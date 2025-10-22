@@ -178,6 +178,131 @@ export type Database = {
           },
         ]
       }
+      api_keys: {
+        Row: {
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          ip_whitelist: string[] | null
+          is_active: boolean | null
+          key_hash: string
+          key_prefix: string
+          last_used_at: string | null
+          name: string
+          organization_id: string
+          rate_limit_per_hour: number | null
+          scopes: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          ip_whitelist?: string[] | null
+          is_active?: boolean | null
+          key_hash: string
+          key_prefix: string
+          last_used_at?: string | null
+          name: string
+          organization_id: string
+          rate_limit_per_hour?: number | null
+          scopes?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          ip_whitelist?: string[] | null
+          is_active?: boolean | null
+          key_hash?: string
+          key_prefix?: string
+          last_used_at?: string | null
+          name?: string
+          organization_id?: string
+          rate_limit_per_hour?: number | null
+          scopes?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_keys_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          api_key_id: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          ip_address: unknown
+          new_values: Json | null
+          old_values: Json | null
+          organization_id: string
+          resource_id: string | null
+          resource_type: string
+          status: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          api_key_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          ip_address?: unknown
+          new_values?: Json | null
+          old_values?: Json | null
+          organization_id: string
+          resource_id?: string | null
+          resource_type: string
+          status: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          api_key_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          ip_address?: unknown
+          new_values?: Json | null
+          old_values?: Json | null
+          organization_id?: string
+          resource_id?: string | null
+          resource_type?: string
+          status?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_units: {
         Row: {
           created_at: string
@@ -203,6 +328,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "business_units_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      data_retention_policies: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          last_cleanup_at: string | null
+          organization_id: string
+          retention_days: number
+          table_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_cleanup_at?: string | null
+          organization_id: string
+          retention_days: number
+          table_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_cleanup_at?: string | null
+          organization_id?: string
+          retention_days?: number
+          table_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_retention_policies_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -678,6 +844,62 @@ export type Database = {
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gdpr_requests: {
+        Row: {
+          expires_at: string | null
+          id: string
+          notes: string | null
+          organization_id: string
+          processed_at: string | null
+          processed_by: string | null
+          request_data: Json | null
+          request_type: string
+          requested_at: string
+          requested_by: string
+          response_data: Json | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          expires_at?: string | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          processed_at?: string | null
+          processed_by?: string | null
+          request_data?: Json | null
+          request_type: string
+          requested_at?: string
+          requested_by: string
+          response_data?: Json | null
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          expires_at?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          request_data?: Json | null
+          request_type?: string
+          requested_at?: string
+          requested_by?: string
+          response_data?: Json | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gdpr_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -1623,6 +1845,18 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      log_audit_event: {
+        Args: {
+          _action: string
+          _error_message?: string
+          _new_values?: Json
+          _old_values?: Json
+          _resource_id?: string
+          _resource_type: string
+          _status?: string
+        }
+        Returns: string
       }
     }
     Enums: {
