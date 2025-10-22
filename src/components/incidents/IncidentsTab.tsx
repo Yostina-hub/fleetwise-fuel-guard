@@ -14,6 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
 import { format } from "date-fns";
+import CreateIncidentDialog from "./CreateIncidentDialog";
 
 const IncidentsTab = () => {
   const { organizationId } = useOrganization();
@@ -60,10 +61,7 @@ const IncidentsTab = () => {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Incident Reports</h3>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Report Incident
-        </Button>
+        <CreateIncidentDialog />
       </div>
 
       <Table>

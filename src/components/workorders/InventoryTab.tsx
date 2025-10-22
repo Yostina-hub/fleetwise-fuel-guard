@@ -1,8 +1,26 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -13,9 +31,33 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Plus, AlertTriangle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
+
+const inventorySchema = z.object({
+  part_number: z.string().trim().min(1, "Part number is required").max(50),
+  part_name: z.string().trim().min(1, "Part name is required").max(100),
+  category: z.enum(["engine", "transmission", "brakes", "tires", "electrical", "body", "other"]),
+  current_quantity: z.number().min(0),
+  minimum_quantity: z.number().min(0).optional(),
+  unit_cost: z.number().min(0).optional(),
+  unit_of_measure: z.string().trim().max(20),
+});
 
 const InventoryTab = () => {
   const { organizationId } = useOrganization();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    part_number: "",
+    part_name: "",
+    category: "other" as const,
+    current_quantity: 0,
+    minimum_quantity: 0,
+    unit_cost: 0,
+    unit_of_measure: "pcs",
+  });
 
   const { data: inventory, isLoading } = useQuery({
     queryKey: ["inventory_items", organizationId],
@@ -36,16 +78,174 @@ const InventoryTab = () => {
     return item.minimum_quantity && item.current_quantity <= item.minimum_quantity;
   };
 
+  const createMutation = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      const validated = inventorySchema.parse(data);
+      const { error } = await (supabase as any)
+        .from("inventory_items")
+        .insert({
+          ...validated,
+          organization_id: organizationId,
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inventory_items"] });
+      toast({ title: "Inventory item added successfully" });
+      setIsDialogOpen(false);
+      resetForm();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const resetForm = () => {
+    setFormData({
+      part_number: "",
+      part_name: "",
+      category: "other",
+      current_quantity: 0,
+      minimum_quantity: 0,
+      unit_cost: 0,
+      unit_of_measure: "pcs",
+    });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    createMutation.mutate(formData);
+  };
+
   if (isLoading) return <div>Loading...</div>;
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Parts Inventory</h3>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Part
-        </Button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={resetForm}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Part
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Add Inventory Part</DialogTitle>
+              <DialogDescription>
+                Add a new part to your inventory
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit}>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="part_number">Part Number *</Label>
+                    <Input
+                      id="part_number"
+                      value={formData.part_number}
+                      onChange={(e) =>
+                        setFormData({ ...formData, part_number: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="category">Category *</Label>
+                    <Select
+                      value={formData.category}
+                      onValueChange={(value: any) =>
+                        setFormData({ ...formData, category: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="engine">Engine</SelectItem>
+                        <SelectItem value="transmission">Transmission</SelectItem>
+                        <SelectItem value="brakes">Brakes</SelectItem>
+                        <SelectItem value="tires">Tires</SelectItem>
+                        <SelectItem value="electrical">Electrical</SelectItem>
+                        <SelectItem value="body">Body</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="part_name">Part Name *</Label>
+                  <Input
+                    id="part_name"
+                    value={formData.part_name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, part_name: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="current_quantity">Current Qty *</Label>
+                    <Input
+                      id="current_quantity"
+                      type="number"
+                      value={formData.current_quantity}
+                      onChange={(e) =>
+                        setFormData({ ...formData, current_quantity: parseFloat(e.target.value) || 0 })
+                      }
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="minimum_quantity">Min Qty</Label>
+                    <Input
+                      id="minimum_quantity"
+                      type="number"
+                      value={formData.minimum_quantity}
+                      onChange={(e) =>
+                        setFormData({ ...formData, minimum_quantity: parseFloat(e.target.value) || 0 })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="unit_of_measure">Unit</Label>
+                    <Input
+                      id="unit_of_measure"
+                      value={formData.unit_of_measure}
+                      onChange={(e) =>
+                        setFormData({ ...formData, unit_of_measure: e.target.value })
+                      }
+                      placeholder="pcs"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="unit_cost">Unit Cost ($)</Label>
+                  <Input
+                    id="unit_cost"
+                    type="number"
+                    step="0.01"
+                    value={formData.unit_cost}
+                    onChange={(e) =>
+                      setFormData({ ...formData, unit_cost: parseFloat(e.target.value) || 0 })
+                    }
+                  />
+                </div>
+              </div>
+              <DialogFooter className="mt-6">
+                <Button type="submit" disabled={createMutation.isPending}>
+                  {createMutation.isPending ? "Adding..." : "Add Part"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Table>
