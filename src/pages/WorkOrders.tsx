@@ -1,3 +1,4 @@
+import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { ClipboardList, Package } from "lucide-react";
@@ -6,7 +7,8 @@ import InventoryTab from "@/components/workorders/InventoryTab";
 
 const WorkOrders = () => {
   return (
-    <div className="p-6 space-y-6">
+    <Layout>
+      <div className="p-8 space-y-6 animate-fade-in">
       <div className="flex items-center gap-3">
         <ClipboardList className="h-8 w-8 text-primary" />
         <div>
@@ -42,6 +44,7 @@ const WorkOrders = () => {
         </TabsContent>
       </Tabs>
     </div>
+    </Layout>
   );
 };
 

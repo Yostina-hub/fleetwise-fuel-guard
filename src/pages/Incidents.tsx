@@ -1,10 +1,12 @@
+import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
 import IncidentsTab from "@/components/incidents/IncidentsTab";
 
 const Incidents = () => {
   return (
-    <div className="p-6 space-y-6">
+    <Layout>
+      <div className="p-8 space-y-6 animate-fade-in">
       <div className="flex items-center gap-3">
         <AlertTriangle className="h-8 w-8 text-primary" />
         <div>
@@ -19,6 +21,7 @@ const Incidents = () => {
         <IncidentsTab />
       </Card>
     </div>
+    </Layout>
   );
 };
 
