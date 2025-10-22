@@ -12,78 +12,39 @@ import {
   Clock,
   MapPin,
   Filter,
-  Download
+  Download,
+  Loader2
 } from "lucide-react";
+import { useAlerts } from "@/hooks/useAlerts";
+import { useVehicles } from "@/hooks/useVehicles";
 
 const Alerts = () => {
-  const [selectedAlert, setSelectedAlert] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-  const alerts = [
-    {
-      id: 1,
-      severity: "critical",
-      type: "Fuel Theft Detected",
-      vehicle: "AB 5678",
-      message: "Sudden fuel drop of 12.3L detected at 03:15 AM",
-      location: "Parking Lot A, Depot B",
-      timestamp: "2025-01-10 03:15",
-      status: "unacknowledged"
-    },
-    {
-      id: 2,
-      severity: "warning",
-      type: "Low Fuel Alert",
-      vehicle: "AD 3456",
-      message: "Fuel level below 20% threshold (18% remaining)",
-      location: "Highway 12, near Exit 45",
-      timestamp: "2025-01-10 08:45",
-      status: "unacknowledged"
-    },
-    {
-      id: 3,
-      severity: "warning",
-      type: "Excessive Idling",
-      vehicle: "AC 9012",
-      message: "Vehicle idling for 45 minutes consuming 2.3L",
-      location: "Customer Site - Warehouse 3",
-      timestamp: "2025-01-10 07:20",
-      status: "acknowledged"
-    },
-    {
-      id: 4,
-      severity: "info",
-      type: "Maintenance Due",
-      vehicle: "AE 7890",
-      message: "Scheduled maintenance due in 3 days",
-      location: "N/A",
-      timestamp: "2025-01-10 06:00",
-      status: "acknowledged"
-    },
-    {
-      id: 5,
-      severity: "critical",
-      type: "Suspected Fuel Leak",
-      vehicle: "AD 3456",
-      message: "Gradual fuel loss of 5.2L over 2 hours",
-      location: "Route 45, between Depot A-B",
-      timestamp: "2025-01-09 14:20",
-      status: "resolved"
-    },
-    {
-      id: 6,
-      severity: "warning",
-      type: "Speeding Violation",
-      vehicle: "AA 1234",
-      message: "Speed exceeded 85 km/h in 60 km/h zone",
-      location: "Main Street, City Center",
-      timestamp: "2025-01-09 16:30",
-      status: "acknowledged"
-    },
-  ];
+  
+  const { alerts: dbAlerts, loading } = useAlerts({ severity: severityFilter });
+  const { vehicles } = useVehicles();
+  const [selectedAlert, setSelectedAlert] = useState<any>(null);
+
+  // Transform DB alerts to display format
+  const alerts = useMemo(() => {
+    return dbAlerts.map(alert => {
+      const vehicle = vehicles.find(v => v.id === alert.vehicle_id);
+      return {
+        id: alert.id,
+        severity: alert.severity,
+        type: alert.alert_type,
+        vehicle: (vehicle as any)?.license_plate || "Unknown",
+        message: alert.message,
+        location: alert.location_name || "Unknown location",
+        timestamp: new Date(alert.alert_time).toLocaleString(),
+        status: alert.status
+      };
+    });
+  }, [dbAlerts, vehicles]);
 
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
@@ -146,6 +107,19 @@ const Alerts = () => {
     const start = (currentPage - 1) * itemsPerPage;
     return filteredAlerts.slice(start, start + itemsPerPage);
   }, [filteredAlerts, currentPage]);
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="p-8 flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+            <p className="text-muted-foreground">Loading alerts...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

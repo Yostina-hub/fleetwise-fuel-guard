@@ -6,72 +6,33 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import StatusBadge from "@/components/StatusBadge";
 import VehicleDetailModal from "@/components/VehicleDetailModal";
-import { Truck, Search, Plus, Fuel, MapPin, Calendar, Filter, Eye, Settings } from "lucide-react";
+import { Truck, Search, Plus, Fuel, MapPin, Calendar, Filter, Eye, Settings, Loader2 } from "lucide-react";
+import { useVehicles } from "@/hooks/useVehicles";
 
 const Fleet = () => {
+  const { vehicles: dbVehicles, loading } = useVehicles();
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [fuelTypeFilter, setFuelTypeFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
-  const vehicles = [
-    { 
-      id: "V-001", 
-      plate: "AA 1234", 
-      make: "Mercedes", 
-      model: "Actros", 
-      year: 2022,
-      status: "moving" as const, 
-      fuel: 75,
-      odometer: 45230,
-      nextService: "2025-02-15"
-    },
-    { 
-      id: "V-002", 
-      plate: "AB 5678", 
-      make: "Volvo", 
-      model: "FH16", 
-      year: 2021,
-      status: "idle" as const, 
-      fuel: 45,
-      odometer: 67890,
-      nextService: "2025-01-25"
-    },
-    { 
-      id: "V-003", 
-      plate: "AC 9012", 
-      make: "Scania", 
-      model: "R450", 
-      year: 2023,
-      status: "stopped" as const, 
-      fuel: 90,
-      odometer: 23450,
-      nextService: "2025-03-10"
-    },
-    { 
-      id: "V-004", 
-      plate: "AD 3456", 
-      make: "MAN", 
-      model: "TGX", 
-      year: 2022,
-      status: "moving" as const, 
-      fuel: 35,
-      odometer: 51200,
-      nextService: "2025-02-01"
-    },
-    { 
-      id: "V-005", 
-      plate: "AE 7890", 
-      make: "DAF", 
-      model: "XF", 
-      year: 2020,
-      status: "offline" as const, 
-      fuel: 60,
-      odometer: 89340,
-      nextService: "2025-01-20"
-    },
-  ];
+
+  // Transform DB vehicles to display format
+  const vehicles = useMemo(() => {
+    return dbVehicles.map(v => ({
+      id: (v as any).license_plate,
+      plate: (v as any).license_plate,
+      make: v.make || "Unknown",
+      model: v.model || "",
+      year: v.year || new Date().getFullYear(),
+      status: (v.status === 'active' ? 'moving' : v.status === 'maintenance' ? 'idle' : 'offline') as 'moving' | 'idle' | 'offline',
+      fuel: v.current_fuel || 50,
+      odometer: v.odometer_km || 0,
+      nextService: "2025-03-01",
+      vehicleId: v.id
+    }));
+  }, [dbVehicles]);
 
   // Filter and search
   const filteredVehicles = useMemo(() => {
@@ -95,6 +56,19 @@ const Fleet = () => {
     const start = (currentPage - 1) * itemsPerPage;
     return filteredVehicles.slice(start, start + itemsPerPage);
   }, [filteredVehicles, currentPage]);
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="p-8 flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+            <p className="text-muted-foreground">Loading fleet data...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

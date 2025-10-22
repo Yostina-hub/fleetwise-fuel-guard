@@ -1,23 +1,59 @@
+import { useMemo } from "react";
 import Layout from "@/components/Layout";
 import KPICard from "@/components/KPICard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Fuel, TrendingDown, AlertTriangle, BarChart3, Droplet, DollarSign } from "lucide-react";
+import { Fuel, TrendingDown, AlertTriangle, BarChart3, Droplet, DollarSign, Loader2 } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
+import { useFuelEvents } from "@/hooks/useFuelEvents";
+import { useVehicles } from "@/hooks/useVehicles";
 
 const FuelMonitoring = () => {
-  const fuelEvents = [
-    { id: 1, vehicle: "AA 1234", type: "refuel", amount: 45.5, timestamp: "2025-01-10 08:30", location: "Shell Station, Main St" },
-    { id: 2, vehicle: "AB 5678", type: "theft", amount: -12.3, timestamp: "2025-01-10 03:15", location: "Parking Lot A" },
-    { id: 3, vehicle: "AC 9012", type: "refuel", amount: 52.0, timestamp: "2025-01-09 16:45", location: "Total Station, Highway 12" },
-    { id: 4, vehicle: "AD 3456", type: "leak", amount: -5.2, timestamp: "2025-01-09 14:20", location: "Route 45" },
-  ];
+  const { fuelEvents: dbFuelEvents, loading } = useFuelEvents();
+  const { vehicles } = useVehicles();
 
-  const topConsumers = [
-    { vehicle: "AA 1234", consumption: 12.5, cost: 450, efficiency: 7.2 },
-    { vehicle: "AB 5678", consumption: 11.8, cost: 425, efficiency: 7.5 },
-    { vehicle: "AC 9012", consumption: 13.2, cost: 475, efficiency: 6.8 },
-    { vehicle: "AD 3456", consumption: 10.5, cost: 380, efficiency: 8.1 },
-  ];
+  // Transform fuel events to display format
+  const fuelEvents = useMemo(() => {
+    return dbFuelEvents.slice(0, 10).map(event => {
+      const vehicle = vehicles.find(v => v.id === event.vehicle_id);
+      return {
+        id: event.id,
+        vehicle: (vehicle as any)?.license_plate || "Unknown",
+        type: event.event_type,
+        amount: event.fuel_change_liters,
+        timestamp: new Date(event.event_time).toLocaleString(),
+        location: event.location_name || "Unknown location"
+      };
+    });
+  }, [dbFuelEvents, vehicles]);
+
+  // Calculate stats
+  const stats = useMemo(() => {
+    const totalConsumption = dbFuelEvents
+      .filter(e => e.event_type === 'refuel')
+      .reduce((sum, e) => sum + Math.abs(e.fuel_change_liters), 0);
+    
+    const anomalyCount = dbFuelEvents
+      .filter(e => e.event_type === 'theft' || e.event_type === 'leak')
+      .length;
+
+    return {
+      totalConsumption: totalConsumption.toFixed(0),
+      anomalyCount
+    };
+  }, [dbFuelEvents]);
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="p-8 flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+            <p className="text-muted-foreground">Loading fuel data...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -32,19 +68,18 @@ const FuelMonitoring = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <KPICard
             title="Total Consumption"
-            value="8,542L"
-            subtitle="this month"
+            value={`${stats.totalConsumption}L`}
+            subtitle="total refuels"
             icon={<Fuel className="w-5 h-5" />}
             trend={{ value: -5.2, label: "vs last month" }}
             variant="success"
           />
           <KPICard
-            title="Fuel Cost"
-            value="$12,450"
-            subtitle="total expenditure"
+            title="Fuel Events"
+            value={dbFuelEvents.length.toString()}
+            subtitle="total events tracked"
             icon={<DollarSign className="w-5 h-5" />}
-            trend={{ value: -3.8, label: "savings" }}
-            variant="success"
+            variant="default"
           />
           <KPICard
             title="Avg. Efficiency"
@@ -56,10 +91,10 @@ const FuelMonitoring = () => {
           />
           <KPICard
             title="Anomalies"
-            value="3"
+            value={stats.anomalyCount.toString()}
             subtitle="suspected theft/leaks"
             icon={<AlertTriangle className="w-5 h-5" />}
-            variant="warning"
+            variant={stats.anomalyCount > 0 ? "warning" : "success"}
           />
         </div>
 
@@ -127,30 +162,38 @@ const FuelMonitoring = () => {
             </CardContent>
           </Card>
 
-          {/* Top Consumers */}
+          {/* Vehicle Fuel Stats */}
           <Card>
             <CardHeader>
-              <CardTitle>Top Fuel Consumers</CardTitle>
+              <CardTitle>Vehicles with Most Events</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {topConsumers.map((item, index) => (
-                  <div key={item.vehicle} className="flex items-center gap-4">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-semibold text-primary">
-                      {index + 1}
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-semibold">{item.vehicle}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {item.consumption}L/100km • ${item.cost} total
+                {vehicles.slice(0, 5).map((vehicle, index) => {
+                  const vehicleEvents = dbFuelEvents.filter(e => e.vehicle_id === vehicle.id);
+                  return (
+                    <div key={vehicle.id} className="flex items-center gap-4">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-semibold text-primary">
+                        {index + 1}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-semibold">{(vehicle as any).license_plate}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {vehicle.make} {vehicle.model}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-medium">{vehicleEvents.length}</div>
+                        <div className="text-xs text-muted-foreground">events</div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-sm font-medium">{item.efficiency}</div>
-                      <div className="text-xs text-muted-foreground">L/100km</div>
-                    </div>
+                  );
+                })}
+                {vehicles.length === 0 && (
+                  <div className="text-center text-muted-foreground py-4">
+                    No vehicles found
                   </div>
-                ))}
+                )}
               </div>
             </CardContent>
           </Card>
