@@ -14,10 +14,13 @@ import {
   Gauge,
   Eye,
   ChevronRight,
-  RefreshCw
+  RefreshCw,
+  Activity,
+  Route
 } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
 import VehicleDetailModal from "@/components/VehicleDetailModal";
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, LineChart, Line } from "recharts";
 
 const Dashboard = () => {
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
@@ -39,6 +42,35 @@ const Dashboard = () => {
     { id: 1, type: "warning", message: "Low fuel detected - Vehicle AA 1234", time: "5 min ago" },
     { id: 2, type: "critical", message: "Suspected fuel theft - Vehicle AB 5678", time: "12 min ago" },
     { id: 3, type: "warning", message: "Excessive idling - Vehicle AC 9012", time: "25 min ago" },
+  ];
+
+  // Vehicle status distribution for pie chart
+  const vehicleStatusData = [
+    { name: "Moving", value: 85, color: "hsl(var(--success))" },
+    { name: "Idle", value: 32, color: "hsl(var(--warning))" },
+    { name: "Stopped", value: 18, color: "hsl(var(--muted-foreground))" },
+    { name: "Offline", value: 15, color: "hsl(var(--destructive))" },
+  ];
+
+  // Fuel consumption trend data
+  const fuelTrendData = [
+    { day: "Mon", consumption: 450 },
+    { day: "Tue", consumption: 520 },
+    { day: "Wed", consumption: 480 },
+    { day: "Thu", consumption: 510 },
+    { day: "Fri", consumption: 490 },
+    { day: "Sat", consumption: 380 },
+    { day: "Sun", consumption: 320 },
+  ];
+
+  // Trips per hour data
+  const tripsData = [
+    { hour: "00:00", trips: 5 },
+    { hour: "04:00", trips: 8 },
+    { hour: "08:00", trips: 45 },
+    { hour: "12:00", trips: 62 },
+    { hour: "16:00", trips: 58 },
+    { hour: "20:00", trips: 28 },
   ];
 
   return (
@@ -98,36 +130,110 @@ const Dashboard = () => {
           />
         </div>
 
-        {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Charts Row - Circular KPIs and Analytics */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Vehicle Status Distribution - Circular Chart */}
           <Card>
             <CardHeader>
-              <CardTitle>Fuel Consumption Trend</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="w-5 h-5 text-primary" />
+                Fleet Status
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-64 flex items-center justify-center bg-muted/30 rounded-lg">
-                <div className="text-center text-muted-foreground">
-                  <TrendingUp className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Chart visualization</p>
-                </div>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={vehicleStatusData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={90}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {vehicleStatusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="grid grid-cols-2 gap-3 mt-4">
+                {vehicleStatusData.map((item, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <div>
+                      <div className="text-xs text-muted-foreground">{item.name}</div>
+                      <div className="font-semibold">{item.value}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          {/* Fuel Consumption Trend */}
+          <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle>Fleet Utilization</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-primary" />
+                Fuel Consumption (Liters)
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-64 flex items-center justify-center bg-muted/30 rounded-lg">
-                <div className="text-center text-muted-foreground">
-                  <Gauge className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Chart visualization</p>
-                </div>
-              </div>
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={fuelTrendData}>
+                  <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" />
+                  <YAxis stroke="hsl(var(--muted-foreground))" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: "hsl(var(--card))", 
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px"
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="consumption" 
+                    stroke="hsl(var(--primary))" 
+                    strokeWidth={2}
+                    dot={{ fill: "hsl(var(--primary))", r: 4 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
         </div>
+
+        {/* Trips Analytics */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Route className="w-5 h-5 text-primary" />
+              Trip Activity by Time
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={tripsData}>
+                <XAxis dataKey="hour" stroke="hsl(var(--muted-foreground))" />
+                <YAxis stroke="hsl(var(--muted-foreground))" />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: "hsl(var(--card))", 
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px"
+                  }}
+                />
+                <Bar dataKey="trips" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
 
         {/* Bottom Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
