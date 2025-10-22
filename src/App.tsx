@@ -21,6 +21,7 @@ import RoutesPage from "./pages/Routes";
 import WorkOrders from "./pages/WorkOrders";
 import Incidents from "./pages/Incidents";
 import SystemConfig from "./pages/SystemConfig";
+import DeviceIntegration from "./pages/DeviceIntegration";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
@@ -51,6 +52,7 @@ const App = () => {
           <Route path="/workorders" element={<ProtectedRoute><WorkOrders /></ProtectedRoute>} />
           <Route path="/incidents" element={<ProtectedRoute><Incidents /></ProtectedRoute>} />
           <Route path="/config" element={<ProtectedRoute requiredRole="super_admin"><SystemConfig /></ProtectedRoute>} />
+          <Route path="/devices" element={<ProtectedRoute><DeviceIntegration /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

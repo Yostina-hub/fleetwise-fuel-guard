@@ -18,7 +18,8 @@ import {
   ClipboardList,
   AlertTriangle,
   Settings2,
-  Building2
+  Building2,
+  Smartphone
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -33,6 +34,7 @@ const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: Map, label: "Live Map", path: "/map" },
   { icon: Truck, label: "Fleet", path: "/fleet" },
+  { icon: Smartphone, label: "Devices", path: "/devices", highlight: true },
   { icon: Fuel, label: "Fuel", path: "/fuel" },
   { icon: Bell, label: "Alerts", path: "/alerts" },
   { icon: Wrench, label: "Maintenance", path: "/maintenance" },
@@ -82,7 +84,7 @@ const Layout = ({ children }: LayoutProps) => {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative",
                   isActive
                     ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
                     : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground hover:translate-x-1"
@@ -90,6 +92,11 @@ const Layout = ({ children }: LayoutProps) => {
               >
                 <Icon className="w-5 h-5 transition-transform group-hover:scale-110" />
                 <span className="font-medium">{item.label}</span>
+                {item.highlight && (
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-0.5 text-[10px] font-bold bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full animate-pulse">
+                    NEW
+                  </span>
+                )}
               </Link>
             );
           })}
