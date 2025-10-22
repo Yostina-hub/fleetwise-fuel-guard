@@ -37,9 +37,9 @@ import { format } from "date-fns";
 import { z } from "zod";
 
 const workOrderSchema = z.object({
-  work_order_type: z.enum(["inspection", "repair", "service", "replacement"]),
+  work_type: z.string().trim().min(1, "Work type is required"),
   priority: z.enum(["low", "medium", "high", "urgent"]),
-  description: z.string().trim().min(1, "Description is required").max(500),
+  service_description: z.string().trim().min(1, "Description is required").max(500),
   scheduled_date: z.string().optional(),
 });
 
@@ -49,9 +49,9 @@ const WorkOrdersTab = () => {
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
-    work_order_type: "service" as const,
+    work_type: "oil_change",
     priority: "medium" as const,
-    description: "",
+    service_description: "",
     scheduled_date: "",
   });
 
@@ -98,13 +98,21 @@ const WorkOrdersTab = () => {
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       const validated = workOrderSchema.parse(data);
+      const woNumber = `WO-${Date.now().toString().slice(-8)}`;
       
       const { error } = await (supabase as any)
         .from("work_orders")
         .insert({
-          ...validated,
+          work_order_number: woNumber,
+          work_type: validated.work_type,
+          priority: validated.priority,
+          service_description: validated.service_description,
+          scheduled_date: validated.scheduled_date || null,
           organization_id: organizationId,
           status: "scheduled",
+          parts_cost: 0,
+          labor_cost: 0,
+          total_cost: 0,
         });
       if (error) throw error;
     },
@@ -125,9 +133,9 @@ const WorkOrdersTab = () => {
 
   const resetForm = () => {
     setFormData({
-      work_order_type: "service",
+      work_type: "oil_change",
       priority: "medium",
-      description: "",
+      service_description: "",
       scheduled_date: "",
     });
   };
@@ -160,21 +168,25 @@ const WorkOrdersTab = () => {
             <form onSubmit={handleSubmit}>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="work_order_type">Type *</Label>
+                  <Label htmlFor="work_type">Work Type *</Label>
                   <Select
-                    value={formData.work_order_type}
+                    value={formData.work_type}
                     onValueChange={(value: any) =>
-                      setFormData({ ...formData, work_order_type: value })
+                      setFormData({ ...formData, work_type: value })
                     }
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="oil_change">Oil Change</SelectItem>
+                      <SelectItem value="tire_service">Tire Service</SelectItem>
+                      <SelectItem value="brake_service">Brake Service</SelectItem>
                       <SelectItem value="inspection">Inspection</SelectItem>
-                      <SelectItem value="repair">Repair</SelectItem>
-                      <SelectItem value="service">Service</SelectItem>
-                      <SelectItem value="replacement">Replacement</SelectItem>
+                      <SelectItem value="engine_repair">Engine Repair</SelectItem>
+                      <SelectItem value="transmission_service">Transmission Service</SelectItem>
+                      <SelectItem value="electrical_repair">Electrical Repair</SelectItem>
+                      <SelectItem value="body_repair">Body Repair</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -198,12 +210,12 @@ const WorkOrdersTab = () => {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="description">Description *</Label>
+                  <Label htmlFor="service_description">Description *</Label>
                   <Textarea
-                    id="description"
-                    value={formData.description}
+                    id="service_description"
+                    value={formData.service_description}
                     onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
+                      setFormData({ ...formData, service_description: e.target.value })
                     }
                     placeholder="Describe the work to be done..."
                     rows={3}
@@ -247,8 +259,8 @@ const WorkOrdersTab = () => {
         <TableBody>
           {workOrders?.map((wo: any) => (
             <TableRow key={wo.id}>
-              <TableCell className="font-medium">{wo.work_order_number}</TableCell>
-              <TableCell className="capitalize">{wo.work_order_type}</TableCell>
+            <TableCell className="font-medium">{wo.work_order_number}</TableCell>
+            <TableCell className="capitalize">{wo.work_type?.replace(/_/g, ' ')}</TableCell>
               <TableCell>
                 {wo.vehicles ? `${wo.vehicles.plate_number} (${wo.vehicles.make})` : "-"}
               </TableCell>

@@ -1472,6 +1472,69 @@ export type Database = {
           },
         ]
       }
+      incidents: {
+        Row: {
+          actual_cost: number | null
+          created_at: string
+          description: string
+          driver_id: string | null
+          estimated_cost: number | null
+          id: string
+          incident_number: string
+          incident_time: string
+          incident_type: string
+          location: string | null
+          organization_id: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          status: string
+          updated_at: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          actual_cost?: number | null
+          created_at?: string
+          description: string
+          driver_id?: string | null
+          estimated_cost?: number | null
+          id?: string
+          incident_number: string
+          incident_time: string
+          incident_type: string
+          location?: string | null
+          organization_id: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity: string
+          status?: string
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          actual_cost?: number | null
+          created_at?: string
+          description?: string
+          driver_id?: string | null
+          estimated_cost?: number | null
+          id?: string
+          incident_number?: string
+          incident_time?: string
+          incident_type?: string
+          location?: string | null
+          organization_id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
       integration_sync_logs: {
         Row: {
           completed_at: string | null
@@ -1574,6 +1637,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      inventory_items: {
+        Row: {
+          category: string
+          created_at: string
+          current_quantity: number
+          id: string
+          minimum_quantity: number | null
+          organization_id: string
+          part_name: string
+          part_number: string
+          unit_cost: number | null
+          unit_of_measure: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          current_quantity?: number
+          id?: string
+          minimum_quantity?: number | null
+          organization_id: string
+          part_name: string
+          part_number: string
+          unit_cost?: number | null
+          unit_of_measure?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          current_quantity?: number
+          id?: string
+          minimum_quantity?: number | null
+          organization_id?: string
+          part_name?: string
+          part_number?: string
+          unit_cost?: number | null
+          unit_of_measure?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       ip_allowlists: {
         Row: {
@@ -2139,6 +2244,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      routes: {
+        Row: {
+          created_at: string
+          description: string | null
+          frequency: string
+          id: string
+          is_active: boolean | null
+          organization_id: string
+          route_code: string | null
+          route_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          frequency: string
+          id?: string
+          is_active?: boolean | null
+          organization_id: string
+          route_code?: string | null
+          route_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          frequency?: string
+          id?: string
+          is_active?: boolean | null
+          organization_id?: string
+          route_code?: string | null
+          route_name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       sensors: {
         Row: {
