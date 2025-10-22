@@ -87,6 +87,38 @@ const InventoryTab = () => {
     enabled: !!organizationId,
   });
 
+  // Filter and search
+  const filteredItems = useMemo(() => {
+    if (!inventory) return [];
+    
+    return inventory.filter((item: any) => {
+      const matchesSearch = searchQuery === "" || 
+        item.part_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.part_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.category.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesCategory = categoryFilter === "all" || item.category === categoryFilter;
+      
+      let matchesStock = true;
+      if (stockFilter === "low") {
+        matchesStock = Number(item.current_quantity) <= Number(item.minimum_quantity);
+      } else if (stockFilter === "out") {
+        matchesStock = Number(item.current_quantity) === 0;
+      } else if (stockFilter === "in") {
+        matchesStock = Number(item.current_quantity) > Number(item.minimum_quantity);
+      }
+      
+      return matchesSearch && matchesCategory && matchesStock;
+    });
+  }, [inventory, searchQuery, categoryFilter, stockFilter]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+  const paginatedItems = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredItems.slice(start, start + itemsPerPage);
+  }, [filteredItems, currentPage]);
+
   const isLowStock = (item: any) => {
     return item.minimum_quantity && item.current_quantity <= item.minimum_quantity;
   };

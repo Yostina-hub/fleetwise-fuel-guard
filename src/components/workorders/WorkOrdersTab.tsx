@@ -31,6 +31,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -76,6 +84,31 @@ const WorkOrdersTab = () => {
     },
     enabled: !!organizationId,
   });
+
+  // Filter and search
+  const filteredWorkOrders = useMemo(() => {
+    if (!workOrders) return [];
+    
+    return workOrders.filter((wo: any) => {
+      const matchesSearch = searchQuery === "" || 
+        wo.work_order_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        wo.work_type?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        wo.service_description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        wo.vehicles?.plate_number?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesStatus = statusFilter === "all" || wo.status === statusFilter;
+      const matchesPriority = priorityFilter === "all" || wo.priority === priorityFilter;
+      
+      return matchesSearch && matchesStatus && matchesPriority;
+    });
+  }, [workOrders, searchQuery, statusFilter, priorityFilter]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredWorkOrders.length / itemsPerPage);
+  const paginatedWorkOrders = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredWorkOrders.slice(start, start + itemsPerPage);
+  }, [filteredWorkOrders, currentPage]);
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
