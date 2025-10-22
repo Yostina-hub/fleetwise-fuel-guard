@@ -8,6 +8,9 @@ import MapView from "./pages/MapView";
 import Fleet from "./pages/Fleet";
 import FuelMonitoring from "./pages/FuelMonitoring";
 import Alerts from "./pages/Alerts";
+import Maintenance from "./pages/Maintenance";
+import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,9 +27,9 @@ const App = () => (
           <Route path="/fleet" element={<Fleet />} />
           <Route path="/fuel" element={<FuelMonitoring />} />
           <Route path="/alerts" element={<Alerts />} />
-          <Route path="/maintenance" element={<Dashboard />} />
-          <Route path="/reports" element={<Dashboard />} />
-          <Route path="/settings" element={<Dashboard />} />
+          <Route path="/maintenance" element={<Maintenance />} />
+          <Route path="/reports" element={<Reports />} />
+          <Route path="/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
