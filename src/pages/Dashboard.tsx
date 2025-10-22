@@ -1,6 +1,8 @@
+import { useState } from "react";
 import Layout from "@/components/Layout";
 import KPICard from "@/components/KPICard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { 
   Truck, 
   Fuel, 
@@ -9,11 +11,22 @@ import {
   AlertTriangle,
   Clock,
   MapPin,
-  Gauge
+  Gauge,
+  Eye,
+  ChevronRight,
+  RefreshCw
 } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
+import VehicleDetailModal from "@/components/VehicleDetailModal";
 
 const Dashboard = () => {
+  const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 1000);
+  };
   const vehicles = [
     { id: "V-001", plate: "AA 1234", status: "moving" as const, fuel: 75, location: "Highway 45" },
     { id: "V-002", plate: "AB 5678", status: "idle" as const, fuel: 45, location: "Depot A" },
@@ -32,9 +45,22 @@ const Dashboard = () => {
     <Layout>
       <div className="p-8 space-y-8 animate-fade-in">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold">Fleet Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Real-time overview of your fleet operations</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              Fleet Dashboard
+            </h1>
+            <p className="text-muted-foreground mt-1">Real-time overview of your fleet operations</p>
+          </div>
+          <Button 
+            variant="outline" 
+            className="gap-2" 
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
         </div>
 
         {/* KPI Grid */}
@@ -107,20 +133,30 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Vehicle Status */}
           <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Vehicle Status</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Live Vehicle Status</CardTitle>
+              <Button variant="ghost" size="sm" className="gap-2">
+                View All <ChevronRight className="w-4 h-4" />
+              </Button>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {vehicles.map((vehicle) => (
-                  <div key={vehicle.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
+                  <div 
+                    key={vehicle.id} 
+                    className="group flex items-center justify-between p-4 border border-border rounded-lg hover:shadow-md hover:border-primary/50 transition-all cursor-pointer bg-gradient-to-r hover:from-primary/5 hover:to-transparent"
+                    onClick={() => setSelectedVehicle(vehicle)}
+                  >
                     <div className="flex items-center gap-4">
-                      <div className="p-3 bg-primary/10 rounded-lg">
+                      <div className="p-3 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg group-hover:scale-110 transition-transform">
                         <Truck className="w-5 h-5 text-primary" />
                       </div>
                       <div>
-                        <div className="font-semibold">{vehicle.plate}</div>
-                        <div className="text-sm text-muted-foreground flex items-center gap-1">
+                        <div className="font-semibold flex items-center gap-2">
+                          {vehicle.plate}
+                          <span className="text-xs text-muted-foreground">#{vehicle.id}</span>
+                        </div>
+                        <div className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
                           <MapPin className="w-3 h-3" />
                           {vehicle.location}
                         </div>
@@ -128,10 +164,29 @@ const Dashboard = () => {
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="text-right">
-                        <div className="text-sm font-medium">{vehicle.fuel}%</div>
-                        <div className="text-xs text-muted-foreground">Fuel</div>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${
+                            vehicle.fuel > 60 ? 'bg-success' : 
+                            vehicle.fuel > 30 ? 'bg-warning' : 
+                            'bg-destructive'
+                          } animate-pulse`}></div>
+                          <span className="text-sm font-medium">{vehicle.fuel}%</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground">Fuel Level</div>
                       </div>
                       <StatusBadge status={vehicle.status} />
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="opacity-0 group-hover:opacity-100 transition-opacity gap-2"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedVehicle(vehicle);
+                        }}
+                      >
+                        <Eye className="w-4 h-4" />
+                        Details
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -140,21 +195,39 @@ const Dashboard = () => {
           </Card>
 
           {/* Recent Alerts */}
-          <Card>
+          <Card className="border-warning/20">
             <CardHeader>
-              <CardTitle>Recent Alerts</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <div className="p-2 rounded-md bg-warning/10">
+                    <AlertTriangle className="w-4 h-4 text-warning" />
+                  </div>
+                  Recent Alerts
+                </CardTitle>
+                <Button variant="ghost" size="sm">View All</Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {recentAlerts.map((alert) => (
-                  <div key={alert.id} className="p-3 border border-border rounded-lg">
-                    <div className="flex items-start gap-2">
-                      <AlertTriangle className={`w-4 h-4 mt-0.5 ${alert.type === 'critical' ? 'text-destructive' : 'text-warning'}`} />
+                  <div 
+                    key={alert.id} 
+                    className={`p-3 border rounded-lg hover:shadow-md transition-all cursor-pointer ${
+                      alert.type === 'critical' ? 'border-destructive/30 bg-destructive/5' : 'border-warning/30 bg-warning/5'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className={`w-5 h-5 mt-0.5 ${alert.type === 'critical' ? 'text-destructive animate-pulse' : 'text-warning'}`} />
                       <div className="flex-1">
                         <p className="text-sm font-medium">{alert.message}</p>
-                        <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                          <Clock className="w-3 h-3" />
-                          {alert.time}
+                        <div className="flex items-center gap-2 mt-2">
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Clock className="w-3 h-3" />
+                            {alert.time}
+                          </div>
+                          <Button size="sm" variant="ghost" className="h-6 text-xs">
+                            Acknowledge
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -165,6 +238,13 @@ const Dashboard = () => {
           </Card>
         </div>
       </div>
+
+      {/* Vehicle Detail Modal */}
+      <VehicleDetailModal
+        open={!!selectedVehicle}
+        onOpenChange={(open) => !open && setSelectedVehicle(null)}
+        vehicle={selectedVehicle || {}}
+      />
     </Layout>
   );
 };
