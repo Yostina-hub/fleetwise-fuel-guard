@@ -508,6 +508,53 @@ export type Database = {
           },
         ]
       }
+      device_protocols: {
+        Row: {
+          created_at: string
+          decoder_config: Json
+          id: string
+          is_active: boolean | null
+          notes: string | null
+          organization_id: string
+          protocol_name: string
+          updated_at: string
+          vendor: string
+          version: string | null
+        }
+        Insert: {
+          created_at?: string
+          decoder_config: Json
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          organization_id: string
+          protocol_name: string
+          updated_at?: string
+          vendor: string
+          version?: string | null
+        }
+        Update: {
+          created_at?: string
+          decoder_config?: Json
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          organization_id?: string
+          protocol_name?: string
+          updated_at?: string
+          vendor?: string
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_protocols_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       devices: {
         Row: {
           apn: string | null
@@ -521,6 +568,7 @@ export type Database = {
           last_heartbeat: string | null
           notes: string | null
           organization_id: string
+          protocol_id: string | null
           serial_number: string | null
           sim_iccid: string | null
           sim_msisdn: string | null
@@ -541,6 +589,7 @@ export type Database = {
           last_heartbeat?: string | null
           notes?: string | null
           organization_id: string
+          protocol_id?: string | null
           serial_number?: string | null
           sim_iccid?: string | null
           sim_msisdn?: string | null
@@ -561,6 +610,7 @@ export type Database = {
           last_heartbeat?: string | null
           notes?: string | null
           organization_id?: string
+          protocol_id?: string | null
           serial_number?: string | null
           sim_iccid?: string | null
           sim_msisdn?: string | null
@@ -575,6 +625,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devices_protocol_id_fkey"
+            columns: ["protocol_id"]
+            isOneToOne: false
+            referencedRelation: "device_protocols"
             referencedColumns: ["id"]
           },
           {
@@ -754,6 +811,293 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      enrichment_configs: {
+        Row: {
+          cache_geocoding_results: boolean | null
+          config_name: string
+          created_at: string
+          driver_id_methods: Json | null
+          driver_timeout_minutes: number | null
+          enable_driver_binding: boolean | null
+          enable_geofence_matching: boolean | null
+          enable_map_matching: boolean | null
+          enable_reverse_geocoding: boolean | null
+          enable_speed_limit_lookup: boolean | null
+          geocoding_provider: string | null
+          geofence_buffer_meters: number | null
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          map_provider: string | null
+          organization_id: string
+          road_tolerance_meters: number | null
+          snap_to_roads: boolean | null
+          speed_limit_provider: string | null
+          updated_at: string
+        }
+        Insert: {
+          cache_geocoding_results?: boolean | null
+          config_name: string
+          created_at?: string
+          driver_id_methods?: Json | null
+          driver_timeout_minutes?: number | null
+          enable_driver_binding?: boolean | null
+          enable_geofence_matching?: boolean | null
+          enable_map_matching?: boolean | null
+          enable_reverse_geocoding?: boolean | null
+          enable_speed_limit_lookup?: boolean | null
+          geocoding_provider?: string | null
+          geofence_buffer_meters?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          map_provider?: string | null
+          organization_id: string
+          road_tolerance_meters?: number | null
+          snap_to_roads?: boolean | null
+          speed_limit_provider?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cache_geocoding_results?: boolean | null
+          config_name?: string
+          created_at?: string
+          driver_id_methods?: Json | null
+          driver_timeout_minutes?: number | null
+          enable_driver_binding?: boolean | null
+          enable_geofence_matching?: boolean | null
+          enable_map_matching?: boolean | null
+          enable_reverse_geocoding?: boolean | null
+          enable_speed_limit_lookup?: boolean | null
+          geocoding_provider?: string | null
+          geofence_buffer_meters?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          map_provider?: string | null
+          organization_id?: string
+          road_tolerance_meters?: number | null
+          snap_to_roads?: boolean | null
+          speed_limit_provider?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrichment_configs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fuel_detection_configs: {
+        Row: {
+          cornering_threshold_degrees: number | null
+          created_at: string
+          hill_gradient_threshold_percent: number | null
+          id: string
+          ignore_cornering: boolean | null
+          ignore_hill_gradient: boolean | null
+          ignore_vibration_spikes: boolean | null
+          is_active: boolean | null
+          min_samples_for_detection: number | null
+          moving_average_window: number | null
+          notes: string | null
+          organization_id: string
+          refuel_speed_threshold_kmh: number | null
+          refuel_threshold_percent: number | null
+          refuel_time_window_seconds: number | null
+          require_fuel_card_validation: boolean | null
+          sensor_fault_threshold_hours: number | null
+          sensor_id: string | null
+          theft_speed_threshold_kmh: number | null
+          theft_threshold_percent: number | null
+          theft_time_window_seconds: number | null
+          updated_at: string
+          use_kalman_filter: boolean | null
+          use_temperature_compensation: boolean | null
+          validation_time_window_hours: number | null
+          vehicle_id: string
+        }
+        Insert: {
+          cornering_threshold_degrees?: number | null
+          created_at?: string
+          hill_gradient_threshold_percent?: number | null
+          id?: string
+          ignore_cornering?: boolean | null
+          ignore_hill_gradient?: boolean | null
+          ignore_vibration_spikes?: boolean | null
+          is_active?: boolean | null
+          min_samples_for_detection?: number | null
+          moving_average_window?: number | null
+          notes?: string | null
+          organization_id: string
+          refuel_speed_threshold_kmh?: number | null
+          refuel_threshold_percent?: number | null
+          refuel_time_window_seconds?: number | null
+          require_fuel_card_validation?: boolean | null
+          sensor_fault_threshold_hours?: number | null
+          sensor_id?: string | null
+          theft_speed_threshold_kmh?: number | null
+          theft_threshold_percent?: number | null
+          theft_time_window_seconds?: number | null
+          updated_at?: string
+          use_kalman_filter?: boolean | null
+          use_temperature_compensation?: boolean | null
+          validation_time_window_hours?: number | null
+          vehicle_id: string
+        }
+        Update: {
+          cornering_threshold_degrees?: number | null
+          created_at?: string
+          hill_gradient_threshold_percent?: number | null
+          id?: string
+          ignore_cornering?: boolean | null
+          ignore_hill_gradient?: boolean | null
+          ignore_vibration_spikes?: boolean | null
+          is_active?: boolean | null
+          min_samples_for_detection?: number | null
+          moving_average_window?: number | null
+          notes?: string | null
+          organization_id?: string
+          refuel_speed_threshold_kmh?: number | null
+          refuel_threshold_percent?: number | null
+          refuel_time_window_seconds?: number | null
+          require_fuel_card_validation?: boolean | null
+          sensor_fault_threshold_hours?: number | null
+          sensor_id?: string | null
+          theft_speed_threshold_kmh?: number | null
+          theft_threshold_percent?: number | null
+          theft_time_window_seconds?: number | null
+          updated_at?: string
+          use_kalman_filter?: boolean | null
+          use_temperature_compensation?: boolean | null
+          validation_time_window_hours?: number | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_detection_configs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_detection_configs_sensor_id_fkey"
+            columns: ["sensor_id"]
+            isOneToOne: false
+            referencedRelation: "sensors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_detection_configs_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fuel_event_processing_logs: {
+        Row: {
+          config_snapshot: Json | null
+          created_at: string
+          detection_confidence: number | null
+          event_detected: string | null
+          false_positive_checks: Json | null
+          filters_applied: Json | null
+          fuel_card_validation: Json | null
+          fuel_change_liters: number | null
+          fuel_change_percent: number | null
+          fuel_event_id: string | null
+          id: string
+          ignition_status: boolean | null
+          organization_id: string
+          processing_time: string
+          raw_readings: Json | null
+          sensor_id: string | null
+          smoothed_readings: Json | null
+          speed_at_event: number | null
+          time_window_seconds: number | null
+          vehicle_id: string
+        }
+        Insert: {
+          config_snapshot?: Json | null
+          created_at?: string
+          detection_confidence?: number | null
+          event_detected?: string | null
+          false_positive_checks?: Json | null
+          filters_applied?: Json | null
+          fuel_card_validation?: Json | null
+          fuel_change_liters?: number | null
+          fuel_change_percent?: number | null
+          fuel_event_id?: string | null
+          id?: string
+          ignition_status?: boolean | null
+          organization_id: string
+          processing_time?: string
+          raw_readings?: Json | null
+          sensor_id?: string | null
+          smoothed_readings?: Json | null
+          speed_at_event?: number | null
+          time_window_seconds?: number | null
+          vehicle_id: string
+        }
+        Update: {
+          config_snapshot?: Json | null
+          created_at?: string
+          detection_confidence?: number | null
+          event_detected?: string | null
+          false_positive_checks?: Json | null
+          filters_applied?: Json | null
+          fuel_card_validation?: Json | null
+          fuel_change_liters?: number | null
+          fuel_change_percent?: number | null
+          fuel_event_id?: string | null
+          id?: string
+          ignition_status?: boolean | null
+          organization_id?: string
+          processing_time?: string
+          raw_readings?: Json | null
+          sensor_id?: string | null
+          smoothed_readings?: Json | null
+          speed_at_event?: number | null
+          time_window_seconds?: number | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_event_processing_logs_fuel_event_id_fkey"
+            columns: ["fuel_event_id"]
+            isOneToOne: false
+            referencedRelation: "fuel_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_event_processing_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_event_processing_logs_sensor_id_fkey"
+            columns: ["sensor_id"]
+            isOneToOne: false
+            referencedRelation: "sensors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_event_processing_logs_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
             referencedColumns: ["id"]
           },
         ]
@@ -1631,6 +1975,72 @@ export type Database = {
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      telemetry_raw: {
+        Row: {
+          created_at: string
+          created_telemetry_ids: string[] | null
+          device_id: string | null
+          id: string
+          organization_id: string
+          parsed_payload: Json | null
+          processed_at: string | null
+          processing_error: string | null
+          processing_status: string | null
+          protocol: string | null
+          raw_hex: string | null
+          raw_payload: string | null
+          received_at: string
+          source_ip: unknown
+        }
+        Insert: {
+          created_at?: string
+          created_telemetry_ids?: string[] | null
+          device_id?: string | null
+          id?: string
+          organization_id: string
+          parsed_payload?: Json | null
+          processed_at?: string | null
+          processing_error?: string | null
+          processing_status?: string | null
+          protocol?: string | null
+          raw_hex?: string | null
+          raw_payload?: string | null
+          received_at?: string
+          source_ip?: unknown
+        }
+        Update: {
+          created_at?: string
+          created_telemetry_ids?: string[] | null
+          device_id?: string | null
+          id?: string
+          organization_id?: string
+          parsed_payload?: Json | null
+          processed_at?: string | null
+          processing_error?: string | null
+          processing_status?: string | null
+          protocol?: string | null
+          raw_hex?: string | null
+          raw_payload?: string | null
+          received_at?: string
+          source_ip?: unknown
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telemetry_raw_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telemetry_raw_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
