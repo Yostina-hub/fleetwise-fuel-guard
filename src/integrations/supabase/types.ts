@@ -14,6 +14,170 @@ export type Database = {
   }
   public: {
     Tables: {
+      alert_rules: {
+        Row: {
+          conditions: Json
+          created_at: string
+          id: string
+          is_active: boolean | null
+          name: string
+          notification_channels: Json | null
+          notification_recipients: Json | null
+          organization_id: string
+          rule_type: string
+          severity: string
+          updated_at: string
+        }
+        Insert: {
+          conditions: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          notification_channels?: Json | null
+          notification_recipients?: Json | null
+          organization_id: string
+          rule_type: string
+          severity: string
+          updated_at?: string
+        }
+        Update: {
+          conditions?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          notification_channels?: Json | null
+          notification_recipients?: Json | null
+          organization_id?: string
+          rule_type?: string
+          severity?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alert_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_data: Json | null
+          alert_rule_id: string | null
+          alert_time: string
+          alert_type: string
+          created_at: string
+          driver_id: string | null
+          id: string
+          lat: number | null
+          lng: number | null
+          location_name: string | null
+          message: string
+          organization_id: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          status: string | null
+          title: string
+          trip_id: string | null
+          updated_at: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_data?: Json | null
+          alert_rule_id?: string | null
+          alert_time: string
+          alert_type: string
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          location_name?: string | null
+          message: string
+          organization_id: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity: string
+          status?: string | null
+          title: string
+          trip_id?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_data?: Json | null
+          alert_rule_id?: string | null
+          alert_time?: string
+          alert_type?: string
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          location_name?: string | null
+          message?: string
+          organization_id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string | null
+          title?: string
+          trip_id?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alerts_alert_rule_id_fkey"
+            columns: ["alert_rule_id"]
+            isOneToOne: false
+            referencedRelation: "alert_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alerts_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alerts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alerts_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alerts_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_units: {
         Row: {
           created_at: string
@@ -77,6 +241,692 @@ export type Database = {
             columns: ["business_unit_id"]
             isOneToOne: false
             referencedRelation: "business_units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      devices: {
+        Row: {
+          apn: string | null
+          created_at: string
+          firmware_version: string | null
+          id: string
+          imei: string
+          install_date: string | null
+          installed_by: string | null
+          last_firmware_update: string | null
+          last_heartbeat: string | null
+          notes: string | null
+          organization_id: string
+          serial_number: string | null
+          sim_iccid: string | null
+          sim_msisdn: string | null
+          status: string
+          tracker_model: string
+          updated_at: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          apn?: string | null
+          created_at?: string
+          firmware_version?: string | null
+          id?: string
+          imei: string
+          install_date?: string | null
+          installed_by?: string | null
+          last_firmware_update?: string | null
+          last_heartbeat?: string | null
+          notes?: string | null
+          organization_id: string
+          serial_number?: string | null
+          sim_iccid?: string | null
+          sim_msisdn?: string | null
+          status?: string
+          tracker_model: string
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          apn?: string | null
+          created_at?: string
+          firmware_version?: string | null
+          id?: string
+          imei?: string
+          install_date?: string | null
+          installed_by?: string | null
+          last_firmware_update?: string | null
+          last_heartbeat?: string | null
+          notes?: string | null
+          organization_id?: string
+          serial_number?: string | null
+          sim_iccid?: string | null
+          sim_msisdn?: string | null
+          status?: string
+          tracker_model?: string
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devices_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devices_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_events: {
+        Row: {
+          acceleration_g: number | null
+          address: string | null
+          created_at: string
+          driver_id: string | null
+          event_time: string
+          event_type: string
+          id: string
+          lat: number | null
+          lng: number | null
+          notes: string | null
+          organization_id: string
+          severity: string
+          speed_kmh: number | null
+          speed_limit_kmh: number | null
+          trip_id: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          acceleration_g?: number | null
+          address?: string | null
+          created_at?: string
+          driver_id?: string | null
+          event_time: string
+          event_type: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          notes?: string | null
+          organization_id: string
+          severity: string
+          speed_kmh?: number | null
+          speed_limit_kmh?: number | null
+          trip_id?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          acceleration_g?: number | null
+          address?: string | null
+          created_at?: string
+          driver_id?: string | null
+          event_time?: string
+          event_type?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          notes?: string | null
+          organization_id?: string
+          severity?: string
+          speed_kmh?: number | null
+          speed_limit_kmh?: number | null
+          trip_id?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_events_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_events_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_events_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      drivers: {
+        Row: {
+          avatar_url: string | null
+          bluetooth_id: string | null
+          created_at: string
+          email: string | null
+          employee_id: string | null
+          first_name: string
+          hire_date: string | null
+          ibutton_id: string | null
+          id: string
+          last_name: string
+          license_class: string | null
+          license_expiry: string | null
+          license_number: string
+          notes: string | null
+          organization_id: string
+          phone: string | null
+          rfid_tag: string | null
+          safety_score: number | null
+          status: string | null
+          total_distance_km: number | null
+          total_trips: number | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bluetooth_id?: string | null
+          created_at?: string
+          email?: string | null
+          employee_id?: string | null
+          first_name: string
+          hire_date?: string | null
+          ibutton_id?: string | null
+          id?: string
+          last_name: string
+          license_class?: string | null
+          license_expiry?: string | null
+          license_number: string
+          notes?: string | null
+          organization_id: string
+          phone?: string | null
+          rfid_tag?: string | null
+          safety_score?: number | null
+          status?: string | null
+          total_distance_km?: number | null
+          total_trips?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bluetooth_id?: string | null
+          created_at?: string
+          email?: string | null
+          employee_id?: string | null
+          first_name?: string
+          hire_date?: string | null
+          ibutton_id?: string | null
+          id?: string
+          last_name?: string
+          license_class?: string | null
+          license_expiry?: string | null
+          license_number?: string
+          notes?: string | null
+          organization_id?: string
+          phone?: string | null
+          rfid_tag?: string | null
+          safety_score?: number | null
+          status?: string | null
+          total_distance_km?: number | null
+          total_trips?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drivers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fuel_events: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          event_time: string
+          event_type: string
+          fuel_after_liters: number | null
+          fuel_before_liters: number | null
+          fuel_change_liters: number
+          fuel_change_percent: number
+          id: string
+          ignition_status: boolean | null
+          investigated_at: string | null
+          investigated_by: string | null
+          investigation_notes: string | null
+          lat: number | null
+          lng: number | null
+          location_name: string | null
+          organization_id: string
+          speed_kmh: number | null
+          status: string | null
+          trip_id: string | null
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          event_time: string
+          event_type: string
+          fuel_after_liters?: number | null
+          fuel_before_liters?: number | null
+          fuel_change_liters: number
+          fuel_change_percent: number
+          id?: string
+          ignition_status?: boolean | null
+          investigated_at?: string | null
+          investigated_by?: string | null
+          investigation_notes?: string | null
+          lat?: number | null
+          lng?: number | null
+          location_name?: string | null
+          organization_id: string
+          speed_kmh?: number | null
+          status?: string | null
+          trip_id?: string | null
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          event_time?: string
+          event_type?: string
+          fuel_after_liters?: number | null
+          fuel_before_liters?: number | null
+          fuel_change_liters?: number
+          fuel_change_percent?: number
+          id?: string
+          ignition_status?: boolean | null
+          investigated_at?: string | null
+          investigated_by?: string | null
+          investigation_notes?: string | null
+          lat?: number | null
+          lng?: number | null
+          location_name?: string | null
+          organization_id?: string
+          speed_kmh?: number | null
+          status?: string | null
+          trip_id?: string | null
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_events_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_events_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fuel_transactions: {
+        Row: {
+          card_number: string | null
+          created_at: string
+          fuel_amount_liters: number
+          fuel_cost: number | null
+          fuel_price_per_liter: number | null
+          id: string
+          is_reconciled: boolean | null
+          lat: number | null
+          lng: number | null
+          location_name: string | null
+          notes: string | null
+          odometer_km: number | null
+          organization_id: string
+          receipt_number: string | null
+          reconciled_at: string | null
+          reconciled_by: string | null
+          transaction_date: string
+          transaction_type: string
+          updated_at: string
+          variance_liters: number | null
+          vehicle_id: string
+          vendor_name: string | null
+        }
+        Insert: {
+          card_number?: string | null
+          created_at?: string
+          fuel_amount_liters: number
+          fuel_cost?: number | null
+          fuel_price_per_liter?: number | null
+          id?: string
+          is_reconciled?: boolean | null
+          lat?: number | null
+          lng?: number | null
+          location_name?: string | null
+          notes?: string | null
+          odometer_km?: number | null
+          organization_id: string
+          receipt_number?: string | null
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          transaction_date: string
+          transaction_type: string
+          updated_at?: string
+          variance_liters?: number | null
+          vehicle_id: string
+          vendor_name?: string | null
+        }
+        Update: {
+          card_number?: string | null
+          created_at?: string
+          fuel_amount_liters?: number
+          fuel_cost?: number | null
+          fuel_price_per_liter?: number | null
+          id?: string
+          is_reconciled?: boolean | null
+          lat?: number | null
+          lng?: number | null
+          location_name?: string | null
+          notes?: string | null
+          odometer_km?: number | null
+          organization_id?: string
+          receipt_number?: string | null
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          transaction_date?: string
+          transaction_type?: string
+          updated_at?: string
+          variance_liters?: number | null
+          vehicle_id?: string
+          vendor_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_transactions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_transactions_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      geofence_events: {
+        Row: {
+          created_at: string
+          event_time: string
+          event_type: string
+          geofence_id: string
+          id: string
+          lat: number | null
+          lng: number | null
+          organization_id: string
+          trip_id: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_time: string
+          event_type: string
+          geofence_id: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id: string
+          trip_id?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          created_at?: string
+          event_time?: string
+          event_type?: string
+          geofence_id?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id?: string
+          trip_id?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "geofence_events_geofence_id_fkey"
+            columns: ["geofence_id"]
+            isOneToOne: false
+            referencedRelation: "geofences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "geofence_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "geofence_events_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "geofence_events_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      geofences: {
+        Row: {
+          address: string | null
+          category: string
+          center_lat: number | null
+          center_lng: number | null
+          created_at: string
+          geometry_type: string
+          id: string
+          is_active: boolean | null
+          name: string
+          notes: string | null
+          organization_id: string
+          polygon_points: Json | null
+          radius_meters: number | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          category: string
+          center_lat?: number | null
+          center_lng?: number | null
+          created_at?: string
+          geometry_type: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          notes?: string | null
+          organization_id: string
+          polygon_points?: Json | null
+          radius_meters?: number | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          category?: string
+          center_lat?: number | null
+          center_lng?: number | null
+          created_at?: string
+          geometry_type?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          notes?: string | null
+          organization_id?: string
+          polygon_points?: Json | null
+          radius_meters?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "geofences_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jobs: {
+        Row: {
+          actual_delivery_time: string | null
+          actual_pickup_time: string | null
+          cargo_description: string | null
+          cargo_volume_m3: number | null
+          cargo_weight_kg: number | null
+          created_at: string
+          customer_email: string | null
+          customer_name: string
+          customer_phone: string | null
+          delivery_location: Json | null
+          driver_id: string | null
+          id: string
+          job_number: string
+          job_type: string
+          notes: string | null
+          organization_id: string
+          pickup_location: Json | null
+          pod_completed_at: string | null
+          pod_notes: string | null
+          pod_photos: Json | null
+          pod_signature_url: string | null
+          priority: string | null
+          scheduled_delivery_time: string | null
+          scheduled_pickup_time: string | null
+          status: string | null
+          trip_id: string | null
+          updated_at: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          actual_delivery_time?: string | null
+          actual_pickup_time?: string | null
+          cargo_description?: string | null
+          cargo_volume_m3?: number | null
+          cargo_weight_kg?: number | null
+          created_at?: string
+          customer_email?: string | null
+          customer_name: string
+          customer_phone?: string | null
+          delivery_location?: Json | null
+          driver_id?: string | null
+          id?: string
+          job_number: string
+          job_type: string
+          notes?: string | null
+          organization_id: string
+          pickup_location?: Json | null
+          pod_completed_at?: string | null
+          pod_notes?: string | null
+          pod_photos?: Json | null
+          pod_signature_url?: string | null
+          priority?: string | null
+          scheduled_delivery_time?: string | null
+          scheduled_pickup_time?: string | null
+          status?: string | null
+          trip_id?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          actual_delivery_time?: string | null
+          actual_pickup_time?: string | null
+          cargo_description?: string | null
+          cargo_volume_m3?: number | null
+          cargo_weight_kg?: number | null
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string
+          customer_phone?: string | null
+          delivery_location?: Json | null
+          driver_id?: string | null
+          id?: string
+          job_number?: string
+          job_type?: string
+          notes?: string | null
+          organization_id?: string
+          pickup_location?: Json | null
+          pod_completed_at?: string | null
+          pod_notes?: string | null
+          pod_photos?: Json | null
+          pod_signature_url?: string | null
+          priority?: string | null
+          scheduled_delivery_time?: string | null
+          scheduled_pickup_time?: string | null
+          status?: string | null
+          trip_id?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jobs_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
             referencedColumns: ["id"]
           },
         ]
@@ -199,6 +1049,272 @@ export type Database = {
           },
         ]
       }
+      sensors: {
+        Row: {
+          calibration_curve: Json | null
+          created_at: string
+          id: string
+          install_date: string | null
+          install_location: string | null
+          last_reading: string | null
+          notes: string | null
+          organization_id: string
+          sensor_subtype: string | null
+          sensor_type: string
+          status: string
+          temperature_compensation: boolean | null
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          calibration_curve?: Json | null
+          created_at?: string
+          id?: string
+          install_date?: string | null
+          install_location?: string | null
+          last_reading?: string | null
+          notes?: string | null
+          organization_id: string
+          sensor_subtype?: string | null
+          sensor_type: string
+          status?: string
+          temperature_compensation?: boolean | null
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          calibration_curve?: Json | null
+          created_at?: string
+          id?: string
+          install_date?: string | null
+          install_location?: string | null
+          last_reading?: string | null
+          notes?: string | null
+          organization_id?: string
+          sensor_subtype?: string | null
+          sensor_type?: string
+          status?: string
+          temperature_compensation?: boolean | null
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sensors_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sensors_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      telemetry: {
+        Row: {
+          altitude: number | null
+          battery_voltage: number | null
+          created_at: string
+          device_id: string | null
+          engine_rpm: number | null
+          engine_temp_celsius: number | null
+          external_voltage: number | null
+          fuel_level_liters: number | null
+          fuel_level_percent: number | null
+          heading: number | null
+          id: string
+          ignition: boolean | null
+          lat: number
+          lng: number
+          organization_id: string
+          raw_data: Json | null
+          recorded_at: string
+          speed_kmh: number | null
+          trip_id: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          altitude?: number | null
+          battery_voltage?: number | null
+          created_at?: string
+          device_id?: string | null
+          engine_rpm?: number | null
+          engine_temp_celsius?: number | null
+          external_voltage?: number | null
+          fuel_level_liters?: number | null
+          fuel_level_percent?: number | null
+          heading?: number | null
+          id?: string
+          ignition?: boolean | null
+          lat: number
+          lng: number
+          organization_id: string
+          raw_data?: Json | null
+          recorded_at: string
+          speed_kmh?: number | null
+          trip_id?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          altitude?: number | null
+          battery_voltage?: number | null
+          created_at?: string
+          device_id?: string | null
+          engine_rpm?: number | null
+          engine_temp_celsius?: number | null
+          external_voltage?: number | null
+          fuel_level_liters?: number | null
+          fuel_level_percent?: number | null
+          heading?: number | null
+          id?: string
+          ignition?: boolean | null
+          lat?: number
+          lng?: number
+          organization_id?: string
+          raw_data?: Json | null
+          recorded_at?: string
+          speed_kmh?: number | null
+          trip_id?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telemetry_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telemetry_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telemetry_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telemetry_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trips: {
+        Row: {
+          avg_speed_kmh: number | null
+          created_at: string
+          distance_km: number | null
+          driver_id: string | null
+          duration_minutes: number | null
+          end_fuel_level: number | null
+          end_location: Json | null
+          end_odometer: number | null
+          end_time: string | null
+          fuel_consumed_liters: number | null
+          fuel_efficiency_kmpl: number | null
+          harsh_events_count: number | null
+          id: string
+          idle_time_minutes: number | null
+          max_speed_kmh: number | null
+          notes: string | null
+          organization_id: string
+          speeding_events_count: number | null
+          start_fuel_level: number | null
+          start_location: Json | null
+          start_odometer: number | null
+          start_time: string
+          status: string | null
+          stops_count: number | null
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          avg_speed_kmh?: number | null
+          created_at?: string
+          distance_km?: number | null
+          driver_id?: string | null
+          duration_minutes?: number | null
+          end_fuel_level?: number | null
+          end_location?: Json | null
+          end_odometer?: number | null
+          end_time?: string | null
+          fuel_consumed_liters?: number | null
+          fuel_efficiency_kmpl?: number | null
+          harsh_events_count?: number | null
+          id?: string
+          idle_time_minutes?: number | null
+          max_speed_kmh?: number | null
+          notes?: string | null
+          organization_id: string
+          speeding_events_count?: number | null
+          start_fuel_level?: number | null
+          start_location?: Json | null
+          start_odometer?: number | null
+          start_time: string
+          status?: string | null
+          stops_count?: number | null
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          avg_speed_kmh?: number | null
+          created_at?: string
+          distance_km?: number | null
+          driver_id?: string | null
+          duration_minutes?: number | null
+          end_fuel_level?: number | null
+          end_location?: Json | null
+          end_odometer?: number | null
+          end_time?: string | null
+          fuel_consumed_liters?: number | null
+          fuel_efficiency_kmpl?: number | null
+          harsh_events_count?: number | null
+          id?: string
+          idle_time_minutes?: number | null
+          max_speed_kmh?: number | null
+          notes?: string | null
+          organization_id?: string
+          speeding_events_count?: number | null
+          start_fuel_level?: number | null
+          start_location?: Json | null
+          start_odometer?: number | null
+          start_time?: string
+          status?: string | null
+          stops_count?: number | null
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trips_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trips_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           business_unit_id: string | null
@@ -247,6 +1363,246 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicles: {
+        Row: {
+          acquisition_cost: number | null
+          acquisition_date: string | null
+          color: string | null
+          created_at: string
+          depot_id: string | null
+          depreciation_rate: number | null
+          engine_hours: number | null
+          fuel_type: string
+          id: string
+          make: string
+          model: string
+          notes: string | null
+          odometer_km: number | null
+          organization_id: string
+          ownership_type: string | null
+          plate_number: string
+          status: string
+          tank_capacity_liters: number
+          updated_at: string
+          vin: string | null
+          year: number
+        }
+        Insert: {
+          acquisition_cost?: number | null
+          acquisition_date?: string | null
+          color?: string | null
+          created_at?: string
+          depot_id?: string | null
+          depreciation_rate?: number | null
+          engine_hours?: number | null
+          fuel_type: string
+          id?: string
+          make: string
+          model: string
+          notes?: string | null
+          odometer_km?: number | null
+          organization_id: string
+          ownership_type?: string | null
+          plate_number: string
+          status?: string
+          tank_capacity_liters: number
+          updated_at?: string
+          vin?: string | null
+          year: number
+        }
+        Update: {
+          acquisition_cost?: number | null
+          acquisition_date?: string | null
+          color?: string | null
+          created_at?: string
+          depot_id?: string | null
+          depreciation_rate?: number | null
+          engine_hours?: number | null
+          fuel_type?: string
+          id?: string
+          make?: string
+          model?: string
+          notes?: string | null
+          odometer_km?: number | null
+          organization_id?: string
+          ownership_type?: string | null
+          plate_number?: string
+          status?: string
+          tank_capacity_liters?: number
+          updated_at?: string
+          vin?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicles_depot_id_fkey"
+            columns: ["depot_id"]
+            isOneToOne: false
+            referencedRelation: "depots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendors: {
+        Row: {
+          address: string | null
+          contact_person: string | null
+          created_at: string
+          email: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          notes: string | null
+          organization_id: string
+          phone: string | null
+          rating: number | null
+          total_jobs: number | null
+          updated_at: string
+          vendor_type: string
+        }
+        Insert: {
+          address?: string | null
+          contact_person?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          notes?: string | null
+          organization_id: string
+          phone?: string | null
+          rating?: number | null
+          total_jobs?: number | null
+          updated_at?: string
+          vendor_type: string
+        }
+        Update: {
+          address?: string | null
+          contact_person?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          notes?: string | null
+          organization_id?: string
+          phone?: string | null
+          rating?: number | null
+          total_jobs?: number | null
+          updated_at?: string
+          vendor_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendors_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_orders: {
+        Row: {
+          attachments: Json | null
+          completed_date: string | null
+          created_at: string
+          id: string
+          labor_cost: number | null
+          notes: string | null
+          odometer_at_service: number | null
+          organization_id: string
+          parts_cost: number | null
+          priority: string | null
+          scheduled_date: string | null
+          service_category: string | null
+          service_description: string
+          status: string | null
+          technician_name: string | null
+          total_cost: number | null
+          updated_at: string
+          vehicle_id: string
+          vendor_id: string | null
+          work_order_number: string
+          work_type: string
+        }
+        Insert: {
+          attachments?: Json | null
+          completed_date?: string | null
+          created_at?: string
+          id?: string
+          labor_cost?: number | null
+          notes?: string | null
+          odometer_at_service?: number | null
+          organization_id: string
+          parts_cost?: number | null
+          priority?: string | null
+          scheduled_date?: string | null
+          service_category?: string | null
+          service_description: string
+          status?: string | null
+          technician_name?: string | null
+          total_cost?: number | null
+          updated_at?: string
+          vehicle_id: string
+          vendor_id?: string | null
+          work_order_number: string
+          work_type: string
+        }
+        Update: {
+          attachments?: Json | null
+          completed_date?: string | null
+          created_at?: string
+          id?: string
+          labor_cost?: number | null
+          notes?: string | null
+          odometer_at_service?: number | null
+          organization_id?: string
+          parts_cost?: number | null
+          priority?: string | null
+          scheduled_date?: string | null
+          service_category?: string | null
+          service_description?: string
+          status?: string | null
+          technician_name?: string | null
+          total_cost?: number | null
+          updated_at?: string
+          vehicle_id?: string
+          vendor_id?: string | null
+          work_order_number?: string
+          work_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_orders_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_orders_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_orders_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
             referencedColumns: ["id"]
           },
         ]
