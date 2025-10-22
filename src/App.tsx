@@ -23,6 +23,7 @@ import Incidents from "./pages/Incidents";
 import SystemConfig from "./pages/SystemConfig";
 import DeviceIntegration from "./pages/DeviceIntegration";
 import RouteHistory from "./pages/RouteHistory";
+import Geofencing from "./pages/Geofencing";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
@@ -51,6 +52,7 @@ const App = () => {
           <Route path="/administration" element={<ProtectedRoute requiredRole="super_admin"><Administration /></ProtectedRoute>} />
           <Route path="/routes" element={<ProtectedRoute><RoutesPage /></ProtectedRoute>} />
           <Route path="/route-history" element={<ProtectedRoute><RouteHistory /></ProtectedRoute>} />
+          <Route path="/geofencing" element={<ProtectedRoute><Geofencing /></ProtectedRoute>} />
           <Route path="/workorders" element={<ProtectedRoute><WorkOrders /></ProtectedRoute>} />
           <Route path="/incidents" element={<ProtectedRoute><Incidents /></ProtectedRoute>} />
           <Route path="/config" element={<ProtectedRoute requiredRole="super_admin"><SystemConfig /></ProtectedRoute>} />

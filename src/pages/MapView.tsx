@@ -1,12 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import StatusBadge from "@/components/StatusBadge";
 import LiveTrackingMap from "@/components/map/LiveTrackingMap";
-import { MapPin, Navigation, Fuel, Zap } from "lucide-react";
+import { MapPin, Navigation, Fuel, Zap, RefreshCw } from "lucide-react";
 
 const MapView = () => {
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | undefined>();
+  const [autoRefresh, setAutoRefresh] = useState("30");
+  const [lastUpdate, setLastUpdate] = useState(new Date());
   
   const vehicles = [
     { id: "V-001", plate: "AA 1234", status: "moving" as const, fuel: 75, speed: 65, lat: 9.03, lng: 38.74, engine_on: true, heading: 45 },
@@ -15,6 +19,18 @@ const MapView = () => {
     { id: "V-004", plate: "AD 3456", status: "moving" as const, fuel: 60, speed: 48, lat: 9.00, lng: 38.72, engine_on: true, heading: 90 },
     { id: "V-005", plate: "AE 7890", status: "offline" as const, fuel: 30, speed: 0, lat: 9.05, lng: 38.80, engine_on: false, heading: 0 },
   ];
+
+  // Auto-refresh simulation
+  useEffect(() => {
+    if (autoRefresh === "off") return;
+    
+    const interval = setInterval(() => {
+      setLastUpdate(new Date());
+      // In production, this would refetch data from API
+    }, parseInt(autoRefresh) * 1000);
+
+    return () => clearInterval(interval);
+  }, [autoRefresh]);
 
   return (
     <Layout>
@@ -59,8 +75,36 @@ const MapView = () => {
         {/* Side Panel */}
         <div className="w-96 border-l border-border bg-card overflow-auto">
           <div className="p-6 border-b border-border">
-            <h2 className="text-xl font-bold">Live Vehicles</h2>
-            <p className="text-sm text-muted-foreground mt-1">{vehicles.length} vehicles online</p>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-bold">Live Vehicles</h2>
+                <p className="text-sm text-muted-foreground mt-1">{vehicles.length} vehicles online</p>
+              </div>
+              <Badge variant="outline" className="gap-2">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                Live
+              </Badge>
+            </div>
+
+            {/* Auto-Refresh Control */}
+            <div className="flex items-center gap-2">
+              <RefreshCw className="w-4 h-4 text-muted-foreground" />
+              <Select value={autoRefresh} onValueChange={setAutoRefresh}>
+                <SelectTrigger className="w-[120px] h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10 Sec</SelectItem>
+                  <SelectItem value="30">30 Sec</SelectItem>
+                  <SelectItem value="60">1 Min</SelectItem>
+                  <SelectItem value="300">5 Min</SelectItem>
+                  <SelectItem value="off">Off</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-xs text-muted-foreground">
+                {lastUpdate.toLocaleTimeString()}
+              </span>
+            </div>
           </div>
 
           <div className="p-4 space-y-3">
