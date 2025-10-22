@@ -237,6 +237,38 @@ export type Database = {
           },
         ]
       }
+      api_rate_limits: {
+        Row: {
+          api_key_id: string
+          created_at: string
+          id: string
+          request_count: number | null
+          window_start: string
+        }
+        Insert: {
+          api_key_id: string
+          created_at?: string
+          id?: string
+          request_count?: number | null
+          window_start: string
+        }
+        Update: {
+          api_key_id?: string
+          created_at?: string
+          id?: string
+          request_count?: number | null
+          window_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_rate_limits_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -296,6 +328,71 @@ export type Database = {
           },
           {
             foreignKeyName: "audit_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bulk_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          entity_type: string
+          error_log: Json | null
+          failed_records: number | null
+          file_name: string | null
+          file_url: string | null
+          format: string
+          id: string
+          job_type: string
+          organization_id: string
+          processed_records: number | null
+          started_at: string | null
+          status: string
+          total_records: number | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          entity_type: string
+          error_log?: Json | null
+          failed_records?: number | null
+          file_name?: string | null
+          file_url?: string | null
+          format: string
+          id?: string
+          job_type: string
+          organization_id: string
+          processed_records?: number | null
+          started_at?: string | null
+          status?: string
+          total_records?: number | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          entity_type?: string
+          error_log?: Json | null
+          failed_records?: number | null
+          file_name?: string | null
+          file_url?: string | null
+          format?: string
+          id?: string
+          job_type?: string
+          organization_id?: string
+          processed_records?: number | null
+          started_at?: string | null
+          status?: string
+          total_records?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bulk_jobs_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -1031,6 +1128,109 @@ export type Database = {
           },
         ]
       }
+      integration_sync_logs: {
+        Row: {
+          completed_at: string | null
+          error_details: Json | null
+          id: string
+          integration_id: string
+          records_failed: number | null
+          records_processed: number | null
+          started_at: string
+          status: string
+          sync_type: string
+        }
+        Insert: {
+          completed_at?: string | null
+          error_details?: Json | null
+          id?: string
+          integration_id: string
+          records_failed?: number | null
+          records_processed?: number | null
+          started_at?: string
+          status: string
+          sync_type: string
+        }
+        Update: {
+          completed_at?: string | null
+          error_details?: Json | null
+          id?: string
+          integration_id?: string
+          records_failed?: number | null
+          records_processed?: number | null
+          started_at?: string
+          status?: string
+          sync_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_sync_logs_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integrations: {
+        Row: {
+          config: Json
+          created_at: string
+          created_by: string
+          credentials: Json
+          id: string
+          integration_type: string
+          is_active: boolean | null
+          last_sync_at: string | null
+          name: string
+          organization_id: string
+          provider: string
+          sync_error: string | null
+          sync_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          created_by: string
+          credentials?: Json
+          id?: string
+          integration_type: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          name: string
+          organization_id: string
+          provider: string
+          sync_error?: string | null
+          sync_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          created_by?: string
+          credentials?: Json
+          id?: string
+          integration_type?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          name?: string
+          organization_id?: string
+          provider?: string
+          sync_error?: string | null
+          sync_status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integrations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jobs: {
         Row: {
           actual_delivery_time: string | null
@@ -1735,6 +1935,112 @@ export type Database = {
           },
         ]
       }
+      webhook_deliveries: {
+        Row: {
+          attempt_count: number | null
+          created_at: string
+          error_message: string | null
+          event_data: Json
+          event_type: string
+          id: string
+          last_attempt_at: string | null
+          next_retry_at: string | null
+          response_body: string | null
+          response_status: number | null
+          status: string
+          subscription_id: string
+        }
+        Insert: {
+          attempt_count?: number | null
+          created_at?: string
+          error_message?: string | null
+          event_data: Json
+          event_type: string
+          id?: string
+          last_attempt_at?: string | null
+          next_retry_at?: string | null
+          response_body?: string | null
+          response_status?: number | null
+          status: string
+          subscription_id: string
+        }
+        Update: {
+          attempt_count?: number | null
+          created_at?: string
+          error_message?: string | null
+          event_data?: Json
+          event_type?: string
+          id?: string
+          last_attempt_at?: string | null
+          next_retry_at?: string | null
+          response_body?: string | null
+          response_status?: number | null
+          status?: string
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_deliveries_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "webhook_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhook_subscriptions: {
+        Row: {
+          created_at: string
+          created_by: string
+          events: string[]
+          headers: Json | null
+          id: string
+          is_active: boolean | null
+          name: string
+          organization_id: string
+          retry_config: Json | null
+          secret: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          events: string[]
+          headers?: Json | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          organization_id: string
+          retry_config?: Json | null
+          secret: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          events?: string[]
+          headers?: Json | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          organization_id?: string
+          retry_config?: Json | null
+          secret?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_subscriptions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       work_orders: {
         Row: {
           attachments: Json | null
@@ -1857,6 +2163,10 @@ export type Database = {
           _status?: string
         }
         Returns: string
+      }
+      trigger_webhook: {
+        Args: { _event_data: Json; _event_type: string }
+        Returns: undefined
       }
     }
     Enums: {
