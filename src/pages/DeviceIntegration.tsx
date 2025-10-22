@@ -485,10 +485,9 @@ const DeviceIntegration = () => {
                         onValueChange={(value) => setFormData({ ...formData, vehicle_id: value })}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select vehicle" />
+                          <SelectValue placeholder="Select vehicle (optional)" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">None - Assign later</SelectItem>
                           {vehicles?.map((vehicle) => (
                             <SelectItem key={vehicle.id} value={vehicle.id}>
                               {vehicle.plate_number} - {vehicle.make} {vehicle.model}
