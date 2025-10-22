@@ -24,6 +24,7 @@ import SystemConfig from "./pages/SystemConfig";
 import DeviceIntegration from "./pages/DeviceIntegration";
 import RouteHistory from "./pages/RouteHistory";
 import Geofencing from "./pages/Geofencing";
+import SpeedGovernor from "./pages/SpeedGovernor";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
@@ -53,6 +54,7 @@ const App = () => {
           <Route path="/routes" element={<ProtectedRoute><RoutesPage /></ProtectedRoute>} />
           <Route path="/route-history" element={<ProtectedRoute><RouteHistory /></ProtectedRoute>} />
           <Route path="/geofencing" element={<ProtectedRoute><Geofencing /></ProtectedRoute>} />
+          <Route path="/speed-governor" element={<ProtectedRoute><SpeedGovernor /></ProtectedRoute>} />
           <Route path="/workorders" element={<ProtectedRoute><WorkOrders /></ProtectedRoute>} />
           <Route path="/incidents" element={<ProtectedRoute><Incidents /></ProtectedRoute>} />
           <Route path="/config" element={<ProtectedRoute requiredRole="super_admin"><SystemConfig /></ProtectedRoute>} />
