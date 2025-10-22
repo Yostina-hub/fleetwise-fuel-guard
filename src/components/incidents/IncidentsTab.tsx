@@ -21,7 +21,7 @@ const IncidentsTab = () => {
   const { data: incidents, isLoading } = useQuery({
     queryKey: ["incidents", organizationId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("incidents")
         .select("*, vehicles(plate_number, make, model), drivers(first_name, last_name)")
         .eq("organization_id", organizationId!)

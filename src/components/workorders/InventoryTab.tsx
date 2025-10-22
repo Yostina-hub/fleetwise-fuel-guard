@@ -20,7 +20,7 @@ const InventoryTab = () => {
   const { data: inventory, isLoading } = useQuery({
     queryKey: ["inventory_items", organizationId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("inventory_items")
         .select("*")
         .eq("organization_id", organizationId!)

@@ -57,7 +57,7 @@ const RoutesTab = () => {
   const { data: routes, isLoading } = useQuery({
     queryKey: ["routes", organizationId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("routes")
         .select("*")
         .eq("organization_id", organizationId!)
@@ -72,7 +72,7 @@ const RoutesTab = () => {
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       const validated = routeSchema.parse(data);
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("routes")
         .insert({
           ...validated,
@@ -98,7 +98,7 @@ const RoutesTab = () => {
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
       const validated = routeSchema.parse(data);
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("routes")
         .update(validated)
         .eq("id", id);
@@ -121,7 +121,7 @@ const RoutesTab = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("routes").delete().eq("id", id);
+      const { error } = await (supabase as any).from("routes").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {

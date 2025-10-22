@@ -56,7 +56,7 @@ const CustomerSitesTab = () => {
   const { data: sites, isLoading } = useQuery({
     queryKey: ["customer_sites", organizationId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("customer_sites")
         .select("*")
         .eq("organization_id", organizationId!)
@@ -71,7 +71,7 @@ const CustomerSitesTab = () => {
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       const validated = siteSchema.parse(data);
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("customer_sites")
         .insert({
           ...validated,
@@ -97,7 +97,7 @@ const CustomerSitesTab = () => {
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
       const validated = siteSchema.parse(data);
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("customer_sites")
         .update(validated)
         .eq("id", id);
@@ -120,7 +120,7 @@ const CustomerSitesTab = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error} = await supabase.from("customer_sites").delete().eq("id", id);
+      const { error} = await (supabase as any).from("customer_sites").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
