@@ -1575,6 +1575,53 @@ export type Database = {
           },
         ]
       }
+      ip_allowlists: {
+        Row: {
+          applies_to: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          ip_address: unknown
+          is_active: boolean | null
+          name: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          applies_to?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          ip_address: unknown
+          is_active?: boolean | null
+          name: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          applies_to?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          ip_address?: unknown
+          is_active?: boolean | null
+          name?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ip_allowlists_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jobs: {
         Row: {
           actual_delivery_time: string | null
@@ -1697,6 +1744,222 @@ export type Database = {
           },
         ]
       }
+      legal_holds: {
+        Row: {
+          case_number: string | null
+          created_at: string
+          data_types: string[] | null
+          description: string
+          hold_name: string
+          hold_type: string
+          id: string
+          issued_at: string
+          issued_by: string | null
+          notes: string | null
+          organization_id: string
+          released_at: string | null
+          released_by: string | null
+          scope_data: Json | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          case_number?: string | null
+          created_at?: string
+          data_types?: string[] | null
+          description: string
+          hold_name: string
+          hold_type: string
+          id?: string
+          issued_at?: string
+          issued_by?: string | null
+          notes?: string | null
+          organization_id: string
+          released_at?: string | null
+          released_by?: string | null
+          scope_data?: Json | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          case_number?: string | null
+          created_at?: string
+          data_types?: string[] | null
+          description?: string
+          hold_name?: string
+          hold_type?: string
+          id?: string
+          issued_at?: string
+          issued_by?: string | null
+          notes?: string | null
+          organization_id?: string
+          released_at?: string | null
+          released_by?: string | null
+          scope_data?: Json | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_holds_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      login_history: {
+        Row: {
+          created_at: string
+          device_type: string | null
+          failure_reason: string | null
+          id: string
+          ip_address: unknown
+          location_city: string | null
+          location_country: string | null
+          login_time: string
+          organization_id: string | null
+          status: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_type?: string | null
+          failure_reason?: string | null
+          id?: string
+          ip_address?: unknown
+          location_city?: string | null
+          location_country?: string | null
+          login_time?: string
+          organization_id?: string | null
+          status: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_type?: string | null
+          failure_reason?: string | null
+          id?: string
+          ip_address?: unknown
+          location_city?: string | null
+          location_country?: string | null
+          login_time?: string
+          organization_id?: string | null
+          status?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "login_history_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_settings: {
+        Row: {
+          company_name: string | null
+          created_at: string
+          currency: string | null
+          custom_domain: string | null
+          date_format: string | null
+          default_language: string | null
+          default_timezone: string | null
+          distance_unit: string | null
+          enable_2fa: boolean | null
+          enable_api_access: boolean | null
+          enable_mobile_access: boolean | null
+          enable_sso: boolean | null
+          enforce_2fa: boolean | null
+          favicon_url: string | null
+          from_email: string | null
+          from_name: string | null
+          id: string
+          logo_url: string | null
+          organization_id: string
+          primary_color: string | null
+          secondary_color: string | null
+          smtp_host: string | null
+          smtp_password: string | null
+          smtp_port: number | null
+          smtp_username: string | null
+          time_format: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string
+          currency?: string | null
+          custom_domain?: string | null
+          date_format?: string | null
+          default_language?: string | null
+          default_timezone?: string | null
+          distance_unit?: string | null
+          enable_2fa?: boolean | null
+          enable_api_access?: boolean | null
+          enable_mobile_access?: boolean | null
+          enable_sso?: boolean | null
+          enforce_2fa?: boolean | null
+          favicon_url?: string | null
+          from_email?: string | null
+          from_name?: string | null
+          id?: string
+          logo_url?: string | null
+          organization_id: string
+          primary_color?: string | null
+          secondary_color?: string | null
+          smtp_host?: string | null
+          smtp_password?: string | null
+          smtp_port?: number | null
+          smtp_username?: string | null
+          time_format?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string
+          currency?: string | null
+          custom_domain?: string | null
+          date_format?: string | null
+          default_language?: string | null
+          default_timezone?: string | null
+          distance_unit?: string | null
+          enable_2fa?: boolean | null
+          enable_api_access?: boolean | null
+          enable_mobile_access?: boolean | null
+          enable_sso?: boolean | null
+          enforce_2fa?: boolean | null
+          favicon_url?: string | null
+          from_email?: string | null
+          from_name?: string | null
+          id?: string
+          logo_url?: string | null
+          organization_id?: string
+          primary_color?: string | null
+          secondary_color?: string | null
+          smtp_host?: string | null
+          smtp_password?: string | null
+          smtp_port?: number | null
+          smtp_username?: string | null
+          time_format?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string
@@ -1717,6 +1980,68 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      password_policies: {
+        Row: {
+          created_at: string
+          id: string
+          lockout_duration_minutes: number | null
+          max_login_attempts: number | null
+          min_length: number | null
+          organization_id: string
+          password_expiry_days: number | null
+          prevent_password_reuse: number | null
+          require_lowercase: boolean | null
+          require_numbers: boolean | null
+          require_special_chars: boolean | null
+          require_uppercase: boolean | null
+          session_absolute_timeout_minutes: number | null
+          session_timeout_minutes: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lockout_duration_minutes?: number | null
+          max_login_attempts?: number | null
+          min_length?: number | null
+          organization_id: string
+          password_expiry_days?: number | null
+          prevent_password_reuse?: number | null
+          require_lowercase?: boolean | null
+          require_numbers?: boolean | null
+          require_special_chars?: boolean | null
+          require_uppercase?: boolean | null
+          session_absolute_timeout_minutes?: number | null
+          session_timeout_minutes?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lockout_duration_minutes?: number | null
+          max_login_attempts?: number | null
+          min_length?: number | null
+          organization_id?: string
+          password_expiry_days?: number | null
+          prevent_password_reuse?: number | null
+          require_lowercase?: boolean | null
+          require_numbers?: boolean | null
+          require_special_chars?: boolean | null
+          require_uppercase?: boolean | null
+          session_absolute_timeout_minutes?: number | null
+          session_timeout_minutes?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "password_policies_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       permissions: {
         Row: {
@@ -1877,6 +2202,77 @@ export type Database = {
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sso_configurations: {
+        Row: {
+          attribute_mapping: Json | null
+          auto_provision_users: boolean | null
+          created_at: string
+          default_role: string | null
+          id: string
+          is_active: boolean | null
+          oidc_authorization_endpoint: string | null
+          oidc_client_id: string | null
+          oidc_client_secret: string | null
+          oidc_issuer_url: string | null
+          oidc_token_endpoint: string | null
+          oidc_userinfo_endpoint: string | null
+          organization_id: string
+          provider_name: string
+          saml_certificate: string | null
+          saml_entity_id: string | null
+          saml_sso_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          attribute_mapping?: Json | null
+          auto_provision_users?: boolean | null
+          created_at?: string
+          default_role?: string | null
+          id?: string
+          is_active?: boolean | null
+          oidc_authorization_endpoint?: string | null
+          oidc_client_id?: string | null
+          oidc_client_secret?: string | null
+          oidc_issuer_url?: string | null
+          oidc_token_endpoint?: string | null
+          oidc_userinfo_endpoint?: string | null
+          organization_id: string
+          provider_name: string
+          saml_certificate?: string | null
+          saml_entity_id?: string | null
+          saml_sso_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attribute_mapping?: Json | null
+          auto_provision_users?: boolean | null
+          created_at?: string
+          default_role?: string | null
+          id?: string
+          is_active?: boolean | null
+          oidc_authorization_endpoint?: string | null
+          oidc_client_id?: string | null
+          oidc_client_secret?: string | null
+          oidc_issuer_url?: string | null
+          oidc_token_endpoint?: string | null
+          oidc_userinfo_endpoint?: string | null
+          organization_id?: string
+          provider_name?: string
+          saml_certificate?: string | null
+          saml_entity_id?: string | null
+          saml_sso_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sso_configurations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -2146,6 +2542,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_2fa_settings: {
+        Row: {
+          backup_codes: string[] | null
+          created_at: string
+          id: string
+          is_enabled: boolean | null
+          last_verified_at: string | null
+          method: string | null
+          phone_number: string | null
+          secret: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          backup_codes?: string[] | null
+          created_at?: string
+          id?: string
+          is_enabled?: boolean | null
+          last_verified_at?: string | null
+          method?: string | null
+          phone_number?: string | null
+          secret?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          backup_codes?: string[] | null
+          created_at?: string
+          id?: string
+          is_enabled?: boolean | null
+          last_verified_at?: string | null
+          method?: string | null
+          phone_number?: string | null
+          secret?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

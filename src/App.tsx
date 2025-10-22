@@ -15,6 +15,7 @@ import Auth from "./pages/Auth";
 import UserManagement from "./pages/UserManagement";
 import Security from "./pages/Security";
 import Integrations from "./pages/Integrations";
+import Administration from "./pages/Administration";
 import RoutesPage from "./pages/Routes";
 import WorkOrders from "./pages/WorkOrders";
 import Incidents from "./pages/Incidents";
@@ -43,6 +44,7 @@ const App = () => (
           <Route path="/users" element={<ProtectedRoute requiredRole="super_admin"><UserManagement /></ProtectedRoute>} />
           <Route path="/security" element={<ProtectedRoute requiredRole="super_admin"><Security /></ProtectedRoute>} />
           <Route path="/integrations" element={<ProtectedRoute requiredRole="super_admin"><Integrations /></ProtectedRoute>} />
+          <Route path="/administration" element={<ProtectedRoute requiredRole="super_admin"><Administration /></ProtectedRoute>} />
           <Route path="/routes" element={<ProtectedRoute><RoutesPage /></ProtectedRoute>} />
           <Route path="/workorders" element={<ProtectedRoute><WorkOrders /></ProtectedRoute>} />
           <Route path="/incidents" element={<ProtectedRoute><Incidents /></ProtectedRoute>} />
