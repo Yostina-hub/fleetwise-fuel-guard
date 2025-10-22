@@ -28,16 +28,30 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 
-// Popular device templates - pre-configured for plug-and-play
+// Popular device templates - pre-configured for plug-and-play with comprehensive GPS parameters
 const deviceTemplates = [
   {
     id: "teltonika_fmb920",
     name: "Teltonika FMB920",
     type: "gps",
     vendor: "Teltonika",
-    description: "Professional GPS tracker with fuel monitoring",
+    description: "Professional GPS tracker with fuel monitoring - Popular in Ethiopia",
     icon: "📍",
-    features: ["GPS Tracking", "Fuel Monitoring", "Driver ID", "Temperature"],
+    features: ["GPS", "Fuel Level", "Driver ID (RFID/iButton)", "Temperature", "4x Digital In", "2x Analog In", "CAN Bus", "Harsh Driving", "Towing Detection"],
+    parameters: ["Speed", "Heading", "Altitude", "Satellites", "HDOP", "Fuel %", "Fuel Liters", "Temp Sensor 1-3", "Ignition", "Battery V", "External V", "GSM Signal", "Odometer", "Engine Hours", "RPM", "Acceleration", "Braking", "Cornering", "Idling", "Door Sensors"],
+    protocol: "teltonika",
+    defaultPort: 5027,
+    popular: true,
+  },
+  {
+    id: "teltonika_fmb640",
+    name: "Teltonika FMB640",
+    type: "gps",
+    vendor: "Teltonika",
+    description: "Advanced tracker with extended I/O - Ideal for Ethiopian trucks",
+    icon: "🚛",
+    features: ["GPS", "6x Digital In", "2x Digital Out", "2x Analog In", "1-Wire", "RFID", "BLE", "CAN", "Tachograph"],
+    parameters: ["GPS Position", "Speed", "Heading", "Altitude", "Fuel Level", "Fuel Consumption", "Temperature 1-4", "Driver ID", "Cargo Door", "Panic Button", "Trailer Status", "PTO Status", "Battery Voltage", "Ignition", "Odometer", "Trip Distance", "Engine Hours", "Coolant Temp", "RPM"],
     protocol: "teltonika",
     defaultPort: 5027,
     popular: true,
@@ -47,9 +61,23 @@ const deviceTemplates = [
     name: "Queclink GV300",
     type: "gps",
     vendor: "Queclink",
-    description: "Advanced vehicle tracker with CAN bus",
+    description: "Advanced vehicle tracker with CAN bus - Ethiopian market leader",
     icon: "🚗",
-    features: ["GPS Tracking", "CAN Bus", "Fuel", "Driving Behavior"],
+    features: ["GPS", "CAN Bus", "Fuel", "4x Digital In", "4x Analog In", "Driver Behavior", "RFID", "Temperature"],
+    parameters: ["Latitude", "Longitude", "Speed", "Heading", "Altitude", "Fuel Level %", "Fuel Liters", "Fuel Rate", "Temp 1-2", "Driver RFID", "Harsh Acceleration", "Harsh Braking", "Harsh Cornering", "Ignition On/Off", "Main Power V", "Backup Battery V", "GSM/GPS Signal", "Odometer", "Engine RPM", "Throttle Position"],
+    protocol: "queclink",
+    defaultPort: 5028,
+    popular: true,
+  },
+  {
+    id: "queclink_gv500",
+    name: "Queclink GV500",
+    type: "gps",
+    vendor: "Queclink",
+    description: "Heavy-duty tracker for large Ethiopian fleets",
+    icon: "🚌",
+    features: ["GPS", "OBD-II", "CAN", "J1939", "Fuel", "Driver ID", "6x Digital I/O", "3x Analog In"],
+    parameters: ["GPS Data", "Speed", "Odometer", "Engine Hours", "Fuel Level", "Fuel Consumption", "Coolant Temp", "Engine Load", "RPM", "VIN", "Driver ID", "Door Status", "AC Status", "Seatbelt", "Airbag", "MIL Status", "Battery Voltage", "Panic Button", "Cargo Temp"],
     protocol: "queclink",
     defaultPort: 5028,
     popular: true,
@@ -59,9 +87,10 @@ const deviceTemplates = [
     name: "Ruptela Pro5",
     type: "gps_fuel",
     vendor: "Ruptela",
-    description: "Heavy-duty tracker for commercial fleets",
-    icon: "🚛",
-    features: ["GPS", "Fuel Sensors", "Temperature", "Digital Inputs"],
+    description: "Heavy-duty tracker for Ethiopian commercial fleets",
+    icon: "🚚",
+    features: ["GPS", "Fuel Sensors (Up to 5)", "Temperature (Up to 8)", "8x Digital In", "4x Analog In", "CAN/J1939", "Tachograph", "Eco Driving"],
+    parameters: ["Position", "Speed", "Course", "Altitude", "Fuel Tank 1-5", "Total Fuel", "Fuel Consumption", "Temp Probe 1-8", "Refrigeration Temp", "Driver 1 & 2 ID", "Tachograph Data", "Digital Inputs", "Analog Inputs", "Ignition", "Power Supply", "Battery", "GSM Strength", "Trip Odometer", "Total Odometer", "Engine Hours", "Eco Score"],
     protocol: "ruptela",
     defaultPort: 5029,
     popular: true,
@@ -71,35 +100,103 @@ const deviceTemplates = [
     name: "Concox GT06N",
     type: "gps",
     vendor: "Concox",
-    description: "Budget-friendly GPS tracker",
+    description: "Budget-friendly GPS tracker - Popular entry-level in Ethiopia",
     icon: "📱",
-    features: ["GPS Tracking", "Geo-fencing", "SOS"],
+    features: ["GPS", "Geo-fencing", "SOS", "Digital Input", "ACC Detection", "Vibration Alert"],
+    parameters: ["GPS Location", "Speed", "Direction", "Satellites", "GSM Signal", "Battery Level", "External Power", "Ignition Status", "Movement Alert", "Overspeed Alert"],
     protocol: "gt06",
     defaultPort: 5023,
-    popular: false,
+    popular: true,
+  },
+  {
+    id: "concox_at4",
+    name: "Concox AT4",
+    type: "gps",
+    vendor: "Concox",
+    description: "4G tracker with extended battery - Great for Ethiopian conditions",
+    icon: "📡",
+    features: ["4G LTE", "GPS", "ACC", "SOS", "Fuel Cut", "Relay Control", "Voice Monitoring"],
+    parameters: ["GPS Position", "Speed", "Heading", "LBS Location", "WiFi Positioning", "Ignition", "Battery %", "External Power V", "Movement", "Towing Alert", "Vibration", "Geo-fence Status"],
+    protocol: "gt06",
+    defaultPort: 5023,
+    popular: true,
   },
   {
     id: "calamp_lmu3030",
     name: "CalAmp LMU-3030",
     type: "gps",
     vendor: "CalAmp",
-    description: "Enterprise-grade tracking device",
+    description: "Enterprise-grade tracking device - Premium Ethiopian solution",
     icon: "⭐",
-    features: ["GPS", "Driver Behavior", "Maintenance", "Messaging"],
+    features: ["GPS", "Driver Behavior", "Maintenance", "Messaging", "4x Digital I/O", "CAN/J1939", "PTO Detection"],
+    parameters: ["GPS Quality", "Speed", "Heading", "Odometer", "Driver Behavior Score", "Harsh Events", "Idling Time", "Fuel Economy", "Engine Diagnostics", "Maintenance Alerts", "Digital Inputs", "Ignition", "Power", "Messages"],
     protocol: "calamp",
     defaultPort: 5030,
-    popular: true,
+    popular: false,
   },
   {
     id: "omnicomm_lls",
     name: "Omnicomm LLS Fuel Sensor",
     type: "fuel",
     vendor: "Omnicomm",
-    description: "High-precision fuel level sensor",
+    description: "High-precision capacitive fuel sensor - Ethiopian fuel theft solution",
     icon: "⛽",
-    features: ["Fuel Level", "Temperature", "Theft Detection"],
+    features: ["Fuel Level (±1mm accuracy)", "Temperature Compensation", "Theft Detection", "Refueling Detection", "Calibration Table"],
+    parameters: ["Fuel Level (mm)", "Fuel Volume (L)", "Fuel Temperature (°C)", "Sensor Status", "Calibration Status", "Fuel Change Rate", "Theft Alert", "Refuel Alert"],
     protocol: "omnicomm",
     defaultPort: 5031,
+    popular: true,
+  },
+  {
+    id: "coban_tk103",
+    name: "Coban TK103",
+    type: "gps",
+    vendor: "Coban",
+    description: "Affordable GPS tracker - Widely used in Ethiopian taxis",
+    icon: "🚕",
+    features: ["GPS", "SMS Control", "SOS", "Geo-fence", "Movement Alert", "Overspeed Alert"],
+    parameters: ["GPS Location", "Speed (km/h)", "Battery Status", "GSM Signal", "ACC Status", "Door Alarm", "SOS Status"],
+    protocol: "tk103",
+    defaultPort: 5002,
+    popular: true,
+  },
+  {
+    id: "topflytech_t8806",
+    name: "TopFlyTech T8806",
+    type: "gps",
+    vendor: "TopFlyTech",
+    description: "Multi-sensor tracker - Ethiopian cold chain specialist",
+    icon: "❄️",
+    features: ["GPS", "BLE 5.0", "Temperature (4x)", "Humidity", "Door Sensor", "Fuel", "Driver ID", "Camera Support"],
+    parameters: ["Location", "Speed", "Heading", "Temperature 1-4", "Humidity %", "BLE Temp Sensors", "Fuel Level", "Driver Card", "Door Open/Close", "Refrigeration Status", "Ignition", "Battery", "Camera Trigger"],
+    protocol: "topflytech",
+    defaultPort: 5032,
+    popular: true,
+  },
+  {
+    id: "jt701",
+    name: "JT701 CAN Bus Tracker",
+    type: "gps",
+    vendor: "JT701",
+    description: "CAN bus reader - Ethiopian OBD solution",
+    icon: "🔧",
+    features: ["GPS", "CAN Bus", "J1708", "Fuel from ECU", "DTC Codes", "Driver Behavior", "4x I/O"],
+    parameters: ["GPS Data", "VIN Number", "Fuel Level (ECU)", "Fuel Used", "Engine RPM", "Coolant Temp", "Engine Load %", "Throttle %", "DTC Codes", "MIL Status", "Harsh Driving", "Idling", "PTO", "Odometer (ECU)", "Engine Hours"],
+    protocol: "jt701",
+    defaultPort: 5033,
+    popular: false,
+  },
+  {
+    id: "meitrack_t366",
+    name: "Meitrack T366",
+    type: "gps",
+    vendor: "Meitrack",
+    description: "4G OBD tracker - Modern Ethiopian fleet solution",
+    icon: "🔌",
+    features: ["4G", "GPS", "OBD-II", "Fuel", "Driver Behavior", "BLE", "RFID", "Accident Detection"],
+    parameters: ["GPS Position", "Speed", "Odometer", "Fuel %", "Engine RPM", "Coolant Temp", "Battery V", "Throttle Position", "Engine Load", "Acceleration Events", "Braking Events", "Cornering Events", "Collision Detection", "Driver RFID", "BLE Devices"],
+    protocol: "meitrack",
+    defaultPort: 5034,
     popular: true,
   },
 ];
@@ -301,12 +398,29 @@ const DeviceIntegration = () => {
                         </CardHeader>
                         <CardContent>
                           <p className="text-sm text-muted-foreground mb-3">{template.description}</p>
-                          <div className="flex flex-wrap gap-2">
-                            {template.features.map((feature) => (
-                              <Badge key={feature} variant="outline" className="text-xs">
-                                {feature}
-                              </Badge>
-                            ))}
+                          <div className="space-y-3">
+                            <div>
+                              <p className="text-xs font-semibold mb-2">Features:</p>
+                              <div className="flex flex-wrap gap-2">
+                                {template.features.map((feature) => (
+                                  <Badge key={feature} variant="outline" className="text-xs">
+                                    {feature}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                            {template.parameters && (
+                              <div>
+                                <p className="text-xs font-semibold mb-2 text-primary">GPS Parameters Tracked:</p>
+                                <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                                  {template.parameters.map((param) => (
+                                    <Badge key={param} variant="secondary" className="text-xs">
+                                      {param}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </CardContent>
                       </Card>
@@ -583,16 +697,43 @@ const DeviceIntegration = () => {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground mb-3">{template.description}</p>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {template.features.map((feature) => (
-                        <Badge key={feature} variant="outline" className="text-xs">
-                          {feature}
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="flex justify-between items-center text-xs text-muted-foreground">
-                      <span>Protocol: {template.protocol}</span>
-                      <span>Port: {template.defaultPort}</span>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-xs font-semibold mb-2 text-muted-foreground">Key Features:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {template.features.slice(0, 4).map((feature) => (
+                            <Badge key={feature} variant="outline" className="text-xs">
+                              {feature}
+                            </Badge>
+                          ))}
+                          {template.features.length > 4 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{template.features.length - 4} more
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      {template.parameters && (
+                        <div>
+                          <p className="text-xs font-semibold mb-2 text-muted-foreground">Tracked Parameters:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {template.parameters.slice(0, 6).map((param) => (
+                              <Badge key={param} variant="secondary" className="text-xs">
+                                {param}
+                              </Badge>
+                            ))}
+                            {template.parameters.length > 6 && (
+                              <Badge variant="secondary" className="text-xs font-semibold">
+                                +{template.parameters.length - 6} more
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center text-xs text-muted-foreground pt-2 border-t">
+                        <span>Protocol: {template.protocol}</span>
+                        <span>Port: {template.defaultPort}</span>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -666,6 +807,151 @@ const DeviceIntegration = () => {
                       shown in your device settings page. Most devices can be configured via SMS commands - check your
                       device manual or contact support for help.
                     </p>
+                  </CardContent>
+                </Card>
+
+                {/* Comprehensive GPS Parameters Section */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>📊 Comprehensive GPS Parameters Available</CardTitle>
+                    <CardDescription>
+                      All devices automatically track these parameters - perfect for Ethiopian fleet management
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <h4 className="font-semibold mb-3 flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-primary" />
+                          Location & Movement
+                        </h4>
+                        <ul className="space-y-1.5 text-sm text-muted-foreground">
+                          <li>• GPS Coordinates (Latitude/Longitude)</li>
+                          <li>• Speed (km/h)</li>
+                          <li>• Heading/Direction</li>
+                          <li>• Altitude</li>
+                          <li>• GPS Accuracy (HDOP, Satellites)</li>
+                          <li>• Odometer Reading</li>
+                          <li>• Trip Distance</li>
+                        </ul>
+                      </div>
+
+                      <div>
+                        <h4 className="font-semibold mb-3 flex items-center gap-2">
+                          <Fuel className="h-4 w-4 text-orange-600" />
+                          Fuel Management (Critical for Ethiopia)
+                        </h4>
+                        <ul className="space-y-1.5 text-sm text-muted-foreground">
+                          <li>• Real-time Fuel Level (%)</li>
+                          <li>• Fuel Volume (Liters)</li>
+                          <li>• Fuel Consumption Rate</li>
+                          <li>• Refueling Detection & Volume</li>
+                          <li>• Fuel Theft Detection & Volume</li>
+                          <li>• Temperature Compensation</li>
+                          <li>• Multiple Tank Support (up to 5 tanks)</li>
+                        </ul>
+                      </div>
+
+                      <div>
+                        <h4 className="font-semibold mb-3 flex items-center gap-2">
+                          <Zap className="h-4 w-4 text-yellow-600" />
+                          Engine & Vehicle Status
+                        </h4>
+                        <ul className="space-y-1.5 text-sm text-muted-foreground">
+                          <li>• Ignition On/Off</li>
+                          <li>• Engine RPM</li>
+                          <li>• Engine Hours</li>
+                          <li>• Coolant Temperature</li>
+                          <li>• Engine Load (%)</li>
+                          <li>• Throttle Position</li>
+                          <li>• Battery Voltage</li>
+                          <li>• External Power Voltage</li>
+                          <li>• MIL/Check Engine Status</li>
+                          <li>• DTC Error Codes</li>
+                        </ul>
+                      </div>
+
+                      <div>
+                        <h4 className="font-semibold mb-3 flex items-center gap-2">
+                          <Smartphone className="h-4 w-4 text-green-600" />
+                          Driver & Safety
+                        </h4>
+                        <ul className="space-y-1.5 text-sm text-muted-foreground">
+                          <li>• Driver Identification (RFID/iButton/BLE)</li>
+                          <li>• Harsh Acceleration Events</li>
+                          <li>• Harsh Braking Events</li>
+                          <li>• Harsh Cornering</li>
+                          <li>• Overspeed Alerts</li>
+                          <li>• Idling Time & Detection</li>
+                          <li>• Collision/Accident Detection</li>
+                          <li>• Panic/SOS Button</li>
+                          <li>• Seatbelt Status</li>
+                          <li>• Driver Behavior Score</li>
+                        </ul>
+                      </div>
+
+                      <div>
+                        <h4 className="font-semibold mb-3">🌡️ Temperature Monitoring</h4>
+                        <ul className="space-y-1.5 text-sm text-muted-foreground">
+                          <li>• Up to 8 Temperature Probes</li>
+                          <li>• Refrigeration Unit Monitoring</li>
+                          <li>• Cold Chain Compliance</li>
+                          <li>• Ambient Temperature</li>
+                          <li>• Fuel Tank Temperature</li>
+                          <li>• Cargo Temperature Zones</li>
+                        </ul>
+                      </div>
+
+                      <div>
+                        <h4 className="font-semibold mb-3">🚪 Digital & Analog Inputs</h4>
+                        <ul className="space-y-1.5 text-sm text-muted-foreground">
+                          <li>• Door Open/Close Sensors</li>
+                          <li>• Cargo Door Status</li>
+                          <li>• Trailer Connection Status</li>
+                          <li>• PTO (Power Take-Off) Status</li>
+                          <li>• AC Status</li>
+                          <li>• Custom Sensor Inputs</li>
+                          <li>• Towing/Movement Alerts</li>
+                          <li>• Vibration Sensors</li>
+                        </ul>
+                      </div>
+
+                      <div>
+                        <h4 className="font-semibold mb-3">📡 Communication & Connectivity</h4>
+                        <ul className="space-y-1.5 text-sm text-muted-foreground">
+                          <li>• GSM/4G Signal Strength</li>
+                          <li>• GPS Signal Quality</li>
+                          <li>• IMEI Number</li>
+                          <li>• SIM Card Status</li>
+                          <li>• Data Usage</li>
+                          <li>• Last Communication Time</li>
+                        </ul>
+                      </div>
+
+                      <div>
+                        <h4 className="font-semibold mb-3">🔧 Maintenance & Diagnostics</h4>
+                        <ul className="space-y-1.5 text-sm text-muted-foreground">
+                          <li>• Service Due Indicators</li>
+                          <li>• Maintenance Mileage Tracking</li>
+                          <li>• VIN Number</li>
+                          <li>• Firmware Version</li>
+                          <li>• Device Health Status</li>
+                          <li>• Sensor Fault Detection</li>
+                          <li>• Tachograph Data (EU-compliant)</li>
+                        </ul>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-950 dark:to-blue-950 rounded-lg border">
+                      <p className="text-sm font-semibold text-green-900 dark:text-green-100 mb-2">
+                        ✅ Optimized for Ethiopian Market
+                      </p>
+                      <p className="text-sm text-green-700 dark:text-green-200">
+                        Our system is specifically configured for Ethiopian fleet operations with focus on fuel theft prevention, 
+                        temperature monitoring for cold chain logistics, harsh road condition tracking, and driver safety. 
+                        All parameters are automatically captured and stored - no additional configuration needed!
+                      </p>
+                    </div>
                   </CardContent>
                 </Card>
               </CardContent>
