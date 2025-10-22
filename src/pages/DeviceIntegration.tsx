@@ -199,6 +199,19 @@ const deviceTemplates = [
     defaultPort: 5034,
     popular: true,
   },
+  {
+    id: "ytwl_ca100f",
+    name: "YTWL CA100F Speed Governor",
+    type: "gps_governor",
+    vendor: "YTWL (Thingsasys)",
+    description: "GPS Speed Limiter/Governor - Ethiopian compliance solution",
+    icon: "🚦",
+    features: ["GPS Tracking", "Speed Limiting", "Remote Speed Control", "Over-speed Prevention", "Compliance Reports", "Driver Alerts", "Digital I/O", "Voice Warnings"],
+    parameters: ["GPS Position", "Current Speed", "Max Speed Setting", "Speed Limit Status", "Over-speed Events", "Speed Violations Count", "Governor Active/Inactive", "Ignition Status", "Digital Inputs", "Relay Output", "Odometer", "Trip Distance", "Engine Hours", "Battery Voltage", "GSM Signal", "GPS Satellites", "Driver Warnings Triggered", "Compliance Score", "Tamper Alerts"],
+    protocol: "ytwl",
+    defaultPort: 5035,
+    popular: true,
+  },
 ];
 
 const DeviceIntegration = () => {
@@ -887,6 +900,8 @@ const DeviceIntegration = () => {
                           <li>• Panic/SOS Button</li>
                           <li>• Seatbelt Status</li>
                           <li>• Driver Behavior Score</li>
+                          <li>• <strong>Speed Governor/Limiter (Compliance)</strong></li>
+                          <li>• <strong>Speed Violation Reporting</strong></li>
                         </ul>
                       </div>
 
