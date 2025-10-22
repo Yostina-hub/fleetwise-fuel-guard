@@ -15,6 +15,10 @@ import Auth from "./pages/Auth";
 import UserManagement from "./pages/UserManagement";
 import Security from "./pages/Security";
 import Integrations from "./pages/Integrations";
+import RoutesPage from "./pages/Routes";
+import WorkOrders from "./pages/WorkOrders";
+import Incidents from "./pages/Incidents";
+import SystemConfig from "./pages/SystemConfig";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
@@ -39,6 +43,10 @@ const App = () => (
           <Route path="/users" element={<ProtectedRoute requiredRole="super_admin"><UserManagement /></ProtectedRoute>} />
           <Route path="/security" element={<ProtectedRoute requiredRole="super_admin"><Security /></ProtectedRoute>} />
           <Route path="/integrations" element={<ProtectedRoute requiredRole="super_admin"><Integrations /></ProtectedRoute>} />
+          <Route path="/routes" element={<ProtectedRoute><RoutesPage /></ProtectedRoute>} />
+          <Route path="/workorders" element={<ProtectedRoute><WorkOrders /></ProtectedRoute>} />
+          <Route path="/incidents" element={<ProtectedRoute><Incidents /></ProtectedRoute>} />
+          <Route path="/config" element={<ProtectedRoute requiredRole="super_admin"><SystemConfig /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
