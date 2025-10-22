@@ -7,22 +7,49 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Copy, Trash2, Eye, EyeOff } from "lucide-react";
+import { Plus, Copy, Trash2, Calendar, Settings } from "lucide-react";
 import { format } from "date-fns";
 
 import { useOrganization } from "@/hooks/useOrganization";
 import { useAuth } from "@/hooks/useAuth";
 
+interface ApiKeyFormData {
+  name: string;
+  scopes: string[];
+  expiresAt: string;
+  ipWhitelist: string;
+  rateLimitPerHour: number;
+}
+
+const availableScopes = [
+  { id: "vehicles:read", label: "Read Vehicles" },
+  { id: "vehicles:write", label: "Write Vehicles" },
+  { id: "tracking:read", label: "Read Tracking Data" },
+  { id: "fuel:read", label: "Read Fuel Data" },
+  { id: "fuel:write", label: "Write Fuel Data" },
+  { id: "reports:read", label: "Read Reports" },
+  { id: "alerts:read", label: "Read Alerts" },
+  { id: "alerts:write", label: "Write Alerts" },
+];
+
 const ApiKeysTab = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newKeyName, setNewKeyName] = useState("");
   const [generatedKey, setGeneratedKey] = useState<string | null>(null);
-  const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
   const { user } = useAuth();
+
+  const [formData, setFormData] = useState<ApiKeyFormData>({
+    name: "",
+    scopes: [],
+    expiresAt: "",
+    ipWhitelist: "",
+    rateLimitPerHour: 1000,
+  });
 
   const { data: apiKeys, isLoading } = useQuery({
     queryKey: ["api-keys"],
@@ -38,32 +65,45 @@ const ApiKeysTab = () => {
   });
 
   const createKeyMutation = useMutation({
-    mutationFn: async (name: string) => {
+    mutationFn: async (data: ApiKeyFormData) => {
       if (!organizationId || !user) throw new Error("Missing organization or user");
       
       const key = `fms_${Math.random().toString(36).substring(2)}${Math.random().toString(36).substring(2)}`;
       const keyHash = btoa(key);
       
-      const { data, error } = await supabase
+      const ipWhitelistArray = data.ipWhitelist
+        ? data.ipWhitelist.split(',').map(ip => ip.trim()).filter(Boolean)
+        : null;
+
+      const { data: insertData, error } = await supabase
         .from("api_keys")
         .insert([{
-          name,
+          name: data.name,
           key_hash: keyHash,
           key_prefix: key.substring(0, 8),
-          scopes: [],
+          scopes: data.scopes,
           organization_id: organizationId,
           created_by: user.id,
+          expires_at: data.expiresAt || null,
+          ip_whitelist: ipWhitelistArray,
+          rate_limit_per_hour: data.rateLimitPerHour,
         }])
         .select()
         .single();
       
       if (error) throw error;
-      return { ...data, plainKey: key };
+      return { ...insertData, plainKey: key };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["api-keys"] });
       setGeneratedKey(data.plainKey);
-      setNewKeyName("");
+      setFormData({
+        name: "",
+        scopes: [],
+        expiresAt: "",
+        ipWhitelist: "",
+        rateLimitPerHour: 1000,
+      });
       toast({
         title: "API Key Created",
         description: "Copy the key now - it won't be shown again!",
@@ -96,24 +136,33 @@ const ApiKeysTab = () => {
     },
   });
 
-  const toggleKeyVisibility = (keyId: string) => {
-    setVisibleKeys(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(keyId)) {
-        newSet.delete(keyId);
-      } else {
-        newSet.add(keyId);
-      }
-      return newSet;
-    });
-  };
-
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast({
       title: "Copied",
       description: "API key copied to clipboard",
     });
+  };
+
+  const toggleScope = (scopeId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      scopes: prev.scopes.includes(scopeId)
+        ? prev.scopes.filter(s => s !== scopeId)
+        : [...prev.scopes, scopeId]
+    }));
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      scopes: [],
+      expiresAt: "",
+      ipWhitelist: "",
+      rateLimitPerHour: 1000,
+    });
+    setGeneratedKey(null);
+    setIsDialogOpen(false);
   };
 
   return (
@@ -156,33 +205,98 @@ const ApiKeysTab = () => {
                     ⚠️ Save this key now - it won't be shown again!
                   </p>
                 </div>
-                <Button
-                  onClick={() => {
-                    setGeneratedKey(null);
-                    setIsDialogOpen(false);
-                  }}
-                  className="w-full"
-                >
+                <Button onClick={resetForm} className="w-full">
                   Done
                 </Button>
               </div>
             ) : (
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="keyName">Key Name</Label>
-                  <Input
-                    id="keyName"
-                    value={newKeyName}
-                    onChange={(e) => setNewKeyName(e.target.value)}
-                    placeholder="Production API Key"
-                  />
+              <div className="space-y-6">
+                {/* Basic Info */}
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="keyName">Key Name *</Label>
+                    <Input
+                      id="keyName"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="Production API Key"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="expiresAt" className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        Expires At
+                      </Label>
+                      <Input
+                        id="expiresAt"
+                        type="datetime-local"
+                        value={formData.expiresAt}
+                        onChange={(e) => setFormData({ ...formData, expiresAt: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="rateLimit" className="flex items-center gap-2">
+                        <Settings className="h-4 w-4" />
+                        Rate Limit (per hour)
+                      </Label>
+                      <Input
+                        id="rateLimit"
+                        type="number"
+                        value={formData.rateLimitPerHour}
+                        onChange={(e) => setFormData({ ...formData, rateLimitPerHour: parseInt(e.target.value) || 1000 })}
+                      />
+                    </div>
+                  </div>
                 </div>
+
+                <Separator />
+
+                {/* Scopes */}
+                <div className="space-y-3">
+                  <Label>Permissions (Scopes)</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {availableScopes.map((scope) => (
+                      <div key={scope.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={scope.id}
+                          checked={formData.scopes.includes(scope.id)}
+                          onCheckedChange={() => toggleScope(scope.id)}
+                        />
+                        <label
+                          htmlFor={scope.id}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                        >
+                          {scope.label}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* IP Whitelist */}
+                <div>
+                  <Label htmlFor="ipWhitelist">IP Whitelist (Optional)</Label>
+                  <Input
+                    id="ipWhitelist"
+                    value={formData.ipWhitelist}
+                    onChange={(e) => setFormData({ ...formData, ipWhitelist: e.target.value })}
+                    placeholder="192.168.1.1, 10.0.0.1"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Comma-separated IP addresses. Leave empty to allow all IPs.
+                  </p>
+                </div>
+
                 <Button
-                  onClick={() => createKeyMutation.mutate(newKeyName)}
-                  disabled={!newKeyName || createKeyMutation.isPending}
+                  onClick={() => createKeyMutation.mutate(formData)}
+                  disabled={!formData.name || createKeyMutation.isPending}
                   className="w-full"
                 >
-                  {createKeyMutation.isPending ? "Creating..." : "Create Key"}
+                  {createKeyMutation.isPending ? "Creating..." : "Create API Key"}
                 </Button>
               </div>
             )}
@@ -198,43 +312,80 @@ const ApiKeysTab = () => {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Key Prefix</TableHead>
+              <TableHead>Scopes</TableHead>
+              <TableHead>Rate Limit</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Expires</TableHead>
               <TableHead>Last Used</TableHead>
               <TableHead>Created</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {apiKeys?.map((key) => (
-              <TableRow key={key.id}>
-                <TableCell className="font-medium">{key.name}</TableCell>
-                <TableCell>
-                  <code className="text-xs">{key.key_prefix}...</code>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={key.is_active ? "default" : "secondary"}>
-                    {key.is_active ? "Active" : "Inactive"}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {key.last_used_at
-                    ? format(new Date(key.last_used_at), "PP")
-                    : "Never"}
-                </TableCell>
-                <TableCell>
-                  {format(new Date(key.created_at), "PP")}
-                </TableCell>
-                <TableCell>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => deleteKeyMutation.mutate(key.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+            {apiKeys?.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={9} className="text-center text-muted-foreground">
+                  No API keys found. Create one to get started.
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              apiKeys?.map((key) => (
+                <TableRow key={key.id}>
+                  <TableCell className="font-medium">{key.name}</TableCell>
+                  <TableCell>
+                    <code className="text-xs bg-muted px-2 py-1 rounded">{key.key_prefix}...</code>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {(key.scopes as string[])?.length > 0 ? (
+                        (key.scopes as string[]).slice(0, 2).map((scope) => (
+                          <Badge key={scope} variant="outline" className="text-xs">
+                            {scope.split(':')[0]}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-xs text-muted-foreground">None</span>
+                      )}
+                      {(key.scopes as string[])?.length > 2 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{(key.scopes as string[]).length - 2}
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {key.rate_limit_per_hour || 1000}/hr
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={key.is_active ? "default" : "secondary"}>
+                      {key.is_active ? "Active" : "Inactive"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {key.expires_at
+                      ? format(new Date(key.expires_at), "PP")
+                      : "Never"}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {key.last_used_at
+                      ? format(new Date(key.last_used_at), "PP p")
+                      : "Never"}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {format(new Date(key.created_at), "PP")}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => deleteKeyMutation.mutate(key.id)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       )}
