@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -23,7 +23,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 
@@ -43,6 +51,9 @@ const CustomerSitesTab = () => {
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSite, setEditingSite] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [formData, setFormData] = useState({
     customer_name: "",
     site_name: "",
@@ -67,6 +78,29 @@ const CustomerSitesTab = () => {
     },
     enabled: !!organizationId,
   });
+
+  // Filter and search
+  const filteredSites = useMemo(() => {
+    if (!sites) return [];
+    
+    return sites.filter((site: any) => {
+      const matchesSearch = searchQuery === "" || 
+        site.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        site.site_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        site.site_code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        site.address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        site.contact_person?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      return matchesSearch;
+    });
+  }, [sites, searchQuery]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredSites.length / itemsPerPage);
+  const paginatedSites = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredSites.slice(start, start + itemsPerPage);
+  }, [filteredSites, currentPage]);
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -177,7 +211,7 @@ const CustomerSitesTab = () => {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Customer Sites</h3>
+        <h3 className="text-lg font-semibold">Customer Sites ({filteredSites.length})</h3>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={resetForm}>
@@ -285,6 +319,20 @@ const CustomerSitesTab = () => {
         </Dialog>
       </div>
 
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search customer sites..."
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            setCurrentPage(1);
+          }}
+          className="pl-10"
+        />
+      </div>
+
       <Table>
         <TableHeader>
           <TableRow>
@@ -297,7 +345,14 @@ const CustomerSitesTab = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sites?.map((site) => (
+          {paginatedSites.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                No customer sites found
+              </TableCell>
+            </TableRow>
+          ) : (
+            paginatedSites.map((site) => (
             <TableRow key={site.id}>
               <TableCell className="font-medium">{site.customer_name}</TableCell>
               <TableCell>{site.site_name}</TableCell>
@@ -329,9 +384,41 @@ const CustomerSitesTab = () => {
                 </div>
               </TableCell>
             </TableRow>
-          ))}
+            ))
+          )}
         </TableBody>
       </Table>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious 
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+              />
+            </PaginationItem>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <PaginationItem key={page}>
+                <PaginationLink
+                  onClick={() => setCurrentPage(page)}
+                  isActive={currentPage === page}
+                  className="cursor-pointer"
+                >
+                  {page}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+            <PaginationItem>
+              <PaginationNext 
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
     </div>
   );
 };

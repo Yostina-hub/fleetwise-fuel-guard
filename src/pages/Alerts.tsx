@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,11 @@ import {
 
 const Alerts = () => {
   const [selectedAlert, setSelectedAlert] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [severityFilter, setSeverityFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const alerts = [
     {
       id: 1,
@@ -118,6 +123,29 @@ const Alerts = () => {
         return null;
     }
   };
+
+  // Filter and search
+  const filteredAlerts = useMemo(() => {
+    return alerts.filter((alert) => {
+      const matchesSearch = searchQuery === "" ||
+        alert.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        alert.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        alert.vehicle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        alert.location.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesSeverity = severityFilter === "all" || alert.severity === severityFilter;
+      const matchesType = typeFilter === "all" || alert.type === typeFilter;
+      
+      return matchesSearch && matchesSeverity && matchesType;
+    });
+  }, [searchQuery, severityFilter, typeFilter]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredAlerts.length / itemsPerPage);
+  const paginatedAlerts = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredAlerts.slice(start, start + itemsPerPage);
+  }, [filteredAlerts, currentPage]);
 
   return (
     <Layout>

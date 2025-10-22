@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -30,7 +30,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 
@@ -47,6 +55,10 @@ const RoutesTab = () => {
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRoute, setEditingRoute] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [frequencyFilter, setFrequencyFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [formData, setFormData] = useState({
     route_name: "",
     route_code: "",
@@ -68,6 +80,29 @@ const RoutesTab = () => {
     },
     enabled: !!organizationId,
   });
+
+  // Filter and search
+  const filteredRoutes = useMemo(() => {
+    if (!routes) return [];
+    
+    return routes.filter((route: any) => {
+      const matchesSearch = searchQuery === "" || 
+        route.route_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        route.route_code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        route.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesFrequency = frequencyFilter === "all" || route.frequency === frequencyFilter;
+      
+      return matchesSearch && matchesFrequency;
+    });
+  }, [routes, searchQuery, frequencyFilter]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredRoutes.length / itemsPerPage);
+  const paginatedRoutes = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredRoutes.slice(start, start + itemsPerPage);
+  }, [filteredRoutes, currentPage]);
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -172,7 +207,7 @@ const RoutesTab = () => {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Planned Routes</h3>
+        <h3 className="text-lg font-semibold">Planned Routes ({filteredRoutes.length})</h3>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={resetForm}>
@@ -252,6 +287,33 @@ const RoutesTab = () => {
         </Dialog>
       </div>
 
+      {/* Search and Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search routes..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="pl-10"
+          />
+        </div>
+        <Select value={frequencyFilter} onValueChange={(value) => { setFrequencyFilter(value); setCurrentPage(1); }}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Frequency" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Frequency</SelectItem>
+            <SelectItem value="daily">Daily</SelectItem>
+            <SelectItem value="weekly">Weekly</SelectItem>
+            <SelectItem value="adhoc">Ad-hoc</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       <Table>
         <TableHeader>
           <TableRow>
@@ -263,7 +325,14 @@ const RoutesTab = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {routes?.map((route) => (
+          {paginatedRoutes.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                No routes found
+              </TableCell>
+            </TableRow>
+          ) : (
+            paginatedRoutes.map((route) => (
             <TableRow key={route.id}>
               <TableCell className="font-medium">{route.route_name}</TableCell>
               <TableCell>{route.route_code || "-"}</TableCell>
@@ -294,9 +363,41 @@ const RoutesTab = () => {
                 </div>
               </TableCell>
             </TableRow>
-          ))}
+            ))
+          )}
         </TableBody>
       </Table>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious 
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+              />
+            </PaginationItem>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <PaginationItem key={page}>
+                <PaginationLink
+                  onClick={() => setCurrentPage(page)}
+                  isActive={currentPage === page}
+                  className="cursor-pointer"
+                >
+                  {page}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+            <PaginationItem>
+              <PaginationNext 
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
     </div>
   );
 };

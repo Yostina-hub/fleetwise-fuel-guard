@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,10 @@ import { Truck, Search, Plus, Fuel, MapPin, Calendar, Filter, Eye, Settings } fr
 const Fleet = () => {
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [fuelTypeFilter, setFuelTypeFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
   const vehicles = [
     { 
       id: "V-001", 
@@ -69,11 +73,28 @@ const Fleet = () => {
     },
   ];
 
-  const filteredVehicles = vehicles.filter(v => 
-    v.plate.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    v.make.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    v.model.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter and search
+  const filteredVehicles = useMemo(() => {
+    return vehicles.filter((vehicle) => {
+      const matchesSearch = searchQuery === "" ||
+        vehicle.plate.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        vehicle.make.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        vehicle.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        vehicle.id.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesStatus = statusFilter === "all" || vehicle.status === statusFilter;
+      const matchesFuelType = fuelTypeFilter === "all";
+      
+      return matchesSearch && matchesStatus && matchesFuelType;
+    });
+  }, [searchQuery, statusFilter, fuelTypeFilter]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredVehicles.length / itemsPerPage);
+  const paginatedVehicles = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredVehicles.slice(start, start + itemsPerPage);
+  }, [filteredVehicles, currentPage]);
 
   return (
     <Layout>
