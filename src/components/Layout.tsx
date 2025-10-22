@@ -64,15 +64,15 @@ const Layout = ({ children }: LayoutProps) => {
   };
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col">
+      <aside className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col shrink-0">
         <div className="p-6 border-b border-sidebar-border">
-          <h1 className="text-xl font-bold text-sidebar-foreground">FleetTrack FMS</h1>
-          <p className="text-sm text-sidebar-foreground/60 mt-1">Fleet Management</p>
+          <h1 className="text-xl font-bold text-sidebar-foreground tracking-tight">FleetTrack FMS</h1>
+          <p className="text-sm text-sidebar-foreground/60 mt-1">Fleet Management System</p>
         </div>
         
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
@@ -82,13 +82,13 @@ const Layout = ({ children }: LayoutProps) => {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
                   isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground hover:translate-x-1"
                 )}
               >
-                <Icon className="w-5 h-5" />
+                <Icon className="w-5 h-5 transition-transform group-hover:scale-110" />
                 <span className="font-medium">{item.label}</span>
               </Link>
             );
@@ -96,64 +96,69 @@ const Layout = ({ children }: LayoutProps) => {
           
           {isSuperAdmin && (
             <>
+              <div className="pt-4 pb-2">
+                <div className="px-3 text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider">
+                  Admin
+                </div>
+              </div>
               <Link
                 to="/users"
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
                   location.pathname === "/users"
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground hover:translate-x-1"
                 )}
               >
-                <Users className="w-5 h-5" />
+                <Users className="w-5 h-5 transition-transform group-hover:scale-110" />
                 <span className="font-medium">Users</span>
               </Link>
               <Link
                 to="/security"
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
                   location.pathname === "/security"
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground hover:translate-x-1"
                 )}
               >
-                <Shield className="w-5 h-5" />
+                <Shield className="w-5 h-5 transition-transform group-hover:scale-110" />
                 <span className="font-medium">Security</span>
               </Link>
               <Link
                 to="/integrations"
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
                   location.pathname === "/integrations"
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground hover:translate-x-1"
                 )}
               >
-                <Plug className="w-5 h-5" />
+                <Plug className="w-5 h-5 transition-transform group-hover:scale-110" />
                 <span className="font-medium">Integrations</span>
               </Link>
               <Link
                 to="/administration"
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
                   location.pathname === "/administration"
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground hover:translate-x-1"
                 )}
               >
-                <Building2 className="w-5 h-5" />
+                <Building2 className="w-5 h-5 transition-transform group-hover:scale-110" />
                 <span className="font-medium">Administration</span>
               </Link>
               <Link
                 to="/config"
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
                   location.pathname === "/config"
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground hover:translate-x-1"
                 )}
               >
-                <Settings2 className="w-5 h-5" />
+                <Settings2 className="w-5 h-5 transition-transform group-hover:scale-110" />
                 <span className="font-medium">System Config</span>
               </Link>
             </>
@@ -182,7 +187,7 @@ const Layout = ({ children }: LayoutProps) => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto bg-background custom-scrollbar">
         {children}
       </main>
     </div>

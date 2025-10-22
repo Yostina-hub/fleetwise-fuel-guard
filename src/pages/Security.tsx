@@ -1,3 +1,4 @@
+import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Shield, Key, History, FileText } from "lucide-react";
@@ -8,7 +9,8 @@ import GdprRequestsTab from "@/components/security/GdprRequestsTab";
 
 const Security = () => {
   return (
-    <div className="p-6 space-y-6">
+    <Layout>
+      <div className="p-8 space-y-6 animate-fade-in">
       <div className="flex items-center gap-3">
         <Shield className="h-8 w-8 text-primary" />
         <div>
@@ -64,6 +66,7 @@ const Security = () => {
         </TabsContent>
       </Tabs>
     </div>
+    </Layout>
   );
 };
 

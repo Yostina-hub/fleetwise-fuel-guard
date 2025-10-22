@@ -30,7 +30,7 @@ const Dashboard = () => {
 
   return (
     <Layout>
-      <div className="p-8 space-y-8">
+      <div className="p-8 space-y-8 animate-fade-in">
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold">Fleet Dashboard</h1>

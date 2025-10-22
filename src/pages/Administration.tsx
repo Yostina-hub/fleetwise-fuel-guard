@@ -1,3 +1,4 @@
+import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Settings, Shield, Lock, Globe, Scale, History } from "lucide-react";
@@ -10,7 +11,8 @@ import LoginHistoryTab from "@/components/admin/LoginHistoryTab";
 
 const Administration = () => {
   return (
-    <div className="p-6 space-y-6">
+    <Layout>
+      <div className="p-8 space-y-6 animate-fade-in">
       <div className="flex items-center gap-3">
         <Settings className="h-8 w-8 text-primary" />
         <div>
@@ -86,6 +88,7 @@ const Administration = () => {
         </TabsContent>
       </Tabs>
     </div>
+    </Layout>
   );
 };
 
