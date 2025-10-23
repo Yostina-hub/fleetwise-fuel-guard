@@ -6,10 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
-import { Settings, RefreshCw, CheckCircle2, XCircle, Loader2, Database, Users, Fuel, Wrench, TrendingUp, AlertTriangle, MapPin, Activity } from "lucide-react";
+import { Settings, RefreshCw, CheckCircle2, XCircle, Loader2, Database, Users, Fuel, Wrench, TrendingUp, AlertTriangle, MapPin, Activity, ChevronDown } from "lucide-react";
 
 const ERPNextTab = () => {
   const { toast } = useToast();
@@ -37,6 +38,47 @@ const ERPNextTab = () => {
     sync_interval_minutes: 30,
   });
 
+  const [fieldMappings, setFieldMappings] = useState({
+    // Vehicle mappings
+    vehicle_doctype: "Vehicle",
+    vehicle_plate_field: "license_plate",
+    vehicle_make_field: "make",
+    vehicle_model_field: "model",
+    vehicle_vin_field: "chassis_number",
+    
+    // Driver mappings
+    driver_doctype: "Employee",
+    driver_name_field: "employee_name",
+    driver_email_field: "personal_email",
+    driver_phone_field: "cell_number",
+    
+    // Fuel mappings
+    fuel_doctype: "Expense Claim",
+    fuel_amount_field: "total_claimed_amount",
+    fuel_date_field: "expense_date",
+    
+    // Maintenance mappings
+    maintenance_doctype: "Asset Maintenance",
+    maintenance_type_field: "maintenance_type",
+    maintenance_status_field: "maintenance_status",
+    
+    // Trip mappings
+    trip_doctype: "Delivery Trip",
+    trip_vehicle_field: "vehicle",
+    trip_driver_field: "driver",
+    trip_distance_field: "total_distance",
+    
+    // Alert mappings
+    alert_doctype: "Issue",
+    alert_subject_field: "subject",
+    alert_priority_field: "priority",
+    
+    // Incident mappings
+    incident_doctype: "Issue",
+    incident_subject_field: "subject",
+    incident_status_field: "status",
+  });
+
   useEffect(() => {
     fetchConfig();
     fetchLogs();
@@ -55,6 +97,8 @@ const ERPNextTab = () => {
     if (data) {
       setConfig(data);
       const syncSettings = (data.sync_settings as any) || {};
+      const mappings = (data.field_mappings as any) || {};
+      
       setFormData({
         erpnext_url: data.erpnext_url,
         api_key: data.api_key,
@@ -71,6 +115,10 @@ const ERPNextTab = () => {
         auto_sync: syncSettings.auto_sync ?? true,
         sync_interval_minutes: syncSettings.sync_interval_minutes ?? 30,
       });
+
+      if (Object.keys(mappings).length > 0) {
+        setFieldMappings({ ...fieldMappings, ...mappings });
+      }
     }
     setLoading(false);
   };
@@ -113,6 +161,7 @@ const ERPNextTab = () => {
       api_key: formData.api_key,
       api_secret: formData.api_secret,
       sync_settings: syncSettings,
+      field_mappings: fieldMappings,
       is_active: true,
     };
 
@@ -229,9 +278,18 @@ const ERPNextTab = () => {
     <div className="space-y-6">
       {/* Configuration Card */}
       <Card className="p-6">
-        <div className="flex items-center gap-2 mb-6">
+        <div className="flex items-center gap-2 mb-4">
           <Settings className="w-5 h-5 text-primary" />
           <h3 className="text-lg font-semibold">ERPNext Configuration</h3>
+        </div>
+
+        {/* Info Card */}
+        <div className="mb-6 p-4 bg-muted/50 rounded-lg border border-border">
+          <h4 className="font-medium text-sm mb-2">📌 Field Mapping Info</h4>
+          <p className="text-sm text-muted-foreground">
+            FleetTrack works with <strong>any ERPNext field names</strong>. Use default mappings for standard ERPNext, 
+            or customize field mappings below if your ERPNext has different field names, custom DocTypes, or localized fields.
+          </p>
         </div>
 
         <div className="space-y-4">
@@ -266,6 +324,214 @@ const ERPNextTab = () => {
               onChange={(e) => setFormData({ ...formData, api_secret: e.target.value })}
             />
           </div>
+
+          <Separator />
+
+          {/* Field Mappings Section */}
+          <Collapsible>
+            <CollapsibleTrigger className="flex items-center justify-between w-full py-2 hover:bg-accent rounded-md px-2">
+              <h4 className="font-medium flex items-center gap-2">
+                <Settings className="w-4 h-4" />
+                Advanced Field Mappings (Optional)
+              </h4>
+              <ChevronDown className="w-4 h-4" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-4 mt-4">
+              <p className="text-sm text-muted-foreground">
+                Customize which ERPNext fields your FleetTrack data maps to. Change these only if your ERPNext has different field names.
+              </p>
+
+              {/* Vehicle Mappings */}
+              <div className="space-y-3 p-4 border rounded-lg">
+                <h5 className="font-medium text-sm flex items-center gap-2">
+                  <Database className="w-3 h-3" />
+                  Vehicle Field Mappings
+                </h5>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="vehicle_doctype" className="text-xs">ERPNext DocType</Label>
+                    <Input
+                      id="vehicle_doctype"
+                      value={fieldMappings.vehicle_doctype}
+                      onChange={(e) => setFieldMappings({ ...fieldMappings, vehicle_doctype: e.target.value })}
+                      placeholder="Vehicle"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="vehicle_plate_field" className="text-xs">Plate Number Field</Label>
+                    <Input
+                      id="vehicle_plate_field"
+                      value={fieldMappings.vehicle_plate_field}
+                      onChange={(e) => setFieldMappings({ ...fieldMappings, vehicle_plate_field: e.target.value })}
+                      placeholder="license_plate"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="vehicle_make_field" className="text-xs">Make Field</Label>
+                    <Input
+                      id="vehicle_make_field"
+                      value={fieldMappings.vehicle_make_field}
+                      onChange={(e) => setFieldMappings({ ...fieldMappings, vehicle_make_field: e.target.value })}
+                      placeholder="make"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="vehicle_vin_field" className="text-xs">VIN Field</Label>
+                    <Input
+                      id="vehicle_vin_field"
+                      value={fieldMappings.vehicle_vin_field}
+                      onChange={(e) => setFieldMappings({ ...fieldMappings, vehicle_vin_field: e.target.value })}
+                      placeholder="chassis_number"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Driver Mappings */}
+              <div className="space-y-3 p-4 border rounded-lg">
+                <h5 className="font-medium text-sm flex items-center gap-2">
+                  <Users className="w-3 h-3" />
+                  Driver Field Mappings
+                </h5>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="driver_doctype" className="text-xs">ERPNext DocType</Label>
+                    <Input
+                      id="driver_doctype"
+                      value={fieldMappings.driver_doctype}
+                      onChange={(e) => setFieldMappings({ ...fieldMappings, driver_doctype: e.target.value })}
+                      placeholder="Employee"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="driver_name_field" className="text-xs">Name Field</Label>
+                    <Input
+                      id="driver_name_field"
+                      value={fieldMappings.driver_name_field}
+                      onChange={(e) => setFieldMappings({ ...fieldMappings, driver_name_field: e.target.value })}
+                      placeholder="employee_name"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="driver_email_field" className="text-xs">Email Field</Label>
+                    <Input
+                      id="driver_email_field"
+                      value={fieldMappings.driver_email_field}
+                      onChange={(e) => setFieldMappings({ ...fieldMappings, driver_email_field: e.target.value })}
+                      placeholder="personal_email"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="driver_phone_field" className="text-xs">Phone Field</Label>
+                    <Input
+                      id="driver_phone_field"
+                      value={fieldMappings.driver_phone_field}
+                      onChange={(e) => setFieldMappings({ ...fieldMappings, driver_phone_field: e.target.value })}
+                      placeholder="cell_number"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Fuel Mappings */}
+              <div className="space-y-3 p-4 border rounded-lg">
+                <h5 className="font-medium text-sm flex items-center gap-2">
+                  <Fuel className="w-3 h-3" />
+                  Fuel Transaction Field Mappings
+                </h5>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="fuel_doctype" className="text-xs">ERPNext DocType</Label>
+                    <Input
+                      id="fuel_doctype"
+                      value={fieldMappings.fuel_doctype}
+                      onChange={(e) => setFieldMappings({ ...fieldMappings, fuel_doctype: e.target.value })}
+                      placeholder="Expense Claim"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="fuel_amount_field" className="text-xs">Amount Field</Label>
+                    <Input
+                      id="fuel_amount_field"
+                      value={fieldMappings.fuel_amount_field}
+                      onChange={(e) => setFieldMappings({ ...fieldMappings, fuel_amount_field: e.target.value })}
+                      placeholder="total_claimed_amount"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Trip Mappings */}
+              <div className="space-y-3 p-4 border rounded-lg">
+                <h5 className="font-medium text-sm flex items-center gap-2">
+                  <MapPin className="w-3 h-3" />
+                  GPS/Trip Field Mappings
+                </h5>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="trip_doctype" className="text-xs">ERPNext DocType</Label>
+                    <Input
+                      id="trip_doctype"
+                      value={fieldMappings.trip_doctype}
+                      onChange={(e) => setFieldMappings({ ...fieldMappings, trip_doctype: e.target.value })}
+                      placeholder="Delivery Trip"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="trip_distance_field" className="text-xs">Distance Field</Label>
+                    <Input
+                      id="trip_distance_field"
+                      value={fieldMappings.trip_distance_field}
+                      onChange={(e) => setFieldMappings({ ...fieldMappings, trip_distance_field: e.target.value })}
+                      placeholder="total_distance"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Alert/Incident Mappings */}
+              <div className="space-y-3 p-4 border rounded-lg">
+                <h5 className="font-medium text-sm flex items-center gap-2">
+                  <AlertTriangle className="w-3 h-3" />
+                  Alert/Incident Field Mappings
+                </h5>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="alert_doctype" className="text-xs">Alert DocType</Label>
+                    <Input
+                      id="alert_doctype"
+                      value={fieldMappings.alert_doctype}
+                      onChange={(e) => setFieldMappings({ ...fieldMappings, alert_doctype: e.target.value })}
+                      placeholder="Issue"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="incident_doctype" className="text-xs">Incident DocType</Label>
+                    <Input
+                      id="incident_doctype"
+                      value={fieldMappings.incident_doctype}
+                      onChange={(e) => setFieldMappings({ ...fieldMappings, incident_doctype: e.target.value })}
+                      placeholder="Issue"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
 
           <Separator />
 

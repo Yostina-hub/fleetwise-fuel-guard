@@ -51,22 +51,38 @@ async function syncVehicles(supabase: any, config: ERPNextConfig, organizationId
   let failed = 0;
   const errors: any[] = [];
 
+  const mappings = config.field_mappings || {};
+  const doctype = mappings.vehicle_doctype || 'Vehicle';
+
   for (const vehicle of vehicles) {
     try {
-      const erpData = {
-        doctype: config.field_mappings.vehicle_doctype || 'Vehicle',
-        license_plate: vehicle.plate_number,
-        make: vehicle.make,
-        model: vehicle.model,
-        year: vehicle.year,
-        chassis_number: vehicle.vin,
-        color: vehicle.color,
-        fuel_type: vehicle.fuel_type,
-        odometer: vehicle.odometer_km,
-        status: vehicle.status === 'active' ? 'Available' : 'Not Available',
+      // Build dynamic data object using custom field mappings
+      const erpData: any = {
+        doctype: doctype,
       };
 
-      await callERPNextAPI(config, 'POST', '/api/resource/Vehicle', erpData);
+      // Map fields dynamically based on configuration
+      if (mappings.vehicle_plate_field) {
+        erpData[mappings.vehicle_plate_field] = vehicle.plate_number;
+      }
+      if (mappings.vehicle_make_field) {
+        erpData[mappings.vehicle_make_field] = vehicle.make;
+      }
+      if (mappings.vehicle_model_field) {
+        erpData[mappings.vehicle_model_field || 'model'] = vehicle.model;
+      }
+      if (mappings.vehicle_vin_field) {
+        erpData[mappings.vehicle_vin_field] = vehicle.vin;
+      }
+
+      // Default fields (using standard ERPNext naming if no mapping provided)
+      erpData.year = vehicle.year;
+      erpData.color = vehicle.color;
+      erpData.fuel_type = vehicle.fuel_type;
+      erpData.odometer = vehicle.odometer_km;
+      erpData.status = vehicle.status === 'active' ? 'Available' : 'Not Available';
+
+      await callERPNextAPI(config, 'POST', `/api/resource/${doctype}`, erpData);
       synced++;
     } catch (err: any) {
       failed++;
@@ -89,20 +105,33 @@ async function syncDrivers(supabase: any, config: ERPNextConfig, organizationId:
   let failed = 0;
   const errors: any[] = [];
 
+  const mappings = config.field_mappings || {};
+  const doctype = mappings.driver_doctype || 'Employee';
+
   for (const driver of drivers) {
     try {
-      const erpData = {
-        doctype: config.field_mappings.driver_doctype || 'Employee',
-        employee_name: `${driver.first_name} ${driver.last_name}`,
-        first_name: driver.first_name,
-        last_name: driver.last_name,
-        personal_email: driver.email,
-        cell_number: driver.phone,
-        status: driver.status === 'active' ? 'Active' : 'Left',
-        date_of_joining: driver.hire_date,
+      const erpData: any = {
+        doctype: doctype,
       };
 
-      await callERPNextAPI(config, 'POST', '/api/resource/Employee', erpData);
+      // Map fields dynamically
+      if (mappings.driver_name_field) {
+        erpData[mappings.driver_name_field] = `${driver.first_name} ${driver.last_name}`;
+      }
+      if (mappings.driver_email_field) {
+        erpData[mappings.driver_email_field] = driver.email;
+      }
+      if (mappings.driver_phone_field) {
+        erpData[mappings.driver_phone_field] = driver.phone;
+      }
+
+      // Default fields
+      erpData.first_name = driver.first_name;
+      erpData.last_name = driver.last_name;
+      erpData.status = driver.status === 'active' ? 'Active' : 'Left';
+      erpData.date_of_joining = driver.hire_date;
+
+      await callERPNextAPI(config, 'POST', `/api/resource/${doctype}`, erpData);
       synced++;
     } catch (err: any) {
       failed++;
