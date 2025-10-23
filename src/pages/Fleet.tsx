@@ -50,7 +50,7 @@ const Fleet = () => {
       
       return matchesSearch && matchesStatus && matchesFuelType;
     });
-  }, [searchQuery, statusFilter, fuelTypeFilter]);
+  }, [vehicles, searchQuery, statusFilter, fuelTypeFilter]);
 
   // Pagination
   const totalPages = Math.ceil(filteredVehicles.length / itemsPerPage);
