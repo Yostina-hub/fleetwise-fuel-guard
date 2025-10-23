@@ -22,7 +22,8 @@ import {
   AlertTriangle,
   Settings2,
   Building2,
-  Smartphone
+  Smartphone,
+  CalendarClock
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -47,6 +48,7 @@ const navItems = [
   { icon: GaugeCircle, label: "Speed Governor", path: "/speed-governor", highlight: true },
   { icon: ClipboardList, label: "Work Orders", path: "/workorders" },
   { icon: AlertTriangle, label: "Incidents", path: "/incidents" },
+  { icon: CalendarClock, label: "Fleet Scheduling", path: "/fleet-scheduling", highlight: true },
   { icon: BarChart3, label: "Reports", path: "/reports" },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];

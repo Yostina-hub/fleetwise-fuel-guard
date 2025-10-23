@@ -25,6 +25,7 @@ import DeviceIntegration from "./pages/DeviceIntegration";
 import RouteHistory from "./pages/RouteHistory";
 import Geofencing from "./pages/Geofencing";
 import SpeedGovernor from "./pages/SpeedGovernor";
+import FleetScheduling from "./pages/FleetScheduling";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
@@ -57,6 +58,7 @@ const App = () => {
           <Route path="/speed-governor" element={<ProtectedRoute><SpeedGovernor /></ProtectedRoute>} />
           <Route path="/workorders" element={<ProtectedRoute><WorkOrders /></ProtectedRoute>} />
           <Route path="/incidents" element={<ProtectedRoute><Incidents /></ProtectedRoute>} />
+          <Route path="/fleet-scheduling" element={<ProtectedRoute><FleetScheduling /></ProtectedRoute>} />
           <Route path="/config" element={<ProtectedRoute requiredRole="super_admin"><SystemConfig /></ProtectedRoute>} />
           <Route path="/devices" element={<ProtectedRoute><DeviceIntegration /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
