@@ -41,7 +41,7 @@ const AlertDetailModal = ({ open, onOpenChange, alert }: AlertDetailModalProps) 
   const [acknowledging, setAcknowledging] = useState(false);
 
   const getSeverityIcon = () => {
-    switch (alert.severity) {
+    switch (alert?.severity) {
       case "critical":
         return <AlertTriangle className="w-6 h-6 text-destructive animate-pulse" />;
       case "warning":
@@ -52,7 +52,7 @@ const AlertDetailModal = ({ open, onOpenChange, alert }: AlertDetailModalProps) 
   };
 
   const getSeverityColor = () => {
-    switch (alert.severity) {
+    switch (alert?.severity) {
       case "critical":
         return "destructive";
       case "warning":
@@ -61,6 +61,10 @@ const AlertDetailModal = ({ open, onOpenChange, alert }: AlertDetailModalProps) 
         return "outline";
     }
   };
+
+  if (!alert || !alert.type) {
+    return null;
+  }
 
   const handleAcknowledge = () => {
     setAcknowledging(true);
@@ -86,9 +90,9 @@ const AlertDetailModal = ({ open, onOpenChange, alert }: AlertDetailModalProps) 
               <DialogTitle className="text-2xl">{alert.type}</DialogTitle>
               <div className="flex items-center gap-2 mt-2">
                 <Badge variant={getSeverityColor() as any}>
-                  {alert.severity.toUpperCase()}
+                  {alert.severity?.toUpperCase() || 'UNKNOWN'}
                 </Badge>
-                <Badge variant="outline">{alert.status}</Badge>
+                <Badge variant="outline">{alert.status || 'pending'}</Badge>
               </div>
             </div>
           </div>
@@ -104,24 +108,24 @@ const AlertDetailModal = ({ open, onOpenChange, alert }: AlertDetailModalProps) 
             <div className="space-y-3 text-sm">
               <div className="flex items-start gap-3">
                 <div className="w-24 text-muted-foreground">Message:</div>
-                <div className="flex-1 font-medium">{alert.message}</div>
+                <div className="flex-1 font-medium">{alert.message || 'N/A'}</div>
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-24 text-muted-foreground">Vehicle:</div>
-                <div className="flex-1 font-medium">{alert.vehicle}</div>
+                <div className="flex-1 font-medium">{alert.vehicle || 'N/A'}</div>
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-24 text-muted-foreground">Location:</div>
                 <div className="flex-1 font-medium flex items-center gap-2">
                   <MapPin className="w-3 h-3" />
-                  {alert.location}
+                  {alert.location || 'Unknown'}
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-24 text-muted-foreground">Time:</div>
                 <div className="flex-1 font-medium flex items-center gap-2">
                   <Clock className="w-3 h-3" />
-                  {alert.timestamp}
+                  {alert.timestamp || 'N/A'}
                 </div>
               </div>
             </div>
@@ -136,7 +140,7 @@ const AlertDetailModal = ({ open, onOpenChange, alert }: AlertDetailModalProps) 
               Recommended Actions
             </h3>
             <div className="space-y-2">
-              {alert.severity === "critical" ? (
+              {alert?.severity === "critical" ? (
                 <>
                   <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20">
                     <p className="text-sm font-medium">1. Immediately contact the driver</p>
@@ -164,7 +168,7 @@ const AlertDetailModal = ({ open, onOpenChange, alert }: AlertDetailModalProps) 
           <Separator />
 
           {/* Add Notes */}
-          {alert.status === "unacknowledged" && (
+          {alert?.status === "unacknowledged" && (
             <div className="space-y-3">
               <Label className="flex items-center gap-2">
                 <MessageSquare className="w-4 h-4" />
@@ -181,7 +185,7 @@ const AlertDetailModal = ({ open, onOpenChange, alert }: AlertDetailModalProps) 
 
           {/* Action Buttons */}
           <div className="flex gap-3 pt-4">
-            {alert.status === "unacknowledged" ? (
+            {alert?.status === "unacknowledged" ? (
               <>
                 <Button 
                   className="flex-1 gap-2" 
