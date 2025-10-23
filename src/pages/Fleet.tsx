@@ -6,12 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import StatusBadge from "@/components/StatusBadge";
 import VehicleDetailModal from "@/components/VehicleDetailModal";
+import CreateVehicleDialog from "@/components/fleet/CreateVehicleDialog";
 import { Truck, Search, Plus, Fuel, MapPin, Calendar, Filter, Eye, Settings, Loader2 } from "lucide-react";
 import { useVehicles } from "@/hooks/useVehicles";
 
 const Fleet = () => {
   const { vehicles: dbVehicles, loading } = useVehicles();
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [fuelTypeFilter, setFuelTypeFilter] = useState("all");
@@ -88,7 +90,10 @@ const Fleet = () => {
               <Settings className="w-4 h-4" />
               Settings
             </Button>
-            <Button className="gap-2 bg-gradient-to-r from-primary to-primary/80">
+            <Button 
+              className="gap-2 bg-gradient-to-r from-primary to-primary/80"
+              onClick={() => setCreateDialogOpen(true)}
+            >
               <Plus className="w-4 h-4" />
               Add Vehicle
             </Button>
@@ -241,6 +246,12 @@ const Fleet = () => {
         open={!!selectedVehicle}
         onOpenChange={(open) => !open && setSelectedVehicle(null)}
         vehicle={selectedVehicle || {}}
+      />
+
+      {/* Create Vehicle Dialog */}
+      <CreateVehicleDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
       />
     </Layout>
   );
