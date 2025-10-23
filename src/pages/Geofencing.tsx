@@ -49,11 +49,12 @@ const Geofencing = () => {
   const [selectedGeofence, setSelectedGeofence] = useState<any>(null);
   const [drawingMode, setDrawingMode] = useState<'circle' | 'polygon' | null>(null);
   const [mapToken, setMapToken] = useState<string>("");
+  const envToken = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
   
   useEffect(() => {
-    const token = localStorage.getItem('mapbox_token') || import.meta.env.VITE_MAPBOX_TOKEN || '';
+    const token = localStorage.getItem('mapbox_token') || envToken || '';
     setMapToken(token);
-  }, []);
+  }, [envToken]);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -217,7 +218,25 @@ const Geofencing = () => {
       <div className="flex h-full">
         {/* Map View */}
         <div className="flex-1 relative">
-          <LiveTrackingMap vehicles={[]} token={mapToken} />
+          <LiveTrackingMap vehicles={[]} token={mapToken || envToken} />
+
+          {/* Token Prompt */}
+          {(!envToken && !mapToken) && (
+            <div className="absolute top-4 right-4 z-10">
+              <Card className="p-4 bg-card/95 backdrop-blur space-y-2 w-80">
+                <div className="text-sm font-semibold">Add Mapbox public token</div>
+                <Input
+                  placeholder="pk.eyJ..."
+                  value={mapToken}
+                  onChange={(e) => setMapToken(e.target.value)}
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => { localStorage.setItem('mapbox_token', mapToken); window.location.reload(); }}>Save</Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Get your token at mapbox.com → Tokens.</p>
+              </Card>
+            </div>
+          )}
           
           {/* Drawing Tools */}
           <Card className="absolute top-4 left-4 bg-card/95 backdrop-blur z-10">
