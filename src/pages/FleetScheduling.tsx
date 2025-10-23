@@ -12,6 +12,10 @@ import { ApprovalChainConfig } from "@/components/scheduling/ApprovalChainConfig
 import { ApprovalHistory } from "@/components/scheduling/ApprovalHistory";
 import { SchedulingAssistant } from "@/components/scheduling/SchedulingAssistant";
 import { ActiveAssignments } from "@/components/scheduling/ActiveAssignments";
+import { ScheduleBoard } from "@/components/scheduling/ScheduleBoard";
+import { TimelineView } from "@/components/scheduling/TimelineView";
+import { CalendarView } from "@/components/scheduling/CalendarView";
+import { UtilizationAnalytics } from "@/components/scheduling/UtilizationAnalytics";
 import { useTripRequests } from "@/hooks/useTripRequests";
 import { usePermissions } from "@/hooks/usePermissions";
 
@@ -91,9 +95,12 @@ const FleetScheduling = () => {
             <TabsTrigger value="requests">Trip Requests</TabsTrigger>
             <TabsTrigger value="assignments">Active Assignments</TabsTrigger>
             {canApprove && <TabsTrigger value="approvals">Approvals Inbox</TabsTrigger>}
-            <TabsTrigger value="availability">Availability Matrix</TabsTrigger>
+            <TabsTrigger value="calendar">Calendar</TabsTrigger>
             <TabsTrigger value="schedule">Schedule Board</TabsTrigger>
-            {isSuperAdmin && <TabsTrigger value="config">Approval Config</TabsTrigger>}
+            <TabsTrigger value="timeline">Timeline</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="availability">Availability</TabsTrigger>
+            {isSuperAdmin && <TabsTrigger value="config">Config</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="requests" className="space-y-4">
@@ -111,18 +118,24 @@ const FleetScheduling = () => {
             </TabsContent>
           )}
 
-          <TabsContent value="availability" className="space-y-4">
-            <AvailabilityMatrix />
+          <TabsContent value="calendar" className="space-y-4">
+            <CalendarView />
           </TabsContent>
 
           <TabsContent value="schedule" className="space-y-4">
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-center text-muted-foreground">
-                  Schedule board coming in Phase 4
-                </p>
-              </CardContent>
-            </Card>
+            <ScheduleBoard />
+          </TabsContent>
+
+          <TabsContent value="timeline" className="space-y-4">
+            <TimelineView />
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-4">
+            <UtilizationAnalytics />
+          </TabsContent>
+
+          <TabsContent value="availability" className="space-y-4">
+            <AvailabilityMatrix />
           </TabsContent>
 
           {isSuperAdmin && (
