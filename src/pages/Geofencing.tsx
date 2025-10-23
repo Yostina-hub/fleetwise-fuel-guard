@@ -7,6 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import MapboxDraw from '@mapbox/mapbox-gl-draw';
+import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
+import mapboxgl from 'mapbox-gl';
 import {
   Table,
   TableBody,
@@ -50,11 +53,92 @@ const Geofencing = () => {
   const [drawingMode, setDrawingMode] = useState<'circle' | 'polygon' | null>(null);
   const [mapToken, setMapToken] = useState<string>("");
   const envToken = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const drawRef = useRef<MapboxDraw | null>(null);
   
   useEffect(() => {
     const token = localStorage.getItem('mapbox_token') || envToken || '';
     setMapToken(token);
   }, [envToken]);
+
+  // Initialize Mapbox Draw when map is ready
+  const handleMapReady = (map: mapboxgl.Map) => {
+    mapRef.current = map;
+    
+    // Initialize draw control
+    const draw = new MapboxDraw({
+      displayControlsDefault: false,
+      controls: {},
+      modes: {
+        ...MapboxDraw.modes,
+      }
+    });
+    
+    drawRef.current = draw;
+    map.addControl(draw);
+
+    // Listen for draw events
+    map.on('draw.create', (e: any) => {
+      const feature = e.features[0];
+      if (feature.geometry.type === 'Polygon') {
+        const coords = feature.geometry.coordinates[0].map((coord: number[]) => ({
+          lng: coord[0],
+          lat: coord[1]
+        }));
+        // Remove last point (duplicate of first)
+        coords.pop();
+        setFormData(prev => ({
+          ...prev,
+          polygon_points: coords,
+          geometry_type: 'polygon'
+        }));
+        toast({
+          title: "Polygon Drawn",
+          description: `Captured ${coords.length} points. Open Create dialog to save.`
+        });
+      }
+      draw.deleteAll();
+    });
+  };
+
+  // Handle drawing mode changes
+  useEffect(() => {
+    if (!drawRef.current) return;
+
+    // Clear any existing drawings
+    drawRef.current.deleteAll();
+
+    if (drawingMode === 'circle') {
+      toast({
+        title: "Circle Drawing",
+        description: "Click on the map to set center, then manually enter radius in the form.",
+      });
+      
+      // For circles, we'll let user click to set center
+      const handleMapClick = (e: any) => {
+        setFormData(prev => ({
+          ...prev,
+          center_lat: e.lngLat.lat,
+          center_lng: e.lngLat.lng,
+          geometry_type: 'circle'
+        }));
+        toast({
+          title: "Center Point Set",
+          description: `Lat: ${e.lngLat.lat.toFixed(6)}, Lng: ${e.lngLat.lng.toFixed(6)}`,
+        });
+        setDrawingMode(null);
+        mapRef.current?.off('click', handleMapClick);
+      };
+
+      mapRef.current?.on('click', handleMapClick);
+    } else if (drawingMode === 'polygon') {
+      drawRef.current.changeMode('draw_polygon');
+      toast({
+        title: "Polygon Drawing",
+        description: "Click points on the map. Double-click to finish.",
+      });
+    }
+  }, [drawingMode]);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -218,7 +302,11 @@ const Geofencing = () => {
       <div className="flex h-full">
         {/* Map View */}
         <div className="flex-1 relative">
-          <LiveTrackingMap vehicles={[]} token={mapToken || envToken} />
+          <LiveTrackingMap 
+            vehicles={[]} 
+            token={mapToken || envToken}
+            onMapReady={handleMapReady}
+          />
 
           {/* Token Prompt */}
           {(!envToken && !mapToken) && (
