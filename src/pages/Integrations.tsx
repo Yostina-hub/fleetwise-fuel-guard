@@ -1,10 +1,11 @@
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { Webhook, Plug, Upload } from "lucide-react";
+import { Webhook, Plug, Upload, Database } from "lucide-react";
 import WebhooksTab from "@/components/integrations/WebhooksTab";
 import IntegrationsTab from "@/components/integrations/IntegrationsTab";
 import BulkJobsTab from "@/components/integrations/BulkJobsTab";
+import ERPNextTab from "@/components/integrations/ERPNextTab";
 
 const Integrations = () => {
   return (
@@ -21,10 +22,14 @@ const Integrations = () => {
       </div>
 
       <Tabs defaultValue="webhooks" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="webhooks" className="gap-2">
             <Webhook className="h-4 w-4" />
             Webhooks
+          </TabsTrigger>
+          <TabsTrigger value="erpnext" className="gap-2">
+            <Database className="h-4 w-4" />
+            ERPNext
           </TabsTrigger>
           <TabsTrigger value="integrations" className="gap-2">
             <Plug className="h-4 w-4" />
@@ -40,6 +45,10 @@ const Integrations = () => {
           <Card className="p-6">
             <WebhooksTab />
           </Card>
+        </TabsContent>
+
+        <TabsContent value="erpnext">
+          <ERPNextTab />
         </TabsContent>
 
         <TabsContent value="integrations">

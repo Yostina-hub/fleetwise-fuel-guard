@@ -895,6 +895,119 @@ export type Database = {
           },
         ]
       }
+      erpnext_config: {
+        Row: {
+          api_key: string
+          api_secret: string
+          created_at: string | null
+          erpnext_url: string
+          field_mappings: Json | null
+          id: string
+          is_active: boolean | null
+          last_sync_at: string | null
+          last_sync_status: string | null
+          organization_id: string
+          sync_settings: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          api_key: string
+          api_secret: string
+          created_at?: string | null
+          erpnext_url: string
+          field_mappings?: Json | null
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          last_sync_status?: string | null
+          organization_id: string
+          sync_settings?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          api_key?: string
+          api_secret?: string
+          created_at?: string | null
+          erpnext_url?: string
+          field_mappings?: Json | null
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          last_sync_status?: string | null
+          organization_id?: string
+          sync_settings?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erpnext_config_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erpnext_sync_logs: {
+        Row: {
+          completed_at: string | null
+          config_id: string
+          created_at: string | null
+          entity_type: string
+          error_details: Json | null
+          id: string
+          organization_id: string
+          records_failed: number | null
+          records_synced: number | null
+          started_at: string | null
+          status: string
+          sync_type: string
+        }
+        Insert: {
+          completed_at?: string | null
+          config_id: string
+          created_at?: string | null
+          entity_type: string
+          error_details?: Json | null
+          id?: string
+          organization_id: string
+          records_failed?: number | null
+          records_synced?: number | null
+          started_at?: string | null
+          status: string
+          sync_type: string
+        }
+        Update: {
+          completed_at?: string | null
+          config_id?: string
+          created_at?: string | null
+          entity_type?: string
+          error_details?: Json | null
+          id?: string
+          organization_id?: string
+          records_failed?: number | null
+          records_synced?: number | null
+          started_at?: string | null
+          status?: string
+          sync_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erpnext_sync_logs_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "erpnext_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erpnext_sync_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fuel_detection_configs: {
         Row: {
           cornering_threshold_degrees: number | null
