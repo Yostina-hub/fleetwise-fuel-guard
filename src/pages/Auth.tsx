@@ -23,7 +23,7 @@ const Auth = () => {
 
   // Redirect if already logged in
   if (user) {
-    navigate("/");
+    navigate("/dashboard");
     return null;
   }
 
@@ -48,7 +48,7 @@ const Auth = () => {
         title: "Success",
         description: "Logged in successfully!",
       });
-      navigate("/");
+      navigate("/dashboard");
     }
 
     setLoading(false);
@@ -87,7 +87,7 @@ const Auth = () => {
         title: "Success",
         description: "Account created successfully! You can now log in.",
       });
-      navigate("/");
+      navigate("/dashboard");
     }
 
     setLoading(false);
