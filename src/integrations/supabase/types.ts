@@ -432,6 +432,47 @@ export type Database = {
           },
         ]
       }
+      cost_centers: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cost_centers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       data_retention_policies: {
         Row: {
           created_at: string
@@ -639,6 +680,64 @@ export type Database = {
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_calendar: {
+        Row: {
+          created_at: string
+          driver_id: string
+          end_time: string
+          id: string
+          notes: string | null
+          organization_id: string
+          start_time: string
+          status: string | null
+          trip_assignment_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          end_time: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          start_time: string
+          status?: string | null
+          trip_assignment_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          end_time?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          start_time?: string
+          status?: string | null
+          trip_assignment_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_calendar_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_calendar_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_calendar_trip_assignment_id_fkey"
+            columns: ["trip_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "trip_assignments"
             referencedColumns: ["id"]
           },
         ]
@@ -2806,6 +2905,232 @@ export type Database = {
           },
         ]
       }
+      trip_approvals: {
+        Row: {
+          acted_at: string | null
+          action: string
+          approver_id: string
+          comment: string | null
+          created_at: string
+          id: string
+          step: number
+          trip_request_id: string
+        }
+        Insert: {
+          acted_at?: string | null
+          action?: string
+          approver_id: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          step: number
+          trip_request_id: string
+        }
+        Update: {
+          acted_at?: string | null
+          action?: string
+          approver_id?: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          step?: number
+          trip_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_approvals_trip_request_id_fkey"
+            columns: ["trip_request_id"]
+            isOneToOne: false
+            referencedRelation: "trip_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_assignments: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          dispatched_at: string | null
+          driver_id: string
+          id: string
+          notes: string | null
+          organization_id: string
+          started_at: string | null
+          status: string
+          trip_request_id: string
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          dispatched_at?: string | null
+          driver_id: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          started_at?: string | null
+          status?: string
+          trip_request_id: string
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          dispatched_at?: string | null
+          driver_id?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          started_at?: string | null
+          status?: string
+          trip_request_id?: string
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_assignments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_assignments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_assignments_trip_request_id_fkey"
+            columns: ["trip_request_id"]
+            isOneToOne: true
+            referencedRelation: "trip_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_assignments_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_requests: {
+        Row: {
+          approved_at: string | null
+          cost_center_id: string | null
+          created_at: string
+          drop_geofence_id: string | null
+          id: string
+          organization_id: string
+          passenger_count: number
+          pickup_at: string
+          pickup_geofence_id: string | null
+          preferred_driver_id: string | null
+          priority: string | null
+          purpose: string
+          rejected_at: string | null
+          rejection_reason: string | null
+          request_number: string
+          requester_id: string
+          return_at: string
+          sla_deadline_at: string | null
+          special_requirements: string | null
+          status: string
+          submitted_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          cost_center_id?: string | null
+          created_at?: string
+          drop_geofence_id?: string | null
+          id?: string
+          organization_id: string
+          passenger_count?: number
+          pickup_at: string
+          pickup_geofence_id?: string | null
+          preferred_driver_id?: string | null
+          priority?: string | null
+          purpose: string
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          request_number: string
+          requester_id: string
+          return_at: string
+          sla_deadline_at?: string | null
+          special_requirements?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          cost_center_id?: string | null
+          created_at?: string
+          drop_geofence_id?: string | null
+          id?: string
+          organization_id?: string
+          passenger_count?: number
+          pickup_at?: string
+          pickup_geofence_id?: string | null
+          preferred_driver_id?: string | null
+          priority?: string | null
+          purpose?: string
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          request_number?: string
+          requester_id?: string
+          return_at?: string
+          sla_deadline_at?: string | null
+          special_requirements?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_requests_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_requests_drop_geofence_id_fkey"
+            columns: ["drop_geofence_id"]
+            isOneToOne: false
+            referencedRelation: "geofences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_requests_pickup_geofence_id_fkey"
+            columns: ["pickup_geofence_id"]
+            isOneToOne: false
+            referencedRelation: "geofences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_requests_preferred_driver_id_fkey"
+            columns: ["preferred_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trip_templates: {
         Row: {
           created_at: string
@@ -3052,6 +3377,64 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_calendar: {
+        Row: {
+          created_at: string
+          end_time: string
+          id: string
+          notes: string | null
+          organization_id: string
+          start_time: string
+          status: string | null
+          trip_assignment_id: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_time: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          start_time: string
+          status?: string | null
+          trip_assignment_id?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          start_time?: string
+          status?: string | null
+          trip_assignment_id?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_calendar_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_calendar_trip_assignment_id_fkey"
+            columns: ["trip_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "trip_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_calendar_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
             referencedColumns: ["id"]
           },
         ]
