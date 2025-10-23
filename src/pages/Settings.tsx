@@ -26,6 +26,8 @@ const Settings = () => {
     twilio: localStorage.getItem('twilio_token') || '',
     sendgrid: localStorage.getItem('sendgrid_token') || '',
     openai: localStorage.getItem('openai_token') || '',
+    gemini: localStorage.getItem('gemini_token') || '',
+    anthropic: localStorage.getItem('anthropic_token') || '',
   });
   const [savedKeys, setSavedKeys] = useState<Record<string, boolean>>({});
 
@@ -199,7 +201,24 @@ const Settings = () => {
                   AI Services
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="gemini-token">Google Gemini API Key</Label>
+                  <Input 
+                    id="gemini-token" 
+                    type="password"
+                    placeholder="AIza..." 
+                    value={apiKeys.gemini}
+                    onChange={(e) => setApiKeys({ ...apiKeys, gemini: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    For Google Gemini AI models. Get your key at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google AI Studio</a>
+                  </p>
+                  <Button size="sm" onClick={() => handleSaveApiKey('gemini', apiKeys.gemini)}>
+                    {savedKeys.gemini ? '✓ Saved' : 'Save'}
+                  </Button>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="openai-token">OpenAI API Key</Label>
                   <Input 
@@ -210,10 +229,27 @@ const Settings = () => {
                     onChange={(e) => setApiKeys({ ...apiKeys, openai: e.target.value })}
                   />
                   <p className="text-xs text-muted-foreground">
-                    For AI-powered route optimization and analytics. Get your key at <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">platform.openai.com</a>
+                    For GPT models and AI-powered features. Get your key at <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">platform.openai.com</a>
                   </p>
                   <Button size="sm" onClick={() => handleSaveApiKey('openai', apiKeys.openai)}>
                     {savedKeys.openai ? '✓ Saved' : 'Save'}
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="anthropic-token">Anthropic Claude API Key</Label>
+                  <Input 
+                    id="anthropic-token" 
+                    type="password"
+                    placeholder="sk-ant-..." 
+                    value={apiKeys.anthropic}
+                    onChange={(e) => setApiKeys({ ...apiKeys, anthropic: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    For Claude AI models. Get your key at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">console.anthropic.com</a>
+                  </p>
+                  <Button size="sm" onClick={() => handleSaveApiKey('anthropic', apiKeys.anthropic)}>
+                    {savedKeys.anthropic ? '✓ Saved' : 'Save'}
                   </Button>
                 </div>
               </CardContent>
