@@ -116,8 +116,9 @@ const ERPNextTab = () => {
         sync_interval_minutes: syncSettings.sync_interval_minutes ?? 30,
       });
 
-      if (Object.keys(mappings).length > 0) {
-        setFieldMappings({ ...fieldMappings, ...mappings });
+      // Update field mappings if custom mappings exist
+      if (mappings && Object.keys(mappings).length > 0) {
+        setFieldMappings(prev => ({ ...prev, ...mappings }));
       }
     }
     setLoading(false);
