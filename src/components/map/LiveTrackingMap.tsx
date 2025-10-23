@@ -4,6 +4,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Vehicle {
   id: string;
@@ -42,20 +43,18 @@ const LiveTrackingMap = ({ vehicles, onVehicleClick, selectedVehicleId, token, m
           return localToken;
         }
         
-        // Fetch from edge function
-        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-mapbox-token`, {
-          headers: {
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
-          }
-        });
-        
-        if (!response.ok) {
+        // Fetch from edge function via Supabase client (handles CORS/auth)
+        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
+        if (error) {
+          console.error('get-mapbox-token error:', error);
           setTokenError('missing');
           return null;
         }
-        
-        const data = await response.json();
-        return data.token;
+        const fetched = (data as any)?.token as string | undefined;
+        if (fetched) {
+          try { localStorage.setItem('mapbox_token', fetched); } catch {}
+        }
+        return fetched || null;
       } catch (err) {
         console.error('Failed to fetch Mapbox token:', err);
         setTokenError('missing');
