@@ -30,6 +30,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationCenter } from "@/components/scheduling/NotificationCenter";
+import { AIAssistant } from "@/components/AIAssistant";
 
 interface LayoutProps {
   children: ReactNode;
@@ -209,6 +210,9 @@ const Layout = ({ children }: LayoutProps) => {
       <main className="flex-1 overflow-auto bg-background custom-scrollbar">
         {children}
       </main>
+      
+      {/* AI Assistant */}
+      <AIAssistant />
     </div>
   );
 };
