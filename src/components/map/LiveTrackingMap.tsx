@@ -24,15 +24,17 @@ interface LiveTrackingMapProps {
   selectedVehicleId?: string;
   token?: string;
   mapStyle?: 'streets' | 'satellite';
+  onMapReady?: (map: mapboxgl.Map) => void;
 }
 
-const LiveTrackingMap = ({ vehicles, onVehicleClick, selectedVehicleId, token, mapStyle = 'satellite' }: LiveTrackingMapProps) => {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const markers = useRef<Map<string, mapboxgl.Marker>>(new Map());
-  const [mapLoaded, setMapLoaded] = useState(false);
-  const [tokenError, setTokenError] = useState<string | null>(null);
-  const [tempToken, setTempToken] = useState('');
+const LiveTrackingMap = ({ vehicles, onVehicleClick, selectedVehicleId, token, mapStyle = 'satellite', onMapReady }: LiveTrackingMapProps) => {
+const mapContainer = useRef<HTMLDivElement>(null);
+const map = useRef<mapboxgl.Map | null>(null);
+const markers = useRef<Map<string, mapboxgl.Marker>>(new Map());
+const resizeObserver = useRef<ResizeObserver | null>(null);
+const [mapLoaded, setMapLoaded] = useState(false);
+const [tokenError, setTokenError] = useState<string | null>(null);
+const [tempToken, setTempToken] = useState('');
 
   // Fetch token from backend
   useEffect(() => {
@@ -85,9 +87,20 @@ const LiveTrackingMap = ({ vehicles, onVehicleClick, selectedVehicleId, token, m
       map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
       map.current.addControl(new mapboxgl.FullscreenControl(), 'top-right');
 
-      const setLoaded = () => setMapLoaded(true);
-      map.current.on('load', setLoaded);
-      map.current.on('style.load', setLoaded);
+const setLoaded = () => setMapLoaded(true);
+map.current.on('load', () => {
+  setLoaded();
+  try { onMapReady?.(map.current!); } catch {}
+  try {
+    if (mapContainer.current) {
+      resizeObserver.current = new ResizeObserver(() => {
+        try { map.current?.resize(); } catch {}
+      });
+      resizeObserver.current.observe(mapContainer.current);
+    }
+  } catch {}
+});
+map.current.on('style.load', setLoaded);
       map.current.on('error', (e: any) => {
         const msg = e?.error?.message || '';
         const status = e?.error?.status || e?.error?.statusCode;
@@ -99,19 +112,23 @@ const LiveTrackingMap = ({ vehicles, onVehicleClick, selectedVehicleId, token, m
 
     initMap();
 
-    return () => {
-      try {
-        markers.current.forEach(marker => marker.remove());
-        markers.current.clear();
-        if (map.current) {
-          map.current.remove();
-          map.current = null;
-        }
-      } catch (e) {
-        console.warn('Map cleanup error (ignored):', e);
-        map.current = null;
-      }
-    };
+return () => {
+  try {
+    // Disconnect resize observer
+    try { resizeObserver.current?.disconnect(); } catch {}
+    resizeObserver.current = null;
+
+    markers.current.forEach(marker => marker.remove());
+    markers.current.clear();
+    if (map.current) {
+      map.current.remove();
+      map.current = null;
+    }
+  } catch (e) {
+    console.warn('Map cleanup error (ignored):', e);
+    map.current = null;
+  }
+};
   }, [token]);
 
   // Update map style when setting changes
@@ -253,7 +270,7 @@ const LiveTrackingMap = ({ vehicles, onVehicleClick, selectedVehicleId, token, m
   }
 
   return (
-    <div ref={mapContainer} className="absolute inset-0" />
+<div ref={mapContainer} className="h-full w-full" />
   );
 };
 

@@ -216,7 +216,7 @@ const Layout = ({ children }: LayoutProps) => {
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto bg-background custom-scrollbar relative z-10">
-        <div className="min-h-full">
+        <div className="h-full">
           {children}
         </div>
       </main>
