@@ -76,15 +76,20 @@ const Layout = ({ children }: LayoutProps) => {
   };
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="flex h-screen bg-background overflow-hidden relative">
+      {/* Animated Background */}
+      <div className="parallax-bg"></div>
+      
       {/* Sidebar */}
-      <aside className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col shrink-0">
-        <div className="p-6 border-b border-sidebar-border flex items-center justify-between">
+      <aside className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col shrink-0 glass-strong relative z-10">
+        <div className="p-6 border-b border-sidebar-border flex items-center justify-between backdrop-blur-xl">
           <div>
-            <h1 className="text-xl font-bold text-sidebar-foreground tracking-tight">FleetTrack FMS</h1>
-            <p className="text-sm text-sidebar-foreground/60 mt-1">Fleet Management System</p>
+            <h1 className="text-xl font-bold text-sidebar-foreground tracking-tight gradient-text">FleetTrack FMS</h1>
+            <p className="text-sm text-sidebar-foreground/60 mt-1 animate-slide-in-left">Fleet Management System</p>
           </div>
-          <NotificationCenter />
+          <div className="pulse-glow rounded-full">
+            <NotificationCenter />
+          </div>
         </div>
         
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
@@ -97,16 +102,19 @@ const Layout = ({ children }: LayoutProps) => {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative",
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-300 group relative overflow-hidden",
                   isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-lg glow"
                     : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground hover:translate-x-1"
                 )}
               >
-                <Icon className="w-5 h-5 transition-transform group-hover:scale-110" />
-                <span className="font-medium">{item.label}</span>
+                {isActive && (
+                  <span className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent animate-shimmer" />
+                )}
+                <Icon className="w-5 h-5 transition-transform group-hover:scale-110 relative z-10" />
+                <span className="font-medium relative z-10">{item.label}</span>
                 {item.highlight && (
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-0.5 text-[10px] font-bold bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full animate-pulse">
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-0.5 text-[10px] font-bold bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full pulse-glow">
                     NEW
                   </span>
                 )}
@@ -207,8 +215,10 @@ const Layout = ({ children }: LayoutProps) => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto bg-background custom-scrollbar">
-        {children}
+      <main className="flex-1 overflow-auto bg-background custom-scrollbar relative z-10">
+        <div className="min-h-full">
+          {children}
+        </div>
       </main>
       
       {/* AI Assistant */}

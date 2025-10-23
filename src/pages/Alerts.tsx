@@ -125,19 +125,24 @@ const Alerts = () => {
     <Layout>
       <div className="p-8 space-y-8 animate-fade-in">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-destructive to-warning bg-clip-text text-transparent">
-              Alert Center
-            </h1>
-            <p className="text-muted-foreground mt-1">Monitor and manage fleet alerts • {alerts.length} total</p>
+        <div className="flex items-center justify-between slide-in-left">
+          <div className="flex items-center gap-4">
+            <div className="p-4 rounded-2xl glass-strong pulse-glow">
+              <AlertTriangle className="w-8 h-8 text-destructive animate-float" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-destructive via-warning to-destructive bg-clip-text text-transparent">
+                Alert Center
+              </h1>
+              <p className="text-muted-foreground mt-1 text-lg">Monitor and manage fleet alerts • <span className="font-semibold text-foreground">{alerts.length}</span> active alerts</p>
+            </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" className="gap-2">
+            <Button variant="outline" className="gap-2 glass hover:bg-primary hover:text-primary-foreground transition-all duration-300">
               <Filter className="w-4 h-4" />
               Filter
             </Button>
-            <Button variant="outline" className="gap-2">
+            <Button variant="outline" className="gap-2 glass hover:bg-primary hover:text-primary-foreground transition-all duration-300">
               <Download className="w-4 h-4" />
               Export
             </Button>
@@ -146,7 +151,7 @@ const Alerts = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card>
+          <Card className="glass-strong border-2 hover:border-destructive/50 transition-all duration-300 hover:shadow-2xl card-premium">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-destructive/10 rounded-lg">
@@ -160,10 +165,10 @@ const Alerts = () => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="glass-strong border-2 hover:border-warning/50 transition-all duration-300 hover:shadow-2xl card-premium">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-warning/10 rounded-lg">
+                <div className="p-3 bg-warning/10 rounded-lg glow">
                   <AlertCircle className="w-6 h-6 text-warning" />
                 </div>
                 <div>
@@ -174,10 +179,10 @@ const Alerts = () => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="glass-strong border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-2xl card-premium">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-primary/10 rounded-lg">
+                <div className="p-3 bg-primary/10 rounded-lg glow">
                   <Info className="w-6 h-6 text-primary" />
                 </div>
                 <div>
@@ -188,10 +193,10 @@ const Alerts = () => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="glass-strong border-2 hover:border-success/50 transition-all duration-300 hover:shadow-2xl card-premium">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-success/10 rounded-lg">
+                <div className="p-3 bg-success/10 rounded-lg glow">
                   <CheckCircle className="w-6 h-6 text-success" />
                 </div>
                 <div>
@@ -204,9 +209,9 @@ const Alerts = () => {
         </div>
 
         {/* Alerts List */}
-        <Card>
+        <Card className="glass-strong border-2 hover:border-primary/30 transition-all duration-300">
           <CardHeader>
-            <CardTitle>All Alerts</CardTitle>
+            <CardTitle className="text-2xl">All Alerts</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">

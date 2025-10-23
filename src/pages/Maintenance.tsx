@@ -152,16 +152,21 @@ const Maintenance = () => {
 
   return (
     <Layout>
-      <div className="p-8 space-y-8">
+      <div className="p-8 space-y-8 animate-fade-in">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Maintenance Management</h1>
-            <p className="text-muted-foreground mt-1">Track service schedules and work orders</p>
+        <div className="flex items-center justify-between slide-in-right">
+          <div className="flex items-center gap-4">
+            <div className="p-4 rounded-2xl glass-strong glow">
+              <Wrench className="w-8 h-8 text-primary float-animation" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold gradient-text">Maintenance Management</h1>
+              <p className="text-muted-foreground mt-1 text-lg">Track service schedules and work orders</p>
+            </div>
           </div>
-          <Button className="gap-2" onClick={() => navigate('/work-orders')}>
-            <Plus className="w-4 h-4" />
-            New Work Order
+          <Button className="gap-2 glass-strong hover:scale-105 transition-all duration-300 glow" onClick={() => navigate('/work-orders')}>
+            <Plus className="w-5 h-5" />
+            <span className="font-semibold">New Work Order</span>
           </Button>
         </div>
 
