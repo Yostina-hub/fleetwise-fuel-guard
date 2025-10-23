@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,10 +14,20 @@ import {
   Database,
   MapPin,
   Fuel,
-  Globe
+  Globe,
+  Key
 } from "lucide-react";
 
 const Settings = () => {
+  const [mapboxToken, setMapboxToken] = useState(() => localStorage.getItem('mapbox_token') || '');
+  const [tokenSaved, setTokenSaved] = useState(false);
+
+  const handleSaveMapboxToken = () => {
+    localStorage.setItem('mapbox_token', mapboxToken);
+    setTokenSaved(true);
+    setTimeout(() => setTokenSaved(false), 2000);
+  };
+
   return (
     <Layout>
       <div className="p-8 space-y-8">
@@ -27,10 +38,14 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto">
+          <TabsList className="grid w-full grid-cols-5 lg:w-auto">
             <TabsTrigger value="general" className="gap-2">
               <SettingsIcon className="w-4 h-4" />
               General
+            </TabsTrigger>
+            <TabsTrigger value="api" className="gap-2">
+              <Key className="w-4 h-4" />
+              API Keys
             </TabsTrigger>
             <TabsTrigger value="alerts" className="gap-2">
               <Bell className="w-4 h-4" />
@@ -45,6 +60,37 @@ const Settings = () => {
               Users
             </TabsTrigger>
           </TabsList>
+
+          {/* API Keys Settings */}
+          <TabsContent value="api" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="w-5 h-5" />
+                  Mapbox API Key
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="mapbox-token">Mapbox Public Token</Label>
+                  <Input 
+                    id="mapbox-token" 
+                    type="password"
+                    placeholder="pk.eyJ..." 
+                    value={mapboxToken}
+                    onChange={(e) => setMapboxToken(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Required for Map View, Geofencing, and Route History features. 
+                    Get your token at <a href="https://mapbox.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">mapbox.com</a> → Tokens
+                  </p>
+                </div>
+                <Button onClick={handleSaveMapboxToken}>
+                  {tokenSaved ? '✓ Saved' : 'Save Token'}
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* General Settings */}
           <TabsContent value="general" className="space-y-6">
