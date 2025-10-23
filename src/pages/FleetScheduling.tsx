@@ -10,6 +10,8 @@ import { AvailabilityMatrix } from "@/components/scheduling/AvailabilityMatrix";
 import { ApprovalsInbox } from "@/components/scheduling/ApprovalsInbox";
 import { ApprovalChainConfig } from "@/components/scheduling/ApprovalChainConfig";
 import { ApprovalHistory } from "@/components/scheduling/ApprovalHistory";
+import { SchedulingAssistant } from "@/components/scheduling/SchedulingAssistant";
+import { ActiveAssignments } from "@/components/scheduling/ActiveAssignments";
 import { useTripRequests } from "@/hooks/useTripRequests";
 import { usePermissions } from "@/hooks/usePermissions";
 
@@ -80,10 +82,14 @@ const FleetScheduling = () => {
           ))}
         </div>
 
+        {/* Scheduling Assistant */}
+        {canApprove && <SchedulingAssistant />}
+
         {/* Main Content */}
         <Tabs defaultValue="requests" className="space-y-4">
           <TabsList>
             <TabsTrigger value="requests">Trip Requests</TabsTrigger>
+            <TabsTrigger value="assignments">Active Assignments</TabsTrigger>
             {canApprove && <TabsTrigger value="approvals">Approvals Inbox</TabsTrigger>}
             <TabsTrigger value="availability">Availability Matrix</TabsTrigger>
             <TabsTrigger value="schedule">Schedule Board</TabsTrigger>
@@ -92,6 +98,10 @@ const FleetScheduling = () => {
 
           <TabsContent value="requests" className="space-y-4">
             <TripRequestsList requests={requests} loading={loading} />
+          </TabsContent>
+
+          <TabsContent value="assignments" className="space-y-4">
+            <ActiveAssignments />
           </TabsContent>
 
           {canApprove && (

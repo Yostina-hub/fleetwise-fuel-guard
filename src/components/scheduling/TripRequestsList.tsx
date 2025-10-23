@@ -19,6 +19,7 @@ import { Calendar, MapPin, Users, Send, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { useTripRequests } from "@/hooks/useTripRequests";
 import { ApprovalFlowViewer } from "@/components/scheduling/ApprovalFlowViewer";
+import { VehicleRecommendations } from "@/components/scheduling/VehicleRecommendations";
 import { useState } from "react";
 
 interface TripRequestsListProps {
@@ -195,8 +196,20 @@ export const TripRequestsList = ({ requests, loading }: TripRequestsListProps) =
             </div>
 
             {/* Approval Flow */}
-            {selectedRequest && (
+            {selectedRequest && selectedRequest.status !== 'draft' && (
               <ApprovalFlowViewer requestId={selectedRequest.id} />
+            )}
+
+            {/* Vehicle Recommendations (only for approved requests) */}
+            {selectedRequest && selectedRequest.status === 'approved' && (
+              <VehicleRecommendations
+                requestId={selectedRequest.id}
+                pickupAt={selectedRequest.pickup_at}
+                returnAt={selectedRequest.return_at}
+                requiredClass={selectedRequest.required_class}
+                passengers={selectedRequest.passengers}
+                pickupGeofenceId={selectedRequest.pickup_geofence_id}
+              />
             )}
           </div>
         </DialogContent>
