@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import StatusBadge from "@/components/StatusBadge";
@@ -13,6 +15,10 @@ const MapView = () => {
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | undefined>();
   const [autoRefresh, setAutoRefresh] = useState("30");
   const [lastUpdate, setLastUpdate] = useState(new Date());
+  
+  const [mapStyle, setMapStyle] = useState<'streets' | 'satellite'>('satellite');
+  const [mapToken, setMapToken] = useState<string>(() => localStorage.getItem('mapbox_token') || '');
+  const envToken = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
   
   // Transform vehicles for map display with random positions around Addis Ababa
   const vehicles = useMemo(() => {
@@ -63,6 +69,8 @@ const MapView = () => {
             vehicles={vehicles}
             selectedVehicleId={selectedVehicleId}
             onVehicleClick={(vehicle) => setSelectedVehicleId(vehicle.id)}
+            token={mapToken || envToken}
+            mapStyle={mapStyle}
           />
 
           {/* Map Legend */}
@@ -91,7 +99,36 @@ const MapView = () => {
                 <span className="text-sm font-medium">Offline</span>
               </div>
             </Card>
+            <Card className="p-3 bg-card/95 backdrop-blur">
+              <div className="text-sm font-medium mb-2">Map Style</div>
+              <Select value={mapStyle} onValueChange={(v) => setMapStyle(v as 'streets' | 'satellite')}>
+                <SelectTrigger className="h-8 w-[140px]">
+                  <SelectValue placeholder="Style" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="satellite">Satellite</SelectItem>
+                  <SelectItem value="streets">Streets</SelectItem>
+                </SelectContent>
+              </Select>
+            </Card>
           </div>
+          {/* Token Prompt */}
+          {(!envToken && !mapToken) && (
+            <div className="absolute top-4 right-4 z-10">
+              <Card className="p-4 bg-card/95 backdrop-blur space-y-2 w-80">
+                <div className="text-sm font-semibold">Add Mapbox public token</div>
+                <Input
+                  placeholder="pk.eyJ..."
+                  value={mapToken}
+                  onChange={(e) => setMapToken(e.target.value)}
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => { localStorage.setItem('mapbox_token', mapToken); window.location.reload(); }}>Save</Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Get your token at mapbox.com → Tokens.</p>
+              </Card>
+            </div>
+          )}
         </div>
 
         {/* Side Panel */}

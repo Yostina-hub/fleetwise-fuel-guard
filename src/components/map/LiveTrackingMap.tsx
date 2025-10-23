@@ -18,9 +18,11 @@ interface LiveTrackingMapProps {
   vehicles: Vehicle[];
   onVehicleClick?: (vehicle: Vehicle) => void;
   selectedVehicleId?: string;
+  token?: string;
+  mapStyle?: 'streets' | 'satellite';
 }
 
-const LiveTrackingMap = ({ vehicles, onVehicleClick, selectedVehicleId }: LiveTrackingMapProps) => {
+const LiveTrackingMap = ({ vehicles, onVehicleClick, selectedVehicleId, token, mapStyle = 'satellite' }: LiveTrackingMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<Map<string, mapboxgl.Marker>>(new Map());
@@ -30,7 +32,7 @@ const LiveTrackingMap = ({ vehicles, onVehicleClick, selectedVehicleId }: LiveTr
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
 
-    const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN;
+    const mapboxToken = token || localStorage.getItem('mapbox_token') || import.meta.env.VITE_MAPBOX_TOKEN;
     if (!mapboxToken) {
       console.error('Mapbox token not found');
       return;
@@ -40,7 +42,7 @@ const LiveTrackingMap = ({ vehicles, onVehicleClick, selectedVehicleId }: LiveTr
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
+      style: mapStyle === 'satellite' ? 'mapbox://styles/mapbox/satellite-streets-v12' : 'mapbox://styles/mapbox/streets-v12',
       center: [38.75, 9.02], // Addis Ababa
       zoom: 12,
     });
@@ -58,6 +60,13 @@ const LiveTrackingMap = ({ vehicles, onVehicleClick, selectedVehicleId }: LiveTr
       map.current?.remove();
     };
   }, []);
+
+  // Update map style when setting changes
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+    const targetStyle = mapStyle === 'satellite' ? 'mapbox://styles/mapbox/satellite-streets-v12' : 'mapbox://styles/mapbox/streets-v12';
+    map.current.setStyle(targetStyle);
+  }, [mapStyle, mapLoaded]);
 
   // Update vehicle markers
   useEffect(() => {
