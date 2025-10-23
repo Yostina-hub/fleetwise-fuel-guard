@@ -17,6 +17,8 @@ import { ScheduleBoard } from "@/components/scheduling/ScheduleBoard";
 import { TimelineView } from "@/components/scheduling/TimelineView";
 import { CalendarView } from "@/components/scheduling/CalendarView";
 import { UtilizationAnalytics } from "@/components/scheduling/UtilizationAnalytics";
+import { ActivityFeed } from "@/components/scheduling/ActivityFeed";
+import { NotificationPreferences } from "@/components/scheduling/NotificationPreferences";
 import { useTripRequests } from "@/hooks/useTripRequests";
 import { usePermissions } from "@/hooks/usePermissions";
 
@@ -107,7 +109,9 @@ const FleetScheduling = () => {
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="availability">Availability</TabsTrigger>
+            <TabsTrigger value="activity">Activity</TabsTrigger>
             {isSuperAdmin && <TabsTrigger value="config">Config</TabsTrigger>}
+            {isSuperAdmin && <TabsTrigger value="notifications">Preferences</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="requests" className="space-y-4">
@@ -145,9 +149,19 @@ const FleetScheduling = () => {
             <AvailabilityMatrix />
           </TabsContent>
 
+          <TabsContent value="activity" className="space-y-4">
+            <ActivityFeed />
+          </TabsContent>
+
           {isSuperAdmin && (
             <TabsContent value="config" className="space-y-4">
               <ApprovalChainConfig />
+            </TabsContent>
+          )}
+
+          {isSuperAdmin && (
+            <TabsContent value="notifications" className="space-y-4">
+              <NotificationPreferences />
             </TabsContent>
           )}
         </Tabs>

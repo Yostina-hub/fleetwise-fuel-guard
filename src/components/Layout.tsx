@@ -29,6 +29,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { NotificationCenter } from "@/components/scheduling/NotificationCenter";
 
 interface LayoutProps {
   children: ReactNode;
@@ -77,9 +78,12 @@ const Layout = ({ children }: LayoutProps) => {
     <div className="flex h-screen bg-background overflow-hidden">
       {/* Sidebar */}
       <aside className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col shrink-0">
-        <div className="p-6 border-b border-sidebar-border">
-          <h1 className="text-xl font-bold text-sidebar-foreground tracking-tight">FleetTrack FMS</h1>
-          <p className="text-sm text-sidebar-foreground/60 mt-1">Fleet Management System</p>
+        <div className="p-6 border-b border-sidebar-border flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-sidebar-foreground tracking-tight">FleetTrack FMS</h1>
+            <p className="text-sm text-sidebar-foreground/60 mt-1">Fleet Management System</p>
+          </div>
+          <NotificationCenter />
         </div>
         
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
