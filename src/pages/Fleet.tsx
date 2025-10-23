@@ -21,8 +21,8 @@ const Fleet = () => {
   // Transform DB vehicles to display format
   const vehicles = useMemo(() => {
     return dbVehicles.map(v => ({
-      id: (v as any).license_plate,
-      plate: (v as any).license_plate,
+      id: v.plate_number,
+      plate: v.plate_number,
       make: v.make || "Unknown",
       model: v.model || "",
       year: v.year || new Date().getFullYear(),

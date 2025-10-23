@@ -5,17 +5,23 @@ import { useOrganization } from "./useOrganization";
 export interface Vehicle {
   id: string;
   organization_id: string;
-  license_plate: string;
-  vehicle_type: string;
+  depot_id?: string;
+  vin?: string;
+  plate_number: string;
   make: string;
   model: string;
   year: number;
-  vin?: string;
+  color?: string;
   fuel_type?: string;
-  fuel_capacity_liters?: number;
-  tank_count?: number;
+  tank_capacity_liters?: number;
   odometer_km?: number;
+  engine_hours?: number;
+  ownership_type?: string;
+  acquisition_date?: string;
+  acquisition_cost?: number;
+  depreciation_rate?: number;
   status: 'active' | 'maintenance' | 'inactive';
+  notes?: string;
   created_at: string;
   updated_at: string;
   // Computed fields
@@ -45,7 +51,7 @@ export const useVehicles = () => {
           .from("vehicles")
           .select("*")
           .eq("organization_id", organizationId)
-          .order("license_plate", { ascending: true });
+          .order("created_at", { ascending: false });
 
         if (error) throw error;
         setVehicles((data as any) || []);

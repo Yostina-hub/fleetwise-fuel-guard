@@ -24,7 +24,7 @@ const Maintenance = () => {
   const maintenanceSchedule = useMemo(() => {
     return dbVehicles.slice(0, 4).map((v, idx) => ({
       id: idx + 1,
-      vehicle: (v as any).license_plate || 'Unknown',
+      vehicle: v.plate_number || 'Unknown',
       type: ['Oil Change', 'Tire Replacement', 'Annual Inspection', 'Brake Service'][idx % 4],
       dueDate: new Date(Date.now() + (idx + 1) * 86400000 * 5).toISOString().split('T')[0],
       dueOdometer: (v.odometer_km || 50000) + 5000,

@@ -17,7 +17,7 @@ const FuelMonitoring = () => {
       const vehicle = vehicles.find(v => v.id === event.vehicle_id);
       return {
         id: event.id,
-        vehicle: (vehicle as any)?.license_plate || "Unknown",
+        vehicle: vehicle?.plate_number || "Unknown",
         type: event.event_type,
         amount: event.fuel_change_liters,
         timestamp: new Date(event.event_time).toLocaleString(),
@@ -177,7 +177,7 @@ const FuelMonitoring = () => {
                         {index + 1}
                       </div>
                       <div className="flex-1">
-                        <div className="font-semibold">{(vehicle as any).license_plate}</div>
+                        <div className="font-semibold">{vehicle.plate_number}</div>
                         <div className="text-sm text-muted-foreground">
                           {vehicle.make} {vehicle.model}
                         </div>

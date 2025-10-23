@@ -18,7 +18,7 @@ const MapView = () => {
   const vehicles = useMemo(() => {
     return dbVehicles.map((v, idx) => ({
       id: v.id,
-      plate: (v as any).license_plate || 'Unknown',
+      plate: v.plate_number || 'Unknown',
       status: (v.status === 'active' ? 'moving' : v.status === 'maintenance' ? 'idle' : 'stopped') as 'moving' | 'idle' | 'stopped' | 'offline',
       fuel: v.current_fuel || 50,
       speed: v.current_speed || 0,

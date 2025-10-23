@@ -37,7 +37,7 @@ const Alerts = () => {
         id: alert.id,
         severity: alert.severity,
         type: alert.alert_type,
-        vehicle: (vehicle as any)?.license_plate || "Unknown",
+        vehicle: vehicle?.plate_number || "Unknown",
         message: alert.message,
         location: alert.location_name || "Unknown location",
         timestamp: new Date(alert.alert_time).toLocaleString(),

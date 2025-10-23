@@ -60,7 +60,7 @@ const Dashboard = () => {
       return {
         id: alert.id,
         type: alert.severity === 'critical' ? 'critical' : 'warning',
-        message: `${alert.alert_type} - Vehicle ${(vehicle as any)?.license_plate || 'Unknown'}`,
+        message: `${alert.alert_type} - Vehicle ${vehicle?.plate_number || 'Unknown'}`,
         time: new Date(alert.alert_time).toLocaleString()
       };
     });
