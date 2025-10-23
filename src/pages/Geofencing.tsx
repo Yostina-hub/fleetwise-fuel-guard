@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,6 +48,12 @@ const Geofencing = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedGeofence, setSelectedGeofence] = useState<any>(null);
   const [drawingMode, setDrawingMode] = useState<'circle' | 'polygon' | null>(null);
+  const [mapToken, setMapToken] = useState<string>("");
+  
+  useEffect(() => {
+    const token = localStorage.getItem('mapbox_token') || import.meta.env.VITE_MAPBOX_TOKEN || '';
+    setMapToken(token);
+  }, []);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -211,7 +217,7 @@ const Geofencing = () => {
       <div className="flex h-full">
         {/* Map View */}
         <div className="flex-1 relative">
-          <LiveTrackingMap vehicles={[]} />
+          <LiveTrackingMap vehicles={[]} token={mapToken} />
           
           {/* Drawing Tools */}
           <Card className="absolute top-4 left-4 bg-card/95 backdrop-blur z-10">
