@@ -69,19 +69,29 @@ const UserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch profiles
+      const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
-        .select(`
-          id,
-          email,
-          full_name,
-          user_roles (
-            role
-          )
-        `);
+        .select("id, email, full_name");
 
-      if (error) throw error;
-      setUsers((data as any) || []);
+      if (profilesError) throw profilesError;
+
+      // Fetch user roles
+      const { data: rolesData, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id, role");
+
+      if (rolesError) throw rolesError;
+
+      // Merge profiles with their roles
+      const usersWithRoles = (profilesData || []).map((profile) => ({
+        ...profile,
+        user_roles: (rolesData || [])
+          .filter((ur) => ur.user_id === profile.id)
+          .map((ur) => ({ role: ur.role })),
+      }));
+
+      setUsers(usersWithRoles);
     } catch (error) {
       console.error("Error fetching users:", error);
       toast({
