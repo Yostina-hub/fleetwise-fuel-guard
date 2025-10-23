@@ -100,9 +100,17 @@ const LiveTrackingMap = ({ vehicles, onVehicleClick, selectedVehicleId, token, m
     initMap();
 
     return () => {
-      markers.current.forEach(marker => marker.remove());
-      markers.current.clear();
-      map.current?.remove();
+      try {
+        markers.current.forEach(marker => marker.remove());
+        markers.current.clear();
+        if (map.current) {
+          map.current.remove();
+          map.current = null;
+        }
+      } catch (e) {
+        console.warn('Map cleanup error (ignored):', e);
+        map.current = null;
+      }
     };
   }, [token]);
 
