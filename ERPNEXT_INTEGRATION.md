@@ -11,8 +11,10 @@ The FleetTrack FMS now includes seamless integration with ERPNext, allowing you 
 - **Drivers** → ERPNext Employee Master
 - **Fuel Transactions** → ERPNext Expense Claims
 - **Maintenance Records** → ERPNext Asset Maintenance
-- **Trips** → ERPNext Delivery Trips
-- **Incidents** → ERPNext Custom Records
+- **GPS/Trips Data** → ERPNext Delivery Trips
+- **Alerts** → ERPNext Issues
+- **Incidents** → ERPNext Issues
+- **Driver Events** → ERPNext Comments (linked to Employees)
 
 ### Sync Options
 - **Manual Sync**: On-demand synchronization
@@ -98,6 +100,43 @@ The FleetTrack FMS now includes seamless integration with ERPNext, allowing you 
 | description | description |
 | completed_at | completion_date |
 
+### Alerts → ERPNext Issue
+| FMS Field | ERPNext Field |
+|-----------|---------------|
+| title | subject |
+| message + details | description |
+| severity | priority (critical→High, warning→Medium) |
+| status | status (resolved→Closed, else→Open) |
+| alert_type | issue_type |
+
+### Incidents → ERPNext Issue
+| FMS Field | ERPNext Field |
+|-----------|---------------|
+| incident_number | subject |
+| description | description |
+| severity | priority |
+| status | status |
+| estimated_cost | Included in description |
+
+### GPS/Trips → ERPNext Delivery Trip
+| FMS Field | ERPNext Field |
+|-----------|---------------|
+| vehicle | vehicle |
+| driver | driver |
+| start_time | departure_time |
+| end_time | arrival_time |
+| distance_km | total_distance |
+| start_odometer_km | odometer_start_value |
+| end_odometer_km | odometer_end_value |
+
+### Driver Events → ERPNext Comment
+| FMS Field | ERPNext Field |
+|-----------|---------------|
+| event_type | content |
+| severity | Included in content |
+| speed_kmh | Included in content |
+| location/address | Included in content |
+
 ## Customization
 
 ### Custom Field Mappings
@@ -110,7 +149,10 @@ You can customize which ERPNext DocTypes to use for each data type. Edit the `fi
   "driver_doctype": "Employee",
   "fuel_doctype": "Expense Claim",
   "maintenance_doctype": "Asset Maintenance",
-  "trip_doctype": "Delivery Trip"
+  "trip_doctype": "Delivery Trip",
+  "alert_doctype": "Issue",
+  "incident_doctype": "Issue",
+  "driver_event_doctype": "Comment"
 }
 ```
 
@@ -146,7 +188,7 @@ The integration respects ERPNext workflows. Make sure your API user has appropri
 POST /functions/v1/erpnext-sync
 {
   "action": "sync",
-  "entityType": "vehicles" // or "all", "drivers", "fuel", "maintenance"
+  "entityType": "all" // or "vehicles", "drivers", "fuel", "maintenance", "alerts", "incidents", "gps", "driver_events"
 }
 ```
 

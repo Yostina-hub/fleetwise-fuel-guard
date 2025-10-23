@@ -184,6 +184,150 @@ async function syncMaintenance(supabase: any, config: ERPNextConfig, organizatio
   return { synced, failed, errors };
 }
 
+async function syncAlerts(supabase: any, config: ERPNextConfig, organizationId: string) {
+  const { data: alerts, error } = await supabase
+    .from('alerts')
+    .select('*, vehicles(plate_number), drivers(first_name, last_name)')
+    .eq('organization_id', organizationId)
+    .gte('alert_time', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()); // Last 7 days
+
+  if (error) throw error;
+
+  let synced = 0;
+  let failed = 0;
+  const errors: any[] = [];
+
+  for (const alert of alerts) {
+    try {
+      const erpData = {
+        doctype: config.field_mappings.alert_doctype || 'Issue',
+        subject: alert.title,
+        description: `${alert.message}\n\nVehicle: ${alert.vehicles?.plate_number || 'Unknown'}\nLocation: ${alert.location_name || 'N/A'}`,
+        priority: alert.severity === 'critical' ? 'High' : alert.severity === 'warning' ? 'Medium' : 'Low',
+        status: alert.status === 'resolved' ? 'Closed' : 'Open',
+        issue_type: alert.alert_type,
+      };
+
+      await callERPNextAPI(config, 'POST', '/api/resource/Issue', erpData);
+      synced++;
+    } catch (err: any) {
+      failed++;
+      errors.push({ alert_id: alert.id, error: err.message });
+    }
+  }
+
+  return { synced, failed, errors };
+}
+
+async function syncIncidents(supabase: any, config: ERPNextConfig, organizationId: string) {
+  const { data: incidents, error } = await supabase
+    .from('incidents')
+    .select('*, vehicles(plate_number), drivers(first_name, last_name)')
+    .eq('organization_id', organizationId)
+    .gte('incident_time', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()); // Last 30 days
+
+  if (error) throw error;
+
+  let synced = 0;
+  let failed = 0;
+  const errors: any[] = [];
+
+  for (const incident of incidents) {
+    try {
+      const erpData = {
+        doctype: config.field_mappings.incident_doctype || 'Issue',
+        subject: `${incident.incident_type} - ${incident.incident_number}`,
+        description: `${incident.description}\n\nVehicle: ${incident.vehicles?.plate_number || 'Unknown'}\nDriver: ${incident.drivers ? `${incident.drivers.first_name} ${incident.drivers.last_name}` : 'Unknown'}\nLocation: ${incident.location || 'N/A'}\nEstimated Cost: ${incident.estimated_cost || 0}`,
+        priority: incident.severity === 'critical' ? 'High' : incident.severity === 'major' ? 'Medium' : 'Low',
+        status: incident.status === 'resolved' ? 'Closed' : 'Open',
+        issue_type: 'Incident',
+      };
+
+      await callERPNextAPI(config, 'POST', '/api/resource/Issue', erpData);
+      synced++;
+    } catch (err: any) {
+      failed++;
+      errors.push({ incident_id: incident.id, error: err.message });
+    }
+  }
+
+  return { synced, failed, errors };
+}
+
+async function syncGPSData(supabase: any, config: ERPNextConfig, organizationId: string) {
+  const { data: trips, error } = await supabase
+    .from('trips')
+    .select('*, vehicles(plate_number), drivers(first_name, last_name)')
+    .eq('organization_id', organizationId)
+    .gte('start_time', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()) // Last 7 days
+    .limit(500); // Limit to prevent overwhelming ERPNext
+
+  if (error) throw error;
+
+  let synced = 0;
+  let failed = 0;
+  const errors: any[] = [];
+
+  for (const trip of trips) {
+    try {
+      const erpData = {
+        doctype: config.field_mappings.trip_doctype || 'Delivery Trip',
+        vehicle: trip.vehicles?.plate_number || 'Unknown',
+        driver: trip.drivers ? `${trip.drivers.first_name} ${trip.drivers.last_name}` : 'Unknown',
+        date: trip.start_time,
+        departure_time: trip.start_time,
+        arrival_time: trip.end_time,
+        odometer_start_value: trip.start_odometer_km || 0,
+        odometer_end_value: trip.end_odometer_km || 0,
+        total_distance: trip.distance_km || 0,
+        status: trip.status,
+      };
+
+      await callERPNextAPI(config, 'POST', '/api/resource/Delivery Trip', erpData);
+      synced++;
+    } catch (err: any) {
+      failed++;
+      errors.push({ trip_id: trip.id, error: err.message });
+    }
+  }
+
+  return { synced, failed, errors };
+}
+
+async function syncDriverEvents(supabase: any, config: ERPNextConfig, organizationId: string) {
+  const { data: events, error } = await supabase
+    .from('driver_events')
+    .select('*, vehicles(plate_number), drivers(first_name, last_name)')
+    .eq('organization_id', organizationId)
+    .gte('event_time', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()); // Last 7 days
+
+  if (error) throw error;
+
+  let synced = 0;
+  let failed = 0;
+  const errors: any[] = [];
+
+  for (const event of events) {
+    try {
+      const erpData = {
+        doctype: config.field_mappings.driver_event_doctype || 'Comment',
+        reference_doctype: 'Employee',
+        reference_name: event.drivers ? `${event.drivers.first_name} ${event.drivers.last_name}` : 'Unknown',
+        content: `Driver Event: ${event.event_type}\nSeverity: ${event.severity}\nVehicle: ${event.vehicles?.plate_number || 'Unknown'}\nSpeed: ${event.speed_kmh || 0} km/h\nLocation: ${event.address || 'Unknown'}\nNotes: ${event.notes || 'N/A'}`,
+        comment_type: 'Info',
+      };
+
+      await callERPNextAPI(config, 'POST', '/api/resource/Comment', erpData);
+      synced++;
+    } catch (err: any) {
+      failed++;
+      errors.push({ event_id: event.id, error: err.message });
+    }
+  }
+
+  return { synced, failed, errors };
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -272,6 +416,30 @@ Deno.serve(async (req) => {
       if (!entityType || entityType === 'all' || entityType === 'maintenance') {
         if (config.sync_settings.sync_maintenance) {
           syncResults.maintenance = await syncMaintenance(supabaseClient, config, profile.organization_id);
+        }
+      }
+
+      if (!entityType || entityType === 'all' || entityType === 'alerts') {
+        if (config.sync_settings.sync_alerts) {
+          syncResults.alerts = await syncAlerts(supabaseClient, config, profile.organization_id);
+        }
+      }
+
+      if (!entityType || entityType === 'all' || entityType === 'incidents') {
+        if (config.sync_settings.sync_incidents) {
+          syncResults.incidents = await syncIncidents(supabaseClient, config, profile.organization_id);
+        }
+      }
+
+      if (!entityType || entityType === 'all' || entityType === 'gps') {
+        if (config.sync_settings.sync_gps_data) {
+          syncResults.gps = await syncGPSData(supabaseClient, config, profile.organization_id);
+        }
+      }
+
+      if (!entityType || entityType === 'all' || entityType === 'driver_events') {
+        if (config.sync_settings.sync_driver_events) {
+          syncResults.driver_events = await syncDriverEvents(supabaseClient, config, profile.organization_id);
         }
       }
 

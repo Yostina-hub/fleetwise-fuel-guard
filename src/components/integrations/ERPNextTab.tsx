@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
-import { Settings, RefreshCw, CheckCircle2, XCircle, Loader2, Database, Users, Fuel, Wrench, TrendingUp } from "lucide-react";
+import { Settings, RefreshCw, CheckCircle2, XCircle, Loader2, Database, Users, Fuel, Wrench, TrendingUp, AlertTriangle, MapPin, Activity } from "lucide-react";
 
 const ERPNextTab = () => {
   const { toast } = useToast();
@@ -30,6 +30,9 @@ const ERPNextTab = () => {
     sync_maintenance: true,
     sync_trips: true,
     sync_incidents: true,
+    sync_alerts: true,
+    sync_gps_data: true,
+    sync_driver_events: true,
     auto_sync: true,
     sync_interval_minutes: 30,
   });
@@ -62,6 +65,9 @@ const ERPNextTab = () => {
         sync_maintenance: syncSettings.sync_maintenance ?? true,
         sync_trips: syncSettings.sync_trips ?? true,
         sync_incidents: syncSettings.sync_incidents ?? true,
+        sync_alerts: syncSettings.sync_alerts ?? true,
+        sync_gps_data: syncSettings.sync_gps_data ?? true,
+        sync_driver_events: syncSettings.sync_driver_events ?? true,
         auto_sync: syncSettings.auto_sync ?? true,
         sync_interval_minutes: syncSettings.sync_interval_minutes ?? 30,
       });
@@ -94,6 +100,9 @@ const ERPNextTab = () => {
       sync_maintenance: formData.sync_maintenance,
       sync_trips: formData.sync_trips,
       sync_incidents: formData.sync_incidents,
+      sync_alerts: formData.sync_alerts,
+      sync_gps_data: formData.sync_gps_data,
+      sync_driver_events: formData.sync_driver_events,
       auto_sync: formData.auto_sync,
       sync_interval_minutes: formData.sync_interval_minutes,
     };
@@ -308,6 +317,54 @@ const ERPNextTab = () => {
                   id="sync_maintenance"
                   checked={formData.sync_maintenance}
                   onCheckedChange={(checked) => setFormData({ ...formData, sync_maintenance: checked })}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-muted-foreground" />
+                  <Label htmlFor="sync_alerts">Sync Alerts</Label>
+                </div>
+                <Switch
+                  id="sync_alerts"
+                  checked={formData.sync_alerts}
+                  onCheckedChange={(checked) => setFormData({ ...formData, sync_alerts: checked })}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-muted-foreground" />
+                  <Label htmlFor="sync_incidents">Sync Incidents</Label>
+                </div>
+                <Switch
+                  id="sync_incidents"
+                  checked={formData.sync_incidents}
+                  onCheckedChange={(checked) => setFormData({ ...formData, sync_incidents: checked })}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-muted-foreground" />
+                  <Label htmlFor="sync_gps">Sync GPS/Trips Data</Label>
+                </div>
+                <Switch
+                  id="sync_gps"
+                  checked={formData.sync_gps_data}
+                  onCheckedChange={(checked) => setFormData({ ...formData, sync_gps_data: checked })}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-muted-foreground" />
+                  <Label htmlFor="sync_driver_events">Sync Driver Events</Label>
+                </div>
+                <Switch
+                  id="sync_driver_events"
+                  checked={formData.sync_driver_events}
+                  onCheckedChange={(checked) => setFormData({ ...formData, sync_driver_events: checked })}
                 />
               </div>
 
