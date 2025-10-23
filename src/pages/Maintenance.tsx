@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import {
 import { useVehicles } from "@/hooks/useVehicles";
 
 const Maintenance = () => {
+  const navigate = useNavigate();
   const { vehicles: dbVehicles, loading } = useVehicles();
 
   // Generate maintenance schedule from vehicles
@@ -157,7 +159,7 @@ const Maintenance = () => {
             <h1 className="text-3xl font-bold">Maintenance Management</h1>
             <p className="text-muted-foreground mt-1">Track service schedules and work orders</p>
           </div>
-          <Button className="gap-2">
+          <Button className="gap-2" onClick={() => navigate('/work-orders')}>
             <Plus className="w-4 h-4" />
             New Work Order
           </Button>
