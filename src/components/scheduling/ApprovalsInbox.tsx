@@ -92,8 +92,18 @@ export const ApprovalsInbox = () => {
   if (loading) {
     return (
       <Card>
-        <CardContent className="pt-6">
-          <div className="text-center text-muted-foreground">Loading approvals...</div>
+        <CardHeader className="animate-pulse">
+          <div className="h-6 bg-muted rounded w-1/4" />
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {[1, 2].map((i) => (
+              <div key={i} className="p-4 border rounded-lg space-y-2">
+                <div className="h-4 bg-muted rounded w-1/3" />
+                <div className="h-4 bg-muted rounded w-full" />
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
     );

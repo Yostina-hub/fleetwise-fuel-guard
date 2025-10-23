@@ -3,9 +3,10 @@ import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Calendar, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Plus, Calendar, CheckCircle, Clock, XCircle, Download } from "lucide-react";
 import { CreateTripRequestDialog } from "@/components/scheduling/CreateTripRequestDialog";
 import { TripRequestsList } from "@/components/scheduling/TripRequestsList";
+import { ExportScheduleDialog } from "@/components/scheduling/ExportScheduleDialog";
 import { AvailabilityMatrix } from "@/components/scheduling/AvailabilityMatrix";
 import { ApprovalsInbox } from "@/components/scheduling/ApprovalsInbox";
 import { ApprovalChainConfig } from "@/components/scheduling/ApprovalChainConfig";
@@ -21,6 +22,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 
 const FleetScheduling = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const { requests, loading } = useTripRequests();
   const { isSuperAdmin, hasRole } = usePermissions();
   const canApprove = isSuperAdmin || hasRole('operations_manager') || hasRole('fleet_owner');
@@ -63,16 +65,21 @@ const FleetScheduling = () => {
               Manage trip requests, approvals, and vehicle assignments
             </p>
           </div>
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center flex-wrap">
+            <Button variant="outline" onClick={() => setExportDialogOpen(true)} className="gap-2">
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Export</span>
+            </Button>
             <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
               <Plus className="w-4 h-4" />
-              New Trip Request
+              <span className="hidden sm:inline">New Trip Request</span>
+              <span className="sm:hidden">New</span>
             </Button>
           </div>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map((stat) => (
             <Card key={stat.title}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -91,12 +98,12 @@ const FleetScheduling = () => {
 
         {/* Main Content */}
         <Tabs defaultValue="requests" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="requests">Trip Requests</TabsTrigger>
-            <TabsTrigger value="assignments">Active Assignments</TabsTrigger>
-            {canApprove && <TabsTrigger value="approvals">Approvals Inbox</TabsTrigger>}
+          <TabsList className="flex-wrap h-auto">
+            <TabsTrigger value="requests">Requests</TabsTrigger>
+            <TabsTrigger value="assignments">Active</TabsTrigger>
+            {canApprove && <TabsTrigger value="approvals">Approvals</TabsTrigger>}
             <TabsTrigger value="calendar">Calendar</TabsTrigger>
-            <TabsTrigger value="schedule">Schedule Board</TabsTrigger>
+            <TabsTrigger value="schedule">Schedule</TabsTrigger>
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="availability">Availability</TabsTrigger>
@@ -149,6 +156,10 @@ const FleetScheduling = () => {
       <CreateTripRequestDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
+      />
+      <ExportScheduleDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
       />
     </Layout>
   );

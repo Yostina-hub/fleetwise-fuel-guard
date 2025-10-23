@@ -162,13 +162,15 @@ export const ScheduleBoard = () => {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            Schedule Board
-          </CardTitle>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <CardTitle>Schedule Board</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              {viewMode === "day" ? format(currentDate, "PPP") : `Week of ${format(startOfWeek(currentDate), "PPP")}`}
+            </p>
+          </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             {/* View By Selector */}
             <Select value={viewBy} onValueChange={(value: any) => setViewBy(value)}>
               <SelectTrigger className="w-[140px]">
@@ -214,7 +216,7 @@ export const ScheduleBoard = () => {
               </Button>
             </div>
 
-            <div className="text-sm font-medium">
+            <div className="text-sm font-medium whitespace-nowrap">
               {viewMode === 'week' ? (
                 `${format(days[0], "MMM dd")} - ${format(days[days.length - 1], "MMM dd, yyyy")}`
               ) : (
