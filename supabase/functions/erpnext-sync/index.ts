@@ -19,7 +19,12 @@ async function callERPNextAPI(
   endpoint: string,
   data?: any
 ) {
-  const url = `${config.erpnext_url}${endpoint}`;
+  // Normalize URL by removing trailing slash from base URL
+  const baseUrl = config.erpnext_url.replace(/\/+$/, '');
+  // Ensure endpoint starts with slash
+  const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = `${baseUrl}${normalizedEndpoint}`;
+  
   const headers = {
     'Authorization': `token ${config.api_key}:${config.api_secret}`,
     'Content-Type': 'application/json',
