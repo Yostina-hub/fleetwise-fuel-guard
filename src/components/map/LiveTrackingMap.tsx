@@ -33,50 +33,79 @@ const LiveTrackingMap = ({ vehicles, onVehicleClick, selectedVehicleId, token, m
   const [tokenError, setTokenError] = useState<string | null>(null);
   const [tempToken, setTempToken] = useState('');
 
-  // Initialize map
+  // Fetch token from backend
   useEffect(() => {
-    if (!mapContainer.current || map.current) return;
-
-    const mapboxToken = token || localStorage.getItem('mapbox_token') || import.meta.env.VITE_MAPBOX_TOKEN;
-    if (!mapboxToken) {
-      setTokenError('missing');
-      return;
-    }
-
-    if (!mapboxgl.supported()) {
-      setTokenError('webgl');
-      return;
-    }
-
-    mapboxgl.accessToken = mapboxToken;
-
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: mapStyle === 'satellite' ? 'mapbox://styles/mapbox/satellite-streets-v12' : 'mapbox://styles/mapbox/streets-v12',
-      center: [38.75, 9.02], // Addis Ababa
-      zoom: 12,
-    });
-
-    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-    map.current.addControl(new mapboxgl.FullscreenControl(), 'top-right');
-
-    const setLoaded = () => setMapLoaded(true);
-    map.current.on('load', setLoaded);
-    map.current.on('style.load', setLoaded);
-    map.current.on('error', (e: any) => {
-      const msg = e?.error?.message || '';
-      const status = e?.error?.status || e?.error?.statusCode;
-      if (status === 401 || status === 403 || /unauthorized|forbidden|access token|token/i.test(String(msg))) {
-        setTokenError('invalid');
+    const fetchToken = async () => {
+      try {
+        const localToken = token || localStorage.getItem('mapbox_token') || import.meta.env.VITE_MAPBOX_TOKEN;
+        if (localToken) {
+          return localToken;
+        }
+        
+        // Fetch from edge function
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-mapbox-token`, {
+          headers: {
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+          }
+        });
+        
+        if (!response.ok) {
+          setTokenError('missing');
+          return null;
+        }
+        
+        const data = await response.json();
+        return data.token;
+      } catch (err) {
+        console.error('Failed to fetch Mapbox token:', err);
+        setTokenError('missing');
+        return null;
       }
-    });
+    };
+
+    const initMap = async () => {
+      if (!mapContainer.current || map.current) return;
+
+      const mapboxToken = await fetchToken();
+      if (!mapboxToken) return;
+
+      if (!mapboxgl.supported()) {
+        setTokenError('webgl');
+        return;
+      }
+
+      mapboxgl.accessToken = mapboxToken;
+
+      map.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: mapStyle === 'satellite' ? 'mapbox://styles/mapbox/satellite-streets-v12' : 'mapbox://styles/mapbox/streets-v12',
+        center: [38.75, 9.02], // Addis Ababa
+        zoom: 12,
+      });
+
+      map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+      map.current.addControl(new mapboxgl.FullscreenControl(), 'top-right');
+
+      const setLoaded = () => setMapLoaded(true);
+      map.current.on('load', setLoaded);
+      map.current.on('style.load', setLoaded);
+      map.current.on('error', (e: any) => {
+        const msg = e?.error?.message || '';
+        const status = e?.error?.status || e?.error?.statusCode;
+        if (status === 401 || status === 403 || /unauthorized|forbidden|access token|token/i.test(String(msg))) {
+          setTokenError('invalid');
+        }
+      });
+    };
+
+    initMap();
 
     return () => {
       markers.current.forEach(marker => marker.remove());
       markers.current.clear();
       map.current?.remove();
     };
-  }, []);
+  }, [token]);
 
   // Update map style when setting changes
   useEffect(() => {
