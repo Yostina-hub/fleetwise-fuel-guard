@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import KPICard from "@/components/KPICard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,52 +17,78 @@ import {
   ChevronRight,
   RefreshCw,
   Activity,
-  Route
+  Route,
+  Loader2
 } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
 import VehicleDetailModal from "@/components/VehicleDetailModal";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, LineChart, Line } from "recharts";
+import { useVehicles } from "@/hooks/useVehicles";
+import { useAlerts } from "@/hooks/useAlerts";
+import { useFuelEvents } from "@/hooks/useFuelEvents";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  const { vehicles: dbVehicles, loading: vehiclesLoading, refetch } = useVehicles();
+  const { alerts: dbAlerts, loading: alertsLoading } = useAlerts({ status: 'unacknowledged' });
+  const { fuelEvents: dbFuelEvents } = useFuelEvents();
+
   const handleRefresh = () => {
     setRefreshing(true);
+    refetch();
     setTimeout(() => setRefreshing(false), 1000);
   };
-  const vehicles = [
-    { id: "V-001", plate: "AA 1234", status: "moving" as const, fuel: 75, location: "Highway 45" },
-    { id: "V-002", plate: "AB 5678", status: "idle" as const, fuel: 45, location: "Depot A" },
-    { id: "V-003", plate: "AC 9012", status: "stopped" as const, fuel: 90, location: "Customer Site" },
-    { id: "V-004", plate: "AD 3456", status: "moving" as const, fuel: 35, location: "Route 12" },
-    { id: "V-005", plate: "AE 7890", status: "offline" as const, fuel: 60, location: "Last: Depot B" },
-  ];
 
-  const recentAlerts = [
-    { id: 1, type: "warning", message: "Low fuel detected - Vehicle AA 1234", time: "5 min ago" },
-    { id: 2, type: "critical", message: "Suspected fuel theft - Vehicle AB 5678", time: "12 min ago" },
-    { id: 3, type: "warning", message: "Excessive idling - Vehicle AC 9012", time: "25 min ago" },
-  ];
+  // Transform vehicles for display
+  const vehicles = useMemo(() => {
+    return dbVehicles.slice(0, 5).map(v => ({
+      id: v.id,
+      plate: (v as any).license_plate || 'Unknown',
+      status: (v.status === 'active' ? 'moving' : v.status === 'maintenance' ? 'idle' : 'offline') as 'moving' | 'idle' | 'offline',
+      fuel: v.current_fuel || 50,
+      location: "Live tracking"
+    }));
+  }, [dbVehicles]);
+
+  // Transform alerts for display
+  const recentAlerts = useMemo(() => {
+    return dbAlerts.slice(0, 3).map((alert, idx) => {
+      const vehicle = dbVehicles.find(v => v.id === alert.vehicle_id);
+      return {
+        id: alert.id,
+        type: alert.severity === 'critical' ? 'critical' : 'warning',
+        message: `${alert.alert_type} - Vehicle ${(vehicle as any)?.license_plate || 'Unknown'}`,
+        time: new Date(alert.alert_time).toLocaleString()
+      };
+    });
+  }, [dbAlerts, dbVehicles]);
 
   // Vehicle status distribution for pie chart
-  const vehicleStatusData = [
-    { name: "Moving", value: 85, color: "hsl(var(--success))" },
-    { name: "Idle", value: 32, color: "hsl(var(--warning))" },
-    { name: "Stopped", value: 18, color: "hsl(var(--muted-foreground))" },
-    { name: "Offline", value: 15, color: "hsl(var(--destructive))" },
-  ];
+  const vehicleStatusData = useMemo(() => {
+    const moving = dbVehicles.filter(v => v.status === 'active').length;
+    const maintenance = dbVehicles.filter(v => v.status === 'maintenance').length;
+    const inactive = dbVehicles.filter(v => v.status === 'inactive').length;
+    return [
+      { name: "Active", value: moving, color: "hsl(var(--success))" },
+      { name: "Maintenance", value: maintenance, color: "hsl(var(--warning))" },
+      { name: "Inactive", value: inactive, color: "hsl(var(--destructive))" },
+    ];
+  }, [dbVehicles]);
 
-  // Fuel consumption trend data
-  const fuelTrendData = [
-    { day: "Mon", consumption: 450 },
-    { day: "Tue", consumption: 520 },
-    { day: "Wed", consumption: 480 },
-    { day: "Thu", consumption: 510 },
-    { day: "Fri", consumption: 490 },
-    { day: "Sat", consumption: 380 },
-    { day: "Sun", consumption: 320 },
-  ];
+  // Fuel consumption trend data - aggregate by day
+  const fuelTrendData = useMemo(() => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const refuels = dbFuelEvents.filter(e => e.event_type === 'refuel');
+    const byDay = days.map((day, idx) => {
+      const dayEvents = refuels.filter(e => new Date(e.event_time).getDay() === idx);
+      const total = dayEvents.reduce((sum, e) => sum + Math.abs(e.fuel_change_liters), 0);
+      return { day, consumption: Math.round(total) };
+    });
+    return byDay;
+  }, [dbFuelEvents]);
 
   // Trips per hour data
   const tripsData = [
@@ -72,6 +99,19 @@ const Dashboard = () => {
     { hour: "16:00", trips: 58 },
     { hour: "20:00", trips: 28 },
   ];
+
+  if (vehiclesLoading || alertsLoading) {
+    return (
+      <Layout>
+        <div className="p-8 flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+            <p className="text-muted-foreground">Loading dashboard...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -99,32 +139,29 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <KPICard
             title="Active Vehicles"
-            value="142"
-            subtitle="of 150 total"
+            value={dbVehicles.filter(v => v.status === 'active').length.toString()}
+            subtitle={`of ${dbVehicles.length} total`}
             icon={<Truck className="w-5 h-5" />}
-            trend={{ value: 5, label: "from last week" }}
             variant="default"
           />
           <KPICard
-            title="Fuel Savings"
-            value="18.5%"
-            subtitle="vs. last month"
+            title="Total Fuel Events"
+            value={dbFuelEvents.length.toString()}
+            subtitle="tracked events"
             icon={<Fuel className="w-5 h-5" />}
-            trend={{ value: 3.2, label: "improvement" }}
             variant="success"
           />
           <KPICard
-            title="Cost per KM"
-            value="$2.45"
-            subtitle="avg. operating cost"
+            title="Fleet Size"
+            value={dbVehicles.length.toString()}
+            subtitle="total vehicles"
             icon={<DollarSign className="w-5 h-5" />}
-            trend={{ value: -2.1, label: "reduction" }}
-            variant="success"
+            variant="default"
           />
           <KPICard
             title="Active Alerts"
-            value="7"
-            subtitle="3 critical, 4 warning"
+            value={dbAlerts.length.toString()}
+            subtitle={`${dbAlerts.filter(a => a.severity === 'critical').length} critical`}
             icon={<AlertTriangle className="w-5 h-5" />}
             variant="warning"
           />
@@ -241,7 +278,7 @@ const Dashboard = () => {
           <Card className="lg:col-span-2">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Live Vehicle Status</CardTitle>
-              <Button variant="ghost" size="sm" className="gap-2">
+              <Button variant="ghost" size="sm" className="gap-2" onClick={() => navigate('/fleet')}>
                 View All <ChevronRight className="w-4 h-4" />
               </Button>
             </CardHeader>
@@ -310,7 +347,7 @@ const Dashboard = () => {
                   </div>
                   Recent Alerts
                 </CardTitle>
-                <Button variant="ghost" size="sm">View All</Button>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/alerts')}>View All</Button>
               </div>
             </CardHeader>
             <CardContent>

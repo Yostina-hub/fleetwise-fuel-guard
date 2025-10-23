@@ -1,36 +1,58 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import StatusBadge from "@/components/StatusBadge";
 import LiveTrackingMap from "@/components/map/LiveTrackingMap";
-import { MapPin, Navigation, Fuel, Zap, RefreshCw } from "lucide-react";
+import { MapPin, Navigation, Fuel, Zap, RefreshCw, Loader2 } from "lucide-react";
+import { useVehicles } from "@/hooks/useVehicles";
 
 const MapView = () => {
+  const { vehicles: dbVehicles, loading, refetch } = useVehicles();
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | undefined>();
   const [autoRefresh, setAutoRefresh] = useState("30");
   const [lastUpdate, setLastUpdate] = useState(new Date());
   
-  const vehicles = [
-    { id: "V-001", plate: "AA 1234", status: "moving" as const, fuel: 75, speed: 65, lat: 9.03, lng: 38.74, engine_on: true, heading: 45 },
-    { id: "V-002", plate: "AB 5678", status: "idle" as const, fuel: 45, speed: 0, lat: 8.98, lng: 38.78, engine_on: true, heading: 0 },
-    { id: "V-003", plate: "AC 9012", status: "stopped" as const, fuel: 90, speed: 0, lat: 9.01, lng: 38.76, engine_on: false, heading: 180 },
-    { id: "V-004", plate: "AD 3456", status: "moving" as const, fuel: 60, speed: 48, lat: 9.00, lng: 38.72, engine_on: true, heading: 90 },
-    { id: "V-005", plate: "AE 7890", status: "offline" as const, fuel: 30, speed: 0, lat: 9.05, lng: 38.80, engine_on: false, heading: 0 },
-  ];
+  // Transform vehicles for map display with random positions around Addis Ababa
+  const vehicles = useMemo(() => {
+    return dbVehicles.map((v, idx) => ({
+      id: v.id,
+      plate: (v as any).license_plate || 'Unknown',
+      status: (v.status === 'active' ? 'moving' : v.status === 'maintenance' ? 'idle' : 'stopped') as 'moving' | 'idle' | 'stopped' | 'offline',
+      fuel: v.current_fuel || 50,
+      speed: v.current_speed || 0,
+      lat: 9.03 + (Math.random() - 0.5) * 0.1,
+      lng: 38.74 + (Math.random() - 0.5) * 0.1,
+      engine_on: v.status === 'active',
+      heading: Math.random() * 360
+    }));
+  }, [dbVehicles]);
 
-  // Auto-refresh simulation
+  // Auto-refresh
   useEffect(() => {
     if (autoRefresh === "off") return;
     
     const interval = setInterval(() => {
       setLastUpdate(new Date());
-      // In production, this would refetch data from API
+      refetch();
     }, parseInt(autoRefresh) * 1000);
 
     return () => clearInterval(interval);
-  }, [autoRefresh]);
+  }, [autoRefresh, refetch]);
+
+  if (loading && vehicles.length === 0) {
+    return (
+      <Layout>
+        <div className="p-8 flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+            <p className="text-muted-foreground">Loading map data...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

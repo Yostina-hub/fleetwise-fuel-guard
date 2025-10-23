@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,11 +12,29 @@ import {
   Clock,
   DollarSign,
   TrendingUp,
-  Plus
+  Plus,
+  Loader2
 } from "lucide-react";
+import { useVehicles } from "@/hooks/useVehicles";
 
 const Maintenance = () => {
-  const maintenanceSchedule = [
+  const { vehicles: dbVehicles, loading } = useVehicles();
+
+  // Generate maintenance schedule from vehicles
+  const maintenanceSchedule = useMemo(() => {
+    return dbVehicles.slice(0, 4).map((v, idx) => ({
+      id: idx + 1,
+      vehicle: (v as any).license_plate || 'Unknown',
+      type: ['Oil Change', 'Tire Replacement', 'Annual Inspection', 'Brake Service'][idx % 4],
+      dueDate: new Date(Date.now() + (idx + 1) * 86400000 * 5).toISOString().split('T')[0],
+      dueOdometer: (v.odometer_km || 50000) + 5000,
+      currentOdometer: v.odometer_km || 48000,
+      status: v.status === 'maintenance' ? 'overdue' : (idx % 3 === 0 ? 'upcoming' : 'scheduled'),
+      priority: ['high', 'medium', 'low'][idx % 3]
+    }));
+  }, [dbVehicles]);
+
+  const oldMaintenanceSchedule = [
     {
       id: 1,
       vehicle: "AA 1234",
@@ -115,6 +134,19 @@ const Maintenance = () => {
         return "";
     }
   };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="p-8 flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+            <p className="text-muted-foreground">Loading maintenance data...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
