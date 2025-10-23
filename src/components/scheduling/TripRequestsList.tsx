@@ -2,6 +2,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -9,9 +15,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Calendar, MapPin, Users, Send } from "lucide-react";
+import { Calendar, MapPin, Users, Send, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { useTripRequests } from "@/hooks/useTripRequests";
+import { ApprovalFlowViewer } from "@/components/scheduling/ApprovalFlowViewer";
+import { useState } from "react";
 
 interface TripRequestsListProps {
   requests: any[];
@@ -44,6 +52,13 @@ const statusLabels: Record<string, string> = {
 
 export const TripRequestsList = ({ requests, loading }: TripRequestsListProps) => {
   const { submitRequest } = useTripRequests();
+  const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
+  const openDetails = (request: any) => {
+    setSelectedRequest(request);
+    setDetailsOpen(true);
+  };
 
   if (loading) {
     return (
@@ -68,78 +83,124 @@ export const TripRequestsList = ({ requests, loading }: TripRequestsListProps) =
   }
 
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Request #</TableHead>
-              <TableHead>Purpose</TableHead>
-              <TableHead>Schedule</TableHead>
-              <TableHead>Locations</TableHead>
-              <TableHead>Passengers</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {requests.map((request) => (
-              <TableRow key={request.id}>
-                <TableCell className="font-medium">
-                  {request.request_number}
-                </TableCell>
-                <TableCell>
-                  <div className="max-w-xs truncate">{request.purpose}</div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1 text-sm">
-                    <Calendar className="w-3 h-3" />
-                    <div>
-                      <div>{format(new Date(request.pickup_at), "MMM dd, HH:mm")}</div>
-                      <div className="text-muted-foreground text-xs">
-                        to {format(new Date(request.return_at), "MMM dd, HH:mm")}
+    <>
+      <Card>
+        <CardContent className="pt-6">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Request #</TableHead>
+                <TableHead>Purpose</TableHead>
+                <TableHead>Schedule</TableHead>
+                <TableHead>Locations</TableHead>
+                <TableHead>Passengers</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {requests.map((request) => (
+                <TableRow key={request.id}>
+                  <TableCell className="font-medium">
+                    {request.request_number}
+                  </TableCell>
+                  <TableCell>
+                    <div className="max-w-xs truncate">{request.purpose}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1 text-sm">
+                      <Calendar className="w-3 h-3" />
+                      <div>
+                        <div>{format(new Date(request.pickup_at), "MMM dd, HH:mm")}</div>
+                        <div className="text-muted-foreground text-xs">
+                          to {format(new Date(request.return_at), "MMM dd, HH:mm")}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1 text-sm">
-                    <MapPin className="w-3 h-3" />
-                    <div className="max-w-[150px] truncate">
-                      {request.pickup_geofence?.name || "Not specified"}
-                      {request.drop_geofence && ` → ${request.drop_geofence.name}`}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1 text-sm">
+                      <MapPin className="w-3 h-3" />
+                      <div className="max-w-[150px] truncate">
+                        {request.pickup_geofence?.name || "Not specified"}
+                        {request.drop_geofence && ` → ${request.drop_geofence.name}`}
+                      </div>
                     </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <Users className="w-3 h-3" />
-                    {request.passengers}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge className={statusColors[request.status]}>
-                    {statusLabels[request.status]}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {request.status === "draft" && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => submitRequest.mutate(request.id)}
-                      disabled={submitRequest.isPending}
-                    >
-                      <Send className="w-3 h-3 mr-1" />
-                      Submit
-                    </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Users className="w-3 h-3" />
+                      {request.passengers}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={statusColors[request.status]}>
+                      {statusLabels[request.status]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      {request.status === "draft" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => submitRequest.mutate(request.id)}
+                          disabled={submitRequest.isPending}
+                        >
+                          <Send className="w-3 h-3 mr-1" />
+                          Submit
+                        </Button>
+                      )}
+                      {['submitted', 'approved', 'rejected'].includes(request.status) && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => openDetails(request)}
+                        >
+                          <Eye className="w-3 h-3 mr-1" />
+                          View
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Request Details Dialog */}
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Trip Request: {selectedRequest?.request_number}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Request Details */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-sm font-medium text-muted-foreground">Purpose</div>
+                <div>{selectedRequest?.purpose}</div>
+              </div>
+              <div>
+                <div className="text-sm font-medium text-muted-foreground">Status</div>
+                <Badge className={statusColors[selectedRequest?.status]}>
+                  {statusLabels[selectedRequest?.status]}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Approval Flow */}
+            {selectedRequest && (
+              <ApprovalFlowViewer requestId={selectedRequest.id} />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };

@@ -7,11 +7,17 @@ import { Plus, Calendar, CheckCircle, Clock, XCircle } from "lucide-react";
 import { CreateTripRequestDialog } from "@/components/scheduling/CreateTripRequestDialog";
 import { TripRequestsList } from "@/components/scheduling/TripRequestsList";
 import { AvailabilityMatrix } from "@/components/scheduling/AvailabilityMatrix";
+import { ApprovalsInbox } from "@/components/scheduling/ApprovalsInbox";
+import { ApprovalChainConfig } from "@/components/scheduling/ApprovalChainConfig";
+import { ApprovalHistory } from "@/components/scheduling/ApprovalHistory";
 import { useTripRequests } from "@/hooks/useTripRequests";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const FleetScheduling = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const { requests, loading } = useTripRequests();
+  const { isSuperAdmin, hasRole } = usePermissions();
+  const canApprove = isSuperAdmin || hasRole('operations_manager') || hasRole('fleet_owner');
 
   const stats = [
     {
@@ -51,10 +57,12 @@ const FleetScheduling = () => {
               Manage trip requests, approvals, and vehicle assignments
             </p>
           </div>
-          <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
-            <Plus className="w-4 h-4" />
-            New Trip Request
-          </Button>
+          <div className="flex gap-2 items-center">
+            <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
+              <Plus className="w-4 h-4" />
+              New Trip Request
+            </Button>
+          </div>
         </div>
 
         {/* Stats */}
@@ -76,13 +84,22 @@ const FleetScheduling = () => {
         <Tabs defaultValue="requests" className="space-y-4">
           <TabsList>
             <TabsTrigger value="requests">Trip Requests</TabsTrigger>
+            {canApprove && <TabsTrigger value="approvals">Approvals Inbox</TabsTrigger>}
             <TabsTrigger value="availability">Availability Matrix</TabsTrigger>
             <TabsTrigger value="schedule">Schedule Board</TabsTrigger>
+            {isSuperAdmin && <TabsTrigger value="config">Approval Config</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="requests" className="space-y-4">
             <TripRequestsList requests={requests} loading={loading} />
           </TabsContent>
+
+          {canApprove && (
+            <TabsContent value="approvals" className="space-y-4">
+              <ApprovalsInbox />
+              <ApprovalHistory />
+            </TabsContent>
+          )}
 
           <TabsContent value="availability" className="space-y-4">
             <AvailabilityMatrix />
@@ -97,6 +114,12 @@ const FleetScheduling = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {isSuperAdmin && (
+            <TabsContent value="config" className="space-y-4">
+              <ApprovalChainConfig />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 

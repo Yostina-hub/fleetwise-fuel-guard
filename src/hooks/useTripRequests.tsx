@@ -68,18 +68,52 @@ export const useTripRequests = () => {
 
   const submitRequest = useMutation({
     mutationFn: async (requestId: string) => {
-      const { data, error } = await supabase
+      // Update request status
+      const { data: request, error } = await supabase
         .from("trip_requests" as any)
         .update({
           status: "submitted",
           submitted_at: new Date().toISOString(),
+          sla_deadline_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24h SLA
         })
         .eq("id", requestId)
         .select()
         .single();
 
       if (error) throw error;
-      return data as any;
+
+      // Get organization users with approval roles
+      const { data: orgData } = await supabase
+        .from("profiles")
+        .select("organization_id")
+        .eq("id", (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (!orgData?.organization_id) throw new Error("Organization not found");
+
+      // Find users with operations_manager role
+      const { data: approvers } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("organization_id", orgData.organization_id)
+        .eq("role", "operations_manager")
+        .limit(1);
+
+      // Create approval record for first step
+      if (approvers && approvers.length > 0) {
+        const { error: approvalError } = await supabase
+          .from("trip_approvals" as any)
+          .insert({
+            trip_request_id: requestId,
+            step: 1,
+            approver_id: approvers[0].user_id,
+            action: "pending",
+          });
+
+        if (approvalError) throw approvalError;
+      }
+
+      return request as any;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["trip-requests"] });
