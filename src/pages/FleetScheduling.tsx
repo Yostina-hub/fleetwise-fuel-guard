@@ -19,6 +19,7 @@ import { CalendarView } from "@/components/scheduling/CalendarView";
 import { UtilizationAnalytics } from "@/components/scheduling/UtilizationAnalytics";
 import { ActivityFeed } from "@/components/scheduling/ActivityFeed";
 import { NotificationPreferences } from "@/components/scheduling/NotificationPreferences";
+import { TripTemplatesTab } from "@/components/scheduling/TripTemplatesTab";
 import { useTripRequests } from "@/hooks/useTripRequests";
 import { usePermissions } from "@/hooks/usePermissions";
 
@@ -110,6 +111,7 @@ const FleetScheduling = () => {
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="availability">Availability</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
+            <TabsTrigger value="templates">Templates</TabsTrigger>
             {isSuperAdmin && <TabsTrigger value="config">Config</TabsTrigger>}
             {isSuperAdmin && <TabsTrigger value="notifications">Preferences</TabsTrigger>}
           </TabsList>
@@ -151,6 +153,10 @@ const FleetScheduling = () => {
 
           <TabsContent value="activity" className="space-y-4">
             <ActivityFeed />
+          </TabsContent>
+
+          <TabsContent value="templates" className="space-y-4">
+            <TripTemplatesTab />
           </TabsContent>
 
           {isSuperAdmin && (

@@ -2469,6 +2469,42 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_filters: {
+        Row: {
+          created_at: string
+          filter_config: Json
+          filter_name: string
+          filter_type: string
+          id: string
+          is_default: boolean | null
+          organization_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          filter_config: Json
+          filter_name: string
+          filter_type: string
+          id?: string
+          is_default?: boolean | null
+          organization_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          filter_config?: Json
+          filter_name?: string
+          filter_type?: string
+          id?: string
+          is_default?: boolean | null
+          organization_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       sensors: {
         Row: {
           calibration_curve: Json | null
@@ -2769,6 +2805,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      trip_templates: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          drop_geofence_id: string | null
+          id: string
+          is_active: boolean | null
+          is_recurring: boolean | null
+          notes: string | null
+          organization_id: string
+          passengers: number | null
+          pickup_geofence_id: string | null
+          purpose: string
+          recurrence_pattern: Json | null
+          required_class: string | null
+          template_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          drop_geofence_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_recurring?: boolean | null
+          notes?: string | null
+          organization_id: string
+          passengers?: number | null
+          pickup_geofence_id?: string | null
+          purpose: string
+          recurrence_pattern?: Json | null
+          required_class?: string | null
+          template_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          drop_geofence_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_recurring?: boolean | null
+          notes?: string | null
+          organization_id?: string
+          passengers?: number | null
+          pickup_geofence_id?: string | null
+          purpose?: string
+          recurrence_pattern?: Json | null
+          required_class?: string | null
+          template_name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       trips: {
         Row: {
