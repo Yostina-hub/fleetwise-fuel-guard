@@ -19,13 +19,22 @@ import {
 } from "lucide-react";
 
 const Settings = () => {
-  const [mapboxToken, setMapboxToken] = useState(() => localStorage.getItem('mapbox_token') || '');
-  const [tokenSaved, setTokenSaved] = useState(false);
+  const [apiKeys, setApiKeys] = useState({
+    mapbox: localStorage.getItem('mapbox_token') || '',
+    googleMaps: localStorage.getItem('google_maps_token') || '',
+    openWeather: localStorage.getItem('openweather_token') || '',
+    twilio: localStorage.getItem('twilio_token') || '',
+    sendgrid: localStorage.getItem('sendgrid_token') || '',
+    openai: localStorage.getItem('openai_token') || '',
+  });
+  const [savedKeys, setSavedKeys] = useState<Record<string, boolean>>({});
 
-  const handleSaveMapboxToken = () => {
-    localStorage.setItem('mapbox_token', mapboxToken);
-    setTokenSaved(true);
-    setTimeout(() => setTokenSaved(false), 2000);
+  const handleSaveApiKey = (key: string, value: string) => {
+    localStorage.setItem(`${key}_token`, value);
+    setSavedKeys({ ...savedKeys, [key]: true });
+    setTimeout(() => {
+      setSavedKeys(prev => ({ ...prev, [key]: false }));
+    }, 2000);
   };
 
   return (
@@ -63,31 +72,150 @@ const Settings = () => {
 
           {/* API Keys Settings */}
           <TabsContent value="api" className="space-y-6">
+            {/* Mapping Services */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MapPin className="w-5 h-5" />
-                  Mapbox API Key
+                  Mapping Services
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="mapbox-token">Mapbox Public Token</Label>
                   <Input 
                     id="mapbox-token" 
                     type="password"
                     placeholder="pk.eyJ..." 
-                    value={mapboxToken}
-                    onChange={(e) => setMapboxToken(e.target.value)}
+                    value={apiKeys.mapbox}
+                    onChange={(e) => setApiKeys({ ...apiKeys, mapbox: e.target.value })}
                   />
                   <p className="text-xs text-muted-foreground">
                     Required for Map View, Geofencing, and Route History features. 
-                    Get your token at <a href="https://mapbox.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">mapbox.com</a> → Tokens
+                    Get your token at <a href="https://mapbox.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">mapbox.com</a>
                   </p>
+                  <Button size="sm" onClick={() => handleSaveApiKey('mapbox', apiKeys.mapbox)}>
+                    {savedKeys.mapbox ? '✓ Saved' : 'Save'}
+                  </Button>
                 </div>
-                <Button onClick={handleSaveMapboxToken}>
-                  {tokenSaved ? '✓ Saved' : 'Save Token'}
-                </Button>
+
+                <div className="space-y-2">
+                  <Label htmlFor="google-maps-token">Google Maps API Key</Label>
+                  <Input 
+                    id="google-maps-token" 
+                    type="password"
+                    placeholder="AIza..." 
+                    value={apiKeys.googleMaps}
+                    onChange={(e) => setApiKeys({ ...apiKeys, googleMaps: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Alternative mapping service. Get your key at <a href="https://console.cloud.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google Cloud Console</a>
+                  </p>
+                  <Button size="sm" onClick={() => handleSaveApiKey('google_maps', apiKeys.googleMaps)}>
+                    {savedKeys.google_maps ? '✓ Saved' : 'Save'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Weather Services */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className="w-5 h-5" />
+                  Weather Services
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="openweather-token">OpenWeatherMap API Key</Label>
+                  <Input 
+                    id="openweather-token" 
+                    type="password"
+                    placeholder="Enter API key..." 
+                    value={apiKeys.openWeather}
+                    onChange={(e) => setApiKeys({ ...apiKeys, openWeather: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    For weather-based route planning and alerts. Get your key at <a href="https://openweathermap.org/api" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">openweathermap.org</a>
+                  </p>
+                  <Button size="sm" onClick={() => handleSaveApiKey('openweather', apiKeys.openWeather)}>
+                    {savedKeys.openweather ? '✓ Saved' : 'Save'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Communication Services */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bell className="w-5 h-5" />
+                  Communication Services
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="twilio-token">Twilio API Key</Label>
+                  <Input 
+                    id="twilio-token" 
+                    type="password"
+                    placeholder="SK..." 
+                    value={apiKeys.twilio}
+                    onChange={(e) => setApiKeys({ ...apiKeys, twilio: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    For SMS and WhatsApp notifications. Get your key at <a href="https://www.twilio.com/console" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">twilio.com</a>
+                  </p>
+                  <Button size="sm" onClick={() => handleSaveApiKey('twilio', apiKeys.twilio)}>
+                    {savedKeys.twilio ? '✓ Saved' : 'Save'}
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="sendgrid-token">SendGrid API Key</Label>
+                  <Input 
+                    id="sendgrid-token" 
+                    type="password"
+                    placeholder="SG..." 
+                    value={apiKeys.sendgrid}
+                    onChange={(e) => setApiKeys({ ...apiKeys, sendgrid: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    For email notifications and reports. Get your key at <a href="https://app.sendgrid.com/settings/api_keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">sendgrid.com</a>
+                  </p>
+                  <Button size="sm" onClick={() => handleSaveApiKey('sendgrid', apiKeys.sendgrid)}>
+                    {savedKeys.sendgrid ? '✓ Saved' : 'Save'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* AI Services */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="w-5 h-5" />
+                  AI Services
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="openai-token">OpenAI API Key</Label>
+                  <Input 
+                    id="openai-token" 
+                    type="password"
+                    placeholder="sk-..." 
+                    value={apiKeys.openai}
+                    onChange={(e) => setApiKeys({ ...apiKeys, openai: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    For AI-powered route optimization and analytics. Get your key at <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">platform.openai.com</a>
+                  </p>
+                  <Button size="sm" onClick={() => handleSaveApiKey('openai', apiKeys.openai)}>
+                    {savedKeys.openai ? '✓ Saved' : 'Save'}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
