@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Link } from "react-router-dom";
 
 interface Vehicle {
   id: string;
@@ -27,6 +30,8 @@ const LiveTrackingMap = ({ vehicles, onVehicleClick, selectedVehicleId, token, m
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<Map<string, mapboxgl.Marker>>(new Map());
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [tokenError, setTokenError] = useState<string | null>(null);
+  const [tempToken, setTempToken] = useState('');
 
   // Initialize map
   useEffect(() => {
@@ -34,7 +39,7 @@ const LiveTrackingMap = ({ vehicles, onVehicleClick, selectedVehicleId, token, m
 
     const mapboxToken = token || localStorage.getItem('mapbox_token') || import.meta.env.VITE_MAPBOX_TOKEN;
     if (!mapboxToken) {
-      console.error('Mapbox token not found');
+      setTokenError('missing');
       return;
     }
 
@@ -163,6 +168,32 @@ const LiveTrackingMap = ({ vehicles, onVehicleClick, selectedVehicleId, token, m
       map.current!.fitBounds(bounds, { padding: 50, maxZoom: 15 });
     }
   }, [vehicles, mapLoaded, selectedVehicleId, onVehicleClick]);
+
+  if (tokenError) {
+    return (
+      <div className="absolute inset-0 flex items-center justify-center p-6">
+        <div className="max-w-md w-full glass-strong border rounded-xl p-6 text-center space-y-4">
+          <h2 className="text-2xl font-bold gradient-text">Map requires a Mapbox token</h2>
+          <p className="text-sm text-muted-foreground">
+            Add your Mapbox public token to render the live map.
+          </p>
+          <div className="space-y-2 text-left">
+            <label className="text-sm">Enter token (starts with pk.)</label>
+            <Input placeholder="pk.XXXX..." value={tempToken} onChange={(e) => setTempToken(e.target.value)} />
+            <Button className="w-full" onClick={() => { if (tempToken) { localStorage.setItem('mapbox_token', tempToken); window.location.reload(); } }}>
+              Save token and reload
+            </Button>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            Or configure in <Link className="text-primary underline" to="/settings#api">Settings → API Keys</Link>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            Get a token at mapbox.com (Tokens)
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div ref={mapContainer} className="absolute inset-0" />
