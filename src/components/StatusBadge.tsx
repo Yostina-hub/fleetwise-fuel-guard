@@ -17,7 +17,7 @@ const statusConfig = {
 };
 
 const StatusBadge = ({ status, className }: StatusBadgeProps) => {
-  const config = statusConfig[status];
+  const config = statusConfig[status] || statusConfig.offline;
   
   return (
     <Badge variant="outline" className={cn(config.className, className)}>
