@@ -88,12 +88,12 @@ export const CreateTripRequestDialog = ({
     queryKey: ["cost-centers"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("cost_centers")
+        .from("cost_centers" as any)
         .select("id, code, name")
         .eq("is_active", true)
         .order("code");
       if (error) throw error;
-      return data;
+      return data as any;
     },
   });
 

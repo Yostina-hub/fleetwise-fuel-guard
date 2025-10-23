@@ -22,7 +22,7 @@ export const AvailabilityMatrix = () => {
     queryFn: async () => {
       // Fetch vehicles
       const { data: vehicles, error: vehiclesError } = await supabase
-        .from("vehicles")
+        .from("vehicles" as any)
         .select("id, plate_number, make, model, vehicle_class, status")
         .order("plate_number");
 
@@ -30,7 +30,7 @@ export const AvailabilityMatrix = () => {
 
       // Fetch calendar entries for the time window
       const { data: calendar, error: calendarError } = await supabase
-        .from("vehicle_calendar")
+        .from("vehicle_calendar" as any)
         .select("vehicle_id, entry_type, window_start, window_end")
         .gte("window_end", fromDate)
         .lte("window_start", toDate);
@@ -38,8 +38,8 @@ export const AvailabilityMatrix = () => {
       if (calendarError) throw calendarError;
 
       // Compute status for each vehicle
-      return vehicles.map((vehicle) => {
-        const entries = calendar?.filter((e) => e.vehicle_id === vehicle.id) || [];
+      return (vehicles as any)?.map((vehicle: any) => {
+        const entries = (calendar as any)?.filter((e: any) => e.vehicle_id === vehicle.id) || [];
         
         let computedStatus = "available";
         let conflicts: string[] = [];

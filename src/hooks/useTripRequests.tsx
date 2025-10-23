@@ -10,7 +10,7 @@ export const useTripRequests = () => {
     queryKey: ["trip-requests"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("trip_requests")
+        .from("trip_requests" as any)
         .select(`
           *,
           pickup_geofence:pickup_geofence_id(id, name),
@@ -21,7 +21,7 @@ export const useTripRequests = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data;
+      return data as any;
     },
   });
 
@@ -37,7 +37,7 @@ export const useTripRequests = () => {
       const requestNumber = `TR-${Date.now().toString().slice(-8)}`;
 
       const { data, error } = await supabase
-        .from("trip_requests")
+        .from("trip_requests" as any)
         .insert({
           ...request,
           organization_id: orgData?.organization_id,
@@ -48,7 +48,7 @@ export const useTripRequests = () => {
         .single();
 
       if (error) throw error;
-      return data;
+      return data as any;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["trip-requests"] });
@@ -69,7 +69,7 @@ export const useTripRequests = () => {
   const submitRequest = useMutation({
     mutationFn: async (requestId: string) => {
       const { data, error } = await supabase
-        .from("trip_requests")
+        .from("trip_requests" as any)
         .update({
           status: "submitted",
           submitted_at: new Date().toISOString(),
@@ -79,7 +79,7 @@ export const useTripRequests = () => {
         .single();
 
       if (error) throw error;
-      return data;
+      return data as any;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["trip-requests"] });

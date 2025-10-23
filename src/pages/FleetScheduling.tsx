@@ -16,25 +16,25 @@ const FleetScheduling = () => {
   const stats = [
     {
       title: "Pending Approval",
-      value: requests?.filter(r => r.status === 'submitted').length || 0,
+      value: requests?.filter((r: any) => r.status === 'submitted').length || 0,
       icon: Clock,
       color: "text-yellow-600"
     },
     {
       title: "Approved",
-      value: requests?.filter(r => r.status === 'approved').length || 0,
+      value: requests?.filter((r: any) => r.status === 'approved').length || 0,
       icon: CheckCircle,
       color: "text-green-600"
     },
     {
       title: "Active Trips",
-      value: requests?.filter(r => ['dispatched', 'in_service'].includes(r.status)).length || 0,
+      value: requests?.filter((r: any) => ['dispatched', 'in_service'].includes(r.status)).length || 0,
       icon: Calendar,
       color: "text-blue-600"
     },
     {
       title: "Rejected",
-      value: requests?.filter(r => r.status === 'rejected').length || 0,
+      value: requests?.filter((r: any) => r.status === 'rejected').length || 0,
       icon: XCircle,
       color: "text-red-600"
     }
