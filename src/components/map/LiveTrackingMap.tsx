@@ -43,6 +43,11 @@ const LiveTrackingMap = ({ vehicles, onVehicleClick, selectedVehicleId, token, m
       return;
     }
 
+    if (!mapboxgl.supported()) {
+      setTokenError('webgl');
+      return;
+    }
+
     mapboxgl.accessToken = mapboxToken;
 
     map.current = new mapboxgl.Map({
@@ -55,8 +60,15 @@ const LiveTrackingMap = ({ vehicles, onVehicleClick, selectedVehicleId, token, m
     map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
     map.current.addControl(new mapboxgl.FullscreenControl(), 'top-right');
 
-    map.current.on('load', () => {
-      setMapLoaded(true);
+    const setLoaded = () => setMapLoaded(true);
+    map.current.on('load', setLoaded);
+    map.current.on('style.load', setLoaded);
+    map.current.on('error', (e: any) => {
+      const msg = e?.error?.message || '';
+      const status = e?.error?.status || e?.error?.statusCode;
+      if (status === 401 || status === 403 || /unauthorized|forbidden|access token|token/i.test(String(msg))) {
+        setTokenError('invalid');
+      }
     });
 
     return () => {
@@ -68,10 +80,11 @@ const LiveTrackingMap = ({ vehicles, onVehicleClick, selectedVehicleId, token, m
 
   // Update map style when setting changes
   useEffect(() => {
-    if (!map.current || !mapLoaded) return;
+    if (!map.current) return;
     const targetStyle = mapStyle === 'satellite' ? 'mapbox://styles/mapbox/satellite-streets-v12' : 'mapbox://styles/mapbox/streets-v12';
+    setMapLoaded(false);
     map.current.setStyle(targetStyle);
-  }, [mapStyle, mapLoaded]);
+  }, [mapStyle]);
 
   // Update vehicle markers
   useEffect(() => {
@@ -173,17 +186,25 @@ const LiveTrackingMap = ({ vehicles, onVehicleClick, selectedVehicleId, token, m
     return (
       <div className="absolute inset-0 flex items-center justify-center p-6">
         <div className="max-w-md w-full glass-strong border rounded-xl p-6 text-center space-y-4">
-          <h2 className="text-2xl font-bold gradient-text">Map requires a Mapbox token</h2>
+          <h2 className="text-2xl font-bold gradient-text">
+            {tokenError === 'webgl' ? 'WebGL not supported' : tokenError === 'invalid' ? 'Invalid Mapbox token' : 'Map requires a Mapbox token'}
+          </h2>
           <p className="text-sm text-muted-foreground">
-            Add your Mapbox public token to render the live map.
+            {tokenError === 'webgl'
+              ? 'Your browser/device does not support WebGL required by the 3D map. Try a different browser or enable hardware acceleration.'
+              : tokenError === 'invalid'
+              ? 'The Mapbox token is invalid or expired. Update the token to render the map.'
+              : 'Add your Mapbox public token to render the live map.'}
           </p>
-          <div className="space-y-2 text-left">
-            <label className="text-sm">Enter token (starts with pk.)</label>
-            <Input placeholder="pk.XXXX..." value={tempToken} onChange={(e) => setTempToken(e.target.value)} />
-            <Button className="w-full" onClick={() => { if (tempToken) { localStorage.setItem('mapbox_token', tempToken); window.location.reload(); } }}>
-              Save token and reload
-            </Button>
-          </div>
+          {tokenError !== 'webgl' && (
+            <div className="space-y-2 text-left">
+              <label className="text-sm">Enter token (starts with pk.)</label>
+              <Input placeholder="pk.XXXX..." value={tempToken} onChange={(e) => setTempToken(e.target.value)} />
+              <Button className="w-full" onClick={() => { if (tempToken) { localStorage.setItem('mapbox_token', tempToken); window.location.reload(); } }}>
+                Save token and reload
+              </Button>
+            </div>
+          )}
           <div className="text-xs text-muted-foreground">
             Or configure in <Link className="text-primary underline" to="/settings#api">Settings → API Keys</Link>
           </div>
