@@ -22,6 +22,8 @@ import {
   Activity,
 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 interface VehicleDetailModalProps {
   open: boolean;
@@ -38,10 +40,26 @@ interface VehicleDetailModalProps {
     speed?: number;
     odometer?: number;
     driver?: string;
+    vehicleId?: string;
   };
 }
 
 const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalProps) => {
+  const navigate = useNavigate();
+
+  const handleTrackOnMap = () => {
+    onOpenChange(false);
+    navigate('/map', { state: { selectedVehicleId: vehicle.vehicleId || vehicle.id } });
+  };
+
+  const handleViewDriverProfile = () => {
+    if (!vehicle.driver || vehicle.driver === "Not assigned") {
+      toast.info("No driver assigned to this vehicle");
+    } else {
+      toast.info("Driver profile feature coming soon");
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -132,7 +150,7 @@ const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalP
                     Last updated: 2 minutes ago
                   </p>
                 </div>
-                <Button variant="outline" className="w-full gap-2">
+                <Button variant="outline" className="w-full gap-2" onClick={handleTrackOnMap}>
                   <MapPin className="w-4 h-4" />
                   Track on Map
                 </Button>
@@ -150,7 +168,7 @@ const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalP
                     <Badge variant="outline" className="text-xs">4.8★ Rating</Badge>
                   </div>
                 </div>
-                <Button variant="outline" className="w-full gap-2">
+                <Button variant="outline" className="w-full gap-2" onClick={handleViewDriverProfile}>
                   <User className="w-4 h-4" />
                   View Driver Profile
                 </Button>

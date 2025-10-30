@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,8 +12,11 @@ import { MapPin, Navigation, Fuel, Zap, RefreshCw, Loader2 } from "lucide-react"
 import { useVehicles } from "@/hooks/useVehicles";
 
 const MapView = () => {
+  const location = useLocation();
   const { vehicles: dbVehicles, loading, refetch } = useVehicles();
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string | undefined>();
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | undefined>(
+    location.state?.selectedVehicleId
+  );
   const [autoRefresh, setAutoRefresh] = useState("30");
   const [lastUpdate, setLastUpdate] = useState(new Date());
   
