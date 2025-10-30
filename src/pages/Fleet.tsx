@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import { Truck, Search, Plus, Fuel, MapPin, Calendar, Filter, Eye, Settings, Loa
 import { useVehicles } from "@/hooks/useVehicles";
 
 const Fleet = () => {
+  const navigate = useNavigate();
   const { vehicles: dbVehicles, loading } = useVehicles();
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -219,7 +221,7 @@ const Fleet = () => {
                     variant="outline" 
                     size="sm" 
                     className="flex-1 gap-2"
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => { e.stopPropagation(); navigate('/map', { state: { selectedVehicleId: vehicle.vehicleId } }); }}
                   >
                     <MapPin className="w-4 h-4" />
                     Track

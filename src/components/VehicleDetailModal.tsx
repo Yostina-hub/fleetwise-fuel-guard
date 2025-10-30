@@ -24,6 +24,7 @@ import {
 import StatusBadge from "./StatusBadge";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import CreateIncidentDialog from "@/components/incidents/CreateIncidentDialog";
 
 interface VehicleDetailModalProps {
   open: boolean;
@@ -212,10 +213,14 @@ const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalP
                 <Calendar className="w-4 h-4" />
                 Schedule Maintenance
               </Button>
-              <Button variant="outline" className="flex-1 gap-2">
-                <AlertTriangle className="w-4 h-4" />
-                Report Issue
-              </Button>
+              <CreateIncidentDialog
+                trigger={
+                  <Button variant="outline" className="flex-1 gap-2">
+                    <AlertTriangle className="w-4 h-4" />
+                    Report Issue
+                  </Button>
+                }
+              />
             </div>
           </TabsContent>
 

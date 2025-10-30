@@ -23,6 +23,7 @@ const MapView = () => {
   const [mapStyle, setMapStyle] = useState<'streets' | 'satellite'>('satellite');
   const [mapToken, setMapToken] = useState<string>(() => localStorage.getItem('mapbox_token') || '');
   const envToken = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
+  const [mapInstance, setMapInstance] = useState<any>(null);
   
   // Transform vehicles for map display with random positions around Addis Ababa
   const vehicles = useMemo(() => {
@@ -75,6 +76,7 @@ const MapView = () => {
             onVehicleClick={(vehicle) => setSelectedVehicleId(vehicle.id)}
             token={mapToken || envToken}
             mapStyle={mapStyle}
+            onMapReady={setMapInstance}
           />
 
           {/* Map Legend */}
@@ -177,7 +179,10 @@ const MapView = () => {
                 className={`p-4 hover:shadow-md transition-all cursor-pointer ${
                   selectedVehicleId === vehicle.id ? 'ring-2 ring-primary' : ''
                 }`}
-                onClick={() => setSelectedVehicleId(vehicle.id)}
+                onClick={() => { 
+                  setSelectedVehicleId(vehicle.id);
+                  try { mapInstance?.flyTo({ center: [vehicle.lng, vehicle.lat], zoom: 15, duration: 1200, essential: true }); } catch {}
+                }}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div>
