@@ -227,8 +227,18 @@ return () => {
       }
     });
 
-    // Auto-fit bounds to show all vehicles
-    if (vehicles.length > 0) {
+    // Center on selected vehicle or auto-fit bounds to show all vehicles
+    if (selectedVehicleId && vehicles.length > 0) {
+      const selectedVehicle = vehicles.find(v => v.id === selectedVehicleId);
+      if (selectedVehicle) {
+        map.current!.flyTo({
+          center: [selectedVehicle.lng, selectedVehicle.lat],
+          zoom: 15,
+          duration: 1500,
+          essential: true
+        });
+      }
+    } else if (vehicles.length > 0) {
       const bounds = new mapboxgl.LngLatBounds();
       vehicles.forEach(v => bounds.extend([v.lng, v.lat]));
       map.current!.fitBounds(bounds, { padding: 50, maxZoom: 15 });
