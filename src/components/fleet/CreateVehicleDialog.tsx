@@ -30,14 +30,14 @@ const vehicleSchema = z.object({
   make: z.string().trim().min(1, "Make is required").max(50),
   model: z.string().trim().min(1, "Model is required").max(50),
   year: z.number().min(1900).max(new Date().getFullYear() + 1),
-  vin: z.string().trim().max(17).optional(),
-  color: z.string().trim().max(30).optional(),
-  fuel_type: z.enum(["diesel", "petrol", "electric", "hybrid"]).optional(),
-  tank_capacity_liters: z.number().min(0).optional(),
-  odometer_km: z.number().min(0).optional(),
-  ownership_type: z.enum(["owned", "leased", "rented"]).optional(),
+  vin: z.string().trim().max(17).nullish(),
+  color: z.string().trim().max(30).nullish(),
+  fuel_type: z.enum(["diesel", "petrol", "electric", "hybrid"]).nullish(),
+  tank_capacity_liters: z.number().min(0).nullish(),
+  odometer_km: z.number().min(0).nullish(),
+  ownership_type: z.enum(["owned", "leased", "rented"]).nullish(),
   status: z.enum(["active", "maintenance", "inactive"]),
-  notes: z.string().trim().max(500).optional(),
+  notes: z.string().trim().max(500).nullish(),
 });
 
 interface CreateVehicleDialogProps {
