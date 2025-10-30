@@ -8,12 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import StatusBadge from "@/components/StatusBadge";
 import LiveTrackingMap from "@/components/map/LiveTrackingMap";
-import { MapPin, Navigation, Fuel, Zap, RefreshCw, Loader2 } from "lucide-react";
+import { MapPin, Navigation, Fuel, Zap, RefreshCw, Loader2, WifiOff } from "lucide-react";
 import { useVehicles } from "@/hooks/useVehicles";
+import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 
 const MapView = () => {
   const location = useLocation();
   const { vehicles: dbVehicles, loading, refetch } = useVehicles();
+  const { telemetry, isVehicleOnline } = useVehicleTelemetry();
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | undefined>(
     location.state?.selectedVehicleId
   );
@@ -25,25 +27,43 @@ const MapView = () => {
   const envToken = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
   const [mapInstance, setMapInstance] = useState<any>(null);
   
-  // Transform vehicles for map display with random positions around Addis Ababa
+  // Transform vehicles for map display with telemetry data
   const vehicles = useMemo(() => {
-    return dbVehicles.map((v, idx) => {
-      // Special handling for DF-14289 - place it at a specific notable location
-      const isTrackedVehicle = v.plate_number === 'DF-14289';
+    return dbVehicles.map((v) => {
+      const vehicleTelemetry = telemetry[v.id];
+      const online = isVehicleOnline(v.id);
+      
+      // If device is offline or SIM card removed, mark as offline
+      if (!online || !vehicleTelemetry) {
+        return {
+          id: v.id,
+          plate: v.plate_number || 'Unknown',
+          status: 'offline' as const,
+          fuel: 0,
+          speed: 0,
+          lat: 9.03, // Default center of Addis Ababa
+          lng: 38.74,
+          engine_on: false,
+          heading: 0,
+          isOffline: true,
+        };
+      }
       
       return {
         id: v.id,
         plate: v.plate_number || 'Unknown',
-        status: (v.status === 'active' ? 'moving' : v.status === 'maintenance' ? 'idle' : 'stopped') as 'moving' | 'idle' | 'stopped' | 'offline',
-        fuel: v.current_fuel || 50,
-        speed: v.current_speed || 0,
-        lat: isTrackedVehicle ? 9.0200 : (9.03 + (Math.random() - 0.5) * 0.1),
-        lng: isTrackedVehicle ? 38.7468 : (38.74 + (Math.random() - 0.5) * 0.1),
-        engine_on: v.status === 'active',
-        heading: Math.random() * 360
+        status: (vehicleTelemetry.engine_on ? 'moving' : 'idle') as 'moving' | 'idle' | 'stopped' | 'offline',
+        fuel: vehicleTelemetry.fuel_level_percent || 0,
+        speed: vehicleTelemetry.speed_kmh || 0,
+        lat: vehicleTelemetry.latitude || 9.03,
+        lng: vehicleTelemetry.longitude || 38.74,
+        engine_on: vehicleTelemetry.engine_on,
+        heading: vehicleTelemetry.heading || 0,
+        isOffline: false,
+        lastSeen: vehicleTelemetry.last_communication_at,
       };
     });
-  }, [dbVehicles]);
+  }, [dbVehicles, telemetry, isVehicleOnline]);
 
   // Auto-refresh
   useEffect(() => {
@@ -148,7 +168,9 @@ const MapView = () => {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-xl font-bold">Live Vehicles</h2>
-                <p className="text-sm text-muted-foreground mt-1">{vehicles.length} vehicles online</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {vehicles.filter(v => !v.isOffline).length} online / {vehicles.length} total
+                </p>
               </div>
               <Badge variant="outline" className="gap-2">
                 <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
@@ -183,55 +205,84 @@ const MapView = () => {
                 key={vehicle.id} 
                 className={`p-4 hover:shadow-md transition-all cursor-pointer ${
                   selectedVehicleId === vehicle.id ? 'ring-2 ring-primary' : ''
-                }`}
+                } ${vehicle.isOffline ? 'opacity-60' : ''}`}
                 onClick={() => { 
-                  setSelectedVehicleId(vehicle.id);
-                  try { mapInstance?.flyTo({ center: [vehicle.lng, vehicle.lat], zoom: 15, duration: 1200, essential: true }); } catch {}
+                  if (!vehicle.isOffline) {
+                    setSelectedVehicleId(vehicle.id);
+                    try { mapInstance?.flyTo({ center: [vehicle.lng, vehicle.lat], zoom: 15, duration: 1200, essential: true }); } catch {}
+                  }
                 }}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <div className="font-semibold">{vehicle.plate}</div>
+                    <div className="font-semibold flex items-center gap-2">
+                      {vehicle.plate}
+                      {vehicle.isOffline && (
+                        <Badge variant="destructive" className="text-xs">
+                          <WifiOff className="w-3 h-3 mr-1" />
+                          Offline
+                        </Badge>
+                      )}
+                    </div>
                     <div className="text-xs text-muted-foreground">{vehicle.id}</div>
                   </div>
-                  <StatusBadge status={vehicle.status} />
+                  {!vehicle.isOffline && <StatusBadge status={vehicle.status} />}
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Navigation className="w-4 h-4 text-primary" />
-                    <div>
-                      <div className="text-xs text-muted-foreground">Speed</div>
-                      <div className="font-medium">{vehicle.speed} km/h</div>
+                {vehicle.isOffline ? (
+                  <div className="text-sm text-destructive bg-destructive/10 rounded p-3 space-y-1">
+                    <div className="font-medium flex items-center gap-2">
+                      <WifiOff className="w-4 h-4" />
+                      Device Disconnected
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Fuel className="w-4 h-4 text-primary" />
-                    <div>
-                      <div className="text-xs text-muted-foreground">Fuel</div>
-                      <div className="font-medium">{vehicle.fuel}%</div>
+                    <div className="text-xs">
+                      GPS device is offline. This could be due to:
                     </div>
+                    <ul className="text-xs list-disc list-inside space-y-0.5">
+                      <li>SIM card removed</li>
+                      <li>Power disconnection</li>
+                      <li>No cellular signal</li>
+                    </ul>
+                    {vehicle.lastSeen && (
+                      <div className="text-xs mt-2 pt-2 border-t border-destructive/20">
+                        Last seen: {new Date(vehicle.lastSeen).toLocaleString()}
+                      </div>
+                    )}
                   </div>
-                </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="flex items-center gap-2">
+                        <Navigation className="w-4 h-4 text-primary" />
+                        <div>
+                          <div className="text-xs text-muted-foreground">Speed</div>
+                          <div className="font-medium">{vehicle.speed} km/h</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Fuel className="w-4 h-4 text-primary" />
+                        <div>
+                          <div className="text-xs text-muted-foreground">Fuel</div>
+                          <div className="font-medium">{vehicle.fuel}%</div>
+                        </div>
+                      </div>
+                    </div>
 
-                {vehicle.engine_on && (
-                  <div className="mt-2 flex items-center gap-1 text-xs text-success">
-                    <Zap className="w-3 h-3" />
-                    <span>Engine On</span>
-                  </div>
+                    {vehicle.engine_on && (
+                      <div className="mt-2 flex items-center gap-1 text-xs text-success">
+                        <Zap className="w-3 h-3" />
+                        <span>Engine On</span>
+                      </div>
+                    )}
+
+                    <div className="mt-3 pt-3 border-t border-border space-y-1">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <MapPin className="w-3 h-3" />
+                        <span>{vehicle.lat.toFixed(4)}, {vehicle.lng.toFixed(4)}</span>
+                      </div>
+                    </div>
+                  </>
                 )}
-
-                <div className="mt-3 pt-3 border-t border-border space-y-1">
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <MapPin className="w-3 h-3" />
-                    <span>{vehicle.lat.toFixed(4)}, {vehicle.lng.toFixed(4)}</span>
-                  </div>
-                  {vehicle.plate === 'DF-14289' && (
-                    <div className="text-xs text-muted-foreground">
-                      📍 Near Bole International Airport
-                    </div>
-                  )}
-                </div>
               </Card>
             ))}
           </div>

@@ -3454,6 +3454,62 @@ export type Database = {
           },
         ]
       }
+      vehicle_telemetry: {
+        Row: {
+          created_at: string
+          device_connected: boolean | null
+          engine_on: boolean | null
+          fuel_level_percent: number | null
+          heading: number | null
+          id: string
+          last_communication_at: string | null
+          latitude: number | null
+          longitude: number | null
+          organization_id: string
+          speed_kmh: number | null
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_connected?: boolean | null
+          engine_on?: boolean | null
+          fuel_level_percent?: number | null
+          heading?: number | null
+          id?: string
+          last_communication_at?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          organization_id: string
+          speed_kmh?: number | null
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          created_at?: string
+          device_connected?: boolean | null
+          engine_on?: boolean | null
+          fuel_level_percent?: number | null
+          heading?: number | null
+          id?: string
+          last_communication_at?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          organization_id?: string
+          speed_kmh?: number | null
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_telemetry_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vehicles: {
         Row: {
           acquisition_cost: number | null
@@ -3817,6 +3873,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_vehicle_online: { Args: { vehicle_uuid: string }; Returns: boolean }
       log_audit_event: {
         Args: {
           _action: string
