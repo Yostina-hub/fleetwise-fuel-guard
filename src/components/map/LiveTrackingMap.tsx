@@ -16,6 +16,7 @@ interface Vehicle {
   fuel: number;
   heading?: number;
   engine_on?: boolean;
+  address?: string;
 }
 
 interface LiveTrackingMapProps {
@@ -35,6 +36,7 @@ const resizeObserver = useRef<ResizeObserver | null>(null);
 const [mapLoaded, setMapLoaded] = useState(false);
 const [tokenError, setTokenError] = useState<string | null>(null);
 const [tempToken, setTempToken] = useState('');
+const [vehicleAddresses, setVehicleAddresses] = useState<Map<string, string>>(new Map());
 
   // Fetch token from backend
   useEffect(() => {
@@ -139,6 +141,27 @@ return () => {
     map.current.setStyle(targetStyle);
   }, [mapStyle]);
 
+  // Fetch address for a location
+  const fetchAddress = async (lng: number, lat: number, vehicleId: string) => {
+    try {
+      const mapboxToken = token || localStorage.getItem('mapbox_token') || import.meta.env.VITE_MAPBOX_TOKEN;
+      if (!mapboxToken) return;
+      
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxToken}&types=poi,address,place`
+      );
+      const data = await response.json();
+      
+      if (data.features && data.features.length > 0) {
+        const place = data.features[0];
+        const address = place.place_name || place.text || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        setVehicleAddresses(prev => new Map(prev).set(vehicleId, address));
+      }
+    } catch (error) {
+      console.error('Error fetching address:', error);
+    }
+  };
+
   // Update vehicle markers
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
@@ -163,6 +186,13 @@ return () => {
       };
 
       const color = statusColors[vehicle.status];
+      
+      // Fetch address if not already cached
+      if (!vehicleAddresses.has(vehicle.id)) {
+        fetchAddress(vehicle.lng, vehicle.lat, vehicle.id);
+      }
+      
+      const address = vehicleAddresses.get(vehicle.id) || 'Loading address...';
 
       let existingMarker = markers.current.get(vehicle.id);
 
@@ -209,11 +239,16 @@ return () => {
           .setLngLat([vehicle.lng, vehicle.lat])
           .setPopup(
             new mapboxgl.Popup({ offset: 25 }).setHTML(`
-              <div style="padding:8px;">
-                <strong>${vehicle.plate}</strong><br/>
-                <small>Speed: ${vehicle.speed} km/h</small><br/>
-                <small>Fuel: ${vehicle.fuel}%</small><br/>
-                <small>Status: ${vehicle.status}</small>
+              <div style="padding:12px; min-width:200px;">
+                <strong style="font-size:14px;">${vehicle.plate}</strong><br/>
+                <div style="margin-top:8px; padding-top:8px; border-top:1px solid #eee;">
+                  <small style="display:block; margin:4px 0;">⚡ Speed: ${vehicle.speed} km/h</small>
+                  <small style="display:block; margin:4px 0;">⛽ Fuel: ${vehicle.fuel}%</small>
+                  <small style="display:block; margin:4px 0;">📍 Status: ${vehicle.status}</small>
+                </div>
+                <div style="margin-top:8px; padding-top:8px; border-top:1px solid #eee;">
+                  <small style="color:#666; font-size:11px;">${address}</small>
+                </div>
               </div>
             `)
           )

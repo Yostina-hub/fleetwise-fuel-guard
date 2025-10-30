@@ -27,17 +27,22 @@ const MapView = () => {
   
   // Transform vehicles for map display with random positions around Addis Ababa
   const vehicles = useMemo(() => {
-    return dbVehicles.map((v, idx) => ({
-      id: v.id,
-      plate: v.plate_number || 'Unknown',
-      status: (v.status === 'active' ? 'moving' : v.status === 'maintenance' ? 'idle' : 'stopped') as 'moving' | 'idle' | 'stopped' | 'offline',
-      fuel: v.current_fuel || 50,
-      speed: v.current_speed || 0,
-      lat: 9.03 + (Math.random() - 0.5) * 0.1,
-      lng: 38.74 + (Math.random() - 0.5) * 0.1,
-      engine_on: v.status === 'active',
-      heading: Math.random() * 360
-    }));
+    return dbVehicles.map((v, idx) => {
+      // Special handling for DF-14289 - place it at a specific notable location
+      const isTrackedVehicle = v.plate_number === 'DF-14289';
+      
+      return {
+        id: v.id,
+        plate: v.plate_number || 'Unknown',
+        status: (v.status === 'active' ? 'moving' : v.status === 'maintenance' ? 'idle' : 'stopped') as 'moving' | 'idle' | 'stopped' | 'offline',
+        fuel: v.current_fuel || 50,
+        speed: v.current_speed || 0,
+        lat: isTrackedVehicle ? 9.0200 : (9.03 + (Math.random() - 0.5) * 0.1),
+        lng: isTrackedVehicle ? 38.7468 : (38.74 + (Math.random() - 0.5) * 0.1),
+        engine_on: v.status === 'active',
+        heading: Math.random() * 360
+      };
+    });
   }, [dbVehicles]);
 
   // Auto-refresh
@@ -216,11 +221,16 @@ const MapView = () => {
                   </div>
                 )}
 
-                <div className="mt-3 pt-3 border-t border-border">
+                <div className="mt-3 pt-3 border-t border-border space-y-1">
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <MapPin className="w-3 h-3" />
                     <span>{vehicle.lat.toFixed(4)}, {vehicle.lng.toFixed(4)}</span>
                   </div>
+                  {vehicle.plate === 'DF-14289' && (
+                    <div className="text-xs text-muted-foreground">
+                      📍 Near Bole International Airport
+                    </div>
+                  )}
                 </div>
               </Card>
             ))}
