@@ -51,6 +51,7 @@ import { GovernorMapView } from "@/components/speedgovernor/GovernorMapView";
 import { RoutePlaybackMap } from "@/components/speedgovernor/RoutePlaybackMap";
 import { RouteComparisonMap } from "@/components/speedgovernor/RouteComparisonMap";
 import { GpsSignalHistoryChart } from "@/components/speedgovernor/GpsSignalHistoryChart";
+import { TrafficFlowAnalysis } from "@/components/speedgovernor/TrafficFlowAnalysis";
 
 const SpeedGovernor = () => {
   const { organizationId } = useOrganization();
@@ -242,6 +243,7 @@ const SpeedGovernor = () => {
             <TabsTrigger value="control">Remote Control</TabsTrigger>
             <TabsTrigger value="monitoring">Live Monitoring</TabsTrigger>
             <TabsTrigger value="map">Map View</TabsTrigger>
+            <TabsTrigger value="analytics">Traffic Analytics</TabsTrigger>
             <TabsTrigger value="playback">Route Playback</TabsTrigger>
             <TabsTrigger value="comparison">Route Comparison</TabsTrigger>
             <TabsTrigger value="violations">Violations Log</TabsTrigger>
@@ -490,6 +492,13 @@ const SpeedGovernor = () => {
               telemetry={telemetry}
               isVehicleOnline={isVehicleOnline}
             />
+          </TabsContent>
+
+          {/* Traffic Analytics Tab */}
+          <TabsContent value="analytics" className="space-y-4">
+            {organizationId && (
+              <TrafficFlowAnalysis organizationId={organizationId} />
+            )}
           </TabsContent>
 
           {/* Route Playback Tab */}
