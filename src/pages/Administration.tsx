@@ -1,13 +1,14 @@
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { Settings, Shield, Lock, Globe, Scale, History } from "lucide-react";
+import { Settings, Shield, Lock, Globe, Scale, History, Mail } from "lucide-react";
 import OrganizationSettingsTab from "@/components/admin/OrganizationSettingsTab";
 import SSOConfigTab from "@/components/admin/SSOConfigTab";
 import PasswordPoliciesTab from "@/components/admin/PasswordPoliciesTab";
 import IPAllowlistTab from "@/components/admin/IPAllowlistTab";
 import LegalHoldsTab from "@/components/admin/LegalHoldsTab";
 import LoginHistoryTab from "@/components/admin/LoginHistoryTab";
+import { EmailReportsTab } from "@/components/admin/EmailReportsTab";
 
 const Administration = () => {
   return (
@@ -24,7 +25,7 @@ const Administration = () => {
       </div>
 
       <Tabs defaultValue="org-settings" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="org-settings" className="gap-2">
             <Globe className="h-4 w-4" />
             Organization
@@ -48,6 +49,10 @@ const Administration = () => {
           <TabsTrigger value="history" className="gap-2">
             <History className="h-4 w-4" />
             Login History
+          </TabsTrigger>
+          <TabsTrigger value="email-reports" className="gap-2">
+            <Mail className="h-4 w-4" />
+            Email Reports
           </TabsTrigger>
         </TabsList>
 
@@ -84,6 +89,12 @@ const Administration = () => {
         <TabsContent value="history">
           <Card className="p-6">
             <LoginHistoryTab />
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="email-reports">
+          <Card className="p-6">
+            <EmailReportsTab />
           </Card>
         </TabsContent>
       </Tabs>
