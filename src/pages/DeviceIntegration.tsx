@@ -708,12 +708,23 @@ const DeviceIntegration = () => {
                               </div>
                               <div>
                                 <h4 className="font-semibold">{device.tracker_model}</h4>
-                                <p className="text-sm text-muted-foreground">IMEI: {device.imei}</p>
-                                {device.vehicles && (
-                                  <p className="text-sm text-muted-foreground">
-                                    Vehicle: {device.vehicles.plate_number}
-                                  </p>
-                                )}
+                                <div className="space-y-1 mt-1">
+                                  <p className="text-sm text-muted-foreground">IMEI: {device.imei}</p>
+                                  {device.sim_msisdn && (
+                                    <p className="text-sm text-muted-foreground">
+                                      SIM: {device.sim_msisdn}
+                                    </p>
+                                  )}
+                                  {device.vehicles ? (
+                                    <p className="text-sm font-medium text-primary">
+                                      🚗 {device.vehicles.plate_number}
+                                    </p>
+                                  ) : (
+                                    <p className="text-sm text-muted-foreground italic">
+                                      No vehicle assigned
+                                    </p>
+                                  )}
+                                </div>
                               </div>
                             </div>
                             <div className="flex items-center gap-3">
