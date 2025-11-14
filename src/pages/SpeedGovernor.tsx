@@ -38,16 +38,20 @@ import {
   Shield,
   Clock,
   TrendingUp,
-  AlertCircle
+  AlertCircle,
+  MapPin
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
+import { LiveTelemetryCard } from "@/components/speedgovernor/LiveTelemetryCard";
 
 const SpeedGovernor = () => {
   const { organizationId } = useOrganization();
   const { toast } = useToast();
+  const { telemetry, isVehicleOnline } = useVehicleTelemetry();
   const [selectedVehicle, setSelectedVehicle] = useState<string>("");
   const [speedLimit, setSpeedLimit] = useState<number>(80);
   const [isGovernorActive, setIsGovernorActive] = useState(true);
@@ -389,90 +393,72 @@ const SpeedGovernor = () => {
           </TabsContent>
 
           {/* Live Monitoring Tab */}
-          <TabsContent value="monitoring">
+          <TabsContent value="monitoring" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Live Vehicle Status</CardTitle>
-                <CardDescription>Real-time governor status and speed monitoring</CardDescription>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-primary" />
+                  Live Vehicle Telemetry
+                </CardTitle>
+                <CardDescription>
+                  Real-time speed, GPS position, and governor status monitoring
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Vehicle</TableHead>
-                      <TableHead>Current Speed</TableHead>
-                      <TableHead>Speed Limit</TableHead>
-                      <TableHead>Governor</TableHead>
-                      <TableHead>Violations Today</TableHead>
-                      <TableHead>Last Update</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {vehicles?.map((vehicle) => (
-                      <TableRow key={vehicle.id}>
-                        <TableCell className="font-medium">{vehicle.plate}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Gauge className="h-4 w-4 text-muted-foreground" />
-                            <span className={vehicle.currentSpeed > vehicle.maxSpeed ? "text-destructive font-semibold" : ""}>
-                              {vehicle.currentSpeed} km/h
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{vehicle.maxSpeed} km/h</TableCell>
-                        <TableCell>
-                          <Badge variant={vehicle.governorActive ? "default" : "destructive"}>
-                            {vehicle.governorActive ? "Active" : "Inactive"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={vehicle.violations === 0 ? "outline" : "destructive"}>
-                            {vehicle.violations}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {vehicle.lastUpdate}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="sm">
-                                <Settings className="h-4 w-4" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Configure {vehicle.plate}</DialogTitle>
-                                <DialogDescription>
-                                  Adjust speed governor settings for this vehicle
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="space-y-4 py-4">
-                                <div>
-                                  <Label>Speed Limit</Label>
-                                  <Input type="number" defaultValue={vehicle.maxSpeed} />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                  <Label>Enable Governor</Label>
-                                  <Switch defaultChecked={vehicle.governorActive} />
-                                </div>
-                              </div>
-                              <DialogFooter>
-                                <Button onClick={() => toast({ title: "Settings Updated" })}>
-                                  Apply Changes
-                                </Button>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
-                        </TableCell>
-                      </TableRow>
+                {!vehicles || vehicles.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Gauge className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No Speed Governors Found</h3>
+                    <p className="text-muted-foreground">
+                      Add vehicles with speed governor devices to see live telemetry
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {vehicles.map((vehicle) => (
+                      <LiveTelemetryCard
+                        key={vehicle.id}
+                        plate={vehicle.plate}
+                        telemetry={telemetry[vehicle.id] || null}
+                        maxSpeed={vehicle.maxSpeed}
+                        governorActive={vehicle.governorActive}
+                        isOnline={isVehicleOnline(vehicle.id)}
+                      />
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Quick Actions Card */}
+            <Card className="border-primary/20 bg-primary/5">
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-primary/10 rounded-lg">
+                    <Activity className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold mb-2">Real-time Updates</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Telemetry data updates automatically every few seconds. Green badges indicate active connections, 
+                      while gray badges show offline devices.
+                    </p>
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      <Badge variant="outline" className="gap-1">
+                        <Activity className="h-3 w-3" />
+                        Live Speed Tracking
+                      </Badge>
+                      <Badge variant="outline" className="gap-1">
+                        <MapPin className="h-3 w-3" />
+                        GPS Position
+                      </Badge>
+                      <Badge variant="outline" className="gap-1">
+                        <Shield className="h-3 w-3" />
+                        Governor Status
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
