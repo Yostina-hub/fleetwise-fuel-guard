@@ -47,6 +47,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { LiveTelemetryCard } from "@/components/speedgovernor/LiveTelemetryCard";
+import { GovernorMapView } from "@/components/speedgovernor/GovernorMapView";
 
 const SpeedGovernor = () => {
   const { organizationId } = useOrganization();
@@ -237,6 +238,7 @@ const SpeedGovernor = () => {
           <TabsList>
             <TabsTrigger value="control">Remote Control</TabsTrigger>
             <TabsTrigger value="monitoring">Live Monitoring</TabsTrigger>
+            <TabsTrigger value="map">Map View</TabsTrigger>
             <TabsTrigger value="violations">Violations Log</TabsTrigger>
             <TabsTrigger value="compliance">Compliance Reports</TabsTrigger>
           </TabsList>
@@ -461,6 +463,15 @@ const SpeedGovernor = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Map View Tab */}
+          <TabsContent value="map" className="space-y-4">
+            <GovernorMapView
+              vehicles={vehicles || []}
+              telemetry={telemetry}
+              isVehicleOnline={isVehicleOnline}
+            />
           </TabsContent>
 
           {/* Violations Log Tab */}
