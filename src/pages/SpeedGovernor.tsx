@@ -50,6 +50,7 @@ import { LiveTelemetryCard } from "@/components/speedgovernor/LiveTelemetryCard"
 import { GovernorMapView } from "@/components/speedgovernor/GovernorMapView";
 import { RoutePlaybackMap } from "@/components/speedgovernor/RoutePlaybackMap";
 import { RouteComparisonMap } from "@/components/speedgovernor/RouteComparisonMap";
+import { GpsSignalHistoryChart } from "@/components/speedgovernor/GpsSignalHistoryChart";
 
 const SpeedGovernor = () => {
   const { organizationId } = useOrganization();
@@ -467,6 +468,19 @@ const SpeedGovernor = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* GPS Signal History Charts */}
+            {vehicles && vehicles.length > 0 && (
+              <div className="space-y-4">
+                {vehicles.map((vehicle) => (
+                  <GpsSignalHistoryChart
+                    key={vehicle.id}
+                    vehicleId={vehicle.id}
+                    hours={24}
+                  />
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           {/* Map View Tab */}
