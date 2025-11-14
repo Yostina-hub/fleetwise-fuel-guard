@@ -26,12 +26,12 @@ export const useEmailReports = () => {
     queryKey: ["email-report-configs"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("email_report_configs")
+        .from("email_report_configs" as any)
         .select("*")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data as EmailReportConfig[];
+      return data as unknown as EmailReportConfig[];
     },
   });
 
@@ -41,7 +41,7 @@ export const useEmailReports = () => {
       if (!user) throw new Error("Not authenticated");
 
       const { data, error } = await supabase
-        .from("email_report_configs")
+        .from("email_report_configs" as any)
         .insert({
           ...config,
           created_by: user.id,
@@ -72,7 +72,7 @@ export const useEmailReports = () => {
   const updateReportConfig = useMutation({
     mutationFn: async ({ id, ...config }: Partial<EmailReportConfig> & { id: string }) => {
       const { data, error } = await supabase
-        .from("email_report_configs")
+        .from("email_report_configs" as any)
         .update(config)
         .eq("id", id)
         .select()
@@ -100,7 +100,7 @@ export const useEmailReports = () => {
   const deleteReportConfig = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from("email_report_configs")
+        .from("email_report_configs" as any)
         .delete()
         .eq("id", id);
 
