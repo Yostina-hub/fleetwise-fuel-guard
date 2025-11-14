@@ -30,6 +30,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { DeviceManagementTab } from "@/components/devices/DeviceManagementTab";
 import { HeartbeatMonitoringTab } from "@/components/devices/HeartbeatMonitoringTab";
 import { DeviceStatusMonitor } from "@/components/devices/DeviceStatusMonitor";
+import { OfflineAlertsConfig } from "@/components/devices/OfflineAlertsConfig";
 
 // Popular device templates - pre-configured for plug-and-play with comprehensive GPS parameters
 const deviceTemplates = [
@@ -682,6 +683,7 @@ const DeviceIntegration = () => {
             <TabsTrigger value="devices">Device Management</TabsTrigger>
             <TabsTrigger value="heartbeat">Heartbeat Monitor</TabsTrigger>
             <TabsTrigger value="realtime">Live Status</TabsTrigger>
+            <TabsTrigger value="alerts">Offline Alerts</TabsTrigger>
             <TabsTrigger value="connected">Connected Devices</TabsTrigger>
             <TabsTrigger value="templates">Device Templates</TabsTrigger>
             <TabsTrigger value="guide">Setup Guide</TabsTrigger>
@@ -697,6 +699,10 @@ const DeviceIntegration = () => {
 
           <TabsContent value="realtime" className="space-y-4">
             <DeviceStatusMonitor />
+          </TabsContent>
+
+          <TabsContent value="alerts" className="space-y-4">
+            <OfflineAlertsConfig />
           </TabsContent>
 
           <TabsContent value="connected" className="space-y-4">
