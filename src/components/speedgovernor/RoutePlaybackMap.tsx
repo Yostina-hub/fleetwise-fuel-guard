@@ -15,15 +15,12 @@ import {
   FastForward,
   Calendar as CalendarIcon,
   Clock,
-  AlertTriangle,
-  Download
+  AlertTriangle
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useOrganization } from "@/hooks/useOrganization";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 import { toast } from "sonner";
 
 interface RoutePoint {
@@ -343,166 +340,6 @@ export const RoutePlaybackMap = ({ vehicleId, vehiclePlate, maxSpeed }: RoutePla
     setIsPlaying(false);
   };
 
-  const handleExportPDF = async () => {
-    if (!routeData || routeData.length === 0) {
-      toast.error("No route data to export");
-      return;
-    }
-
-    try {
-      toast.loading("Generating PDF report...");
-      setIsPlaying(false);
-
-      // Wait a moment for map to settle
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Capture map screenshot
-      const mapElement = mapContainer.current;
-      if (!mapElement) {
-        toast.error("Map not ready");
-        return;
-      }
-
-      const canvas = await html2canvas(mapElement, {
-        useCORS: true,
-        allowTaint: true,
-        scale: 2,
-      });
-
-      // Initialize PDF
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      let yPosition = 20;
-
-      // Title
-      pdf.setFontSize(18);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Route Playback Report', pageWidth / 2, yPosition, { align: 'center' });
-      yPosition += 10;
-
-      // Vehicle and Date Info
-      pdf.setFontSize(11);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(`Vehicle: ${vehiclePlate}`, 15, yPosition);
-      yPosition += 6;
-      pdf.text(`Date: ${format(selectedDate, "PPP")}`, 15, yPosition);
-      yPosition += 6;
-      pdf.text(`Time Range: ${startTime} - ${endTime}`, 15, yPosition);
-      yPosition += 6;
-      pdf.text(`Generated: ${format(new Date(), "PPP p")}`, 15, yPosition);
-      yPosition += 10;
-
-      // Statistics Summary
-      pdf.setFontSize(14);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Statistics Summary', 15, yPosition);
-      yPosition += 8;
-
-      pdf.setFontSize(10);
-      pdf.setFont('helvetica', 'normal');
-      
-      const stats = [
-        ['Total Data Points:', routeData.length.toString()],
-        ['Approximate Distance:', `${totalDistance} km`],
-        ['Speed Violations:', violationCount.toString()],
-        ['Speed Limit:', `${maxSpeed} km/h`],
-        ['Average Speed:', `${(routeData.reduce((sum, p) => sum + p.speed_kmh, 0) / routeData.length).toFixed(1)} km/h`],
-        ['Max Speed Recorded:', `${Math.max(...routeData.map(p => p.speed_kmh)).toFixed(1)} km/h`],
-      ];
-
-      stats.forEach(([label, value]) => {
-        pdf.text(label, 15, yPosition);
-        pdf.text(value, 100, yPosition);
-        yPosition += 6;
-      });
-
-      yPosition += 5;
-
-      // Map Screenshot
-      pdf.setFontSize(14);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Route Map', 15, yPosition);
-      yPosition += 8;
-
-      const imgData = canvas.toDataURL('image/png');
-      const imgWidth = pageWidth - 30;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      if (yPosition + imgHeight > pageHeight - 20) {
-        pdf.addPage();
-        yPosition = 20;
-      }
-
-      pdf.addImage(imgData, 'PNG', 15, yPosition, imgWidth, imgHeight);
-      yPosition += imgHeight + 10;
-
-      // Violation Details Table
-      if (violationCount > 0) {
-        if (yPosition > pageHeight - 40) {
-          pdf.addPage();
-          yPosition = 20;
-        }
-
-        pdf.setFontSize(14);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Speed Violations Details', 15, yPosition);
-        yPosition += 8;
-
-        pdf.setFontSize(9);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Time', 15, yPosition);
-        pdf.text('Speed', 70, yPosition);
-        pdf.text('Limit', 100, yPosition);
-        pdf.text('Excess', 130, yPosition);
-        pdf.text('Location', 160, yPosition);
-        yPosition += 5;
-
-        pdf.setFont('helvetica', 'normal');
-        
-        const violations = routeData.filter(p => p.speed_kmh > maxSpeed).slice(0, 30);
-        
-        violations.forEach((point) => {
-          if (yPosition > pageHeight - 15) {
-            pdf.addPage();
-            yPosition = 20;
-          }
-
-          const timeStr = format(new Date(point.timestamp), "HH:mm:ss");
-          const speedStr = `${point.speed_kmh.toFixed(0)} km/h`;
-          const limitStr = `${maxSpeed} km/h`;
-          const excessStr = `+${(point.speed_kmh - maxSpeed).toFixed(0)}`;
-          const locationStr = `${point.latitude.toFixed(4)}, ${point.longitude.toFixed(4)}`;
-
-          pdf.text(timeStr, 15, yPosition);
-          pdf.text(speedStr, 70, yPosition);
-          pdf.text(limitStr, 100, yPosition);
-          pdf.text(excessStr, 130, yPosition);
-          pdf.text(locationStr, 160, yPosition);
-          yPosition += 5;
-        });
-
-        if (violationCount > 30) {
-          yPosition += 3;
-          pdf.setFontSize(8);
-          pdf.setFont('helvetica', 'italic');
-          pdf.text(`(Showing first 30 of ${violationCount} violations)`, 15, yPosition);
-        }
-      }
-
-      // Save PDF
-      const fileName = `route-report-${vehiclePlate}-${format(selectedDate, "yyyy-MM-dd")}.pdf`;
-      pdf.save(fileName);
-
-      toast.dismiss();
-      toast.success("PDF report generated successfully");
-    } catch (error) {
-      console.error("Error generating PDF:", error);
-      toast.dismiss();
-      toast.error("Failed to generate PDF report");
-    }
-  };
-
   const currentPoint = routeData?.[Math.floor(currentIndex)];
   const violationCount = routeData?.filter(p => p.speed_kmh > maxSpeed).length || 0;
   const totalDistance = routeData?.length ? ((routeData.length * 0.1) / 1000).toFixed(1) : "0";
@@ -573,21 +410,7 @@ export const RoutePlaybackMap = ({ vehicleId, vehiclePlate, maxSpeed }: RoutePla
 
       {/* Playback Controls */}
       <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle>Playback Controls</CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExportPDF}
-              disabled={!routeData || routeData.length === 0 || isLoading}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Export PDF Report
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <div className="space-y-6">
             {/* Timeline Slider */}
             <div className="space-y-2">
