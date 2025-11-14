@@ -22,11 +22,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Smartphone, Fuel, MapPin, Zap, CheckCircle, Plus, Settings } from "lucide-react";
+import { Smartphone, Fuel, MapPin, Zap, CheckCircle, Plus, Settings, Activity } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
+import { DeviceManagementTab } from "@/components/devices/DeviceManagementTab";
+import { HeartbeatMonitoringTab } from "@/components/devices/HeartbeatMonitoringTab";
 
 // Popular device templates - pre-configured for plug-and-play with comprehensive GPS parameters
 const deviceTemplates = [
@@ -674,12 +676,22 @@ const DeviceIntegration = () => {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="connected" className="space-y-4">
+        <Tabs defaultValue="devices" className="space-y-4">
           <TabsList>
+            <TabsTrigger value="devices">Device Management</TabsTrigger>
+            <TabsTrigger value="heartbeat">Heartbeat Monitor</TabsTrigger>
             <TabsTrigger value="connected">Connected Devices</TabsTrigger>
             <TabsTrigger value="templates">Device Templates</TabsTrigger>
             <TabsTrigger value="guide">Setup Guide</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="devices" className="space-y-4">
+            <DeviceManagementTab />
+          </TabsContent>
+
+          <TabsContent value="heartbeat" className="space-y-4">
+            <HeartbeatMonitoringTab />
+          </TabsContent>
 
           <TabsContent value="connected" className="space-y-4">
             <Card>
