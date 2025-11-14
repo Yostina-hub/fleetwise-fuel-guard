@@ -17,6 +17,10 @@ interface Vehicle {
   heading?: number;
   engine_on?: boolean;
   address?: string;
+  gps_signal_strength?: number;
+  gps_satellites_count?: number;
+  gps_hdop?: number;
+  gps_fix_type?: string;
 }
 
 interface LiveTrackingMapProps {
@@ -245,7 +249,19 @@ return () => {
                   <small style="display:block; margin:4px 0;">⚡ Speed: ${vehicle.speed} km/h</small>
                   <small style="display:block; margin:4px 0;">⛽ Fuel: ${vehicle.fuel}%</small>
                   <small style="display:block; margin:4px 0;">📍 Status: ${vehicle.status}</small>
+                  <small style="display:block; margin:4px 0; color: ${
+                    !vehicle.gps_signal_strength || vehicle.gps_signal_strength === 0 
+                      ? '#ef4444' 
+                      : vehicle.gps_signal_strength > 50 
+                        ? '#22c55e' 
+                        : '#f59e0b'
+                  };">
+                    📡 GPS: ${vehicle.gps_signal_strength || 0}% (${vehicle.gps_satellites_count || 0} satellites)
+                  </small>
                 </div>
+                ${!vehicle.gps_signal_strength || vehicle.gps_signal_strength === 0 
+                  ? '<div style="margin-top:8px;padding:6px;background:#fef2f2;border-radius:4px;color:#ef4444;text-align:center;font-size:11px;">⚠️ No GPS Signal - Location may be outdated</div>' 
+                  : ''}
                 <div style="margin-top:8px; padding-top:8px; border-top:1px solid #eee;">
                   <small style="color:#666; font-size:11px;">${address}</small>
                 </div>

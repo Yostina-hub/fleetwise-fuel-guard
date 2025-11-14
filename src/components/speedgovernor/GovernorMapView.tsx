@@ -168,7 +168,14 @@ export const GovernorMapView = ({ vehicles, telemetry, isVehicleOnline }: Govern
                   ${isOnline ? "● Online" : "○ Offline"}
                 </span>
               </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: #6b7280;">GPS Signal:</span>
+                <span style="color: ${vehicleTelemetry.gps_signal_strength > 50 ? '#22c55e' : vehicleTelemetry.gps_signal_strength > 0 ? '#f59e0b' : '#ef4444'}; font-weight: 600;">
+                  ${vehicleTelemetry.gps_signal_strength || 0}% (${vehicleTelemetry.gps_satellites_count || 0} sats)
+                </span>
+              </div>
               ${isOverSpeed ? '<div style="margin-top: 8px; padding: 6px; background: #fef2f2; border-radius: 4px; color: #ef4444; font-weight: 600; text-align: center;">⚠️ OVERSPEEDING!</div>' : ''}
+              ${!vehicleTelemetry.gps_signal_strength || vehicleTelemetry.gps_signal_strength === 0 ? '<div style="margin-top: 8px; padding: 6px; background: #fef2f2; border-radius: 4px; color: #ef4444; text-align: center; font-size: 12px;">⚠️ No GPS Signal</div>' : ''}
             </div>
           </div>
         `);

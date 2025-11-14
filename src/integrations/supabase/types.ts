@@ -549,6 +549,93 @@ export type Database = {
           },
         ]
       }
+      device_offline_alerts: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          notification_emails: string[]
+          notification_sms: string[] | null
+          offline_threshold_minutes: number
+          organization_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          notification_emails: string[]
+          notification_sms?: string[] | null
+          offline_threshold_minutes?: number
+          organization_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          notification_emails?: string[]
+          notification_sms?: string[] | null
+          offline_threshold_minutes?: number
+          organization_id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      device_offline_events: {
+        Row: {
+          back_online_at: string | null
+          created_at: string | null
+          device_id: string
+          id: string
+          notification_sent: boolean | null
+          notification_sent_at: string | null
+          offline_duration_minutes: number | null
+          offline_since: string
+          organization_id: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          back_online_at?: string | null
+          created_at?: string | null
+          device_id: string
+          id?: string
+          notification_sent?: boolean | null
+          notification_sent_at?: string | null
+          offline_duration_minutes?: number | null
+          offline_since: string
+          organization_id: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          back_online_at?: string | null
+          created_at?: string | null
+          device_id?: string
+          id?: string
+          notification_sent?: boolean | null
+          notification_sent_at?: string | null
+          offline_duration_minutes?: number | null
+          offline_since?: string
+          organization_id?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_offline_events_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "device_offline_events_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       device_protocols: {
         Row: {
           created_at: string
@@ -677,6 +764,92 @@ export type Database = {
           },
           {
             foreignKeyName: "devices_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_behavior_scores: {
+        Row: {
+          acceleration_score: number
+          braking_score: number
+          created_at: string
+          driver_id: string
+          harsh_acceleration_events: number
+          harsh_braking_events: number
+          id: string
+          idle_score: number
+          organization_id: string
+          overall_score: number
+          recommendations: string[] | null
+          risk_factors: string[] | null
+          safety_rating: string
+          score_period_end: string
+          score_period_start: string
+          speed_violations: number
+          speeding_score: number
+          total_distance: number
+          total_drive_time: number
+          total_idle_time: number
+          trend: string | null
+          updated_at: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          acceleration_score?: number
+          braking_score?: number
+          created_at?: string
+          driver_id: string
+          harsh_acceleration_events?: number
+          harsh_braking_events?: number
+          id?: string
+          idle_score?: number
+          organization_id: string
+          overall_score: number
+          recommendations?: string[] | null
+          risk_factors?: string[] | null
+          safety_rating: string
+          score_period_end: string
+          score_period_start: string
+          speed_violations?: number
+          speeding_score?: number
+          total_distance?: number
+          total_drive_time?: number
+          total_idle_time?: number
+          trend?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          acceleration_score?: number
+          braking_score?: number
+          created_at?: string
+          driver_id?: string
+          harsh_acceleration_events?: number
+          harsh_braking_events?: number
+          id?: string
+          idle_score?: number
+          organization_id?: string
+          overall_score?: number
+          recommendations?: string[] | null
+          risk_factors?: string[] | null
+          safety_rating?: string
+          score_period_end?: string
+          score_period_start?: string
+          speed_violations?: number
+          speeding_score?: number
+          total_distance?: number
+          total_drive_time?: number
+          total_idle_time?: number
+          trend?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_behavior_scores_vehicle_id_fkey"
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
@@ -913,6 +1086,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      email_report_configs: {
+        Row: {
+          created_at: string
+          created_by: string
+          day_of_week: number | null
+          frequency: string
+          id: string
+          include_trend_analysis: boolean
+          is_active: boolean
+          name: string
+          organization_id: string
+          recipient_emails: string[]
+          time_of_day: string
+          updated_at: string
+          vehicle_ids: string[]
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          day_of_week?: number | null
+          frequency: string
+          id?: string
+          include_trend_analysis?: boolean
+          is_active?: boolean
+          name: string
+          organization_id: string
+          recipient_emails: string[]
+          time_of_day?: string
+          updated_at?: string
+          vehicle_ids: string[]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          day_of_week?: number | null
+          frequency?: string
+          id?: string
+          include_trend_analysis?: boolean
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          recipient_emails?: string[]
+          time_of_day?: string
+          updated_at?: string
+          vehicle_ids?: string[]
+        }
+        Relationships: []
       }
       enrichment_configs: {
         Row: {
@@ -3460,6 +3681,10 @@ export type Database = {
           device_connected: boolean | null
           engine_on: boolean | null
           fuel_level_percent: number | null
+          gps_fix_type: string | null
+          gps_hdop: number | null
+          gps_satellites_count: number | null
+          gps_signal_strength: number | null
           heading: number | null
           id: string
           last_communication_at: string | null
@@ -3475,6 +3700,10 @@ export type Database = {
           device_connected?: boolean | null
           engine_on?: boolean | null
           fuel_level_percent?: number | null
+          gps_fix_type?: string | null
+          gps_hdop?: number | null
+          gps_satellites_count?: number | null
+          gps_signal_strength?: number | null
           heading?: number | null
           id?: string
           last_communication_at?: string | null
@@ -3490,6 +3719,10 @@ export type Database = {
           device_connected?: boolean | null
           engine_on?: boolean | null
           fuel_level_percent?: number | null
+          gps_fix_type?: string | null
+          gps_hdop?: number | null
+          gps_satellites_count?: number | null
+          gps_signal_strength?: number | null
           heading?: number | null
           id?: string
           last_communication_at?: string | null
@@ -3858,7 +4091,42 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      latest_driver_scores: {
+        Row: {
+          acceleration_score: number | null
+          braking_score: number | null
+          created_at: string | null
+          driver_id: string | null
+          harsh_acceleration_events: number | null
+          harsh_braking_events: number | null
+          id: string | null
+          idle_score: number | null
+          organization_id: string | null
+          overall_score: number | null
+          recommendations: string[] | null
+          risk_factors: string[] | null
+          safety_rating: string | null
+          score_period_end: string | null
+          score_period_start: string | null
+          speed_violations: number | null
+          speeding_score: number | null
+          total_distance: number | null
+          total_drive_time: number | null
+          total_idle_time: number | null
+          trend: string | null
+          updated_at: string | null
+          vehicle_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_behavior_scores_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       get_user_organization: { Args: { _user_id: string }; Returns: string }

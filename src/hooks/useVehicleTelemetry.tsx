@@ -16,6 +16,10 @@ export interface VehicleTelemetry {
   last_communication_at: string;
   created_at: string;
   updated_at: string;
+  gps_satellites_count?: number;
+  gps_signal_strength?: number;
+  gps_hdop?: number;
+  gps_fix_type?: 'no_fix' | '2d_fix' | '3d_fix';
 }
 
 export const useVehicleTelemetry = () => {
