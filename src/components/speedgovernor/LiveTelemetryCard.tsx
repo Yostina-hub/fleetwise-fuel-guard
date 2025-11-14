@@ -7,10 +7,12 @@ import {
   Activity,
   Wifi,
   WifiOff,
-  Clock
+  Clock,
+  Satellite
 } from "lucide-react";
 import { VehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { formatDistanceToNow } from "date-fns";
+import { GpsSignalIndicator } from "@/components/GpsSignalIndicator";
 
 interface LiveTelemetryCardProps {
   plate: string;
@@ -139,6 +141,16 @@ export const LiveTelemetryCard = ({
             No GPS signal
           </div>
         )}
+
+        {/* GPS Signal Quality */}
+        <GpsSignalIndicator
+          signalStrength={telemetry?.gps_signal_strength}
+          satellitesCount={telemetry?.gps_satellites_count}
+          hdop={telemetry?.gps_hdop}
+          fixType={telemetry?.gps_fix_type}
+          showDetails={true}
+          variant="default"
+        />
 
         {/* Engine Status */}
         <div className="flex items-center justify-between text-sm">

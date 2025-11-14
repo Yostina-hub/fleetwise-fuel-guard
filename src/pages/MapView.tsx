@@ -46,6 +46,8 @@ const MapView = () => {
           engine_on: false,
           heading: 0,
           isOffline: true,
+          gps_signal_strength: 0,
+          gps_satellites_count: 0,
         };
       }
       
@@ -61,6 +63,10 @@ const MapView = () => {
         heading: vehicleTelemetry.heading || 0,
         isOffline: false,
         lastSeen: vehicleTelemetry.last_communication_at,
+        gps_signal_strength: vehicleTelemetry.gps_signal_strength,
+        gps_satellites_count: vehicleTelemetry.gps_satellites_count,
+        gps_hdop: vehicleTelemetry.gps_hdop,
+        gps_fix_type: vehicleTelemetry.gps_fix_type,
       };
     });
   }, [dbVehicles, telemetry, isVehicleOnline]);
