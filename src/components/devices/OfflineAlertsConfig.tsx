@@ -22,7 +22,7 @@ export const OfflineAlertsConfig = () => {
     queryKey: ["offline-alerts-config"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("device_offline_alerts")
+        .from("device_offline_alerts" as any)
         .select("*")
         .order("created_at", { ascending: false })
         .limit(1)
@@ -31,10 +31,10 @@ export const OfflineAlertsConfig = () => {
       if (error && error.code !== 'PGRST116') throw error;
       
       if (data) {
-        setEmails(data.notification_emails?.join(", ") || "");
-        setSms(data.notification_sms?.join(", ") || "");
-        setThreshold(data.offline_threshold_minutes);
-        setIsActive(data.is_active);
+        setEmails((data as any).notification_emails?.join(", ") || "");
+        setSms((data as any).notification_sms?.join(", ") || "");
+        setThreshold((data as any).offline_threshold_minutes);
+        setIsActive((data as any).is_active);
       }
       
       return data;
@@ -45,7 +45,7 @@ export const OfflineAlertsConfig = () => {
     queryKey: ["offline-events"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("device_offline_events")
+        .from("device_offline_events" as any)
         .select(`
           *,
           devices(imei, tracker_model),
@@ -75,15 +75,15 @@ export const OfflineAlertsConfig = () => {
         is_active: isActive,
       };
 
-      if (config?.id) {
+      if ((config as any)?.id) {
         const { error } = await supabase
-          .from("device_offline_alerts")
+          .from("device_offline_alerts" as any)
           .update(payload)
-          .eq("id", config.id);
+          .eq("id", (config as any).id);
         if (error) throw error;
       } else {
         const { error } = await supabase
-          .from("device_offline_alerts")
+          .from("device_offline_alerts" as any)
           .insert(payload);
         if (error) throw error;
       }
@@ -228,7 +228,7 @@ export const OfflineAlertsConfig = () => {
         <CardContent>
           {offlineEvents && offlineEvents.length > 0 ? (
             <div className="space-y-3">
-              {offlineEvents.map((event) => (
+              {offlineEvents.map((event: any) => (
                 <div
                   key={event.id}
                   className="flex items-center justify-between p-3 border rounded-lg"

@@ -34,12 +34,12 @@ export const useDriverScores = () => {
     queryKey: ["driver-scores"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("latest_driver_scores")
+        .from("latest_driver_scores" as any)
         .select("*")
         .order("overall_score", { ascending: true });
 
       if (error) throw error;
-      return data as DriverScore[];
+      return data as unknown as DriverScore[];
     },
   });
 
@@ -47,13 +47,13 @@ export const useDriverScores = () => {
     queryKey: ["driver-score-history"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("driver_behavior_scores")
+        .from("driver_behavior_scores" as any)
         .select("*")
         .order("score_period_end", { ascending: false })
         .limit(100);
 
       if (error) throw error;
-      return data as DriverScore[];
+      return data as unknown as DriverScore[];
     },
   });
 
