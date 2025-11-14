@@ -221,6 +221,7 @@ const DeviceIntegration = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [step, setStep] = useState(1);
+  const [editingDevice, setEditingDevice] = useState<any>(null);
   const [formData, setFormData] = useState({
     imei: "",
     sim_iccid: "",
@@ -355,12 +356,29 @@ const DeviceIntegration = () => {
       vehicle_id: "",
     });
     setSelectedTemplate(null);
+    setEditingDevice(null);
     setStep(1);
   };
 
   const handleSelectTemplate = (template: any) => {
     setSelectedTemplate(template);
     setStep(2);
+  };
+
+  const handleEditDevice = (device: any) => {
+    // Find the template for this device
+    const template = deviceTemplates.find(t => t.name === device.tracker_model);
+    
+    setEditingDevice(device);
+    setSelectedTemplate(template || deviceTemplates[0]);
+    setFormData({
+      imei: device.imei,
+      sim_iccid: device.sim_iccid || "",
+      sim_msisdn: device.sim_msisdn || "",
+      vehicle_id: device.vehicle_id || "",
+    });
+    setStep(2);
+    setIsDialogOpen(true);
   };
 
   const handleSubmit = () => {
@@ -398,16 +416,22 @@ const DeviceIntegration = () => {
             <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
-                  {step === 1 ? "Step 1: Choose Your Device" : "Step 2: Enter Device Details"}
+                  {editingDevice 
+                    ? "Edit Device" 
+                    : step === 1 
+                    ? "Step 1: Choose Your Device" 
+                    : "Step 2: Enter Device Details"}
                 </DialogTitle>
                 <DialogDescription>
-                  {step === 1
+                  {editingDevice
+                    ? "Update device information"
+                    : step === 1
                     ? "Select your device model from our pre-configured templates"
                     : "Enter your device information - we'll handle the rest automatically"}
                 </DialogDescription>
               </DialogHeader>
 
-              {step === 1 ? (
+              {step === 1 && !editingDevice ? (
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {deviceTemplates.map((template) => (
@@ -497,9 +521,10 @@ const DeviceIntegration = () => {
                         value={formData.imei}
                         onChange={(e) => setFormData({ ...formData, imei: e.target.value })}
                         maxLength={15}
+                        disabled={!!editingDevice}
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Find this on your device label or box
+                        {editingDevice ? "IMEI cannot be changed" : "Find this on your device label or box"}
                       </p>
                     </div>
 
@@ -698,7 +723,11 @@ const DeviceIntegration = () => {
                               >
                                 {device.status}
                               </Badge>
-                              <Button variant="ghost" size="icon">
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => handleEditDevice(device)}
+                              >
                                 <Settings className="h-4 w-4" />
                               </Button>
                             </div>
