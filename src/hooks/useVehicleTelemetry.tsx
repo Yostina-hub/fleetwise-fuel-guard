@@ -84,7 +84,7 @@ export const useVehicleTelemetry = () => {
     };
   }, [organizationId]);
 
-  // Helper function to check if a vehicle is online (last communication within 5 minutes)
+  // Helper function to check if a vehicle is online (last communication within 15 minutes)
   const isVehicleOnline = (vehicleId: string): boolean => {
     const vehicleTelemetry = telemetry[vehicleId];
     if (!vehicleTelemetry || !vehicleTelemetry.device_connected) {
@@ -95,7 +95,7 @@ export const useVehicleTelemetry = () => {
     const now = new Date();
     const minutesSinceLastComm = (now.getTime() - lastComm.getTime()) / 1000 / 60;
     
-    return minutesSinceLastComm <= 5;
+    return minutesSinceLastComm <= 15;
   };
 
   return {
