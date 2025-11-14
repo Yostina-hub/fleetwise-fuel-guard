@@ -49,6 +49,7 @@ import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { LiveTelemetryCard } from "@/components/speedgovernor/LiveTelemetryCard";
 import { GovernorMapView } from "@/components/speedgovernor/GovernorMapView";
 import { RoutePlaybackMap } from "@/components/speedgovernor/RoutePlaybackMap";
+import { RouteComparisonMap } from "@/components/speedgovernor/RouteComparisonMap";
 
 const SpeedGovernor = () => {
   const { organizationId } = useOrganization();
@@ -241,6 +242,7 @@ const SpeedGovernor = () => {
             <TabsTrigger value="monitoring">Live Monitoring</TabsTrigger>
             <TabsTrigger value="map">Map View</TabsTrigger>
             <TabsTrigger value="playback">Route Playback</TabsTrigger>
+            <TabsTrigger value="comparison">Route Comparison</TabsTrigger>
             <TabsTrigger value="violations">Violations Log</TabsTrigger>
             <TabsTrigger value="compliance">Compliance Reports</TabsTrigger>
           </TabsList>
@@ -539,6 +541,30 @@ const SpeedGovernor = () => {
                     )}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Route Comparison Tab */}
+          <TabsContent value="comparison" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  Multi-Vehicle Route Comparison
+                </CardTitle>
+                <CardDescription>
+                  Compare routes and driving patterns across multiple vehicles with synchronized playback
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <RouteComparisonMap
+                  availableVehicles={(vehicles || []).map(v => ({
+                    id: v.id,
+                    plate: v.plate,
+                    maxSpeed: v.maxSpeed
+                  }))}
+                />
               </CardContent>
             </Card>
           </TabsContent>
