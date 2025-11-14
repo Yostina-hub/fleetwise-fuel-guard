@@ -5,6 +5,7 @@ import { VehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { GpsSignalHeatmap } from "./GpsSignalHeatmap";
+import { MovementHeatmap } from "./MovementHeatmap";
 import { useOrganization } from "@/hooks/useOrganization";
 
 interface Vehicle {
@@ -404,6 +405,14 @@ export const GovernorMapView = ({ vehicles, telemetry, isVehicleOnline }: Govern
 
         {/* Sidebar */}
         <div className="space-y-4">
+          {/* Movement Heatmap Control */}
+          {organizationId && (
+            <MovementHeatmap 
+              map={map.current} 
+              organizationId={organizationId}
+            />
+          )}
+
           {/* GPS Signal Heatmap Control */}
           {organizationId && (
             <GpsSignalHeatmap 
