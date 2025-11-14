@@ -258,6 +258,14 @@ const DeviceIntegration = () => {
 
   const addDeviceMutation = useMutation({
     mutationFn: async (data: any) => {
+      // Check if device with this IMEI already exists
+      const { data: existingDevice } = await supabase
+        .from("devices")
+        .select("id")
+        .eq("imei", data.imei)
+        .eq("organization_id", organizationId!)
+        .maybeSingle();
+
       // Create device protocol if not exists
       const { data: protocolData, error: protocolError } = await (supabase as any)
         .from("device_protocols")
@@ -288,27 +296,44 @@ const DeviceIntegration = () => {
         protocolId = newProtocol.id;
       }
 
-      // Create device
-      const { error: deviceError } = await supabase
-        .from("devices")
-        .insert({
-          organization_id: organizationId,
-          imei: data.imei,
-          tracker_model: selectedTemplate.name,
-          sim_iccid: data.sim_iccid || null,
-          sim_msisdn: data.sim_msisdn || null,
-          vehicle_id: data.vehicle_id || null,
-          protocol_id: protocolId,
-          status: "active",
-        });
+      if (existingDevice) {
+        // Update existing device
+        const { error: updateError } = await supabase
+          .from("devices")
+          .update({
+            tracker_model: selectedTemplate.name,
+            sim_iccid: data.sim_iccid || null,
+            sim_msisdn: data.sim_msisdn || null,
+            vehicle_id: data.vehicle_id || null,
+            protocol_id: protocolId,
+            status: "active",
+          })
+          .eq("id", existingDevice.id);
 
-      if (deviceError) throw deviceError;
+        if (updateError) throw updateError;
+      } else {
+        // Create new device
+        const { error: deviceError } = await supabase
+          .from("devices")
+          .insert({
+            organization_id: organizationId,
+            imei: data.imei,
+            tracker_model: selectedTemplate.name,
+            sim_iccid: data.sim_iccid || null,
+            sim_msisdn: data.sim_msisdn || null,
+            vehicle_id: data.vehicle_id || null,
+            protocol_id: protocolId,
+            status: "active",
+          });
+
+        if (deviceError) throw deviceError;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["devices"] });
       toast({
-        title: "Device Added Successfully!",
-        description: "Your device is now active and ready to track.",
+        title: "Device Saved Successfully!",
+        description: "Your device information has been updated.",
       });
       setIsDialogOpen(false);
       resetForm();
