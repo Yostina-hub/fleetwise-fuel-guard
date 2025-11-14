@@ -8,6 +8,9 @@ import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { 
   Play, 
   Pause, 
@@ -52,6 +55,10 @@ export const RoutePlaybackMap = ({ vehicleId, vehiclePlate, maxSpeed }: RoutePla
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [startTime, setStartTime] = useState("00:00");
   const [endTime, setEndTime] = useState("23:59");
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportType, setExportType] = useState<"all" | "violations">("all");
+  const [exportStartTime, setExportStartTime] = useState("00:00");
+  const [exportEndTime, setExportEndTime] = useState("23:59");
 
   // Fetch Mapbox token
   useEffect(() => {
@@ -348,6 +355,30 @@ export const RoutePlaybackMap = ({ vehicleId, vehiclePlate, maxSpeed }: RoutePla
     }
 
     try {
+      // Filter data based on export options
+      let filteredData = [...routeData];
+
+      // Filter by time range
+      const exportStart = new Date(selectedDate);
+      exportStart.setHours(parseInt(exportStartTime.split(':')[0]), parseInt(exportStartTime.split(':')[1]), 0);
+      const exportEnd = new Date(selectedDate);
+      exportEnd.setHours(parseInt(exportEndTime.split(':')[0]), parseInt(exportEndTime.split(':')[1]), 59);
+
+      filteredData = filteredData.filter(point => {
+        const pointTime = new Date(point.timestamp);
+        return pointTime >= exportStart && pointTime <= exportEnd;
+      });
+
+      // Filter by violation type
+      if (exportType === "violations") {
+        filteredData = filteredData.filter(point => point.speed_kmh > maxSpeed);
+      }
+
+      if (filteredData.length === 0) {
+        toast.error("No data matches the selected filters");
+        return;
+      }
+
       // CSV Headers
       const headers = [
         'Timestamp',
@@ -363,7 +394,7 @@ export const RoutePlaybackMap = ({ vehicleId, vehiclePlate, maxSpeed }: RoutePla
       ];
 
       // Convert route data to CSV rows
-      const rows = routeData.map(point => {
+      const rows = filteredData.map(point => {
         const timestamp = new Date(point.timestamp);
         const isViolation = point.speed_kmh > maxSpeed;
         const speedExcess = isViolation ? (point.speed_kmh - maxSpeed).toFixed(1) : '0';
@@ -382,21 +413,25 @@ export const RoutePlaybackMap = ({ vehicleId, vehiclePlate, maxSpeed }: RoutePla
         ];
       });
 
+      const filteredViolationCount = filteredData.filter(p => p.speed_kmh > maxSpeed).length;
+      const filteredDistance = ((filteredData.length * 0.1) / 1000).toFixed(1);
+
       // Create CSV content
       const csvContent = [
         // Metadata rows
         ['Route Playback Export'],
         ['Vehicle', vehiclePlate],
         ['Date', format(selectedDate, 'yyyy-MM-dd')],
-        ['Time Range', `${startTime} - ${endTime}`],
+        ['Time Range', `${exportStartTime} - ${exportEndTime}`],
+        ['Export Type', exportType === "violations" ? "Violations Only" : "All Data"],
         ['Export Date', format(new Date(), 'yyyy-MM-dd HH:mm:ss')],
         [''],
         ['Summary Statistics'],
-        ['Total Data Points', routeData.length.toString()],
-        ['Total Violations', violationCount.toString()],
-        ['Approximate Distance (km)', totalDistance],
-        ['Average Speed (km/h)', (routeData.reduce((sum, p) => sum + p.speed_kmh, 0) / routeData.length).toFixed(1)],
-        ['Max Speed Recorded (km/h)', Math.max(...routeData.map(p => p.speed_kmh)).toFixed(1)],
+        ['Total Data Points', filteredData.length.toString()],
+        ['Total Violations', filteredViolationCount.toString()],
+        ['Approximate Distance (km)', filteredDistance],
+        ['Average Speed (km/h)', (filteredData.reduce((sum, p) => sum + p.speed_kmh, 0) / filteredData.length).toFixed(1)],
+        ['Max Speed Recorded (km/h)', Math.max(...filteredData.map(p => p.speed_kmh)).toFixed(1)],
         [''],
         ['Route Data'],
         headers,
@@ -408,8 +443,9 @@ export const RoutePlaybackMap = ({ vehicleId, vehiclePlate, maxSpeed }: RoutePla
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
       
+      const exportTypeLabel = exportType === "violations" ? "violations" : "data";
       link.setAttribute('href', url);
-      link.setAttribute('download', `route-data-${vehiclePlate}-${format(selectedDate, 'yyyy-MM-dd')}.csv`);
+      link.setAttribute('download', `route-${exportTypeLabel}-${vehiclePlate}-${format(selectedDate, 'yyyy-MM-dd')}.csv`);
       link.style.visibility = 'hidden';
       
       document.body.appendChild(link);
@@ -418,7 +454,8 @@ export const RoutePlaybackMap = ({ vehicleId, vehiclePlate, maxSpeed }: RoutePla
       
       URL.revokeObjectURL(url);
       
-      toast.success("CSV file downloaded successfully");
+      setExportDialogOpen(false);
+      toast.success(`CSV file with ${filteredData.length} records downloaded successfully`);
     } catch (error) {
       console.error("Error exporting CSV:", error);
       toast.error("Failed to export CSV file");
@@ -498,15 +535,98 @@ export const RoutePlaybackMap = ({ vehicleId, vehiclePlate, maxSpeed }: RoutePla
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle>Playback Controls</CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExportCSV}
-              disabled={!routeData || routeData.length === 0 || isLoading}
-            >
-              <FileDown className="h-4 w-4 mr-2" />
-              Export CSV
-            </Button>
+            <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!routeData || routeData.length === 0 || isLoading}
+                >
+                  <FileDown className="h-4 w-4 mr-2" />
+                  Export CSV
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Export Route Data</DialogTitle>
+                  <DialogDescription>
+                    Configure export options to download filtered route data as CSV
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-6 py-4">
+                  {/* Export Type */}
+                  <div className="space-y-3">
+                    <Label className="text-base font-medium">Export Type</Label>
+                    <RadioGroup value={exportType} onValueChange={(value: "all" | "violations") => setExportType(value)}>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="all" id="export-all" />
+                        <Label htmlFor="export-all" className="font-normal cursor-pointer">
+                          All route data ({routeData?.length || 0} points)
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="violations" id="export-violations" />
+                        <Label htmlFor="export-violations" className="font-normal cursor-pointer">
+                          Violations only ({violationCount} points)
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  {/* Time Range */}
+                  <div className="space-y-3">
+                    <Label className="text-base font-medium">Time Range</Label>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <Select value={exportStartTime} onValueChange={setExportStartTime}>
+                        <SelectTrigger className="w-[110px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: 24 }, (_, i) => {
+                            const hour = i.toString().padStart(2, '0');
+                            return <SelectItem key={hour} value={`${hour}:00`}>{hour}:00</SelectItem>;
+                          })}
+                        </SelectContent>
+                      </Select>
+                      <span className="text-muted-foreground">to</span>
+                      <Select value={exportEndTime} onValueChange={setExportEndTime}>
+                        <SelectTrigger className="w-[110px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: 24 }, (_, i) => {
+                            const hour = i.toString().padStart(2, '0');
+                            return <SelectItem key={hour} value={`${hour}:59`}>{hour}:59</SelectItem>;
+                          })}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Preview Stats */}
+                  <div className="rounded-lg bg-muted p-4 space-y-2">
+                    <p className="text-sm font-medium">Export Preview</p>
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <p>Date: {format(selectedDate, 'PPP')}</p>
+                      <p>Time: {exportStartTime} - {exportEndTime}</p>
+                      <p>Type: {exportType === "violations" ? "Violations Only" : "All Data"}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setExportDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleExportCSV}>
+                    <FileDown className="h-4 w-4 mr-2" />
+                    Export CSV
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </CardHeader>
         <CardContent>
