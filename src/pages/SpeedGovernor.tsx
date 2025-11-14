@@ -56,73 +56,77 @@ const SpeedGovernor = () => {
   const { data: vehicles } = useQuery({
     queryKey: ["vehicles-with-governors", organizationId],
     queryFn: async () => {
-      // Mock data - in production would filter devices with speed governor type
-      return [
-        { 
-          id: "v1", 
-          plate: "AA 1234 ET", 
-          governorActive: true, 
-          currentSpeed: 65, 
-          maxSpeed: 80,
-          violations: 3,
-          lastUpdate: "2 min ago"
-        },
-        { 
-          id: "v2", 
-          plate: "AB 5678 ET", 
-          governorActive: true, 
-          currentSpeed: 45, 
-          maxSpeed: 60,
-          violations: 0,
-          lastUpdate: "1 min ago"
-        },
-        { 
-          id: "v3", 
-          plate: "AC 9012 ET", 
-          governorActive: false, 
-          currentSpeed: 0, 
-          maxSpeed: 80,
-          violations: 12,
-          lastUpdate: "5 min ago"
-        },
-      ];
+      // Fetch vehicles with speed governor devices
+      const { data: vehiclesWithDevices, error } = await supabase
+        .from("vehicles")
+        .select(`
+          id,
+          plate_number,
+          devices!inner(
+            id,
+            tracker_model,
+            status,
+            last_heartbeat
+          )
+        `)
+        .eq("organization_id", organizationId!)
+        .ilike("devices.tracker_model", "%Governor%");
+
+      if (error) throw error;
+
+      // Transform data to match UI format
+      return vehiclesWithDevices?.map((v: any) => ({
+        id: v.id,
+        plate: v.plate_number,
+        governorActive: v.devices?.[0]?.status === "active",
+        currentSpeed: 0, // Would come from real-time telemetry
+        maxSpeed: 80, // Would be stored in device config
+        violations: 0, // Would come from driver_events
+        lastUpdate: v.devices?.[0]?.last_heartbeat 
+          ? new Date(v.devices[0].last_heartbeat).toLocaleString()
+          : "No signal",
+        deviceId: v.devices?.[0]?.id,
+        deviceModel: v.devices?.[0]?.tracker_model
+      })) || [];
     },
     enabled: !!organizationId,
   });
 
-  // Mock violation events
-  const violations = [
-    {
-      id: 1,
-      vehicle: "AA 1234 ET",
-      time: "2025-01-23 14:32:15",
-      speed: 95,
-      limit: 80,
-      duration: "45s",
-      location: "Addis-Adama Highway",
-      severity: "high"
+  // Fetch real speed violation events
+  const { data: violations = [] } = useQuery({
+    queryKey: ["speed-violations", organizationId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("driver_events")
+        .select(`
+          id,
+          event_time,
+          speed_kmh,
+          speed_limit_kmh,
+          address,
+          vehicle_id,
+          vehicles(plate_number)
+        `)
+        .eq("organization_id", organizationId!)
+        .eq("event_type", "speeding")
+        .order("event_time", { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+
+      return data?.map((event: any) => ({
+        id: event.id,
+        vehicle: event.vehicles?.plate_number || "Unknown",
+        time: new Date(event.event_time).toLocaleString(),
+        speed: event.speed_kmh,
+        limit: event.speed_limit_kmh || 80,
+        duration: "N/A", // Calculate from event data if available
+        location: event.address || "Location unknown",
+        severity: event.speed_kmh > (event.speed_limit_kmh || 80) + 15 ? "high" : "medium"
+      })) || [];
     },
-    {
-      id: 2,
-      vehicle: "AC 9012 ET",
-      time: "2025-01-23 14:15:08",
-      speed: 88,
-      limit: 80,
-      duration: "2m 12s",
-      location: "Debre Zeit Road",
-      severity: "medium"
-    },
-    {
-      id: 3,
-      vehicle: "AA 1234 ET",
-      time: "2025-01-23 13:45:22",
-      speed: 92,
-      limit: 80,
-      duration: "1m 05s",
-      location: "Ring Road",
-      severity: "medium"
-    },
-  ];
+    enabled: !!organizationId,
+  });
 
   const handleSendCommand = () => {
     toast({
