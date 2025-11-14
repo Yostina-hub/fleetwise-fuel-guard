@@ -20,10 +20,16 @@ interface GovernorMapViewProps {
   isVehicleOnline: (vehicleId: string) => boolean;
 }
 
+interface VehicleTrail {
+  coordinates: [number, number][];
+  lastUpdate: number;
+}
+
 export const GovernorMapView = ({ vehicles, telemetry, isVehicleOnline }: GovernorMapViewProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<Record<string, mapboxgl.Marker>>({});
+  const trails = useRef<Record<string, VehicleTrail>>({});
   const [mapboxToken, setMapboxToken] = useState<string>("");
   const { organizationId } = useOrganization();
 
@@ -58,6 +64,36 @@ export const GovernorMapView = ({ vehicles, telemetry, isVehicleOnline }: Govern
 
     map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
     map.current.addControl(new mapboxgl.FullscreenControl(), "top-right");
+
+    // Initialize map with trail source when loaded
+    map.current.on('load', () => {
+      if (!map.current) return;
+      
+      // Add source for vehicle trails
+      map.current.addSource('vehicle-trails', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: []
+        }
+      });
+
+      // Add trail lines layer
+      map.current.addLayer({
+        id: 'vehicle-trails-layer',
+        type: 'line',
+        source: 'vehicle-trails',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-width': 3,
+          'line-opacity': 0.6
+        }
+      });
+    });
 
     return () => {
       map.current?.remove();
@@ -102,9 +138,10 @@ export const GovernorMapView = ({ vehicles, telemetry, isVehicleOnline }: Govern
         }
       }
 
-      // Create custom marker HTML
+      // Create custom marker HTML with directional arrow
       const el = document.createElement("div");
       el.className = "governor-marker";
+      const rotation = vehicleTelemetry.heading || 0;
       el.style.cssText = `
         width: 40px;
         height: 40px;
@@ -117,25 +154,76 @@ export const GovernorMapView = ({ vehicles, telemetry, isVehicleOnline }: Govern
         justify-content: center;
         color: white;
         font-weight: bold;
-        font-size: 12px;
+        font-size: 16px;
         cursor: pointer;
-        transition: all 0.3s ease;
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: rotate(${rotation}deg);
       `;
-      el.innerHTML = isOverSpeed ? "⚠️" : "🚗";
-
-      // Pulse animation for overspeeding vehicles
+      
+      // Use arrow for moving vehicles, warning for overspeeding, car for stationary
       if (isOverSpeed) {
-        el.style.animation = "pulse 1.5s infinite";
+        el.innerHTML = "⚠️";
+      } else if (isMoving) {
+        el.innerHTML = "▲"; // Arrow pointing up, rotated by heading
+      } else {
+        el.innerHTML = "🚗";
+      }
+
+      // Pulse animation for moving or overspeeding vehicles
+      if (isOverSpeed || isMoving) {
+        el.style.animation = isOverSpeed ? "pulse 1.5s infinite" : "pulse-subtle 2s infinite";
+      }
+
+      // Update vehicle trail
+      const currentPos: [number, number] = [vehicleTelemetry.longitude, vehicleTelemetry.latitude];
+      const now = Date.now();
+      
+      if (!trails.current[vehicle.id]) {
+        trails.current[vehicle.id] = {
+          coordinates: [currentPos],
+          lastUpdate: now
+        };
+      } else {
+        const trail = trails.current[vehicle.id];
+        const lastPos = trail.coordinates[trail.coordinates.length - 1];
+        
+        // Only add to trail if vehicle has moved significantly (> 5 meters)
+        const distance = Math.sqrt(
+          Math.pow(currentPos[0] - lastPos[0], 2) + 
+          Math.pow(currentPos[1] - lastPos[1], 2)
+        ) * 111320; // Convert to meters
+        
+        if (distance > 5 && isMoving) {
+          trail.coordinates.push(currentPos);
+          trail.lastUpdate = now;
+          
+          // Keep only last 50 points (about 5 minutes at 6 second intervals)
+          if (trail.coordinates.length > 50) {
+            trail.coordinates.shift();
+          }
+        }
+        
+        // Clear old trails (older than 10 minutes)
+        if (now - trail.lastUpdate > 600000 || !isMoving) {
+          trail.coordinates = [currentPos];
+        }
       }
 
       // Create or update marker
       if (markers.current[vehicle.id]) {
-        // Update existing marker
-        markers.current[vehicle.id]
-          .setLngLat([vehicleTelemetry.longitude, vehicleTelemetry.latitude])
-          .getElement().innerHTML = el.innerHTML;
-        markers.current[vehicle.id].getElement().style.backgroundColor = markerColor;
-        markers.current[vehicle.id].getElement().style.animation = isOverSpeed ? "pulse 1.5s infinite" : "";
+        // Smoothly animate marker to new position
+        const marker = markers.current[vehicle.id];
+        const markerEl = marker.getElement();
+        
+        // Update position with smooth transition
+        marker.setLngLat([vehicleTelemetry.longitude, vehicleTelemetry.latitude]);
+        
+        // Update appearance
+        markerEl.innerHTML = el.innerHTML;
+        markerEl.style.backgroundColor = markerColor;
+        markerEl.style.transform = `rotate(${rotation}deg)`;
+        markerEl.style.animation = (isOverSpeed || isMoving) ? 
+          (isOverSpeed ? "pulse 1.5s infinite" : "pulse-subtle 2s infinite") : "";
       } else {
         // Create new marker
         const marker = new mapboxgl.Marker(el)
@@ -188,6 +276,46 @@ export const GovernorMapView = ({ vehicles, telemetry, isVehicleOnline }: Govern
       }
     });
 
+    // Update trail lines on map
+    if (map.current && map.current.getSource('vehicle-trails')) {
+      const features = vehicles
+        .filter(v => trails.current[v.id] && trails.current[v.id].coordinates.length > 1)
+        .map(v => {
+          const vehicleTelemetry = telemetry[v.id];
+          const isOnline = isVehicleOnline(v.id);
+          const currentSpeed = vehicleTelemetry?.speed_kmh || 0;
+          const isOverSpeed = currentSpeed > v.maxSpeed;
+          const isMoving = vehicleTelemetry?.engine_on && currentSpeed > 5;
+          
+          // Determine trail color
+          let trailColor = "#6b7280";
+          if (isOnline && isMoving) {
+            if (isOverSpeed) {
+              trailColor = "#ef4444";
+            } else {
+              trailColor = "#22c55e";
+            }
+          }
+          
+          return {
+            type: 'Feature',
+            properties: {
+              vehicleId: v.id,
+              color: trailColor
+            },
+            geometry: {
+              type: 'LineString',
+              coordinates: trails.current[v.id].coordinates
+            }
+          };
+        });
+
+      (map.current.getSource('vehicle-trails') as mapboxgl.GeoJSONSource).setData({
+        type: 'FeatureCollection',
+        features: features as any
+      });
+    }
+
     // Fit map to show all markers
     if (vehicles.length > 0) {
       const bounds = new mapboxgl.LngLatBounds();
@@ -203,13 +331,32 @@ export const GovernorMapView = ({ vehicles, telemetry, isVehicleOnline }: Govern
     }
   }, [vehicles, telemetry, isVehicleOnline]);
 
-  // Add CSS for pulse animation
+  // Add CSS for pulse animations
   useEffect(() => {
     const style = document.createElement("style");
     style.innerHTML = `
       @keyframes pulse {
-        0%, 100% { transform: scale(1); opacity: 1; }
-        50% { transform: scale(1.1); opacity: 0.8; }
+        0%, 100% { 
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          opacity: 1;
+        }
+        50% { 
+          box-shadow: 0 2px 20px rgba(239, 68, 68, 0.6);
+          opacity: 0.8;
+        }
+      }
+      
+      @keyframes pulse-subtle {
+        0%, 100% { 
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        50% { 
+          box-shadow: 0 2px 15px rgba(34, 197, 94, 0.5);
+        }
+      }
+      
+      .governor-marker {
+        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1) !important;
       }
     `;
     document.head.appendChild(style);
