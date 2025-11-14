@@ -4,6 +4,8 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { VehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { GpsSignalHeatmap } from "./GpsSignalHeatmap";
+import { useOrganization } from "@/hooks/useOrganization";
 
 interface Vehicle {
   id: string;
@@ -23,6 +25,7 @@ export const GovernorMapView = ({ vehicles, telemetry, isVehicleOnline }: Govern
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<Record<string, mapboxgl.Marker>>({});
   const [mapboxToken, setMapboxToken] = useState<string>("");
+  const { organizationId } = useOrganization();
 
   // Fetch Mapbox token from edge function
   useEffect(() => {
@@ -244,43 +247,59 @@ export const GovernorMapView = ({ vehicles, telemetry, isVehicleOnline }: Govern
         </div>
       </Card>
 
-      {/* Map Container */}
-      <Card className="overflow-hidden">
-        <div ref={mapContainer} className="w-full h-[600px]" />
-      </Card>
-
-      {/* Status Summary */}
-      <Card className="p-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-          <div>
-            <div className="text-2xl font-bold text-green-600">
-              {vehicles.filter(v => isVehicleOnline(v.id) && v.governorActive).length}
-            </div>
-            <div className="text-sm text-muted-foreground">Active Governors</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-red-600">
-              {vehicles.filter(v => {
-                const t = telemetry[v.id];
-                return t && (t.speed_kmh || 0) > v.maxSpeed;
-              }).length}
-            </div>
-            <div className="text-sm text-muted-foreground">Overspeeding Now</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-blue-600">
-              {vehicles.filter(v => isVehicleOnline(v.id)).length}
-            </div>
-            <div className="text-sm text-muted-foreground">Vehicles Online</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-gray-600">
-              {vehicles.filter(v => !isVehicleOnline(v.id)).length}
-            </div>
-            <div className="text-sm text-muted-foreground">Vehicles Offline</div>
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        {/* Map Container */}
+        <div className="lg:col-span-3">
+          <Card className="overflow-hidden">
+            <div ref={mapContainer} className="w-full h-[600px]" />
+          </Card>
         </div>
-      </Card>
+
+        {/* Sidebar */}
+        <div className="space-y-4">
+          {/* GPS Signal Heatmap Control */}
+          {organizationId && (
+            <GpsSignalHeatmap 
+              map={map.current} 
+              organizationId={organizationId}
+            />
+          )}
+
+          {/* Status Summary */}
+          <Card className="p-4">
+            <h3 className="font-semibold mb-4">Live Statistics</h3>
+            <div className="space-y-4">
+              <div>
+                <div className="text-2xl font-bold text-success">
+                  {vehicles.filter(v => isVehicleOnline(v.id) && v.governorActive).length}
+                </div>
+                <div className="text-sm text-muted-foreground">Active Governors</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-destructive">
+                  {vehicles.filter(v => {
+                    const t = telemetry[v.id];
+                    return t && (t.speed_kmh || 0) > v.maxSpeed;
+                  }).length}
+                </div>
+                <div className="text-sm text-muted-foreground">Overspeeding Now</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-primary">
+                  {vehicles.filter(v => isVehicleOnline(v.id)).length}
+                </div>
+                <div className="text-sm text-muted-foreground">Vehicles Online</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-muted-foreground">
+                  {vehicles.filter(v => !isVehicleOnline(v.id)).length}
+                </div>
+                <div className="text-sm text-muted-foreground">Vehicles Offline</div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 };
