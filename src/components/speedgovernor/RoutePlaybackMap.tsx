@@ -15,7 +15,8 @@ import {
   FastForward,
   Calendar as CalendarIcon,
   Clock,
-  AlertTriangle
+  AlertTriangle,
+  FileDown
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -340,6 +341,90 @@ export const RoutePlaybackMap = ({ vehicleId, vehiclePlate, maxSpeed }: RoutePla
     setIsPlaying(false);
   };
 
+  const handleExportCSV = () => {
+    if (!routeData || routeData.length === 0) {
+      toast.error("No route data to export");
+      return;
+    }
+
+    try {
+      // CSV Headers
+      const headers = [
+        'Timestamp',
+        'Date',
+        'Time',
+        'Latitude',
+        'Longitude',
+        'Speed (km/h)',
+        'Speed Limit (km/h)',
+        'Violation',
+        'Speed Excess (km/h)',
+        'Heading (degrees)'
+      ];
+
+      // Convert route data to CSV rows
+      const rows = routeData.map(point => {
+        const timestamp = new Date(point.timestamp);
+        const isViolation = point.speed_kmh > maxSpeed;
+        const speedExcess = isViolation ? (point.speed_kmh - maxSpeed).toFixed(1) : '0';
+
+        return [
+          point.timestamp,
+          format(timestamp, 'yyyy-MM-dd'),
+          format(timestamp, 'HH:mm:ss'),
+          point.latitude.toFixed(6),
+          point.longitude.toFixed(6),
+          point.speed_kmh.toFixed(1),
+          maxSpeed.toString(),
+          isViolation ? 'Yes' : 'No',
+          speedExcess,
+          point.heading?.toFixed(1) || 'N/A'
+        ];
+      });
+
+      // Create CSV content
+      const csvContent = [
+        // Metadata rows
+        ['Route Playback Export'],
+        ['Vehicle', vehiclePlate],
+        ['Date', format(selectedDate, 'yyyy-MM-dd')],
+        ['Time Range', `${startTime} - ${endTime}`],
+        ['Export Date', format(new Date(), 'yyyy-MM-dd HH:mm:ss')],
+        [''],
+        ['Summary Statistics'],
+        ['Total Data Points', routeData.length.toString()],
+        ['Total Violations', violationCount.toString()],
+        ['Approximate Distance (km)', totalDistance],
+        ['Average Speed (km/h)', (routeData.reduce((sum, p) => sum + p.speed_kmh, 0) / routeData.length).toFixed(1)],
+        ['Max Speed Recorded (km/h)', Math.max(...routeData.map(p => p.speed_kmh)).toFixed(1)],
+        [''],
+        ['Route Data'],
+        headers,
+        ...rows
+      ].map(row => row.join(',')).join('\n');
+
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `route-data-${vehiclePlate}-${format(selectedDate, 'yyyy-MM-dd')}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      URL.revokeObjectURL(url);
+      
+      toast.success("CSV file downloaded successfully");
+    } catch (error) {
+      console.error("Error exporting CSV:", error);
+      toast.error("Failed to export CSV file");
+    }
+  };
+
   const currentPoint = routeData?.[Math.floor(currentIndex)];
   const violationCount = routeData?.filter(p => p.speed_kmh > maxSpeed).length || 0;
   const totalDistance = routeData?.length ? ((routeData.length * 0.1) / 1000).toFixed(1) : "0";
@@ -410,7 +495,21 @@ export const RoutePlaybackMap = ({ vehicleId, vehiclePlate, maxSpeed }: RoutePla
 
       {/* Playback Controls */}
       <Card>
-        <CardContent className="pt-6">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle>Playback Controls</CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCSV}
+              disabled={!routeData || routeData.length === 0 || isLoading}
+            >
+              <FileDown className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
           <div className="space-y-6">
             {/* Timeline Slider */}
             <div className="space-y-2">
