@@ -23,7 +23,8 @@ import {
   Settings2,
   Building2,
   Smartphone,
-  CalendarClock
+  CalendarClock,
+  Award
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -40,6 +41,7 @@ const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: Map, label: "Live Map", path: "/map" },
   { icon: Truck, label: "Fleet", path: "/fleet" },
+  { icon: Award, label: "Driver Scoring", path: "/driver-scoring", highlight: true },
   { icon: Smartphone, label: "Devices", path: "/devices", highlight: true },
   { icon: Fuel, label: "Fuel", path: "/fuel" },
   { icon: Bell, label: "Alerts", path: "/alerts" },
