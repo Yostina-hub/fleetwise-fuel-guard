@@ -48,6 +48,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { LiveTelemetryCard } from "@/components/speedgovernor/LiveTelemetryCard";
 import { GovernorMapView } from "@/components/speedgovernor/GovernorMapView";
+import { RoutePlaybackMap } from "@/components/speedgovernor/RoutePlaybackMap";
 
 const SpeedGovernor = () => {
   const { organizationId } = useOrganization();
@@ -239,6 +240,7 @@ const SpeedGovernor = () => {
             <TabsTrigger value="control">Remote Control</TabsTrigger>
             <TabsTrigger value="monitoring">Live Monitoring</TabsTrigger>
             <TabsTrigger value="map">Map View</TabsTrigger>
+            <TabsTrigger value="playback">Route Playback</TabsTrigger>
             <TabsTrigger value="violations">Violations Log</TabsTrigger>
             <TabsTrigger value="compliance">Compliance Reports</TabsTrigger>
           </TabsList>
@@ -472,6 +474,73 @@ const SpeedGovernor = () => {
               telemetry={telemetry}
               isVehicleOnline={isVehicleOnline}
             />
+          </TabsContent>
+
+          {/* Route Playback Tab */}
+          <TabsContent value="playback" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-primary" />
+                  Historical Route Playback
+                </CardTitle>
+                <CardDescription>
+                  View vehicle routes over time with speed violations highlighted
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {!vehicles || vehicles.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Clock className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No Vehicles Found</h3>
+                    <p className="text-muted-foreground">
+                      Add vehicles with speed governor devices to view route history
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Vehicle Selection */}
+                    <Card className="bg-muted/50">
+                      <CardContent className="pt-6">
+                        <Label htmlFor="playback-vehicle">Select Vehicle</Label>
+                        <Select value={selectedVehicle} onValueChange={setSelectedVehicle}>
+                          <SelectTrigger id="playback-vehicle">
+                            <SelectValue placeholder="Choose a vehicle to view route history" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {vehicles.map((vehicle) => (
+                              <SelectItem key={vehicle.id} value={vehicle.id}>
+                                {vehicle.plate} - Max Speed: {vehicle.maxSpeed} km/h
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </CardContent>
+                    </Card>
+
+                    {/* Route Playback Component */}
+                    {selectedVehicle && (
+                      <RoutePlaybackMap
+                        vehicleId={selectedVehicle}
+                        vehiclePlate={vehicles.find(v => v.id === selectedVehicle)?.plate || ""}
+                        maxSpeed={vehicles.find(v => v.id === selectedVehicle)?.maxSpeed || 80}
+                      />
+                    )}
+
+                    {!selectedVehicle && (
+                      <Card className="border-dashed">
+                        <CardContent className="pt-12 pb-12 text-center">
+                          <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                          <p className="text-muted-foreground">
+                            Select a vehicle above to view its route history and playback
+                          </p>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Violations Log Tab */}
