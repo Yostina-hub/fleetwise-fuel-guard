@@ -34,7 +34,9 @@ export const LiveTelemetryCard = ({
   const isOverSpeed = currentSpeed > maxSpeed;
   
   return (
-    <Card className="border-2 hover:shadow-lg transition-shadow">
+    <Card className={`border-2 hover:shadow-lg transition-all ${
+      !isOnline ? 'opacity-60 border-muted-foreground/30' : 'border-border'
+    }`}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-bold flex items-center gap-2">
@@ -42,18 +44,20 @@ export const LiveTelemetryCard = ({
           </CardTitle>
           <div className="flex items-center gap-2">
             <Badge 
-              variant={isOnline ? "default" : "secondary"}
-              className="flex items-center gap-1"
+              variant={isOnline ? "default" : "destructive"}
+              className={`flex items-center gap-1.5 text-sm px-3 py-1.5 ${
+                isOnline ? 'bg-success' : 'bg-destructive'
+              }`}
             >
               {isOnline ? (
                 <>
-                  <Wifi className="h-3 w-3" />
-                  Online
+                  <Wifi className="h-4 w-4" />
+                  <span className="font-semibold">Online</span>
                 </>
               ) : (
                 <>
-                  <WifiOff className="h-3 w-3" />
-                  Offline
+                  <WifiOff className="h-4 w-4" />
+                  <span className="font-semibold">Offline</span>
                 </>
               )}
             </Badge>
@@ -61,6 +65,26 @@ export const LiveTelemetryCard = ({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Offline Warning Banner */}
+        {!isOnline && (
+          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+            <div className="flex items-start gap-3">
+              <WifiOff className="h-5 w-5 text-destructive mt-0.5" />
+              <div className="flex-1 space-y-1">
+                <p className="text-sm font-semibold text-destructive">
+                  Device Offline
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  GPS data shown below may be outdated. Last communication:{" "}
+                  {telemetry?.last_communication_at 
+                    ? formatDistanceToNow(new Date(telemetry.last_communication_at), { addSuffix: true })
+                    : 'Unknown'
+                  }
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         {/* Speed Display */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
