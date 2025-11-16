@@ -272,6 +272,17 @@ return () => {
 
         el.addEventListener('click', () => {
           onVehicleClick?.(vehicle);
+          // Zoom to vehicle location
+          if (map.current) {
+            map.current.flyTo({
+              center: [vehicle.lng, vehicle.lat],
+              zoom: 16,
+              duration: 1500,
+              essential: true
+            });
+          }
+          // Open popup
+          marker.togglePopup();
         });
 
         markers.current.set(vehicle.id, marker);
