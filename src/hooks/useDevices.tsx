@@ -135,18 +135,51 @@ export const useDevices = () => {
 
   const testHeartbeat = useMutation({
     mutationFn: async (deviceId: string) => {
-      const { error } = await supabase
+      // Get device info
+      const { data: device, error: deviceError } = await supabase
+        .from("devices")
+        .select("vehicle_id, organization_id")
+        .eq("id", deviceId)
+        .single();
+
+      if (deviceError) throw deviceError;
+      if (!device?.vehicle_id) throw new Error("Device not assigned to a vehicle");
+
+      // Update heartbeat
+      const { error: heartbeatError } = await supabase
         .from("devices")
         .update({ last_heartbeat: new Date().toISOString() })
         .eq("id", deviceId);
 
-      if (error) throw error;
+      if (heartbeatError) throw heartbeatError;
+
+      // Insert sample telemetry data
+      const { error: telemetryError } = await supabase
+        .from("vehicle_telemetry")
+        .insert({
+          vehicle_id: device.vehicle_id,
+          organization_id: device.organization_id,
+          latitude: 9.0214 + (Math.random() - 0.5) * 0.01, // Small random offset
+          longitude: 38.7624 + (Math.random() - 0.5) * 0.01,
+          speed_kmh: Math.random() * 80,
+          heading: Math.random() * 360,
+          fuel_level_percent: 50 + Math.random() * 50,
+          engine_on: true,
+          device_connected: true,
+          last_communication_at: new Date().toISOString(),
+          gps_satellites_count: 8 + Math.floor(Math.random() * 4),
+          gps_signal_strength: 70 + Math.floor(Math.random() * 30),
+          gps_fix_type: '3d_fix'
+        });
+
+      if (telemetryError) throw telemetryError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["devices"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicle-telemetry"] });
       toast({
-        title: "Heartbeat sent",
-        description: "Device heartbeat updated successfully",
+        title: "Test successful",
+        description: "Device heartbeat and telemetry data sent",
       });
     },
     onError: (error: Error) => {
