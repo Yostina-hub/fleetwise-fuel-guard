@@ -65,10 +65,21 @@ const Layout = ({ children }: LayoutProps) => {
   const { toast } = useToast();
 
   const handleSignOut = async () => {
-    // Navigate first to avoid dashboard trying to fetch data during logout
-    navigate("/auth");
-    // Then sign out
-    await signOut();
+    const { error } = await signOut();
+    if (error) {
+      console.error("Sign out error:", error);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      // Navigation will happen automatically via auth state change
+      toast({
+        title: "Success",
+        description: "Signed out successfully",
+      });
+    }
   };
 
   return (
