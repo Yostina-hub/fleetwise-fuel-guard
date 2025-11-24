@@ -103,11 +103,11 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
-      {/* Left Side - Branding & Features */}
-      <div className="hidden lg:flex flex-col justify-between bg-gradient-to-br from-primary/10 via-primary/5 to-background p-12 relative overflow-hidden">
-        {/* Decorative elements */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+      {/* Left Side - Branding & Features (ethio telecom Brand Colors) */}
+      <div className="hidden lg:flex flex-col justify-between bg-gradient-to-br from-lemon-green/20 via-lemon-green/10 to-background p-12 relative overflow-hidden">
+        {/* Decorative elements - ethio telecom Brand */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-lemon-green/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-dark-blue/10 rounded-full blur-3xl" />
         
         <div className="relative z-10">
           <Button 
@@ -120,27 +120,27 @@ const Auth = () => {
           </Button>
 
           <div className="flex items-center gap-3 mb-6 animate-fade-in">
-            <div className="p-3 bg-primary/20 rounded-xl animate-float">
-              <Truck className="w-10 h-10 text-primary" />
+            <div className="p-3 bg-lemon-green/20 rounded-xl animate-float">
+              <Truck className="w-10 h-10 text-lemon-green" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">FleetTrack FMS</h1>
-              <p className="text-muted-foreground">Enterprise Fleet Management</p>
+              <h1 className="headline-large text-brand-black">FleetTrack FMS</h1>
+              <p className="body-text text-muted-foreground">Enterprise Fleet Management</p>
             </div>
           </div>
 
           <div className="space-y-4 mt-12">
-            <h2 className="text-2xl font-semibold mb-6">Why choose FleetTrack?</h2>
+            <h2 className="headline-small text-brand-black mb-6">Why choose FleetTrack?</h2>
             {features.map((feature, index) => (
               <div 
                 key={index} 
                 className="flex items-center gap-3 animate-fade-in"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <feature.icon className="w-5 h-5 text-primary" />
+                <div className="w-10 h-10 rounded-lg bg-lemon-green/20 flex items-center justify-center">
+                  <feature.icon className="w-5 h-5 text-lemon-green" />
                 </div>
-                <span className="text-lg">{feature.text}</span>
+                <span className="body-text text-lg text-brand-black">{feature.text}</span>
               </div>
             ))}
           </div>
@@ -180,14 +180,14 @@ const Auth = () => {
             <CardHeader className="space-y-1 pb-6">
               {/* Mobile branding */}
               <div className="flex lg:hidden items-center justify-center gap-2 mb-4">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <Truck className="w-6 h-6 text-primary" />
+                <div className="p-2 bg-lemon-green/20 rounded-lg">
+                  <Truck className="w-6 h-6 text-lemon-green" />
                 </div>
-                <span className="text-xl font-bold">FleetTrack FMS</span>
+                <span className="headline-small">FleetTrack FMS</span>
               </div>
               
-              <CardTitle className="text-2xl text-center">Welcome</CardTitle>
-              <CardDescription className="text-center">
+              <CardTitle className="headline-small text-center">Welcome</CardTitle>
+              <CardDescription className="body-text text-center">
                 Sign in to your account or create a new one
               </CardDescription>
             </CardHeader>
@@ -366,7 +366,7 @@ const Auth = () => {
                 key={index}
                 className="flex items-center gap-2 text-sm text-muted-foreground"
               >
-                <feature.icon className="w-4 h-4 text-primary" />
+                <feature.icon className="w-4 h-4 text-lemon-green" />
                 <span>{feature.text}</span>
               </div>
             ))}

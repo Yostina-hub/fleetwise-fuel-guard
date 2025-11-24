@@ -8,25 +8,31 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 215 25% 15%;
+    /* ethio telecom Brand Colors */
+    --lemon-green: 84 54% 56%;      /* #8DC63F */
+    --dark-blue: 202 100% 37%;      /* #0072BC */
+    --light-gray: 0 0% 96%;         /* #F4F4F4 */
+    --brand-black: 356 7% 13%;      /* #231F20 */
+
+    --background: 0 0% 100%;        /* White body background */
+    --foreground: 356 7% 13%;       /* Brand black text */
 
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 356 7% 13%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 356 7% 13%;
 
-    --primary: 210 85% 42%;
+    --primary: 84 54% 56%;          /* Lemon Green primary */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 188 85% 45%;
+    --secondary: 202 100% 37%;      /* Dark Blue secondary */
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 15% 95%;
-    --muted-foreground: 215 15% 45%;
+    --muted: 0 0% 96%;              /* Light Gray muted */
+    --muted-foreground: 356 7% 40%;
 
-    --accent: 188 85% 45%;
+    --accent: 84 54% 56%;           /* Lemon Green accent */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 75% 55%;
@@ -38,59 +44,68 @@ All colors MUST be HSL.
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 215 20% 88%;
-    --input: 215 20% 88%;
-    --ring: 210 85% 42%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 84 54% 56%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
-    --sidebar-background: 215 30% 12%;
-    --sidebar-foreground: 210 20% 90%;
-    --sidebar-primary: 210 85% 42%;
+    /* Header uses Lemon Green background */
+    --header-background: 84 54% 56%;
+    --header-foreground: 0 0% 100%;
+    
+    /* Footer uses Light Gray background */
+    --footer-background: 0 0% 96%;
+    --footer-foreground: 356 7% 13%;
+
+    --sidebar-background: 356 7% 13%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 84 54% 56%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 25% 18%;
-    --sidebar-accent-foreground: 210 20% 95%;
-    --sidebar-border: 215 25% 18%;
-    --sidebar-ring: 188 85% 45%;
+    --sidebar-accent: 356 7% 20%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 356 7% 20%;
+    --sidebar-ring: 84 54% 56%;
 
-    --chart-1: 210 85% 42%;
-    --chart-2: 188 85% 45%;
+    --chart-1: 84 54% 56%;
+    --chart-2: 202 100% 37%;
     --chart-3: 145 65% 45%;
     --chart-4: 38 92% 50%;
     --chart-5: 0 75% 55%;
 
     /* Advanced Design Tokens */
-    --gradient-primary: linear-gradient(135deg, hsl(210 85% 42%) 0%, hsl(188 85% 45%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(84 54% 56%) 0%, hsl(84 54% 66%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(202 100% 37%) 0%, hsl(202 100% 47%) 100%);
     --gradient-success: linear-gradient(135deg, hsl(145 65% 45%) 0%, hsl(145 75% 55%) 100%);
     --gradient-warning: linear-gradient(135deg, hsl(38 92% 50%) 0%, hsl(45 100% 60%) 100%);
-    --gradient-glass: linear-gradient(135deg, hsla(210 20% 98% / 0.6) 0%, hsla(210 20% 98% / 0.3) 100%);
+    --gradient-glass: linear-gradient(135deg, hsla(0 0% 100% / 0.6) 0%, hsla(0 0% 100% / 0.3) 100%);
     
-    --shadow-glow: 0 0 30px hsla(210 85% 42% / 0.2);
-    --shadow-glow-strong: 0 0 50px hsla(210 85% 42% / 0.4);
-    --shadow-elevated: 0 10px 40px hsla(215 25% 15% / 0.1);
-    --shadow-floating: 0 20px 60px hsla(215 25% 15% / 0.15);
+    --shadow-glow: 0 0 30px hsla(84 54% 56% / 0.2);
+    --shadow-glow-strong: 0 0 50px hsla(84 54% 56% / 0.4);
+    --shadow-elevated: 0 10px 40px hsla(356 7% 13% / 0.1);
+    --shadow-floating: 0 20px 60px hsla(356 7% 13% / 0.15);
   }
 
   .dark {
-    --background: 215 30% 8%;
-    --foreground: 210 20% 95%;
+    --background: 356 7% 13%;
+    --foreground: 0 0% 95%;
 
-    --card: 215 28% 12%;
-    --card-foreground: 210 20% 95%;
+    --card: 356 7% 18%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 215 28% 12%;
-    --popover-foreground: 210 20% 95%;
+    --popover: 356 7% 18%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 210 85% 55%;
+    --primary: 84 54% 56%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 188 85% 50%;
+    --secondary: 202 100% 37%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 215 25% 18%;
-    --muted-foreground: 215 15% 65%;
+    --muted: 356 7% 25%;
+    --muted-foreground: 0 0% 70%;
 
-    --accent: 188 85% 50%;
+    --accent: 84 54% 56%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 75% 55%;
@@ -102,33 +117,40 @@ All colors MUST be HSL.
     --warning: 38 92% 55%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 215 25% 20%;
-    --input: 215 25% 20%;
-    --ring: 210 85% 55%;
+    --border: 356 7% 30%;
+    --input: 356 7% 30%;
+    --ring: 84 54% 56%;
 
-    --sidebar-background: 215 30% 10%;
-    --sidebar-foreground: 210 20% 90%;
-    --sidebar-primary: 210 85% 55%;
+    --header-background: 356 7% 18%;
+    --header-foreground: 0 0% 95%;
+    
+    --footer-background: 356 7% 20%;
+    --footer-foreground: 0 0% 95%;
+
+    --sidebar-background: 356 7% 15%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 84 54% 56%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 25% 16%;
-    --sidebar-accent-foreground: 210 20% 95%;
-    --sidebar-border: 215 25% 16%;
-    --sidebar-ring: 188 85% 50%;
+    --sidebar-accent: 356 7% 22%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 356 7% 22%;
+    --sidebar-ring: 84 54% 56%;
 
-    --chart-1: 210 85% 55%;
-    --chart-2: 188 85% 50%;
+    --chart-1: 84 54% 56%;
+    --chart-2: 202 100% 37%;
     --chart-3: 145 65% 50%;
     --chart-4: 38 92% 55%;
     --chart-5: 0 75% 60%;
 
     /* Dark Mode Advanced Tokens */
-    --gradient-primary: linear-gradient(135deg, hsl(210 85% 55%) 0%, hsl(188 85% 50%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(84 54% 56%) 0%, hsl(84 54% 66%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(202 100% 37%) 0%, hsl(202 100% 47%) 100%);
     --gradient-success: linear-gradient(135deg, hsl(145 65% 50%) 0%, hsl(145 75% 60%) 100%);
     --gradient-warning: linear-gradient(135deg, hsl(38 92% 55%) 0%, hsl(45 100% 65%) 100%);
-    --gradient-glass: linear-gradient(135deg, hsla(215 28% 12% / 0.8) 0%, hsla(215 28% 12% / 0.4) 100%);
+    --gradient-glass: linear-gradient(135deg, hsla(356 7% 18% / 0.8) 0%, hsla(356 7% 18% / 0.4) 100%);
     
-    --shadow-glow: 0 0 40px hsla(210 85% 55% / 0.3);
-    --shadow-glow-strong: 0 0 60px hsla(210 85% 55% / 0.5);
+    --shadow-glow: 0 0 40px hsla(84 54% 56% / 0.3);
+    --shadow-glow-strong: 0 0 60px hsla(84 54% 56% / 0.5);
     --shadow-elevated: 0 10px 40px hsla(0 0% 0% / 0.3);
     --shadow-floating: 0 20px 60px hsla(0 0% 0% / 0.5);
   }
@@ -141,6 +163,31 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Gotham', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  }
+  
+  /* Typography - ethio telecom Brand Guidelines */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    font-family: 'Gotham', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  }
+  
+  .headline-large {
+    font-weight: 700;
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+  }
+  
+  .headline-small {
+    font-weight: 500;
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+  
+  .body-text {
+    font-weight: 400;
+    font-size: 1rem;
+    line-height: 1.5rem;
   }
 
   /* Custom Scrollbar */

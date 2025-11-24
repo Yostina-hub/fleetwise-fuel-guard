@@ -88,13 +88,14 @@ const Layout = ({ children }: LayoutProps) => {
       <div className="parallax-bg"></div>
       
       {/* Sidebar */}
-      <aside className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col shrink-0 glass-strong relative z-10">
-        <div className="p-6 border-b border-sidebar-border flex items-center justify-between backdrop-blur-xl">
+      <aside className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col shrink-0 relative z-10">
+        {/* Header - Lemon Green Background (ethio telecom Brand) */}
+        <div className="p-6 bg-primary border-b border-border flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-sidebar-foreground tracking-tight gradient-text">FleetTrack FMS</h1>
-            <p className="text-sm text-sidebar-foreground/60 mt-1 animate-slide-in-left">Fleet Management System</p>
+            <h1 className="text-xl font-bold text-primary-foreground tracking-tight headline-large">FleetTrack FMS</h1>
+            <p className="text-sm text-primary-foreground/90 mt-1 animate-slide-in-left body-text">Fleet Management System</p>
           </div>
-          <div className="pulse-glow rounded-full">
+          <div className="rounded-full">
             <NotificationCenter />
           </div>
         </div>
@@ -200,14 +201,15 @@ const Layout = ({ children }: LayoutProps) => {
           )}
         </nav>
 
-        <div className="p-4 border-t border-sidebar-border space-y-3">
+        {/* Footer - Light Gray Background (ethio telecom Brand) */}
+        <div className="p-4 bg-footer border-t border-border space-y-3">
           {user && (
-            <div className="px-3 py-2 text-sm text-sidebar-foreground/70">
+            <div className="px-3 py-2 text-sm text-footer-foreground/80 body-text">
               {user.email}
             </div>
           )}
           <Button
-            variant="outline"
+            variant="secondary"
             size="sm"
             className="w-full gap-2"
             onClick={handleSignOut}
@@ -215,7 +217,7 @@ const Layout = ({ children }: LayoutProps) => {
             <LogOut className="w-4 h-4" />
             Sign Out
           </Button>
-          <div className="px-3 py-2 text-xs text-sidebar-foreground/50">
+          <div className="px-3 py-2 text-xs text-footer-foreground/60 body-text">
             v1.0.0 • © 2025 FleetTrack
           </div>
         </div>
