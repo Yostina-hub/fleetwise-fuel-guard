@@ -14,6 +14,10 @@ export default {
     },
     extend: {
       colors: {
+        "lemon-green": "hsl(var(--lemon-green))",
+        "dark-blue": "hsl(var(--dark-blue))",
+        "light-gray": "hsl(var(--light-gray))",
+        "brand-black": "hsl(var(--brand-black))",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -54,6 +58,14 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        header: {
+          DEFAULT: "hsl(var(--header-background))",
+          foreground: "hsl(var(--header-foreground))",
+        },
+        footer: {
+          DEFAULT: "hsl(var(--footer-background))",
+          foreground: "hsl(var(--footer-foreground))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
