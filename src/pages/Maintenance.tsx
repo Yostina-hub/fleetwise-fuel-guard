@@ -164,7 +164,7 @@ const Maintenance = () => {
               <p className="text-muted-foreground mt-1 text-lg">Track service schedules and work orders</p>
             </div>
           </div>
-          <Button className="gap-2 glass-strong hover:scale-105 transition-all duration-300 glow" onClick={() => navigate('/work-orders')}>
+          <Button className="gap-2 glass-strong hover:scale-105 transition-all duration-300 glow" onClick={() => navigate('/workorders')}>
             <Plus className="w-5 h-5" />
             <span className="font-semibold">New Work Order</span>
           </Button>
