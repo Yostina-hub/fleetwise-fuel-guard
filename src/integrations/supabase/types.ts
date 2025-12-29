@@ -3511,6 +3511,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "trips_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "trips_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
