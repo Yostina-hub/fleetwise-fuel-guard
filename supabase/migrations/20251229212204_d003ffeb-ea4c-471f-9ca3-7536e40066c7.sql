@@ -1,0 +1,1 @@
+ALTER TABLE public.work_orders ALTER COLUMN priority SET DEFAULT 'medium';
