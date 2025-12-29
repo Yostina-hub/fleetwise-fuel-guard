@@ -216,9 +216,41 @@ const Auth = () => {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label htmlFor="signin-password">Password</Label>
-                        <a href="#" className="text-xs text-primary hover:underline">
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            const email = (document.getElementById('signin-email') as HTMLInputElement)?.value;
+                            if (email) {
+                              import('@/integrations/supabase/client').then(({ supabase }) => {
+                                supabase.auth.resetPasswordForEmail(email, {
+                                  redirectTo: `${window.location.origin}/auth`,
+                                }).then(({ error }) => {
+                                  if (error) {
+                                    toast({
+                                      title: "Error",
+                                      description: error.message,
+                                      variant: "destructive",
+                                    });
+                                  } else {
+                                    toast({
+                                      title: "Password Reset Email Sent",
+                                      description: "Check your email for a password reset link.",
+                                    });
+                                  }
+                                });
+                              });
+                            } else {
+                              toast({
+                                title: "Email Required",
+                                description: "Please enter your email address first.",
+                                variant: "destructive",
+                              });
+                            }
+                          }}
+                          className="text-xs text-primary hover:underline"
+                        >
                           Forgot password?
-                        </a>
+                        </button>
                       </div>
                       <div className="relative">
                         <Input

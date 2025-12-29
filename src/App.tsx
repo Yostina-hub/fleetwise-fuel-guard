@@ -59,7 +59,6 @@ const App = () => {
           <Route path="/geofencing" element={<ProtectedRoute><Geofencing /></ProtectedRoute>} />
           <Route path="/speed-governor" element={<ProtectedRoute><SpeedGovernor /></ProtectedRoute>} />
           <Route path="/work-orders" element={<ProtectedRoute><WorkOrders /></ProtectedRoute>} />
-          <Route path="/workorders" element={<ProtectedRoute><WorkOrders /></ProtectedRoute>} />
           <Route path="/fleet-scheduling" element={<ProtectedRoute><FleetScheduling /></ProtectedRoute>} />
           <Route path="/config" element={<ProtectedRoute requiredRole="super_admin"><SystemConfig /></ProtectedRoute>} />
           <Route path="/devices" element={<ProtectedRoute><DeviceIntegration /></ProtectedRoute>} />
