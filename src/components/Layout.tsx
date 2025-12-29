@@ -88,19 +88,22 @@ const Layout = ({ children }: LayoutProps) => {
       <div className="parallax-bg"></div>
       
       {/* Sidebar */}
-      <aside className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col shrink-0 relative z-10">
-        {/* Header - Lemon Green Background (ethio telecom Brand) */}
-        <div className="p-6 bg-primary border-b border-border flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-primary-foreground tracking-tight headline-large">FleetTrack FMS</h1>
-            <p className="text-sm text-primary-foreground/90 mt-1 animate-slide-in-left body-text">Fleet Management System</p>
+      <aside className="w-60 bg-sidebar border-r border-sidebar-border flex flex-col shrink-0 relative z-10">
+        {/* Compact Header */}
+        <div className="px-4 py-3 bg-primary flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-primary-foreground/20 flex items-center justify-center">
+              <Truck className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-sm font-bold text-primary-foreground tracking-tight">FleetTrack</h1>
+              <p className="text-[10px] text-primary-foreground/80">FMS</p>
+            </div>
           </div>
-          <div className="rounded-full">
-            <NotificationCenter />
-          </div>
+          <NotificationCenter />
         </div>
         
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
+        <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto custom-scrollbar">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
@@ -110,19 +113,16 @@ const Layout = ({ children }: LayoutProps) => {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-300 group relative overflow-hidden",
+                  "flex items-center gap-2.5 px-3 py-2 rounded-md transition-all duration-200 group relative text-sm",
                   isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-lg glow"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground hover:translate-x-1"
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
                 )}
               >
-                {isActive && (
-                  <span className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent animate-shimmer" />
-                )}
-                <Icon className="w-5 h-5 transition-transform group-hover:scale-110 relative z-10" />
-                <span className="font-medium relative z-10">{item.label}</span>
+                <Icon className="w-4 h-4 shrink-0" />
+                <span className="font-medium truncate">{item.label}</span>
                 {item.highlight && (
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-0.5 text-[10px] font-bold bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full pulse-glow">
+                  <span className="ml-auto px-1.5 py-0.5 text-[9px] font-bold bg-primary text-primary-foreground rounded">
                     NEW
                   </span>
                 )}
@@ -132,93 +132,95 @@ const Layout = ({ children }: LayoutProps) => {
           
           {isSuperAdmin && (
             <>
-              <div className="pt-4 pb-2">
-                <div className="px-3 text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider">
+              <div className="pt-3 pb-1.5">
+                <div className="px-3 text-[10px] font-semibold text-sidebar-foreground/50 uppercase tracking-wider">
                   Admin
                 </div>
               </div>
               <Link
                 to="/users"
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                  "flex items-center gap-2.5 px-3 py-2 rounded-md transition-all duration-200 group text-sm",
                   location.pathname === "/users"
                     ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground hover:translate-x-1"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
                 )}
               >
-                <Users className="w-5 h-5 transition-transform group-hover:scale-110" />
+                <Users className="w-4 h-4 shrink-0" />
                 <span className="font-medium">Users</span>
               </Link>
               <Link
                 to="/security"
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                  "flex items-center gap-2.5 px-3 py-2 rounded-md transition-all duration-200 group text-sm",
                   location.pathname === "/security"
                     ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground hover:translate-x-1"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
                 )}
               >
-                <Shield className="w-5 h-5 transition-transform group-hover:scale-110" />
+                <Shield className="w-4 h-4 shrink-0" />
                 <span className="font-medium">Security</span>
               </Link>
               <Link
                 to="/integrations"
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                  "flex items-center gap-2.5 px-3 py-2 rounded-md transition-all duration-200 group text-sm",
                   location.pathname === "/integrations"
                     ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground hover:translate-x-1"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
                 )}
               >
-                <Plug className="w-5 h-5 transition-transform group-hover:scale-110" />
+                <Plug className="w-4 h-4 shrink-0" />
                 <span className="font-medium">Integrations</span>
               </Link>
               <Link
                 to="/administration"
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                  "flex items-center gap-2.5 px-3 py-2 rounded-md transition-all duration-200 group text-sm",
                   location.pathname === "/administration"
                     ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground hover:translate-x-1"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
                 )}
               >
-                <Building2 className="w-5 h-5 transition-transform group-hover:scale-110" />
+                <Building2 className="w-4 h-4 shrink-0" />
                 <span className="font-medium">Administration</span>
               </Link>
               <Link
                 to="/config"
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group",
+                  "flex items-center gap-2.5 px-3 py-2 rounded-md transition-all duration-200 group text-sm",
                   location.pathname === "/config"
                     ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground hover:translate-x-1"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
                 )}
               >
-                <Settings2 className="w-5 h-5 transition-transform group-hover:scale-110" />
+                <Settings2 className="w-4 h-4 shrink-0" />
                 <span className="font-medium">System Config</span>
               </Link>
             </>
           )}
         </nav>
 
-        {/* Footer - Light Gray Background (ethio telecom Brand) */}
-        <div className="p-4 bg-footer border-t border-border space-y-3">
-          {user && (
-            <div className="px-3 py-2 text-sm text-footer-foreground/80 body-text">
-              {user.email}
+        {/* Compact Footer */}
+        <div className="px-2 py-2 border-t border-sidebar-border bg-sidebar">
+          <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50">
+            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <span className="text-xs font-semibold text-primary">
+                {user?.email?.charAt(0).toUpperCase() || 'U'}
+              </span>
             </div>
-          )}
-          <Button
-            variant="secondary"
-            size="sm"
-            className="w-full gap-2"
-            onClick={handleSignOut}
-          >
-            <LogOut className="w-4 h-4" />
-            Sign Out
-          </Button>
-          <div className="px-3 py-2 text-xs text-footer-foreground/60 body-text">
-            v1.0.0 • © 2025 FleetTrack
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-foreground truncate">{user?.email}</p>
+              <p className="text-[10px] text-muted-foreground">v1.0.0</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground hover:bg-destructive/10"
+              onClick={handleSignOut}
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </Button>
           </div>
         </div>
       </aside>
