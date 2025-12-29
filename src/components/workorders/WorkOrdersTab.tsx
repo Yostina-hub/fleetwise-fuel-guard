@@ -41,6 +41,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -85,6 +86,7 @@ const WorkOrdersTab = () => {
     scheduled_date: "",
   });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState<string | null>(null);
 
   const {
     data: vehicles,
@@ -161,16 +163,17 @@ const WorkOrdersTab = () => {
   };
 
   const getPriorityBadge = (priority: string) => {
-    const colors: Record<string, string> = {
-      urgent: "text-red-600 bg-red-50",
-      high: "text-orange-600 bg-orange-50",
-      medium: "text-yellow-600 bg-yellow-50",
-      low: "text-green-600 bg-green-50",
+    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+      urgent: "destructive",
+      high: "default",
+      medium: "secondary",
+      low: "outline",
     };
+
     return (
-      <span className={`px-2 py-1 rounded-full text-xs ${colors[priority] || colors.medium}`}>
+      <Badge variant={variants[priority] || "secondary"}>
         {priority}
-      </span>
+      </Badge>
     );
   };
 
@@ -207,29 +210,33 @@ const WorkOrdersTab = () => {
       setPriorityFilter("all");
       setCurrentPage(1);
     },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error?.message || "Failed to create work order",
-        variant: "destructive",
-      });
-    },
+     onError: (error: any) => {
+       const message = error?.message || "Failed to create work order";
+       setFormError(message);
+       toast({
+         title: "Error",
+         description: message,
+         variant: "destructive",
+       });
+     },
   });
 
-  const resetForm = () => {
-    setFormData({
-      vehicle_id: "",
-      work_type: "oil_change",
-      priority: "medium",
-      service_description: "",
-      scheduled_date: "",
-    });
-    setFieldErrors({});
-  };
+   const resetForm = () => {
+     setFormData({
+       vehicle_id: "",
+       work_type: "oil_change",
+       priority: "medium",
+       service_description: "",
+       scheduled_date: "",
+     });
+     setFieldErrors({});
+     setFormError(null);
+   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setFieldErrors({});
+    setFormError(null);
     console.debug("[work_orders] submit", formData);
 
     if (vehiclesError) {
@@ -316,6 +323,13 @@ const WorkOrdersTab = () => {
             </DialogHeader>
             <form onSubmit={handleSubmit} noValidate>
               <div className="space-y-4">
+                {formError && (
+                  <Alert variant="destructive">
+                    <AlertTitle>Couldn't create work order</AlertTitle>
+                    <AlertDescription>{formError}</AlertDescription>
+                  </Alert>
+                )}
+
                 <div>
                   <Label htmlFor="vehicle_id">Vehicle *</Label>
                   <Select
