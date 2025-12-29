@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -64,7 +65,11 @@ type WorkOrderForm = z.infer<typeof workOrderSchema>;
 
 const WorkOrdersTab = () => {
   const { organizationId, loading: organizationLoading } = useOrganization();
+  const { hasRole, loading: permissionsLoading } = usePermissions();
   const { toast } = useToast();
+  
+  // Check if user has permission to create work orders (matches RLS policy)
+  const canCreateWorkOrder = hasRole("super_admin") || hasRole("maintenance_lead") || hasRole("operations_manager");
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -146,12 +151,13 @@ const WorkOrdersTab = () => {
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+      pending: "secondary",
       scheduled: "secondary",
       in_progress: "default",
       completed: "outline",
       cancelled: "destructive",
     };
-    return <Badge variant={variants[status] || "default"}>{status}</Badge>;
+    return <Badge variant={variants[status] || "default"}>{status.replace(/_/g, ' ')}</Badge>;
   };
 
   const getPriorityBadge = (priority: string) => {
@@ -262,8 +268,8 @@ const WorkOrdersTab = () => {
     createMutation.mutate(parsed.data);
   };
 
-  if (organizationLoading) {
-    return <div className="py-8 text-sm text-muted-foreground">Loading organization…</div>;
+  if (organizationLoading || permissionsLoading) {
+    return <div className="py-8 text-sm text-muted-foreground">Loading…</div>;
   }
 
   if (!organizationId) {
@@ -292,7 +298,11 @@ const WorkOrdersTab = () => {
         <h3 className="text-lg font-semibold">Work Orders ({filteredWorkOrders.length})</h3>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={resetForm}>
+            <Button 
+              onClick={resetForm} 
+              disabled={!canCreateWorkOrder}
+              title={!canCreateWorkOrder ? "You need super_admin, maintenance_lead, or operations_manager role" : undefined}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Create Work Order
             </Button>
@@ -439,6 +449,7 @@ const WorkOrdersTab = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
             <SelectItem value="scheduled">Scheduled</SelectItem>
             <SelectItem value="in_progress">In Progress</SelectItem>
             <SelectItem value="completed">Completed</SelectItem>
