@@ -190,7 +190,7 @@ const WorkOrdersTab = () => {
           service_description: validated.service_description,
           scheduled_date: validated.scheduled_date ?? null,
           organization_id: organizationId,
-          status: "scheduled",
+          status: "pending",
           parts_cost: 0,
           labor_cost: 0,
           total_cost: 0,
