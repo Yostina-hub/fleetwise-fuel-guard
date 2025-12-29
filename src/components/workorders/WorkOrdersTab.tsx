@@ -79,8 +79,13 @@ const WorkOrdersTab = () => {
     service_description: "",
     scheduled_date: "",
   });
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  const { data: vehicles, isLoading: vehiclesLoading } = useQuery({
+  const {
+    data: vehicles,
+    isLoading: vehiclesLoading,
+    error: vehiclesError,
+  } = useQuery({
     queryKey: ["vehicles", organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -213,21 +218,47 @@ const WorkOrdersTab = () => {
       service_description: "",
       scheduled_date: "",
     });
+    setFieldErrors({});
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setFieldErrors({});
+    console.debug("[work_orders] submit", formData);
 
-    const parsed = workOrderSchema.safeParse(formData);
-    if (!parsed.success) {
+    if (vehiclesError) {
       toast({
-        title: "Please fix the form",
-        description: parsed.error.issues?.[0]?.message ?? "Invalid form data",
+        title: "Vehicle list not available",
+        description: "Please refresh and try again.",
         variant: "destructive",
       });
       return;
     }
 
+    const parsed = workOrderSchema.safeParse(formData);
+    if (!parsed.success) {
+      const nextErrors: Record<string, string> = {};
+      for (const issue of parsed.error.issues) {
+        const key = issue.path?.[0];
+        if (typeof key === "string" && !nextErrors[key]) {
+          nextErrors[key] = issue.message;
+        }
+      }
+
+      setFieldErrors(nextErrors);
+
+      toast({
+        title: "Please fix the form",
+        description:
+          Object.values(nextErrors)[0] ??
+          parsed.error.issues?.[0]?.message ??
+          "Invalid form data",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.debug("[work_orders] parsed ok", parsed.data);
     createMutation.mutate(parsed.data);
   };
 
@@ -304,6 +335,9 @@ const WorkOrdersTab = () => {
                       )}
                     </SelectContent>
                   </Select>
+                  {fieldErrors.vehicle_id && (
+                    <p className="mt-1 text-sm text-destructive">{fieldErrors.vehicle_id}</p>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="work_type">Work Type *</Label>
