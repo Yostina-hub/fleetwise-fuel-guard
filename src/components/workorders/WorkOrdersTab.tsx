@@ -46,6 +46,7 @@ import { format } from "date-fns";
 import { z } from "zod";
 
 const workOrderSchema = z.object({
+  vehicle_id: z.string().uuid("Please select a vehicle"),
   work_type: z.string().trim().min(1, "Work type is required"),
   priority: z.enum(["low", "medium", "high", "urgent"]),
   service_description: z.string().trim().min(1, "Description is required").max(500),
@@ -63,10 +64,25 @@ const WorkOrdersTab = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [formData, setFormData] = useState({
+    vehicle_id: "",
     work_type: "oil_change",
     priority: "medium" as const,
     service_description: "",
     scheduled_date: "",
+  });
+
+  const { data: vehicles } = useQuery({
+    queryKey: ["vehicles", organizationId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vehicles")
+        .select("id, plate_number, make, model")
+        .eq("organization_id", organizationId!)
+        .order("plate_number");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!organizationId,
   });
 
   const { data: workOrders, isLoading } = useQuery({
@@ -139,10 +155,11 @@ const WorkOrdersTab = () => {
       const validated = workOrderSchema.parse(data);
       const woNumber = `WO-${Date.now().toString().slice(-8)}`;
       
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("work_orders")
         .insert({
           work_order_number: woNumber,
+          vehicle_id: validated.vehicle_id,
           work_type: validated.work_type,
           priority: validated.priority,
           service_description: validated.service_description,
@@ -172,6 +189,7 @@ const WorkOrdersTab = () => {
 
   const resetForm = () => {
     setFormData({
+      vehicle_id: "",
       work_type: "oil_change",
       priority: "medium",
       service_description: "",
@@ -206,6 +224,26 @@ const WorkOrdersTab = () => {
             </DialogHeader>
             <form onSubmit={handleSubmit}>
               <div className="space-y-4">
+                <div>
+                  <Label htmlFor="vehicle_id">Vehicle *</Label>
+                  <Select
+                    value={formData.vehicle_id}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, vehicle_id: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a vehicle" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {vehicles?.map((vehicle) => (
+                        <SelectItem key={vehicle.id} value={vehicle.id}>
+                          {vehicle.plate_number} - {vehicle.make} {vehicle.model}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div>
                   <Label htmlFor="work_type">Work Type *</Label>
                   <Select
