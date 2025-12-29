@@ -49,9 +49,18 @@ const workOrderSchema = z.object({
   vehicle_id: z.string().uuid("Please select a vehicle"),
   work_type: z.string().trim().min(1, "Work type is required"),
   priority: z.enum(["low", "medium", "high", "urgent"]),
-  service_description: z.string().trim().min(1, "Description is required").max(500),
-  scheduled_date: z.string().optional(),
+  service_description: z
+    .string()
+    .trim()
+    .min(1, "Description is required")
+    .max(500, "Description must be 500 characters or less"),
+  scheduled_date: z.preprocess(
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+    z.string().optional(),
+  ),
 });
+
+type WorkOrderForm = z.infer<typeof workOrderSchema>;
 
 const WorkOrdersTab = () => {
   const { organizationId } = useOrganization();
@@ -151,10 +160,11 @@ const WorkOrdersTab = () => {
   };
 
   const createMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      const validated = workOrderSchema.parse(data);
+    mutationFn: async (validated: WorkOrderForm) => {
+      if (!organizationId) throw new Error("Missing organization");
+
       const woNumber = `WO-${Date.now().toString().slice(-8)}`;
-      
+
       const { error } = await supabase
         .from("work_orders")
         .insert({
@@ -163,7 +173,7 @@ const WorkOrdersTab = () => {
           work_type: validated.work_type,
           priority: validated.priority,
           service_description: validated.service_description,
-          scheduled_date: validated.scheduled_date || null,
+          scheduled_date: validated.scheduled_date ?? null,
           organization_id: organizationId,
           status: "scheduled",
           parts_cost: 0,
@@ -181,7 +191,7 @@ const WorkOrdersTab = () => {
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message,
+        description: error?.message || "Failed to create work order",
         variant: "destructive",
       });
     },
@@ -199,7 +209,18 @@ const WorkOrdersTab = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createMutation.mutate(formData);
+
+    const parsed = workOrderSchema.safeParse(formData);
+    if (!parsed.success) {
+      toast({
+        title: "Please fix the form",
+        description: parsed.error.issues?.[0]?.message ?? "Invalid form data",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createMutation.mutate(parsed.data);
   };
 
   if (isLoading) return <div>Loading...</div>;
@@ -222,7 +243,7 @@ const WorkOrdersTab = () => {
                 Schedule a new maintenance work order
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} noValidate>
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="vehicle_id">Vehicle *</Label>
@@ -296,7 +317,6 @@ const WorkOrdersTab = () => {
                     }
                     placeholder="Describe the work to be done..."
                     rows={3}
-                    required
                   />
                 </div>
                 <div>
