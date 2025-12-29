@@ -235,9 +235,11 @@ All colors MUST be HSL.
   .card-premium {
     position: relative;
     overflow: hidden;
+    isolation: isolate;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
+  /* Ensure decorative layers never block clicks */
   .card-premium::before {
     content: '';
     position: absolute;
@@ -254,6 +256,8 @@ All colors MUST be HSL.
     animation: rotate 4s linear infinite;
     opacity: 0;
     transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 0;
   }
 
   .card-premium:hover::before {
@@ -267,6 +271,12 @@ All colors MUST be HSL.
     background: hsl(var(--card));
     border-radius: calc(var(--radius) - 2px);
     z-index: -1;
+    pointer-events: none;
+  }
+
+  .card-premium > * {
+    position: relative;
+    z-index: 1;
   }
 
   /* Gradient Text */
