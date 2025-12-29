@@ -29,7 +29,7 @@ const Integrations = () => {
           </TabsTrigger>
           <TabsTrigger value="erpnext" className="gap-2">
             <Database className="h-4 w-4" />
-            ERPNext
+            tele Erp
           </TabsTrigger>
           <TabsTrigger value="integrations" className="gap-2">
             <Plug className="h-4 w-4" />

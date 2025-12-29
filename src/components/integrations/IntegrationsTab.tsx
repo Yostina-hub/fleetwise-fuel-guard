@@ -15,7 +15,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useAuth } from "@/hooks/useAuth";
 
 const INTEGRATION_TYPES = [
-  { value: "erp", label: "ERP System", providers: ["ERPNext", "Odoo", "SAP"] },
+  { value: "erp", label: "ERP System", providers: ["tele Erp", "Odoo", "SAP"] },
   { value: "fuel_card", label: "Fuel Card", providers: ["Shell Fleet", "BP Fuel Card", "Custom"] },
   { value: "messaging", label: "Messaging", providers: ["Twilio", "Vonage", "WhatsApp Business"] },
   { value: "device", label: "Device", providers: ["Teltonika", "Queclink", "Custom"] },

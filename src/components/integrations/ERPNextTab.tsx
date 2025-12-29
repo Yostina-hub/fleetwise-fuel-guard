@@ -187,7 +187,7 @@ const ERPNextTab = () => {
     } else {
       toast({
         title: "Success",
-        description: "ERPNext configuration saved successfully",
+        description: "tele Erp configuration saved successfully",
       });
       fetchConfig();
     }
@@ -218,7 +218,7 @@ const ERPNextTab = () => {
       if (result.success) {
         toast({
           title: "Connection Successful",
-          description: "Successfully connected to ERPNext",
+          description: "Successfully connected to tele Erp",
         });
       } else {
         throw new Error(result.error || 'Connection failed');
@@ -281,24 +281,24 @@ const ERPNextTab = () => {
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <Settings className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold">ERPNext Configuration</h3>
+          <h3 className="text-lg font-semibold">tele Erp Configuration</h3>
         </div>
 
         {/* Info Card */}
         <div className="mb-6 p-4 bg-muted/50 rounded-lg border border-border">
           <h4 className="font-medium text-sm mb-2">📌 Field Mapping Info</h4>
           <p className="text-sm text-muted-foreground">
-            FleetTrack works with <strong>any ERPNext field names</strong>. Use default mappings for standard ERPNext, 
-            or customize field mappings below if your ERPNext has different field names, custom DocTypes, or localized fields.
+            FleetTrack works with <strong>any tele Erp field names</strong>. Use default mappings for standard tele Erp, 
+            or customize field mappings below if your tele Erp has different field names, custom DocTypes, or localized fields.
           </p>
         </div>
 
         <div className="space-y-4">
           <div>
-            <Label htmlFor="erpnext_url">ERPNext URL</Label>
+            <Label htmlFor="erpnext_url">tele Erp URL</Label>
             <Input
               id="erpnext_url"
-              placeholder="https://your-erpnext-instance.com"
+              placeholder="https://your-tele-erp-instance.com"
               value={formData.erpnext_url}
               onChange={(e) => setFormData({ ...formData, erpnext_url: e.target.value })}
             />
@@ -309,7 +309,7 @@ const ERPNextTab = () => {
             <Input
               id="api_key"
               type="password"
-              placeholder="Your ERPNext API Key"
+              placeholder="Your tele Erp API Key"
               value={formData.api_key}
               onChange={(e) => setFormData({ ...formData, api_key: e.target.value })}
             />
@@ -320,7 +320,7 @@ const ERPNextTab = () => {
             <Input
               id="api_secret"
               type="password"
-              placeholder="Your ERPNext API Secret"
+              placeholder="Your tele Erp API Secret"
               value={formData.api_secret}
               onChange={(e) => setFormData({ ...formData, api_secret: e.target.value })}
             />
@@ -339,7 +339,7 @@ const ERPNextTab = () => {
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-4 mt-4">
               <p className="text-sm text-muted-foreground">
-                Customize which ERPNext fields your FleetTrack data maps to. Change these only if your ERPNext has different field names.
+                Customize which tele Erp fields your FleetTrack data maps to. Change these only if your tele Erp has different field names.
               </p>
 
               {/* Vehicle Mappings */}
@@ -350,7 +350,7 @@ const ERPNextTab = () => {
                 </h5>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="vehicle_doctype" className="text-xs">ERPNext DocType</Label>
+                    <Label htmlFor="vehicle_doctype" className="text-xs">tele Erp DocType</Label>
                     <Input
                       id="vehicle_doctype"
                       value={fieldMappings.vehicle_doctype}
@@ -400,7 +400,7 @@ const ERPNextTab = () => {
                 </h5>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="driver_doctype" className="text-xs">ERPNext DocType</Label>
+                    <Label htmlFor="driver_doctype" className="text-xs">tele Erp DocType</Label>
                     <Input
                       id="driver_doctype"
                       value={fieldMappings.driver_doctype}
@@ -450,7 +450,7 @@ const ERPNextTab = () => {
                 </h5>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="fuel_doctype" className="text-xs">ERPNext DocType</Label>
+                    <Label htmlFor="fuel_doctype" className="text-xs">tele Erp DocType</Label>
                     <Input
                       id="fuel_doctype"
                       value={fieldMappings.fuel_doctype}
@@ -480,7 +480,7 @@ const ERPNextTab = () => {
                 </h5>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="trip_doctype" className="text-xs">ERPNext DocType</Label>
+                    <Label htmlFor="trip_doctype" className="text-xs">tele Erp DocType</Label>
                     <Input
                       id="trip_doctype"
                       value={fieldMappings.trip_doctype}
