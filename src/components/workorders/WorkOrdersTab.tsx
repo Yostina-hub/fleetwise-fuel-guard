@@ -63,7 +63,7 @@ const workOrderSchema = z.object({
 type WorkOrderForm = z.infer<typeof workOrderSchema>;
 
 const WorkOrdersTab = () => {
-  const { organizationId } = useOrganization();
+  const { organizationId, loading: organizationLoading } = useOrganization();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -80,7 +80,7 @@ const WorkOrdersTab = () => {
     scheduled_date: "",
   });
 
-  const { data: vehicles } = useQuery({
+  const { data: vehicles, isLoading: vehiclesLoading } = useQuery({
     queryKey: ["vehicles", organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -94,7 +94,11 @@ const WorkOrdersTab = () => {
     enabled: !!organizationId,
   });
 
-  const { data: workOrders, isLoading } = useQuery({
+  const {
+    data: workOrders,
+    isLoading: workOrdersLoading,
+    error: workOrdersError,
+  } = useQuery({
     queryKey: ["work_orders", organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -187,6 +191,10 @@ const WorkOrdersTab = () => {
       toast({ title: "Work order created successfully" });
       setIsDialogOpen(false);
       resetForm();
+      setSearchQuery("");
+      setStatusFilter("all");
+      setPriorityFilter("all");
+      setCurrentPage(1);
     },
     onError: (error: any) => {
       toast({
@@ -223,7 +231,29 @@ const WorkOrdersTab = () => {
     createMutation.mutate(parsed.data);
   };
 
-  if (isLoading) return <div>Loading...</div>;
+  if (organizationLoading) {
+    return <div className="py-8 text-sm text-muted-foreground">Loading organization…</div>;
+  }
+
+  if (!organizationId) {
+    return (
+      <div className="py-8 text-sm text-muted-foreground">
+        No organization found for your account.
+      </div>
+    );
+  }
+
+  if (workOrdersLoading) {
+    return <div className="py-8 text-sm text-muted-foreground">Loading work orders…</div>;
+  }
+
+  if (workOrdersError) {
+    return (
+      <div className="py-8 text-sm text-muted-foreground">
+        Failed to load work orders. Please refresh.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -257,11 +287,21 @@ const WorkOrdersTab = () => {
                       <SelectValue placeholder="Select a vehicle" />
                     </SelectTrigger>
                     <SelectContent>
-                      {vehicles?.map((vehicle) => (
-                        <SelectItem key={vehicle.id} value={vehicle.id}>
-                          {vehicle.plate_number} - {vehicle.make} {vehicle.model}
+                      {vehiclesLoading ? (
+                        <SelectItem value="__loading" disabled>
+                          Loading vehicles…
                         </SelectItem>
-                      ))}
+                      ) : vehicles && vehicles.length > 0 ? (
+                        vehicles.map((vehicle) => (
+                          <SelectItem key={vehicle.id} value={vehicle.id}>
+                            {vehicle.plate_number} - {vehicle.make} {vehicle.model}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="__none" disabled>
+                          No vehicles available
+                        </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -332,9 +372,12 @@ const WorkOrdersTab = () => {
                 </div>
               </div>
               <DialogFooter className="mt-6">
-                <Button type="submit" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? "Creating..." : "Create Work Order"}
-                </Button>
+                 <Button
+                   type="submit"
+                   disabled={createMutation.isPending || vehiclesLoading || !vehicles || vehicles.length === 0}
+                 >
+                   {createMutation.isPending ? "Creating..." : "Create Work Order"}
+                 </Button>
               </DialogFooter>
             </form>
           </DialogContent>
