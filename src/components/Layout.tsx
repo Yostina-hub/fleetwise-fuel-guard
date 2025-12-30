@@ -14,9 +14,8 @@ import {
   Shield,
   Plug,
   LogOut,
-  Route,
-  GaugeCircle,
-  AlertTriangle,
+  MapPinned,
+  ShieldCheck,
   Settings2,
   Building2,
   CalendarClock
@@ -43,7 +42,7 @@ const navItems = [
     subItems: [
       { label: "Vehicles", path: "/fleet" },
       { label: "Driver Scoring", path: "/driver-scoring" },
-      { label: "Devices", path: "/devices" },
+      { label: "Device Management", path: "/devices" },
     ]
   },
   { icon: Fuel, label: "Fuel Monitoring", path: "/fuel" },
@@ -57,28 +56,43 @@ const navItems = [
     ]
   },
   { 
-    icon: Route, 
-    label: "Routes & Trips", 
+    icon: MapPinned, 
+    label: "Routes & Locations", 
     subItems: [
-      { label: "Route Planning", path: "/routes" },
-      { label: "Trip History", path: "/route-history" },
-      { label: "Geofencing", path: "/geofencing" },
+      { label: "Customer Sites", path: "/routes" },
+      { label: "Journey History", path: "/route-history" },
+      { label: "Geofences", path: "/geofencing" },
     ]
   },
   { 
     icon: CalendarClock, 
-    label: "Trip Requests", 
+    label: "Trip Management", 
     highlight: true,
     subItems: [
-      { label: "All Requests", path: "/fleet-scheduling" },
+      { label: "Request Dashboard", path: "/fleet-scheduling" },
       { label: "Pending Approvals", path: "/fleet-scheduling?tab=approvals" },
       { label: "Assignments", path: "/fleet-scheduling?tab=assignments" },
     ]
   },
-  { icon: GaugeCircle, label: "Speed Governor", path: "/speed-governor" },
-  { icon: AlertTriangle, label: "Incidents", path: "/incidents" },
+  { 
+    icon: ShieldCheck, 
+    label: "Safety & Compliance", 
+    subItems: [
+      { label: "Speed Governor", path: "/speed-governor" },
+      { label: "Incidents", path: "/incidents" },
+    ]
+  },
   { icon: BarChart3, label: "Reports", path: "/reports" },
   { icon: Settings, label: "Settings", path: "/settings" },
+];
+
+// Admin navigation items
+const adminItems = [
+  { label: "Users", path: "/users", icon: Users },
+  { label: "Security", path: "/security", icon: Shield },
+  { label: "Integrations", path: "/integrations", icon: Plug },
+  { label: "Administration", path: "/administration", icon: Building2 },
+  { label: "System Config", path: "/config", icon: Settings2 },
 ];
 
 const Layout = ({ children }: LayoutProps) => {
@@ -146,66 +160,21 @@ const Layout = ({ children }: LayoutProps) => {
                   Admin
                 </div>
               </div>
-              <Link
-                to="/users"
-                className={cn(
-                  "flex items-center gap-2.5 px-3 py-2 rounded-md transition-all duration-200 group text-sm",
-                  location.pathname === "/users"
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-                )}
-              >
-                <Users className="w-4 h-4 shrink-0" />
-                <span className="font-medium">Users</span>
-              </Link>
-              <Link
-                to="/security"
-                className={cn(
-                  "flex items-center gap-2.5 px-3 py-2 rounded-md transition-all duration-200 group text-sm",
-                  location.pathname === "/security"
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-                )}
-              >
-                <Shield className="w-4 h-4 shrink-0" />
-                <span className="font-medium">Security</span>
-              </Link>
-              <Link
-                to="/integrations"
-                className={cn(
-                  "flex items-center gap-2.5 px-3 py-2 rounded-md transition-all duration-200 group text-sm",
-                  location.pathname === "/integrations"
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-                )}
-              >
-                <Plug className="w-4 h-4 shrink-0" />
-                <span className="font-medium">Integrations</span>
-              </Link>
-              <Link
-                to="/administration"
-                className={cn(
-                  "flex items-center gap-2.5 px-3 py-2 rounded-md transition-all duration-200 group text-sm",
-                  location.pathname === "/administration"
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-                )}
-              >
-                <Building2 className="w-4 h-4 shrink-0" />
-                <span className="font-medium">Administration</span>
-              </Link>
-              <Link
-                to="/config"
-                className={cn(
-                  "flex items-center gap-2.5 px-3 py-2 rounded-md transition-all duration-200 group text-sm",
-                  location.pathname === "/config"
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-                )}
-              >
-                <Settings2 className="w-4 h-4 shrink-0" />
-                <span className="font-medium">System Config</span>
-              </Link>
+              {adminItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={cn(
+                    "flex items-center gap-2.5 px-3 py-2 rounded-md transition-all duration-200 group text-sm",
+                    location.pathname === item.path
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                  )}
+                >
+                  <item.icon className="w-4 h-4 shrink-0" />
+                  <span className="font-medium">{item.label}</span>
+                </Link>
+              ))}
             </>
           )}
         </nav>
