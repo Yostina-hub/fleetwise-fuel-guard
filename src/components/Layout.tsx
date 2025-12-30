@@ -15,19 +15,11 @@ import {
   Plug,
   LogOut,
   Route,
-  History,
-  Fence,
   GaugeCircle,
-  ClipboardList,
   AlertTriangle,
   Settings2,
   Building2,
-  Smartphone,
-  CalendarClock,
-  Award,
-  Car,
-  FileText,
-  CheckSquare
+  CalendarClock
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -44,47 +36,46 @@ interface LayoutProps {
 // Navigation structure with collapsible groups
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-  { icon: Map, label: "Live Map", path: "/map" },
-  { icon: Truck, label: "Fleet", path: "/fleet" },
-  { icon: Award, label: "Driver Scoring", path: "/driver-scoring", highlight: true },
-  { icon: Smartphone, label: "Devices", path: "/devices", highlight: true },
-  { icon: Fuel, label: "Fuel", path: "/fuel" },
+  { icon: Map, label: "Live Tracking", path: "/map" },
+  { 
+    icon: Truck, 
+    label: "Fleet Management", 
+    subItems: [
+      { label: "Vehicles", path: "/fleet" },
+      { label: "Driver Scoring", path: "/driver-scoring" },
+      { label: "Devices", path: "/devices" },
+    ]
+  },
+  { icon: Fuel, label: "Fuel Monitoring", path: "/fuel" },
   { icon: Bell, label: "Alerts", path: "/alerts" },
   { 
     icon: Wrench, 
-    label: "Services", 
+    label: "Maintenance", 
     subItems: [
       { label: "Service History", path: "/maintenance" },
-      { label: "Service Tasks", path: "/work-orders" },
+      { label: "Work Orders", path: "/work-orders" },
     ]
   },
   { 
     icon: Route, 
-    label: "Manual Trips", 
+    label: "Routes & Trips", 
     subItems: [
-      { label: "Manual Trips", path: "/route-history" },
+      { label: "Route Planning", path: "/routes" },
+      { label: "Trip History", path: "/route-history" },
+      { label: "Geofencing", path: "/geofencing" },
     ]
   },
   { 
-    icon: Car, 
-    label: "Direct Trip", 
-    subItems: [
-      { label: "Direct Trip", path: "/routes" },
-      { label: "Direct Trip Assignment", path: "/geofencing" },
-    ]
-  },
-  { 
-    icon: FileText, 
-    label: "Trip Request", 
+    icon: CalendarClock, 
+    label: "Trip Requests", 
     highlight: true,
     subItems: [
       { label: "All Requests", path: "/fleet-scheduling" },
-      { label: "My Requests", path: "/fleet-scheduling?tab=my-requests" },
-      { label: "Approval", path: "/fleet-scheduling?tab=approvals" },
-      { label: "Assignment", path: "/fleet-scheduling?tab=assignments" },
+      { label: "Pending Approvals", path: "/fleet-scheduling?tab=approvals" },
+      { label: "Assignments", path: "/fleet-scheduling?tab=assignments" },
     ]
   },
-  { icon: GaugeCircle, label: "Speed Governor", path: "/speed-governor", highlight: true },
+  { icon: GaugeCircle, label: "Speed Governor", path: "/speed-governor" },
   { icon: AlertTriangle, label: "Incidents", path: "/incidents" },
   { icon: BarChart3, label: "Reports", path: "/reports" },
   { icon: Settings, label: "Settings", path: "/settings" },

@@ -21,6 +21,27 @@ interface SidebarMenuItemProps {
   highlight?: boolean;
 }
 
+// Helper to check if path matches (handles query params)
+const isPathActive = (currentPath: string, currentSearch: string, itemPath: string) => {
+  const [basePath, queryString] = itemPath.split('?');
+  
+  // Check base path first
+  if (currentPath !== basePath) return false;
+  
+  // If item has query params, check they match
+  if (queryString) {
+    const itemParams = new URLSearchParams(queryString);
+    const currentParams = new URLSearchParams(currentSearch);
+    for (const [key, value] of itemParams.entries()) {
+      if (currentParams.get(key) !== value) return false;
+    }
+    return true;
+  }
+  
+  // Base path matches and no query params required
+  return true;
+};
+
 export const SidebarMenuItem = ({
   icon: Icon,
   label,
@@ -29,8 +50,10 @@ export const SidebarMenuItem = ({
   highlight,
 }: SidebarMenuItemProps) => {
   const location = useLocation();
-  const isActive = path ? location.pathname === path : false;
-  const isChildActive = subItems?.some((item) => location.pathname === item.path);
+  const isActive = path ? isPathActive(location.pathname, location.search, path) : false;
+  const isChildActive = subItems?.some((item) => 
+    isPathActive(location.pathname, location.search, item.path)
+  );
   const [isOpen, setIsOpen] = useState(isChildActive);
 
   // If no sub-items, render a simple link
@@ -80,7 +103,7 @@ export const SidebarMenuItem = ({
       </CollapsibleTrigger>
       <CollapsibleContent className="pl-4 mt-0.5 space-y-0.5">
         {subItems.map((item) => {
-          const isSubActive = location.pathname === item.path;
+          const isSubActive = isPathActive(location.pathname, location.search, item.path);
           return (
             <Link
               key={item.path}
