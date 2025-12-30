@@ -24,7 +24,10 @@ import {
   Building2,
   Smartphone,
   CalendarClock,
-  Award
+  Award,
+  Car,
+  FileText,
+  CheckSquare
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -32,11 +35,13 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationCenter } from "@/components/scheduling/NotificationCenter";
 import { AIAssistant } from "@/components/AIAssistant";
+import { SidebarMenuItem } from "@/components/sidebar/SidebarMenuItem";
 
 interface LayoutProps {
   children: ReactNode;
 }
 
+// Navigation structure with collapsible groups
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: Map, label: "Live Map", path: "/map" },
@@ -45,14 +50,42 @@ const navItems = [
   { icon: Smartphone, label: "Devices", path: "/devices", highlight: true },
   { icon: Fuel, label: "Fuel", path: "/fuel" },
   { icon: Bell, label: "Alerts", path: "/alerts" },
-  { icon: Wrench, label: "Maintenance", path: "/maintenance" },
-  { icon: Route, label: "Routes", path: "/routes" },
-  { icon: History, label: "Route History", path: "/route-history", highlight: true },
-  { icon: Fence, label: "Geofencing", path: "/geofencing", highlight: true },
+  { 
+    icon: Wrench, 
+    label: "Services", 
+    subItems: [
+      { label: "Service History", path: "/maintenance" },
+      { label: "Service Tasks", path: "/work-orders" },
+    ]
+  },
+  { 
+    icon: Route, 
+    label: "Manual Trips", 
+    subItems: [
+      { label: "Manual Trips", path: "/route-history" },
+    ]
+  },
+  { 
+    icon: Car, 
+    label: "Direct Trip", 
+    subItems: [
+      { label: "Direct Trip", path: "/routes" },
+      { label: "Direct Trip Assignment", path: "/geofencing" },
+    ]
+  },
+  { 
+    icon: FileText, 
+    label: "Trip Request", 
+    highlight: true,
+    subItems: [
+      { label: "All Requests", path: "/fleet-scheduling" },
+      { label: "My Requests", path: "/fleet-scheduling?tab=my-requests" },
+      { label: "Approval", path: "/fleet-scheduling?tab=approvals" },
+      { label: "Assignment", path: "/fleet-scheduling?tab=assignments" },
+    ]
+  },
   { icon: GaugeCircle, label: "Speed Governor", path: "/speed-governor", highlight: true },
-  { icon: ClipboardList, label: "Work Orders", path: "/workorders" },
   { icon: AlertTriangle, label: "Incidents", path: "/incidents" },
-  { icon: CalendarClock, label: "Fleet Scheduling", path: "/fleet-scheduling", highlight: true },
   { icon: BarChart3, label: "Reports", path: "/reports" },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
@@ -104,31 +137,16 @@ const Layout = ({ children }: LayoutProps) => {
         </div>
         
         <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto custom-scrollbar">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.path;
-            
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={cn(
-                  "flex items-center gap-2.5 px-3 py-2 rounded-md transition-all duration-200 group relative text-sm",
-                  isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-                )}
-              >
-                <Icon className="w-4 h-4 shrink-0" />
-                <span className="font-medium truncate">{item.label}</span>
-                {item.highlight && (
-                  <span className="ml-auto px-1.5 py-0.5 text-[9px] font-bold bg-primary text-primary-foreground rounded">
-                    NEW
-                  </span>
-                )}
-              </Link>
-            );
-          })}
+          {navItems.map((item, index) => (
+            <SidebarMenuItem
+              key={item.path || `menu-${index}`}
+              icon={item.icon}
+              label={item.label}
+              path={item.path}
+              subItems={item.subItems}
+              highlight={item.highlight}
+            />
+          ))}
           
           {isSuperAdmin && (
             <>
