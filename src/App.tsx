@@ -17,6 +17,7 @@ import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import UserManagement from "./pages/UserManagement";
 import Security from "./pages/Security";
+import SecurityDashboard from "./pages/SecurityDashboard";
 import Integrations from "./pages/Integrations";
 import Administration from "./pages/Administration";
 import RoutesPage from "./pages/Routes";
@@ -54,6 +55,7 @@ const App = () => {
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/users" element={<ProtectedRoute requiredRole="super_admin"><UserManagement /></ProtectedRoute>} />
           <Route path="/security" element={<ProtectedRoute requiredRole="super_admin"><Security /></ProtectedRoute>} />
+          <Route path="/security-dashboard" element={<ProtectedRoute requiredRole="super_admin"><SecurityDashboard /></ProtectedRoute>} />
           <Route path="/integrations" element={<ProtectedRoute requiredRole="super_admin"><Integrations /></ProtectedRoute>} />
           <Route path="/administration" element={<ProtectedRoute requiredRole="super_admin"><Administration /></ProtectedRoute>} />
           <Route path="/routes" element={<ProtectedRoute><RoutesPage /></ProtectedRoute>} />
