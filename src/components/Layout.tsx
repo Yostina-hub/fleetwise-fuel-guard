@@ -91,6 +91,7 @@ const navItems = [
 const adminItems = [
   { label: "Users", path: "/users", icon: Users },
   { label: "Security", path: "/security", icon: Shield },
+  { label: "Security Dashboard", path: "/security-dashboard", icon: ShieldCheck },
   { label: "Integrations", path: "/integrations", icon: Plug },
   { label: "Administration", path: "/administration", icon: Building2 },
   { label: "System Config", path: "/config", icon: Settings2 },
