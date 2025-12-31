@@ -34,19 +34,24 @@ export interface Vehicle {
 export const useVehicles = () => {
   const { organizationId } = useOrganization();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start false for instant feel
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!organizationId) {
       setVehicles([]);
       setLoading(false);
+      setIsFirstLoad(false);
       return;
     }
 
-    const fetchVehicles = async () => {
+    const fetchVehicles = async (showLoading = true) => {
       try {
-        setLoading(true);
+        // Only show loading on first load
+        if (showLoading && isFirstLoad) {
+          setLoading(true);
+        }
         // Use explicit limit to handle large fleets (up to 5000 vehicles)
         const { data, error } = await supabase
           .from("vehicles")
@@ -62,6 +67,7 @@ export const useVehicles = () => {
         setError(err.message);
       } finally {
         setLoading(false);
+        setIsFirstLoad(false);
       }
     };
 
@@ -80,10 +86,10 @@ export const useVehicles = () => {
           filter: `organization_id=eq.${organizationId}`
         },
         () => {
-          // Debounce to prevent rapid refetches
+          // Debounce to prevent rapid refetches, update in background
           clearTimeout(debounceTimer);
           debounceTimer = setTimeout(() => {
-            fetchVehicles();
+            fetchVehicles(false); // Don't show loading for background updates
           }, 2000);
         }
       )

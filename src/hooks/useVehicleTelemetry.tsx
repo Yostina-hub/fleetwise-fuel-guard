@@ -25,19 +25,24 @@ export interface VehicleTelemetry {
 export const useVehicleTelemetry = () => {
   const { organizationId } = useOrganization();
   const [telemetry, setTelemetry] = useState<Record<string, VehicleTelemetry>>({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start false for instant feel
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!organizationId) {
       setTelemetry({});
       setLoading(false);
+      setIsFirstLoad(false);
       return;
     }
 
-    const fetchTelemetry = async () => {
+    const fetchTelemetry = async (showLoading = true) => {
       try {
-        setLoading(true);
+        // Only show loading on first load
+        if (showLoading && isFirstLoad) {
+          setLoading(true);
+        }
         // Use RPC or optimized query for large fleets
         // Get latest telemetry per vehicle using distinct on vehicle_id
         const { data, error } = await supabase
@@ -63,6 +68,7 @@ export const useVehicleTelemetry = () => {
         setError(err.message);
       } finally {
         setLoading(false);
+        setIsFirstLoad(false);
       }
     };
 
@@ -94,7 +100,7 @@ export const useVehicleTelemetry = () => {
             // For DELETE or other events, debounce full refetch
             if (!throttleTimer) {
               throttleTimer = setTimeout(() => {
-                fetchTelemetry();
+                fetchTelemetry(false); // Don't show loading for background updates
                 throttleTimer = undefined as any;
               }, 3000);
             } else {

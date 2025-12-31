@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { MapSidebarSkeleton } from "@/components/ui/skeletons";
 import StatusBadge from "@/components/StatusBadge";
 import LiveTrackingMap from "@/components/map/LiveTrackingMap";
 import ClusteredMap from "@/components/map/ClusteredMap";
-import { MapPin, Navigation, Fuel, Zap, RefreshCw, Loader2, WifiOff, Layers } from "lucide-react";
+import { MapPin, Navigation, Fuel, Zap, RefreshCw, WifiOff, Layers } from "lucide-react";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -88,18 +90,8 @@ const MapView = () => {
     return () => clearInterval(interval);
   }, [autoRefresh, refetch]);
 
-  if (loading && vehicles.length === 0) {
-    return (
-      <Layout>
-        <div className="p-8 flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
-            <p className="text-muted-foreground">Loading map data...</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+  // Show map immediately with loading indicator in sidebar
+  const isInitialLoading = loading && vehicles.length === 0;
 
   // Use clustering for large fleets
   const useClusteredMap = vehicles.length > CLUSTER_THRESHOLD;
@@ -266,6 +258,9 @@ const MapView = () => {
 
           {/* Virtual scrolling vehicle list */}
           <div ref={sidebarRef} className="flex-1 overflow-auto p-4">
+            {isInitialLoading ? (
+              <MapSidebarSkeleton count={6} />
+            ) : (
             <div
               style={{
                 height: `${rowVirtualizer.getTotalSize()}px`,
@@ -352,6 +347,7 @@ const MapView = () => {
                 );
               })}
             </div>
+            )}
           </div>
         </div>
       </div>

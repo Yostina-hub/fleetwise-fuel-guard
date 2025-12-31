@@ -4,6 +4,13 @@ import Layout from "@/components/Layout";
 import KPICard from "@/components/KPICard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { 
+  StatCardSkeleton,
+  ChartSkeleton,
+  DashboardVehicleListSkeleton,
+  AlertItemSkeleton,
+} from "@/components/ui/skeletons";
 import { 
   Truck, 
   Fuel, 
@@ -12,17 +19,15 @@ import {
   AlertTriangle,
   Clock,
   MapPin,
-  Gauge,
   Eye,
   ChevronRight,
   RefreshCw,
   Activity,
   Route,
-  Loader2
 } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
 import VehicleDetailModal from "@/components/VehicleDetailModal";
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, LineChart, Line } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, LineChart, Line } from "recharts";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useAlerts } from "@/hooks/useAlerts";
 import { useFuelEvents } from "@/hooks/useFuelEvents";
@@ -100,18 +105,8 @@ const Dashboard = () => {
     { hour: "20:00", trips: 28 },
   ];
 
-  if (vehiclesLoading || alertsLoading) {
-    return (
-      <Layout>
-        <div className="p-8 flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
-            <p className="text-muted-foreground">Loading dashboard...</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+  // Show skeleton content instead of blocking loader
+  const isLoading = vehiclesLoading || alertsLoading;
 
   return (
     <Layout>
@@ -135,38 +130,47 @@ const Dashboard = () => {
           </Button>
         </div>
 
-        {/* KPI Grid */}
+        {/* KPI Grid - show skeletons while loading */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <KPICard
-            title="Active Vehicles"
-            value={dbVehicles.filter(v => v.status === 'active').length.toString()}
-            subtitle={`of ${dbVehicles.length} total`}
-            icon={<Truck className="w-5 h-5" />}
-            variant="default"
-          />
-          <KPICard
-            title="Total Fuel Events"
-            value={dbFuelEvents.length.toString()}
-            subtitle="tracked events"
-            icon={<Fuel className="w-5 h-5" />}
-            variant="success"
-          />
-          <KPICard
-            title="Fleet Size"
-            value={dbVehicles.length.toString()}
-            subtitle="total vehicles"
-            icon={<DollarSign className="w-5 h-5" />}
-            variant="default"
-          />
-          <KPICard
-            title="Active Alerts"
-            value={dbAlerts.length.toString()}
-            subtitle={`${dbAlerts.filter(a => a.severity === 'critical').length} critical`}
-            icon={<AlertTriangle className="w-5 h-5" />}
-            variant="warning"
-          />
+          {isLoading && dbVehicles.length === 0 ? (
+            <>
+              {[1, 2, 3, 4].map((i) => (
+                <StatCardSkeleton key={i} />
+              ))}
+            </>
+          ) : (
+            <>
+              <KPICard
+                title="Active Vehicles"
+                value={dbVehicles.filter(v => v.status === 'active').length.toString()}
+                subtitle={`of ${dbVehicles.length} total`}
+                icon={<Truck className="w-5 h-5" />}
+                variant="default"
+              />
+              <KPICard
+                title="Total Fuel Events"
+                value={dbFuelEvents.length.toString()}
+                subtitle="tracked events"
+                icon={<Fuel className="w-5 h-5" />}
+                variant="success"
+              />
+              <KPICard
+                title="Fleet Size"
+                value={dbVehicles.length.toString()}
+                subtitle="total vehicles"
+                icon={<DollarSign className="w-5 h-5" />}
+                variant="default"
+              />
+              <KPICard
+                title="Active Alerts"
+                value={dbAlerts.length.toString()}
+                subtitle={`${dbAlerts.filter(a => a.severity === 'critical').length} critical`}
+                icon={<AlertTriangle className="w-5 h-5" />}
+                variant="warning"
+              />
+            </>
+          )}
         </div>
-
         {/* Charts Row - Circular KPIs and Analytics */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Vehicle Status Distribution - Circular Chart */}

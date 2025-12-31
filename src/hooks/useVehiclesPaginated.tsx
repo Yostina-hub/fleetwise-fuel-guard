@@ -52,7 +52,8 @@ export const useVehiclesPaginated = (
   const { organizationId } = useOrganization();
   
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start with false for instant feel
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
@@ -87,11 +88,15 @@ export const useVehiclesPaginated = (
     if (!organizationId) {
       setVehicles([]);
       setLoading(false);
+      setIsFirstLoad(false);
       return;
     }
 
     try {
-      setLoading(true);
+      // Only show loading on first load, otherwise update in background
+      if (isFirstLoad) {
+        setLoading(true);
+      }
       setError(null);
 
       // Get total count
@@ -131,8 +136,9 @@ export const useVehiclesPaginated = (
       setError(err.message);
     } finally {
       setLoading(false);
+      setIsFirstLoad(false);
     }
-  }, [organizationId, pageSize, statusFilter, searchQuery, fetchCount]);
+  }, [organizationId, pageSize, statusFilter, searchQuery, fetchCount, isFirstLoad]);
 
   const loadMore = useCallback(async () => {
     if (!hasMore || loading) return;
