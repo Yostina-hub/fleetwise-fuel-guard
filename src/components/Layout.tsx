@@ -41,6 +41,7 @@ const navItems = [
     label: "Fleet Management", 
     subItems: [
       { label: "Vehicles", path: "/fleet" },
+      { label: "Drivers", path: "/drivers" },
       { label: "Driver Scoring", path: "/driver-scoring" },
       { label: "Device Management", path: "/devices" },
     ]

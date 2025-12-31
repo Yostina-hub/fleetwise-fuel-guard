@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import MapView from "./pages/MapView";
 import Fleet from "./pages/Fleet";
 import DriverScoring from "./pages/DriverScoring";
+import Drivers from "./pages/Drivers";
 import FuelMonitoring from "./pages/FuelMonitoring";
 import Alerts from "./pages/Alerts";
 import Maintenance from "./pages/Maintenance";
@@ -45,6 +46,7 @@ const App = () => {
           <Route path="/map" element={<ProtectedRoute><MapView /></ProtectedRoute>} />
           <Route path="/fleet" element={<ProtectedRoute><Fleet /></ProtectedRoute>} />
           <Route path="/driver-scoring" element={<ProtectedRoute><DriverScoring /></ProtectedRoute>} />
+          <Route path="/drivers" element={<ProtectedRoute><Drivers /></ProtectedRoute>} />
           <Route path="/fuel" element={<ProtectedRoute><FuelMonitoring /></ProtectedRoute>} />
           <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
           <Route path="/maintenance" element={<ProtectedRoute><Maintenance /></ProtectedRoute>} />
