@@ -3,6 +3,12 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import Supercluster from "supercluster";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  createAnimatedMarkerElement,
+  createAnimatedClusterElement,
+  animatePosition,
+  injectMarkerAnimations,
+} from "./AnimatedMarker";
 
 interface VehiclePoint {
   id: string;
@@ -34,8 +40,14 @@ const ClusteredMap = ({
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const clusterMarkers = useRef<Map<string, mapboxgl.Marker>>(new Map());
+  const previousPositions = useRef<Map<string, { lng: number; lat: number }>>(new Map());
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapboxToken, setMapboxToken] = useState<string>("");
+
+  // Inject marker animations on mount
+  useEffect(() => {
+    injectMarkerAnimations();
+  }, []);
 
   // Create supercluster index
   const supercluster = useMemo(() => {
@@ -148,35 +160,9 @@ const ClusteredMap = ({
       if (isCluster) {
         markerId = `cluster-${cluster.id}`;
         const pointCount = cluster.properties.point_count;
-        const size = Math.min(50, 30 + Math.sqrt(pointCount) * 3);
 
-        markerElement = document.createElement("div");
-        markerElement.className = "cluster-marker";
-        markerElement.style.cssText = `
-          width: ${size}px;
-          height: ${size}px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.7));
-          border: 3px solid white;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-weight: bold;
-          font-size: ${Math.max(12, size / 3)}px;
-          cursor: pointer;
-          transition: transform 0.2s;
-        `;
-        markerElement.innerHTML = `${pointCount}`;
-        markerElement.addEventListener("mouseenter", () => {
-          markerElement.style.transform = "scale(1.1)";
-        });
-        markerElement.addEventListener("mouseleave", () => {
-          markerElement.style.transform = "scale(1)";
-        });
-        markerElement.addEventListener("click", () => {
-          // Zoom into cluster
+        // Use animated cluster element
+        markerElement = createAnimatedClusterElement(pointCount, () => {
           const expansionZoom = Math.min(
             supercluster.getClusterExpansionZoom(cluster.id as number),
             20
@@ -184,50 +170,21 @@ const ClusteredMap = ({
           map.current?.flyTo({
             center: [lng, lat],
             zoom: expansionZoom,
-            duration: 500,
+            duration: 800,
           });
         });
       } else {
-        // Individual vehicle marker
+        // Individual vehicle marker with animations
         const vehicle = cluster.properties as VehiclePoint;
         markerId = `vehicle-${vehicle.id}`;
-
-        const statusColors = {
-          moving: "#22c55e",
-          idle: "#f59e0b",
-          stopped: "#6b7280",
-          offline: "#ef4444",
-        };
-
-        const color = statusColors[vehicle.status];
         const isSelected = vehicle.id === selectedVehicleId;
 
-        markerElement = document.createElement("div");
-        markerElement.className = "vehicle-marker";
-        markerElement.style.cssText = `
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          background-color: ${color};
-          border: ${isSelected ? "4px" : "2px"} solid ${
-          isSelected ? "white" : color
-        };
-          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          transform: rotate(${vehicle.heading || 0}deg);
-        `;
-
-        if (vehicle.engine_on && vehicle.status === "moving") {
-          markerElement.innerHTML = "▲";
-        } else {
-          markerElement.innerHTML =
-            '<div style="width:8px;height:8px;background:white;border-radius:50%;"></div>';
-        }
+        markerElement = createAnimatedMarkerElement(
+          vehicle.status,
+          isSelected,
+          vehicle.engine_on,
+          vehicle.heading
+        );
 
         markerElement.addEventListener("click", () => {
           onVehicleClick?.(vehicle);
@@ -241,10 +198,11 @@ const ClusteredMap = ({
 
       activeIds.add(markerId);
 
-      // Create or update marker
+      // Create or update marker with smooth position animation
       if (!clusterMarkers.current.has(markerId)) {
         const marker = new mapboxgl.Marker({
           element: markerElement,
+          anchor: "center",
         })
           .setLngLat([lng, lat])
           .addTo(map.current!);
@@ -252,7 +210,7 @@ const ClusteredMap = ({
         if (!isCluster) {
           const vehicle = cluster.properties as VehiclePoint;
           marker.setPopup(
-            new mapboxgl.Popup({ offset: 25 }).setHTML(`
+            new mapboxgl.Popup({ offset: 25, closeButton: true }).setHTML(`
               <div style="padding:12px; min-width:180px;">
                 <strong style="font-size:14px;">${vehicle.plate}</strong><br/>
                 <div style="margin-top:8px;">
@@ -266,9 +224,19 @@ const ClusteredMap = ({
         }
 
         clusterMarkers.current.set(markerId, marker);
+        previousPositions.current.set(markerId, { lng, lat });
       } else {
         const marker = clusterMarkers.current.get(markerId)!;
-        marker.setLngLat([lng, lat]);
+        const prevPos = previousPositions.current.get(markerId);
+
+        // Animate to new position if it changed
+        if (prevPos && (Math.abs(prevPos.lng - lng) > 0.00001 || Math.abs(prevPos.lat - lat) > 0.00001)) {
+          animatePosition(marker, prevPos.lng, prevPos.lat, lng, lat, 1000);
+        } else {
+          marker.setLngLat([lng, lat]);
+        }
+
+        previousPositions.current.set(markerId, { lng, lat });
       }
     });
 
