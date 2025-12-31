@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
@@ -8,9 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import StatusBadge from "@/components/StatusBadge";
 import LiveTrackingMap from "@/components/map/LiveTrackingMap";
-import { MapPin, Navigation, Fuel, Zap, RefreshCw, Loader2, WifiOff } from "lucide-react";
+import ClusteredMap from "@/components/map/ClusteredMap";
+import { MapPin, Navigation, Fuel, Zap, RefreshCw, Loader2, WifiOff, Layers } from "lucide-react";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
+import { useVirtualizer } from "@tanstack/react-virtual";
+
+// Threshold for switching to clustered map
+const CLUSTER_THRESHOLD = 100;
 
 const MapView = () => {
   const location = useLocation();
@@ -96,19 +101,64 @@ const MapView = () => {
     );
   }
 
+  // Use clustering for large fleets
+  const useClusteredMap = vehicles.length > CLUSTER_THRESHOLD;
+
+  // Virtual list for sidebar
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: vehicles.length,
+    getScrollElement: () => sidebarRef.current,
+    estimateSize: () => 140,
+    overscan: 5,
+  });
+
+  const handleVehicleClick = useCallback((vehicle: any) => {
+    if (!vehicle.isOffline) {
+      setSelectedVehicleId(vehicle.id);
+      try {
+        mapInstance?.flyTo({
+          center: [vehicle.lng, vehicle.lat],
+          zoom: 15,
+          duration: 1200,
+          essential: true,
+        });
+      } catch {}
+    }
+  }, [mapInstance]);
+
   return (
     <Layout>
       <div className="flex h-full">
         {/* Map Area */}
         <div className="flex-1 relative">
-          <LiveTrackingMap 
-            vehicles={vehicles}
-            selectedVehicleId={selectedVehicleId}
-            onVehicleClick={(vehicle) => setSelectedVehicleId(vehicle.id)}
-            token={mapToken || envToken}
-            mapStyle={mapStyle}
-            onMapReady={setMapInstance}
-          />
+          {useClusteredMap ? (
+            <ClusteredMap
+              vehicles={vehicles.map(v => ({
+                id: v.id,
+                plate: v.plate,
+                status: v.status,
+                lat: v.lat,
+                lng: v.lng,
+                speed: v.speed,
+                fuel: v.fuel,
+                heading: v.heading,
+                engine_on: v.engine_on,
+              }))}
+              selectedVehicleId={selectedVehicleId}
+              onVehicleClick={(v) => setSelectedVehicleId(v.id)}
+              mapStyle={mapStyle}
+            />
+          ) : (
+            <LiveTrackingMap
+              vehicles={vehicles}
+              selectedVehicleId={selectedVehicleId}
+              onVehicleClick={(vehicle) => setSelectedVehicleId(vehicle.id)}
+              token={mapToken || envToken}
+              mapStyle={mapStyle}
+              onMapReady={setMapInstance}
+            />
+          )}
 
           {/* Map Legend */}
           <div className="absolute top-4 left-4 space-y-2 z-10">
@@ -136,6 +186,15 @@ const MapView = () => {
                 <span className="text-sm font-medium">Offline</span>
               </div>
             </Card>
+            {useClusteredMap && (
+              <Card className="p-3 bg-card/95 backdrop-blur">
+                <div className="flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium">Clustered Mode</span>
+                </div>
+                <span className="text-xs text-muted-foreground">Click clusters to zoom</span>
+              </Card>
+            )}
             <Card className="p-3 bg-card/95 backdrop-blur">
               <div className="text-sm font-medium mb-2">Map Style</div>
               <Select value={mapStyle} onValueChange={(v) => setMapStyle(v as 'streets' | 'satellite')}>
@@ -169,13 +228,13 @@ const MapView = () => {
         </div>
 
         {/* Side Panel */}
-        <div className="w-96 border-l border-border bg-card overflow-auto">
+        <div className="w-96 border-l border-border bg-card flex flex-col">
           <div className="p-6 border-b border-border">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-xl font-bold">Live Vehicles</h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {vehicles.filter(v => !v.isOffline).length} online / {vehicles.length} total
+                  {vehicles.filter(v => !v.isOffline).length} online / {vehicles.length.toLocaleString()} total
                 </p>
               </div>
               <Badge variant="outline" className="gap-2">
@@ -205,92 +264,94 @@ const MapView = () => {
             </div>
           </div>
 
-          <div className="p-4 space-y-3">
-            {vehicles.map((vehicle) => (
-              <Card 
-                key={vehicle.id} 
-                className={`p-4 hover:shadow-md transition-all cursor-pointer ${
-                  selectedVehicleId === vehicle.id ? 'ring-2 ring-primary' : ''
-                } ${vehicle.isOffline ? 'opacity-60' : ''}`}
-                onClick={() => { 
-                  if (!vehicle.isOffline) {
-                    setSelectedVehicleId(vehicle.id);
-                    try { mapInstance?.flyTo({ center: [vehicle.lng, vehicle.lat], zoom: 15, duration: 1200, essential: true }); } catch {}
-                  }
-                }}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <div className="font-semibold flex items-center gap-2">
-                      {vehicle.plate}
-                      {vehicle.isOffline && (
-                        <Badge variant="destructive" className="text-xs">
-                          <WifiOff className="w-3 h-3 mr-1" />
-                          Offline
-                        </Badge>
+          {/* Virtual scrolling vehicle list */}
+          <div ref={sidebarRef} className="flex-1 overflow-auto p-4">
+            <div
+              style={{
+                height: `${rowVirtualizer.getTotalSize()}px`,
+                width: '100%',
+                position: 'relative',
+              }}
+            >
+              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                const vehicle = vehicles[virtualRow.index];
+                return (
+                  <div
+                    key={vehicle.id}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                    className="pb-3"
+                  >
+                    <Card
+                      className={`p-4 hover:shadow-md transition-all cursor-pointer ${
+                        selectedVehicleId === vehicle.id ? 'ring-2 ring-primary' : ''
+                      } ${vehicle.isOffline ? 'opacity-60' : ''}`}
+                      onClick={() => handleVehicleClick(vehicle)}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <div className="font-semibold flex items-center gap-2">
+                            {vehicle.plate}
+                            {vehicle.isOffline && (
+                              <Badge variant="destructive" className="text-xs">
+                                <WifiOff className="w-3 h-3 mr-1" />
+                                Offline
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground">{vehicle.id.slice(0, 8)}...</div>
+                        </div>
+                        {!vehicle.isOffline && <StatusBadge status={vehicle.status} />}
+                      </div>
+
+                      {vehicle.isOffline ? (
+                        <div className="text-sm text-destructive bg-destructive/10 rounded p-2">
+                          <div className="font-medium flex items-center gap-2">
+                            <WifiOff className="w-4 h-4" />
+                            Device Disconnected
+                          </div>
+                          {vehicle.lastSeen && (
+                            <div className="text-xs mt-1">
+                              Last: {new Date(vehicle.lastSeen).toLocaleString()}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div className="flex items-center gap-2">
+                              <Navigation className="w-4 h-4 text-primary" />
+                              <div>
+                                <div className="text-xs text-muted-foreground">Speed</div>
+                                <div className="font-medium">{vehicle.speed} km/h</div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Fuel className="w-4 h-4 text-primary" />
+                              <div>
+                                <div className="text-xs text-muted-foreground">Fuel</div>
+                                <div className="font-medium">{vehicle.fuel}%</div>
+                              </div>
+                            </div>
+                          </div>
+                          {vehicle.engine_on && (
+                            <div className="mt-2 flex items-center gap-1 text-xs text-success">
+                              <Zap className="w-3 h-3" />
+                              <span>Engine On</span>
+                            </div>
+                          )}
+                        </>
                       )}
-                    </div>
-                    <div className="text-xs text-muted-foreground">{vehicle.id}</div>
+                    </Card>
                   </div>
-                  {!vehicle.isOffline && <StatusBadge status={vehicle.status} />}
-                </div>
-
-                {vehicle.isOffline ? (
-                  <div className="text-sm text-destructive bg-destructive/10 rounded p-3 space-y-1">
-                    <div className="font-medium flex items-center gap-2">
-                      <WifiOff className="w-4 h-4" />
-                      Device Disconnected
-                    </div>
-                    <div className="text-xs">
-                      GPS device is offline. This could be due to:
-                    </div>
-                    <ul className="text-xs list-disc list-inside space-y-0.5">
-                      <li>SIM card removed</li>
-                      <li>Power disconnection</li>
-                      <li>No cellular signal</li>
-                    </ul>
-                    {vehicle.lastSeen && (
-                      <div className="text-xs mt-2 pt-2 border-t border-destructive/20">
-                        Last seen: {new Date(vehicle.lastSeen).toLocaleString()}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div className="flex items-center gap-2">
-                        <Navigation className="w-4 h-4 text-primary" />
-                        <div>
-                          <div className="text-xs text-muted-foreground">Speed</div>
-                          <div className="font-medium">{vehicle.speed} km/h</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Fuel className="w-4 h-4 text-primary" />
-                        <div>
-                          <div className="text-xs text-muted-foreground">Fuel</div>
-                          <div className="font-medium">{vehicle.fuel}%</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {vehicle.engine_on && (
-                      <div className="mt-2 flex items-center gap-1 text-xs text-success">
-                        <Zap className="w-3 h-3" />
-                        <span>Engine On</span>
-                      </div>
-                    )}
-
-                    <div className="mt-3 pt-3 border-t border-border space-y-1">
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <MapPin className="w-3 h-3" />
-                        <span>{vehicle.lat.toFixed(4)}, {vehicle.lng.toFixed(4)}</span>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </Card>
-            ))}
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
