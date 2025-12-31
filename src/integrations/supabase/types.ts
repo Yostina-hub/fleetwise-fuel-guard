@@ -3754,6 +3754,7 @@ export type Database = {
         Row: {
           acquisition_cost: number | null
           acquisition_date: string | null
+          assigned_driver_id: string | null
           color: string | null
           created_at: string
           depot_id: string | null
@@ -3771,12 +3772,14 @@ export type Database = {
           status: string
           tank_capacity_liters: number
           updated_at: string
+          vehicle_type: string | null
           vin: string | null
           year: number
         }
         Insert: {
           acquisition_cost?: number | null
           acquisition_date?: string | null
+          assigned_driver_id?: string | null
           color?: string | null
           created_at?: string
           depot_id?: string | null
@@ -3794,12 +3797,14 @@ export type Database = {
           status?: string
           tank_capacity_liters: number
           updated_at?: string
+          vehicle_type?: string | null
           vin?: string | null
           year: number
         }
         Update: {
           acquisition_cost?: number | null
           acquisition_date?: string | null
+          assigned_driver_id?: string | null
           color?: string | null
           created_at?: string
           depot_id?: string | null
@@ -3817,10 +3822,18 @@ export type Database = {
           status?: string
           tank_capacity_liters?: number
           updated_at?: string
+          vehicle_type?: string | null
           vin?: string | null
           year?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "vehicles_assigned_driver_id_fkey"
+            columns: ["assigned_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "vehicles_depot_id_fkey"
             columns: ["depot_id"]
