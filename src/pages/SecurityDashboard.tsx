@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
   Shield,
   Lock,
@@ -20,10 +20,18 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
+  Timer,
+  Users,
+  Calendar,
+  Bell,
 } from "lucide-react";
 import MfaManagement from "@/components/security/MfaManagement";
 import AccountLockoutPanel from "@/components/security/AccountLockoutPanel";
 import AuditComplianceTab from "@/components/security/AuditComplianceTab";
+import ProgressiveDelayTab from "@/components/security/ProgressiveDelayTab";
+import SessionManagementTab from "@/components/security/SessionManagementTab";
+import PasswordExpiryTab from "@/components/security/PasswordExpiryTab";
+import LoginAlertsTab from "@/components/security/LoginAlertsTab";
 
 interface SecurityFeature {
   id: string;
@@ -175,12 +183,19 @@ const SecurityDashboard = () => {
         </div>
 
         <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="audit">Audit Compliance</TabsTrigger>
-            <TabsTrigger value="mfa">MFA Settings</TabsTrigger>
-            <TabsTrigger value="lockout">Account Lockout</TabsTrigger>
-          </TabsList>
+          <ScrollArea className="w-full whitespace-nowrap">
+            <TabsList className="inline-flex w-max">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="audit">Audit Compliance</TabsTrigger>
+              <TabsTrigger value="delay">Progressive Delay</TabsTrigger>
+              <TabsTrigger value="sessions">Sessions</TabsTrigger>
+              <TabsTrigger value="expiry">Password Expiry</TabsTrigger>
+              <TabsTrigger value="alerts">Login Alerts</TabsTrigger>
+              <TabsTrigger value="mfa">MFA Settings</TabsTrigger>
+              <TabsTrigger value="lockout">Account Lockout</TabsTrigger>
+            </TabsList>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
 
           <TabsContent value="overview" className="space-y-4">
             {/* Features by Category */}
@@ -226,6 +241,22 @@ const SecurityDashboard = () => {
 
           <TabsContent value="audit">
             <AuditComplianceTab />
+          </TabsContent>
+
+          <TabsContent value="delay">
+            <ProgressiveDelayTab />
+          </TabsContent>
+
+          <TabsContent value="sessions">
+            <SessionManagementTab />
+          </TabsContent>
+
+          <TabsContent value="expiry">
+            <PasswordExpiryTab />
+          </TabsContent>
+
+          <TabsContent value="alerts">
+            <LoginAlertsTab />
           </TabsContent>
 
           <TabsContent value="mfa">
