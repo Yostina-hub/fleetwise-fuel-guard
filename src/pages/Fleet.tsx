@@ -5,10 +5,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import VehicleDetailModal from "@/components/VehicleDetailModal";
 import CreateVehicleDialog from "@/components/fleet/CreateVehicleDialog";
 import { VehicleVirtualGrid } from "@/components/fleet/VehicleVirtualGrid";
-import { Truck, Search, Plus, Filter, Settings, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { VehicleGridSkeleton, StatsRowSkeleton } from "@/components/ui/skeletons";
+import { Truck, Search, Plus, Filter, Settings, ChevronLeft, ChevronRight } from "lucide-react";
 import { useVehiclesPaginated } from "@/hooks/useVehiclesPaginated";
 import { useDebounce } from "@/hooks/useDebounce";
 
@@ -104,45 +106,44 @@ const Fleet = () => {
           </div>
         </div>
 
-        {/* Fleet Overview Stats */}
+        {/* Fleet Overview Stats - show instantly with loading state */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {[
-            {
-              label: "Total Vehicles",
-              value: totalCount,
-              color: "primary",
-            },
-            {
-              label: "On Road",
-              value: stats.moving,
-              color: "success",
-            },
-            {
-              label: "Idle",
-              value: stats.idle,
-              color: "warning",
-            },
-            {
-              label: "Offline",
-              value: stats.offline,
-              color: "destructive",
-            },
-          ].map((stat, i) => (
-            <Card
-              key={i}
-              className="hover:shadow-lg transition-shadow border-l-4"
-              style={{ borderLeftColor: `hsl(var(--${stat.color}))` }}
-            >
-              <CardContent className="pt-6">
-                <div className="text-sm font-medium text-muted-foreground">
-                  {stat.label}
-                </div>
-                <div className="text-3xl font-bold mt-2">
-                  {stat.value.toLocaleString()}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {loading && vehicles.length === 0 ? (
+            <>
+              {[1, 2, 3, 4].map((i) => (
+                <Card key={i} className="border-l-4 border-l-muted">
+                  <CardContent className="pt-6">
+                    <Skeleton className="h-4 w-24 mb-3" />
+                    <Skeleton className="h-8 w-16" />
+                  </CardContent>
+                </Card>
+              ))}
+            </>
+          ) : (
+            <>
+              {[
+                { label: "Total Vehicles", value: totalCount, color: "primary" },
+                { label: "On Road", value: stats.moving, color: "success" },
+                { label: "Idle", value: stats.idle, color: "warning" },
+                { label: "Offline", value: stats.offline, color: "destructive" },
+              ].map((stat, i) => (
+                <Card
+                  key={i}
+                  className="hover:shadow-lg transition-shadow border-l-4"
+                  style={{ borderLeftColor: `hsl(var(--${stat.color}))` }}
+                >
+                  <CardContent className="pt-6">
+                    <div className="text-sm font-medium text-muted-foreground">
+                      {stat.label}
+                    </div>
+                    <div className="text-3xl font-bold mt-2">
+                      {stat.value.toLocaleString()}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </>
+          )}
         </div>
 
         {/* Search and Filters */}
@@ -174,13 +175,11 @@ const Fleet = () => {
           </CardContent>
         </Card>
 
-        {/* Loading State */}
+        {/* Show skeletons during initial load, but keep showing data during pagination */}
         {loading && vehicles.length === 0 ? (
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
-              <p className="text-muted-foreground">Loading fleet data...</p>
-            </div>
+          <div className="space-y-6">
+            <StatsRowSkeleton count={4} />
+            <VehicleGridSkeleton count={10} />
           </div>
         ) : vehicles.length === 0 ? (
           <Card className="p-12">
