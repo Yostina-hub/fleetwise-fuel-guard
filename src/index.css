@@ -459,4 +459,179 @@ All colors MUST be HSL.
       transform: translateX(0);
     }
   }
+
+  /* Stagger Animation */
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.1s; }
+  .stagger-3 { animation-delay: 0.15s; }
+  .stagger-4 { animation-delay: 0.2s; }
+  .stagger-5 { animation-delay: 0.25s; }
+
+  /* Particle Background */
+  .particle-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .particle {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: hsl(var(--primary) / 0.4);
+    border-radius: 50%;
+    animation: particleFloat 15s infinite ease-in-out;
+  }
+
+  @keyframes particleFloat {
+    0%, 100% {
+      transform: translateY(100vh) translateX(0) scale(0);
+      opacity: 0;
+    }
+    10% {
+      opacity: 1;
+      transform: translateY(90vh) translateX(10px) scale(1);
+    }
+    90% {
+      opacity: 1;
+      transform: translateY(10vh) translateX(-10px) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(0) translateX(0) scale(0);
+    }
+  }
+
+  /* Password Strength Colors */
+  .strength-weak { --strength-color: hsl(var(--destructive)); }
+  .strength-fair { --strength-color: hsl(var(--warning)); }
+  .strength-good { --strength-color: hsl(202 100% 37%); }
+  .strength-strong { --strength-color: hsl(var(--success)); }
+
+  /* Typing Cursor */
+  .typing-cursor::after {
+    content: '|';
+    animation: blink 1s step-end infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  /* Number Counter Animation */
+  .count-up {
+    display: inline-block;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Hover Lift Effect */
+  .hover-lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-elevated);
+  }
+
+  /* Focus Ring Animation */
+  .focus-ring-animated:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--primary));
+    animation: focusRing 0.3s ease;
+  }
+
+  @keyframes focusRing {
+    from { box-shadow: 0 0 0 0 hsl(var(--background)), 0 0 0 0 hsl(var(--primary)); }
+    to { box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--primary)); }
+  }
+
+  /* Gradient Border */
+  .gradient-border {
+    position: relative;
+    background: hsl(var(--card));
+    border-radius: var(--radius);
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 2px;
+    border-radius: var(--radius);
+    background: var(--gradient-primary);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  /* Live Pulse Indicator */
+  .live-pulse {
+    position: relative;
+  }
+
+  .live-pulse::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    background: hsl(var(--success));
+    animation: livePulse 2s infinite;
+  }
+
+  @keyframes livePulse {
+    0% {
+      transform: scale(1);
+      opacity: 0.7;
+    }
+    100% {
+      transform: scale(2.5);
+      opacity: 0;
+    }
+  }
+
+  /* Skeleton Loading */
+  .skeleton-loading {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--muted) / 0.5) 50%,
+      hsl(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: skeletonWave 1.5s ease-in-out infinite;
+  }
+
+  @keyframes skeletonWave {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* Ripple Effect */
+  .ripple {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ripple::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at var(--ripple-x, 50%) var(--ripple-y, 50%), hsl(var(--primary) / 0.3) 0%, transparent 60%);
+    opacity: 0;
+    transform: scale(0);
+    transition: transform 0.5s ease, opacity 0.5s ease;
+  }
+
+  .ripple:active::after {
+    opacity: 1;
+    transform: scale(2);
+    transition: transform 0s, opacity 0s;
+  }
 }

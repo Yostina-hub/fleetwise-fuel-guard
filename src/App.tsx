@@ -31,6 +31,7 @@ import SpeedGovernor from "./pages/SpeedGovernor";
 import FleetScheduling from "./pages/FleetScheduling";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import { CommandPalette } from "./components/CommandPalette";
 
 const App = () => {
   const [queryClient] = useState(() => new QueryClient());
@@ -40,6 +41,7 @@ const App = () => {
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <CommandPalette />
       <BrowserRouter>
         <Routes>
           <Route path="/auth" element={<Auth />} />
