@@ -39,9 +39,10 @@ const Auth = () => {
     const { error } = await signIn(email, password);
 
     if (error) {
+      // Generic error message to prevent user enumeration
       toast({
-        title: "Error",
-        description: error.message,
+        title: "Authentication Failed",
+        description: "Invalid email or password. Please try again.",
         variant: "destructive",
       });
     } else {
@@ -78,9 +79,10 @@ const Auth = () => {
     const { error } = await signUp(email, password, fullName);
 
     if (error) {
+      // Generic error message to prevent user enumeration
       toast({
-        title: "Error",
-        description: error.message,
+        title: "Registration Error",
+        description: "Unable to create account. Please check your details and try again.",
         variant: "destructive",
       });
     } else {

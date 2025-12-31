@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import MfaManagement from "@/components/security/MfaManagement";
 import AccountLockoutPanel from "@/components/security/AccountLockoutPanel";
+import AuditComplianceTab from "@/components/security/AuditComplianceTab";
 
 interface SecurityFeature {
   id: string;
@@ -176,6 +177,7 @@ const SecurityDashboard = () => {
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="audit">Audit Compliance</TabsTrigger>
             <TabsTrigger value="mfa">MFA Settings</TabsTrigger>
             <TabsTrigger value="lockout">Account Lockout</TabsTrigger>
           </TabsList>
@@ -220,6 +222,10 @@ const SecurityDashboard = () => {
                 );
               })}
             </div>
+          </TabsContent>
+
+          <TabsContent value="audit">
+            <AuditComplianceTab />
           </TabsContent>
 
           <TabsContent value="mfa">
