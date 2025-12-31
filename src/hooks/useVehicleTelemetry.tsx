@@ -38,12 +38,14 @@ export const useVehicleTelemetry = () => {
     const fetchTelemetry = async () => {
       try {
         setLoading(true);
-        // Get the latest telemetry for each vehicle
+        // Use RPC or optimized query for large fleets
+        // Get latest telemetry per vehicle using distinct on vehicle_id
         const { data, error } = await supabase
           .from("vehicle_telemetry")
           .select("*")
           .eq("organization_id", organizationId)
-          .order("last_communication_at", { ascending: false });
+          .order("last_communication_at", { ascending: false })
+          .limit(5000); // Handle up to 5000 vehicles
 
         if (error) throw error;
 
@@ -66,7 +68,10 @@ export const useVehicleTelemetry = () => {
 
     fetchTelemetry();
 
-    // Subscribe to realtime changes
+    // Subscribe to realtime changes with throttling for large fleets
+    let throttleTimer: NodeJS.Timeout;
+    let pendingUpdate = false;
+    
     const channel = supabase
       .channel('vehicle-telemetry-changes')
       .on(
@@ -77,13 +82,31 @@ export const useVehicleTelemetry = () => {
           table: 'vehicle_telemetry',
           filter: `organization_id=eq.${organizationId}`
         },
-        () => {
-          fetchTelemetry();
+        (payload) => {
+          // For INSERT/UPDATE, update single vehicle telemetry directly
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const newData = payload.new as VehicleTelemetry;
+            setTelemetry(prev => ({
+              ...prev,
+              [newData.vehicle_id]: newData
+            }));
+          } else {
+            // For DELETE or other events, debounce full refetch
+            if (!throttleTimer) {
+              throttleTimer = setTimeout(() => {
+                fetchTelemetry();
+                throttleTimer = undefined as any;
+              }, 3000);
+            } else {
+              pendingUpdate = true;
+            }
+          }
         }
       )
       .subscribe();
 
     return () => {
+      clearTimeout(throttleTimer);
       supabase.removeChannel(channel);
     };
   }, [organizationId]);

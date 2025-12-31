@@ -47,11 +47,13 @@ export const useVehicles = () => {
     const fetchVehicles = async () => {
       try {
         setLoading(true);
+        // Use explicit limit to handle large fleets (up to 5000 vehicles)
         const { data, error } = await supabase
           .from("vehicles")
           .select("*")
           .eq("organization_id", organizationId)
-          .order("created_at", { ascending: false });
+          .order("created_at", { ascending: false })
+          .limit(5000);
 
         if (error) throw error;
         setVehicles((data as any) || []);
@@ -65,7 +67,8 @@ export const useVehicles = () => {
 
     fetchVehicles();
 
-    // Subscribe to realtime changes
+    // Subscribe to realtime changes with debouncing
+    let debounceTimer: NodeJS.Timeout;
     const channel = supabase
       .channel('vehicles-changes')
       .on(
@@ -77,12 +80,17 @@ export const useVehicles = () => {
           filter: `organization_id=eq.${organizationId}`
         },
         () => {
-          fetchVehicles();
+          // Debounce to prevent rapid refetches
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            fetchVehicles();
+          }, 2000);
         }
       )
       .subscribe();
 
     return () => {
+      clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
   }, [organizationId]);

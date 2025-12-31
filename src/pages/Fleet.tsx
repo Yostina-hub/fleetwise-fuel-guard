@@ -1,78 +1,79 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import StatusBadge from "@/components/StatusBadge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import VehicleDetailModal from "@/components/VehicleDetailModal";
 import CreateVehicleDialog from "@/components/fleet/CreateVehicleDialog";
-import { Truck, Search, Plus, Fuel, MapPin, Calendar, Filter, Eye, Settings, Loader2 } from "lucide-react";
-import { useVehicles } from "@/hooks/useVehicles";
+import { VehicleVirtualGrid } from "@/components/fleet/VehicleVirtualGrid";
+import { Truck, Search, Plus, Filter, Settings, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { useVehiclesPaginated } from "@/hooks/useVehiclesPaginated";
+import { useDebounce } from "@/hooks/useDebounce";
 
 const Fleet = () => {
   const navigate = useNavigate();
-  const { vehicles: dbVehicles, loading } = useVehicles();
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [fuelTypeFilter, setFuelTypeFilter] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 12;
+
+  // Debounce search to avoid too many queries
+  const debouncedSearch = useDebounce(searchInput, 300);
+
+  // Use paginated hook for scalability
+  const {
+    vehicles: dbVehicles,
+    loading,
+    totalCount,
+    currentPage,
+    totalPages,
+    hasMore,
+    loadPage,
+    loadMore,
+  } = useVehiclesPaginated({
+    pageSize: 50,
+    searchQuery: debouncedSearch,
+    statusFilter,
+  });
 
   // Transform DB vehicles to display format
   const vehicles = useMemo(() => {
-    return dbVehicles.map(v => ({
+    return dbVehicles.map((v) => ({
       id: v.plate_number,
       plate: v.plate_number,
       make: v.make || "Unknown",
       model: v.model || "",
       year: v.year || new Date().getFullYear(),
-      status: (v.status === 'active' ? 'moving' : v.status === 'maintenance' ? 'idle' : 'offline') as 'moving' | 'idle' | 'offline',
-      fuel: v.current_fuel || 50,
+      status: (v.status === "active"
+        ? "moving"
+        : v.status === "maintenance"
+        ? "idle"
+        : "offline") as "moving" | "idle" | "offline",
+      fuel: 50,
       odometer: v.odometer_km || 0,
       nextService: "2025-03-01",
-      vehicleId: v.id
+      vehicleId: v.id,
     }));
   }, [dbVehicles]);
 
-  // Filter and search
-  const filteredVehicles = useMemo(() => {
-    return vehicles.filter((vehicle) => {
-      const matchesSearch = searchQuery === "" ||
-        vehicle.plate.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        vehicle.make.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        vehicle.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        vehicle.id.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const matchesStatus = statusFilter === "all" || vehicle.status === statusFilter;
-      const matchesFuelType = fuelTypeFilter === "all";
-      
-      return matchesSearch && matchesStatus && matchesFuelType;
-    });
-  }, [vehicles, searchQuery, statusFilter, fuelTypeFilter]);
+  // Calculate stats from current page (for large fleets, these would be server-side)
+  const stats = useMemo(() => {
+    const moving = vehicles.filter((v) => v.status === "moving").length;
+    const idle = vehicles.filter((v) => v.status === "idle").length;
+    const offline = vehicles.filter((v) => v.status === "offline").length;
+    return { moving, idle, offline };
+  }, [vehicles]);
 
-  // Pagination
-  const totalPages = Math.ceil(filteredVehicles.length / itemsPerPage);
-  const paginatedVehicles = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredVehicles.slice(start, start + itemsPerPage);
-  }, [filteredVehicles, currentPage]);
+  const handleVehicleClick = useCallback((vehicle: any) => {
+    setSelectedVehicle(vehicle);
+  }, []);
 
-  if (loading) {
-    return (
-      <Layout>
-        <div className="p-8 flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
-            <p className="text-muted-foreground">Loading fleet data...</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+  const handlePageChange = useCallback((page: number) => {
+    loadPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [loadPage]);
 
   return (
     <Layout>
@@ -84,7 +85,8 @@ const Fleet = () => {
               Fleet Management
             </h1>
             <p className="text-muted-foreground mt-1">
-              Manage all vehicles and their status • {vehicles.length} vehicles total
+              Manage all vehicles and their status •{" "}
+              <span className="font-semibold text-foreground">{totalCount.toLocaleString()}</span> vehicles total
             </p>
           </div>
           <div className="flex gap-2">
@@ -92,7 +94,7 @@ const Fleet = () => {
               <Settings className="w-4 h-4" />
               Settings
             </Button>
-            <Button 
+            <Button
               className="gap-2 bg-gradient-to-r from-primary to-primary/80"
               onClick={() => setCreateDialogOpen(true)}
             >
@@ -105,15 +107,39 @@ const Fleet = () => {
         {/* Fleet Overview Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[
-            { label: "Total Vehicles", value: vehicles.length, color: "primary", moving: vehicles.filter(v => v.status === "moving").length },
-            { label: "On Road", value: vehicles.filter(v => v.status === "moving").length, color: "success" },
-            { label: "Idle", value: vehicles.filter(v => v.status === "idle").length, color: "warning" },
-            { label: "Offline", value: vehicles.filter(v => v.status === "offline").length, color: "destructive" },
+            {
+              label: "Total Vehicles",
+              value: totalCount,
+              color: "primary",
+            },
+            {
+              label: "On Road",
+              value: stats.moving,
+              color: "success",
+            },
+            {
+              label: "Idle",
+              value: stats.idle,
+              color: "warning",
+            },
+            {
+              label: "Offline",
+              value: stats.offline,
+              color: "destructive",
+            },
           ].map((stat, i) => (
-            <Card key={i} className="hover:shadow-lg transition-shadow border-l-4" style={{ borderLeftColor: `hsl(var(--${stat.color}))` }}>
+            <Card
+              key={i}
+              className="hover:shadow-lg transition-shadow border-l-4"
+              style={{ borderLeftColor: `hsl(var(--${stat.color}))` }}
+            >
               <CardContent className="pt-6">
-                <div className="text-sm font-medium text-muted-foreground">{stat.label}</div>
-                <div className="text-3xl font-bold mt-2">{stat.value}</div>
+                <div className="text-sm font-medium text-muted-foreground">
+                  {stat.label}
+                </div>
+                <div className="text-3xl font-bold mt-2">
+                  {stat.value.toLocaleString()}
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -122,117 +148,41 @@ const Fleet = () => {
         {/* Search and Filters */}
         <Card className="border-primary/20">
           <CardContent className="pt-6">
-            <div className="flex gap-4">
-              <div className="relative flex-1">
+            <div className="flex gap-4 flex-wrap">
+              <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Search by plate, ID, make, or model..." 
+                <Input
+                  placeholder="Search by plate, make, or model..."
                   className="pl-10 focus-visible:ring-primary"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
                 />
               </div>
-              <Button variant="outline" className="gap-2">
-                <Filter className="w-4 h-4" />
-                Filter
-              </Button>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="maintenance">Maintenance</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
 
-        {/* Vehicle Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredVehicles.map((vehicle) => (
-            <Card 
-              key={vehicle.id} 
-              className="group hover:shadow-xl transition-all hover:scale-[1.02] cursor-pointer border-2 hover:border-primary/50 relative overflow-hidden"
-              onClick={() => setSelectedVehicle(vehicle)}
-            >
-              {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              
-              <CardHeader className="relative">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-xl flex items-center gap-2">
-                      {vehicle.plate}
-                      <Badge variant="outline" className="text-xs font-normal">
-                        {vehicle.id}
-                      </Badge>
-                    </CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {vehicle.make} {vehicle.model} • {vehicle.year}
-                    </p>
-                  </div>
-                  <StatusBadge status={vehicle.status} />
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4 relative">
-                {/* Fuel Level */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Fuel className="w-4 h-4 text-primary" />
-                      <span className="font-medium">Fuel Level</span>
-                    </div>
-                    <span className="text-sm font-semibold">{vehicle.fuel}%</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2">
-                    <div 
-                      className={`h-2 rounded-full transition-all ${
-                        vehicle.fuel > 60 ? 'bg-success' : 
-                        vehicle.fuel > 30 ? 'bg-warning' : 
-                        'bg-destructive'
-                      }`}
-                      style={{ width: `${vehicle.fuel}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* Odometer */}
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Odometer:</span>
-                  <span className="font-medium">{vehicle.odometer.toLocaleString()} km</span>
-                </div>
-
-                {/* Next Service */}
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Next Service:</span>
-                  <span className="font-medium">{vehicle.nextService}</span>
-                </div>
-
-                {/* Actions */}
-                <div className="pt-4 flex gap-2">
-                  <Button 
-                    variant="default" 
-                    size="sm" 
-                    className="flex-1 gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedVehicle(vehicle);
-                    }}
-                  >
-                    <Eye className="w-4 h-4" />
-                    View Details
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1 gap-2"
-                    onClick={(e) => { e.stopPropagation(); navigate('/map', { state: { selectedVehicleId: vehicle.vehicleId } }); }}
-                  >
-                    <MapPin className="w-4 h-4" />
-                    Track
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {filteredVehicles.length === 0 && (
+        {/* Loading State */}
+        {loading && vehicles.length === 0 ? (
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+              <p className="text-muted-foreground">Loading fleet data...</p>
+            </div>
+          </div>
+        ) : vehicles.length === 0 ? (
           <Card className="p-12">
             <div className="text-center text-muted-foreground">
               <Truck className="w-16 h-16 mx-auto mb-4 opacity-50" />
@@ -240,6 +190,47 @@ const Fleet = () => {
               <p className="text-sm">Try adjusting your search criteria</p>
             </div>
           </Card>
+        ) : (
+          <>
+            {/* Virtual Grid for Large Lists */}
+            <VehicleVirtualGrid
+              vehicles={vehicles}
+              onVehicleClick={handleVehicleClick}
+              hasMore={hasMore}
+              onLoadMore={loadMore}
+              loading={loading}
+              columns={3}
+            />
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-4 pt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage <= 1 || loading}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Previous
+                </Button>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= totalPages || loading}
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
