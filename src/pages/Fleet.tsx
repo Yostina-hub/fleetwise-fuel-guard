@@ -33,7 +33,7 @@ const Fleet = () => {
     loadPage,
     loadMore,
   } = useVehiclesPaginated({
-    pageSize: 50,
+    pageSize: 10,
     searchQuery: debouncedSearch,
     statusFilter,
   });
