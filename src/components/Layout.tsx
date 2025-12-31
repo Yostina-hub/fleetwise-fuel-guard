@@ -181,6 +181,17 @@ const Layout = ({ children }: LayoutProps) => {
           )}
         </nav>
 
+        {/* Keyboard shortcut hint */}
+        <div className="px-3 py-2 border-t border-sidebar-border/50">
+          <div className="flex items-center justify-center gap-2 text-[11px] text-sidebar-foreground/50">
+            <span>Press</span>
+            <kbd className="px-1.5 py-0.5 bg-sidebar-accent/50 rounded text-[10px] font-mono border border-sidebar-border">
+              ⌘K
+            </kbd>
+            <span>for commands</span>
+          </div>
+        </div>
+
         {/* Compact Footer */}
         <div className="px-2 py-2 border-t border-sidebar-border bg-sidebar">
           <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/50">

@@ -142,31 +142,35 @@ const Dashboard = () => {
             <>
               <KPICard
                 title="Active Vehicles"
-                value={dbVehicles.filter(v => v.status === 'active').length.toString()}
+                value={dbVehicles.filter(v => v.status === 'active').length}
                 subtitle={`of ${dbVehicles.length} total`}
                 icon={<Truck className="w-5 h-5" />}
                 variant="default"
+                animationDelay={0}
               />
               <KPICard
                 title="Total Fuel Events"
-                value={dbFuelEvents.length.toString()}
+                value={dbFuelEvents.length}
                 subtitle="tracked events"
                 icon={<Fuel className="w-5 h-5" />}
                 variant="success"
+                animationDelay={100}
               />
               <KPICard
                 title="Fleet Size"
-                value={dbVehicles.length.toString()}
+                value={dbVehicles.length}
                 subtitle="total vehicles"
                 icon={<DollarSign className="w-5 h-5" />}
                 variant="default"
+                animationDelay={200}
               />
               <KPICard
                 title="Active Alerts"
-                value={dbAlerts.length.toString()}
+                value={dbAlerts.length}
                 subtitle={`${dbAlerts.filter(a => a.severity === 'critical').length} critical`}
                 icon={<AlertTriangle className="w-5 h-5" />}
                 variant="warning"
+                animationDelay={300}
               />
             </>
           )}
