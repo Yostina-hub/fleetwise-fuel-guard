@@ -5,6 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { 
+  createAnimatedMarkerElement, 
+  animatePosition, 
+  injectMarkerAnimations 
+} from './AnimatedMarker';
 
 interface Vehicle {
   id: string;
@@ -36,11 +41,17 @@ const LiveTrackingMap = ({ vehicles, onVehicleClick, selectedVehicleId, token, m
 const mapContainer = useRef<HTMLDivElement>(null);
 const map = useRef<mapboxgl.Map | null>(null);
 const markers = useRef<Map<string, mapboxgl.Marker>>(new Map());
+const previousPositions = useRef<Map<string, { lng: number; lat: number }>>(new Map());
 const resizeObserver = useRef<ResizeObserver | null>(null);
 const [mapLoaded, setMapLoaded] = useState(false);
 const [tokenError, setTokenError] = useState<string | null>(null);
 const [tempToken, setTempToken] = useState('');
 const [vehicleAddresses, setVehicleAddresses] = useState<Map<string, string>>(new Map());
+
+// Inject marker animations on mount
+useEffect(() => {
+  injectMarkerAnimations();
+}, []);
 
   // Fetch token from backend
   useEffect(() => {
@@ -180,69 +191,55 @@ return () => {
       }
     });
 
-    // Add or update markers
+    // Add or update markers with smooth animations
     vehicles.forEach(vehicle => {
-      const statusColors = {
-        moving: '#10b981', // primary/success
-        idle: '#f59e0b', // warning
-        stopped: '#6b7280', // muted
-        offline: '#ef4444', // destructive
-      };
-
-      const color = statusColors[vehicle.status];
-      
       // Fetch address if not already cached
       if (!vehicleAddresses.has(vehicle.id)) {
         fetchAddress(vehicle.lng, vehicle.lat, vehicle.id);
       }
       
       const address = vehicleAddresses.get(vehicle.id) || 'Loading address...';
+      const existingMarker = markers.current.get(vehicle.id);
+      const previousPos = previousPositions.current.get(vehicle.id);
 
-      let existingMarker = markers.current.get(vehicle.id);
+      if (existingMarker && previousPos) {
+        // Animate to new position smoothly
+        const hasPositionChanged = 
+          Math.abs(previousPos.lng - vehicle.lng) > 0.00001 || 
+          Math.abs(previousPos.lat - vehicle.lat) > 0.00001;
 
-      if (existingMarker) {
-        // Update existing marker
-        existingMarker.setLngLat([vehicle.lng, vehicle.lat]);
-        const element = existingMarker.getElement();
-        element.style.backgroundColor = color;
-        element.style.borderColor = vehicle.id === selectedVehicleId ? '#fff' : color;
-        element.style.borderWidth = vehicle.id === selectedVehicleId ? '3px' : '2px';
-      } else {
-        // Create new marker
-        const el = document.createElement('div');
-        el.className = 'vehicle-marker';
-        el.style.width = '32px';
-        el.style.height = '32px';
-        el.style.borderRadius = '50%';
-        el.style.backgroundColor = color;
-        el.style.border = `2px solid ${color}`;
-        el.style.cursor = 'pointer';
-        el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-        el.style.display = 'flex';
-        el.style.alignItems = 'center';
-        el.style.justifyContent = 'center';
-        el.style.transition = 'all 0.3s ease';
-
-        // Add engine icon if engine is on
-        if (vehicle.engine_on) {
-          el.innerHTML = '<div style="width:8px;height:8px;background:white;border-radius:50%;"></div>';
+        if (hasPositionChanged) {
+          animatePosition(
+            existingMarker,
+            previousPos.lng,
+            previousPos.lat,
+            vehicle.lng,
+            vehicle.lat,
+            1200
+          );
         }
 
-        el.addEventListener('mouseenter', () => {
-          el.style.transform = 'scale(1.2)';
-        });
-
-        el.addEventListener('mouseleave', () => {
-          el.style.transform = 'scale(1)';
-        });
+        // Update marker appearance
+        const el = existingMarker.getElement();
+        const isSelected = vehicle.id === selectedVehicleId;
+        el.style.borderWidth = isSelected ? '4px' : '2px';
+        el.style.borderColor = isSelected ? 'white' : '';
+      } else {
+        // Create new animated marker element
+        const el = createAnimatedMarkerElement(
+          vehicle.status,
+          vehicle.id === selectedVehicleId,
+          vehicle.engine_on,
+          vehicle.heading
+        );
 
         const marker = new mapboxgl.Marker({
           element: el,
-          rotation: vehicle.heading || 0,
+          anchor: 'center',
         })
           .setLngLat([vehicle.lng, vehicle.lat])
           .setPopup(
-            new mapboxgl.Popup({ offset: 25 }).setHTML(`
+            new mapboxgl.Popup({ offset: 25, closeButton: true, closeOnClick: false }).setHTML(`
               <div style="padding:12px; min-width:200px;">
                 <strong style="font-size:14px;">${vehicle.plate}</strong><br/>
                 <div style="margin-top:8px; padding-top:8px; border-top:1px solid #eee;">
@@ -272,21 +269,22 @@ return () => {
 
         el.addEventListener('click', () => {
           onVehicleClick?.(vehicle);
-          // Zoom to vehicle location
           if (map.current) {
             map.current.flyTo({
               center: [vehicle.lng, vehicle.lat],
               zoom: 16,
-              duration: 1500,
+              duration: 1200,
               essential: true
             });
           }
-          // Open popup
           marker.togglePopup();
         });
 
         markers.current.set(vehicle.id, marker);
       }
+
+      // Store current position for next animation
+      previousPositions.current.set(vehicle.id, { lng: vehicle.lng, lat: vehicle.lat });
     });
 
     // Center on selected vehicle or auto-fit bounds to show all vehicles
