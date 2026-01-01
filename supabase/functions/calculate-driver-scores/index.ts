@@ -64,6 +64,17 @@ serve(async (req) => {
     
     if (!user) throw new Error("Not authenticated");
 
+    // Get user's organization from profiles
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("organization_id")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError || !profile?.organization_id) {
+      throw new Error("User organization not found");
+    }
+
     // Store the score
     const { data: scoreData, error: scoreError } = await supabase
       .from("driver_behavior_scores")
@@ -87,7 +98,7 @@ serve(async (req) => {
         risk_factors: insights.riskFactors,
         recommendations: insights.recommendations,
         trend: insights.trend,
-        organization_id: user.id, // TODO: Replace with actual org ID
+        organization_id: profile.organization_id,
       })
       .select()
       .single();

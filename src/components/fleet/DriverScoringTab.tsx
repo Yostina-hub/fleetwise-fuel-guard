@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useDriverScores } from "@/hooks/useDriverScores";
 import { useDrivers } from "@/hooks/useDrivers";
 import { useVehicles } from "@/hooks/useVehicles";
@@ -20,16 +22,24 @@ import {
   Calculator,
   User,
   Award,
-  AlertCircle
+  AlertCircle,
+  Search,
+  Download,
+  Filter,
+  Trophy,
+  Target,
+  Loader2,
+  History
 } from "lucide-react";
+import { format } from "date-fns";
 
 const getRatingColor = (rating: string) => {
   switch (rating) {
-    case "excellent": return "text-green-600 bg-green-50 border-green-200";
-    case "good": return "text-blue-600 bg-blue-50 border-blue-200";
-    case "fair": return "text-yellow-600 bg-yellow-50 border-yellow-200";
+    case "excellent": return "text-success bg-success/10 border-success/20";
+    case "good": return "text-primary bg-primary/10 border-primary/20";
+    case "fair": return "text-warning bg-warning/10 border-warning/20";
     case "poor": return "text-orange-600 bg-orange-50 border-orange-200";
-    case "critical": return "text-red-600 bg-red-50 border-red-200";
+    case "critical": return "text-destructive bg-destructive/10 border-destructive/20";
     default: return "text-muted-foreground bg-muted border-border";
   }
 };
@@ -47,18 +57,20 @@ const getRatingIcon = (rating: string) => {
 
 const getTrendIcon = (trend: string) => {
   switch (trend) {
-    case "improving": return <TrendingUp className="h-4 w-4 text-green-600" />;
-    case "declining": return <TrendingDown className="h-4 w-4 text-red-600" />;
+    case "improving": return <TrendingUp className="h-4 w-4 text-success" />;
+    case "declining": return <TrendingDown className="h-4 w-4 text-destructive" />;
     default: return <Minus className="h-4 w-4 text-muted-foreground" />;
   }
 };
 
 export const DriverScoringTab = () => {
-  const { driverScores, isLoading, calculateScore } = useDriverScores();
+  const { driverScores, scoreHistory, isLoading, calculateScore } = useDriverScores();
   const { drivers } = useDrivers();
   const { vehicles } = useVehicles();
   const [isCalculateDialogOpen, setIsCalculateDialogOpen] = useState(false);
   const [selectedDriverScore, setSelectedDriverScore] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [ratingFilter, setRatingFilter] = useState("all");
 
   const [calcForm, setCalcForm] = useState({
     driverId: "",
@@ -66,6 +78,16 @@ export const DriverScoringTab = () => {
     startDate: "",
     endDate: "",
   });
+
+  const filteredScores = useMemo(() => {
+    if (!driverScores) return [];
+    return driverScores.filter((score) => {
+      const driverName = getDriverName(score.driver_id).toLowerCase();
+      const matchesSearch = searchQuery === "" || driverName.includes(searchQuery.toLowerCase());
+      const matchesRating = ratingFilter === "all" || score.safety_rating === ratingFilter;
+      return matchesSearch && matchesRating;
+    });
+  }, [driverScores, searchQuery, ratingFilter]);
 
   const handleCalculateScore = () => {
     calculateScore.mutate(calcForm);
@@ -78,143 +100,279 @@ export const DriverScoringTab = () => {
     return driver ? `${driver.first_name} ${driver.last_name}` : "Unknown Driver";
   };
 
+  const getDriver = (driverId: string) => {
+    return drivers?.find(d => d.id === driverId);
+  };
+
   const getVehiclePlate = (vehicleId: string) => {
     const vehicle = vehicles?.find(v => v.id === vehicleId);
     return vehicle?.plate_number || "Unknown Vehicle";
   };
 
+  const handleExportScores = () => {
+    if (!driverScores) return;
+    const csv = [
+      ["Rank", "Driver", "Vehicle", "Overall Score", "Safety Rating", "Speed Violations", "Harsh Braking", "Harsh Acceleration"].join(","),
+      ...driverScores.map((score, idx) => [
+        idx + 1,
+        getDriverName(score.driver_id),
+        getVehiclePlate(score.vehicle_id),
+        score.overall_score,
+        score.safety_rating,
+        score.speed_violations,
+        score.harsh_braking_events,
+        score.harsh_acceleration_events
+      ].join(","))
+    ].join("\n");
+    
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `driver_scores_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (isLoading) {
-    return <div className="text-center py-8">Loading driver scores...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Loading driver scores...</p>
+        </div>
+      </div>
+    );
   }
+
+  // Get top 3 performers for leaderboard
+  const topPerformers = useMemo(() => {
+    if (!driverScores) return [];
+    return [...driverScores]
+      .sort((a, b) => b.overall_score - a.overall_score)
+      .slice(0, 3);
+  }, [driverScores]);
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">Driver Behavior Scoring</h2>
-          <p className="text-muted-foreground">
-            Safety scores and risk analysis for all drivers
-          </p>
+      {/* Actions Bar */}
+      <div className="flex flex-wrap gap-4 items-center justify-between">
+        <div className="flex gap-2 flex-1 max-w-xl">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input 
+              placeholder="Search drivers..." 
+              className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <Select value={ratingFilter} onValueChange={setRatingFilter}>
+            <SelectTrigger className="w-[150px]">
+              <Filter className="w-4 h-4 mr-2" />
+              <SelectValue placeholder="Rating" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Ratings</SelectItem>
+              <SelectItem value="excellent">Excellent</SelectItem>
+              <SelectItem value="good">Good</SelectItem>
+              <SelectItem value="fair">Fair</SelectItem>
+              <SelectItem value="poor">Poor</SelectItem>
+              <SelectItem value="critical">Critical</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        <Dialog open={isCalculateDialogOpen} onOpenChange={setIsCalculateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Calculator className="mr-2 h-4 w-4" />
-              Calculate Score
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Calculate Driver Score</DialogTitle>
-              <DialogDescription>
-                Select driver, vehicle, and time period to calculate safety score
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="driver">Driver</Label>
-                <Select
-                  value={calcForm.driverId}
-                  onValueChange={(value) => setCalcForm({ ...calcForm, driverId: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select driver" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {drivers?.map((driver) => (
-                      <SelectItem key={driver.id} value={driver.id}>
-                        {driver.first_name} {driver.last_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="vehicle">Vehicle</Label>
-                <Select
-                  value={calcForm.vehicleId}
-                  onValueChange={(value) => setCalcForm({ ...calcForm, vehicleId: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select vehicle" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {vehicles?.map((vehicle) => (
-                      <SelectItem key={vehicle.id} value={vehicle.id}>
-                        {vehicle.plate_number} - {vehicle.make} {vehicle.model}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="startDate">Start Date</Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={calcForm.startDate}
-                  onChange={(e) => setCalcForm({ ...calcForm, startDate: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="endDate">End Date</Label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={calcForm.endDate}
-                  onChange={(e) => setCalcForm({ ...calcForm, endDate: e.target.value })}
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsCalculateDialogOpen(false)}>
-                Cancel
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExportScores}>
+            <Download className="mr-2 h-4 w-4" />
+            Export
+          </Button>
+          <Dialog open={isCalculateDialogOpen} onOpenChange={setIsCalculateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-to-r from-primary to-primary/80">
+                <Calculator className="mr-2 h-4 w-4" />
+                Calculate Score
               </Button>
-              <Button onClick={handleCalculateScore}>Calculate</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Calculate Driver Score</DialogTitle>
+                <DialogDescription>
+                  Select driver, vehicle, and time period to calculate safety score
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="driver">Driver</Label>
+                  <Select
+                    value={calcForm.driverId}
+                    onValueChange={(value) => setCalcForm({ ...calcForm, driverId: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select driver" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {drivers?.map((driver) => (
+                        <SelectItem key={driver.id} value={driver.id}>
+                          {driver.first_name} {driver.last_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="vehicle">Vehicle</Label>
+                  <Select
+                    value={calcForm.vehicleId}
+                    onValueChange={(value) => setCalcForm({ ...calcForm, vehicleId: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select vehicle" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {vehicles?.map((vehicle) => (
+                        <SelectItem key={vehicle.id} value={vehicle.id}>
+                          {vehicle.plate_number} - {vehicle.make} {vehicle.model}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="startDate">Start Date</Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={calcForm.startDate}
+                    onChange={(e) => setCalcForm({ ...calcForm, startDate: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="endDate">End Date</Label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={calcForm.endDate}
+                    onChange={(e) => setCalcForm({ ...calcForm, endDate: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsCalculateDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleCalculateScore}
+                  disabled={!calcForm.driverId || !calcForm.vehicleId || !calcForm.startDate || !calcForm.endDate}
+                >
+                  {calculateScore.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Calculating...
+                    </>
+                  ) : (
+                    "Calculate"
+                  )}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
+
+      {/* Top Performers Leaderboard */}
+      {topPerformers.length > 0 && (
+        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-primary" />
+              Top Performers
+            </CardTitle>
+            <CardDescription>Leading drivers by safety score</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {topPerformers.map((score, index) => {
+                const driver = getDriver(score.driver_id);
+                const medals = ["🥇", "🥈", "🥉"];
+                return (
+                  <div 
+                    key={score.id} 
+                    className={`p-4 rounded-lg border ${
+                      index === 0 ? 'bg-yellow-50/50 border-yellow-200 dark:bg-yellow-900/10' :
+                      index === 1 ? 'bg-gray-50/50 border-gray-200 dark:bg-gray-800/20' :
+                      'bg-orange-50/50 border-orange-200 dark:bg-orange-900/10'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{medals[index]}</span>
+                      <Avatar>
+                        <AvatarImage src={driver?.avatar_url || undefined} />
+                        <AvatarFallback className="bg-primary/10 text-primary">
+                          {driver ? `${driver.first_name.charAt(0)}${driver.last_name.charAt(0)}` : "??"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <div className="font-medium">{getDriverName(score.driver_id)}</div>
+                        <div className="text-xs text-muted-foreground">{getVehiclePlate(score.vehicle_id)}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-primary">{score.overall_score}</div>
+                        <Badge className={getRatingColor(score.safety_rating)}>
+                          {score.safety_rating}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="border-l-4 border-l-success">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Award className="w-4 h-4 text-success" />
               Excellent Drivers
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-3xl font-bold text-success">
               {driverScores?.filter(s => s.safety_rating === 'excellent').length || 0}
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-l-4 border-l-warning">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-warning" />
               At Risk Drivers
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
+            <div className="text-3xl font-bold text-warning">
               {driverScores?.filter(s => s.safety_rating === 'poor' || s.safety_rating === 'critical').length || 0}
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-l-4 border-l-primary">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Target className="w-4 h-4 text-primary" />
               Average Score
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-3xl font-bold">
               {driverScores && driverScores.length > 0
                 ? Math.round(driverScores.reduce((acc, s) => acc + s.overall_score, 0) / driverScores.length)
                 : 0}
@@ -222,86 +380,190 @@ export const DriverScoringTab = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-l-4 border-l-destructive">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-destructive" />
               Total Violations
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-3xl font-bold text-destructive">
               {driverScores?.reduce((acc, s) => acc + s.speed_violations, 0) || 0}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Scores Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Driver Rankings</CardTitle>
-          <CardDescription>Latest safety scores for all drivers</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Rank</TableHead>
-                <TableHead>Driver</TableHead>
-                <TableHead>Vehicle</TableHead>
-                <TableHead>Overall Score</TableHead>
-                <TableHead>Safety Rating</TableHead>
-                <TableHead>Trend</TableHead>
-                <TableHead>Violations</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {driverScores?.map((score, index) => (
-                <TableRow key={score.id}>
-                  <TableCell className="font-medium">#{index + 1}</TableCell>
-                  <TableCell>{getDriverName(score.driver_id)}</TableCell>
-                  <TableCell>{getVehiclePlate(score.vehicle_id)}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Progress value={score.overall_score} className="w-20" />
-                      <span className="text-sm font-medium">{score.overall_score}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getRatingColor(score.safety_rating)}>
-                      {getRatingIcon(score.safety_rating)}
-                      <span className="ml-1">{score.safety_rating}</span>
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{getTrendIcon(score.trend)}</TableCell>
-                  <TableCell>
-                    <span className="text-red-600 font-medium">
-                      {score.speed_violations}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setSelectedDriverScore(score)}
-                    >
-                      View Details
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {driverScores?.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                    No driver scores calculated yet
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {/* Tabs for Rankings and History */}
+      <Tabs defaultValue="rankings" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="rankings" className="gap-2">
+            <Trophy className="w-4 h-4" />
+            Rankings
+          </TabsTrigger>
+          <TabsTrigger value="history" className="gap-2">
+            <History className="w-4 h-4" />
+            Score History
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="rankings">
+          <Card>
+            <CardHeader>
+              <CardTitle>Driver Rankings</CardTitle>
+              <CardDescription>
+                {filteredScores.length} drivers {searchQuery || ratingFilter !== "all" ? "(filtered)" : ""}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[60px]">Rank</TableHead>
+                    <TableHead>Driver</TableHead>
+                    <TableHead>Vehicle</TableHead>
+                    <TableHead>Overall Score</TableHead>
+                    <TableHead>Safety Rating</TableHead>
+                    <TableHead>Trend</TableHead>
+                    <TableHead>Violations</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredScores.map((score, index) => {
+                    const driver = getDriver(score.driver_id);
+                    return (
+                      <TableRow key={score.id}>
+                        <TableCell className="font-medium">
+                          {index < 3 ? (
+                            <span className="text-lg">{["🥇", "🥈", "🥉"][index]}</span>
+                          ) : (
+                            `#${index + 1}`
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src={driver?.avatar_url || undefined} />
+                              <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                                {driver ? `${driver.first_name.charAt(0)}${driver.last_name.charAt(0)}` : "??"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span>{getDriverName(score.driver_id)}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{getVehiclePlate(score.vehicle_id)}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Progress value={score.overall_score} className="w-20" />
+                            <span className="text-sm font-medium">{score.overall_score}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={getRatingColor(score.safety_rating)}>
+                            {getRatingIcon(score.safety_rating)}
+                            <span className="ml-1 capitalize">{score.safety_rating}</span>
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{getTrendIcon(score.trend)}</TableCell>
+                        <TableCell>
+                          <span className="text-destructive font-medium">
+                            {score.speed_violations}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setSelectedDriverScore(score)}
+                          >
+                            View Details
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {filteredScores.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-12">
+                        <Target className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                        <h3 className="text-lg font-semibold mb-2">No driver scores found</h3>
+                        <p className="text-muted-foreground text-sm">
+                          {searchQuery || ratingFilter !== "all" 
+                            ? "Try adjusting your filters" 
+                            : "Click 'Calculate Score' to generate driver safety scores"}
+                        </p>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="history">
+          <Card>
+            <CardHeader>
+              <CardTitle>Score History</CardTitle>
+              <CardDescription>Historical safety score calculations</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Driver</TableHead>
+                    <TableHead>Period</TableHead>
+                    <TableHead>Score</TableHead>
+                    <TableHead>Rating</TableHead>
+                    <TableHead>Violations</TableHead>
+                    <TableHead>Calculated</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {scoreHistory?.map((score) => (
+                    <TableRow key={score.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-6 w-6">
+                            <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                              {getDriverName(score.driver_id).split(" ").map(n => n[0]).join("")}
+                            </AvatarFallback>
+                          </Avatar>
+                          {getDriverName(score.driver_id)}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {format(new Date(score.score_period_start), "MMM d")} - {format(new Date(score.score_period_end), "MMM d, yyyy")}
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-medium">{score.overall_score}</span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getRatingColor(score.safety_rating)}>
+                          {score.safety_rating}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-destructive">{score.speed_violations}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {format(new Date(score.created_at), "MMM d, yyyy")}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {(!scoreHistory || scoreHistory.length === 0) && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        No score history available
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Details Dialog */}
       <Dialog open={!!selectedDriverScore} onOpenChange={() => setSelectedDriverScore(null)}>
