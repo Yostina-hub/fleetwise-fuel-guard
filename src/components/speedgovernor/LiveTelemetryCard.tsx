@@ -13,6 +13,7 @@ import {
 import { VehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { formatDistanceToNow } from "date-fns";
 import { GpsSignalIndicator } from "@/components/GpsSignalIndicator";
+import { GpsJammingIndicator } from "@/components/map/GpsJammingIndicator";
 
 interface LiveTelemetryCardProps {
   plate: string;
@@ -43,6 +44,11 @@ export const LiveTelemetryCard = ({
             🚗 {plate}
           </CardTitle>
           <div className="flex items-center gap-2">
+            <GpsJammingIndicator 
+              jammingDetected={telemetry?.gps_jamming_detected}
+              spoofingDetected={telemetry?.gps_spoofing_detected}
+              showLabel={false}
+            />
             <Badge 
               variant={isOnline ? "default" : "destructive"}
               className={`flex items-center gap-1.5 text-sm px-3 py-1.5 ${
