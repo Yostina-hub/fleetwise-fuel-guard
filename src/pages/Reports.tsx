@@ -1,242 +1,403 @@
+import { useState, useMemo } from "react";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { 
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { 
   FileText, 
   Download,
   Calendar,
-  Filter,
+  Search,
   TrendingUp,
-  BarChart3,
-  PieChart,
-  LineChart
+  TrendingDown,
+  Settings2,
+  ChevronRight,
+  Info,
 } from "lucide-react";
+import { useVehicles } from "@/hooks/useVehicles";
+import { useFuelEvents } from "@/hooks/useFuelEvents";
+import { format, subDays } from "date-fns";
 
 const Reports = () => {
-  const reportCategories = [
-    {
-      name: "Fuel Reports",
-      icon: <BarChart3 className="w-6 h-6" />,
-      reports: [
-        { name: "Fuel Variance Report", description: "Compare sensor vs. purchase data", lastRun: "2025-01-10" },
-        { name: "Theft Suspects Log", description: "Suspected theft and leak events", lastRun: "2025-01-09" },
-        { name: "Consumption Analysis", description: "Efficiency by vehicle and route", lastRun: "2025-01-08" },
-        { name: "Refuel History", description: "Complete refueling logs", lastRun: "2025-01-07" },
-      ]
-    },
-    {
-      name: "Operations Reports",
-      icon: <TrendingUp className="w-6 h-6" />,
-      reports: [
-        { name: "Trip Summary", description: "Distance, duration, and stops", lastRun: "2025-01-10" },
-        { name: "Utilization Report", description: "Asset usage and idle time", lastRun: "2025-01-09" },
-        { name: "Geofence Dwell", description: "Time spent in zones", lastRun: "2025-01-08" },
-        { name: "Route Compliance", description: "Deviation and on-time metrics", lastRun: "2025-01-10" },
-      ]
-    },
-    {
-      name: "Safety Reports",
-      icon: <PieChart className="w-6 h-6" />,
-      reports: [
-        { name: "Driver Scorecards", description: "Behavior and safety metrics", lastRun: "2025-01-10" },
-        { name: "Speeding Violations", description: "Over-speed events by vehicle", lastRun: "2025-01-09" },
-        { name: "Harsh Events", description: "Acceleration, braking, cornering", lastRun: "2025-01-08" },
-        { name: "Incident Report", description: "Accidents and near-misses", lastRun: "2025-01-05" },
-      ]
-    },
-    {
-      name: "Maintenance Reports",
-      icon: <LineChart className="w-6 h-6" />,
-      reports: [
-        { name: "Maintenance Compliance", description: "Schedule adherence rate", lastRun: "2025-01-10" },
-        { name: "Cost per KM", description: "Operating expenses analysis", lastRun: "2025-01-09" },
-        { name: "Work Order History", description: "Services and repairs log", lastRun: "2025-01-08" },
-        { name: "Downtime Analysis", description: "Vehicle availability metrics", lastRun: "2025-01-07" },
-      ]
-    },
-  ];
+  const [activeReportTab, setActiveReportTab] = useState("vehicle");
+  const [activeSubTab, setActiveSubTab] = useState("fuel");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [makeFilter, setMakeFilter] = useState<string>("all");
+  const [modelFilter, setModelFilter] = useState<string>("all");
+  const [startDate, setStartDate] = useState(format(subDays(new Date(), 7), "yyyy-MM-dd"));
+  const [endDate, setEndDate] = useState(format(new Date(), "yyyy-MM-dd"));
 
-  const scheduledReports = [
-    { name: "Daily Fleet Summary", frequency: "Daily at 6:00 AM", recipients: "operations@fleet.com", format: "PDF" },
-    { name: "Weekly Fuel Analysis", frequency: "Monday at 8:00 AM", recipients: "fuel-team@fleet.com", format: "XLSX" },
-    { name: "Monthly Cost Report", frequency: "1st of month", recipients: "finance@fleet.com", format: "PDF" },
+  const { vehicles } = useVehicles();
+  const { fuelEvents } = useFuelEvents();
+
+  // Get unique makes and models
+  const makes = useMemo(() => {
+    const uniqueMakes = [...new Set(vehicles.map(v => v.make).filter(Boolean))];
+    return uniqueMakes;
+  }, [vehicles]);
+
+  const models = useMemo(() => {
+    const uniqueModels = [...new Set(vehicles.map(v => v.model).filter(Boolean))];
+    return uniqueModels;
+  }, [vehicles]);
+
+  // Calculate summary metrics
+  const summaryMetrics = useMemo(() => {
+    const filteredVehicles = vehicles.filter(v => {
+      if (makeFilter !== "all" && v.make !== makeFilter) return false;
+      if (modelFilter !== "all" && v.model !== modelFilter) return false;
+      if (searchQuery && !v.plate_number?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      return true;
+    });
+
+    const totalDistance = filteredVehicles.reduce((sum, v) => sum + (v.odometer_km || 0), 0);
+    const totalFuelConsumed = fuelEvents
+      .filter(e => e.event_type === 'refuel')
+      .reduce((sum, e) => sum + Math.abs(e.fuel_change_liters || 0), 0);
+    
+    const efficiency = totalDistance > 0 && totalFuelConsumed > 0 
+      ? (totalDistance / totalFuelConsumed).toFixed(1) 
+      : "0";
+
+    // Estimate idle fuel cost (demo calculation)
+    const idleFuelCost = Math.round(filteredVehicles.length * 2.5);
+
+    return {
+      distanceKm: Math.round(totalDistance),
+      distanceMiles: Math.round(totalDistance * 0.621371),
+      fuelLiters: Math.round(totalFuelConsumed),
+      fuelGallons: Math.round(totalFuelConsumed * 0.264172),
+      efficiencyKmpl: parseFloat(efficiency),
+      efficiencyMpg: (parseFloat(efficiency) * 2.35215).toFixed(1),
+      idleFuelCost,
+      // Trend changes (demo values)
+      distanceChange: 77,
+      fuelChange: 6,
+      efficiencyChange: 0.50,
+      costChange: 4,
+    };
+  }, [vehicles, fuelEvents, makeFilter, modelFilter, searchQuery]);
+
+  // Vehicle data for table
+  const vehicleTableData = useMemo(() => {
+    return vehicles
+      .filter(v => {
+        if (makeFilter !== "all" && v.make !== makeFilter) return false;
+        if (modelFilter !== "all" && v.model !== modelFilter) return false;
+        if (searchQuery && !v.plate_number?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+        return true;
+      })
+      .map(v => {
+        const vehicleFuelEvents = fuelEvents.filter(e => e.vehicle_id === v.id);
+        const fuelConsumed = vehicleFuelEvents
+          .filter(e => e.event_type === 'refuel')
+          .reduce((sum, e) => sum + Math.abs(e.fuel_change_liters || 0), 0);
+        
+        const distance = v.odometer_km || 0;
+        const efficiency = distance > 0 && fuelConsumed > 0 ? (distance / fuelConsumed) : 0;
+        const idleFuelConsumed = fuelConsumed * 0.1; // Estimate 10% idle
+        const idleFuelCost = idleFuelConsumed * 1.2; // $1.2 per liter
+
+        return {
+          id: v.id,
+          plateNumber: v.plate_number || 'Unknown',
+          year: v.year || '-',
+          make: v.make || '-',
+          model: v.model || '-',
+          distanceMiles: Math.round(distance * 0.621371),
+          fuelConsumedGal: (fuelConsumed * 0.264172).toFixed(1),
+          efficiencyMpg: (efficiency * 2.35215).toFixed(1),
+          idleFuelConsumedGal: (idleFuelConsumed * 0.264172).toFixed(1),
+          idleFuelCost: idleFuelCost > 0 ? `$${idleFuelCost.toFixed(2)}` : '-',
+        };
+      });
+  }, [vehicles, fuelEvents, makeFilter, modelFilter, searchQuery]);
+
+  const reportSubTabs = [
+    { id: "speeding", label: "Speeding Events" },
+    { id: "seatbelt", label: "Seat Belt Violations" },
+    { id: "harsh", label: "Harsh Events" },
+    { id: "idling", label: "Excessive Idling Time" },
+    { id: "fuel", label: "Fuel" },
+    { id: "summary", label: "Vehicle Summary" },
   ];
 
   return (
     <Layout>
-      <div className="p-8 space-y-8">
+      <div className="p-8 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Reports & Analytics</h1>
-            <p className="text-muted-foreground mt-1">Generate insights and export data</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" className="gap-2">
-              <Calendar className="w-4 h-4" />
-              Schedule Report
-            </Button>
-            <Button className="gap-2">
-              <FileText className="w-4 h-4" />
-              Custom Report
-            </Button>
-          </div>
+        <div>
+          <h1 className="text-3xl font-bold">Reports</h1>
         </div>
 
-        {/* Quick Filters */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="flex-1">
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">Date Range</label>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm">Last 7 Days</Button>
-                  <Button variant="outline" size="sm">Last 30 Days</Button>
-                  <Button variant="outline" size="sm">This Month</Button>
-                  <Button variant="outline" size="sm">Custom</Button>
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">Export Format</label>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm">PDF</Button>
-                  <Button variant="outline" size="sm">Excel</Button>
-                  <Button variant="outline" size="sm">CSV</Button>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Main Report Tabs */}
+        <div className="border-b border-border">
+          <nav className="flex gap-6">
+            <button
+              onClick={() => setActiveReportTab("vehicle")}
+              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+                activeReportTab === "vehicle"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Vehicle Reports
+            </button>
+            <button
+              onClick={() => setActiveReportTab("driver")}
+              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+                activeReportTab === "driver"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Driver Reports
+            </button>
+            <button
+              onClick={() => setActiveReportTab("charge")}
+              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+                activeReportTab === "charge"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Charge Insights
+            </button>
+            <button
+              onClick={() => setActiveReportTab("location")}
+              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+                activeReportTab === "location"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Location Reports
+            </button>
+          </nav>
+        </div>
 
-        {/* Report Categories */}
-        <div className="space-y-6">
-          {reportCategories.map((category) => (
-            <Card key={category.name}>
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-primary/10 rounded-lg text-primary">
-                    {category.icon}
-                  </div>
-                  <CardTitle>{category.name}</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {category.reports.map((report) => (
-                    <div
-                      key={report.name}
-                      className="p-4 border border-border rounded-lg hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <div className="font-semibold">{report.name}</div>
-                          <div className="text-sm text-muted-foreground mt-1">
-                            {report.description}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
-                        <div className="text-xs text-muted-foreground">
-                          Last run: {report.lastRun}
-                        </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" className="gap-2">
-                            <Download className="w-3 h-3" />
-                            Export
-                          </Button>
-                          <Button size="sm" variant="outline">
-                            View
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+        {/* Sub Tabs */}
+        <div className="flex items-center gap-4 flex-wrap">
+          {reportSubTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveSubTab(tab.id)}
+              className={`px-1 py-1 text-sm transition-colors ${
+                activeSubTab === tab.id
+                  ? "text-foreground border-b-2 border-primary font-medium"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+            </button>
           ))}
         </div>
 
-        {/* Scheduled Reports */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Scheduled Reports</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {scheduledReports.map((report) => (
-                <div
-                  key={report.name}
-                  className="flex items-center justify-between p-4 border border-border rounded-lg"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-primary/10 rounded-lg">
-                      <Calendar className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <div className="font-semibold">{report.name}</div>
-                      <div className="text-sm text-muted-foreground mt-1">
-                        {report.frequency} • {report.recipients} • {report.format}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline">Edit</Button>
-                    <Button size="sm" variant="outline">Run Now</Button>
-                  </div>
-                </div>
-              ))}
+        {/* Date Range & Export */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">Start Date</label>
+              <div className="flex items-center gap-2 border border-border rounded-md px-3 py-2">
+                <Calendar className="w-4 h-4 text-muted-foreground" />
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="bg-transparent text-sm outline-none"
+                />
+              </div>
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">End Date</label>
+              <div className="flex items-center gap-2 border border-border rounded-md px-3 py-2">
+                <Calendar className="w-4 h-4 text-muted-foreground" />
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="bg-transparent text-sm outline-none"
+                />
+              </div>
+            </div>
+          </div>
+          <Button className="gap-2">
+            <Download className="w-4 h-4" />
+            EXPORT
+          </Button>
+        </div>
 
-        {/* Report Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-primary/10 rounded-lg">
-                  <FileText className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold">156</div>
-                  <div className="text-sm text-muted-foreground">Reports Generated</div>
-                  <div className="text-xs text-muted-foreground mt-1">This month</div>
-                </div>
+              <div className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
+                Distance Driven (MI)
+              </div>
+              <div className="text-3xl font-bold">{summaryMetrics.distanceMiles.toLocaleString()}</div>
+              <div className="flex items-center gap-1 mt-2 text-sm">
+                <TrendingUp className="w-4 h-4 text-success" />
+                <span className="text-success">+{summaryMetrics.distanceChange}</span>
+                <span className="text-muted-foreground">increase since last week</span>
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-success/10 rounded-lg">
-                  <Download className="w-6 h-6 text-success" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold">892</div>
-                  <div className="text-sm text-muted-foreground">Total Downloads</div>
-                  <div className="text-xs text-muted-foreground mt-1">All time</div>
-                </div>
+              <div className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
+                Fuel Consumed (GAL)
+              </div>
+              <div className="text-3xl font-bold">{summaryMetrics.fuelGallons}</div>
+              <div className="flex items-center gap-1 mt-2 text-sm">
+                <TrendingUp className="w-4 h-4 text-success" />
+                <span className="text-success">+{summaryMetrics.fuelChange}</span>
+                <span className="text-muted-foreground">increase since last week</span>
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-accent/10 rounded-lg">
-                  <Calendar className="w-6 h-6 text-accent" />
+              <div className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
+                Efficiency (MPG)
+              </div>
+              <div className="text-3xl font-bold">{summaryMetrics.efficiencyMpg}</div>
+              <div className="flex items-center gap-1 mt-2 text-sm">
+                <TrendingUp className="w-4 h-4 text-success" />
+                <span className="text-success">{summaryMetrics.efficiencyChange}</span>
+                <span className="text-muted-foreground">improvement since last week</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2">
+                <div className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
+                  Idle Fuel Cost ($)
                 </div>
-                <div>
-                  <div className="text-2xl font-bold">3</div>
-                  <div className="text-sm text-muted-foreground">Scheduled Reports</div>
-                  <div className="text-xs text-muted-foreground mt-1">Active</div>
-                </div>
+                <Info className="w-3 h-3 text-muted-foreground" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <div className="text-3xl font-bold">${summaryMetrics.idleFuelCost}</div>
+                <span className="text-xs text-muted-foreground">Gasoline: Current: $5/gallon</span>
+              </div>
+              <div className="flex items-center gap-1 mt-2 text-sm">
+                <TrendingDown className="w-4 h-4 text-destructive" />
+                <span className="text-destructive">${summaryMetrics.costChange}</span>
+                <span className="text-muted-foreground">worse than last week</span>
               </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Search and Filters */}
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={makeFilter} onValueChange={setMakeFilter}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Make" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Makes</SelectItem>
+              {makes.map((make) => (
+                <SelectItem key={make} value={make || "unknown"}>
+                  {make}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={modelFilter} onValueChange={setModelFilter}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Model" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Models</SelectItem>
+              {models.map((model) => (
+                <SelectItem key={model} value={model || "unknown"}>
+                  {model}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button variant="ghost" size="icon">
+            <Settings2 className="w-5 h-5" />
+          </Button>
+        </div>
+
+        {/* Data Table */}
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[120px]">VEHICLE ↕</TableHead>
+                  <TableHead>YEAR ↕</TableHead>
+                  <TableHead>MAKE ↕</TableHead>
+                  <TableHead>MODEL ↕</TableHead>
+                  <TableHead>DISTANCE DRIVEN (MI) ↕</TableHead>
+                  <TableHead>FUEL CONSUMED (GAL) ↕</TableHead>
+                  <TableHead>EFFICIENCY (MPG) ↕</TableHead>
+                  <TableHead>IDLE FUEL CONSUMED (GAL) ↕</TableHead>
+                  <TableHead>IDLE FUEL COST ($) ↕</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {vehicleTableData.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                      No vehicles found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  vehicleTableData.map((vehicle) => (
+                    <TableRow key={vehicle.id}>
+                      <TableCell>
+                        <button className="text-primary hover:underline flex items-center gap-1">
+                          {vehicle.plateNumber}
+                          <ChevronRight className="w-3 h-3" />
+                        </button>
+                      </TableCell>
+                      <TableCell>{vehicle.year}</TableCell>
+                      <TableCell>{vehicle.make}</TableCell>
+                      <TableCell>{vehicle.model}</TableCell>
+                      <TableCell>{vehicle.distanceMiles} mi</TableCell>
+                      <TableCell>{vehicle.fuelConsumedGal}</TableCell>
+                      <TableCell>{vehicle.efficiencyMpg} mpg</TableCell>
+                      <TableCell>{vehicle.idleFuelConsumedGal}</TableCell>
+                      <TableCell>{vehicle.idleFuelCost}</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   );

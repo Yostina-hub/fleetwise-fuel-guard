@@ -52,6 +52,11 @@ import TripsOverviewCard from "@/components/dashboard/TripsOverviewCard";
 import MaintenanceDueCard from "@/components/dashboard/MaintenanceDueCard";
 import DriversOverviewCard from "@/components/dashboard/DriversOverviewCard";
 import DashboardSearch from "@/components/dashboard/DashboardSearch";
+import FleetVehicleSummaryCard from "@/components/dashboard/FleetVehicleSummaryCard";
+import VehicleHealthStatusCard from "@/components/dashboard/VehicleHealthStatusCard";
+import GeofenceCategoriesCard from "@/components/dashboard/GeofenceCategoriesCard";
+import VehicleUtilizationCard from "@/components/dashboard/VehicleUtilizationCard";
+import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -64,6 +69,7 @@ const Dashboard = () => {
   const { alerts: dbAlerts, loading: alertsLoading, refetch: refetchAlerts } = useAlerts({ status: 'unacknowledged' });
   const { fuelEvents: dbFuelEvents } = useFuelEvents();
   const { analytics, loading: analyticsLoading } = useFleetAnalytics();
+  const { telemetry: telemetryMap } = useVehicleTelemetry();
 
   // Real-time subscriptions
   useEffect(() => {
@@ -256,6 +262,14 @@ const Dashboard = () => {
                   />
                 </>
               )}
+            </div>
+
+            {/* Ford Pro Style Dashboard Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FleetVehicleSummaryCard vehicles={dbVehicles} />
+              <VehicleHealthStatusCard vehicles={dbVehicles} />
+              <GeofenceCategoriesCard />
+              <VehicleUtilizationCard vehicles={dbVehicles} telemetryMap={telemetryMap} />
             </div>
 
             {/* Analytics Widgets Row */}
