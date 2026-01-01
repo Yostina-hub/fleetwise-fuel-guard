@@ -915,6 +915,71 @@ export type Database = {
           },
         ]
       }
+      driver_coaching_acknowledgements: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledgement_method: string | null
+          coaching_note: string
+          created_at: string
+          created_by: string
+          driver_id: string
+          id: string
+          organization_id: string
+          score_id: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledgement_method?: string | null
+          coaching_note: string
+          created_at?: string
+          created_by: string
+          driver_id: string
+          id?: string
+          organization_id: string
+          score_id?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledgement_method?: string | null
+          coaching_note?: string
+          created_at?: string
+          created_by?: string
+          driver_id?: string
+          id?: string
+          organization_id?: string
+          score_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_coaching_acknowledgements_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_coaching_acknowledgements_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_coaching_acknowledgements_score_id_fkey"
+            columns: ["score_id"]
+            isOneToOne: false
+            referencedRelation: "driver_behavior_scores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_coaching_acknowledgements_score_id_fkey"
+            columns: ["score_id"]
+            isOneToOne: false
+            referencedRelation: "latest_driver_scores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_events: {
         Row: {
           acceleration_g: number | null
@@ -1001,12 +1066,66 @@ export type Database = {
           },
         ]
       }
+      driver_shift_schedules: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          driver_id: string
+          end_time: string
+          id: string
+          is_active: boolean | null
+          organization_id: string
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          driver_id: string
+          end_time: string
+          id?: string
+          is_active?: boolean | null
+          organization_id: string
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          driver_id?: string
+          end_time?: string
+          id?: string
+          is_active?: boolean | null
+          organization_id?: string
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_shift_schedules_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_shift_schedules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drivers: {
         Row: {
           avatar_url: string | null
           bluetooth_id: string | null
           created_at: string
           email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          emergency_contact_relationship: string | null
           employee_id: string | null
           first_name: string
           hire_date: string | null
@@ -1016,6 +1135,8 @@ export type Database = {
           license_class: string | null
           license_expiry: string | null
           license_number: string
+          medical_certificate_expiry: string | null
+          medical_info: Json | null
           notes: string | null
           organization_id: string
           phone: string | null
@@ -1032,6 +1153,9 @@ export type Database = {
           bluetooth_id?: string | null
           created_at?: string
           email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
           employee_id?: string | null
           first_name: string
           hire_date?: string | null
@@ -1041,6 +1165,8 @@ export type Database = {
           license_class?: string | null
           license_expiry?: string | null
           license_number: string
+          medical_certificate_expiry?: string | null
+          medical_info?: Json | null
           notes?: string | null
           organization_id: string
           phone?: string | null
@@ -1057,6 +1183,9 @@ export type Database = {
           bluetooth_id?: string | null
           created_at?: string
           email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
           employee_id?: string | null
           first_name?: string
           hire_date?: string | null
@@ -1066,6 +1195,8 @@ export type Database = {
           license_class?: string | null
           license_expiry?: string | null
           license_number?: string
+          medical_certificate_expiry?: string | null
+          medical_info?: Json | null
           notes?: string | null
           organization_id?: string
           phone?: string | null
@@ -1861,6 +1992,10 @@ export type Database = {
           organization_id: string
           polygon_points: Json | null
           radius_meters: number | null
+          schedule_days: number[] | null
+          schedule_enabled: boolean | null
+          schedule_end_time: string | null
+          schedule_start_time: string | null
           updated_at: string
         }
         Insert: {
@@ -1877,6 +2012,10 @@ export type Database = {
           organization_id: string
           polygon_points?: Json | null
           radius_meters?: number | null
+          schedule_days?: number[] | null
+          schedule_enabled?: boolean | null
+          schedule_end_time?: string | null
+          schedule_start_time?: string | null
           updated_at?: string
         }
         Update: {
@@ -1893,6 +2032,10 @@ export type Database = {
           organization_id?: string
           polygon_points?: Json | null
           radius_meters?: number | null
+          schedule_days?: number[] | null
+          schedule_enabled?: boolean | null
+          schedule_end_time?: string | null
+          schedule_start_time?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -2906,6 +3049,82 @@ export type Database = {
           },
         ]
       }
+      sos_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_time: string
+          created_at: string
+          driver_id: string | null
+          id: string
+          latitude: number | null
+          location_name: string | null
+          longitude: number | null
+          organization_id: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_time?: string
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          latitude?: number | null
+          location_name?: string | null
+          longitude?: number | null
+          organization_id: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_time?: string
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          latitude?: number | null
+          location_name?: string | null
+          longitude?: number | null
+          organization_id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sos_alerts_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sos_alerts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sos_alerts_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sso_configurations: {
         Row: {
           attribute_mapping: Json | null
@@ -3426,6 +3645,8 @@ export type Database = {
       }
       trips: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           avg_speed_kmh: number | null
           created_at: string
           distance_km: number | null
@@ -3435,6 +3656,7 @@ export type Database = {
           end_location: Json | null
           end_odometer: number | null
           end_time: string | null
+          exception_notes: string | null
           fuel_consumed_liters: number | null
           fuel_efficiency_kmpl: number | null
           harsh_events_count: number | null
@@ -3450,10 +3672,13 @@ export type Database = {
           start_time: string
           status: string | null
           stops_count: number | null
+          trip_type: string | null
           updated_at: string
           vehicle_id: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           avg_speed_kmh?: number | null
           created_at?: string
           distance_km?: number | null
@@ -3463,6 +3688,7 @@ export type Database = {
           end_location?: Json | null
           end_odometer?: number | null
           end_time?: string | null
+          exception_notes?: string | null
           fuel_consumed_liters?: number | null
           fuel_efficiency_kmpl?: number | null
           harsh_events_count?: number | null
@@ -3478,10 +3704,13 @@ export type Database = {
           start_time: string
           status?: string | null
           stops_count?: number | null
+          trip_type?: string | null
           updated_at?: string
           vehicle_id: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           avg_speed_kmh?: number | null
           created_at?: string
           distance_km?: number | null
@@ -3491,6 +3720,7 @@ export type Database = {
           end_location?: Json | null
           end_odometer?: number | null
           end_time?: string | null
+          exception_notes?: string | null
           fuel_consumed_liters?: number | null
           fuel_efficiency_kmpl?: number | null
           harsh_events_count?: number | null
@@ -3506,6 +3736,7 @@ export type Database = {
           start_time?: string
           status?: string | null
           stops_count?: number | null
+          trip_type?: string | null
           updated_at?: string
           vehicle_id?: string
         }
@@ -3690,8 +3921,10 @@ export type Database = {
           fuel_level_percent: number | null
           gps_fix_type: string | null
           gps_hdop: number | null
+          gps_jamming_detected: boolean | null
           gps_satellites_count: number | null
           gps_signal_strength: number | null
+          gps_spoofing_detected: boolean | null
           heading: number | null
           id: string
           last_communication_at: string | null
@@ -3709,8 +3942,10 @@ export type Database = {
           fuel_level_percent?: number | null
           gps_fix_type?: string | null
           gps_hdop?: number | null
+          gps_jamming_detected?: boolean | null
           gps_satellites_count?: number | null
           gps_signal_strength?: number | null
+          gps_spoofing_detected?: boolean | null
           heading?: number | null
           id?: string
           last_communication_at?: string | null
@@ -3728,8 +3963,10 @@ export type Database = {
           fuel_level_percent?: number | null
           gps_fix_type?: string | null
           gps_hdop?: number | null
+          gps_jamming_detected?: boolean | null
           gps_satellites_count?: number | null
           gps_signal_strength?: number | null
+          gps_spoofing_detected?: boolean | null
           heading?: number | null
           id?: string
           last_communication_at?: string | null

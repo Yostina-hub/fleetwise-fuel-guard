@@ -26,6 +26,18 @@ export interface Driver {
   safety_score: number;
   created_at: string;
   updated_at: string;
+  // Emergency contact fields
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  emergency_contact_relationship?: string;
+  // Medical info
+  medical_info?: {
+    blood_type?: string;
+    allergies?: string;
+    medical_conditions?: string;
+    medications?: string;
+  };
+  medical_certificate_expiry?: string;
 }
 
 export const useDrivers = () => {
