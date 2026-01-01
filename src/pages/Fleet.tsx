@@ -104,7 +104,7 @@ const Fleet = () => {
   const [fuelTypeFilter, setFuelTypeFilter] = useState("all");
   const [ownershipFilter, setOwnershipFilter] = useState("all");
   const [driverFilter, setDriverFilter] = useState("all");
-  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "table">("table");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   
   // Selection state for bulk actions
@@ -116,7 +116,8 @@ const Fleet = () => {
   // Debounce search to avoid too many queries
   const debouncedSearch = useDebounce(searchInput, 300);
 
-  // Use paginated hook for scalability
+  // Use paginated hook for scalability - fixed 10 items per page
+  const PAGE_SIZE = 10;
   const {
     vehicles: dbVehicles,
     loading,
@@ -127,7 +128,7 @@ const Fleet = () => {
     loadPage,
     loadMore,
   } = useVehiclesPaginated({
-    pageSize: viewMode === "table" ? 20 : 10,
+    pageSize: PAGE_SIZE,
     searchQuery: debouncedSearch,
     statusFilter,
   });
@@ -670,8 +671,8 @@ const Fleet = () => {
             {totalPages > 1 && (
               <div className="flex items-center justify-between pt-4">
                 <p className="text-sm text-muted-foreground">
-                  Showing {((currentPage - 1) * (viewMode === "table" ? 20 : 10)) + 1} to{" "}
-                  {Math.min(currentPage * (viewMode === "table" ? 20 : 10), totalCount)} of {totalCount} vehicles
+                  Showing {((currentPage - 1) * PAGE_SIZE) + 1} to{" "}
+                  {Math.min(currentPage * PAGE_SIZE, totalCount)} of {totalCount} vehicles
                 </p>
                 <div className="flex items-center gap-2">
                   <Button
