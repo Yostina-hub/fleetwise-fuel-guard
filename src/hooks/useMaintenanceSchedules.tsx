@@ -43,7 +43,6 @@ export interface VehicleInspection {
   repaired_at?: string;
   status: string;
   created_at: string;
-  updated_at: string;
 }
 
 export const useMaintenanceSchedules = (vehicleId?: string) => {
