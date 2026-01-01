@@ -21,6 +21,7 @@ export const useFleetStats = (options: UseFleetStatsOptions = {}) => {
   const { organizationId } = useOrganization();
   const [stats, setStats] = useState<FleetStats>({ total: 0, moving: 0, idle: 0, offline: 0 });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   
   const {
     statusFilter = "all",
@@ -37,6 +38,7 @@ export const useFleetStats = (options: UseFleetStatsOptions = {}) => {
       return;
     }
 
+    setError(null);
     try {
       // Build base query for filtered vehicle IDs
       let vehicleQuery = supabase
@@ -116,6 +118,7 @@ export const useFleetStats = (options: UseFleetStatsOptions = {}) => {
       setStats({ total, moving, idle, offline });
     } catch (err) {
       console.error("Error fetching fleet stats:", err);
+      setError(err instanceof Error ? err : new Error("Failed to fetch fleet stats"));
     } finally {
       setLoading(false);
     }
@@ -125,5 +128,5 @@ export const useFleetStats = (options: UseFleetStatsOptions = {}) => {
     fetchStats();
   }, [fetchStats]);
 
-  return { stats, loading, refetch: fetchStats };
+  return { stats, loading, error, refetch: fetchStats };
 };
