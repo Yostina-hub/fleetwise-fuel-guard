@@ -162,8 +162,10 @@ export const useDriversPaginated = (
   useEffect(() => {
     if (!organizationId) return;
 
+    let debounceTimer: NodeJS.Timeout;
+
     const channel = supabase
-      .channel('drivers-paginated-changes')
+      .channel(`drivers-paginated-${organizationId.slice(0, 8)}`)
       .on(
         'postgres_changes',
         {
@@ -173,12 +175,14 @@ export const useDriversPaginated = (
           filter: `organization_id=eq.${organizationId}`
         },
         () => {
-          refetch();
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(refetch, 500);
         }
       )
       .subscribe();
 
     return () => {
+      clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
   }, [organizationId, refetch]);

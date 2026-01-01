@@ -72,9 +72,11 @@ export const useIncidents = (filters?: {
 
     fetchIncidents();
 
+    let debounceTimer: NodeJS.Timeout;
+
     // Subscribe to realtime changes
     const channel = supabase
-      .channel('incidents-changes')
+      .channel(`incidents-${organizationId.slice(0, 8)}`)
       .on(
         'postgres_changes',
         {
@@ -84,12 +86,14 @@ export const useIncidents = (filters?: {
           filter: `organization_id=eq.${organizationId}`
         },
         () => {
-          fetchIncidents();
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(fetchIncidents, 500);
         }
       )
       .subscribe();
 
     return () => {
+      clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
   }, [organizationId, filters?.status, filters?.severity, filters?.vehicleId]);
