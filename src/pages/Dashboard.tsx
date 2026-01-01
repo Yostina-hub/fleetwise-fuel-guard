@@ -115,13 +115,19 @@ const Dashboard = () => {
 
   // Transform vehicles for display - use correct field name plate_number
   const vehicles = useMemo(() => {
-    return dbVehicles.slice(0, 5).map(v => ({
-      id: v.id,
-      plate: v.plate_number || 'Unknown',
-      status: (v.status === 'active' ? 'moving' : v.status === 'maintenance' ? 'idle' : 'offline') as 'moving' | 'idle' | 'offline',
-      fuel: v.current_fuel || 50,
-      location: "Live tracking"
-    }));
+    return dbVehicles.slice(0, 5).map(v => {
+      const vehicleTelemetry = telemetryMap?.[v.id];
+      const locationName = vehicleTelemetry?.latitude && vehicleTelemetry?.longitude 
+        ? `${vehicleTelemetry.latitude.toFixed(4)}, ${vehicleTelemetry.longitude.toFixed(4)}` 
+        : 'Location unavailable';
+      return {
+        id: v.id,
+        plate: v.plate_number || 'Unknown',
+        status: (v.status === 'active' ? 'moving' : v.status === 'maintenance' ? 'idle' : 'offline') as 'moving' | 'idle' | 'offline',
+        fuel: v.current_fuel || 50,
+        location: locationName
+      };
+    });
   }, [dbVehicles]);
 
   // Transform alerts for display
@@ -278,7 +284,8 @@ const Dashboard = () => {
                 utilizationRate={analytics.utilization.utilizationRate}
                 activeVehicles={analytics.utilization.activeVehicles}
                 totalVehicles={dbVehicles.length}
-                trend="up"
+                trend={analytics.utilization.trend}
+                trendPercentage={analytics.utilization.trendPercentage}
               />
               <TCOBreakdownCard
                 totalCost={analytics.tco.totalCost}
@@ -287,6 +294,8 @@ const Dashboard = () => {
                 breakdown={analytics.tco.breakdown}
                 trend={analytics.tco.trend}
                 trendPercentage={analytics.tco.trendPercentage}
+                formatCurrency={formatCurrency}
+                distanceUnit={settings.distance_unit}
               />
               <CarbonEmissionsCard
                 totalCO2Kg={analytics.carbon.totalCO2Kg}
@@ -528,7 +537,8 @@ const Dashboard = () => {
                 utilizationRate={analytics.utilization.utilizationRate}
                 activeVehicles={analytics.utilization.activeVehicles}
                 totalVehicles={dbVehicles.length}
-                trend="up"
+                trend={analytics.utilization.trend}
+                trendPercentage={analytics.utilization.trendPercentage}
               />
               <TCOBreakdownCard
                 totalCost={analytics.tco.totalCost}
@@ -537,6 +547,8 @@ const Dashboard = () => {
                 breakdown={analytics.tco.breakdown}
                 trend={analytics.tco.trend}
                 trendPercentage={analytics.tco.trendPercentage}
+                formatCurrency={formatCurrency}
+                distanceUnit={settings.distance_unit}
               />
               <CarbonEmissionsCard
                 totalCO2Kg={analytics.carbon.totalCO2Kg}
@@ -550,6 +562,9 @@ const Dashboard = () => {
                 bestPerformer={analytics.fuelEfficiency.bestPerformer}
                 worstPerformer={analytics.fuelEfficiency.worstPerformer}
                 trend={analytics.fuelEfficiency.trend}
+                trendPercentage={analytics.fuelEfficiency.trendPercentage}
+                distanceUnit={settings.distance_unit}
+                fuelUnit={settings.fuel_unit}
               />
               <MaintenanceComplianceCard
                 complianceRate={analytics.maintenance.complianceRate}

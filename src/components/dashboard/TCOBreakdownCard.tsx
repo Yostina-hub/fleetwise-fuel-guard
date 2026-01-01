@@ -15,6 +15,8 @@ interface TCOBreakdownCardProps {
   breakdown: TCOBreakdown[];
   trend: 'up' | 'down' | 'stable';
   trendPercentage: number;
+  formatCurrency?: (value: number) => string;
+  distanceUnit?: 'km' | 'miles';
 }
 
 const COLORS = [
@@ -30,16 +32,18 @@ const TCOBreakdownCard = ({
   costPerKm,
   breakdown,
   trend,
-  trendPercentage
+  trendPercentage,
+  formatCurrency: formatCurrencyProp,
+  distanceUnit = 'km'
 }: TCOBreakdownCardProps) => {
-  const formatCurrency = (value: number) => {
+  const formatCurrency = formatCurrencyProp || ((value: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(value);
-  };
+  });
 
   return (
     <Card className="relative overflow-hidden">
@@ -104,8 +108,8 @@ const TCOBreakdownCard = ({
                 <div className="text-xs text-muted-foreground">Per Vehicle</div>
               </div>
               <div className="p-2 rounded-lg bg-muted/50">
-                <div className="text-sm font-semibold">${costPerKm.toFixed(2)}</div>
-                <div className="text-xs text-muted-foreground">Per Km</div>
+                <div className="text-sm font-semibold">{formatCurrency(costPerKm)}</div>
+                <div className="text-xs text-muted-foreground">Per {distanceUnit === 'miles' ? 'Mile' : 'Km'}</div>
               </div>
             </div>
           </div>
