@@ -93,11 +93,13 @@ const CarbonEmissionsCard = ({
           <span className="font-semibold">{formatWeight(averagePerVehicle)}</span>
         </div>
         
-        {/* Environmental tip */}
-        <div className="mt-3 p-2 rounded-lg bg-success/10 text-success text-xs flex items-center gap-2">
-          <Leaf className="w-3 h-3" />
-          <span>12% reduction vs. industry average</span>
-        </div>
+        {/* Environmental tip - only show if emissions are trending down */}
+        {trend === 'down' && trendPercentage > 0 && (
+          <div className="mt-3 p-2 rounded-lg bg-success/10 text-success text-xs flex items-center gap-2">
+            <Leaf className="w-3 h-3" />
+            <span>{trendPercentage.toFixed(1)}% reduction this period</span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

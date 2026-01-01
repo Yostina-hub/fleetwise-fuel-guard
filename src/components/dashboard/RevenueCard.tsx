@@ -5,21 +5,25 @@ interface RevenueCardProps {
   perVehicle: number;
   total: number;
   trend: 'up' | 'down' | 'stable';
+  trendPercentage?: number;
+  formatCurrency?: (value: number) => string;
 }
 
 const RevenueCard = ({
   perVehicle,
   total,
-  trend
+  trend,
+  trendPercentage = 0,
+  formatCurrency: externalFormatCurrency
 }: RevenueCardProps) => {
-  const formatCurrency = (value: number) => {
+  const formatCurrency = externalFormatCurrency || ((value: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(value);
-  };
+  });
 
   return (
     <Card className="relative overflow-hidden">
@@ -42,15 +46,15 @@ const RevenueCard = ({
           {trend === 'up' ? (
             <>
               <TrendingUp className="w-3 h-3" />
-              <span>+12.5% vs last month</span>
+              <span>+{trendPercentage.toFixed(1)}% vs last month</span>
             </>
           ) : trend === 'down' ? (
             <>
               <TrendingDown className="w-3 h-3" />
-              <span>-5.2% vs last month</span>
+              <span>-{trendPercentage.toFixed(1)}% vs last month</span>
             </>
           ) : (
-            <span>Stable</span>
+            <span>Stable vs last month</span>
           )}
         </div>
         

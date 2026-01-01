@@ -6,6 +6,7 @@ import { useOrganizationSettings } from "./useOrganizationSettings";
 import { useDeliveryMetrics } from "./useDeliveryMetrics";
 import { useMaintenanceMetrics } from "./useMaintenanceMetrics";
 import { useTripMetrics } from "./useTripMetrics";
+import { useRevenueMetrics } from "./useRevenueMetrics";
 
 interface VehicleCosts {
   vehicleId: string;
@@ -71,6 +72,7 @@ interface FleetAnalytics {
     perVehicle: number;
     total: number;
     trend: 'up' | 'down' | 'stable';
+    trendPercentage: number;
   };
 }
 
@@ -82,6 +84,7 @@ export const useFleetAnalytics = () => {
   const { metrics: deliveryMetrics, loading: deliveryLoading } = useDeliveryMetrics();
   const { metrics: maintenanceMetrics, loading: maintenanceLoading } = useMaintenanceMetrics();
   const { metrics: tripMetrics, loading: tripLoading } = useTripMetrics();
+  const { metrics: revenueMetrics, loading: revenueLoading } = useRevenueMetrics();
 
   const analytics = useMemo<FleetAnalytics>(() => {
     // Use settings from organization_settings table
@@ -228,15 +231,16 @@ export const useFleetAnalytics = () => {
         completedTrips: deliveryMetrics.completedTrips
       },
       revenue: {
-        perVehicle: 4500,
-        total: vehicles.length * 4500,
-        trend: 'up'
+        perVehicle: revenueMetrics.revenuePerVehicle,
+        total: revenueMetrics.totalRevenue,
+        trend: revenueMetrics.trend,
+        trendPercentage: revenueMetrics.trendPercentage
       }
     };
-  }, [vehicles, fuelEvents, alerts, settings, deliveryMetrics, maintenanceMetrics, tripMetrics]);
+  }, [vehicles, fuelEvents, alerts, settings, deliveryMetrics, maintenanceMetrics, tripMetrics, revenueMetrics]);
 
   return {
     analytics,
-    loading: vehiclesLoading || fuelLoading || alertsLoading || settingsLoading || deliveryLoading || maintenanceLoading || tripLoading
+    loading: vehiclesLoading || fuelLoading || alertsLoading || settingsLoading || deliveryLoading || maintenanceLoading || tripLoading || revenueLoading
   };
 };
