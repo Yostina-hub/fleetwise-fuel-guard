@@ -24,8 +24,8 @@ export default function FuelConsumptionAlertsCard({ getVehiclePlateFromContext }
     isResolved: false,
   });
   
-  // Use context function if provided, otherwise fallback to local useVehicles
-  const { vehicles } = useVehicles();
+  // Only call useVehicles if context function is not provided
+  const { vehicles } = useVehicles(!getVehiclePlateFromContext);
   
   const getVehiclePlate = (vehicleId: string) => {
     if (getVehiclePlateFromContext) {

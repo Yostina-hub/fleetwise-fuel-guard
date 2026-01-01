@@ -31,7 +31,7 @@ export interface Vehicle {
   current_driver?: any;
 }
 
-export const useVehicles = () => {
+export const useVehicles = (skip = false) => {
   const { organizationId } = useOrganization();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(false); // Start false for instant feel
@@ -39,7 +39,7 @@ export const useVehicles = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!organizationId) {
+    if (skip || !organizationId) {
       setVehicles([]);
       setLoading(false);
       setIsFirstLoad(false);
@@ -110,7 +110,7 @@ export const useVehicles = () => {
       clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
-  }, [organizationId, isFirstLoad]);
+  }, [organizationId, isFirstLoad, skip]);
 
   return {
     vehicles,
