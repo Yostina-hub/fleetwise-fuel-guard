@@ -210,13 +210,21 @@ const ClusteredMap = ({
         if (!isCluster) {
           const vehicle = cluster.properties as VehiclePoint;
           marker.setPopup(
-            new mapboxgl.Popup({ offset: 25, closeButton: true }).setHTML(`
-              <div style="padding:12px; min-width:180px;">
-                <strong style="font-size:14px;">${vehicle.plate}</strong><br/>
-                <div style="margin-top:8px;">
-                  <small style="display:block; margin:4px 0;">⚡ Speed: ${vehicle.speed} km/h</small>
-                  <small style="display:block; margin:4px 0;">⛽ Fuel: ${vehicle.fuel}%</small>
-                  <small style="display:block; margin:4px 0;">📍 Status: ${vehicle.status}</small>
+            new mapboxgl.Popup({ offset: 25, closeButton: false, closeOnClick: true, className: 'vehicle-popup' }).setHTML(`
+              <div class="vehicle-popup-content">
+                <div class="popup-header">
+                  <span class="popup-plate">${vehicle.plate}</span>
+                  <span class="popup-status popup-status-${vehicle.status}">${vehicle.status}</span>
+                </div>
+                <div class="popup-stats">
+                  <div class="popup-stat">
+                    <span class="popup-stat-value">${vehicle.speed}</span>
+                    <span class="popup-stat-label">km/h</span>
+                  </div>
+                  <div class="popup-stat">
+                    <span class="popup-stat-value">${vehicle.fuel}</span>
+                    <span class="popup-stat-label">% fuel</span>
+                  </div>
                 </div>
               </div>
             `)

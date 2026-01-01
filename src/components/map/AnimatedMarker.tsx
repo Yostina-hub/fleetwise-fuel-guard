@@ -51,7 +51,7 @@ export function animatePosition(
   requestAnimationFrame(animate);
 }
 
-// Create animated marker element
+// Create animated marker element - Modern, minimal design
 export function createAnimatedMarkerElement(
   status: 'moving' | 'idle' | 'stopped' | 'offline',
   isSelected: boolean = false,
@@ -59,58 +59,53 @@ export function createAnimatedMarkerElement(
   heading: number = 0
 ): HTMLDivElement {
   const statusColors = {
-    moving: 'hsl(142, 76%, 36%)', // green
-    idle: 'hsl(38, 92%, 50%)', // amber
-    stopped: 'hsl(220, 9%, 46%)', // gray
-    offline: 'hsl(0, 84%, 60%)', // red
+    moving: '#22c55e', // success green
+    idle: '#f59e0b', // warning amber
+    stopped: '#6b7280', // gray
+    offline: '#ef4444', // red
   };
 
   const color = statusColors[status];
+  const size = isSelected ? 32 : 28;
   const el = document.createElement('div');
   el.className = 'animated-vehicle-marker';
   
-  // Base styles with CSS animations
+  // Clean, modern marker style
   el.style.cssText = `
-    width: 36px;
-    height: 36px;
+    width: ${size}px;
+    height: ${size}px;
     border-radius: 50%;
     background: ${color};
-    border: ${isSelected ? '4px' : '2px'} solid ${isSelected ? 'white' : color};
-    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    border: 2px solid white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), 
-                border-width 0.2s ease,
-                box-shadow 0.3s ease;
-    transform: rotate(${heading}deg);
+    transition: all 0.2s ease;
+    transform: rotate(${heading}deg)${isSelected ? ' scale(1.1)' : ''};
     position: relative;
   `;
 
-  // Inner content
+  // Simple direction arrow for moving vehicles
   if (engineOn && status === 'moving') {
-    el.innerHTML = `
-      <span style="color: white; font-size: 14px; font-weight: bold;">▲</span>
-    `;
+    el.innerHTML = `<svg width="12" height="12" viewBox="0 0 12 12" fill="white"><path d="M6 0L12 12H0L6 0Z"/></svg>`;
   } else {
-    el.innerHTML = `
-      <div style="width: 10px; height: 10px; background: white; border-radius: 50%; opacity: 0.9;"></div>
-    `;
+    el.innerHTML = `<div style="width: 6px; height: 6px; background: white; border-radius: 50%;"></div>`;
   }
 
-  // Add pulse ring for moving vehicles
+  // Subtle pulse for moving vehicles
   if (status === 'moving') {
     const pulseRing = document.createElement('div');
-    pulseRing.className = 'marker-pulse-ring';
     pulseRing.style.cssText = `
       position: absolute;
       width: 100%;
       height: 100%;
       border-radius: 50%;
-      border: 2px solid ${color};
-      animation: markerPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      border: 1px solid ${color};
+      animation: markerPulse 2s ease-out infinite;
       pointer-events: none;
+      opacity: 0.6;
     `;
     el.appendChild(pulseRing);
   }
@@ -118,23 +113,23 @@ export function createAnimatedMarkerElement(
   // Hover effects
   el.addEventListener('mouseenter', () => {
     el.style.transform = `rotate(${heading}deg) scale(1.15)`;
-    el.style.boxShadow = '0 8px 24px rgba(0,0,0,0.35)';
+    el.style.boxShadow = '0 4px 16px rgba(0,0,0,0.4)';
   });
 
   el.addEventListener('mouseleave', () => {
-    el.style.transform = `rotate(${heading}deg) scale(1)`;
-    el.style.boxShadow = '0 4px 12px rgba(0,0,0,0.25)';
+    el.style.transform = `rotate(${heading}deg)${isSelected ? ' scale(1.1)' : ''}`;
+    el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
   });
 
   return el;
 }
 
-// Create animated cluster element
+// Create animated cluster element - Modern, minimal design
 export function createAnimatedClusterElement(
   pointCount: number,
   onClick?: () => void
 ): HTMLDivElement {
-  const size = Math.min(56, 32 + Math.sqrt(pointCount) * 4);
+  const size = Math.min(48, 28 + Math.sqrt(pointCount) * 3);
   
   const el = document.createElement('div');
   el.className = 'animated-cluster-marker';
@@ -143,32 +138,30 @@ export function createAnimatedClusterElement(
     width: ${size}px;
     height: ${size}px;
     border-radius: 50%;
-    background: linear-gradient(135deg, hsl(142, 76%, 36%), hsl(142, 76%, 26%));
-    border: 3px solid rgba(255,255,255,0.9);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    border: 2px solid white;
+    box-shadow: 0 2px 10px rgba(59, 130, 246, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    font-weight: 700;
-    font-size: ${Math.max(13, size / 3)}px;
+    font-weight: 600;
+    font-size: ${Math.max(11, size / 3.5)}px;
     cursor: pointer;
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-                box-shadow 0.3s ease;
-    animation: clusterBounceIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all 0.2s ease;
+    animation: clusterBounceIn 0.3s ease-out;
   `;
   
   el.innerHTML = `${pointCount}`;
 
-  // Hover effects
   el.addEventListener('mouseenter', () => {
     el.style.transform = 'scale(1.1)';
-    el.style.boxShadow = '0 8px 24px rgba(0,0,0,0.4)';
+    el.style.boxShadow = '0 4px 16px rgba(59, 130, 246, 0.5)';
   });
 
   el.addEventListener('mouseleave', () => {
     el.style.transform = 'scale(1)';
-    el.style.boxShadow = '0 4px 16px rgba(0,0,0,0.3)';
+    el.style.boxShadow = '0 2px 10px rgba(59, 130, 246, 0.4)';
   });
 
   if (onClick) {
@@ -178,7 +171,7 @@ export function createAnimatedClusterElement(
   return el;
 }
 
-// Inject keyframes for marker animations (call once on mount)
+// Inject keyframes and popup styles
 export function injectMarkerAnimations() {
   if (document.getElementById('marker-animations-style')) return;
 
@@ -186,47 +179,98 @@ export function injectMarkerAnimations() {
   style.id = 'marker-animations-style';
   style.textContent = `
     @keyframes markerPulse {
-      0% {
-        transform: scale(1);
-        opacity: 0.8;
-      }
-      50% {
-        transform: scale(1.8);
-        opacity: 0;
-      }
-      100% {
-        transform: scale(1);
-        opacity: 0;
-      }
+      0% { transform: scale(1); opacity: 0.6; }
+      100% { transform: scale(2); opacity: 0; }
     }
 
     @keyframes clusterBounceIn {
-      0% {
-        transform: scale(0);
-        opacity: 0;
-      }
-      50% {
-        transform: scale(1.1);
-      }
-      100% {
-        transform: scale(1);
-        opacity: 1;
-      }
-    }
-
-    @keyframes markerFadeIn {
-      from {
-        transform: scale(0.5);
-        opacity: 0;
-      }
-      to {
-        transform: scale(1);
-        opacity: 1;
-      }
+      0% { transform: scale(0); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
     }
 
     .animated-vehicle-marker {
-      animation: markerFadeIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      animation: markerFadeIn 0.2s ease-out;
+    }
+
+    @keyframes markerFadeIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    /* Modern popup styles */
+    .mapboxgl-popup-content {
+      padding: 0 !important;
+      border-radius: 12px !important;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+      overflow: hidden;
+    }
+
+    .mapboxgl-popup-tip {
+      border-top-color: white !important;
+    }
+
+    .vehicle-popup-content {
+      padding: 12px 14px;
+      min-width: 140px;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    .popup-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .popup-plate {
+      font-weight: 600;
+      font-size: 14px;
+      color: #1a1a1a;
+    }
+
+    .popup-status {
+      font-size: 10px;
+      font-weight: 500;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: capitalize;
+    }
+
+    .popup-status-moving { background: #dcfce7; color: #166534; }
+    .popup-status-idle { background: #fef3c7; color: #92400e; }
+    .popup-status-stopped { background: #f3f4f6; color: #4b5563; }
+    .popup-status-offline { background: #fee2e2; color: #991b1b; }
+
+    .popup-stats {
+      display: flex;
+      gap: 16px;
+      padding: 8px 0;
+      border-top: 1px solid #f0f0f0;
+    }
+
+    .popup-stat {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .popup-stat-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .popup-stat-label {
+      font-size: 10px;
+      color: #6b7280;
+    }
+
+    .popup-address {
+      font-size: 11px;
+      color: #6b7280;
+      padding-top: 8px;
+      border-top: 1px solid #f0f0f0;
+      line-height: 1.3;
     }
   `;
   document.head.appendChild(style);
