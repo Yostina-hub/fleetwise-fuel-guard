@@ -3668,6 +3668,11 @@ export type Database = {
       }
       organization_settings: {
         Row: {
+          avg_insurance_per_vehicle_annual: number
+          avg_maintenance_per_vehicle_annual: number
+          avg_vehicle_value: number
+          co2_per_liter_diesel: number
+          co2_per_liter_petrol: number
           company_name: string | null
           created_at: string
           currency: string | null
@@ -3675,6 +3680,7 @@ export type Database = {
           date_format: string | null
           default_language: string | null
           default_timezone: string | null
+          depreciation_rate_percent: number
           distance_unit: string | null
           enable_2fa: boolean | null
           enable_api_access: boolean | null
@@ -3684,6 +3690,8 @@ export type Database = {
           favicon_url: string | null
           from_email: string | null
           from_name: string | null
+          fuel_price_per_liter: number
+          fuel_unit: string
           id: string
           logo_url: string | null
           organization_id: string
@@ -3697,6 +3705,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          avg_insurance_per_vehicle_annual?: number
+          avg_maintenance_per_vehicle_annual?: number
+          avg_vehicle_value?: number
+          co2_per_liter_diesel?: number
+          co2_per_liter_petrol?: number
           company_name?: string | null
           created_at?: string
           currency?: string | null
@@ -3704,6 +3717,7 @@ export type Database = {
           date_format?: string | null
           default_language?: string | null
           default_timezone?: string | null
+          depreciation_rate_percent?: number
           distance_unit?: string | null
           enable_2fa?: boolean | null
           enable_api_access?: boolean | null
@@ -3713,6 +3727,8 @@ export type Database = {
           favicon_url?: string | null
           from_email?: string | null
           from_name?: string | null
+          fuel_price_per_liter?: number
+          fuel_unit?: string
           id?: string
           logo_url?: string | null
           organization_id: string
@@ -3726,6 +3742,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          avg_insurance_per_vehicle_annual?: number
+          avg_maintenance_per_vehicle_annual?: number
+          avg_vehicle_value?: number
+          co2_per_liter_diesel?: number
+          co2_per_liter_petrol?: number
           company_name?: string | null
           created_at?: string
           currency?: string | null
@@ -3733,6 +3754,7 @@ export type Database = {
           date_format?: string | null
           default_language?: string | null
           default_timezone?: string | null
+          depreciation_rate_percent?: number
           distance_unit?: string | null
           enable_2fa?: boolean | null
           enable_api_access?: boolean | null
@@ -3742,6 +3764,8 @@ export type Database = {
           favicon_url?: string | null
           from_email?: string | null
           from_name?: string | null
+          fuel_price_per_liter?: number
+          fuel_unit?: string
           id?: string
           logo_url?: string | null
           organization_id?: string

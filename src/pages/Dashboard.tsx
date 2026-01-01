@@ -7,9 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   StatCardSkeleton,
-  ChartSkeleton,
-  DashboardVehicleListSkeleton,
-  AlertItemSkeleton,
 } from "@/components/ui/skeletons";
 import { 
   Truck, 
@@ -19,7 +16,6 @@ import {
   AlertTriangle,
   Clock,
   MapPin,
-  Eye,
   ChevronRight,
   RefreshCw,
   Activity,
@@ -36,6 +32,8 @@ import { useFuelEvents } from "@/hooks/useFuelEvents";
 import { useFleetAnalytics } from "@/hooks/useFleetAnalytics";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useOrganizationSettings } from "@/hooks/useOrganizationSettings";
+import { useTripMetrics } from "@/hooks/useTripMetrics";
 
 // Analytics widgets
 import UtilizationGauge from "@/components/dashboard/UtilizationGauge";
@@ -57,7 +55,9 @@ import VehicleHealthStatusCard from "@/components/dashboard/VehicleHealthStatusC
 import GeofenceCategoriesCard from "@/components/dashboard/GeofenceCategoriesCard";
 import VehicleUtilizationCard from "@/components/dashboard/VehicleUtilizationCard";
 import ComplianceAlertsCard from "@/components/dashboard/ComplianceAlertsCard";
+import DateRangeFilter from "@/components/dashboard/DateRangeFilter";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
+import { startOfMonth } from "date-fns";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -65,12 +65,18 @@ const Dashboard = () => {
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
+  const [dateRange, setDateRange] = useState({
+    start: startOfMonth(new Date()),
+    end: new Date(),
+  });
 
   const { vehicles: dbVehicles, loading: vehiclesLoading, refetch } = useVehicles();
   const { alerts: dbAlerts, loading: alertsLoading, refetch: refetchAlerts } = useAlerts({ status: 'unacknowledged' });
   const { fuelEvents: dbFuelEvents } = useFuelEvents();
   const { analytics, loading: analyticsLoading } = useFleetAnalytics();
   const { telemetry: telemetryMap } = useVehicleTelemetry();
+  const { formatCurrency, formatDistance, settings } = useOrganizationSettings();
+  const { metrics: tripMetrics } = useTripMetrics(dateRange);
 
   // Real-time subscriptions
   useEffect(() => {
@@ -170,14 +176,7 @@ const Dashboard = () => {
   // Show skeleton content instead of blocking loader
   const isLoading = vehiclesLoading || alertsLoading;
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(value);
-  };
+  // formatCurrency is now provided by useOrganizationSettings
 
   return (
     <Layout>
@@ -191,6 +190,7 @@ const Dashboard = () => {
             <p className="text-muted-foreground mt-1">Real-time overview of your fleet operations</p>
           </div>
           <div className="flex items-center gap-3">
+            <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
             <DashboardSearch />
             <Button 
               variant="outline" 

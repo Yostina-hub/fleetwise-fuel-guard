@@ -2,6 +2,10 @@ import { useMemo } from "react";
 import { useVehicles } from "./useVehicles";
 import { useFuelEvents } from "./useFuelEvents";
 import { useAlerts } from "./useAlerts";
+import { useOrganizationSettings } from "./useOrganizationSettings";
+import { useDeliveryMetrics } from "./useDeliveryMetrics";
+import { useMaintenanceMetrics } from "./useMaintenanceMetrics";
+import { useTripMetrics } from "./useTripMetrics";
 
 interface VehicleCosts {
   vehicleId: string;
@@ -70,34 +74,36 @@ interface FleetAnalytics {
   };
 }
 
-const FUEL_PRICE_PER_LITER = 1.45; // Average diesel price
-const CO2_PER_LITER_DIESEL = 2.68; // kg CO2 per liter of diesel
-const AVG_INSURANCE_PER_VEHICLE = 1200; // Annual
-const AVG_MAINTENANCE_PER_VEHICLE = 800; // Annual
-const AVG_DEPRECIATION_RATE = 0.15; // 15% per year
-
 export const useFleetAnalytics = () => {
   const { vehicles, loading: vehiclesLoading } = useVehicles();
   const { fuelEvents, loading: fuelLoading } = useFuelEvents();
   const { alerts, loading: alertsLoading } = useAlerts({});
+  const { settings, loading: settingsLoading } = useOrganizationSettings();
+  const { metrics: deliveryMetrics, loading: deliveryLoading } = useDeliveryMetrics();
+  const { metrics: maintenanceMetrics, loading: maintenanceLoading } = useMaintenanceMetrics();
+  const { metrics: tripMetrics, loading: tripLoading } = useTripMetrics();
 
   const analytics = useMemo<FleetAnalytics>(() => {
-    // Calculate fuel costs from events
+    // Use settings from organization_settings table
+    const fuelPricePerLiter = settings.fuel_price_per_liter;
+    const avgInsuranceAnnual = settings.avg_insurance_per_vehicle_annual;
+    const avgMaintenanceAnnual = settings.avg_maintenance_per_vehicle_annual;
+    const depreciationRate = settings.depreciation_rate_percent / 100;
+    const avgVehicleValue = settings.avg_vehicle_value;
+    const co2PerLiterDiesel = settings.co2_per_liter_diesel;
+    const co2PerLiterPetrol = settings.co2_per_liter_petrol;
+
+    // Calculate fuel costs from real events
     const totalFuelLiters = fuelEvents
       .filter(e => e.event_type === 'refuel')
       .reduce((sum, e) => sum + Math.abs(e.fuel_change_liters), 0);
     
-    const totalFuelCost = totalFuelLiters * FUEL_PRICE_PER_LITER;
+    const totalFuelCost = totalFuelLiters * fuelPricePerLiter;
     
-    // Calculate maintenance costs (estimate based on vehicle count)
-    const totalMaintenanceCost = vehicles.length * (AVG_MAINTENANCE_PER_VEHICLE / 12); // Monthly
-    
-    // Calculate insurance costs
-    const totalInsuranceCost = vehicles.length * (AVG_INSURANCE_PER_VEHICLE / 12); // Monthly
-    
-    // Calculate depreciation (assume avg vehicle value of $25,000)
-    const avgVehicleValue = 25000;
-    const totalDepreciationCost = vehicles.length * (avgVehicleValue * AVG_DEPRECIATION_RATE / 12);
+    // Calculate costs (monthly prorated)
+    const totalMaintenanceCost = vehicles.length * (avgMaintenanceAnnual / 12);
+    const totalInsuranceCost = vehicles.length * (avgInsuranceAnnual / 12);
+    const totalDepreciationCost = vehicles.length * (avgVehicleValue * depreciationRate / 12);
     
     // Total Cost of Ownership
     const totalCost = totalFuelCost + totalMaintenanceCost + totalInsuranceCost + totalDepreciationCost;
@@ -114,15 +120,15 @@ export const useFleetAnalytics = () => {
     const vehicleCosts: VehicleCosts[] = vehicles.slice(0, 10).map(v => {
       const vehicleFuel = fuelEvents
         .filter(e => e.vehicle_id === v.id && e.event_type === 'refuel')
-        .reduce((sum, e) => sum + Math.abs(e.fuel_change_liters), 0) * FUEL_PRICE_PER_LITER;
+        .reduce((sum, e) => sum + Math.abs(e.fuel_change_liters), 0) * fuelPricePerLiter;
       
-      const maintenance = AVG_MAINTENANCE_PER_VEHICLE / 12;
-      const insurance = AVG_INSURANCE_PER_VEHICLE / 12;
-      const depreciation = avgVehicleValue * AVG_DEPRECIATION_RATE / 12;
+      const maintenance = avgMaintenanceAnnual / 12;
+      const insurance = avgInsuranceAnnual / 12;
+      const depreciation = avgVehicleValue * depreciationRate / 12;
       
       return {
         vehicleId: v.id,
-        licensePlate: (v as any).license_plate || v.plate_number || 'Unknown',
+        licensePlate: v.plate_number || 'Unknown',
         fuelCost: vehicleFuel,
         maintenanceCost: maintenance,
         insuranceCost: insurance,
@@ -131,34 +137,45 @@ export const useFleetAnalytics = () => {
       };
     });
 
-    // Fleet utilization
+    // Fleet utilization from real vehicle statuses
     const activeVehicles = vehicles.filter(v => v.status === 'active').length;
     const idleVehicles = vehicles.filter(v => v.status === 'inactive').length;
     const maintenanceVehicles = vehicles.filter(v => v.status === 'maintenance').length;
     const offlineVehicles = vehicles.length - activeVehicles - idleVehicles - maintenanceVehicles;
     const utilizationRate = vehicles.length > 0 ? (activeVehicles / vehicles.length) * 100 : 0;
 
-    // Carbon emissions
-    const totalCO2Kg = totalFuelLiters * CO2_PER_LITER_DIESEL;
+    // Carbon emissions from real fuel data
+    // Calculate by fuel type based on vehicle fuel_type field
+    const dieselVehicles = vehicles.filter(v => v.fuel_type === 'diesel');
+    const petrolVehicles = vehicles.filter(v => v.fuel_type === 'petrol');
+    const electricVehicles = vehicles.filter(v => v.fuel_type === 'electric');
+    
+    const dieselFuelLiters = fuelEvents
+      .filter(e => e.event_type === 'refuel' && dieselVehicles.some(v => v.id === e.vehicle_id))
+      .reduce((sum, e) => sum + Math.abs(e.fuel_change_liters), 0);
+    
+    const petrolFuelLiters = fuelEvents
+      .filter(e => e.event_type === 'refuel' && petrolVehicles.some(v => v.id === e.vehicle_id))
+      .reduce((sum, e) => sum + Math.abs(e.fuel_change_liters), 0);
+
+    const dieselEmissions = dieselFuelLiters * co2PerLiterDiesel;
+    const petrolEmissions = petrolFuelLiters * co2PerLiterPetrol;
+    const electricEmissions = 0; // EVs have zero direct emissions
+
+    const totalCO2Kg = dieselEmissions + petrolEmissions + electricEmissions;
     const averagePerVehicle = vehicles.length > 0 ? totalCO2Kg / vehicles.length : 0;
 
-    // Fuel efficiency (estimate based on fuel events and average distance)
-    const avgDistancePerVehicle = 1500; // km per month estimate
-    const totalDistance = vehicles.length * avgDistancePerVehicle;
-    const avgLPer100Km = totalDistance > 0 ? (totalFuelLiters / totalDistance) * 100 : 0;
+    // Fuel efficiency from real trip data
+    const totalDistance = tripMetrics.totalDistanceKm || (vehicles.length * 1500); // Fallback estimate
+    const avgLPer100Km = totalDistance > 0 ? (totalFuelLiters / totalDistance) * 100 : 8.5;
 
-    // Safety metrics from alerts
+    // Safety metrics from real alerts
     const safetyAlerts = alerts.filter(a => 
       a.alert_type === 'speeding' || 
       a.alert_type === 'harsh_braking' || 
       a.alert_type === 'harsh_acceleration'
     );
     const avgSafetyScore = Math.max(50, 100 - (safetyAlerts.length * 2));
-
-    // Maintenance compliance (estimate)
-    const complianceRate = 85 + Math.random() * 10;
-    const overdueCount = Math.floor(vehicles.length * 0.05);
-    const upcomingCount = Math.floor(vehicles.length * 0.15);
 
     return {
       tco: {
@@ -176,17 +193,17 @@ export const useFleetAnalytics = () => {
         maintenanceVehicles,
         offlineVehicles,
         utilizationRate,
-        averageUtilization: utilizationRate * 0.95 // Slightly lower avg
+        averageUtilization: utilizationRate * 0.95
       },
       carbon: {
         totalCO2Kg,
         averagePerVehicle,
-        trend: 'down',
+        trend: totalCO2Kg < 1000 ? 'down' : 'stable',
         trendPercentage: 12.3,
         byFuelType: [
-          { type: 'Diesel', emissions: totalCO2Kg * 0.75 },
-          { type: 'Petrol', emissions: totalCO2Kg * 0.2 },
-          { type: 'Electric', emissions: totalCO2Kg * 0.05 }
+          { type: 'Diesel', emissions: dieselEmissions },
+          { type: 'Petrol', emissions: petrolEmissions },
+          { type: 'Electric', emissions: electricEmissions }
         ]
       },
       fuelEfficiency: {
@@ -196,9 +213,9 @@ export const useFleetAnalytics = () => {
         trend: 'up'
       },
       maintenance: {
-        complianceRate,
-        overdueCount,
-        upcomingCount
+        complianceRate: maintenanceMetrics.complianceRate,
+        overdueCount: maintenanceMetrics.overdueCount,
+        upcomingCount: maintenanceMetrics.upcomingCount
       },
       safety: {
         averageScore: avgSafetyScore,
@@ -206,9 +223,9 @@ export const useFleetAnalytics = () => {
         trend: safetyAlerts.length < 5 ? 'up' : 'down'
       },
       delivery: {
-        onTimeRate: 94.5,
-        averageDelay: 12,
-        completedTrips: vehicles.length * 45
+        onTimeRate: deliveryMetrics.onTimeRate,
+        averageDelay: deliveryMetrics.averageDelayMinutes,
+        completedTrips: deliveryMetrics.completedTrips
       },
       revenue: {
         perVehicle: 4500,
@@ -216,10 +233,10 @@ export const useFleetAnalytics = () => {
         trend: 'up'
       }
     };
-  }, [vehicles, fuelEvents, alerts]);
+  }, [vehicles, fuelEvents, alerts, settings, deliveryMetrics, maintenanceMetrics, tripMetrics]);
 
   return {
     analytics,
-    loading: vehiclesLoading || fuelLoading || alertsLoading
+    loading: vehiclesLoading || fuelLoading || alertsLoading || settingsLoading || deliveryLoading || maintenanceLoading || tripLoading
   };
 };
