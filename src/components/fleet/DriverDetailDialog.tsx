@@ -17,18 +17,20 @@ import {
   Phone, 
   Mail, 
   Calendar, 
-  MapPin,
   Activity,
-  TrendingUp,
   AlertTriangle,
   Car,
   Clock,
   Gauge,
   Shield,
-  Loader2
+  MapPin,
+  Navigation,
+  Zap,
+  Route
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import type { Driver } from "@/hooks/useDrivers";
+import LicenseExpiryBadge from "./LicenseExpiryBadge";
 
 interface DriverDetailDialogProps {
   open: boolean;
@@ -38,7 +40,7 @@ interface DriverDetailDialogProps {
 
 export default function DriverDetailDialog({ open, onOpenChange, driver }: DriverDetailDialogProps) {
   // Fetch latest driver score
-  const { data: latestScore, isLoading: scoreLoading } = useQuery({
+  const { data: latestScore } = useQuery({
     queryKey: ["driver-score", driver?.id],
     queryFn: async () => {
       if (!driver) return null;
@@ -55,7 +57,41 @@ export default function DriverDetailDialog({ open, onOpenChange, driver }: Drive
     enabled: !!driver,
   });
 
-  // Fetch recent trips count
+  // Fetch recent trips
+  const { data: recentTrips = [] } = useQuery({
+    queryKey: ["driver-recent-trips", driver?.id],
+    queryFn: async () => {
+      if (!driver) return [];
+      const { data, error } = await supabase
+        .from("trips")
+        .select("id, start_time, end_time, distance_km, duration_minutes, status")
+        .eq("driver_id", driver.id)
+        .order("start_time", { ascending: false })
+        .limit(5);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!driver,
+  });
+
+  // Fetch recent driver events
+  const { data: recentEvents = [] } = useQuery({
+    queryKey: ["driver-recent-events", driver?.id],
+    queryFn: async () => {
+      if (!driver) return [];
+      const { data, error } = await supabase
+        .from("driver_events")
+        .select("id, event_type, event_time, severity, speed_kmh, address")
+        .eq("driver_id", driver.id)
+        .order("event_time", { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!driver,
+  });
+
+  // Fetch trips count
   const { data: tripsData } = useQuery({
     queryKey: ["driver-trips-count", driver?.id],
     queryFn: async () => {
@@ -109,6 +145,34 @@ export default function DriverDetailDialog({ open, onOpenChange, driver }: Drive
 
   const getInitials = (firstName: string, lastName: string) => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  };
+
+  const getEventIcon = (eventType: string) => {
+    switch (eventType) {
+      case "speeding":
+        return <Gauge className="w-4 h-4 text-destructive" />;
+      case "harsh_braking":
+        return <AlertTriangle className="w-4 h-4 text-warning" />;
+      case "harsh_acceleration":
+        return <Zap className="w-4 h-4 text-warning" />;
+      case "idle":
+        return <Clock className="w-4 h-4 text-muted-foreground" />;
+      default:
+        return <Activity className="w-4 h-4 text-primary" />;
+    }
+  };
+
+  const getEventSeverityColor = (severity: string) => {
+    switch (severity) {
+      case "critical":
+        return "bg-destructive/10 text-destructive";
+      case "high":
+        return "bg-warning/10 text-warning";
+      case "medium":
+        return "bg-primary/10 text-primary";
+      default:
+        return "bg-muted text-muted-foreground";
+    }
   };
 
   return (
@@ -246,6 +310,10 @@ export default function DriverDetailDialog({ open, onOpenChange, driver }: Drive
                       <span className="font-medium">Class {driver.license_class}</span>
                     </div>
                   )}
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">License Status</span>
+                    <LicenseExpiryBadge expiryDate={driver.license_expiry} />
+                  </div>
                   {driver.license_expiry && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Expiry Date</span>
@@ -274,12 +342,17 @@ export default function DriverDetailDialog({ open, onOpenChange, driver }: Drive
                       </span>
                     </div>
                   )}
-                  {assignedVehicle && (
+                  {assignedVehicle ? (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Assigned Vehicle</span>
                       <span className="font-medium">
                         {assignedVehicle.plate_number} ({assignedVehicle.make} {assignedVehicle.model})
                       </span>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Assigned Vehicle</span>
+                      <span className="text-muted-foreground italic">No vehicle assigned</span>
                     </div>
                   )}
                   <div className="flex justify-between">
@@ -359,6 +432,83 @@ export default function DriverDetailDialog({ open, onOpenChange, driver }: Drive
                 </Card>
               )}
             </div>
+
+            {/* Recent Trips */}
+            {recentTrips.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Route className="w-5 h-5 text-primary" />
+                    Recent Trips
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {recentTrips.map((trip) => (
+                      <div key={trip.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-primary/10">
+                            <Navigation className="w-4 h-4 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">
+                              {trip.start_time && format(new Date(trip.start_time), "MMM d, HH:mm")}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {trip.distance_km ? `${trip.distance_km.toFixed(1)} km` : "Distance N/A"} • 
+                              {trip.duration_minutes ? ` ${trip.duration_minutes} min` : " Duration N/A"}
+                            </p>
+                          </div>
+                        </div>
+                        <Badge variant={trip.status === "completed" ? "default" : "secondary"}>
+                          {trip.status || "Unknown"}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Recent Events */}
+            {recentEvents.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 text-primary" />
+                    Recent Events
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {recentEvents.map((event) => (
+                      <div key={event.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          {getEventIcon(event.event_type)}
+                          <div>
+                            <p className="font-medium text-sm capitalize">
+                              {event.event_type.replace(/_/g, " ")}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {event.event_time && formatDistanceToNow(new Date(event.event_time), { addSuffix: true })}
+                              {event.address && ` • ${event.address}`}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {event.speed_kmh && (
+                            <span className="text-xs text-muted-foreground">{event.speed_kmh} km/h</span>
+                          )}
+                          <Badge className={getEventSeverityColor(event.severity)}>
+                            {event.severity}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Notes */}
             {driver.notes && (

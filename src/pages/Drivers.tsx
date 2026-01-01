@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +26,12 @@ import CreateDriverDialog from "@/components/fleet/CreateDriverDialog";
 import EditDriverDialog from "@/components/fleet/EditDriverDialog";
 import DeleteDriverDialog from "@/components/fleet/DeleteDriverDialog";
 import DriverDetailDialog from "@/components/fleet/DriverDetailDialog";
+import BulkImportDriversDialog from "@/components/fleet/BulkImportDriversDialog";
+import AssignVehicleToDriverDialog from "@/components/fleet/AssignVehicleToDriverDialog";
+import DriverBulkActionsToolbar from "@/components/fleet/DriverBulkActionsToolbar";
+import DriverQuickStatusChange from "@/components/fleet/DriverQuickStatusChange";
+import LicenseExpiryBadge from "@/components/fleet/LicenseExpiryBadge";
+import { exportDriversToCSV } from "@/components/fleet/DriverExportUtils";
 import { 
   Users, 
   Search, 
@@ -42,20 +49,27 @@ import {
   Loader2,
   MoreHorizontal,
   Car,
-  Activity
+  Activity,
+  Upload,
+  Download
 } from "lucide-react";
 import { useDrivers, Driver } from "@/hooks/useDrivers";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 const Drivers = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { drivers, loading } = useDrivers();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [assignVehicleDialogOpen, setAssignVehicleDialogOpen] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
+  const [selectedDrivers, setSelectedDrivers] = useState<Driver[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -105,6 +119,32 @@ const Drivers = () => {
   const handleDeleteDriver = (driver: Driver) => {
     setSelectedDriver(driver);
     setDeleteDialogOpen(true);
+  };
+
+  const handleAssignVehicle = (driver: Driver) => {
+    setSelectedDriver(driver);
+    setAssignVehicleDialogOpen(true);
+  };
+
+  const handleSelectDriver = (driver: Driver, checked: boolean) => {
+    if (checked) {
+      setSelectedDrivers(prev => [...prev, driver]);
+    } else {
+      setSelectedDrivers(prev => prev.filter(d => d.id !== driver.id));
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedDrivers(filteredDrivers);
+    } else {
+      setSelectedDrivers([]);
+    }
+  };
+
+  const handleExportAll = () => {
+    exportDriversToCSV(drivers, `all_drivers_${new Date().toISOString().split('T')[0]}.csv`);
+    toast({ title: `Exported ${drivers.length} drivers` });
   };
 
   if (loading) {
