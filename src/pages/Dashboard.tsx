@@ -4,7 +4,7 @@ import Layout from "@/components/Layout";
 import KPICard from "@/components/KPICard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   StatCardSkeleton,
   ChartSkeleton,
@@ -24,6 +24,8 @@ import {
   RefreshCw,
   Activity,
   Route,
+  LayoutGrid,
+  BarChart3,
 } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
 import VehicleDetailModal from "@/components/VehicleDetailModal";
@@ -31,15 +33,29 @@ import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
 import { useVehicles } from "@/hooks/useVehicles";
 import { useAlerts } from "@/hooks/useAlerts";
 import { useFuelEvents } from "@/hooks/useFuelEvents";
+import { useFleetAnalytics } from "@/hooks/useFleetAnalytics";
+
+// Analytics widgets
+import UtilizationGauge from "@/components/dashboard/UtilizationGauge";
+import TCOBreakdownCard from "@/components/dashboard/TCOBreakdownCard";
+import CarbonEmissionsCard from "@/components/dashboard/CarbonEmissionsCard";
+import MetricCard from "@/components/dashboard/MetricCard";
+import FuelEfficiencyCard from "@/components/dashboard/FuelEfficiencyCard";
+import MaintenanceComplianceCard from "@/components/dashboard/MaintenanceComplianceCard";
+import SafetyScoreCard from "@/components/dashboard/SafetyScoreCard";
+import DeliveryPerformanceCard from "@/components/dashboard/DeliveryPerformanceCard";
+import RevenueCard from "@/components/dashboard/RevenueCard";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
 
   const { vehicles: dbVehicles, loading: vehiclesLoading, refetch } = useVehicles();
   const { alerts: dbAlerts, loading: alertsLoading } = useAlerts({ status: 'unacknowledged' });
   const { fuelEvents: dbFuelEvents } = useFuelEvents();
+  const { analytics, loading: analyticsLoading } = useFleetAnalytics();
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -108,9 +124,18 @@ const Dashboard = () => {
   // Show skeleton content instead of blocking loader
   const isLoading = vehiclesLoading || alertsLoading;
 
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(value);
+  };
+
   return (
     <Layout>
-      <div className="p-8 space-y-8 animate-fade-in">
+      <div className="p-8 space-y-6 animate-fade-in">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -130,264 +155,390 @@ const Dashboard = () => {
           </Button>
         </div>
 
-        {/* KPI Grid - show skeletons while loading */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {isLoading && dbVehicles.length === 0 ? (
-            <>
-              {[1, 2, 3, 4].map((i) => (
-                <StatCardSkeleton key={i} />
-              ))}
-            </>
-          ) : (
-            <>
-              <KPICard
-                title="Active Vehicles"
-                value={dbVehicles.filter(v => v.status === 'active').length}
-                subtitle={`of ${dbVehicles.length} total`}
-                icon={<Truck className="w-5 h-5" />}
-                variant="default"
-                animationDelay={0}
-              />
-              <KPICard
-                title="Total Fuel Events"
-                value={dbFuelEvents.length}
-                subtitle="tracked events"
-                icon={<Fuel className="w-5 h-5" />}
-                variant="success"
-                animationDelay={100}
-              />
-              <KPICard
-                title="Fleet Size"
-                value={dbVehicles.length}
-                subtitle="total vehicles"
-                icon={<DollarSign className="w-5 h-5" />}
-                variant="default"
-                animationDelay={200}
-              />
-              <KPICard
-                title="Active Alerts"
-                value={dbAlerts.length}
-                subtitle={`${dbAlerts.filter(a => a.severity === 'critical').length} critical`}
-                icon={<AlertTriangle className="w-5 h-5" />}
-                variant="warning"
-                animationDelay={300}
-              />
-            </>
-          )}
-        </div>
-        {/* Charts Row - Circular KPIs and Analytics */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Vehicle Status Distribution - Circular Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="w-5 h-5 text-primary" />
-                Fleet Status
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={vehicleStatusData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={90}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {vehicleStatusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="grid grid-cols-2 gap-3 mt-4">
-                {vehicleStatusData.map((item, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <div>
-                      <div className="text-xs text-muted-foreground">{item.name}</div>
-                      <div className="font-semibold">{item.value}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+        {/* Tabs for different views */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="overview" className="gap-2">
+              <LayoutGrid className="w-4 h-4" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Analytics
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Fuel Consumption Trend */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-primary" />
-                Fuel Consumption (Liters)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={fuelTrendData}>
-                  <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" />
-                  <YAxis stroke="hsl(var(--muted-foreground))" />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: "hsl(var(--card))", 
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px"
-                    }}
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-6 mt-6">
+            {/* Quick Stats KPIs */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {isLoading && dbVehicles.length === 0 ? (
+                <>
+                  {[1, 2, 3, 4].map((i) => (
+                    <StatCardSkeleton key={i} />
+                  ))}
+                </>
+              ) : (
+                <>
+                  <KPICard
+                    title="Active Vehicles"
+                    value={dbVehicles.filter(v => v.status === 'active').length}
+                    subtitle={`of ${dbVehicles.length} total`}
+                    icon={<Truck className="w-5 h-5" />}
+                    variant="default"
+                    animationDelay={0}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="consumption" 
-                    stroke="hsl(var(--primary))" 
-                    strokeWidth={2}
-                    dot={{ fill: "hsl(var(--primary))", r: 4 }}
+                  <KPICard
+                    title="Fleet Utilization"
+                    value={`${analytics.utilization.utilizationRate.toFixed(0)}%`}
+                    subtitle="vehicles in use"
+                    icon={<Activity className="w-5 h-5" />}
+                    variant="success"
+                    animationDelay={100}
                   />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
+                  <KPICard
+                    title="Monthly TCO"
+                    value={formatCurrency(analytics.tco.totalCost)}
+                    subtitle={`${formatCurrency(analytics.tco.costPerVehicle)}/vehicle`}
+                    icon={<DollarSign className="w-5 h-5" />}
+                    variant="default"
+                    animationDelay={200}
+                  />
+                  <KPICard
+                    title="Active Alerts"
+                    value={dbAlerts.length}
+                    subtitle={`${dbAlerts.filter(a => a.severity === 'critical').length} critical`}
+                    icon={<AlertTriangle className="w-5 h-5" />}
+                    variant="warning"
+                    animationDelay={300}
+                  />
+                </>
+              )}
+            </div>
 
-        {/* Trips Analytics */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Route className="w-5 h-5 text-primary" />
-              Trip Activity by Time
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={tripsData}>
-                <XAxis dataKey="hour" stroke="hsl(var(--muted-foreground))" />
-                <YAxis stroke="hsl(var(--muted-foreground))" />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: "hsl(var(--card))", 
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px"
-                  }}
-                />
-                <Bar dataKey="trips" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+            {/* Analytics Widgets Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <UtilizationGauge
+                utilizationRate={analytics.utilization.utilizationRate}
+                activeVehicles={analytics.utilization.activeVehicles}
+                totalVehicles={dbVehicles.length}
+                trend="up"
+              />
+              <TCOBreakdownCard
+                totalCost={analytics.tco.totalCost}
+                costPerVehicle={analytics.tco.costPerVehicle}
+                costPerKm={analytics.tco.costPerKm}
+                breakdown={analytics.tco.breakdown}
+                trend={analytics.tco.trend}
+                trendPercentage={analytics.tco.trendPercentage}
+              />
+              <CarbonEmissionsCard
+                totalCO2Kg={analytics.carbon.totalCO2Kg}
+                averagePerVehicle={analytics.carbon.averagePerVehicle}
+                trend={analytics.carbon.trend}
+                trendPercentage={analytics.carbon.trendPercentage}
+                byFuelType={analytics.carbon.byFuelType}
+              />
+              <SafetyScoreCard
+                averageScore={analytics.safety.averageScore}
+                incidentsThisMonth={analytics.safety.incidentsThisMonth}
+                trend={analytics.safety.trend}
+              />
+            </div>
 
-        {/* Bottom Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Vehicle Status */}
-          <Card className="lg:col-span-2">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Live Vehicle Status</CardTitle>
-              <Button variant="ghost" size="sm" className="gap-2" onClick={() => navigate('/fleet')}>
-                View All <ChevronRight className="w-4 h-4" />
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {vehicles.map((vehicle) => (
-                  <div 
-                    key={vehicle.id} 
-                    className="group flex items-center justify-between p-4 border border-border rounded-lg hover:shadow-md hover:border-primary/50 transition-all cursor-pointer bg-gradient-to-r hover:from-primary/5 hover:to-transparent"
-                    onClick={() => setSelectedVehicle(vehicle)}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg group-hover:scale-110 transition-transform">
-                        <Truck className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <div className="font-semibold flex items-center gap-2">
-                          {vehicle.plate}
-                          <span className="text-xs text-muted-foreground">#{vehicle.id}</span>
-                        </div>
-                        <div className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                          <MapPin className="w-3 h-3" />
-                          {vehicle.location}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${
-                            vehicle.fuel > 60 ? 'bg-success' : 
-                            vehicle.fuel > 30 ? 'bg-warning' : 
-                            'bg-destructive'
-                          } animate-pulse`}></div>
-                          <span className="text-sm font-medium">{vehicle.fuel}%</span>
-                        </div>
-                        <div className="text-xs text-muted-foreground">Fuel Level</div>
-                      </div>
-                      <StatusBadge status={vehicle.status} />
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        className="opacity-0 group-hover:opacity-100 transition-opacity gap-2"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedVehicle(vehicle);
-                        }}
+            {/* Charts Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Vehicle Status Distribution */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-primary" />
+                    Fleet Status
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <Pie
+                        data={vehicleStatusData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={75}
+                        paddingAngle={5}
+                        dataKey="value"
                       >
-                        <Eye className="w-4 h-4" />
-                        Details
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Recent Alerts */}
-          <Card className="border-warning/20">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <div className="p-2 rounded-md bg-warning/10">
-                    <AlertTriangle className="w-4 h-4 text-warning" />
-                  </div>
-                  Recent Alerts
-                </CardTitle>
-                <Button variant="ghost" size="sm" onClick={() => navigate('/alerts')}>View All</Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {recentAlerts.map((alert) => (
-                  <div 
-                    key={alert.id} 
-                    className={`p-3 border rounded-lg hover:shadow-md transition-all cursor-pointer ${
-                      alert.type === 'critical' ? 'border-destructive/30 bg-destructive/5' : 'border-warning/30 bg-warning/5'
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <AlertTriangle className={`w-5 h-5 mt-0.5 ${alert.type === 'critical' ? 'text-destructive animate-pulse' : 'text-warning'}`} />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{alert.message}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Clock className="w-3 h-3" />
-                            {alert.time}
-                          </div>
-                          <Button size="sm" variant="ghost" className="h-6 text-xs">
-                            Acknowledge
-                          </Button>
+                        {vehicleStatusData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    {vehicleStatusData.map((item, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <div 
+                          className="w-2 h-2 rounded-full" 
+                          style={{ backgroundColor: item.color }}
+                        />
+                        <div className="text-xs">
+                          <span className="text-muted-foreground">{item.name}</span>
+                          <span className="font-medium ml-1">{item.value}</span>
                         </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                </CardContent>
+              </Card>
+
+              {/* Fuel Consumption Trend */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                    Fuel Consumption Trend
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <LineChart data={fuelTrendData}>
+                      <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: "hsl(var(--card))", 
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px"
+                        }}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="consumption" 
+                        stroke="hsl(var(--primary))" 
+                        strokeWidth={2}
+                        dot={{ fill: "hsl(var(--primary))", r: 4 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Bottom Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Vehicle Status */}
+              <Card className="lg:col-span-2">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Live Vehicle Status</CardTitle>
+                  <Button variant="ghost" size="sm" className="gap-2" onClick={() => navigate('/fleet')}>
+                    View All <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {vehicles.map((vehicle) => (
+                      <div 
+                        key={vehicle.id} 
+                        className="group flex items-center justify-between p-3 border border-border rounded-lg hover:shadow-md hover:border-primary/50 transition-all cursor-pointer bg-gradient-to-r hover:from-primary/5 hover:to-transparent"
+                        onClick={() => setSelectedVehicle(vehicle)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg group-hover:scale-110 transition-transform">
+                            <Truck className="w-4 h-4 text-primary" />
+                          </div>
+                          <div>
+                            <div className="font-semibold text-sm">{vehicle.plate}</div>
+                            <div className="text-xs text-muted-foreground flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {vehicle.location}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="text-right">
+                            <div className="flex items-center gap-1">
+                              <div className={`w-2 h-2 rounded-full ${
+                                vehicle.fuel > 60 ? 'bg-success' : 
+                                vehicle.fuel > 30 ? 'bg-warning' : 
+                                'bg-destructive'
+                              } animate-pulse`}></div>
+                              <span className="text-xs font-medium">{vehicle.fuel}%</span>
+                            </div>
+                          </div>
+                          <StatusBadge status={vehicle.status} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Recent Alerts */}
+              <Card className="border-warning/20">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <div className="p-2 rounded-md bg-warning/10">
+                        <AlertTriangle className="w-4 h-4 text-warning" />
+                      </div>
+                      Recent Alerts
+                    </CardTitle>
+                    <Button variant="ghost" size="sm" onClick={() => navigate('/alerts')}>View All</Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {recentAlerts.map((alert) => (
+                      <div 
+                        key={alert.id} 
+                        className={`p-3 border rounded-lg hover:shadow-md transition-all cursor-pointer ${
+                          alert.type === 'critical' ? 'border-destructive/30 bg-destructive/5' : 'border-warning/30 bg-warning/5'
+                        }`}
+                      >
+                        <div className="flex items-start gap-2">
+                          <AlertTriangle className={`w-4 h-4 mt-0.5 ${alert.type === 'critical' ? 'text-destructive animate-pulse' : 'text-warning'}`} />
+                          <div className="flex-1">
+                            <p className="text-xs font-medium">{alert.message}</p>
+                            <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                              <Clock className="w-3 h-3" />
+                              {alert.time}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Analytics Tab */}
+          <TabsContent value="analytics" className="space-y-6 mt-6">
+            {/* Key Metrics Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <MetricCard
+                title="Cost per Kilometer"
+                value={`$${analytics.tco.costPerKm.toFixed(2)}`}
+                subtitle="operating cost"
+                icon={<DollarSign className="w-5 h-5" />}
+                trend="down"
+                trendValue="-5.3% vs last month"
+                trendPositive={false}
+                variant="success"
+              />
+              <MetricCard
+                title="Avg. Fuel Efficiency"
+                value={`${analytics.fuelEfficiency.averageLPer100Km.toFixed(1)} L/100km`}
+                subtitle="fleet average"
+                icon={<Fuel className="w-5 h-5" />}
+                trend={analytics.fuelEfficiency.trend}
+                trendValue="+2.1% improvement"
+                variant="primary"
+              />
+              <MetricCard
+                title="On-Time Delivery"
+                value={`${analytics.delivery.onTimeRate.toFixed(1)}%`}
+                subtitle={`${analytics.delivery.completedTrips} trips`}
+                icon={<Route className="w-5 h-5" />}
+                trend="up"
+                trendValue="+3.2% vs last month"
+                variant="success"
+              />
+              <MetricCard
+                title="Fleet Revenue"
+                value={formatCurrency(analytics.revenue.total)}
+                subtitle={`${formatCurrency(analytics.revenue.perVehicle)}/vehicle`}
+                icon={<TrendingUp className="w-5 h-5" />}
+                trend={analytics.revenue.trend}
+                trendValue="+12.5% growth"
+                variant="success"
+              />
+            </div>
+
+            {/* Detailed Analytics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <UtilizationGauge
+                utilizationRate={analytics.utilization.utilizationRate}
+                activeVehicles={analytics.utilization.activeVehicles}
+                totalVehicles={dbVehicles.length}
+                trend="up"
+              />
+              <TCOBreakdownCard
+                totalCost={analytics.tco.totalCost}
+                costPerVehicle={analytics.tco.costPerVehicle}
+                costPerKm={analytics.tco.costPerKm}
+                breakdown={analytics.tco.breakdown}
+                trend={analytics.tco.trend}
+                trendPercentage={analytics.tco.trendPercentage}
+              />
+              <CarbonEmissionsCard
+                totalCO2Kg={analytics.carbon.totalCO2Kg}
+                averagePerVehicle={analytics.carbon.averagePerVehicle}
+                trend={analytics.carbon.trend}
+                trendPercentage={analytics.carbon.trendPercentage}
+                byFuelType={analytics.carbon.byFuelType}
+              />
+              <FuelEfficiencyCard
+                averageLPer100Km={analytics.fuelEfficiency.averageLPer100Km}
+                bestPerformer={analytics.fuelEfficiency.bestPerformer}
+                worstPerformer={analytics.fuelEfficiency.worstPerformer}
+                trend={analytics.fuelEfficiency.trend}
+              />
+              <MaintenanceComplianceCard
+                complianceRate={analytics.maintenance.complianceRate}
+                overdueCount={analytics.maintenance.overdueCount}
+                upcomingCount={analytics.maintenance.upcomingCount}
+              />
+              <SafetyScoreCard
+                averageScore={analytics.safety.averageScore}
+                incidentsThisMonth={analytics.safety.incidentsThisMonth}
+                trend={analytics.safety.trend}
+              />
+            </div>
+
+            {/* Performance Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <DeliveryPerformanceCard
+                onTimeRate={analytics.delivery.onTimeRate}
+                averageDelay={analytics.delivery.averageDelay}
+                completedTrips={analytics.delivery.completedTrips}
+              />
+              <RevenueCard
+                perVehicle={analytics.revenue.perVehicle}
+                total={analytics.revenue.total}
+                trend={analytics.revenue.trend}
+              />
+            </div>
+
+            {/* Trip Activity Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Route className="w-5 h-5 text-primary" />
+                  Trip Activity by Time
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={tripsData}>
+                    <XAxis dataKey="hour" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: "hsl(var(--card))", 
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px"
+                      }}
+                    />
+                    <Bar dataKey="trips" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Vehicle Detail Modal */}
