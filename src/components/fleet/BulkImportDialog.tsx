@@ -114,25 +114,29 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
           continue;
         }
 
-        try {
-          const vehicleData: any = {
-            plate_number: row.plate_number.trim(),
-            make: row.make.trim(),
-            model: row.model.trim(),
-            year: parseInt(row.year),
-            fuel_type: row.fuel_type?.trim() || 'diesel',
-            status: ['active', 'maintenance', 'inactive'].includes(row.status?.trim()) 
-              ? row.status.trim() 
-              : 'active',
-          };
-          
-          if (row.vehicle_type?.trim()) vehicleData.vehicle_type = row.vehicle_type.trim();
-          if (row.odometer_km) vehicleData.odometer_km = parseFloat(row.odometer_km);
-          if (row.ownership_type?.trim() && ['owned', 'leased', 'rented'].includes(row.ownership_type.trim())) {
-            vehicleData.ownership_type = row.ownership_type.trim();
-          }
+          try {
+            const vehicleData: any = {
+              organization_id: organizationId,
+              plate_number: row.plate_number.trim(),
+              make: row.make.trim(),
+              model: row.model.trim(),
+              year: parseInt(row.year),
+              fuel_type: row.fuel_type?.trim() || 'diesel',
+              status: ['active', 'maintenance', 'inactive'].includes(row.status?.trim()) 
+                ? row.status.trim() 
+                : 'active',
+            };
+            
+            if (row.vehicle_type?.trim()) vehicleData.vehicle_type = row.vehicle_type.trim();
+            if (row.odometer_km) vehicleData.odometer_km = parseFloat(row.odometer_km);
+            if (row.ownership_type?.trim() && ['owned', 'leased', 'rented'].includes(row.ownership_type.trim())) {
+              vehicleData.ownership_type = row.ownership_type.trim();
+            }
+            if (row.vin?.trim()) vehicleData.vin = row.vin.trim();
+            if (row.color?.trim()) vehicleData.color = row.color.trim();
+            if (row.tank_capacity_liters) vehicleData.tank_capacity_liters = parseFloat(row.tank_capacity_liters);
 
-          const { error } = await supabase.from("vehicles").insert(vehicleData);
+            const { error } = await supabase.from("vehicles").insert(vehicleData);
 
           if (error) {
             importResult.failed++;

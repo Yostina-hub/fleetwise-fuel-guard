@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
+import { format } from "date-fns";
 
 export function useNextServiceDate(vehicleIds: string[]) {
   const { organizationId } = useOrganization();
@@ -33,7 +34,11 @@ export function useNextServiceDate(vehicleIds: string[]) {
         data.forEach(wo => {
           // Keep only the earliest scheduled date per vehicle
           if (!map[wo.vehicle_id] && wo.scheduled_date) {
-            map[wo.vehicle_id] = wo.scheduled_date;
+            try {
+              map[wo.vehicle_id] = format(new Date(wo.scheduled_date), "MMM d, yyyy");
+            } catch {
+              map[wo.vehicle_id] = wo.scheduled_date;
+            }
           }
         });
         setNextServiceMap(map);
