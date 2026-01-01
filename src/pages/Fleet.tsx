@@ -41,6 +41,7 @@ import {
   Upload
 } from "lucide-react";
 import { useVehiclesPaginated } from "@/hooks/useVehiclesPaginated";
+import { useFleetStats } from "@/hooks/useFleetStats";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useDrivers } from "@/hooks/useDrivers";
 import { useVehicleTelemetryBatch } from "@/hooks/useVehicleTelemetryBatch";
@@ -145,17 +146,28 @@ const Fleet = () => {
   // Fetch next service dates
   const { nextServiceMap } = useNextServiceDate(vehicleIds);
 
-  // Fetch driver assignments for vehicles
+  // Fleet-wide stats (not just current page)
+  const { stats: fleetStats, loading: statsLoading } = useFleetStats({
+    statusFilter,
+    vehicleTypeFilter,
+    fuelTypeFilter,
+    ownershipFilter,
+    searchQuery: debouncedSearch,
+  });
+
+  // Fetch driver assignments for vehicles (limited to current page)
   useEffect(() => {
     const fetchDriverAssignments = async () => {
       if (dbVehicles.length === 0) return;
       
-      // Get latest trip assignments with drivers
+      // Get latest trip assignments with drivers - limit to most recent per vehicle
       const { data } = await supabase
         .from("trips")
         .select("vehicle_id, driver_id")
         .in("vehicle_id", vehicleIds)
-        .order("start_time", { ascending: false });
+        .not("driver_id", "is", null)
+        .order("start_time", { ascending: false })
+        .limit(vehicleIds.length * 3); // Reasonable limit
 
       if (data) {
         const assignments: Record<string, string> = {};
@@ -224,14 +236,6 @@ const Fleet = () => {
 
     return filtered;
   }, [dbVehicles, driverFilter, driverAssignments, telemetryMap, nextServiceMap]);
-
-  // Calculate stats from current page
-  const stats = useMemo(() => {
-    const moving = vehicles.filter((v) => v.status === "moving").length;
-    const idle = vehicles.filter((v) => v.status === "idle").length;
-    const offline = vehicles.filter((v) => v.status === "offline").length;
-    return { moving, idle, offline };
-  }, [vehicles]);
 
   const handleVehicleClick = useCallback((vehicle: any) => {
     setSelectedVehicle(vehicle);
@@ -355,10 +359,10 @@ const Fleet = () => {
           ) : (
             <>
               {[
-                { label: "Total", value: totalCount, color: "primary", icon: "📊" },
-                { label: "Moving", value: stats.moving, color: "emerald-500", icon: "🚗" },
-                { label: "Idle", value: stats.idle, color: "amber-500", icon: "⏸️" },
-                { label: "Offline", value: stats.offline, color: "rose-500", icon: "📴" },
+                { label: "Total", value: fleetStats.total, color: "primary", icon: "📊" },
+                { label: "Moving", value: fleetStats.moving, color: "emerald-500", icon: "🚗" },
+                { label: "Idle", value: fleetStats.idle, color: "amber-500", icon: "⏸️" },
+                { label: "Offline", value: fleetStats.offline, color: "rose-500", icon: "📴" },
               ].map((stat, i) => (
                 <Card
                   key={i}
@@ -665,11 +669,16 @@ const Fleet = () => {
             {/* Pagination Controls */}
             {totalPages > 1 && (
               <div className="flex items-center justify-between pt-4">
-                <p className="text-sm text-muted-foreground">
-                  Showing {((currentPage - 1) * PAGE_SIZE) + 1} to{" "}
-                  {Math.min(currentPage * PAGE_SIZE, totalCount)} of {totalCount} vehicles
-                  {driverFilter !== "all" && vehicles.length < PAGE_SIZE && ` (${vehicles.length} after driver filter)`}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-muted-foreground">
+                    Showing {((currentPage - 1) * PAGE_SIZE) + 1} to{" "}
+                    {Math.min(currentPage * PAGE_SIZE, totalCount)} of {totalCount} vehicles
+                    {driverFilter !== "all" && vehicles.length < PAGE_SIZE && ` (${vehicles.length} after driver filter)`}
+                  </p>
+                  {loading && (
+                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  )}
+                </div>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"

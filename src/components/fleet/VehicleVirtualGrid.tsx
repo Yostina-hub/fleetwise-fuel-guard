@@ -42,7 +42,7 @@ interface VehicleItem {
   model: string;
   year: number;
   status: 'moving' | 'idle' | 'offline';
-  fuel: number;
+  fuel: number | null;
   odometer: number;
   nextService: string | null;
   vehicleType?: string;
@@ -334,20 +334,28 @@ export const VehicleVirtualGrid = ({
                             <Fuel className="w-4 h-4 text-primary" />
                             <span className="font-medium">Fuel Level</span>
                           </div>
-                          <span className="text-sm font-semibold">{vehicle.fuel}%</span>
+                          <span className="text-sm font-semibold">
+                            {vehicle.fuel != null ? `${vehicle.fuel}%` : "-"}
+                          </span>
                         </div>
-                        <div className="w-full bg-muted rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full transition-all ${
-                              vehicle.fuel > 60
-                                ? "bg-success"
-                                : vehicle.fuel > 30
-                                ? "bg-warning"
-                                : "bg-destructive"
-                            }`}
-                            style={{ width: `${vehicle.fuel}%` }}
-                          />
-                        </div>
+                        {vehicle.fuel != null ? (
+                          <div className="w-full bg-muted rounded-full h-2">
+                            <div
+                              className={`h-2 rounded-full transition-all ${
+                                vehicle.fuel > 60
+                                  ? "bg-success"
+                                  : vehicle.fuel > 30
+                                  ? "bg-warning"
+                                  : "bg-destructive"
+                              }`}
+                              style={{ width: `${vehicle.fuel}%` }}
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-full bg-muted rounded-full h-2">
+                            <div className="h-2 rounded-full bg-muted-foreground/30 w-full" />
+                          </div>
+                        )}
                       </div>
 
                       {/* Odometer */}
