@@ -20,6 +20,8 @@ export interface VehicleTelemetry {
   gps_signal_strength?: number;
   gps_hdop?: number;
   gps_fix_type?: 'no_fix' | '2d_fix' | '3d_fix';
+  gps_jamming_detected?: boolean;
+  gps_spoofing_detected?: boolean;
 }
 
 export const useVehicleTelemetry = () => {
