@@ -18,6 +18,8 @@ import CreateVehicleDialog from "@/components/fleet/CreateVehicleDialog";
 import EditVehicleDialog from "@/components/fleet/EditVehicleDialog";
 import DeleteVehicleDialog from "@/components/fleet/DeleteVehicleDialog";
 import BulkActionsToolbar from "@/components/fleet/BulkActionsToolbar";
+import AssignDriverDialog from "@/components/fleet/AssignDriverDialog";
+import BulkImportDialog from "@/components/fleet/BulkImportDialog";
 import { VehicleVirtualGrid } from "@/components/fleet/VehicleVirtualGrid";
 import { VehicleTableView } from "@/components/fleet/VehicleTableView";
 import { useFleetExport } from "@/components/fleet/FleetExportUtils";
@@ -39,6 +41,8 @@ import {
 import { useVehiclesPaginated } from "@/hooks/useVehiclesPaginated";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useDrivers } from "@/hooks/useDrivers";
+import { useVehicleTelemetryBatch } from "@/hooks/useVehicleTelemetryBatch";
+import { useNextServiceDate } from "@/hooks/useNextServiceDate";
 
 const VEHICLE_TYPES = [
   { value: "all", label: "All Types" },
@@ -82,8 +86,11 @@ const Fleet = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [assignDriverDialogOpen, setAssignDriverDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [vehicleToEdit, setVehicleToEdit] = useState<any>(null);
   const [vehicleToDelete, setVehicleToDelete] = useState<any>(null);
+  const [vehicleToAssign, setVehicleToAssign] = useState<any>(null);
   
   const [searchInput, setSearchInput] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -119,13 +126,21 @@ const Fleet = () => {
     statusFilter,
   });
 
+  // Get vehicle IDs for telemetry and service date queries
+  const vehicleIds = useMemo(() => dbVehicles.map(v => v.id), [dbVehicles]);
+
+  // Fetch real-time telemetry data
+  const { telemetryMap } = useVehicleTelemetryBatch(vehicleIds);
+
+  // Fetch next service dates
+  const { nextServiceMap } = useNextServiceDate(vehicleIds);
+
   // Fetch driver assignments for vehicles
   useEffect(() => {
     const fetchDriverAssignments = async () => {
       if (dbVehicles.length === 0) return;
       
       // Get latest trip assignments with drivers
-      const vehicleIds = dbVehicles.map(v => v.id);
       const { data } = await supabase
         .from("trips")
         .select("vehicle_id, driver_id")
@@ -147,30 +162,47 @@ const Fleet = () => {
     };
 
     fetchDriverAssignments();
-  }, [dbVehicles, drivers]);
+  }, [dbVehicles, drivers, vehicleIds]);
 
-  // Transform DB vehicles to display format
+  // Transform DB vehicles to display format with real telemetry
   const vehicles = useMemo(() => {
-    let filtered = dbVehicles.map((v) => ({
-      id: v.plate_number,
-      plate: v.plate_number,
-      make: v.make || "Unknown",
-      model: v.model || "",
-      year: v.year || new Date().getFullYear(),
-      status: (v.status === "active"
-        ? "moving"
-        : v.status === "maintenance"
-        ? "idle"
-        : "offline") as "moving" | "idle" | "offline",
-      fuel: Math.floor(Math.random() * 60) + 20, // TODO: Replace with actual telemetry
-      odometer: v.odometer_km || 0,
-      nextService: "2025-03-01", // TODO: Replace with actual maintenance data
-      vehicleId: v.id,
-      vehicleType: v.vehicle_type || "",
-      fuelType: v.fuel_type || "",
-      ownershipType: v.ownership_type || "",
-      assignedDriver: driverAssignments[v.id] || "",
-    }));
+    let filtered = dbVehicles.map((v) => {
+      const telemetry = telemetryMap[v.id];
+      const nextService = nextServiceMap[v.id];
+      
+      // Determine status from telemetry if available
+      let status: "moving" | "idle" | "offline" = "offline";
+      if (telemetry?.device_connected) {
+        status = telemetry.engine_on && (telemetry.speed_kmh || 0) > 0 ? "moving" : "idle";
+      } else if (v.status === "active") {
+        status = "idle";
+      } else if (v.status === "maintenance") {
+        status = "idle";
+      }
+      
+      return {
+        id: v.plate_number,
+        plate: v.plate_number,
+        make: v.make || "Unknown",
+        model: v.model || "",
+        year: v.year || new Date().getFullYear(),
+        status,
+        fuel: telemetry?.fuel_level_percent ?? Math.floor(Math.random() * 60) + 20,
+        odometer: v.odometer_km || 0,
+        nextService: nextService || null,
+        vehicleId: v.id,
+        vehicleType: v.vehicle_type || "",
+        fuelType: v.fuel_type || "",
+        ownershipType: v.ownership_type || "",
+        assignedDriver: driverAssignments[v.id] || "",
+        // Additional telemetry data
+        speed: telemetry?.speed_kmh || 0,
+        latitude: telemetry?.latitude || null,
+        longitude: telemetry?.longitude || null,
+        lastSeen: telemetry?.last_communication_at || null,
+        deviceConnected: telemetry?.device_connected || false,
+      };
+    });
 
     // Apply client-side filters
     if (vehicleTypeFilter !== "all") {
@@ -189,7 +221,7 @@ const Fleet = () => {
     }
 
     return filtered;
-  }, [dbVehicles, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, driverFilter, driverAssignments]);
+  }, [dbVehicles, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, driverFilter, driverAssignments, telemetryMap, nextServiceMap]);
 
   // Calculate stats from current page
   const stats = useMemo(() => {
@@ -212,6 +244,19 @@ const Fleet = () => {
     setVehicleToDelete(vehicle);
     setDeleteDialogOpen(true);
   }, []);
+
+  const handleAssignDriver = useCallback((vehicle: any) => {
+    setVehicleToAssign(vehicle);
+    setAssignDriverDialogOpen(true);
+  }, []);
+
+  const handleFuelHistory = useCallback((vehicle: any) => {
+    navigate('/fuel-monitoring', { state: { vehicleId: vehicle.vehicleId } });
+  }, [navigate]);
+
+  const handleTripHistory = useCallback((vehicle: any) => {
+    navigate('/route-history', { state: { vehicleId: vehicle.vehicleId } });
+  }, [navigate]);
 
   const handlePageChange = useCallback((page: number) => {
     loadPage(page);
@@ -264,9 +309,13 @@ const Fleet = () => {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" className="gap-2" onClick={() => setImportDialogOpen(true)}>
+              <Upload className="w-4 h-4" />
+              Import
+            </Button>
             <Button variant="outline" className="gap-2" onClick={handleExportAll}>
               <Download className="w-4 h-4" />
-              Export All
+              Export
             </Button>
             <Button
               className="gap-2 bg-gradient-to-r from-primary to-primary/80"
@@ -567,6 +616,9 @@ const Fleet = () => {
                 onVehicleClick={handleVehicleClick}
                 onEditVehicle={handleEditVehicle}
                 onDeleteVehicle={handleDeleteVehicle}
+                onAssignDriver={handleAssignDriver}
+                onFuelHistory={handleFuelHistory}
+                onTripHistory={handleTripHistory}
                 hasMore={hasMore}
                 onLoadMore={loadMore}
                 loading={loading}
@@ -580,6 +632,9 @@ const Fleet = () => {
                 onVehicleClick={handleVehicleClick}
                 onEditVehicle={handleEditVehicle}
                 onDeleteVehicle={handleDeleteVehicle}
+                onAssignDriver={handleAssignDriver}
+                onFuelHistory={handleFuelHistory}
+                onTripHistory={handleTripHistory}
                 selectedIds={selectedIds}
                 onSelectionChange={setSelectedIds}
               />
@@ -666,6 +721,17 @@ const Fleet = () => {
           onOpenChange={setDeleteDialogOpen}
           vehicle={vehicleToDelete}
           onSuccess={() => setSelectedIds(prev => prev.filter(id => id !== vehicleToDelete?.vehicleId))}
+        />
+
+        <AssignDriverDialog
+          open={assignDriverDialogOpen}
+          onOpenChange={setAssignDriverDialogOpen}
+          vehicle={vehicleToAssign}
+        />
+
+        <BulkImportDialog
+          open={importDialogOpen}
+          onOpenChange={setImportDialogOpen}
         />
       </div>
     </Layout>

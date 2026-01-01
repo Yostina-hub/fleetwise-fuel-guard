@@ -39,10 +39,13 @@ interface VehicleItem {
   status: 'moving' | 'idle' | 'offline';
   fuel: number;
   odometer: number;
-  nextService: string;
+  nextService: string | null;
   vehicleType?: string;
   fuelType?: string;
   assignedDriver?: string;
+  speed?: number;
+  lastSeen?: string | null;
+  deviceConnected?: boolean;
 }
 
 type SortField = 'plate' | 'make' | 'status' | 'fuel' | 'odometer';
@@ -53,6 +56,9 @@ interface VehicleTableViewProps {
   onVehicleClick: (vehicle: VehicleItem) => void;
   onEditVehicle?: (vehicle: VehicleItem) => void;
   onDeleteVehicle?: (vehicle: VehicleItem) => void;
+  onAssignDriver?: (vehicle: VehicleItem) => void;
+  onFuelHistory?: (vehicle: VehicleItem) => void;
+  onTripHistory?: (vehicle: VehicleItem) => void;
   selectedIds?: string[];
   onSelectionChange?: (ids: string[]) => void;
 }
@@ -62,6 +68,9 @@ export const VehicleTableView = ({
   onVehicleClick,
   onEditVehicle,
   onDeleteVehicle,
+  onAssignDriver,
+  onFuelHistory,
+  onTripHistory,
   selectedIds = [],
   onSelectionChange
 }: VehicleTableViewProps) => {
@@ -294,7 +303,7 @@ export const VehicleTableView = ({
                         <Edit className="w-4 h-4 mr-2" />
                         Edit Vehicle
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onAssignDriver?.(vehicle)}>
                         <UserPlus className="w-4 h-4 mr-2" />
                         Assign Driver
                       </DropdownMenuItem>
@@ -302,18 +311,13 @@ export const VehicleTableView = ({
                         <Wrench className="w-4 h-4 mr-2" />
                         Maintenance
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/fuel-monitoring")}>
+                      <DropdownMenuItem onClick={() => onFuelHistory?.(vehicle)}>
                         <Fuel className="w-4 h-4 mr-2" />
                         Fuel History
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/route-history")}>
+                      <DropdownMenuItem onClick={() => onTripHistory?.(vehicle)}>
                         <FileText className="w-4 h-4 mr-2" />
                         Trip History
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem>
-                        <Power className="w-4 h-4 mr-2" />
-                        Send Command
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
