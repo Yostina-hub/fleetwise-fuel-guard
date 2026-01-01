@@ -92,7 +92,7 @@ const Fleet = () => {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" className="gap-2">
+            <Button variant="outline" className="gap-2" onClick={() => navigate("/settings")}>
               <Settings className="w-4 h-4" />
               Settings
             </Button>
