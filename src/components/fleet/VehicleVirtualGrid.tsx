@@ -22,9 +22,17 @@ import {
   Trash2, 
   Wrench, 
   FileText,
-  User
+  User,
+  Power,
+  Radio,
+  Gauge,
+  Clock,
+  Wifi,
+  WifiOff,
+  UserPlus
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { formatDistanceToNow } from "date-fns";
 
 interface VehicleItem {
   id: string;
@@ -41,6 +49,8 @@ interface VehicleItem {
   fuelType?: string;
   assignedDriver?: string;
   speed?: number;
+  latitude?: number | null;
+  longitude?: number | null;
   lastSeen?: string | null;
   deviceConnected?: boolean;
 }
@@ -53,6 +63,8 @@ interface VehicleVirtualGridProps {
   onAssignDriver?: (vehicle: VehicleItem) => void;
   onFuelHistory?: (vehicle: VehicleItem) => void;
   onTripHistory?: (vehicle: VehicleItem) => void;
+  onSendCommand?: (vehicle: VehicleItem) => void;
+  onAssignDevice?: (vehicle: VehicleItem) => void;
   hasMore: boolean;
   onLoadMore: () => void;
   loading: boolean;
@@ -69,6 +81,8 @@ export const VehicleVirtualGrid = ({
   onAssignDriver,
   onFuelHistory,
   onTripHistory,
+  onSendCommand,
+  onAssignDevice,
   hasMore,
   onLoadMore,
   loading,
@@ -85,7 +99,7 @@ export const VehicleVirtualGrid = ({
   const virtualizer = useVirtualizer({
     count: rowCount + (hasMore ? 1 : 0), // Add 1 for load more row
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 360, // Estimated row height
+    estimateSize: () => 420, // Increased row height for more content
     overscan: 3,
   });
 
@@ -108,6 +122,15 @@ export const VehicleVirtualGrid = ({
       onSelectionChange(selectedIds.filter(id => id !== vehicleId));
     } else {
       onSelectionChange([...selectedIds, vehicleId]);
+    }
+  };
+
+  const formatLastSeen = (lastSeen: string | null) => {
+    if (!lastSeen) return "Never";
+    try {
+      return formatDistanceToNow(new Date(lastSeen), { addSuffix: true });
+    } catch {
+      return "Unknown";
     }
   };
 
@@ -195,6 +218,21 @@ export const VehicleVirtualGrid = ({
                       </div>
                     )}
 
+                    {/* Device status indicator */}
+                    <div className="absolute top-3 left-10 z-10">
+                      {vehicle.deviceConnected ? (
+                        <Badge variant="outline" className="gap-1 bg-background/80 backdrop-blur-sm">
+                          <Wifi className="w-3 h-3 text-success" />
+                          <span className="text-xs">Online</span>
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="gap-1 bg-background/80 backdrop-blur-sm">
+                          <WifiOff className="w-3 h-3 text-muted-foreground" />
+                          <span className="text-xs">Offline</span>
+                        </Badge>
+                      )}
+                    </div>
+
                     {/* Actions menu */}
                     <div 
                       className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -220,11 +258,28 @@ export const VehicleVirtualGrid = ({
                             <Edit className="w-4 h-4 mr-2" />
                             Edit Vehicle
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onAssignDriver?.(vehicle)}>
+                            <UserPlus className="w-4 h-4 mr-2" />
+                            Assign Driver
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onAssignDevice?.(vehicle)}>
+                            <Radio className="w-4 h-4 mr-2" />
+                            GPS Device
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onSendCommand?.(vehicle)}>
+                            <Power className="w-4 h-4 mr-2" />
+                            Send Command
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => navigate("/maintenance")}>
                             <Wrench className="w-4 h-4 mr-2" />
                             Maintenance
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => navigate("/route-history")}>
+                          <DropdownMenuItem onClick={() => onFuelHistory?.(vehicle)}>
+                            <Fuel className="w-4 h-4 mr-2" />
+                            Fuel History
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onTripHistory?.(vehicle)}>
                             <FileText className="w-4 h-4 mr-2" />
                             Trip History
                           </DropdownMenuItem>
@@ -240,7 +295,7 @@ export const VehicleVirtualGrid = ({
                       </DropdownMenu>
                     </div>
 
-                    <CardHeader className="relative pt-10">
+                    <CardHeader className="relative pt-12">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <CardTitle className="text-xl flex items-center gap-2">
@@ -258,7 +313,20 @@ export const VehicleVirtualGrid = ({
                         <StatusBadge status={vehicle.status} />
                       </div>
                     </CardHeader>
-                    <CardContent className="space-y-4 relative">
+                    <CardContent className="space-y-3 relative">
+                      {/* Speed indicator (if moving) */}
+                      {vehicle.status === "moving" && (
+                        <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/10 border border-primary/20">
+                          <Gauge className="w-4 h-4 text-primary" />
+                          <span className="text-sm font-medium">{vehicle.speed} km/h</span>
+                          {vehicle.latitude && vehicle.longitude && (
+                            <span className="text-xs text-muted-foreground ml-auto">
+                              {vehicle.latitude.toFixed(4)}, {vehicle.longitude.toFixed(4)}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
                       {/* Fuel Level */}
                       <div>
                         <div className="flex items-center justify-between mb-2">
@@ -304,7 +372,14 @@ export const VehicleVirtualGrid = ({
                       <div className="flex items-center gap-2 text-sm">
                         <Calendar className="w-4 h-4 text-muted-foreground" />
                         <span className="text-muted-foreground">Next Service:</span>
-                        <span className="font-medium">{vehicle.nextService}</span>
+                        <span className="font-medium">{vehicle.nextService || "Not scheduled"}</span>
+                      </div>
+
+                      {/* Last Seen */}
+                      <div className="flex items-center gap-2 text-sm">
+                        <Clock className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-muted-foreground">Last Update:</span>
+                        <span className="font-medium">{formatLastSeen(vehicle.lastSeen)}</span>
                       </div>
 
                       {/* Actions */}
