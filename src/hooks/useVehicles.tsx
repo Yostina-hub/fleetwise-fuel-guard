@@ -46,6 +46,9 @@ export const useVehicles = () => {
       return;
     }
 
+    let isMounted = true;
+    let debounceTimer: NodeJS.Timeout;
+
     const fetchVehicles = async (showLoading = true) => {
       try {
         // Only show loading on first load
@@ -61,22 +64,27 @@ export const useVehicles = () => {
           .limit(5000);
 
         if (error) throw error;
-        setVehicles((data as any) || []);
+        if (isMounted) {
+          setVehicles((data as any) || []);
+          setIsFirstLoad(false);
+        }
       } catch (err: any) {
         console.error("Error fetching vehicles:", err);
-        setError(err.message);
+        if (isMounted) {
+          setError(err.message);
+        }
       } finally {
-        setLoading(false);
-        setIsFirstLoad(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchVehicles();
 
     // Subscribe to realtime changes with debouncing
-    let debounceTimer: NodeJS.Timeout;
     const channel = supabase
-      .channel('vehicles-changes')
+      .channel(`vehicles-changes-${organizationId.slice(0, 8)}`)
       .on(
         'postgres_changes',
         {
@@ -89,17 +97,20 @@ export const useVehicles = () => {
           // Debounce to prevent rapid refetches, update in background
           clearTimeout(debounceTimer);
           debounceTimer = setTimeout(() => {
-            fetchVehicles(false); // Don't show loading for background updates
-          }, 2000);
+            if (isMounted) {
+              fetchVehicles(false); // Don't show loading for background updates
+            }
+          }, 500);
         }
       )
       .subscribe();
 
     return () => {
+      isMounted = false;
       clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
-  }, [organizationId]);
+  }, [organizationId, isFirstLoad]);
 
   return {
     vehicles,

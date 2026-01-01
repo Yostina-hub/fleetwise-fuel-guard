@@ -39,6 +39,9 @@ export const useVehicleTelemetry = () => {
       return;
     }
 
+    let isMounted = true;
+    let throttleTimer: NodeJS.Timeout;
+
     const fetchTelemetry = async (showLoading = true) => {
       try {
         // Only show loading on first load
@@ -64,24 +67,27 @@ export const useVehicleTelemetry = () => {
           }
         });
 
-        setTelemetry(telemetryMap);
+        if (isMounted) {
+          setTelemetry(telemetryMap);
+          setIsFirstLoad(false);
+        }
       } catch (err: any) {
         console.error("Error fetching vehicle telemetry:", err);
-        setError(err.message);
+        if (isMounted) {
+          setError(err.message);
+        }
       } finally {
-        setLoading(false);
-        setIsFirstLoad(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchTelemetry();
 
     // Subscribe to realtime changes with throttling for large fleets
-    let throttleTimer: NodeJS.Timeout;
-    let pendingUpdate = false;
-    
     const channel = supabase
-      .channel('vehicle-telemetry-changes')
+      .channel(`vehicle-telemetry-${organizationId.slice(0, 8)}`)
       .on(
         'postgres_changes',
         {
@@ -91,6 +97,8 @@ export const useVehicleTelemetry = () => {
           filter: `organization_id=eq.${organizationId}`
         },
         (payload) => {
+          if (!isMounted) return;
+          
           // For INSERT/UPDATE, update single vehicle telemetry directly
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
             const newData = payload.new as VehicleTelemetry;
@@ -100,24 +108,23 @@ export const useVehicleTelemetry = () => {
             }));
           } else {
             // For DELETE or other events, debounce full refetch
-            if (!throttleTimer) {
-              throttleTimer = setTimeout(() => {
+            clearTimeout(throttleTimer);
+            throttleTimer = setTimeout(() => {
+              if (isMounted) {
                 fetchTelemetry(false); // Don't show loading for background updates
-                throttleTimer = undefined as any;
-              }, 3000);
-            } else {
-              pendingUpdate = true;
-            }
+              }
+            }, 1000);
           }
         }
       )
       .subscribe();
 
     return () => {
+      isMounted = false;
       clearTimeout(throttleTimer);
       supabase.removeChannel(channel);
     };
-  }, [organizationId]);
+  }, [organizationId, isFirstLoad]);
 
   // Helper function to check if a vehicle is online (last communication within 15 minutes)
   const isVehicleOnline = (vehicleId: string): boolean => {

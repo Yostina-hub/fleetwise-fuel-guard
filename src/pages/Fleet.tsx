@@ -106,6 +106,8 @@ const Fleet = () => {
   const [ownershipFilter, setOwnershipFilter] = useState("all");
   const [driverFilter, setDriverFilter] = useState("all");
   const [viewMode, setViewMode] = useState<"grid" | "table">("table");
+  const [sortField, setSortField] = useState<string>("created_at");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   
   // Selection state for bulk actions
@@ -135,6 +137,8 @@ const Fleet = () => {
     vehicleTypeFilter,
     fuelTypeFilter,
     ownershipFilter,
+    sortField,
+    sortDirection,
   });
 
   // Get vehicle IDs for telemetry and service date queries
@@ -147,7 +151,7 @@ const Fleet = () => {
   const { nextServiceMap } = useNextServiceDate(vehicleIds);
 
   // Fleet-wide stats (not just current page)
-  const { stats: fleetStats, loading: statsLoading } = useFleetStats({
+  const { stats: fleetStats, loading: statsLoading, error: statsError } = useFleetStats({
     statusFilter,
     vehicleTypeFilter,
     fuelTypeFilter,
@@ -357,6 +361,12 @@ const Fleet = () => {
                 </Card>
               ))}
             </>
+          ) : statsError ? (
+            <Card className="col-span-full border-destructive/50">
+              <CardContent className="pt-4 pb-3">
+                <p className="text-sm text-destructive">Failed to load fleet stats. Please try again.</p>
+              </CardContent>
+            </Card>
           ) : (
             <>
               {[
@@ -664,6 +674,12 @@ const Fleet = () => {
                 onAssignDevice={handleAssignDevice}
                 selectedIds={selectedIds}
                 onSelectionChange={setSelectedIds}
+                sortField={sortField as any}
+                sortDirection={sortDirection}
+                onSortChange={(field, direction) => {
+                  setSortField(field);
+                  setSortDirection(direction);
+                }}
               />
             )}
 
