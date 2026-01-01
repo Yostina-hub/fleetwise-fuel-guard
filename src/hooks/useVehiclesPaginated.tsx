@@ -34,6 +34,8 @@ interface UseVehiclesPaginatedOptions {
   vehicleTypeFilter?: string;
   fuelTypeFilter?: string;
   ownershipFilter?: string;
+  sortField?: string;
+  sortDirection?: 'asc' | 'desc';
 }
 
 interface UseVehiclesPaginatedReturn {
@@ -58,7 +60,9 @@ export const useVehiclesPaginated = (
     statusFilter = "all",
     vehicleTypeFilter = "all",
     fuelTypeFilter = "all",
-    ownershipFilter = "all"
+    ownershipFilter = "all",
+    sortField = "created_at",
+    sortDirection = "desc"
   } = options;
   const { organizationId } = useOrganization();
   
@@ -71,41 +75,6 @@ export const useVehiclesPaginated = (
   const [currentPage, setCurrentPage] = useState(1);
 
   const totalPages = Math.ceil(totalCount / pageSize);
-
-  const fetchCount = useCallback(async () => {
-    if (!organizationId) return 0;
-
-    let query = supabase
-      .from("vehicles")
-      .select("id", { count: "exact", head: true })
-      .eq("organization_id", organizationId);
-
-    if (statusFilter !== "all") {
-      query = query.eq("status", statusFilter);
-    }
-
-    if (vehicleTypeFilter !== "all") {
-      query = query.eq("vehicle_type", vehicleTypeFilter);
-    }
-
-    if (fuelTypeFilter !== "all") {
-      query = query.eq("fuel_type", fuelTypeFilter);
-    }
-
-    if (ownershipFilter !== "all") {
-      query = query.eq("ownership_type", ownershipFilter);
-    }
-
-    if (searchQuery) {
-      query = query.or(
-        `plate_number.ilike.%${searchQuery}%,make.ilike.%${searchQuery}%,model.ilike.%${searchQuery}%,vin.ilike.%${searchQuery}%`
-      );
-    }
-
-    const { count, error } = await query;
-    if (error) throw error;
-    return count || 0;
-  }, [organizationId, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, searchQuery]);
 
   const loadPage = useCallback(async (page: number) => {
     if (!organizationId) {
@@ -122,19 +91,15 @@ export const useVehiclesPaginated = (
       }
       setError(null);
 
-      // Get total count
-      const count = await fetchCount();
-      setTotalCount(count);
-
       // Calculate offset
       const offset = (page - 1) * pageSize;
 
-      // Build query with pagination
+      // Build query with pagination - get count in same query
       let query = supabase
         .from("vehicles")
-        .select("*")
+        .select("*", { count: "exact" })
         .eq("organization_id", organizationId)
-        .order("created_at", { ascending: false })
+        .order(sortField, { ascending: sortDirection === "asc" })
         .range(offset, offset + pageSize - 1);
 
       if (statusFilter !== "all") {
@@ -159,13 +124,15 @@ export const useVehiclesPaginated = (
         );
       }
 
-      const { data, error: queryError } = await query;
+      const { data, count, error: queryError } = await query;
 
       if (queryError) throw queryError;
 
+      const totalRecords = count || 0;
+      setTotalCount(totalRecords);
       setVehicles((data as Vehicle[]) || []);
       setCurrentPage(page);
-      setHasMore(offset + pageSize < count);
+      setHasMore(offset + pageSize < totalRecords);
     } catch (err: any) {
       console.error("Error fetching vehicles:", err);
       setError(err.message);
@@ -173,7 +140,7 @@ export const useVehiclesPaginated = (
       setLoading(false);
       setIsFirstLoad(false);
     }
-  }, [organizationId, pageSize, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, searchQuery, fetchCount, isFirstLoad]);
+  }, [organizationId, pageSize, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, searchQuery, sortField, sortDirection, isFirstLoad]);
 
   const loadMore = useCallback(async () => {
     if (!hasMore || loading) return;
@@ -188,7 +155,7 @@ export const useVehiclesPaginated = (
         .from("vehicles")
         .select("*")
         .eq("organization_id", organizationId)
-        .order("created_at", { ascending: false })
+        .order(sortField, { ascending: sortDirection === "asc" })
         .range(offset, offset + pageSize - 1);
 
       if (statusFilter !== "all") {
@@ -226,17 +193,17 @@ export const useVehiclesPaginated = (
     } finally {
       setLoading(false);
     }
-  }, [organizationId, hasMore, loading, currentPage, pageSize, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, searchQuery, totalCount]);
+  }, [organizationId, hasMore, loading, currentPage, pageSize, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, searchQuery, sortField, sortDirection, totalCount]);
 
   const refetch = useCallback(async () => {
     await loadPage(1);
   }, [loadPage]);
 
-  // Initial load and reload on filter changes
+  // Initial load and reload on filter/sort changes
   useEffect(() => {
     loadPage(1);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organizationId, searchQuery, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter]);
+  }, [organizationId, searchQuery, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, sortField, sortDirection]);
 
   // Subscribe to realtime changes with throttling
   useEffect(() => {
@@ -259,7 +226,7 @@ export const useVehiclesPaginated = (
           clearTimeout(debounceTimer);
           debounceTimer = setTimeout(() => {
             refetch();
-          }, 2000); // Wait 2 seconds before refetching
+          }, 500); // 500ms debounce for responsive updates
         }
       )
       .subscribe();
