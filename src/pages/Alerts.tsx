@@ -2,6 +2,8 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SOSAlertPanel } from "@/components/alerts/SOSAlertPanel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -338,6 +340,9 @@ const Alerts = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* SOS Alert Panel */}
+        <SOSAlertPanel />
 
         {/* Filters */}
         <Card className="glass-strong border">

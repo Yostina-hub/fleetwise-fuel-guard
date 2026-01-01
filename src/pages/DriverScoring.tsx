@@ -1,7 +1,9 @@
 import Layout from "@/components/Layout";
 import { DriverScoringTab } from "@/components/fleet/DriverScoringTab";
+import { AllDriversCoachingTab } from "@/components/fleet/AllDriversCoachingTab";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Users } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, Users, TrendingUp, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const DriverScoring = () => {
@@ -31,7 +33,26 @@ const DriverScoring = () => {
           </Button>
         </div>
         
-        <DriverScoringTab />
+        <Tabs defaultValue="scoring" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="scoring" className="gap-2">
+              <TrendingUp className="w-4 h-4" />
+              Scoring
+            </TabsTrigger>
+            <TabsTrigger value="coaching" className="gap-2">
+              <MessageSquare className="w-4 h-4" />
+              Coaching
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="scoring">
+            <DriverScoringTab />
+          </TabsContent>
+          
+          <TabsContent value="coaching">
+            <AllDriversCoachingTab />
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );
