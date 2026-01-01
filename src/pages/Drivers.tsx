@@ -76,8 +76,10 @@ const Drivers = () => {
   const PAGE_SIZE = 10;
   const { 
     drivers, 
-    loading, 
-    totalCount, 
+    loading,
+    initialLoading,
+    totalCount,
+    statusCounts,
     currentPage, 
     totalPages, 
     loadPage,
@@ -155,7 +157,7 @@ const Drivers = () => {
     toast({ title: `Exported ${drivers.length} drivers` });
   };
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <Layout>
         <div className="p-8 flex items-center justify-center min-h-[400px]">
@@ -168,9 +170,9 @@ const Drivers = () => {
     );
   }
 
-  const activeDrivers = drivers.filter(d => d.status === "active").length;
-  const inactiveDrivers = drivers.filter(d => d.status === "inactive").length;
-  const suspendedDrivers = drivers.filter(d => d.status === "suspended").length;
+  const activeDrivers = statusCounts.active;
+  const inactiveDrivers = statusCounts.inactive;
+  const suspendedDrivers = statusCounts.suspended;
 
   return (
     <Layout>

@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
 import type { Driver } from "./useDrivers";
@@ -9,12 +9,20 @@ interface UseDriversPaginatedOptions {
   statusFilter?: string;
 }
 
+interface StatusCounts {
+  active: number;
+  inactive: number;
+  suspended: number;
+}
+
 interface UseDriversPaginatedReturn {
   drivers: Driver[];
   loading: boolean;
+  initialLoading: boolean;
   error: string | null;
   hasMore: boolean;
   totalCount: number;
+  statusCounts: StatusCounts;
   currentPage: number;
   totalPages: number;
   loadPage: (page: number) => Promise<void>;
@@ -30,12 +38,45 @@ export const useDriversPaginated = (
   
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
+  const [statusCounts, setStatusCounts] = useState<StatusCounts>({ active: 0, inactive: 0, suspended: 0 });
   const [currentPage, setCurrentPage] = useState(1);
+  
+  const isFirstLoad = useRef(true);
 
   const totalPages = useMemo(() => Math.ceil(totalCount / pageSize), [totalCount, pageSize]);
+
+  const fetchStatusCounts = useCallback(async () => {
+    if (!organizationId) return { active: 0, inactive: 0, suspended: 0 };
+    
+    // Fetch counts for each status in parallel
+    const [activeResult, inactiveResult, suspendedResult] = await Promise.all([
+      supabase
+        .from("drivers")
+        .select("*", { count: "exact", head: true })
+        .eq("organization_id", organizationId)
+        .eq("status", "active"),
+      supabase
+        .from("drivers")
+        .select("*", { count: "exact", head: true })
+        .eq("organization_id", organizationId)
+        .eq("status", "inactive"),
+      supabase
+        .from("drivers")
+        .select("*", { count: "exact", head: true })
+        .eq("organization_id", organizationId)
+        .eq("status", "suspended"),
+    ]);
+    
+    return {
+      active: activeResult.count || 0,
+      inactive: inactiveResult.count || 0,
+      suspended: suspendedResult.count || 0,
+    };
+  }, [organizationId]);
 
   const fetchCount = useCallback(async () => {
     if (!organizationId) return 0;
@@ -64,50 +105,62 @@ export const useDriversPaginated = (
     if (!organizationId) {
       setDrivers([]);
       setLoading(false);
+      setInitialLoading(false);
       return;
     }
 
     try {
+      if (isFirstLoad.current) {
+        setInitialLoading(true);
+      }
       setLoading(true);
       setError(null);
 
-      const count = await fetchCount();
+      // Fetch count, status counts, and data in parallel
+      const [count, counts, dataResult] = await Promise.all([
+        fetchCount(),
+        fetchStatusCounts(),
+        (async () => {
+          const from = (page - 1) * pageSize;
+          const to = from + pageSize - 1;
+
+          let query = supabase
+            .from("drivers")
+            .select("*")
+            .eq("organization_id", organizationId)
+            .order("last_name", { ascending: true })
+            .range(from, to);
+
+          if (statusFilter && statusFilter !== "all") {
+            query = query.eq("status", statusFilter);
+          }
+
+          if (searchQuery) {
+            query = query.or(
+              `first_name.ilike.%${searchQuery}%,last_name.ilike.%${searchQuery}%,license_number.ilike.%${searchQuery}%,employee_id.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`
+            );
+          }
+
+          return query;
+        })(),
+      ]);
+
+      if (dataResult.error) throw dataResult.error;
+
       setTotalCount(count);
-
-      const from = (page - 1) * pageSize;
-      const to = from + pageSize - 1;
-
-      let query = supabase
-        .from("drivers")
-        .select("*")
-        .eq("organization_id", organizationId)
-        .order("last_name", { ascending: true })
-        .range(from, to);
-
-      if (statusFilter && statusFilter !== "all") {
-        query = query.eq("status", statusFilter);
-      }
-
-      if (searchQuery) {
-        query = query.or(
-          `first_name.ilike.%${searchQuery}%,last_name.ilike.%${searchQuery}%,license_number.ilike.%${searchQuery}%,employee_id.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`
-        );
-      }
-
-      const { data, error: fetchError } = await query;
-
-      if (fetchError) throw fetchError;
-
-      setDrivers((data as Driver[]) || []);
+      setStatusCounts(counts);
+      setDrivers((dataResult.data as Driver[]) || []);
       setCurrentPage(page);
-      setHasMore(from + pageSize < count);
+      setHasMore((page - 1) * pageSize + pageSize < count);
+      isFirstLoad.current = false;
     } catch (err: any) {
       console.error("Error fetching drivers:", err);
       setError(err.message);
     } finally {
       setLoading(false);
+      setInitialLoading(false);
     }
-  }, [organizationId, pageSize, searchQuery, statusFilter, fetchCount]);
+  }, [organizationId, pageSize, searchQuery, statusFilter, fetchCount, fetchStatusCounts]);
 
   const loadMore = useCallback(async () => {
     if (!hasMore || loading || !organizationId) return;
@@ -151,12 +204,15 @@ export const useDriversPaginated = (
   }, [organizationId, currentPage, pageSize, hasMore, loading, searchQuery, statusFilter, totalCount]);
 
   const refetch = useCallback(() => {
-    loadPage(1);
-  }, [loadPage]);
+    isFirstLoad.current = false; // Don't show full loader on refetch
+    loadPage(currentPage);
+  }, [loadPage, currentPage]);
 
+  // Reset to page 1 when filters change
   useEffect(() => {
+    isFirstLoad.current = true;
     loadPage(1);
-  }, [organizationId, searchQuery, statusFilter]);
+  }, [organizationId, searchQuery, statusFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Real-time subscription
   useEffect(() => {
@@ -176,7 +232,10 @@ export const useDriversPaginated = (
         },
         () => {
           clearTimeout(debounceTimer);
-          debounceTimer = setTimeout(refetch, 500);
+          debounceTimer = setTimeout(() => {
+            isFirstLoad.current = false;
+            loadPage(currentPage);
+          }, 500);
         }
       )
       .subscribe();
@@ -185,14 +244,16 @@ export const useDriversPaginated = (
       clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
-  }, [organizationId, refetch]);
+  }, [organizationId, currentPage]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     drivers,
     loading,
+    initialLoading,
     error,
     hasMore,
     totalCount,
+    statusCounts,
     currentPage,
     totalPages,
     loadPage,
