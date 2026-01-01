@@ -22,12 +22,18 @@ import {
   Trash2, 
   UserPlus,
   Power,
+  Radio,
   FileText,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  User
+  User,
+  Gauge,
+  Clock,
+  Wifi,
+  WifiOff
 } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 
 interface VehicleItem {
   id: string;
@@ -44,11 +50,13 @@ interface VehicleItem {
   fuelType?: string;
   assignedDriver?: string;
   speed?: number;
+  latitude?: number | null;
+  longitude?: number | null;
   lastSeen?: string | null;
   deviceConnected?: boolean;
 }
 
-type SortField = 'plate' | 'make' | 'status' | 'fuel' | 'odometer';
+type SortField = 'plate' | 'make' | 'status' | 'fuel' | 'odometer' | 'speed';
 type SortDirection = 'asc' | 'desc';
 
 interface VehicleTableViewProps {
@@ -59,6 +67,8 @@ interface VehicleTableViewProps {
   onAssignDriver?: (vehicle: VehicleItem) => void;
   onFuelHistory?: (vehicle: VehicleItem) => void;
   onTripHistory?: (vehicle: VehicleItem) => void;
+  onSendCommand?: (vehicle: VehicleItem) => void;
+  onAssignDevice?: (vehicle: VehicleItem) => void;
   selectedIds?: string[];
   onSelectionChange?: (ids: string[]) => void;
 }
@@ -71,6 +81,8 @@ export const VehicleTableView = ({
   onAssignDriver,
   onFuelHistory,
   onTripHistory,
+  onSendCommand,
+  onAssignDevice,
   selectedIds = [],
   onSelectionChange
 }: VehicleTableViewProps) => {
@@ -98,6 +110,15 @@ export const VehicleTableView = ({
     return sortDirection === 'asc' 
       ? <ArrowUp className="w-4 h-4 ml-1" /> 
       : <ArrowDown className="w-4 h-4 ml-1" />;
+  };
+
+  const formatLastSeen = (lastSeen: string | null) => {
+    if (!lastSeen) return "Never";
+    try {
+      return formatDistanceToNow(new Date(lastSeen), { addSuffix: true });
+    } catch {
+      return "Unknown";
+    }
   };
 
   const sortedVehicles = [...vehicles].sort((a, b) => {
@@ -180,6 +201,16 @@ export const VehicleTableView = ({
                 Status {getSortIcon('status')}
               </Button>
             </TableHead>
+            <TableHead className="w-[80px]">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 -ml-3 font-medium"
+                onClick={() => handleSort('speed')}
+              >
+                Speed {getSortIcon('speed')}
+              </Button>
+            </TableHead>
             <TableHead className="w-[120px]">
               <Button 
                 variant="ghost" 
@@ -201,6 +232,7 @@ export const VehicleTableView = ({
               </Button>
             </TableHead>
             <TableHead>Driver</TableHead>
+            <TableHead>Last Update</TableHead>
             <TableHead className="text-right w-[200px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -224,7 +256,14 @@ export const VehicleTableView = ({
               )}
               <TableCell>
                 <div className="flex flex-col">
-                  <span className="font-bold text-foreground">{vehicle.plate}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-foreground">{vehicle.plate}</span>
+                    {vehicle.deviceConnected ? (
+                      <Wifi className="w-3 h-3 text-success" />
+                    ) : (
+                      <WifiOff className="w-3 h-3 text-muted-foreground" />
+                    )}
+                  </div>
                   {vehicle.vehicleType && (
                     <Badge variant="outline" className="text-xs w-fit mt-1 capitalize">
                       {vehicle.vehicleType.replace('_', ' ')}
@@ -240,6 +279,13 @@ export const VehicleTableView = ({
               </TableCell>
               <TableCell>
                 <StatusBadge status={vehicle.status} />
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-1.5">
+                  <Gauge className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span className="font-medium">{vehicle.speed || 0}</span>
+                  <span className="text-xs text-muted-foreground">km/h</span>
+                </div>
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
@@ -264,6 +310,12 @@ export const VehicleTableView = ({
                 ) : (
                   <span className="text-sm text-muted-foreground">Unassigned</span>
                 )}
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">{formatLastSeen(vehicle.lastSeen)}</span>
+                </div>
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
@@ -307,6 +359,15 @@ export const VehicleTableView = ({
                         <UserPlus className="w-4 h-4 mr-2" />
                         Assign Driver
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onAssignDevice?.(vehicle)}>
+                        <Radio className="w-4 h-4 mr-2" />
+                        GPS Device
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onSendCommand?.(vehicle)}>
+                        <Power className="w-4 h-4 mr-2" />
+                        Send Command
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => navigate("/maintenance")}>
                         <Wrench className="w-4 h-4 mr-2" />
                         Maintenance
@@ -335,7 +396,7 @@ export const VehicleTableView = ({
           ))}
           {vehicles.length === 0 && (
             <TableRow>
-              <TableCell colSpan={onSelectionChange ? 8 : 7} className="text-center py-12">
+              <TableCell colSpan={onSelectionChange ? 10 : 9} className="text-center py-12">
                 <p className="text-muted-foreground">No vehicles found</p>
               </TableCell>
             </TableRow>

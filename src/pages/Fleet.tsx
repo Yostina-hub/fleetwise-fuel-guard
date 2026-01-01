@@ -20,6 +20,8 @@ import DeleteVehicleDialog from "@/components/fleet/DeleteVehicleDialog";
 import BulkActionsToolbar from "@/components/fleet/BulkActionsToolbar";
 import AssignDriverDialog from "@/components/fleet/AssignDriverDialog";
 import BulkImportDialog from "@/components/fleet/BulkImportDialog";
+import { SendCommandDialog } from "@/components/fleet/SendCommandDialog";
+import { GPSDeviceDialog } from "@/components/fleet/GPSDeviceDialog";
 import { VehicleVirtualGrid } from "@/components/fleet/VehicleVirtualGrid";
 import { VehicleTableView } from "@/components/fleet/VehicleTableView";
 import { useFleetExport } from "@/components/fleet/FleetExportUtils";
@@ -88,9 +90,13 @@ const Fleet = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [assignDriverDialogOpen, setAssignDriverDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [commandDialogOpen, setCommandDialogOpen] = useState(false);
+  const [deviceDialogOpen, setDeviceDialogOpen] = useState(false);
   const [vehicleToEdit, setVehicleToEdit] = useState<any>(null);
   const [vehicleToDelete, setVehicleToDelete] = useState<any>(null);
   const [vehicleToAssign, setVehicleToAssign] = useState<any>(null);
+  const [vehicleForCommand, setVehicleForCommand] = useState<any>(null);
+  const [vehicleForDevice, setVehicleForDevice] = useState<any>(null);
   
   const [searchInput, setSearchInput] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -257,6 +263,16 @@ const Fleet = () => {
   const handleTripHistory = useCallback((vehicle: any) => {
     navigate('/route-history', { state: { vehicleId: vehicle.vehicleId } });
   }, [navigate]);
+
+  const handleSendCommand = useCallback((vehicle: any) => {
+    setVehicleForCommand(vehicle);
+    setCommandDialogOpen(true);
+  }, []);
+
+  const handleAssignDevice = useCallback((vehicle: any) => {
+    setVehicleForDevice(vehicle);
+    setDeviceDialogOpen(true);
+  }, []);
 
   const handlePageChange = useCallback((page: number) => {
     loadPage(page);
@@ -619,6 +635,8 @@ const Fleet = () => {
                 onAssignDriver={handleAssignDriver}
                 onFuelHistory={handleFuelHistory}
                 onTripHistory={handleTripHistory}
+                onSendCommand={handleSendCommand}
+                onAssignDevice={handleAssignDevice}
                 hasMore={hasMore}
                 onLoadMore={loadMore}
                 loading={loading}
@@ -635,6 +653,8 @@ const Fleet = () => {
                 onAssignDriver={handleAssignDriver}
                 onFuelHistory={handleFuelHistory}
                 onTripHistory={handleTripHistory}
+                onSendCommand={handleSendCommand}
+                onAssignDevice={handleAssignDevice}
                 selectedIds={selectedIds}
                 onSelectionChange={setSelectedIds}
               />
@@ -732,6 +752,18 @@ const Fleet = () => {
         <BulkImportDialog
           open={importDialogOpen}
           onOpenChange={setImportDialogOpen}
+        />
+
+        <SendCommandDialog
+          open={commandDialogOpen}
+          onOpenChange={setCommandDialogOpen}
+          vehicle={vehicleForCommand}
+        />
+
+        <GPSDeviceDialog
+          open={deviceDialogOpen}
+          onOpenChange={setDeviceDialogOpen}
+          vehicle={vehicleForDevice}
         />
       </div>
     </Layout>
