@@ -43,7 +43,7 @@ interface VehicleItem {
   model: string;
   year: number;
   status: 'moving' | 'idle' | 'offline';
-  fuel: number;
+  fuel: number | null;
   odometer: number;
   nextService: string | null;
   vehicleType?: string;
@@ -54,6 +54,7 @@ interface VehicleItem {
   longitude?: number | null;
   lastSeen?: string | null;
   deviceConnected?: boolean;
+  vin?: string;
 }
 
 type SortField = 'plate' | 'make' | 'status' | 'fuel' | 'odometer' | 'speed';
@@ -181,6 +182,7 @@ export const VehicleTableView = ({
                 Plate {getSortIcon('plate')}
               </Button>
             </TableHead>
+            <TableHead className="w-[120px]">VIN</TableHead>
             <TableHead>
               <Button 
                 variant="ghost" 
@@ -272,6 +274,11 @@ export const VehicleTableView = ({
                 </div>
               </TableCell>
               <TableCell>
+                <span className="text-xs font-mono text-muted-foreground">
+                  {vehicle.vin ? vehicle.vin.substring(0, 11) + '...' : '-'}
+                </span>
+              </TableCell>
+              <TableCell>
                 <div className="flex flex-col">
                   <span className="font-medium">{vehicle.make} {vehicle.model}</span>
                   <span className="text-sm text-muted-foreground">{vehicle.year}</span>
@@ -288,15 +295,19 @@ export const VehicleTableView = ({
                 </div>
               </TableCell>
               <TableCell>
-                <div className="flex items-center gap-2">
-                  <div className="w-16 bg-muted rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full ${getFuelColor(vehicle.fuel)}`}
-                      style={{ width: `${vehicle.fuel}%` }}
-                    />
+                {vehicle.fuel !== null ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-16 bg-muted rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full ${getFuelColor(vehicle.fuel)}`}
+                        style={{ width: `${vehicle.fuel}%` }}
+                      />
+                    </div>
+                    <span className="text-sm font-medium w-10">{vehicle.fuel}%</span>
                   </div>
-                  <span className="text-sm font-medium w-10">{vehicle.fuel}%</span>
-                </div>
+                ) : (
+                  <span className="text-sm text-muted-foreground">-</span>
+                )}
               </TableCell>
               <TableCell>
                 <span className="font-medium">{vehicle.odometer.toLocaleString()} km</span>
@@ -396,7 +407,7 @@ export const VehicleTableView = ({
           ))}
           {vehicles.length === 0 && (
             <TableRow>
-              <TableCell colSpan={onSelectionChange ? 10 : 9} className="text-center py-12">
+              <TableCell colSpan={onSelectionChange ? 11 : 10} className="text-center py-12">
                 <p className="text-muted-foreground">No vehicles found</p>
               </TableCell>
             </TableRow>
