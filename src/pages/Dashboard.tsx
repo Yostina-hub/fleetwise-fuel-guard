@@ -161,17 +161,16 @@ const Dashboard = () => {
     return byDay;
   }, [dbFuelEvents]);
 
-  // Trips per hour data - derived from actual trips or estimated from vehicle count
+  // Trips per hour data - use real data from useTripMetrics
   const tripsData = useMemo(() => {
+    const tripsByHour = tripMetrics.tripsByHour;
+    if (tripsByHour && tripsByHour.length > 0) {
+      return tripsByHour;
+    }
+    // Fallback to empty data if no trips
     const hours = ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'];
-    const baseMultiplier = Math.max(1, dbVehicles.length / 10);
-    // Estimated distribution pattern (morning/afternoon peaks)
-    const distribution = [0.1, 0.15, 0.9, 1.0, 0.85, 0.4];
-    return hours.map((hour, idx) => ({
-      hour,
-      trips: Math.round(baseMultiplier * 50 * distribution[idx])
-    }));
-  }, [dbVehicles.length]);
+    return hours.map(hour => ({ hour, trips: 0 }));
+  }, [tripMetrics.tripsByHour]);
 
   // Show skeleton content instead of blocking loader
   const isLoading = vehiclesLoading || alertsLoading;
@@ -575,6 +574,8 @@ const Dashboard = () => {
                 perVehicle={analytics.revenue.perVehicle}
                 total={analytics.revenue.total}
                 trend={analytics.revenue.trend}
+                trendPercentage={analytics.revenue.trendPercentage}
+                formatCurrency={formatCurrency}
               />
             </div>
 
