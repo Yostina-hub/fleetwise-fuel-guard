@@ -29,6 +29,7 @@ import RouteHistory from "./pages/RouteHistory";
 import Geofencing from "./pages/Geofencing";
 import SpeedGovernor from "./pages/SpeedGovernor";
 import FleetScheduling from "./pages/FleetScheduling";
+import Dispatch from "./pages/Dispatch";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { CommandPalette } from "./components/CommandPalette";
@@ -68,6 +69,7 @@ const App = () => {
           <Route path="/speed-governor" element={<ProtectedRoute><SpeedGovernor /></ProtectedRoute>} />
           <Route path="/work-orders" element={<ProtectedRoute><WorkOrders /></ProtectedRoute>} />
           <Route path="/fleet-scheduling" element={<ProtectedRoute><FleetScheduling /></ProtectedRoute>} />
+          <Route path="/dispatch" element={<ProtectedRoute><Dispatch /></ProtectedRoute>} />
           <Route path="/config" element={<ProtectedRoute requiredRole="super_admin"><SystemConfig /></ProtectedRoute>} />
           <Route path="/devices" element={<ProtectedRoute><DeviceIntegration /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
