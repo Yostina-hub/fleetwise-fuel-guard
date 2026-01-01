@@ -3,7 +3,6 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   createAnimatedMarkerElement, 
@@ -239,29 +238,23 @@ return () => {
         })
           .setLngLat([vehicle.lng, vehicle.lat])
           .setPopup(
-            new mapboxgl.Popup({ offset: 25, closeButton: true, closeOnClick: false }).setHTML(`
-              <div style="padding:12px; min-width:200px;">
-                <strong style="font-size:14px;">${vehicle.plate}</strong><br/>
-                <div style="margin-top:8px; padding-top:8px; border-top:1px solid #eee;">
-                  <small style="display:block; margin:4px 0;">⚡ Speed: ${vehicle.speed} km/h</small>
-                  <small style="display:block; margin:4px 0;">⛽ Fuel: ${vehicle.fuel}%</small>
-                  <small style="display:block; margin:4px 0;">📍 Status: ${vehicle.status}</small>
-                  <small style="display:block; margin:4px 0; color: ${
-                    !vehicle.gps_signal_strength || vehicle.gps_signal_strength === 0 
-                      ? '#ef4444' 
-                      : vehicle.gps_signal_strength > 50 
-                        ? '#22c55e' 
-                        : '#f59e0b'
-                  };">
-                    📡 GPS: ${vehicle.gps_signal_strength || 0}% (${vehicle.gps_satellites_count || 0} satellites)
-                  </small>
+            new mapboxgl.Popup({ offset: 25, closeButton: false, closeOnClick: true, className: 'vehicle-popup' }).setHTML(`
+              <div class="vehicle-popup-content">
+                <div class="popup-header">
+                  <span class="popup-plate">${vehicle.plate}</span>
+                  <span class="popup-status popup-status-${vehicle.status}">${vehicle.status}</span>
                 </div>
-                ${!vehicle.gps_signal_strength || vehicle.gps_signal_strength === 0 
-                  ? '<div style="margin-top:8px;padding:6px;background:#fef2f2;border-radius:4px;color:#ef4444;text-align:center;font-size:11px;">⚠️ No GPS Signal - Location may be outdated</div>' 
-                  : ''}
-                <div style="margin-top:8px; padding-top:8px; border-top:1px solid #eee;">
-                  <small style="color:#666; font-size:11px;">${address}</small>
+                <div class="popup-stats">
+                  <div class="popup-stat">
+                    <span class="popup-stat-value">${vehicle.speed}</span>
+                    <span class="popup-stat-label">km/h</span>
+                  </div>
+                  <div class="popup-stat">
+                    <span class="popup-stat-value">${vehicle.fuel}</span>
+                    <span class="popup-stat-label">% fuel</span>
+                  </div>
                 </div>
+                <div class="popup-address">${address}</div>
               </div>
             `)
           )
@@ -307,33 +300,44 @@ return () => {
 
   if (tokenError) {
     return (
-      <div className="absolute inset-0 flex items-center justify-center p-6">
-        <div className="max-w-md w-full glass-strong border rounded-xl p-6 text-center space-y-4">
-          <h2 className="text-2xl font-bold gradient-text">
-            {tokenError === 'webgl' ? 'WebGL not supported' : tokenError === 'invalid' ? 'Invalid Mapbox token' : 'Map requires a Mapbox token'}
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {tokenError === 'webgl'
-              ? 'Your browser/device does not support WebGL required by the 3D map. Try a different browser or enable hardware acceleration.'
-              : tokenError === 'invalid'
-              ? 'The Mapbox token is invalid or expired. Update the token to render the map.'
-              : 'Add your Mapbox public token to render the live map.'}
-          </p>
+      <div className="h-full w-full flex items-center justify-center bg-muted/50">
+        <div className="max-w-sm w-full bg-background border rounded-xl p-6 text-center space-y-4 shadow-lg">
+          <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
+            <span className="text-2xl">🗺️</span>
+          </div>
+          <div>
+            <h3 className="font-semibold text-lg">
+              {tokenError === 'webgl' ? 'WebGL Required' : 'Map Token Needed'}
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              {tokenError === 'webgl'
+                ? 'Enable hardware acceleration in your browser settings.'
+                : 'Add your Mapbox public token to display the map.'}
+            </p>
+          </div>
           {tokenError !== 'webgl' && (
-            <div className="space-y-2 text-left">
-              <label className="text-sm">Enter token (starts with pk.)</label>
-              <Input placeholder="pk.XXXX..." value={tempToken} onChange={(e) => setTempToken(e.target.value)} />
-              <Button className="w-full" onClick={() => { if (tempToken) { localStorage.setItem('mapbox_token', tempToken); window.location.reload(); } }}>
-                Save token and reload
+            <div className="space-y-2">
+              <Input 
+                placeholder="pk.eyJ1..." 
+                value={tempToken} 
+                onChange={(e) => setTempToken(e.target.value)}
+                className="text-sm"
+              />
+              <Button 
+                className="w-full" 
+                size="sm"
+                disabled={!tempToken.startsWith('pk.')}
+                onClick={() => { 
+                  if (tempToken) { 
+                    localStorage.setItem('mapbox_token', tempToken); 
+                    window.location.reload(); 
+                  } 
+                }}
+              >
+                Save & Reload
               </Button>
             </div>
           )}
-          <div className="text-xs text-muted-foreground">
-            Or configure in <Link className="text-primary underline" to="/settings#api">Settings → API Keys</Link>
-          </div>
-          <div className="text-xs text-muted-foreground">
-            Get a token at mapbox.com (Tokens)
-          </div>
         </div>
       </div>
     );
