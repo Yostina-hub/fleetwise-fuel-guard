@@ -68,6 +68,13 @@ const FuelMonitoring = () => {
     };
   }, [dbFuelEvents]);
 
+  const contextValue = useMemo(() => ({
+    vehicles,
+    drivers,
+    getVehiclePlate,
+    getDriverName
+  }), [vehicles, drivers]);
+
   if (loading) {
     return (
       <Layout>
@@ -80,13 +87,6 @@ const FuelMonitoring = () => {
       </Layout>
     );
   }
-
-  const contextValue = useMemo(() => ({
-    vehicles,
-    drivers,
-    getVehiclePlate,
-    getDriverName
-  }), [vehicles, drivers]);
 
   return (
     <FuelPageContext.Provider value={contextValue}>
