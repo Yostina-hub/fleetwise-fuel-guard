@@ -241,7 +241,7 @@ const Drivers = () => {
                 </div>
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Total Drivers</div>
-                  <div className="text-3xl font-bold">{drivers.length}</div>
+                  <div className="text-3xl font-bold">{totalCount}</div>
                 </div>
               </div>
             </CardContent>
