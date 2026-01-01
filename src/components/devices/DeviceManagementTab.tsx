@@ -1,15 +1,18 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useDevices } from "@/hooks/useDevices";
 import { useVehicles } from "@/hooks/useVehicles";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Plus, 
   Edit, 
@@ -17,18 +20,30 @@ import {
   Activity, 
   Signal, 
   Smartphone,
-  CircleDot,
   WifiOff,
-  Wifi
+  Wifi,
+  Download,
+  ChevronLeft,
+  ChevronRight,
+  Filter
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+
+const ITEMS_PER_PAGE = 10;
 
 export const DeviceManagementTab = () => {
   const { devices, isLoading, createDevice, updateDevice, deleteDevice, testHeartbeat } = useDevices();
   const { vehicles } = useVehicles();
+  const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDevice, setEditingDevice] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deviceToDelete, setDeviceToDelete] = useState<any>(null);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     vehicle_id: "",
@@ -44,7 +59,35 @@ export const DeviceManagementTab = () => {
     notes: "",
   });
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    
+    if (!formData.imei.trim()) {
+      errors.imei = "IMEI is required";
+    } else if (!/^\d{15}$/.test(formData.imei.trim())) {
+      errors.imei = "IMEI must be exactly 15 digits";
+    }
+    
+    if (!formData.tracker_model.trim()) {
+      errors.tracker_model = "Tracker model is required";
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = () => {
+    if (!validateForm()) {
+      toast({
+        title: "Validation Error",
+        description: "Please fix the errors in the form",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (editingDevice) {
       updateDevice.mutate({ id: editingDevice.id, ...formData });
     } else {
@@ -67,6 +110,7 @@ export const DeviceManagementTab = () => {
       install_date: "",
       notes: "",
     });
+    setFormErrors({});
     setEditingDevice(null);
     setIsDialogOpen(false);
   };
@@ -86,15 +130,91 @@ export const DeviceManagementTab = () => {
       install_date: device.install_date || "",
       notes: device.notes || "",
     });
+    setFormErrors({});
     setIsDialogOpen(true);
+  };
+
+  const handleDeleteClick = (device: any) => {
+    setDeviceToDelete(device);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (deviceToDelete) {
+      deleteDevice.mutate(deviceToDelete.id);
+      setDeleteDialogOpen(false);
+      setDeviceToDelete(null);
+    }
+  };
+
+  const handleBulkDelete = () => {
+    selectedDevices.forEach(id => deleteDevice.mutate(id));
+    setSelectedDevices([]);
+    setBulkDeleteDialogOpen(false);
+    toast({
+      title: "Devices Deleted",
+      description: `${selectedDevices.length} devices have been deleted`,
+    });
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedDevices(paginatedDevices.map(d => d.id));
+    } else {
+      setSelectedDevices([]);
+    }
+  };
+
+  const handleSelectDevice = (deviceId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedDevices(prev => [...prev, deviceId]);
+    } else {
+      setSelectedDevices(prev => prev.filter(id => id !== deviceId));
+    }
+  };
+
+  const exportToCSV = () => {
+    if (!filteredDevices || filteredDevices.length === 0) {
+      toast({
+        title: "No Data",
+        description: "No devices to export",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const headers = ["Status", "Vehicle", "IMEI", "Tracker Model", "SIM Card", "Last Heartbeat", "Connection"];
+    const rows = filteredDevices.map(device => [
+      device.status,
+      device.vehicles?.plate_number || "Unassigned",
+      device.imei,
+      device.tracker_model,
+      device.sim_msisdn || "No SIM",
+      device.last_heartbeat ? new Date(device.last_heartbeat).toISOString() : "Never",
+      isDeviceOnline(device.last_heartbeat) ? "Online" : "Offline"
+    ]);
+
+    const csvContent = [headers.join(","), ...rows.map(row => row.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `devices-export-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Export Complete",
+      description: `Exported ${filteredDevices.length} devices to CSV`,
+    });
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "active": return "bg-green-100 text-green-800 border-green-200";
-      case "inactive": return "bg-gray-100 text-gray-800 border-gray-200";
-      case "maintenance": return "bg-orange-100 text-orange-800 border-orange-200";
-      default: return "bg-gray-100 text-gray-800 border-gray-200";
+      case "active": return "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 dark:text-emerald-400";
+      case "inactive": return "bg-muted text-muted-foreground border-border";
+      case "maintenance": return "bg-amber-500/10 text-amber-700 border-amber-500/20 dark:text-amber-400";
+      default: return "bg-muted text-muted-foreground border-border";
     }
   };
 
@@ -106,16 +226,37 @@ export const DeviceManagementTab = () => {
     return minutesSince <= 5;
   };
 
-  const filteredDevices = devices?.filter(device => 
-    searchQuery === "" ||
-    device.imei?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    device.sim_msisdn?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    device.tracker_model?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    device.vehicles?.plate_number?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredDevices = useMemo(() => {
+    return devices?.filter(device => {
+      const matchesSearch = searchQuery === "" ||
+        device.imei?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        device.sim_msisdn?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        device.tracker_model?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        device.vehicles?.plate_number?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesStatus = statusFilter === "all" || device.status === statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    }) || [];
+  }, [devices, searchQuery, statusFilter]);
+
+  const totalPages = Math.ceil(filteredDevices.length / ITEMS_PER_PAGE);
+  const paginatedDevices = filteredDevices.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
   );
 
+  // Reset to first page when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
+
+  const onlineCount = devices?.filter(d => isDeviceOnline(d.last_heartbeat)).length || 0;
+  const activeCount = devices?.filter(d => d.status === 'active').length || 0;
+  const maintenanceCount = devices?.filter(d => d.status === 'maintenance').length || 0;
+
   if (isLoading) {
-    return <div className="text-center py-8">Loading devices...</div>;
+    return <div className="text-center py-8 text-muted-foreground">Loading devices...</div>;
   }
 
   return (
@@ -127,165 +268,178 @@ export const DeviceManagementTab = () => {
             Manage GPS trackers, SIM cards, and device configurations
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) resetForm();
-        }}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Device
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingDevice ? "Edit" : "Add"} Device</DialogTitle>
-              <DialogDescription>
-                Configure GPS tracker device with SIM card and connection details
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="grid grid-cols-2 gap-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="vehicle">Vehicle</Label>
-                <Select
-                  value={formData.vehicle_id}
-                  onValueChange={(value) => setFormData({ ...formData, vehicle_id: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select vehicle" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {vehicles?.map((vehicle) => (
-                      <SelectItem key={vehicle.id} value={vehicle.id}>
-                        {vehicle.plate_number} - {vehicle.make} {vehicle.model}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value: any) => setFormData({ ...formData, status: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                    <SelectItem value="maintenance">Maintenance</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="imei">IMEI Number *</Label>
-                <Input
-                  id="imei"
-                  value={formData.imei}
-                  onChange={(e) => setFormData({ ...formData, imei: e.target.value })}
-                  placeholder="355442200988256"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="tracker_model">Tracker Model *</Label>
-                <Input
-                  id="tracker_model"
-                  value={formData.tracker_model}
-                  onChange={(e) => setFormData({ ...formData, tracker_model: e.target.value })}
-                  placeholder="YTWL CA100F Speed Governor"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="serial_number">Serial Number</Label>
-                <Input
-                  id="serial_number"
-                  value={formData.serial_number}
-                  onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })}
-                  placeholder="SN123456789"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="firmware_version">Firmware Version</Label>
-                <Input
-                  id="firmware_version"
-                  value={formData.firmware_version}
-                  onChange={(e) => setFormData({ ...formData, firmware_version: e.target.value })}
-                  placeholder="v2.1.5"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="sim_msisdn">SIM Card Number (MSISDN)</Label>
-                <Input
-                  id="sim_msisdn"
-                  value={formData.sim_msisdn}
-                  onChange={(e) => setFormData({ ...formData, sim_msisdn: e.target.value })}
-                  placeholder="+251980888379"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="sim_iccid">SIM ICCID</Label>
-                <Input
-                  id="sim_iccid"
-                  value={formData.sim_iccid}
-                  onChange={(e) => setFormData({ ...formData, sim_iccid: e.target.value })}
-                  placeholder="89251234567890123456"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="apn">APN</Label>
-                <Input
-                  id="apn"
-                  value={formData.apn}
-                  onChange={(e) => setFormData({ ...formData, apn: e.target.value })}
-                  placeholder="internet.ethionet.et"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="install_date">Install Date</Label>
-                <Input
-                  id="install_date"
-                  type="date"
-                  value={formData.install_date}
-                  onChange={(e) => setFormData({ ...formData, install_date: e.target.value })}
-                />
-              </div>
-
-              <div className="col-span-2 space-y-2">
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="Additional device notes..."
-                  rows={3}
-                />
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={resetForm}>
-                Cancel
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={exportToCSV}>
+            <Download className="mr-2 h-4 w-4" />
+            Export
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) resetForm();
+          }}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Device
               </Button>
-              <Button onClick={handleSubmit}>
-                {editingDevice ? "Update" : "Create"} Device
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{editingDevice ? "Edit" : "Add"} Device</DialogTitle>
+                <DialogDescription>
+                  Configure GPS tracker device with SIM card and connection details
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="grid grid-cols-2 gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="vehicle">Vehicle</Label>
+                  <Select
+                    value={formData.vehicle_id}
+                    onValueChange={(value) => setFormData({ ...formData, vehicle_id: value === "none" ? "" : value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select vehicle" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No vehicle assigned</SelectItem>
+                      {vehicles?.map((vehicle) => (
+                        <SelectItem key={vehicle.id} value={vehicle.id}>
+                          {vehicle.plate_number} - {vehicle.make} {vehicle.model}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value: any) => setFormData({ ...formData, status: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                      <SelectItem value="maintenance">Maintenance</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="imei">IMEI Number *</Label>
+                  <Input
+                    id="imei"
+                    value={formData.imei}
+                    onChange={(e) => setFormData({ ...formData, imei: e.target.value })}
+                    placeholder="355442200988256"
+                    className={formErrors.imei ? "border-destructive" : ""}
+                  />
+                  {formErrors.imei && (
+                    <p className="text-xs text-destructive">{formErrors.imei}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tracker_model">Tracker Model *</Label>
+                  <Input
+                    id="tracker_model"
+                    value={formData.tracker_model}
+                    onChange={(e) => setFormData({ ...formData, tracker_model: e.target.value })}
+                    placeholder="YTWL CA100F Speed Governor"
+                    className={formErrors.tracker_model ? "border-destructive" : ""}
+                  />
+                  {formErrors.tracker_model && (
+                    <p className="text-xs text-destructive">{formErrors.tracker_model}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="serial_number">Serial Number</Label>
+                  <Input
+                    id="serial_number"
+                    value={formData.serial_number}
+                    onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })}
+                    placeholder="SN123456789"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="firmware_version">Firmware Version</Label>
+                  <Input
+                    id="firmware_version"
+                    value={formData.firmware_version}
+                    onChange={(e) => setFormData({ ...formData, firmware_version: e.target.value })}
+                    placeholder="v2.1.5"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="sim_msisdn">SIM Card Number (MSISDN)</Label>
+                  <Input
+                    id="sim_msisdn"
+                    value={formData.sim_msisdn}
+                    onChange={(e) => setFormData({ ...formData, sim_msisdn: e.target.value })}
+                    placeholder="+251980888379"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="sim_iccid">SIM ICCID</Label>
+                  <Input
+                    id="sim_iccid"
+                    value={formData.sim_iccid}
+                    onChange={(e) => setFormData({ ...formData, sim_iccid: e.target.value })}
+                    placeholder="89251234567890123456"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="apn">APN</Label>
+                  <Input
+                    id="apn"
+                    value={formData.apn}
+                    onChange={(e) => setFormData({ ...formData, apn: e.target.value })}
+                    placeholder="internet.ethionet.et"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="install_date">Install Date</Label>
+                  <Input
+                    id="install_date"
+                    type="date"
+                    value={formData.install_date}
+                    onChange={(e) => setFormData({ ...formData, install_date: e.target.value })}
+                  />
+                </div>
+
+                <div className="col-span-2 space-y-2">
+                  <Label htmlFor="notes">Notes</Label>
+                  <Textarea
+                    id="notes"
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    placeholder="Additional device notes..."
+                    rows={3}
+                  />
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={resetForm}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSubmit}>
+                  {editingDevice ? "Update" : "Create"} Device
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Statistics Cards */}
@@ -308,8 +462,8 @@ export const DeviceManagementTab = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {devices?.filter(d => isDeviceOnline(d.last_heartbeat)).length || 0}
+            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+              {onlineCount}
             </div>
           </CardContent>
         </Card>
@@ -322,7 +476,7 @@ export const DeviceManagementTab = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {devices?.filter(d => d.status === 'active').length || 0}
+              {activeCount}
             </div>
           </CardContent>
         </Card>
@@ -334,33 +488,83 @@ export const DeviceManagementTab = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
-              {devices?.filter(d => d.status === 'maintenance').length || 0}
+            <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+              {maintenanceCount}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Search */}
-      <div className="flex items-center gap-2">
+      {/* Bulk Actions */}
+      {selectedDevices.length > 0 && (
+        <Card className="border-primary/50 bg-primary/5">
+          <CardContent className="py-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">
+                {selectedDevices.length} device(s) selected
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setBulkDeleteDialogOpen(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Delete Selected
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedDevices([])}
+                >
+                  Clear Selection
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Search and Filter */}
+      <div className="flex items-center gap-4">
         <Input
           placeholder="Search by IMEI, SIM, model, or vehicle..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="max-w-md"
         />
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[180px]">
+            <Filter className="h-4 w-4 mr-2" />
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+            <SelectItem value="maintenance">Maintenance</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Devices Table */}
       <Card>
         <CardHeader>
           <CardTitle>GPS Devices</CardTitle>
-          <CardDescription>All registered tracking devices</CardDescription>
+          <CardDescription>
+            Showing {paginatedDevices.length} of {filteredDevices.length} devices
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={paginatedDevices.length > 0 && selectedDevices.length === paginatedDevices.length}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Vehicle</TableHead>
                 <TableHead>IMEI</TableHead>
@@ -372,15 +576,21 @@ export const DeviceManagementTab = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredDevices?.map((device) => (
+              {paginatedDevices.map((device) => (
                 <TableRow key={device.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedDevices.includes(device.id)}
+                      onCheckedChange={(checked) => handleSelectDevice(device.id, checked as boolean)}
+                    />
+                  </TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(device.status)}>
                       {device.status}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {device.vehicles?.plate_number || "Unassigned"}
+                    {device.vehicles?.plate_number || <span className="text-muted-foreground italic">Unassigned</span>}
                   </TableCell>
                   <TableCell className="font-mono text-sm">
                     {device.imei}
@@ -389,24 +599,22 @@ export const DeviceManagementTab = () => {
                   <TableCell className="font-mono text-sm">
                     <div className="flex items-center gap-2">
                       <Smartphone className="h-4 w-4 text-muted-foreground" />
-                      {device.sim_msisdn || "No SIM"}
+                      {device.sim_msisdn || <span className="text-muted-foreground">No SIM</span>}
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
                       {device.last_heartbeat ? (
-                        <>
-                          <div className="flex items-center gap-2">
-                            {isDeviceOnline(device.last_heartbeat) ? (
-                              <Wifi className="h-4 w-4 text-green-600" />
-                            ) : (
-                              <WifiOff className="h-4 w-4 text-red-600" />
-                            )}
-                            <span className="text-xs text-muted-foreground">
-                              {formatDistanceToNow(new Date(device.last_heartbeat), { addSuffix: true })}
-                            </span>
-                          </div>
-                        </>
+                        <div className="flex items-center gap-2">
+                          {isDeviceOnline(device.last_heartbeat) ? (
+                            <Wifi className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                          ) : (
+                            <WifiOff className="h-4 w-4 text-destructive" />
+                          )}
+                          <span className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(device.last_heartbeat), { addSuffix: true })}
+                          </span>
+                        </div>
                       ) : (
                         <span className="text-xs text-muted-foreground">Never</span>
                       )}
@@ -414,7 +622,7 @@ export const DeviceManagementTab = () => {
                   </TableCell>
                   <TableCell>
                     {isDeviceOnline(device.last_heartbeat) ? (
-                      <Badge className="bg-green-100 text-green-800 border-green-200">
+                      <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 dark:text-emerald-400">
                         <Signal className="h-3 w-3 mr-1" />
                         Online
                       </Badge>
@@ -430,6 +638,7 @@ export const DeviceManagementTab = () => {
                         size="sm"
                         variant="outline"
                         onClick={() => testHeartbeat.mutate(device.id)}
+                        title="Test Heartbeat"
                       >
                         <Activity className="h-4 w-4" />
                       </Button>
@@ -437,17 +646,15 @@ export const DeviceManagementTab = () => {
                         size="sm"
                         variant="outline"
                         onClick={() => handleEdit(device)}
+                        title="Edit Device"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button
                         size="sm"
                         variant="destructive"
-                        onClick={() => {
-                          if (confirm("Are you sure you want to delete this device?")) {
-                            deleteDevice.mutate(device.id);
-                          }
-                        }}
+                        onClick={() => handleDeleteClick(device)}
+                        title="Delete Device"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -455,17 +662,88 @@ export const DeviceManagementTab = () => {
                   </TableCell>
                 </TableRow>
               ))}
-              {filteredDevices?.length === 0 && (
+              {paginatedDevices.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                    No devices found
+                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                    {filteredDevices.length === 0 && devices?.length ? 
+                      "No devices match your filters" : 
+                      "No devices found. Click 'Add Device' to add your first GPS tracker."
+                    }
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <p className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Device</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the device with IMEI{" "}
+              <span className="font-mono font-semibold">{deviceToDelete?.imei}</span>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedDevices.length} Devices</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedDevices.length} selected devices?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
