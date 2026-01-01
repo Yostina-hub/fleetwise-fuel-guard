@@ -12,6 +12,7 @@ export interface Vehicle {
   model: string;
   year: number;
   color?: string;
+  vehicle_type?: string;
   fuel_type?: string;
   tank_capacity_liters?: number;
   odometer_km?: number;
