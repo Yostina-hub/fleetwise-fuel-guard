@@ -10,7 +10,7 @@ import VehicleDetailModal from "@/components/VehicleDetailModal";
 import CreateVehicleDialog from "@/components/fleet/CreateVehicleDialog";
 import { VehicleVirtualGrid } from "@/components/fleet/VehicleVirtualGrid";
 import { VehicleGridSkeleton, StatsRowSkeleton } from "@/components/ui/skeletons";
-import { Truck, Search, Plus, Filter, Settings, ChevronLeft, ChevronRight } from "lucide-react";
+import { Truck, Search, Plus, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import { useVehiclesPaginated } from "@/hooks/useVehiclesPaginated";
 import { useDebounce } from "@/hooks/useDebounce";
 
@@ -91,19 +91,13 @@ const Fleet = () => {
               <span className="font-semibold text-foreground">{totalCount.toLocaleString()}</span> vehicles total
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" className="gap-2" onClick={() => navigate("/settings")}>
-              <Settings className="w-4 h-4" />
-              Settings
-            </Button>
-            <Button
-              className="gap-2 bg-gradient-to-r from-primary to-primary/80"
-              onClick={() => setCreateDialogOpen(true)}
-            >
-              <Plus className="w-4 h-4" />
-              Add Vehicle
-            </Button>
-          </div>
+          <Button
+            className="gap-2 bg-gradient-to-r from-primary to-primary/80"
+            onClick={() => setCreateDialogOpen(true)}
+          >
+            <Plus className="w-4 h-4" />
+            Add Vehicle
+          </Button>
         </div>
 
         {/* Fleet Overview Stats - show instantly with loading state */}
