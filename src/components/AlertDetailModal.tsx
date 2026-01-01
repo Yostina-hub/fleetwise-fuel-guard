@@ -18,27 +18,45 @@ import {
   X,
   MessageSquare,
   Bell,
+  Car,
+  Loader2,
 } from "lucide-react";
 import { useState } from "react";
+
+interface AlertData {
+  id: string;
+  severity: string;
+  alert_type: string;
+  vehiclePlate: string;
+  driverName?: string | null;
+  message: string;
+  location_name?: string;
+  formattedTime: string;
+  status: string;
+  lat?: number;
+  lng?: number;
+  resolution_notes?: string;
+}
 
 interface AlertDetailModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  alert: {
-    id: number;
-    severity: string;
-    type: string;
-    vehicle: string;
-    message: string;
-    location: string;
-    timestamp: string;
-    status: string;
-  };
+  alert: AlertData | null;
+  onAcknowledge?: (alertId: string, notes?: string) => Promise<boolean>;
+  onResolve?: (alertId: string, notes?: string) => Promise<boolean>;
+  onViewOnMap?: (alert: AlertData) => void;
 }
 
-const AlertDetailModal = ({ open, onOpenChange, alert }: AlertDetailModalProps) => {
+const AlertDetailModal = ({ 
+  open, 
+  onOpenChange, 
+  alert,
+  onAcknowledge,
+  onResolve,
+  onViewOnMap
+}: AlertDetailModalProps) => {
   const [notes, setNotes] = useState("");
-  const [acknowledging, setAcknowledging] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const getSeverityIcon = () => {
     switch (alert?.severity) {
@@ -62,16 +80,37 @@ const AlertDetailModal = ({ open, onOpenChange, alert }: AlertDetailModalProps) 
     }
   };
 
-  if (!alert || !alert.type) {
+  if (!alert) {
     return null;
   }
 
-  const handleAcknowledge = () => {
-    setAcknowledging(true);
-    setTimeout(() => {
-      setAcknowledging(false);
+  const handleAcknowledge = async () => {
+    if (!onAcknowledge) return;
+    setIsProcessing(true);
+    const success = await onAcknowledge(alert.id, notes || undefined);
+    setIsProcessing(false);
+    if (success) {
+      setNotes("");
       onOpenChange(false);
-    }, 1000);
+    }
+  };
+
+  const handleResolve = async () => {
+    if (!onResolve) return;
+    setIsProcessing(true);
+    const success = await onResolve(alert.id, notes || undefined);
+    setIsProcessing(false);
+    if (success) {
+      setNotes("");
+      onOpenChange(false);
+    }
+  };
+
+  const handleViewOnMap = () => {
+    if (onViewOnMap && alert.lat && alert.lng) {
+      onViewOnMap(alert);
+      onOpenChange(false);
+    }
   };
 
   return (
@@ -87,7 +126,7 @@ const AlertDetailModal = ({ open, onOpenChange, alert }: AlertDetailModalProps) 
               {getSeverityIcon()}
             </div>
             <div className="flex-1">
-              <DialogTitle className="text-2xl">{alert.type}</DialogTitle>
+              <DialogTitle className="text-2xl">{alert.alert_type}</DialogTitle>
               <div className="flex items-center gap-2 mt-2">
                 <Badge variant={getSeverityColor() as any}>
                   {alert.severity?.toUpperCase() || 'UNKNOWN'}
@@ -112,22 +151,45 @@ const AlertDetailModal = ({ open, onOpenChange, alert }: AlertDetailModalProps) 
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-24 text-muted-foreground">Vehicle:</div>
-                <div className="flex-1 font-medium">{alert.vehicle || 'N/A'}</div>
+                <div className="flex-1 font-medium flex items-center gap-2">
+                  <Car className="w-3 h-3" />
+                  {alert.vehiclePlate || 'N/A'}
+                </div>
               </div>
+              {alert.driverName && (
+                <div className="flex items-start gap-3">
+                  <div className="w-24 text-muted-foreground">Driver:</div>
+                  <div className="flex-1 font-medium flex items-center gap-2">
+                    <User className="w-3 h-3" />
+                    {alert.driverName}
+                  </div>
+                </div>
+              )}
               <div className="flex items-start gap-3">
                 <div className="w-24 text-muted-foreground">Location:</div>
                 <div className="flex-1 font-medium flex items-center gap-2">
                   <MapPin className="w-3 h-3" />
-                  {alert.location || 'Unknown'}
+                  {alert.location_name || 'Unknown'}
+                  {alert.lat && alert.lng && (
+                    <span className="text-xs text-muted-foreground">
+                      ({alert.lat.toFixed(4)}, {alert.lng.toFixed(4)})
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-24 text-muted-foreground">Time:</div>
                 <div className="flex-1 font-medium flex items-center gap-2">
                   <Clock className="w-3 h-3" />
-                  {alert.timestamp || 'N/A'}
+                  {alert.formattedTime || 'N/A'}
                 </div>
               </div>
+              {alert.resolution_notes && (
+                <div className="flex items-start gap-3">
+                  <div className="w-24 text-muted-foreground">Notes:</div>
+                  <div className="flex-1 font-medium">{alert.resolution_notes}</div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -168,7 +230,7 @@ const AlertDetailModal = ({ open, onOpenChange, alert }: AlertDetailModalProps) 
           <Separator />
 
           {/* Add Notes */}
-          {alert?.status === "unacknowledged" && (
+          {(alert?.status === "unacknowledged" || alert?.status === "acknowledged") && (
             <div className="space-y-3">
               <Label className="flex items-center gap-2">
                 <MessageSquare className="w-4 h-4" />
@@ -190,16 +252,42 @@ const AlertDetailModal = ({ open, onOpenChange, alert }: AlertDetailModalProps) 
                 <Button 
                   className="flex-1 gap-2" 
                   onClick={handleAcknowledge}
-                  disabled={acknowledging}
+                  disabled={isProcessing}
                 >
-                  <CheckCircle className="w-4 h-4" />
-                  {acknowledging ? "Acknowledging..." : "Acknowledge Alert"}
+                  {isProcessing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <CheckCircle className="w-4 h-4" />
+                  )}
+                  Acknowledge
                 </Button>
-                <Button variant="outline" className="flex-1 gap-2">
-                  <User className="w-4 h-4" />
-                  Assign to Team
+                <Button 
+                  variant="outline" 
+                  className="flex-1 gap-2"
+                  onClick={handleResolve}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <CheckCircle className="w-4 h-4" />
+                  )}
+                  Resolve
                 </Button>
               </>
+            ) : alert?.status === "acknowledged" ? (
+              <Button 
+                className="flex-1 gap-2" 
+                onClick={handleResolve}
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <CheckCircle className="w-4 h-4" />
+                )}
+                Mark Resolved
+              </Button>
             ) : (
               <Button 
                 variant="outline" 
@@ -210,10 +298,12 @@ const AlertDetailModal = ({ open, onOpenChange, alert }: AlertDetailModalProps) 
                 Close
               </Button>
             )}
-            <Button variant="outline" className="gap-2">
-              <MapPin className="w-4 h-4" />
-              View on Map
-            </Button>
+            {alert.lat && alert.lng && (
+              <Button variant="outline" className="gap-2" onClick={handleViewOnMap}>
+                <MapPin className="w-4 h-4" />
+                View on Map
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>
