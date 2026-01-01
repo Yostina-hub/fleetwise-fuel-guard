@@ -312,29 +312,29 @@ const Fleet = () => {
 
   return (
     <Layout>
-      <div className="p-8 space-y-6 animate-fade-in">
+      <div className="p-6 lg:p-8 space-y-6 animate-fade-in">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">
               Fleet Management
             </h1>
-            <p className="text-muted-foreground mt-1">
-              Manage all vehicles and their status •{" "}
-              <span className="font-semibold text-foreground">{totalCount.toLocaleString()}</span> vehicles total
+            <p className="text-muted-foreground text-sm mt-1">
+              {totalCount.toLocaleString()} vehicles in your fleet
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" className="gap-2" onClick={() => setImportDialogOpen(true)}>
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => setImportDialogOpen(true)}>
               <Upload className="w-4 h-4" />
-              Import
+              <span className="hidden sm:inline">Import</span>
             </Button>
-            <Button variant="outline" className="gap-2" onClick={handleExportAll}>
+            <Button variant="outline" size="sm" className="gap-2" onClick={handleExportAll}>
               <Download className="w-4 h-4" />
-              Export
+              <span className="hidden sm:inline">Export</span>
             </Button>
             <Button
-              className="gap-2 bg-gradient-to-r from-primary to-primary/80"
+              size="sm"
+              className="gap-2"
               onClick={() => setCreateDialogOpen(true)}
             >
               <Plus className="w-4 h-4" />
@@ -344,14 +344,14 @@ const Fleet = () => {
         </div>
 
         {/* Fleet Overview Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
           {loading && vehicles.length === 0 ? (
             <>
               {[1, 2, 3, 4].map((i) => (
                 <Card key={i} className="border-l-4 border-l-muted">
-                  <CardContent className="pt-6">
-                    <Skeleton className="h-4 w-24 mb-3" />
-                    <Skeleton className="h-8 w-16" />
+                  <CardContent className="pt-4 pb-3">
+                    <Skeleton className="h-3 w-20 mb-2" />
+                    <Skeleton className="h-7 w-12" />
                   </CardContent>
                 </Card>
               ))}
@@ -359,22 +359,29 @@ const Fleet = () => {
           ) : (
             <>
               {[
-                { label: "Total Vehicles", value: totalCount, color: "primary" },
-                { label: "On Road", value: stats.moving, color: "success" },
-                { label: "Idle", value: stats.idle, color: "warning" },
-                { label: "Offline", value: stats.offline, color: "destructive" },
+                { label: "Total", value: totalCount, color: "primary", icon: "📊" },
+                { label: "Moving", value: stats.moving, color: "emerald-500", icon: "🚗" },
+                { label: "Idle", value: stats.idle, color: "amber-500", icon: "⏸️" },
+                { label: "Offline", value: stats.offline, color: "rose-500", icon: "📴" },
               ].map((stat, i) => (
                 <Card
                   key={i}
-                  className="hover:shadow-lg transition-shadow border-l-4"
-                  style={{ borderLeftColor: `hsl(var(--${stat.color}))` }}
+                  className="hover:shadow-md transition-shadow border-l-4 group"
+                  style={{ borderLeftColor: stat.color === 'primary' ? 'hsl(var(--primary))' : undefined }}
                 >
-                  <CardContent className="pt-6">
-                    <div className="text-sm font-medium text-muted-foreground">
-                      {stat.label}
-                    </div>
-                    <div className="text-3xl font-bold mt-2">
-                      {stat.value.toLocaleString()}
+                  <CardContent className="pt-4 pb-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          {stat.label}
+                        </p>
+                        <p className="text-2xl font-bold mt-1">
+                          {stat.value.toLocaleString()}
+                        </p>
+                      </div>
+                      <span className="text-2xl opacity-60 group-hover:opacity-100 transition-opacity">
+                        {stat.icon}
+                      </span>
                     </div>
                   </CardContent>
                 </Card>
@@ -394,17 +401,17 @@ const Fleet = () => {
         )}
 
         {/* Search, Filters & View Toggle */}
-        <Card className="border-primary/20">
-          <CardContent className="pt-6">
-            <div className="flex flex-col gap-4">
+        <Card className="border-border/50">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex flex-col gap-3">
               {/* Main Row: Search, Quick Filters, View Toggle */}
-              <div className="flex gap-4 flex-wrap items-center">
+              <div className="flex gap-3 flex-wrap items-center">
                 {/* Search */}
-                <div className="relative flex-1 min-w-[250px]">
+                <div className="relative flex-1 min-w-[200px]">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search by plate, make, model, or VIN..."
-                    className="pl-10 focus-visible:ring-primary"
+                    placeholder="Search plates, make, model..."
+                    className="pl-9 h-9 bg-muted/30"
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
                   />
@@ -422,7 +429,7 @@ const Fleet = () => {
 
                 {/* Status Filter */}
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[150px]">
+                  <SelectTrigger className="w-[130px] h-9">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -436,9 +443,9 @@ const Fleet = () => {
                 {/* Advanced Filters Popover */}
                 <Popover open={showAdvancedFilters} onOpenChange={setShowAdvancedFilters}>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="gap-2 relative">
+                    <Button variant="outline" size="sm" className="gap-2 h-9 relative">
                       <SlidersHorizontal className="w-4 h-4" />
-                      Filters
+                      <span className="hidden sm:inline">Filters</span>
                       {activeFilterCount > 0 && (
                         <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs">
                           {activeFilterCount}
@@ -541,17 +548,16 @@ const Fleet = () => {
 
                 {/* View Toggle */}
                 <div className="flex items-center gap-2 ml-auto">
-                  <span className="text-sm text-muted-foreground hidden sm:inline">View:</span>
                   <ToggleGroup 
                     type="single" 
                     value={viewMode} 
                     onValueChange={(v) => v && setViewMode(v as "grid" | "table")}
-                    className="border rounded-lg"
+                    className="border rounded-lg h-9"
                   >
-                    <ToggleGroupItem value="grid" aria-label="Grid view" className="px-3">
+                    <ToggleGroupItem value="grid" aria-label="Grid view" className="px-3 h-8">
                       <LayoutGrid className="w-4 h-4" />
                     </ToggleGroupItem>
-                    <ToggleGroupItem value="table" aria-label="Table view" className="px-3">
+                    <ToggleGroupItem value="table" aria-label="Table view" className="px-3 h-8">
                       <List className="w-4 h-4" />
                     </ToggleGroupItem>
                   </ToggleGroup>
