@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,23 +15,30 @@ import {
 import { Badge } from "@/components/ui/badge";
 import VehicleDetailModal from "@/components/VehicleDetailModal";
 import CreateVehicleDialog from "@/components/fleet/CreateVehicleDialog";
+import EditVehicleDialog from "@/components/fleet/EditVehicleDialog";
+import DeleteVehicleDialog from "@/components/fleet/DeleteVehicleDialog";
+import BulkActionsToolbar from "@/components/fleet/BulkActionsToolbar";
 import { VehicleVirtualGrid } from "@/components/fleet/VehicleVirtualGrid";
 import { VehicleTableView } from "@/components/fleet/VehicleTableView";
+import { useFleetExport } from "@/components/fleet/FleetExportUtils";
 import { VehicleGridSkeleton, StatsRowSkeleton } from "@/components/ui/skeletons";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Truck, 
   Search, 
   Plus, 
-  Filter, 
   ChevronLeft, 
   ChevronRight,
   LayoutGrid,
   List,
   X,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Download,
+  Upload
 } from "lucide-react";
 import { useVehiclesPaginated } from "@/hooks/useVehiclesPaginated";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useDrivers } from "@/hooks/useDrivers";
 
 const VEHICLE_TYPES = [
   { value: "all", label: "All Types" },
@@ -53,16 +60,45 @@ const FUEL_TYPES = [
   { value: "hybrid", label: "Hybrid" },
 ];
 
+const OWNERSHIP_TYPES = [
+  { value: "all", label: "All Ownership" },
+  { value: "owned", label: "Owned" },
+  { value: "leased", label: "Leased" },
+  { value: "rented", label: "Rented" },
+];
+
+const DRIVER_FILTER = [
+  { value: "all", label: "All Vehicles" },
+  { value: "assigned", label: "With Driver" },
+  { value: "unassigned", label: "Without Driver" },
+];
+
 const Fleet = () => {
   const navigate = useNavigate();
+  const { drivers } = useDrivers();
+  const { handleExport } = useFleetExport();
+  
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [vehicleToEdit, setVehicleToEdit] = useState<any>(null);
+  const [vehicleToDelete, setVehicleToDelete] = useState<any>(null);
+  
   const [searchInput, setSearchInput] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [vehicleTypeFilter, setVehicleTypeFilter] = useState("all");
   const [fuelTypeFilter, setFuelTypeFilter] = useState("all");
+  const [ownershipFilter, setOwnershipFilter] = useState("all");
+  const [driverFilter, setDriverFilter] = useState("all");
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  
+  // Selection state for bulk actions
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  // Driver assignments map
+  const [driverAssignments, setDriverAssignments] = useState<Record<string, string>>({});
 
   // Debounce search to avoid too many queries
   const debouncedSearch = useDebounce(searchInput, 300);
@@ -83,6 +119,36 @@ const Fleet = () => {
     statusFilter,
   });
 
+  // Fetch driver assignments for vehicles
+  useEffect(() => {
+    const fetchDriverAssignments = async () => {
+      if (dbVehicles.length === 0) return;
+      
+      // Get latest trip assignments with drivers
+      const vehicleIds = dbVehicles.map(v => v.id);
+      const { data } = await supabase
+        .from("trips")
+        .select("vehicle_id, driver_id")
+        .in("vehicle_id", vehicleIds)
+        .order("start_time", { ascending: false });
+
+      if (data) {
+        const assignments: Record<string, string> = {};
+        data.forEach(trip => {
+          if (trip.driver_id && !assignments[trip.vehicle_id]) {
+            const driver = drivers.find(d => d.id === trip.driver_id);
+            if (driver) {
+              assignments[trip.vehicle_id] = `${driver.first_name} ${driver.last_name}`;
+            }
+          }
+        });
+        setDriverAssignments(assignments);
+      }
+    };
+
+    fetchDriverAssignments();
+  }, [dbVehicles, drivers]);
+
   // Transform DB vehicles to display format
   const vehicles = useMemo(() => {
     let filtered = dbVehicles.map((v) => ({
@@ -96,26 +162,36 @@ const Fleet = () => {
         : v.status === "maintenance"
         ? "idle"
         : "offline") as "moving" | "idle" | "offline",
-      fuel: 50,
+      fuel: Math.floor(Math.random() * 60) + 20, // TODO: Replace with actual telemetry
       odometer: v.odometer_km || 0,
-      nextService: "2025-03-01",
+      nextService: "2025-03-01", // TODO: Replace with actual maintenance data
       vehicleId: v.id,
       vehicleType: v.vehicle_type || "",
       fuelType: v.fuel_type || "",
+      ownershipType: v.ownership_type || "",
+      assignedDriver: driverAssignments[v.id] || "",
     }));
 
-    // Apply client-side filters for vehicle type and fuel type
+    // Apply client-side filters
     if (vehicleTypeFilter !== "all") {
       filtered = filtered.filter((v) => v.vehicleType === vehicleTypeFilter);
     }
     if (fuelTypeFilter !== "all") {
       filtered = filtered.filter((v) => v.fuelType === fuelTypeFilter);
     }
+    if (ownershipFilter !== "all") {
+      filtered = filtered.filter((v) => v.ownershipType === ownershipFilter);
+    }
+    if (driverFilter === "assigned") {
+      filtered = filtered.filter((v) => v.assignedDriver);
+    } else if (driverFilter === "unassigned") {
+      filtered = filtered.filter((v) => !v.assignedDriver);
+    }
 
     return filtered;
-  }, [dbVehicles, vehicleTypeFilter, fuelTypeFilter]);
+  }, [dbVehicles, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, driverFilter, driverAssignments]);
 
-  // Calculate stats from current page (for large fleets, these would be server-side)
+  // Calculate stats from current page
   const stats = useMemo(() => {
     const moving = vehicles.filter((v) => v.status === "moving").length;
     const idle = vehicles.filter((v) => v.status === "idle").length;
@@ -125,6 +201,16 @@ const Fleet = () => {
 
   const handleVehicleClick = useCallback((vehicle: any) => {
     setSelectedVehicle(vehicle);
+  }, []);
+
+  const handleEditVehicle = useCallback((vehicle: any) => {
+    setVehicleToEdit(vehicle);
+    setEditDialogOpen(true);
+  }, []);
+
+  const handleDeleteVehicle = useCallback((vehicle: any) => {
+    setVehicleToDelete(vehicle);
+    setDeleteDialogOpen(true);
   }, []);
 
   const handlePageChange = useCallback((page: number) => {
@@ -137,13 +223,31 @@ const Fleet = () => {
     setStatusFilter("all");
     setVehicleTypeFilter("all");
     setFuelTypeFilter("all");
+    setOwnershipFilter("all");
+    setDriverFilter("all");
   };
 
   const activeFilterCount = [
     statusFilter !== "all",
     vehicleTypeFilter !== "all",
     fuelTypeFilter !== "all",
+    ownershipFilter !== "all",
+    driverFilter !== "all",
   ].filter(Boolean).length;
+
+  const handleExportAll = () => {
+    handleExport(vehicles, false);
+  };
+
+  const handleExportSelected = () => {
+    const selectedVehicles = vehicles.filter(v => selectedIds.includes(v.vehicleId));
+    handleExport(selectedVehicles, true);
+  };
+
+  // Clear selection when filters change
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, driverFilter, debouncedSearch]);
 
   return (
     <Layout>
@@ -159,13 +263,19 @@ const Fleet = () => {
               <span className="font-semibold text-foreground">{totalCount.toLocaleString()}</span> vehicles total
             </p>
           </div>
-          <Button
-            className="gap-2 bg-gradient-to-r from-primary to-primary/80"
-            onClick={() => setCreateDialogOpen(true)}
-          >
-            <Plus className="w-4 h-4" />
-            Add Vehicle
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" className="gap-2" onClick={handleExportAll}>
+              <Download className="w-4 h-4" />
+              Export All
+            </Button>
+            <Button
+              className="gap-2 bg-gradient-to-r from-primary to-primary/80"
+              onClick={() => setCreateDialogOpen(true)}
+            >
+              <Plus className="w-4 h-4" />
+              Add Vehicle
+            </Button>
+          </div>
         </div>
 
         {/* Fleet Overview Stats */}
@@ -207,6 +317,16 @@ const Fleet = () => {
             </>
           )}
         </div>
+
+        {/* Bulk Actions Toolbar */}
+        {selectedIds.length > 0 && (
+          <BulkActionsToolbar
+            selectedIds={selectedIds}
+            onClearSelection={() => setSelectedIds([])}
+            onExport={handleExportSelected}
+            totalCount={vehicles.length}
+          />
+        )}
 
         {/* Search, Filters & View Toggle */}
         <Card className="border-primary/20">
@@ -313,6 +433,42 @@ const Fleet = () => {
                             </SelectContent>
                           </Select>
                         </div>
+
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                            Ownership
+                          </label>
+                          <Select value={ownershipFilter} onValueChange={setOwnershipFilter}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select ownership" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {OWNERSHIP_TYPES.map((type) => (
+                                <SelectItem key={type.value} value={type.value}>
+                                  {type.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                            Driver Assignment
+                          </label>
+                          <Select value={driverFilter} onValueChange={setDriverFilter}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select filter" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {DRIVER_FILTER.map((type) => (
+                                <SelectItem key={type.value} value={type.value}>
+                                  {type.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                     </div>
                   </PopoverContent>
@@ -365,6 +521,18 @@ const Fleet = () => {
                       <X className="w-3 h-3 cursor-pointer" onClick={() => setFuelTypeFilter("all")} />
                     </Badge>
                   )}
+                  {ownershipFilter !== "all" && (
+                    <Badge variant="secondary" className="gap-1">
+                      Ownership: {OWNERSHIP_TYPES.find(t => t.value === ownershipFilter)?.label}
+                      <X className="w-3 h-3 cursor-pointer" onClick={() => setOwnershipFilter("all")} />
+                    </Badge>
+                  )}
+                  {driverFilter !== "all" && (
+                    <Badge variant="secondary" className="gap-1">
+                      Driver: {DRIVER_FILTER.find(t => t.value === driverFilter)?.label}
+                      <X className="w-3 h-3 cursor-pointer" onClick={() => setDriverFilter("all")} />
+                    </Badge>
+                  )}
                 </div>
               )}
             </div>
@@ -397,15 +565,23 @@ const Fleet = () => {
               <VehicleVirtualGrid
                 vehicles={vehicles}
                 onVehicleClick={handleVehicleClick}
+                onEditVehicle={handleEditVehicle}
+                onDeleteVehicle={handleDeleteVehicle}
                 hasMore={hasMore}
                 onLoadMore={loadMore}
                 loading={loading}
                 columns={3}
+                selectedIds={selectedIds}
+                onSelectionChange={setSelectedIds}
               />
             ) : (
               <VehicleTableView
                 vehicles={vehicles}
                 onVehicleClick={handleVehicleClick}
+                onEditVehicle={handleEditVehicle}
+                onDeleteVehicle={handleDeleteVehicle}
+                selectedIds={selectedIds}
+                onSelectionChange={setSelectedIds}
               />
             )}
 
@@ -443,9 +619,9 @@ const Fleet = () => {
                           key={pageNum}
                           variant={currentPage === pageNum ? "default" : "outline"}
                           size="sm"
-                          className="w-9"
                           onClick={() => handlePageChange(pageNum)}
                           disabled={loading}
+                          className="w-8"
                         >
                           {pageNum}
                         </Button>
@@ -466,20 +642,32 @@ const Fleet = () => {
             )}
           </>
         )}
+
+        {/* Dialogs */}
+        <VehicleDetailModal
+          vehicle={selectedVehicle}
+          open={!!selectedVehicle}
+          onOpenChange={(open) => !open && setSelectedVehicle(null)}
+        />
+
+        <CreateVehicleDialog
+          open={createDialogOpen}
+          onOpenChange={setCreateDialogOpen}
+        />
+
+        <EditVehicleDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          vehicle={vehicleToEdit}
+        />
+
+        <DeleteVehicleDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          vehicle={vehicleToDelete}
+          onSuccess={() => setSelectedIds(prev => prev.filter(id => id !== vehicleToDelete?.vehicleId))}
+        />
       </div>
-
-      {/* Vehicle Detail Modal */}
-      <VehicleDetailModal
-        open={!!selectedVehicle}
-        onOpenChange={(open) => !open && setSelectedVehicle(null)}
-        vehicle={selectedVehicle || {}}
-      />
-
-      {/* Create Vehicle Dialog */}
-      <CreateVehicleDialog
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
-      />
     </Layout>
   );
 };
