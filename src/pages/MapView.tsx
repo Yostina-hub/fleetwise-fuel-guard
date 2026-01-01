@@ -197,19 +197,23 @@ const MapView = () => {
               </div>
 
               {/* Status Legend - Compact */}
-              <div className="bg-background/90 backdrop-blur-sm rounded-lg border shadow-lg p-3">
-                <div className="flex items-center gap-4 text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-full bg-success" />
-                    <span>Moving</span>
+              <div className="bg-background/95 backdrop-blur-md rounded-lg border border-border/50 shadow-lg px-4 py-2.5">
+                <div className="flex items-center gap-5 text-xs font-medium">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/40" />
+                    <span className="text-foreground/80">Moving</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-full bg-warning" />
-                    <span>Idle</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm shadow-amber-500/40" />
+                    <span className="text-foreground/80">Idle</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-full bg-muted-foreground" />
-                    <span>Offline</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-slate-400" />
+                    <span className="text-foreground/80">Stopped</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm shadow-rose-500/40" />
+                    <span className="text-foreground/80">Offline</span>
                   </div>
                 </div>
               </div>
