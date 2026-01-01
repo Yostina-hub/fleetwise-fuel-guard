@@ -6,19 +6,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import { MapSidebarSkeleton } from "@/components/ui/skeletons";
 import StatusBadge from "@/components/StatusBadge";
 import LiveTrackingMap from "@/components/map/LiveTrackingMap";
 import ClusteredMap from "@/components/map/ClusteredMap";
-import { NearbyVehiclesSearch } from "@/components/map/NearbyVehiclesSearch";
-import { GpsJammingIndicator } from "@/components/map/GpsJammingIndicator";
-import { MapPin, Navigation, Fuel, Zap, RefreshCw, WifiOff, Layers, Radar } from "lucide-react";
+import { 
+  Navigation, 
+  Fuel, 
+  RefreshCw, 
+  WifiOff, 
+  Search,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Satellite,
+  Map
+} from "lucide-react";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { cn } from "@/lib/utils";
 
-// Threshold for switching to clustered map
 const CLUSTER_THRESHOLD = 100;
 
 const MapView = () => {
@@ -30,9 +38,11 @@ const MapView = () => {
   );
   const [autoRefresh, setAutoRefresh] = useState("30");
   const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
   const [mapStyle, setMapStyle] = useState<'streets' | 'satellite'>('satellite');
-  const [mapToken, setMapToken] = useState<string>(() => localStorage.getItem('mapbox_token') || '');
+  const [mapToken] = useState<string>(() => localStorage.getItem('mapbox_token') || '');
   const envToken = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
   const [mapInstance, setMapInstance] = useState<any>(null);
   
@@ -42,7 +52,6 @@ const MapView = () => {
       const vehicleTelemetry = telemetry[v.id];
       const online = isVehicleOnline(v.id);
       
-      // If device is offline or SIM card removed, mark as offline
       if (!online || !vehicleTelemetry) {
         return {
           id: v.id,
@@ -50,7 +59,7 @@ const MapView = () => {
           status: 'offline' as const,
           fuel: 0,
           speed: 0,
-          lat: 9.03, // Default center of Addis Ababa
+          lat: 9.03,
           lng: 38.74,
           engine_on: false,
           heading: 0,
@@ -80,6 +89,13 @@ const MapView = () => {
     });
   }, [dbVehicles, telemetry, isVehicleOnline]);
 
+  // Filter vehicles by search
+  const filteredVehicles = useMemo(() => {
+    if (!searchQuery.trim()) return vehicles;
+    const query = searchQuery.toLowerCase();
+    return vehicles.filter(v => v.plate.toLowerCase().includes(query));
+  }, [vehicles, searchQuery]);
+
   // Auto-refresh
   useEffect(() => {
     if (autoRefresh === "off") return;
@@ -92,18 +108,15 @@ const MapView = () => {
     return () => clearInterval(interval);
   }, [autoRefresh, refetch]);
 
-  // Show map immediately with loading indicator in sidebar
   const isInitialLoading = loading && vehicles.length === 0;
-
-  // Use clustering for large fleets
   const useClusteredMap = vehicles.length > CLUSTER_THRESHOLD;
 
   // Virtual list for sidebar
   const sidebarRef = useRef<HTMLDivElement>(null);
   const rowVirtualizer = useVirtualizer({
-    count: vehicles.length,
+    count: filteredVehicles.length,
     getScrollElement: () => sidebarRef.current,
-    estimateSize: () => 140,
+    estimateSize: () => 88,
     overscan: 5,
   });
 
@@ -121,9 +134,13 @@ const MapView = () => {
     }
   }, [mapInstance]);
 
+  // Stats
+  const onlineCount = vehicles.filter(v => !v.isOffline).length;
+  const movingCount = vehicles.filter(v => v.status === 'moving').length;
+
   return (
     <Layout>
-      <div className="flex h-full">
+      <div className="flex h-full overflow-hidden">
         {/* Map Area */}
         <div className="flex-1 relative">
           {useClusteredMap ? (
@@ -154,213 +171,209 @@ const MapView = () => {
             />
           )}
 
-          {/* Map Legend */}
-          <div className="absolute top-4 left-4 space-y-2 z-10">
-            <Card className="p-3 bg-card/95 backdrop-blur">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-success" />
-                <span className="text-sm font-medium">Moving</span>
+          {/* Minimal Map Controls */}
+          <div className="absolute top-4 left-4 z-10">
+            <div className="flex flex-col gap-2">
+              {/* Map Style Toggle */}
+              <div className="bg-background/90 backdrop-blur-sm rounded-lg border shadow-lg p-1 flex">
+                <Button
+                  variant={mapStyle === 'satellite' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="h-8 px-3 gap-2"
+                  onClick={() => setMapStyle('satellite')}
+                >
+                  <Satellite className="w-4 h-4" />
+                  <span className="hidden sm:inline">Satellite</span>
+                </Button>
+                <Button
+                  variant={mapStyle === 'streets' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="h-8 px-3 gap-2"
+                  onClick={() => setMapStyle('streets')}
+                >
+                  <Map className="w-4 h-4" />
+                  <span className="hidden sm:inline">Streets</span>
+                </Button>
               </div>
-            </Card>
-            <Card className="p-3 bg-card/95 backdrop-blur">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-warning" />
-                <span className="text-sm font-medium">Idle</span>
-              </div>
-            </Card>
-            <Card className="p-3 bg-card/95 backdrop-blur">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-muted-foreground" />
-                <span className="text-sm font-medium">Stopped</span>
-              </div>
-            </Card>
-            <Card className="p-3 bg-card/95 backdrop-blur">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-destructive" />
-                <span className="text-sm font-medium">Offline</span>
-              </div>
-            </Card>
-            {useClusteredMap && (
-              <Card className="p-3 bg-card/95 backdrop-blur">
-                <div className="flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-medium">Clustered Mode</span>
+
+              {/* Status Legend - Compact */}
+              <div className="bg-background/90 backdrop-blur-sm rounded-lg border shadow-lg p-3">
+                <div className="flex items-center gap-4 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-success" />
+                    <span>Moving</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-warning" />
+                    <span>Idle</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-muted-foreground" />
+                    <span>Offline</span>
+                  </div>
                 </div>
-                <span className="text-xs text-muted-foreground">Click clusters to zoom</span>
-              </Card>
-            )}
-            <Card className="p-3 bg-card/95 backdrop-blur">
-              <div className="text-sm font-medium mb-2">Map Style</div>
-              <Select value={mapStyle} onValueChange={(v) => setMapStyle(v as 'streets' | 'satellite')}>
-                <SelectTrigger className="h-8 w-[140px]">
-                  <SelectValue placeholder="Style" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="satellite">Satellite</SelectItem>
-                  <SelectItem value="streets">Streets</SelectItem>
-                </SelectContent>
-              </Select>
-            </Card>
-            {/* Nearby Vehicles Search */}
-            <NearbyVehiclesSearch 
-              vehicles={vehicles}
-              onVehicleSelect={(v) => {
-                setSelectedVehicleId(v.id);
-                mapInstance?.flyTo({
-                  center: [v.lng, v.lat],
-                  zoom: 15,
-                  duration: 1200,
-                });
-              }}
-            />
-          </div>
-          {/* Token Prompt */}
-          {(!envToken && !mapToken) && (
-            <div className="absolute top-4 right-4 z-10">
-              <Card className="p-4 bg-card/95 backdrop-blur space-y-2 w-80">
-                <div className="text-sm font-semibold">Add Mapbox public token</div>
-                <Input
-                  placeholder="pk.eyJ..."
-                  value={mapToken}
-                  onChange={(e) => setMapToken(e.target.value)}
-                />
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={() => { localStorage.setItem('mapbox_token', mapToken); window.location.reload(); }}>Save</Button>
-                </div>
-                <p className="text-xs text-muted-foreground">Get your token at mapbox.com → Tokens.</p>
-              </Card>
+              </div>
             </div>
-          )}
+          </div>
+
+          {/* Sidebar Toggle Button */}
+          <Button
+            variant="secondary"
+            size="icon"
+            className={cn(
+              "absolute top-1/2 -translate-y-1/2 z-20 h-10 w-6 rounded-l-lg rounded-r-none shadow-lg transition-all",
+              sidebarCollapsed ? "right-0" : "right-80"
+            )}
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          >
+            {sidebarCollapsed ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+          </Button>
         </div>
 
-        {/* Side Panel */}
-        <div className="w-96 border-l border-border bg-card flex flex-col">
-          <div className="p-6 border-b border-border">
-            <div className="flex items-center justify-between mb-4">
+        {/* Side Panel - Clean & Modern */}
+        <div className={cn(
+          "bg-background border-l flex flex-col transition-all duration-300",
+          sidebarCollapsed ? "w-0 overflow-hidden" : "w-80"
+        )}>
+          {/* Header */}
+          <div className="p-4 border-b space-y-4">
+            <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold">Live Vehicles</h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {vehicles.filter(v => !v.isOffline).length} online / {vehicles.length.toLocaleString()} total
-                </p>
+                <h2 className="text-lg font-semibold">Vehicles</h2>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                  <span className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                    {onlineCount} online
+                  </span>
+                  <span>{movingCount} moving</span>
+                </div>
               </div>
-              <Badge variant="outline" className="gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <Badge variant="outline" className="gap-1.5 text-xs font-normal">
+                <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
                 Live
               </Badge>
             </div>
 
-            {/* Auto-Refresh Control */}
-            <div className="flex items-center gap-2">
-              <RefreshCw className="w-4 h-4 text-muted-foreground" />
-              <Select value={autoRefresh} onValueChange={setAutoRefresh}>
-                <SelectTrigger className="w-[120px] h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10 Sec</SelectItem>
-                  <SelectItem value="30">30 Sec</SelectItem>
-                  <SelectItem value="60">1 Min</SelectItem>
-                  <SelectItem value="300">5 Min</SelectItem>
-                  <SelectItem value="off">Off</SelectItem>
-                </SelectContent>
-              </Select>
-              <span className="text-xs text-muted-foreground">
-                {lastUpdate.toLocaleTimeString()}
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search vehicles..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-9 h-9 bg-muted/50"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2"
+                >
+                  <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                </button>
+              )}
+            </div>
+
+            {/* Refresh Control */}
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
+                <Select value={autoRefresh} onValueChange={setAutoRefresh}>
+                  <SelectTrigger className="h-7 w-20 text-xs border-0 bg-transparent p-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10s</SelectItem>
+                    <SelectItem value="30">30s</SelectItem>
+                    <SelectItem value="60">1m</SelectItem>
+                    <SelectItem value="off">Off</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <span className="text-muted-foreground">
+                {lastUpdate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
           </div>
 
-          {/* Virtual scrolling vehicle list */}
-          <div ref={sidebarRef} className="flex-1 overflow-auto p-4">
+          {/* Vehicle List */}
+          <div ref={sidebarRef} className="flex-1 overflow-auto">
             {isInitialLoading ? (
-              <MapSidebarSkeleton count={6} />
+              <div className="p-3">
+                <MapSidebarSkeleton count={6} />
+              </div>
+            ) : filteredVehicles.length === 0 ? (
+              <div className="p-6 text-center text-muted-foreground">
+                <p className="text-sm">No vehicles found</p>
+              </div>
             ) : (
-            <div
-              style={{
-                height: `${rowVirtualizer.getTotalSize()}px`,
-                width: '100%',
-                position: 'relative',
-              }}
-            >
-              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                const vehicle = vehicles[virtualRow.index];
-                return (
-                  <div
-                    key={vehicle.id}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      transform: `translateY(${virtualRow.start}px)`,
-                    }}
-                    className="pb-3"
-                  >
-                    <Card
-                      className={`p-4 hover:shadow-md transition-all cursor-pointer ${
-                        selectedVehicleId === vehicle.id ? 'ring-2 ring-primary' : ''
-                      } ${vehicle.isOffline ? 'opacity-60' : ''}`}
-                      onClick={() => handleVehicleClick(vehicle)}
+              <div
+                style={{
+                  height: `${rowVirtualizer.getTotalSize()}px`,
+                  width: '100%',
+                  position: 'relative',
+                }}
+              >
+                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                  const vehicle = filteredVehicles[virtualRow.index];
+                  const isSelected = selectedVehicleId === vehicle.id;
+                  
+                  return (
+                    <div
+                      key={vehicle.id}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        transform: `translateY(${virtualRow.start}px)`,
+                      }}
+                      className="px-3 py-1.5"
                     >
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <div className="font-semibold flex items-center gap-2">
-                            {vehicle.plate}
-                            {vehicle.isOffline && (
-                              <Badge variant="destructive" className="text-xs">
-                                <WifiOff className="w-3 h-3 mr-1" />
-                                Offline
-                              </Badge>
-                            )}
+                      <div
+                        className={cn(
+                          "p-3 rounded-lg cursor-pointer transition-all",
+                          "hover:bg-muted/80",
+                          isSelected && "bg-primary/10 ring-1 ring-primary/30",
+                          vehicle.isOffline && "opacity-50"
+                        )}
+                        onClick={() => handleVehicleClick(vehicle)}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <div className={cn(
+                              "w-2 h-2 rounded-full",
+                              vehicle.isOffline ? "bg-muted-foreground" :
+                              vehicle.status === 'moving' ? "bg-success" : "bg-warning"
+                            )} />
+                            <span className="font-medium text-sm">{vehicle.plate}</span>
                           </div>
-                          <div className="text-xs text-muted-foreground">{vehicle.id.slice(0, 8)}...</div>
+                          {vehicle.isOffline ? (
+                            <Badge variant="secondary" className="text-xs h-5 px-1.5 gap-1">
+                              <WifiOff className="w-3 h-3" />
+                              Offline
+                            </Badge>
+                          ) : (
+                            <StatusBadge status={vehicle.status} />
+                          )}
                         </div>
-                        {!vehicle.isOffline && <StatusBadge status={vehicle.status} />}
-                      </div>
 
-                      {vehicle.isOffline ? (
-                        <div className="text-sm text-destructive bg-destructive/10 rounded p-2">
-                          <div className="font-medium flex items-center gap-2">
-                            <WifiOff className="w-4 h-4" />
-                            Device Disconnected
-                          </div>
-                          {vehicle.lastSeen && (
-                            <div className="text-xs mt-1">
-                              Last: {new Date(vehicle.lastSeen).toLocaleString()}
+                        {!vehicle.isOffline && (
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Navigation className="w-3 h-3" />
+                              <span>{vehicle.speed} km/h</span>
                             </div>
-                          )}
-                        </div>
-                      ) : (
-                        <>
-                          <div className="grid grid-cols-2 gap-3 text-sm">
-                            <div className="flex items-center gap-2">
-                              <Navigation className="w-4 h-4 text-primary" />
-                              <div>
-                                <div className="text-xs text-muted-foreground">Speed</div>
-                                <div className="font-medium">{vehicle.speed} km/h</div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Fuel className="w-4 h-4 text-primary" />
-                              <div>
-                                <div className="text-xs text-muted-foreground">Fuel</div>
-                                <div className="font-medium">{vehicle.fuel}%</div>
-                              </div>
+                            <div className="flex items-center gap-1">
+                              <Fuel className="w-3 h-3" />
+                              <span>{vehicle.fuel}%</span>
                             </div>
                           </div>
-                          {vehicle.engine_on && (
-                            <div className="mt-2 flex items-center gap-1 text-xs text-success">
-                              <Zap className="w-3 h-3" />
-                              <span>Engine On</span>
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </Card>
-                  </div>
-                );
-              })}
-            </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         </div>
