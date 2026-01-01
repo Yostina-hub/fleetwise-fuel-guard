@@ -70,9 +70,34 @@ export const useDocuments = (filters?: UseDocumentsFilters) => {
   };
 
   useEffect(() => {
-    if (organizationId) {
-      fetchDocuments();
-    }
+    if (!organizationId) return;
+
+    fetchDocuments();
+
+    let debounceTimer: NodeJS.Timeout;
+
+    // Subscribe to realtime changes
+    const channel = supabase
+      .channel(`documents-${organizationId.slice(0, 8)}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'documents',
+          filter: `organization_id=eq.${organizationId}`
+        },
+        () => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(fetchDocuments, 500);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      clearTimeout(debounceTimer);
+      supabase.removeChannel(channel);
+    };
   }, [organizationId, filters?.entityType, filters?.entityId, filters?.documentType]);
 
   const createDocument = async (

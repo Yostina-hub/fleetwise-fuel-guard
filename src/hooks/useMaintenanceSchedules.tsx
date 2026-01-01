@@ -107,8 +107,54 @@ export const useMaintenanceSchedules = (vehicleId?: string) => {
   };
 
   useEffect(() => {
+    if (!organizationId) return;
+
     fetchSchedules();
     fetchInspections();
+
+    let debounceTimer: NodeJS.Timeout;
+
+    // Subscribe to realtime changes for schedules
+    const schedulesChannel = supabase
+      .channel(`maintenance-schedules-${organizationId.slice(0, 8)}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'maintenance_schedules',
+          filter: `organization_id=eq.${organizationId}`
+        },
+        () => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(fetchSchedules, 500);
+        }
+      )
+      .subscribe();
+
+    // Subscribe to realtime changes for inspections
+    const inspectionsChannel = supabase
+      .channel(`vehicle-inspections-${organizationId.slice(0, 8)}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'vehicle_inspections',
+          filter: `organization_id=eq.${organizationId}`
+        },
+        () => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(fetchInspections, 500);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      clearTimeout(debounceTimer);
+      supabase.removeChannel(schedulesChannel);
+      supabase.removeChannel(inspectionsChannel);
+    };
   }, [organizationId, vehicleId]);
 
   const createSchedule = async (schedule: Omit<MaintenanceSchedule, 'id' | 'organization_id' | 'created_at' | 'updated_at'>) => {

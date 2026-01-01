@@ -128,5 +128,52 @@ export const useFleetStats = (options: UseFleetStatsOptions = {}) => {
     fetchStats();
   }, [fetchStats]);
 
+  // Subscribe to realtime changes for both vehicles and telemetry
+  useEffect(() => {
+    if (!organizationId) return;
+
+    let debounceTimer: NodeJS.Timeout;
+
+    const vehicleChannel = supabase
+      .channel(`fleet-stats-vehicles-${organizationId.slice(0, 8)}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'vehicles',
+          filter: `organization_id=eq.${organizationId}`
+        },
+        () => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(fetchStats, 500);
+        }
+      )
+      .subscribe();
+
+    const telemetryChannel = supabase
+      .channel(`fleet-stats-telemetry-${organizationId.slice(0, 8)}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'vehicle_telemetry',
+          filter: `organization_id=eq.${organizationId}`
+        },
+        () => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(fetchStats, 500);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      clearTimeout(debounceTimer);
+      supabase.removeChannel(vehicleChannel);
+      supabase.removeChannel(telemetryChannel);
+    };
+  }, [organizationId, fetchStats]);
+
   return { stats, loading, error, refetch: fetchStats };
 };

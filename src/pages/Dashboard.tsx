@@ -82,25 +82,44 @@ const Dashboard = () => {
   useEffect(() => {
     if (!organizationId) return;
 
+    let debounceTimer: NodeJS.Timeout;
+
     const vehiclesChannel = supabase
-      .channel('dashboard-vehicles')
+      .channel(`dashboard-vehicles-${organizationId.slice(0, 8)}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'vehicles' },
-        () => refetch()
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'vehicles',
+          filter: `organization_id=eq.${organizationId}`
+        },
+        () => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(refetch, 500);
+        }
       )
       .subscribe();
 
     const alertsChannel = supabase
-      .channel('dashboard-alerts')
+      .channel(`dashboard-alerts-${organizationId.slice(0, 8)}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'alerts' },
-        () => refetchAlerts()
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'alerts',
+          filter: `organization_id=eq.${organizationId}`
+        },
+        () => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(refetchAlerts, 500);
+        }
       )
       .subscribe();
 
     return () => {
+      clearTimeout(debounceTimer);
       supabase.removeChannel(vehiclesChannel);
       supabase.removeChannel(alertsChannel);
     };

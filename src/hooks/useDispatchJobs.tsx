@@ -103,7 +103,34 @@ export const useDispatchJobs = (filters?: {
   };
 
   useEffect(() => {
+    if (!organizationId) return;
+
     fetchJobs();
+
+    let debounceTimer: NodeJS.Timeout;
+
+    // Subscribe to realtime changes
+    const channel = supabase
+      .channel(`dispatch-jobs-${organizationId.slice(0, 8)}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'dispatch_jobs',
+          filter: `organization_id=eq.${organizationId}`
+        },
+        () => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(fetchJobs, 500);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      clearTimeout(debounceTimer);
+      supabase.removeChannel(channel);
+    };
   }, [organizationId, filters?.status, filters?.vehicleId, filters?.driverId]);
 
   const createJob = async (job: Omit<DispatchJob, 'id' | 'organization_id' | 'job_number' | 'created_at' | 'updated_at'>) => {
