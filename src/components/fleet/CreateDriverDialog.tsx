@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { Loader2, User, CreditCard, Phone, FileText } from "lucide-react";
+import { Loader2, User, CreditCard, Phone, FileText, Heart, AlertCircle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const driverSchema = z.object({
@@ -41,6 +41,10 @@ const driverSchema = z.object({
   ibutton_id: z.string().trim().max(50).nullish(),
   bluetooth_id: z.string().trim().max(50).nullish(),
   notes: z.string().trim().max(500).nullish(),
+  emergency_contact_name: z.string().trim().max(100).nullish(),
+  emergency_contact_phone: z.string().trim().max(20).nullish(),
+  emergency_contact_relationship: z.string().trim().max(50).nullish(),
+  medical_certificate_expiry: z.string().nullish(),
 });
 
 interface CreateDriverDialogProps {
@@ -76,6 +80,10 @@ export default function CreateDriverDialog({ open, onOpenChange }: CreateDriverD
     ibutton_id: "",
     bluetooth_id: "",
     notes: "",
+    emergency_contact_name: "",
+    emergency_contact_phone: "",
+    emergency_contact_relationship: "",
+    medical_certificate_expiry: "",
   });
 
   const createMutation = useMutation({
@@ -120,6 +128,10 @@ export default function CreateDriverDialog({ open, onOpenChange }: CreateDriverD
       ibutton_id: "",
       bluetooth_id: "",
       notes: "",
+      emergency_contact_name: "",
+      emergency_contact_phone: "",
+      emergency_contact_relationship: "",
+      medical_certificate_expiry: "",
     });
   };
 
@@ -140,6 +152,10 @@ export default function CreateDriverDialog({ open, onOpenChange }: CreateDriverD
         ibutton_id: formData.ibutton_id || null,
         bluetooth_id: formData.bluetooth_id || null,
         notes: formData.notes || null,
+        emergency_contact_name: formData.emergency_contact_name || null,
+        emergency_contact_phone: formData.emergency_contact_phone || null,
+        emergency_contact_relationship: formData.emergency_contact_relationship || null,
+        medical_certificate_expiry: formData.medical_certificate_expiry || null,
       };
 
       driverSchema.parse(cleanData);
@@ -347,6 +363,60 @@ export default function CreateDriverDialog({ open, onOpenChange }: CreateDriverD
                     placeholder="Bluetooth device ID"
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Emergency Contact Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
+                <AlertCircle className="w-5 h-5 text-primary" />
+                Emergency Contact
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="emergency_contact_name">Contact Name</Label>
+                  <Input
+                    id="emergency_contact_name"
+                    value={formData.emergency_contact_name}
+                    onChange={(e) => setFormData({ ...formData, emergency_contact_name: e.target.value })}
+                    placeholder="Full name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="emergency_contact_phone">Contact Phone</Label>
+                  <Input
+                    id="emergency_contact_phone"
+                    value={formData.emergency_contact_phone}
+                    onChange={(e) => setFormData({ ...formData, emergency_contact_phone: e.target.value })}
+                    placeholder="+251 911 123 456"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="emergency_contact_relationship">Relationship</Label>
+                  <Input
+                    id="emergency_contact_relationship"
+                    value={formData.emergency_contact_relationship}
+                    onChange={(e) => setFormData({ ...formData, emergency_contact_relationship: e.target.value })}
+                    placeholder="e.g., Spouse, Parent"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Medical Information Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
+                <Heart className="w-5 h-5 text-primary" />
+                Medical Information
+              </h3>
+              <div>
+                <Label htmlFor="medical_certificate_expiry">Medical Certificate Expiry</Label>
+                <Input
+                  id="medical_certificate_expiry"
+                  type="date"
+                  value={formData.medical_certificate_expiry}
+                  onChange={(e) => setFormData({ ...formData, medical_certificate_expiry: e.target.value })}
+                />
               </div>
             </div>
 
