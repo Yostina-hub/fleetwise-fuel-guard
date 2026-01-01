@@ -212,7 +212,7 @@ export const useVehiclesPaginated = (
     let debounceTimer: NodeJS.Timeout;
 
     const channel = supabase
-      .channel('vehicles-paginated-changes')
+      .channel(`vehicles-paginated-${organizationId.slice(0, 8)}`)
       .on(
         'postgres_changes',
         {

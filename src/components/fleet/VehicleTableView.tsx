@@ -57,7 +57,7 @@ interface VehicleItem {
   vin?: string;
 }
 
-type SortField = 'plate' | 'make' | 'status' | 'fuel' | 'odometer' | 'speed';
+type SortField = 'plate_number' | 'make' | 'status' | 'fuel_level_percent' | 'odometer_km' | 'speed_kmh' | 'created_at';
 type SortDirection = 'asc' | 'desc';
 
 interface VehicleTableViewProps {
@@ -72,6 +72,10 @@ interface VehicleTableViewProps {
   onAssignDevice?: (vehicle: VehicleItem) => void;
   selectedIds?: string[];
   onSelectionChange?: (ids: string[]) => void;
+  // Server-side sorting
+  sortField?: SortField;
+  sortDirection?: SortDirection;
+  onSortChange?: (field: SortField, direction: SortDirection) => void;
 }
 
 export const VehicleTableView = ({
@@ -85,11 +89,16 @@ export const VehicleTableView = ({
   onSendCommand,
   onAssignDevice,
   selectedIds = [],
-  onSelectionChange
+  onSelectionChange,
+  sortField: externalSortField,
+  sortDirection: externalSortDirection,
+  onSortChange
 }: VehicleTableViewProps) => {
   const navigate = useNavigate();
-  const [sortField, setSortField] = useState<SortField | null>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  
+  // Use external sort state if provided, otherwise use local state
+  const sortField = externalSortField;
+  const sortDirection = externalSortDirection || 'asc';
 
   const getFuelColor = (level: number) => {
     if (level > 60) return "bg-success";
@@ -98,11 +107,12 @@ export const VehicleTableView = ({
   };
 
   const handleSort = (field: SortField) => {
+    if (!onSortChange) return;
+    
     if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+      onSortChange(field, sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
-      setSortField(field);
-      setSortDirection('asc');
+      onSortChange(field, 'asc');
     }
   };
 
@@ -122,21 +132,9 @@ export const VehicleTableView = ({
     }
   };
 
-  const sortedVehicles = [...vehicles].sort((a, b) => {
-    if (!sortField) return 0;
-    
-    let aVal: any = a[sortField];
-    let bVal: any = b[sortField];
-    
-    if (typeof aVal === 'string') {
-      aVal = aVal.toLowerCase();
-      bVal = bVal.toLowerCase();
-    }
-    
-    if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
-    if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
-    return 0;
-  });
+  // When server-side sorting is used, don't sort client-side
+  // Just use the vehicles array as-is since it comes pre-sorted from the server
+  const sortedVehicles = vehicles;
 
   const allSelected = vehicles.length > 0 && selectedIds.length === vehicles.length;
   const someSelected = selectedIds.length > 0 && selectedIds.length < vehicles.length;
@@ -177,9 +175,9 @@ export const VehicleTableView = ({
                 variant="ghost" 
                 size="sm" 
                 className="h-8 -ml-3 font-medium"
-                onClick={() => handleSort('plate')}
+                onClick={() => handleSort('plate_number')}
               >
-                Plate {getSortIcon('plate')}
+                Plate {getSortIcon('plate_number')}
               </Button>
             </TableHead>
             <TableHead className="w-[120px]">VIN</TableHead>
@@ -208,9 +206,9 @@ export const VehicleTableView = ({
                 variant="ghost" 
                 size="sm" 
                 className="h-8 -ml-3 font-medium"
-                onClick={() => handleSort('speed')}
+                onClick={() => handleSort('speed_kmh')}
               >
-                Speed {getSortIcon('speed')}
+                Speed {getSortIcon('speed_kmh')}
               </Button>
             </TableHead>
             <TableHead className="w-[120px]">
@@ -218,9 +216,9 @@ export const VehicleTableView = ({
                 variant="ghost" 
                 size="sm" 
                 className="h-8 -ml-3 font-medium"
-                onClick={() => handleSort('fuel')}
+                onClick={() => handleSort('fuel_level_percent')}
               >
-                Fuel {getSortIcon('fuel')}
+                Fuel {getSortIcon('fuel_level_percent')}
               </Button>
             </TableHead>
             <TableHead>
@@ -228,9 +226,9 @@ export const VehicleTableView = ({
                 variant="ghost" 
                 size="sm" 
                 className="h-8 -ml-3 font-medium"
-                onClick={() => handleSort('odometer')}
+                onClick={() => handleSort('odometer_km')}
               >
-                Odometer {getSortIcon('odometer')}
+                Odometer {getSortIcon('odometer_km')}
               </Button>
             </TableHead>
             <TableHead>Driver</TableHead>
