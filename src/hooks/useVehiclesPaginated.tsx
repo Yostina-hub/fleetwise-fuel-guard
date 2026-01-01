@@ -235,6 +235,7 @@ export const useVehiclesPaginated = (
   // Initial load and reload on filter changes
   useEffect(() => {
     loadPage(1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organizationId, searchQuery, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter]);
 
   // Subscribe to realtime changes with throttling
