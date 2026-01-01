@@ -39,7 +39,7 @@ import AssignVehicleToDriverDialog from "@/components/fleet/AssignVehicleToDrive
 import DriverBulkActionsToolbar from "@/components/fleet/DriverBulkActionsToolbar";
 import DriverQuickStatusChange from "@/components/fleet/DriverQuickStatusChange";
 import LicenseExpiryBadge from "@/components/fleet/LicenseExpiryBadge";
-import { exportDriversToCSV } from "@/components/fleet/DriverExportUtils";
+import { exportDriversToCSV, exportAllDriversToCSV } from "@/components/fleet/DriverExportUtils";
 import { 
   Users, 
   Search, 
@@ -63,15 +63,18 @@ import {
 } from "lucide-react";
 import { useDriversPaginated } from "@/hooks/useDriversPaginated";
 import { Driver } from "@/hooks/useDrivers";
+import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
 const Drivers = () => {
+  const { organizationId } = useOrganization();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [isExporting, setIsExporting] = useState(false);
   
   const PAGE_SIZE = 10;
   const { 
@@ -152,9 +155,28 @@ const Drivers = () => {
     }
   };
 
-  const handleExportAll = () => {
-    exportDriversToCSV(drivers, `all_drivers_${new Date().toISOString().split('T')[0]}.csv`);
-    toast({ title: `Exported ${drivers.length} drivers` });
+  const handleExportAll = async () => {
+    if (!organizationId || isExporting) return;
+    
+    try {
+      setIsExporting(true);
+      toast({ title: "Preparing export..." });
+      const count = await exportAllDriversToCSV(
+        organizationId,
+        `all_drivers_${new Date().toISOString().split('T')[0]}.csv`,
+        statusFilter,
+        searchQuery
+      );
+      toast({ title: `Exported ${count} drivers` });
+    } catch (error: any) {
+      toast({ 
+        title: "Export failed", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   if (initialLoading) {
@@ -200,9 +222,14 @@ const Drivers = () => {
               variant="outline"
               className="gap-2"
               onClick={handleExportAll}
+              disabled={isExporting}
             >
-              <Download className="w-4 h-4" />
-              Export
+              {isExporting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              {isExporting ? "Exporting..." : "Export"}
             </Button>
             <Button 
               variant="outline"
