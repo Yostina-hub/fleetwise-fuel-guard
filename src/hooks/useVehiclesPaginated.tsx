@@ -31,6 +31,9 @@ interface UseVehiclesPaginatedOptions {
   pageSize?: number;
   searchQuery?: string;
   statusFilter?: string;
+  vehicleTypeFilter?: string;
+  fuelTypeFilter?: string;
+  ownershipFilter?: string;
 }
 
 interface UseVehiclesPaginatedReturn {
@@ -49,7 +52,14 @@ interface UseVehiclesPaginatedReturn {
 export const useVehiclesPaginated = (
   options: UseVehiclesPaginatedOptions = {}
 ): UseVehiclesPaginatedReturn => {
-  const { pageSize = 50, searchQuery = "", statusFilter = "all" } = options;
+  const { 
+    pageSize = 50, 
+    searchQuery = "", 
+    statusFilter = "all",
+    vehicleTypeFilter = "all",
+    fuelTypeFilter = "all",
+    ownershipFilter = "all"
+  } = options;
   const { organizationId } = useOrganization();
   
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -74,16 +84,28 @@ export const useVehiclesPaginated = (
       query = query.eq("status", statusFilter);
     }
 
+    if (vehicleTypeFilter !== "all") {
+      query = query.eq("vehicle_type", vehicleTypeFilter);
+    }
+
+    if (fuelTypeFilter !== "all") {
+      query = query.eq("fuel_type", fuelTypeFilter);
+    }
+
+    if (ownershipFilter !== "all") {
+      query = query.eq("ownership_type", ownershipFilter);
+    }
+
     if (searchQuery) {
       query = query.or(
-        `plate_number.ilike.%${searchQuery}%,make.ilike.%${searchQuery}%,model.ilike.%${searchQuery}%`
+        `plate_number.ilike.%${searchQuery}%,make.ilike.%${searchQuery}%,model.ilike.%${searchQuery}%,vin.ilike.%${searchQuery}%`
       );
     }
 
     const { count, error } = await query;
     if (error) throw error;
     return count || 0;
-  }, [organizationId, statusFilter, searchQuery]);
+  }, [organizationId, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, searchQuery]);
 
   const loadPage = useCallback(async (page: number) => {
     if (!organizationId) {
@@ -119,9 +141,21 @@ export const useVehiclesPaginated = (
         query = query.eq("status", statusFilter);
       }
 
+      if (vehicleTypeFilter !== "all") {
+        query = query.eq("vehicle_type", vehicleTypeFilter);
+      }
+
+      if (fuelTypeFilter !== "all") {
+        query = query.eq("fuel_type", fuelTypeFilter);
+      }
+
+      if (ownershipFilter !== "all") {
+        query = query.eq("ownership_type", ownershipFilter);
+      }
+
       if (searchQuery) {
         query = query.or(
-          `plate_number.ilike.%${searchQuery}%,make.ilike.%${searchQuery}%,model.ilike.%${searchQuery}%`
+          `plate_number.ilike.%${searchQuery}%,make.ilike.%${searchQuery}%,model.ilike.%${searchQuery}%,vin.ilike.%${searchQuery}%`
         );
       }
 
@@ -139,7 +173,7 @@ export const useVehiclesPaginated = (
       setLoading(false);
       setIsFirstLoad(false);
     }
-  }, [organizationId, pageSize, statusFilter, searchQuery, fetchCount, isFirstLoad]);
+  }, [organizationId, pageSize, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, searchQuery, fetchCount, isFirstLoad]);
 
   const loadMore = useCallback(async () => {
     if (!hasMore || loading) return;
@@ -161,9 +195,21 @@ export const useVehiclesPaginated = (
         query = query.eq("status", statusFilter);
       }
 
+      if (vehicleTypeFilter !== "all") {
+        query = query.eq("vehicle_type", vehicleTypeFilter);
+      }
+
+      if (fuelTypeFilter !== "all") {
+        query = query.eq("fuel_type", fuelTypeFilter);
+      }
+
+      if (ownershipFilter !== "all") {
+        query = query.eq("ownership_type", ownershipFilter);
+      }
+
       if (searchQuery) {
         query = query.or(
-          `plate_number.ilike.%${searchQuery}%,make.ilike.%${searchQuery}%,model.ilike.%${searchQuery}%`
+          `plate_number.ilike.%${searchQuery}%,make.ilike.%${searchQuery}%,model.ilike.%${searchQuery}%,vin.ilike.%${searchQuery}%`
         );
       }
 
@@ -180,7 +226,7 @@ export const useVehiclesPaginated = (
     } finally {
       setLoading(false);
     }
-  }, [organizationId, hasMore, loading, currentPage, pageSize, statusFilter, searchQuery, totalCount]);
+  }, [organizationId, hasMore, loading, currentPage, pageSize, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, searchQuery, totalCount]);
 
   const refetch = useCallback(async () => {
     await loadPage(1);
@@ -189,7 +235,7 @@ export const useVehiclesPaginated = (
   // Initial load and reload on filter changes
   useEffect(() => {
     loadPage(1);
-  }, [organizationId, searchQuery, statusFilter]);
+  }, [organizationId, searchQuery, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter]);
 
   // Subscribe to realtime changes with throttling
   useEffect(() => {

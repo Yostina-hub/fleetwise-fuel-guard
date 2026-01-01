@@ -116,7 +116,7 @@ const Fleet = () => {
   // Debounce search to avoid too many queries
   const debouncedSearch = useDebounce(searchInput, 300);
 
-  // Use paginated hook for scalability - fixed 10 items per page
+  // Use paginated hook for scalability - fixed 10 items per page with server-side filters
   const PAGE_SIZE = 10;
   const {
     vehicles: dbVehicles,
@@ -131,6 +131,9 @@ const Fleet = () => {
     pageSize: PAGE_SIZE,
     searchQuery: debouncedSearch,
     statusFilter,
+    vehicleTypeFilter,
+    fuelTypeFilter,
+    ownershipFilter,
   });
 
   // Get vehicle IDs for telemetry and service date queries
@@ -194,7 +197,7 @@ const Fleet = () => {
         model: v.model || "",
         year: v.year || new Date().getFullYear(),
         status,
-        fuel: telemetry?.fuel_level_percent ?? Math.floor(Math.random() * 60) + 20,
+        fuel: telemetry?.fuel_level_percent ?? null,
         odometer: v.odometer_km || 0,
         nextService: nextService || null,
         vehicleId: v.id,
@@ -202,6 +205,7 @@ const Fleet = () => {
         fuelType: v.fuel_type || "",
         ownershipType: v.ownership_type || "",
         assignedDriver: driverAssignments[v.id] || "",
+        vin: v.vin || "",
         // Additional telemetry data
         speed: telemetry?.speed_kmh || 0,
         latitude: telemetry?.latitude || null,
@@ -211,16 +215,7 @@ const Fleet = () => {
       };
     });
 
-    // Apply client-side filters
-    if (vehicleTypeFilter !== "all") {
-      filtered = filtered.filter((v) => v.vehicleType === vehicleTypeFilter);
-    }
-    if (fuelTypeFilter !== "all") {
-      filtered = filtered.filter((v) => v.fuelType === fuelTypeFilter);
-    }
-    if (ownershipFilter !== "all") {
-      filtered = filtered.filter((v) => v.ownershipType === ownershipFilter);
-    }
+    // Apply driver filter client-side (since it depends on trip data)
     if (driverFilter === "assigned") {
       filtered = filtered.filter((v) => v.assignedDriver);
     } else if (driverFilter === "unassigned") {
@@ -228,7 +223,7 @@ const Fleet = () => {
     }
 
     return filtered;
-  }, [dbVehicles, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, driverFilter, driverAssignments, telemetryMap, nextServiceMap]);
+  }, [dbVehicles, driverFilter, driverAssignments, telemetryMap, nextServiceMap]);
 
   // Calculate stats from current page
   const stats = useMemo(() => {
@@ -673,6 +668,7 @@ const Fleet = () => {
                 <p className="text-sm text-muted-foreground">
                   Showing {((currentPage - 1) * PAGE_SIZE) + 1} to{" "}
                   {Math.min(currentPage * PAGE_SIZE, totalCount)} of {totalCount} vehicles
+                  {driverFilter !== "all" && vehicles.length < PAGE_SIZE && ` (${vehicles.length} after driver filter)`}
                 </p>
                 <div className="flex items-center gap-2">
                   <Button

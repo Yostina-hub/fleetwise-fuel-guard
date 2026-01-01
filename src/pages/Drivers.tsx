@@ -73,6 +73,7 @@ const Drivers = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   
+  const PAGE_SIZE = 10;
   const { 
     drivers, 
     loading, 
@@ -82,7 +83,7 @@ const Drivers = () => {
     loadPage,
     refetch 
   } = useDriversPaginated({
-    pageSize: 25,
+    pageSize: PAGE_SIZE,
     searchQuery,
     statusFilter
   });
