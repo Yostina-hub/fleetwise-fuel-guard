@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -31,16 +31,33 @@ const OrganizationSettingsTab = () => {
   });
 
   const [formData, setFormData] = useState({
-    company_name: settings?.company_name || "",
-    primary_color: settings?.primary_color || "#0066cc",
-    secondary_color: settings?.secondary_color || "#333333",
-    default_language: settings?.default_language || "en",
-    default_timezone: settings?.default_timezone || "UTC",
-    currency: settings?.currency || "USD",
-    distance_unit: settings?.distance_unit || "km",
-    enable_2fa: settings?.enable_2fa || false,
-    enforce_2fa: settings?.enforce_2fa || false,
+    company_name: "",
+    primary_color: "#0066cc",
+    secondary_color: "#333333",
+    default_language: "en",
+    default_timezone: "UTC",
+    currency: "USD",
+    distance_unit: "km",
+    enable_2fa: false,
+    enforce_2fa: false,
   });
+
+  // Sync form data when settings load
+  useEffect(() => {
+    if (settings) {
+      setFormData({
+        company_name: settings.company_name || "",
+        primary_color: settings.primary_color || "#0066cc",
+        secondary_color: settings.secondary_color || "#333333",
+        default_language: settings.default_language || "en",
+        default_timezone: settings.default_timezone || "UTC",
+        currency: settings.currency || "USD",
+        distance_unit: settings.distance_unit || "km",
+        enable_2fa: settings.enable_2fa || false,
+        enforce_2fa: settings.enforce_2fa || false,
+      });
+    }
+  }, [settings]);
 
   const saveMutation = useMutation({
     mutationFn: async (data: typeof formData) => {

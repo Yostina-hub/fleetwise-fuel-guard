@@ -6,6 +6,8 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  organizationId: string | null;
+  organizationLoading: boolean;
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<{ error: Error | null }>;
@@ -17,6 +19,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [organizationLoading, setOrganizationLoading] = useState(true);
+
+  // Fetch organization when user changes
+  useEffect(() => {
+    if (!user) {
+      setOrganizationId(null);
+      setOrganizationLoading(false);
+      return;
+    }
+
+    const fetchOrganization = async () => {
+      setOrganizationLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("organization_id")
+          .eq("id", user.id)
+          .single();
+
+        if (error) throw error;
+        setOrganizationId(data?.organization_id || null);
+      } catch (error) {
+        console.error("Error fetching organization:", error);
+        setOrganizationId(null);
+      } finally {
+        setOrganizationLoading(false);
+      }
+    };
+
+    fetchOrganization();
+  }, [user]);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -70,7 +104,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      session, 
+      loading, 
+      organizationId,
+      organizationLoading,
+      signUp, 
+      signIn, 
+      signOut 
+    }}>
       {children}
     </AuthContext.Provider>
   );
