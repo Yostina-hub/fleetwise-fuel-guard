@@ -79,6 +79,14 @@ export const DriverScoringTab = () => {
     endDate: "",
   });
 
+  // Get top 3 performers for leaderboard
+  const topPerformers = useMemo(() => {
+    if (!driverScores) return [];
+    return [...driverScores]
+      .sort((a, b) => b.overall_score - a.overall_score)
+      .slice(0, 3);
+  }, [driverScores]);
+
   const filteredScores = useMemo(() => {
     if (!driverScores) return [];
     return driverScores.filter((score) => {
@@ -145,13 +153,6 @@ export const DriverScoringTab = () => {
     );
   }
 
-  // Get top 3 performers for leaderboard
-  const topPerformers = useMemo(() => {
-    if (!driverScores) return [];
-    return [...driverScores]
-      .sort((a, b) => b.overall_score - a.overall_score)
-      .slice(0, 3);
-  }, [driverScores]);
 
   return (
     <div className="space-y-6">
