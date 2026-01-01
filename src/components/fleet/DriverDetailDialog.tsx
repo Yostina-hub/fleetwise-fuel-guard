@@ -26,7 +26,9 @@ import {
   MapPin,
   Navigation,
   Zap,
-  Route
+  Route,
+  Heart,
+  UserCircle
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import type { Driver } from "@/hooks/useDrivers";
@@ -390,6 +392,58 @@ export default function DriverDetailDialog({ open, onOpenChange, driver }: Drive
                         <span className="font-medium font-mono">{driver.bluetooth_id}</span>
                       </div>
                     )}
+                  </CardContent>
+              </Card>
+              )}
+
+              {/* Emergency Contact */}
+              {(driver.emergency_contact_name || driver.emergency_contact_phone) && (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <UserCircle className="w-5 h-5 text-destructive" />
+                      Emergency Contact
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {driver.emergency_contact_name && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Name</span>
+                        <span className="font-medium">{driver.emergency_contact_name}</span>
+                      </div>
+                    )}
+                    {driver.emergency_contact_relationship && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Relationship</span>
+                        <span className="font-medium">{driver.emergency_contact_relationship}</span>
+                      </div>
+                    )}
+                    {driver.emergency_contact_phone && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Phone</span>
+                        <span className="font-medium">{driver.emergency_contact_phone}</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Medical Information */}
+              {driver.medical_certificate_expiry && (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Heart className="w-5 h-5 text-destructive" />
+                      Medical Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Medical Certificate Expiry</span>
+                      <span className="font-medium">
+                        {format(new Date(driver.medical_certificate_expiry), "MMM d, yyyy")}
+                      </span>
+                    </div>
                   </CardContent>
                 </Card>
               )}

@@ -12,6 +12,8 @@ export interface VehicleTelemetryData {
   device_connected: boolean;
   last_communication_at: string | null;
   gps_signal_strength: number | null;
+  gps_jamming_detected?: boolean;
+  gps_spoofing_detected?: boolean;
 }
 
 export function useVehicleTelemetryBatch(vehicleIds: string[]) {
@@ -28,7 +30,7 @@ export function useVehicleTelemetryBatch(vehicleIds: string[]) {
     try {
       const { data, error } = await supabase
         .from("vehicle_telemetry")
-        .select("vehicle_id, latitude, longitude, speed_kmh, fuel_level_percent, engine_on, device_connected, last_communication_at, gps_signal_strength")
+        .select("vehicle_id, latitude, longitude, speed_kmh, fuel_level_percent, engine_on, device_connected, last_communication_at, gps_signal_strength, gps_jamming_detected, gps_spoofing_detected")
         .in("vehicle_id", vehicleIds)
         .eq("organization_id", organizationId);
 
