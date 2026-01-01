@@ -26,6 +26,7 @@ import { useDispatchJobs } from "@/hooks/useDispatchJobs";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
 import { format } from "date-fns";
+import SLAIndicator from "./SLAIndicator";
 
 const DispatchJobsTab = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -220,6 +221,11 @@ const DispatchJobsTab = () => {
                       {getStatusBadge(job.status)}
                       {getPriorityBadge(job.priority || undefined)}
                       <Badge variant="outline" className="capitalize">{job.job_type}</Badge>
+                      <SLAIndicator 
+                        slaDeadline={job.sla_deadline_at} 
+                        actualTime={job.completed_at}
+                        status={job.status}
+                      />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
