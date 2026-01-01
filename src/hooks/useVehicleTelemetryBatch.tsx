@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
 
@@ -21,8 +21,12 @@ export function useVehicleTelemetryBatch(vehicleIds: string[]) {
   const [telemetryMap, setTelemetryMap] = useState<Record<string, VehicleTelemetryData>>({});
   const [loading, setLoading] = useState(true);
 
+  // Memoize the vehicle IDs string to prevent unnecessary re-renders
+  const vehicleIdsKey = useMemo(() => vehicleIds.join(","), [vehicleIds]);
+
   const fetchTelemetry = useCallback(async () => {
     if (!organizationId || vehicleIds.length === 0) {
+      setTelemetryMap({});
       setLoading(false);
       return;
     }
@@ -54,40 +58,44 @@ export function useVehicleTelemetryBatch(vehicleIds: string[]) {
     } finally {
       setLoading(false);
     }
-  }, [organizationId, vehicleIds.join(",")]);
+  }, [organizationId, vehicleIdsKey]);
 
   useEffect(() => {
     fetchTelemetry();
+  }, [fetchTelemetry]);
 
-    // Set up real-time subscription for telemetry updates
-    if (vehicleIds.length > 0 && organizationId) {
-      const channel = supabase
-        .channel('vehicle-telemetry-batch')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'vehicle_telemetry',
-            filter: `organization_id=eq.${organizationId}`,
-          },
-          (payload) => {
-            const newData = payload.new as VehicleTelemetryData;
-            if (newData && vehicleIds.includes(newData.vehicle_id)) {
-              setTelemetryMap(prev => ({
-                ...prev,
-                [newData.vehicle_id]: newData,
-              }));
-            }
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
+  // Separate effect for real-time subscription
+  useEffect(() => {
+    if (vehicleIds.length === 0 || !organizationId) {
+      return;
     }
-  }, [fetchTelemetry, vehicleIds.join(","), organizationId]);
+
+    const channel = supabase
+      .channel(`vehicle-telemetry-batch-${vehicleIdsKey.slice(0, 50)}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'vehicle_telemetry',
+          filter: `organization_id=eq.${organizationId}`,
+        },
+        (payload) => {
+          const newData = payload.new as VehicleTelemetryData;
+          if (newData && vehicleIds.includes(newData.vehicle_id)) {
+            setTelemetryMap(prev => ({
+              ...prev,
+              [newData.vehicle_id]: newData,
+            }));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [vehicleIdsKey, organizationId]);
 
   return { telemetryMap, loading, refetch: fetchTelemetry };
 }
