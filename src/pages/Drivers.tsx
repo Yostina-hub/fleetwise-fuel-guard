@@ -19,8 +19,7 @@ import {
   UserCheck,
   UserX,
   AlertTriangle,
-  Loader2,
-  Settings
+  Loader2
 } from "lucide-react";
 import { useDrivers } from "@/hooks/useDrivers";
 import { format } from "date-fns";
@@ -94,19 +93,13 @@ const Drivers = () => {
               Manage all drivers and their information • {drivers.length} drivers total
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" className="gap-2">
-              <Settings className="w-4 h-4" />
-              Settings
-            </Button>
-            <Button 
-              className="gap-2 bg-gradient-to-r from-primary to-primary/80"
-              onClick={() => setCreateDialogOpen(true)}
-            >
-              <Plus className="w-4 h-4" />
-              Add Driver
-            </Button>
-          </div>
+          <Button 
+            className="gap-2 bg-gradient-to-r from-primary to-primary/80"
+            onClick={() => setCreateDialogOpen(true)}
+          >
+            <Plus className="w-4 h-4" />
+            Add Driver
+          </Button>
         </div>
 
         {/* Stats Overview */}
