@@ -11,6 +11,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   Table,
   TableBody,
@@ -29,10 +35,18 @@ import {
   Settings2,
   ChevronRight,
   Info,
+  FileSpreadsheet,
 } from "lucide-react";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useFuelEvents } from "@/hooks/useFuelEvents";
 import { format, subDays } from "date-fns";
+import { toast } from "sonner";
+import {
+  exportToCSV,
+  exportToPDF,
+  formatFleetReportData,
+  formatFuelReportData,
+} from "@/lib/exportUtils";
 
 const Reports = () => {
   const [activeReportTab, setActiveReportTab] = useState("vehicle");
@@ -237,10 +251,50 @@ const Reports = () => {
               </div>
             </div>
           </div>
-          <Button className="gap-2">
-            <Download className="w-4 h-4" />
-            EXPORT
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="gap-2">
+                <Download className="w-4 h-4" />
+                EXPORT
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => {
+                  const data = formatFleetReportData(vehicles, fuelEvents);
+                  exportToCSV(data, "fleet_report");
+                  toast.success("Fleet report exported to CSV");
+                }}
+              >
+                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                Export as CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  const data = formatFleetReportData(vehicles, fuelEvents);
+                  exportToPDF(
+                    "Fleet Report",
+                    data,
+                    [
+                      { key: "plate_number", label: "Vehicle", width: 30 },
+                      { key: "make", label: "Make", width: 25 },
+                      { key: "model", label: "Model", width: 25 },
+                      { key: "status", label: "Status", width: 25 },
+                      { key: "distance_km", label: "Distance (km)", width: 35 },
+                      { key: "fuel_consumed_l", label: "Fuel (L)", width: 30 },
+                      { key: "efficiency_kmpl", label: "Efficiency", width: 30 },
+                      { key: "fuel_type", label: "Fuel Type", width: 30 },
+                    ],
+                    "fleet_report"
+                  );
+                  toast.success("Fleet report exported to PDF");
+                }}
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Export as PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Summary Cards */}
