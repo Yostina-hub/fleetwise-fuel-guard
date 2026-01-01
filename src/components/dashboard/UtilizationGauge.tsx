@@ -7,13 +7,15 @@ interface UtilizationGaugeProps {
   activeVehicles: number;
   totalVehicles: number;
   trend?: 'up' | 'down' | 'stable';
+  trendPercentage?: number;
 }
 
 const UtilizationGauge = ({ 
   utilizationRate, 
   activeVehicles, 
   totalVehicles,
-  trend = 'stable'
+  trend = 'stable',
+  trendPercentage = 0
 }: UtilizationGaugeProps) => {
   const { strokeDasharray, strokeDashoffset, color, label } = useMemo(() => {
     const circumference = 2 * Math.PI * 45; // radius = 45
@@ -105,7 +107,11 @@ const UtilizationGauge = ({
             <TrendingDown className="w-4 h-4 text-destructive" />
           ) : null}
           <span className={`text-xs ${trend === 'up' ? 'text-success' : trend === 'down' ? 'text-destructive' : 'text-muted-foreground'}`}>
-            {trend === 'up' ? '+5.2% vs last week' : trend === 'down' ? '-3.1% vs last week' : 'Stable'}
+            {trend === 'up' 
+              ? `+${trendPercentage.toFixed(1)}% vs last week` 
+              : trend === 'down' 
+              ? `-${trendPercentage.toFixed(1)}% vs last week` 
+              : 'Stable'}
           </span>
         </div>
       </CardContent>

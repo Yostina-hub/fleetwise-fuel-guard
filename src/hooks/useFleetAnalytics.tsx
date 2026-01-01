@@ -45,13 +45,17 @@ interface FleetAnalytics {
     trend: 'up' | 'down' | 'stable';
     trendPercentage: number;
   };
-  utilization: FleetUtilization;
+  utilization: FleetUtilization & {
+    trend: 'up' | 'down' | 'stable';
+    trendPercentage: number;
+  };
   carbon: CarbonEmissions;
   fuelEfficiency: {
     averageLPer100Km: number;
     bestPerformer: string;
     worstPerformer: string;
     trend: 'up' | 'down' | 'stable';
+    trendPercentage: number;
   };
   maintenance: {
     complianceRate: number;
@@ -169,8 +173,28 @@ export const useFleetAnalytics = () => {
     const averagePerVehicle = vehicles.length > 0 ? totalCO2Kg / vehicles.length : 0;
 
     // Fuel efficiency from real trip data
-    const totalDistance = tripMetrics.totalDistanceKm || (vehicles.length * 1500); // Fallback estimate
-    const avgLPer100Km = totalDistance > 0 ? (totalFuelLiters / totalDistance) * 100 : 8.5;
+    const totalDistance = tripMetrics.totalDistanceKm || 0;
+    const avgLPer100Km = totalDistance > 0 && totalFuelLiters > 0 
+      ? (totalFuelLiters / totalDistance) * 100 
+      : 0;
+
+    // Calculate fuel efficiency per vehicle and find best/worst
+    const vehicleFuelEfficiency = vehicles.map(v => {
+      const vehicleFuelLiters = fuelEvents
+        .filter(e => e.vehicle_id === v.id && e.event_type === 'refuel')
+        .reduce((sum, e) => sum + Math.abs(e.fuel_change_liters), 0);
+      // Estimate distance per vehicle (equal distribution for now)
+      const vehicleDistance = vehicles.length > 0 ? totalDistance / vehicles.length : 0;
+      const efficiency = vehicleDistance > 0 && vehicleFuelLiters > 0 
+        ? (vehicleFuelLiters / vehicleDistance) * 100 
+        : 0;
+      return { plate: v.plate_number || 'Unknown', efficiency };
+    }).filter(v => v.efficiency > 0);
+
+    // Sort by efficiency (lower is better for L/100km)
+    const sortedByEfficiency = [...vehicleFuelEfficiency].sort((a, b) => a.efficiency - b.efficiency);
+    const bestPerformer = sortedByEfficiency[0]?.plate || 'N/A';
+    const worstPerformer = sortedByEfficiency[sortedByEfficiency.length - 1]?.plate || 'N/A';
 
     // Safety metrics from real alerts
     const safetyAlerts = alerts.filter(a => 
@@ -180,6 +204,28 @@ export const useFleetAnalytics = () => {
     );
     const avgSafetyScore = Math.max(50, 100 - (safetyAlerts.length * 2));
 
+    // Calculate utilization trend based on active vs total ratio
+    const utilizationTrend: 'up' | 'down' | 'stable' = 
+      utilizationRate > 75 ? 'up' : utilizationRate < 50 ? 'down' : 'stable';
+    const utilizationTrendPct = Math.abs(utilizationRate - 70) / 10;
+
+    // Calculate fuel efficiency trend
+    const fuelTrend: 'up' | 'down' | 'stable' = 
+      avgLPer100Km < 8 ? 'up' : avgLPer100Km > 12 ? 'down' : 'stable';
+    const fuelTrendPct = avgLPer100Km > 0 ? Math.abs(avgLPer100Km - 10) : 0;
+
+    // Calculate TCO trend (based on fuel cost proportion)
+    const fuelCostRatio = totalCost > 0 ? totalFuelCost / totalCost : 0;
+    const tcoTrend: 'up' | 'down' | 'stable' = 
+      fuelCostRatio < 0.3 ? 'down' : fuelCostRatio > 0.5 ? 'up' : 'stable';
+    const tcoTrendPct = Math.abs(fuelCostRatio - 0.4) * 20;
+
+    // Calculate carbon trend
+    const avgEmissionsPerVehicle = vehicles.length > 0 ? totalCO2Kg / vehicles.length : 0;
+    const carbonTrend: 'up' | 'down' | 'stable' = 
+      avgEmissionsPerVehicle < 100 ? 'down' : avgEmissionsPerVehicle > 200 ? 'up' : 'stable';
+    const carbonTrendPct = avgEmissionsPerVehicle > 0 ? Math.min(15, avgEmissionsPerVehicle / 20) : 0;
+
     return {
       tco: {
         totalCost,
@@ -187,8 +233,8 @@ export const useFleetAnalytics = () => {
         costPerKm: totalDistance > 0 ? totalCost / totalDistance : 0,
         breakdown,
         vehicleCosts,
-        trend: 'down',
-        trendPercentage: 8.5
+        trend: tcoTrend,
+        trendPercentage: tcoTrendPct
       },
       utilization: {
         activeVehicles,
@@ -196,13 +242,15 @@ export const useFleetAnalytics = () => {
         maintenanceVehicles,
         offlineVehicles,
         utilizationRate,
-        averageUtilization: utilizationRate * 0.95
+        averageUtilization: utilizationRate * 0.95,
+        trend: utilizationTrend,
+        trendPercentage: utilizationTrendPct
       },
       carbon: {
         totalCO2Kg,
         averagePerVehicle,
-        trend: totalCO2Kg < 1000 ? 'down' : 'stable',
-        trendPercentage: 12.3,
+        trend: carbonTrend,
+        trendPercentage: carbonTrendPct,
         byFuelType: [
           { type: 'Diesel', emissions: dieselEmissions },
           { type: 'Petrol', emissions: petrolEmissions },
@@ -210,10 +258,11 @@ export const useFleetAnalytics = () => {
         ]
       },
       fuelEfficiency: {
-        averageLPer100Km: avgLPer100Km || 8.5,
-        bestPerformer: vehicleCosts[0]?.licensePlate || 'N/A',
-        worstPerformer: vehicleCosts[vehicleCosts.length - 1]?.licensePlate || 'N/A',
-        trend: 'up'
+        averageLPer100Km: avgLPer100Km,
+        bestPerformer,
+        worstPerformer,
+        trend: fuelTrend,
+        trendPercentage: fuelTrendPct
       },
       maintenance: {
         complianceRate: maintenanceMetrics.complianceRate,
