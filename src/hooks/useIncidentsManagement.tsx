@@ -8,19 +8,18 @@ export interface Incident {
   organization_id: string;
   incident_number: string;
   incident_type: string;
-  vehicle_id?: string;
-  driver_id?: string;
+  vehicle_id?: string | null;
+  driver_id?: string | null;
   incident_time: string;
-  location_name?: string;
+  location?: string | null;
   description: string;
   severity: string;
   status: string;
-  resolution?: string;
-  resolution_date?: string;
-  estimated_cost?: number;
-  actual_cost?: number;
-  notes?: string;
-  reported_by?: string;
+  resolution_notes?: string | null;
+  resolved_at?: string | null;
+  resolved_by?: string | null;
+  estimated_cost?: number | null;
+  actual_cost?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -54,24 +53,20 @@ export interface InsuranceClaim {
 export interface TrafficViolation {
   id: string;
   organization_id: string;
-  ticket_number: string;
+  ticket_number?: string | null;
   vehicle_id: string;
-  driver_id?: string;
+  driver_id?: string | null;
   violation_type: string;
   violation_date: string;
-  location_name?: string;
-  fine_amount: number;
-  points_assessed?: number;
-  paid_date?: string;
-  paid_by?: string;
-  payment_amount?: number;
-  payment_method?: string;
-  contested?: boolean;
-  court_date?: string;
-  court_outcome?: string;
-  issuing_authority?: string;
-  document_url?: string;
-  notes?: string;
+  location_name?: string | null;
+  fine_amount?: number | null;
+  points_assigned?: number | null;
+  payment_date?: string | null;
+  payment_status?: string | null;
+  paid_by?: string | null;
+  issuing_authority?: string | null;
+  document_url?: string | null;
+  notes?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -184,7 +179,7 @@ export const useIncidentsManagement = (filters?: {
           status: incident.status || 'reported',
           vehicle_id: incident.vehicle_id,
           driver_id: incident.driver_id,
-          location_name: incident.location_name,
+          location: incident.location,
           organization_id: organizationId,
         }])
         .select()
@@ -202,9 +197,9 @@ export const useIncidentsManagement = (filters?: {
 
   const updateIncidentStatus = async (id: string, status: string, notes?: string) => {
     try {
-      const updateData: any = { status };
-      if (notes) updateData.notes = notes;
-      if (status === 'closed') updateData.resolution_date = new Date().toISOString();
+      const updateData: Record<string, unknown> = { status };
+      if (notes) updateData.resolution_notes = notes;
+      if (status === 'resolved' || status === 'closed') updateData.resolved_at = new Date().toISOString();
 
       const { error } = await supabase
         .from("incidents")
@@ -251,7 +246,8 @@ export const useIncidentsManagement = (filters?: {
       const { error } = await supabase
         .from("traffic_violations")
         .update({
-          paid_date: new Date().toISOString(),
+          payment_date: new Date().toISOString(),
+          payment_status: 'paid',
         })
         .eq("id", id);
 

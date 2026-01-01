@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -40,15 +40,11 @@ const IncidentsListTab = () => {
     incident_type: 'accident',
     vehicle_id: '',
     driver_id: '',
-    occurred_at: new Date().toISOString().slice(0, 16),
-    reported_at: new Date().toISOString(),
-    location_name: '',
+    incident_time: new Date().toISOString().slice(0, 16),
+    location: '',
     description: '',
     severity: 'medium',
     status: 'reported',
-    injuries_count: 0,
-    property_damage: false,
-    third_party_involved: false,
   });
 
   const getVehiclePlate = (vehicleId?: string) => {
@@ -99,7 +95,7 @@ const IncidentsListTab = () => {
     return (
       i.incident_number?.toLowerCase().includes(searchLower) ||
       i.description?.toLowerCase().includes(searchLower) ||
-      i.location_name?.toLowerCase().includes(searchLower)
+      i.location?.toLowerCase().includes(searchLower)
     );
   });
 
@@ -114,15 +110,11 @@ const IncidentsListTab = () => {
       incident_type: 'accident',
       vehicle_id: '',
       driver_id: '',
-      occurred_at: new Date().toISOString().slice(0, 16),
-      reported_at: new Date().toISOString(),
-      location_name: '',
+      incident_time: new Date().toISOString().slice(0, 16),
+      location: '',
       description: '',
       severity: 'medium',
       status: 'reported',
-      injuries_count: 0,
-      property_damage: false,
-      third_party_involved: false,
     });
   };
 
@@ -200,9 +192,9 @@ const IncidentsListTab = () => {
         <Card>
           <CardContent className="pt-4">
             <div className="text-2xl font-bold">
-              {incidents.filter(i => i.injuries_count && i.injuries_count > 0).length}
+              {incidents.filter(i => i.status === 'resolved').length}
             </div>
-            <div className="text-sm text-muted-foreground">With Injuries</div>
+            <div className="text-sm text-muted-foreground">Resolved</div>
           </CardContent>
         </Card>
         <Card>
@@ -242,12 +234,12 @@ const IncidentsListTab = () => {
                     <div className="flex items-center gap-6 text-sm text-muted-foreground flex-wrap">
                       <span className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
-                        {format(new Date(incident.occurred_at), "MMM dd, yyyy HH:mm")}
+                        {format(new Date(incident.incident_time), "MMM dd, yyyy HH:mm")}
                       </span>
-                      {incident.location_name && (
+                      {incident.location && (
                         <span className="flex items-center gap-1">
                           <MapPin className="w-4 h-4" />
-                          {incident.location_name}
+                          {incident.location}
                         </span>
                       )}
                       <span className="flex items-center gap-1">
@@ -260,19 +252,16 @@ const IncidentsListTab = () => {
                       </span>
                     </div>
 
-                    <div className="flex gap-4 text-sm">
-                      {incident.injuries_count !== undefined && incident.injuries_count > 0 && (
-                        <span className="text-destructive">
-                          {incident.injuries_count} Injur{incident.injuries_count > 1 ? 'ies' : 'y'}
-                        </span>
-                      )}
-                      {incident.property_damage && (
-                        <span className="text-warning">Property Damage</span>
-                      )}
-                      {incident.third_party_involved && (
-                        <span className="text-muted-foreground">Third Party Involved</span>
-                      )}
-                    </div>
+                    {(incident.estimated_cost || incident.actual_cost) && (
+                      <div className="flex gap-4 text-sm text-muted-foreground">
+                        {incident.estimated_cost && (
+                          <span>Est. Cost: ${incident.estimated_cost.toLocaleString()}</span>
+                        )}
+                        {incident.actual_cost && (
+                          <span>Actual Cost: ${incident.actual_cost.toLocaleString()}</span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex flex-col gap-2 min-w-[140px]">
@@ -390,16 +379,16 @@ const IncidentsListTab = () => {
               <Label>Date & Time</Label>
               <Input 
                 type="datetime-local"
-                value={newIncident.occurred_at}
-                onChange={e => setNewIncident({...newIncident, occurred_at: e.target.value})}
+                value={newIncident.incident_time}
+                onChange={e => setNewIncident({...newIncident, incident_time: e.target.value})}
               />
             </div>
 
             <div>
               <Label>Location</Label>
               <Input 
-                value={newIncident.location_name}
-                onChange={e => setNewIncident({...newIncident, location_name: e.target.value})}
+                value={newIncident.location}
+                onChange={e => setNewIncident({...newIncident, location: e.target.value})}
                 placeholder="Enter incident location"
               />
             </div>
@@ -411,15 +400,6 @@ const IncidentsListTab = () => {
                 onChange={e => setNewIncident({...newIncident, description: e.target.value})}
                 placeholder="Describe what happened..."
                 rows={3}
-              />
-            </div>
-
-            <div>
-              <Label>Number of Injuries</Label>
-              <Input 
-                type="number"
-                value={newIncident.injuries_count}
-                onChange={e => setNewIncident({...newIncident, injuries_count: Number(e.target.value)})}
               />
             </div>
           </div>
