@@ -138,7 +138,8 @@ export const useFuelTheftCases = (filters?: {
         .from("fuel_theft_cases")
         .update({
           status: resolution === 'confirmed' ? 'closed' : 'false_positive',
-          resolution_notes: notes,
+          outcome: resolution,
+          investigation_notes: notes,
           closed_at: new Date().toISOString(),
         })
         .eq("id", id);
