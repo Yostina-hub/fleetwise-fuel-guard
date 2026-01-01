@@ -6,7 +6,25 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import CreateDriverDialog from "@/components/fleet/CreateDriverDialog";
+import EditDriverDialog from "@/components/fleet/EditDriverDialog";
+import DeleteDriverDialog from "@/components/fleet/DeleteDriverDialog";
+import DriverDetailDialog from "@/components/fleet/DriverDetailDialog";
 import { 
   Users, 
   Search, 
@@ -16,17 +34,28 @@ import {
   CreditCard, 
   Filter, 
   Eye,
+  Edit,
+  Trash2,
   UserCheck,
   UserX,
   AlertTriangle,
-  Loader2
+  Loader2,
+  MoreHorizontal,
+  Car,
+  Activity
 } from "lucide-react";
-import { useDrivers } from "@/hooks/useDrivers";
+import { useDrivers, Driver } from "@/hooks/useDrivers";
 import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 const Drivers = () => {
+  const navigate = useNavigate();
   const { drivers, loading } = useDrivers();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -63,6 +92,21 @@ const Drivers = () => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
+  const handleViewDriver = (driver: Driver) => {
+    setSelectedDriver(driver);
+    setDetailDialogOpen(true);
+  };
+
+  const handleEditDriver = (driver: Driver) => {
+    setSelectedDriver(driver);
+    setEditDialogOpen(true);
+  };
+
+  const handleDeleteDriver = (driver: Driver) => {
+    setSelectedDriver(driver);
+    setDeleteDialogOpen(true);
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -93,13 +137,23 @@ const Drivers = () => {
               Manage all drivers and their information • {drivers.length} drivers total
             </p>
           </div>
-          <Button 
-            className="gap-2 bg-gradient-to-r from-primary to-primary/80"
-            onClick={() => setCreateDialogOpen(true)}
-          >
-            <Plus className="w-4 h-4" />
-            Add Driver
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline"
+              className="gap-2"
+              onClick={() => navigate("/driver-scoring")}
+            >
+              <Activity className="w-4 h-4" />
+              Driver Scoring
+            </Button>
+            <Button 
+              className="gap-2 bg-gradient-to-r from-primary to-primary/80"
+              onClick={() => setCreateDialogOpen(true)}
+            >
+              <Plus className="w-4 h-4" />
+              Add Driver
+            </Button>
+          </div>
         </div>
 
         {/* Stats Overview */}
@@ -174,10 +228,18 @@ const Drivers = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <Button variant="outline" className="gap-2">
-                <Filter className="w-4 h-4" />
-                Filter
-              </Button>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[150px]">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="suspended">Suspended</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
@@ -197,12 +259,12 @@ const Drivers = () => {
                   <TableHead>Contact</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Safety Score</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredDrivers.map((driver) => (
-                  <TableRow key={driver.id}>
+                  <TableRow key={driver.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleViewDriver(driver)}>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar>
@@ -268,11 +330,38 @@ const Drivers = () => {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <Button size="sm" variant="outline" className="gap-1">
-                        <Eye className="w-4 h-4" />
-                        View
-                      </Button>
+                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => handleViewDriver(driver)}>
+                            <Eye className="w-4 h-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditDriver(driver)}>
+                            <Edit className="w-4 h-4 mr-2" />
+                            Edit Driver
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate(`/driver-scoring`)}>
+                            <Activity className="w-4 h-4 mr-2" />
+                            View Scoring
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteDriver(driver)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete Driver
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -293,10 +382,28 @@ const Drivers = () => {
         </Card>
       </div>
 
-      {/* Create Driver Dialog */}
+      {/* Dialogs */}
       <CreateDriverDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
+      />
+      
+      <EditDriverDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        driver={selectedDriver}
+      />
+      
+      <DeleteDriverDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        driver={selectedDriver}
+      />
+      
+      <DriverDetailDialog
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+        driver={selectedDriver}
       />
     </Layout>
   );
