@@ -5,12 +5,14 @@ interface SafetyScoreCardProps {
   averageScore: number;
   incidentsThisMonth: number;
   trend: 'up' | 'down' | 'stable';
+  trendPercentage?: number;
 }
 
 const SafetyScoreCard = ({
   averageScore,
   incidentsThisMonth,
-  trend
+  trend,
+  trendPercentage = 0
 }: SafetyScoreCardProps) => {
   const getScoreColor = (score: number) => {
     if (score >= 90) return 'text-success';
@@ -84,12 +86,12 @@ const SafetyScoreCard = ({
               {trend === 'up' ? (
                 <>
                   <TrendingUp className="w-3 h-3" />
-                  <span>Improving</span>
+                  <span>Improving {trendPercentage > 0 && `(+${trendPercentage.toFixed(1)}%)`}</span>
                 </>
               ) : trend === 'down' ? (
                 <>
                   <TrendingDown className="w-3 h-3" />
-                  <span>Declining</span>
+                  <span>Declining {trendPercentage > 0 && `(-${trendPercentage.toFixed(1)}%)`}</span>
                 </>
               ) : (
                 <span>Stable</span>

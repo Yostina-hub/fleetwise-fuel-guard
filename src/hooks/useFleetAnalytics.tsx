@@ -66,11 +66,14 @@ interface FleetAnalytics {
     averageScore: number;
     incidentsThisMonth: number;
     trend: 'up' | 'down' | 'stable';
+    trendPercentage: number;
   };
   delivery: {
     onTimeRate: number;
     averageDelay: number;
     completedTrips: number;
+    trend: 'up' | 'down' | 'stable';
+    trendPercentage: number;
   };
   revenue: {
     perVehicle: number;
@@ -272,12 +275,15 @@ export const useFleetAnalytics = () => {
       safety: {
         averageScore: avgSafetyScore,
         incidentsThisMonth: safetyAlerts.length,
-        trend: safetyAlerts.length < 5 ? 'up' : 'down'
+        trend: safetyAlerts.length < 5 ? 'up' : safetyAlerts.length > 10 ? 'down' : 'stable',
+        trendPercentage: safetyAlerts.length > 0 ? Math.min(20, safetyAlerts.length * 2) : 0
       },
       delivery: {
         onTimeRate: deliveryMetrics.onTimeRate,
         averageDelay: deliveryMetrics.averageDelayMinutes,
-        completedTrips: deliveryMetrics.completedTrips
+        completedTrips: deliveryMetrics.completedTrips,
+        trend: deliveryMetrics.onTimeRate >= 90 ? 'up' : deliveryMetrics.onTimeRate < 75 ? 'down' : 'stable',
+        trendPercentage: Math.abs(deliveryMetrics.onTimeRate - 85) / 5
       },
       revenue: {
         perVehicle: revenueMetrics.revenuePerVehicle,
