@@ -2,23 +2,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, UserCheck, UserX, Award, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useDrivers } from "@/hooks/useDrivers";
-import { useMemo } from "react";
+import { useDriverStats } from "@/hooks/useDriverStats";
 
 const DriversOverviewCard = () => {
   const navigate = useNavigate();
-  const { drivers, loading } = useDrivers();
-
-  const stats = useMemo(() => {
-    const active = drivers.filter(d => d.status === 'active').length;
-    const inactive = drivers.filter(d => d.status === 'inactive').length;
-    const suspended = drivers.filter(d => d.status === 'suspended').length;
-    const avgScore = drivers.length > 0
-      ? Math.round(drivers.reduce((sum, d) => sum + (d.safety_score || 80), 0) / drivers.length)
-      : 0;
-
-    return { active, inactive, suspended, avgScore, total: drivers.length };
-  }, [drivers]);
+  const { stats, loading } = useDriverStats();
 
   return (
     <Card>
