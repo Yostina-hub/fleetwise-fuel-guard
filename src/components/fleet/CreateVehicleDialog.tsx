@@ -269,14 +269,14 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
                 <div>
                   <Label htmlFor="assigned_driver">Assigned Driver</Label>
                   <Select 
-                    value={formData.assigned_driver_id} 
-                    onValueChange={(value) => setFormData({ ...formData, assigned_driver_id: value })}
+                    value={formData.assigned_driver_id || "none"} 
+                    onValueChange={(value) => setFormData({ ...formData, assigned_driver_id: value === "none" ? "" : value })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select driver..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No driver assigned</SelectItem>
+                      <SelectItem value="none">No driver assigned</SelectItem>
                       {activeDrivers.map((driver) => (
                         <SelectItem key={driver.id} value={driver.id}>
                           {driver.first_name} {driver.last_name} - {driver.license_number}
