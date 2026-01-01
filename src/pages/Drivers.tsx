@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import CreateDriverDialog from "@/components/fleet/CreateDriverDialog";
 import EditDriverDialog from "@/components/fleet/EditDriverDialog";
 import DeleteDriverDialog from "@/components/fleet/DeleteDriverDialog";
@@ -53,7 +61,8 @@ import {
   Upload,
   Download
 } from "lucide-react";
-import { useDrivers, Driver } from "@/hooks/useDrivers";
+import { useDriversPaginated } from "@/hooks/useDriversPaginated";
+import { Driver } from "@/hooks/useDrivers";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -61,7 +70,23 @@ import { useToast } from "@/hooks/use-toast";
 const Drivers = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { drivers, loading } = useDrivers();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  
+  const { 
+    drivers, 
+    loading, 
+    totalCount, 
+    currentPage, 
+    totalPages, 
+    loadPage,
+    refetch 
+  } = useDriversPaginated({
+    pageSize: 25,
+    searchQuery,
+    statusFilter
+  });
+
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -70,24 +95,6 @@ const Drivers = () => {
   const [assignVehicleDialogOpen, setAssignVehicleDialogOpen] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [selectedDrivers, setSelectedDrivers] = useState<Driver[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-
-  // Filter drivers
-  const filteredDrivers = useMemo(() => {
-    return drivers.filter((driver) => {
-      const matchesSearch = searchQuery === "" ||
-        driver.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        driver.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        driver.license_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        driver.employee_id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        driver.email?.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const matchesStatus = statusFilter === "all" || driver.status === statusFilter;
-      
-      return matchesSearch && matchesStatus;
-    });
-  }, [drivers, searchQuery, statusFilter]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -136,7 +143,7 @@ const Drivers = () => {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedDrivers(filteredDrivers);
+      setSelectedDrivers(drivers);
     } else {
       setSelectedDrivers([]);
     }
@@ -174,10 +181,26 @@ const Drivers = () => {
               Driver Management
             </h1>
             <p className="text-muted-foreground mt-1">
-              Manage all drivers and their information • {drivers.length} drivers total
+              Manage all drivers and their information • {totalCount} drivers total
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <Button 
+              variant="outline"
+              className="gap-2"
+              onClick={() => setImportDialogOpen(true)}
+            >
+              <Upload className="w-4 h-4" />
+              Import
+            </Button>
+            <Button 
+              variant="outline"
+              className="gap-2"
+              onClick={handleExportAll}
+            >
+              <Download className="w-4 h-4" />
+              Export
+            </Button>
             <Button 
               variant="outline"
               className="gap-2"
@@ -195,6 +218,17 @@ const Drivers = () => {
             </Button>
           </div>
         </div>
+
+        {/* Bulk Actions Toolbar */}
+        {selectedDrivers.length > 0 && (
+          <DriverBulkActionsToolbar
+            selectedDrivers={selectedDrivers}
+            onClearSelection={() => {
+              setSelectedDrivers([]);
+              refetch();
+            }}
+          />
+        )}
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -286,13 +320,22 @@ const Drivers = () => {
 
         {/* Drivers Table */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>All Drivers</CardTitle>
+            <div className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages || 1} • {totalCount} total
+            </div>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[40px]">
+                    <Checkbox
+                      checked={selectedDrivers.length === drivers.length && drivers.length > 0}
+                      onCheckedChange={handleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead>Driver</TableHead>
                   <TableHead>Employee ID</TableHead>
                   <TableHead>License</TableHead>
@@ -303,9 +346,15 @@ const Drivers = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredDrivers.map((driver) => (
-                  <TableRow key={driver.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleViewDriver(driver)}>
-                    <TableCell>
+                {drivers.map((driver) => (
+                  <TableRow key={driver.id} className="cursor-pointer hover:bg-muted/50">
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedDrivers.some(d => d.id === driver.id)}
+                        onCheckedChange={(checked) => handleSelectDriver(driver, !!checked)}
+                      />
+                    </TableCell>
+                    <TableCell onClick={() => handleViewDriver(driver)}>
                       <div className="flex items-center gap-3">
                         <Avatar>
                           <AvatarImage src={driver.avatar_url || undefined} />
@@ -323,21 +372,26 @@ const Drivers = () => {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={() => handleViewDriver(driver)}>
                       <span className="font-mono text-sm">{driver.employee_id || "-"}</span>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <CreditCard className="w-4 h-4 text-muted-foreground" />
-                        <div>
-                          <div className="text-sm font-medium">{driver.license_number}</div>
-                          {driver.license_class && (
-                            <div className="text-xs text-muted-foreground">Class {driver.license_class}</div>
-                          )}
+                    <TableCell onClick={() => handleViewDriver(driver)}>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="w-4 h-4 text-muted-foreground" />
+                          <div>
+                            <div className="text-sm font-medium">{driver.license_number}</div>
+                            {driver.license_class && (
+                              <div className="text-xs text-muted-foreground">Class {driver.license_class}</div>
+                            )}
+                          </div>
                         </div>
+                        {driver.license_expiry && (
+                          <LicenseExpiryBadge expiryDate={driver.license_expiry} />
+                        )}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={() => handleViewDriver(driver)}>
                       <div className="space-y-1">
                         {driver.phone && (
                           <div className="flex items-center gap-1 text-sm">
@@ -356,10 +410,10 @@ const Drivers = () => {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      {getStatusBadge(driver.status || "active")}
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <DriverQuickStatusChange driver={driver} />
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={() => handleViewDriver(driver)}>
                       <div className="flex items-center gap-2">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
                           (driver.safety_score || 0) >= 80 ? 'bg-success/10 text-success' :
@@ -388,6 +442,10 @@ const Drivers = () => {
                             <Edit className="w-4 h-4 mr-2" />
                             Edit Driver
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleAssignVehicle(driver)}>
+                            <Car className="w-4 h-4 mr-2" />
+                            Assign Vehicle
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => navigate(`/driver-scoring`)}>
                             <Activity className="w-4 h-4 mr-2" />
                             View Scoring
@@ -405,9 +463,9 @@ const Drivers = () => {
                     </TableCell>
                   </TableRow>
                 ))}
-                {filteredDrivers.length === 0 && (
+                {drivers.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-12">
+                    <TableCell colSpan={8} className="text-center py-12">
                       <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
                       <h3 className="text-lg font-semibold mb-2">No drivers found</h3>
                       <p className="text-muted-foreground text-sm">
@@ -418,6 +476,51 @@ const Drivers = () => {
                 )}
               </TableBody>
             </Table>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-4">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => currentPage > 1 && loadPage(currentPage - 1)}
+                        className={currentPage <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum: number;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      return (
+                        <PaginationItem key={pageNum}>
+                          <PaginationLink
+                            onClick={() => loadPage(pageNum)}
+                            isActive={currentPage === pageNum}
+                            className="cursor-pointer"
+                          >
+                            {pageNum}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    })}
+                    <PaginationItem>
+                      <PaginationNext 
+                        onClick={() => currentPage < totalPages && loadPage(currentPage + 1)}
+                        className={currentPage >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -443,6 +546,17 @@ const Drivers = () => {
       <DriverDetailDialog
         open={detailDialogOpen}
         onOpenChange={setDetailDialogOpen}
+        driver={selectedDriver}
+      />
+      
+      <BulkImportDriversDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+      />
+      
+      <AssignVehicleToDriverDialog
+        open={assignVehicleDialogOpen}
+        onOpenChange={setAssignVehicleDialogOpen}
         driver={selectedDriver}
       />
     </Layout>
