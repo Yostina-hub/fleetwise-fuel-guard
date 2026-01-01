@@ -11,7 +11,9 @@ import { MapSidebarSkeleton } from "@/components/ui/skeletons";
 import StatusBadge from "@/components/StatusBadge";
 import LiveTrackingMap from "@/components/map/LiveTrackingMap";
 import ClusteredMap from "@/components/map/ClusteredMap";
-import { MapPin, Navigation, Fuel, Zap, RefreshCw, WifiOff, Layers } from "lucide-react";
+import { NearbyVehiclesSearch } from "@/components/map/NearbyVehiclesSearch";
+import { GpsJammingIndicator } from "@/components/map/GpsJammingIndicator";
+import { MapPin, Navigation, Fuel, Zap, RefreshCw, WifiOff, Layers, Radar } from "lucide-react";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -199,6 +201,18 @@ const MapView = () => {
                 </SelectContent>
               </Select>
             </Card>
+            {/* Nearby Vehicles Search */}
+            <NearbyVehiclesSearch 
+              vehicles={vehicles}
+              onVehicleSelect={(v) => {
+                setSelectedVehicleId(v.id);
+                mapInstance?.flyTo({
+                  center: [v.lng, v.lat],
+                  zoom: 15,
+                  duration: 1200,
+                });
+              }}
+            />
           </div>
           {/* Token Prompt */}
           {(!envToken && !mapToken) && (

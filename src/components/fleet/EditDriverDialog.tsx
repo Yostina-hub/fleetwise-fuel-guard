@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { Loader2, User, CreditCard, Phone, FileText, Edit } from "lucide-react";
+import { Loader2, User, CreditCard, Phone, FileText, Edit, HeartPulse, AlertCircle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { Driver } from "@/hooks/useDrivers";
 
@@ -76,6 +76,10 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
     ibutton_id: "",
     bluetooth_id: "",
     notes: "",
+    emergency_contact_name: "",
+    emergency_contact_phone: "",
+    emergency_contact_relationship: "",
+    medical_certificate_expiry: "",
   });
 
   useEffect(() => {
@@ -95,6 +99,10 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
         ibutton_id: driver.ibutton_id || "",
         bluetooth_id: driver.bluetooth_id || "",
         notes: driver.notes || "",
+        emergency_contact_name: driver.emergency_contact_name || "",
+        emergency_contact_phone: driver.emergency_contact_phone || "",
+        emergency_contact_relationship: driver.emergency_contact_relationship || "",
+        medical_certificate_expiry: driver.medical_certificate_expiry || "",
       });
     }
   }, [driver]);
@@ -142,6 +150,10 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
         ibutton_id: formData.ibutton_id || null,
         bluetooth_id: formData.bluetooth_id || null,
         notes: formData.notes || null,
+        emergency_contact_name: formData.emergency_contact_name || null,
+        emergency_contact_phone: formData.emergency_contact_phone || null,
+        emergency_contact_relationship: formData.emergency_contact_relationship || null,
+        medical_certificate_expiry: formData.medical_certificate_expiry || null,
       };
 
       driverSchema.parse(cleanData);
@@ -257,6 +269,72 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
                     id="edit_phone"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Emergency Contact Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
+                <AlertCircle className="w-5 h-5 text-destructive" />
+                Emergency Contact
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="edit_emergency_contact_name">Contact Name</Label>
+                  <Input
+                    id="edit_emergency_contact_name"
+                    value={formData.emergency_contact_name}
+                    onChange={(e) => setFormData({ ...formData, emergency_contact_name: e.target.value })}
+                    placeholder="Full name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit_emergency_contact_phone">Contact Phone</Label>
+                  <Input
+                    id="edit_emergency_contact_phone"
+                    value={formData.emergency_contact_phone}
+                    onChange={(e) => setFormData({ ...formData, emergency_contact_phone: e.target.value })}
+                    placeholder="+251..."
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit_emergency_contact_relationship">Relationship</Label>
+                  <Select 
+                    value={formData.emergency_contact_relationship} 
+                    onValueChange={(value) => setFormData({ ...formData, emergency_contact_relationship: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="spouse">Spouse</SelectItem>
+                      <SelectItem value="parent">Parent</SelectItem>
+                      <SelectItem value="sibling">Sibling</SelectItem>
+                      <SelectItem value="child">Child</SelectItem>
+                      <SelectItem value="friend">Friend</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Medical Information Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
+                <HeartPulse className="w-5 h-5 text-primary" />
+                Medical Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="edit_medical_certificate_expiry">Medical Certificate Expiry</Label>
+                  <Input
+                    id="edit_medical_certificate_expiry"
+                    type="date"
+                    value={formData.medical_certificate_expiry}
+                    onChange={(e) => setFormData({ ...formData, medical_certificate_expiry: e.target.value })}
                   />
                 </div>
               </div>

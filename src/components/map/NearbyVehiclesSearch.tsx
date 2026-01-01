@@ -20,7 +20,7 @@ interface Vehicle {
 interface NearbyVehiclesSearchProps {
   vehicles: Vehicle[];
   onVehicleSelect: (vehicle: Vehicle) => void;
-  onClose: () => void;
+  onClose?: () => void;
 }
 
 function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -90,9 +90,11 @@ export function NearbyVehiclesSearch({ vehicles, onVehicleSelect, onClose }: Nea
             <Search className="w-5 h-5 text-primary" />
             Nearby Vehicles
           </CardTitle>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="w-4 h-4" />
-          </Button>
+          {onClose && (
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <X className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
