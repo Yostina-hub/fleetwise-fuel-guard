@@ -308,6 +308,7 @@ const Dashboard = () => {
                 averageScore={analytics.safety.averageScore}
                 incidentsThisMonth={analytics.safety.incidentsThisMonth}
                 trend={analytics.safety.trend}
+                trendPercentage={analytics.safety.trendPercentage}
               />
             </div>
 
@@ -494,21 +495,21 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <MetricCard
                 title="Cost per Kilometer"
-                value={`$${analytics.tco.costPerKm.toFixed(2)}`}
+                value={`${formatCurrency(analytics.tco.costPerKm)}/${settings.distance_unit}`}
                 subtitle="operating cost"
                 icon={<DollarSign className="w-5 h-5" />}
-                trend="down"
-                trendValue="-5.3% vs last month"
-                trendPositive={false}
+                trend={analytics.tco.trend}
+                trendValue={`${analytics.tco.trend === 'down' ? '-' : '+'}${analytics.tco.trendPercentage.toFixed(1)}% vs last month`}
+                trendPositive={analytics.tco.trend === 'down'}
                 variant="success"
               />
               <MetricCard
                 title="Avg. Fuel Efficiency"
-                value={`${analytics.fuelEfficiency.averageLPer100Km.toFixed(1)} L/100km`}
+                value={`${analytics.fuelEfficiency.averageLPer100Km.toFixed(1)} ${settings.fuel_unit}/100${settings.distance_unit}`}
                 subtitle="fleet average"
                 icon={<Fuel className="w-5 h-5" />}
                 trend={analytics.fuelEfficiency.trend}
-                trendValue="+2.1% improvement"
+                trendValue={`${analytics.fuelEfficiency.trend === 'up' ? '+' : '-'}${analytics.fuelEfficiency.trendPercentage.toFixed(1)}% improvement`}
                 variant="primary"
               />
               <MetricCard
@@ -516,9 +517,9 @@ const Dashboard = () => {
                 value={`${analytics.delivery.onTimeRate.toFixed(1)}%`}
                 subtitle={`${analytics.delivery.completedTrips} trips`}
                 icon={<Route className="w-5 h-5" />}
-                trend="up"
-                trendValue="+3.2% vs last month"
-                variant="success"
+                trend={analytics.delivery.trend}
+                trendValue={`${analytics.delivery.trend === 'up' ? '+' : analytics.delivery.trend === 'down' ? '-' : ''}${analytics.delivery.trendPercentage.toFixed(1)}% vs last month`}
+                variant={analytics.delivery.onTimeRate >= 90 ? "success" : "primary"}
               />
               <MetricCard
                 title="Fleet Revenue"
@@ -526,7 +527,7 @@ const Dashboard = () => {
                 subtitle={`${formatCurrency(analytics.revenue.perVehicle)}/vehicle`}
                 icon={<TrendingUp className="w-5 h-5" />}
                 trend={analytics.revenue.trend}
-                trendValue="+12.5% growth"
+                trendValue={`${analytics.revenue.trend === 'up' ? '+' : analytics.revenue.trend === 'down' ? '-' : ''}${analytics.revenue.trendPercentage.toFixed(1)}% growth`}
                 variant="success"
               />
             </div>
@@ -575,6 +576,7 @@ const Dashboard = () => {
                 averageScore={analytics.safety.averageScore}
                 incidentsThisMonth={analytics.safety.incidentsThisMonth}
                 trend={analytics.safety.trend}
+                trendPercentage={analytics.safety.trendPercentage}
               />
             </div>
 
