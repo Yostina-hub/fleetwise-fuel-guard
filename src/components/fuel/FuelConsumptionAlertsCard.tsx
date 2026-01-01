@@ -15,18 +15,27 @@ import { useFuelConsumptionAlerts } from "@/hooks/useFuelConsumptionAlerts";
 import { useVehicles } from "@/hooks/useVehicles";
 import { formatDistanceToNow } from "date-fns";
 
-export default function FuelConsumptionAlertsCard() {
+interface FuelConsumptionAlertsCardProps {
+  getVehiclePlateFromContext?: (vehicleId: string) => string;
+}
+
+export default function FuelConsumptionAlertsCard({ getVehiclePlateFromContext }: FuelConsumptionAlertsCardProps) {
   const { alerts, loading, acknowledgeAlert, resolveAlert, getAlertStats } = useFuelConsumptionAlerts({
     isResolved: false,
   });
+  
+  // Use context function if provided, otherwise fallback to local useVehicles
   const { vehicles } = useVehicles();
-
-  const stats = getAlertStats();
-
+  
   const getVehiclePlate = (vehicleId: string) => {
+    if (getVehiclePlateFromContext) {
+      return getVehiclePlateFromContext(vehicleId);
+    }
     const vehicle = vehicles.find((v) => v.id === vehicleId);
     return vehicle?.plate_number || "Unknown";
   };
+
+  const stats = getAlertStats();
 
   const getSeverityBadge = (severity: string) => {
     switch (severity) {

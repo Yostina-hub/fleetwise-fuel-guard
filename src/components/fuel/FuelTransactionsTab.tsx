@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Search, Upload, FileSpreadsheet, Loader2, CheckCircle, XCircle } from "lucide-react";
 import { useFuelTransactions } from "@/hooks/useFuelTransactions";
-import { useVehicles } from "@/hooks/useVehicles";
+import { useFuelPageContext } from "@/pages/FuelMonitoring";
 import { format } from "date-fns";
 
 const FuelTransactionsTab = () => {
@@ -19,24 +19,19 @@ const FuelTransactionsTab = () => {
     vehicleId: vehicleFilter !== 'all' ? vehicleFilter : undefined,
     isReconciled: reconcileFilter === 'all' ? undefined : reconcileFilter === 'reconciled',
   });
-  const { vehicles } = useVehicles();
+  const { vehicles, getVehiclePlate } = useFuelPageContext();
 
   const filteredTransactions = transactions.filter(t => {
     if (!searchQuery) return true;
-    const vehicle = vehicles.find(v => v.id === t.vehicle_id);
+    const plate = getVehiclePlate(t.vehicle_id);
     const searchLower = searchQuery.toLowerCase();
     return (
-      vehicle?.plate_number?.toLowerCase().includes(searchLower) ||
+      plate?.toLowerCase().includes(searchLower) ||
       t.vendor_name?.toLowerCase().includes(searchLower) ||
       t.receipt_number?.toLowerCase().includes(searchLower) ||
       t.location_name?.toLowerCase().includes(searchLower)
     );
   });
-
-  const getVehiclePlate = (vehicleId: string) => {
-    const vehicle = vehicles.find(v => v.id === vehicleId);
-    return vehicle?.plate_number || "Unknown";
-  };
 
   const handleReconcile = async (id: string) => {
     await reconcileTransaction(id, 0, "Manual reconciliation");

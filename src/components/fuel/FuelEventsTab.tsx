@@ -4,17 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, Droplet, TrendingDown, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 import { useFuelEvents } from "@/hooks/useFuelEvents";
-import { useVehicles } from "@/hooks/useVehicles";
+import { useFuelPageContext } from "@/pages/FuelMonitoring";
 import { format } from "date-fns";
 
 const FuelEventsTab = () => {
   const { fuelEvents, loading } = useFuelEvents();
-  const { vehicles } = useVehicles();
-
-  const getVehiclePlate = (vehicleId: string) => {
-    const vehicle = vehicles.find(v => v.id === vehicleId);
-    return vehicle?.plate_number || "Unknown";
-  };
+  const { getVehiclePlate } = useFuelPageContext();
 
   const getEventTypeBadge = (type: string) => {
     switch (type) {

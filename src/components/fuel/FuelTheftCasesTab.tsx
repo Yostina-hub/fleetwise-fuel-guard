@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, MapPin, Clock, FileText, Loader2, Eye, CheckCircle } from "lucide-react";
 import { useFuelTheftCases } from "@/hooks/useFuelTheftCases";
-import { useVehicles } from "@/hooks/useVehicles";
+import { useFuelPageContext } from "@/pages/FuelMonitoring";
 import { useDrivers } from "@/hooks/useDrivers";
 import { format } from "date-fns";
 
@@ -17,13 +17,8 @@ const FuelTheftCasesTab = () => {
     status: statusFilter !== 'all' ? statusFilter : undefined,
     priority: priorityFilter !== 'all' ? priorityFilter : undefined,
   });
-  const { vehicles } = useVehicles();
+  const { getVehiclePlate } = useFuelPageContext();
   const { drivers } = useDrivers();
-
-  const getVehiclePlate = (vehicleId: string) => {
-    const vehicle = vehicles.find(v => v.id === vehicleId);
-    return vehicle?.plate_number || "Unknown";
-  };
 
   const getDriverName = (driverId?: string) => {
     if (!driverId) return "Unknown";

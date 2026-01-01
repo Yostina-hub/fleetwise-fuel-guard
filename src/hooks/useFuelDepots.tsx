@@ -97,6 +97,49 @@ export const useFuelDepots = () => {
   useEffect(() => {
     fetchDepots();
     fetchDispensingLogs();
+
+    if (!organizationId) return;
+
+    // Subscribe to realtime changes
+    const depotsChannelName = `fuel-depots-${organizationId.slice(0, 8)}`;
+    const dispensingChannelName = `fuel-dispensing-${organizationId.slice(0, 8)}`;
+    
+    const depotsChannel = supabase
+      .channel(depotsChannelName)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'fuel_depots',
+          filter: `organization_id=eq.${organizationId}`
+        },
+        () => {
+          fetchDepots();
+        }
+      )
+      .subscribe();
+
+    const dispensingChannel = supabase
+      .channel(dispensingChannelName)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'fuel_depot_dispensing',
+          filter: `organization_id=eq.${organizationId}`
+        },
+        () => {
+          fetchDispensingLogs();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(depotsChannel);
+      supabase.removeChannel(dispensingChannel);
+    };
   }, [organizationId]);
 
   const createDepot = async (depot: Omit<FuelDepot, 'id' | 'organization_id' | 'created_at' | 'updated_at'>) => {

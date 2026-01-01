@@ -80,6 +80,30 @@ export const useFuelTheftCases = (filters?: {
 
   useEffect(() => {
     fetchCases();
+
+    if (!organizationId) return;
+
+    // Subscribe to realtime changes
+    const channelName = `fuel-theft-cases-${organizationId.slice(0, 8)}`;
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'fuel_theft_cases',
+          filter: `organization_id=eq.${organizationId}`
+        },
+        () => {
+          fetchCases();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [organizationId, filters?.status, filters?.priority, filters?.vehicleId]);
 
   const createCase = async (caseData: Omit<FuelTheftCase, 'id' | 'organization_id' | 'created_at' | 'updated_at'>) => {

@@ -85,18 +85,20 @@ export const useFuelConsumptionAlerts = (filters?: UseFuelAlertsFilters) => {
   useEffect(() => {
     if (!organizationId) return;
 
+    const channelName = `fuel-alerts-${organizationId.slice(0, 8)}`;
     const channel = supabase
-      .channel("fuel_consumption_alerts")
+      .channel(channelName)
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*",
           schema: "public",
           table: "fuel_consumption_alerts",
+          filter: `organization_id=eq.${organizationId}`
         },
         (payload) => {
-          const newAlert = payload.new as FuelConsumptionAlert;
-          if (newAlert.organization_id === organizationId) {
+          if (payload.eventType === 'INSERT') {
+            const newAlert = payload.new as FuelConsumptionAlert;
             setAlerts((prev) => [newAlert, ...prev]);
             
             // Show toast for critical/high alerts
@@ -105,6 +107,9 @@ export const useFuelConsumptionAlerts = (filters?: UseFuelAlertsFilters) => {
                 description: newAlert.message,
               });
             }
+          } else {
+            // Refetch on UPDATE/DELETE
+            fetchAlerts();
           }
         }
       )

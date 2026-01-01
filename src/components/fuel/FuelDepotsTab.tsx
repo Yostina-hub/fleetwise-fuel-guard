@@ -19,13 +19,13 @@ import {
   MapPin
 } from "lucide-react";
 import { useFuelDepots } from "@/hooks/useFuelDepots";
-import { useVehicles } from "@/hooks/useVehicles";
+import { useFuelPageContext } from "@/pages/FuelMonitoring";
 import { useDrivers } from "@/hooks/useDrivers";
 import { format } from "date-fns";
 
 const FuelDepotsTab = () => {
   const { depots, dispensingLogs, loading, createDepot, recordDispensing, updateDepotStock } = useFuelDepots();
-  const { vehicles } = useVehicles();
+  const { vehicles, getVehiclePlate: getVehiclePlateFromContext } = useFuelPageContext();
   const { drivers } = useDrivers();
   
   const [showAddDepot, setShowAddDepot] = useState(false);
@@ -51,8 +51,7 @@ const FuelDepotsTab = () => {
 
   const getVehiclePlate = (vehicleId?: string) => {
     if (!vehicleId) return "N/A";
-    const vehicle = vehicles.find(v => v.id === vehicleId);
-    return vehicle?.plate_number || "Unknown";
+    return getVehiclePlateFromContext(vehicleId);
   };
 
   const getDriverName = (driverId?: string) => {
