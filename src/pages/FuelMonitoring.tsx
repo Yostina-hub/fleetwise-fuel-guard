@@ -2,13 +2,14 @@ import { useMemo } from "react";
 import Layout from "@/components/Layout";
 import KPICard from "@/components/KPICard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Fuel, AlertTriangle, BarChart3, DollarSign, Loader2, Warehouse, FileText, Droplet } from "lucide-react";
+import { Fuel, AlertTriangle, BarChart3, DollarSign, Loader2, Warehouse, FileText, Droplet, Bell } from "lucide-react";
 import { useFuelEvents } from "@/hooks/useFuelEvents";
 import { useVehicles } from "@/hooks/useVehicles";
 import FuelTransactionsTab from "@/components/fuel/FuelTransactionsTab";
 import FuelEventsTab from "@/components/fuel/FuelEventsTab";
 import FuelTheftCasesTab from "@/components/fuel/FuelTheftCasesTab";
 import FuelDepotsTab from "@/components/fuel/FuelDepotsTab";
+import FuelConsumptionAlertsCard from "@/components/fuel/FuelConsumptionAlertsCard";
 
 const FuelMonitoring = () => {
   const { fuelEvents: dbFuelEvents, loading } = useFuelEvents();
@@ -90,9 +91,12 @@ const FuelMonitoring = () => {
           />
         </div>
 
+        {/* Fuel Alerts Panel */}
+        <FuelConsumptionAlertsCard />
+
         {/* Tabbed Content */}
         <Tabs defaultValue="events" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
+          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
             <TabsTrigger value="events" className="gap-2">
               <Droplet className="w-4 h-4" />
               Fuel Events
@@ -109,6 +113,10 @@ const FuelMonitoring = () => {
               <Warehouse className="w-4 h-4" />
               Depots
             </TabsTrigger>
+            <TabsTrigger value="alerts" className="gap-2">
+              <Bell className="w-4 h-4" />
+              Alerts
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="events">
@@ -122,6 +130,9 @@ const FuelMonitoring = () => {
           </TabsContent>
           <TabsContent value="depots">
             <FuelDepotsTab />
+          </TabsContent>
+          <TabsContent value="alerts">
+            <FuelConsumptionAlertsCard />
           </TabsContent>
         </Tabs>
       </div>

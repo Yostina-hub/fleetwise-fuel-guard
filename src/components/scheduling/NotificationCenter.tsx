@@ -22,6 +22,25 @@ const notificationIcons: Record<string, string> = {
   trip_starting_soon: "🔔",
   trip_completed: "✔️",
   vehicle_recommended: "💡",
+  // Fuel alerts
+  fuel_alert_high_consumption: "⛽",
+  fuel_alert_low_fuel: "🔋",
+  fuel_alert_theft_detected: "🚨",
+  fuel_alert_refuel_mismatch: "⚠️",
+  // Maintenance alerts
+  maintenance_due: "🔧",
+  maintenance_overdue: "🛠️",
+  inspection_required: "📋",
+  // Document alerts
+  document_expiring: "📄",
+  document_expired: "🔴",
+  license_expiring: "🪪",
+  // Driver alerts
+  driver_violation: "⚡",
+  driver_score_changed: "📊",
+  // General
+  system_alert: "ℹ️",
+  sla_breach: "⏱️",
 };
 
 export const NotificationCenter = () => {

@@ -1032,6 +1032,80 @@ export type Database = {
           },
         ]
       }
+      documents: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          document_number: string | null
+          document_type: string
+          entity_id: string
+          entity_type: string
+          expiry_date: string | null
+          file_name: string
+          file_size_bytes: number | null
+          file_url: string
+          id: string
+          is_verified: boolean | null
+          issue_date: string | null
+          mime_type: string | null
+          notes: string | null
+          organization_id: string
+          updated_at: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          document_number?: string | null
+          document_type: string
+          entity_id: string
+          entity_type: string
+          expiry_date?: string | null
+          file_name: string
+          file_size_bytes?: number | null
+          file_url: string
+          id?: string
+          is_verified?: boolean | null
+          issue_date?: string | null
+          mime_type?: string | null
+          notes?: string | null
+          organization_id: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          document_number?: string | null
+          document_type?: string
+          entity_id?: string
+          entity_type?: string
+          expiry_date?: string | null
+          file_name?: string
+          file_size_bytes?: number | null
+          file_url?: string
+          id?: string
+          is_verified?: boolean | null
+          issue_date?: string | null
+          mime_type?: string | null
+          notes?: string | null
+          organization_id?: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_behavior_scores: {
         Row: {
           acceleration_score: number
@@ -1716,6 +1790,94 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fuel_consumption_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          actual_value: number | null
+          alert_type: string
+          created_at: string
+          expected_value: number | null
+          id: string
+          is_acknowledged: boolean | null
+          is_resolved: boolean | null
+          message: string
+          organization_id: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          title: string
+          trip_id: string | null
+          variance_percent: number | null
+          vehicle_id: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          actual_value?: number | null
+          alert_type: string
+          created_at?: string
+          expected_value?: number | null
+          id?: string
+          is_acknowledged?: boolean | null
+          is_resolved?: boolean | null
+          message: string
+          organization_id: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          title: string
+          trip_id?: string | null
+          variance_percent?: number | null
+          vehicle_id: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          actual_value?: number | null
+          alert_type?: string
+          created_at?: string
+          expected_value?: number | null
+          id?: string
+          is_acknowledged?: boolean | null
+          is_resolved?: boolean | null
+          message?: string
+          organization_id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          title?: string
+          trip_id?: string | null
+          variance_percent?: number | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_consumption_alerts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_consumption_alerts_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_consumption_alerts_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
             referencedColumns: ["id"]
           },
         ]
