@@ -56,6 +56,7 @@ import FleetVehicleSummaryCard from "@/components/dashboard/FleetVehicleSummaryC
 import VehicleHealthStatusCard from "@/components/dashboard/VehicleHealthStatusCard";
 import GeofenceCategoriesCard from "@/components/dashboard/GeofenceCategoriesCard";
 import VehicleUtilizationCard from "@/components/dashboard/VehicleUtilizationCard";
+import ComplianceAlertsCard from "@/components/dashboard/ComplianceAlertsCard";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 
 const Dashboard = () => {
@@ -470,11 +471,12 @@ const Dashboard = () => {
             </div>
 
             {/* Additional Widgets Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               <QuickActionsCard />
               <TripsOverviewCard />
               <DriversOverviewCard />
               <MaintenanceDueCard />
+              <ComplianceAlertsCard />
             </div>
           </TabsContent>
 
