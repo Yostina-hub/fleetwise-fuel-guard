@@ -78,6 +78,30 @@ export const useFuelTransactions = (filters?: {
 
   useEffect(() => {
     fetchTransactions();
+
+    if (!organizationId) return;
+
+    // Subscribe to realtime changes
+    const channelName = `fuel-transactions-${organizationId.slice(0, 8)}`;
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'fuel_transactions',
+          filter: `organization_id=eq.${organizationId}`
+        },
+        () => {
+          fetchTransactions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [organizationId, filters?.vehicleId, filters?.transactionType, filters?.isReconciled]);
 
   const createTransaction = async (transaction: Omit<FuelTransaction, 'id' | 'organization_id' | 'created_at' | 'updated_at'>) => {

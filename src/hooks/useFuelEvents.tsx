@@ -77,8 +77,9 @@ export const useFuelEvents = (filters?: {
     fetchFuelEvents();
 
     // Subscribe to realtime changes
+    const channelName = `fuel-events-${organizationId.slice(0, 8)}`;
     const channel = supabase
-      .channel('fuel-events-changes')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
