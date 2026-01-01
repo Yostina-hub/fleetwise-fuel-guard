@@ -74,9 +74,11 @@ export const useDrivers = () => {
 
     fetchDrivers();
 
-    // Subscribe to realtime changes
+    // Subscribe to realtime changes with debouncing
+    let debounceTimer: NodeJS.Timeout;
+
     const channel = supabase
-      .channel(`drivers-${organizationId.slice(0, 8)}`)
+      .channel(`drivers-all-${organizationId.slice(0, 8)}`)
       .on(
         'postgres_changes',
         {
@@ -86,12 +88,14 @@ export const useDrivers = () => {
           filter: `organization_id=eq.${organizationId}`
         },
         () => {
-          fetchDrivers();
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(fetchDrivers, 500);
         }
       )
       .subscribe();
 
     return () => {
+      clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
   }, [organizationId]);
