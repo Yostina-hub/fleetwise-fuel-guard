@@ -48,6 +48,11 @@ interface VehicleDetailModalProps {
 const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalProps) => {
   const navigate = useNavigate();
 
+  // Early return if vehicle is null
+  if (!vehicle) {
+    return null;
+  }
+
   const handleTrackOnMap = () => {
     onOpenChange(false);
     navigate('/map', { state: { selectedVehicleId: vehicle.vehicleId || vehicle.id } });
