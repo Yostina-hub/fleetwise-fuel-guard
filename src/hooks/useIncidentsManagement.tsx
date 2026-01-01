@@ -28,24 +28,23 @@ export interface InsuranceClaim {
   id: string;
   organization_id: string;
   claim_number: string;
-  incident_id?: string;
+  incident_id?: string | null;
   vehicle_id: string;
   claim_type: string;
-  claim_amount?: number;
-  deductible?: number;
-  approved_amount?: number;
+  claim_amount?: number | null;
+  deductible?: number | null;
+  approved_amount?: number | null;
+  settlement_amount?: number | null;
+  settlement_date?: string | null;
   status: string;
-  insurance_company?: string;
-  policy_number?: string;
-  adjuster_name?: string;
-  adjuster_phone?: string;
-  adjuster_email?: string;
-  filed_date?: string;
-  approved_date?: string;
-  paid_date?: string;
-  payout_amount?: number;
-  denial_reason?: string;
-  notes?: string;
+  insurance_provider?: string | null;
+  policy_number?: string | null;
+  adjuster_name?: string | null;
+  adjuster_phone?: string | null;
+  adjuster_email?: string | null;
+  filed_date?: string | null;
+  notes?: string | null;
+  document_urls?: string[] | null;
   created_at: string;
   updated_at: string;
 }
@@ -108,7 +107,7 @@ export const useIncidentsManagement = (filters?: {
       }
 
       const { data, error } = await query
-        .order("occurred_at", { ascending: false })
+        .order("incident_time", { ascending: false })
         .limit(100);
 
       if (error) throw error;
@@ -129,7 +128,7 @@ export const useIncidentsManagement = (filters?: {
         .from("insurance_claims")
         .select("*")
         .eq("organization_id", organizationId)
-        .order("claim_date", { ascending: false })
+        .order("filed_date", { ascending: false })
         .limit(50);
 
       if (error) throw error;
