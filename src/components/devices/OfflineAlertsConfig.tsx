@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,43 +7,55 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Bell, Mail, MessageSquare, Save, Trash2 } from "lucide-react";
+import { useOrganization } from "@/hooks/useOrganization";
+import { Bell, Mail, MessageSquare, Save, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { formatDistanceToNow } from "date-fns";
 
 export const OfflineAlertsConfig = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganization();
   const [emails, setEmails] = useState("");
   const [sms, setSms] = useState("");
   const [threshold, setThreshold] = useState(5);
   const [isActive, setIsActive] = useState(true);
 
   const { data: config, isLoading } = useQuery({
-    queryKey: ["offline-alerts-config"],
+    queryKey: ["offline-alerts-config", organizationId],
     queryFn: async () => {
+      if (!organizationId) return null;
+      
       const { data, error } = await supabase
         .from("device_offline_alerts" as any)
         .select("*")
+        .eq("organization_id", organizationId)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') throw error;
       
-      if (data) {
-        setEmails((data as any).notification_emails?.join(", ") || "");
-        setSms((data as any).notification_sms?.join(", ") || "");
-        setThreshold((data as any).offline_threshold_minutes);
-        setIsActive((data as any).is_active);
-      }
-      
       return data;
     },
+    enabled: !!organizationId,
   });
 
+  // Update form when config loads
+  useEffect(() => {
+    if (config) {
+      setEmails((config as any).notification_emails?.join(", ") || "");
+      setSms((config as any).notification_sms?.join(", ") || "");
+      setThreshold((config as any).offline_threshold_minutes || 5);
+      setIsActive((config as any).is_active ?? true);
+    }
+  }, [config]);
+
   const { data: offlineEvents } = useQuery({
-    queryKey: ["offline-events"],
+    queryKey: ["offline-events", organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
+      
       const { data, error } = await supabase
         .from("device_offline_events" as any)
         .select(`
@@ -51,24 +63,25 @@ export const OfflineAlertsConfig = () => {
           devices(imei, tracker_model),
           vehicles(plate_number)
         `)
+        .eq("organization_id", organizationId)
         .order("created_at", { ascending: false })
         .limit(50);
 
       if (error) throw error;
-      return data;
+      return data || [];
     },
+    enabled: !!organizationId,
   });
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!organizationId) throw new Error("No organization selected");
 
       const emailList = emails.split(",").map(e => e.trim()).filter(Boolean);
       const smsList = sms.split(",").map(s => s.trim()).filter(Boolean);
 
       const payload = {
-        organization_id: user.id,
+        organization_id: organizationId,
         offline_threshold_minutes: threshold,
         notification_emails: emailList,
         notification_sms: smsList,
@@ -89,7 +102,7 @@ export const OfflineAlertsConfig = () => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["offline-alerts-config"] });
+      queryClient.invalidateQueries({ queryKey: ["offline-alerts-config", organizationId] });
       toast({
         title: "Settings saved",
         description: "Offline alert configuration updated successfully",
@@ -111,10 +124,10 @@ export const OfflineAlertsConfig = () => {
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["offline-events"] });
+      queryClient.invalidateQueries({ queryKey: ["offline-events", organizationId] });
       toast({
         title: "Connectivity check complete",
-        description: `Checked ${data.checked} devices. ${data.offline} offline, ${data.online} online.`,
+        description: `Checked ${data?.checked || 0} devices. ${data?.offline || 0} offline, ${data?.online || 0} online.`,
       });
     },
     onError: (error: Error) => {
@@ -125,6 +138,10 @@ export const OfflineAlertsConfig = () => {
       });
     },
   });
+
+  if (isLoading) {
+    return <div className="text-center py-8 text-muted-foreground">Loading configuration...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -140,8 +157,13 @@ export const OfflineAlertsConfig = () => {
                 Get notified when GPS devices go offline
               </CardDescription>
             </div>
-            <Button onClick={() => testMutation.mutate()} variant="outline">
-              Test Now
+            <Button 
+              onClick={() => testMutation.mutate()} 
+              variant="outline"
+              disabled={testMutation.isPending}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${testMutation.isPending ? 'animate-spin' : ''}`} />
+              {testMutation.isPending ? "Checking..." : "Test Now"}
             </Button>
           </div>
         </CardHeader>
@@ -166,7 +188,7 @@ export const OfflineAlertsConfig = () => {
               id="threshold"
               type="number"
               value={threshold}
-              onChange={(e) => setThreshold(parseInt(e.target.value))}
+              onChange={(e) => setThreshold(parseInt(e.target.value) || 5)}
               min={1}
               max={60}
             />
@@ -231,26 +253,30 @@ export const OfflineAlertsConfig = () => {
               {offlineEvents.map((event: any) => (
                 <div
                   key={event.id}
-                  className="flex items-center justify-between p-3 border rounded-lg"
+                  className={`flex items-center justify-between p-3 border rounded-lg ${
+                    !event.back_online_at ? 'bg-destructive/5 border-destructive/30' : ''
+                  }`}
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">
-                        {event.vehicles?.plate_number || event.devices?.imei}
+                        {event.vehicles?.plate_number || event.devices?.imei || "Unknown Device"}
                       </span>
                       {!event.back_online_at ? (
                         <Badge variant="destructive">Offline</Badge>
                       ) : (
-                        <Badge className="bg-green-500">Back Online</Badge>
+                        <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 dark:text-emerald-400">
+                          Back Online
+                        </Badge>
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground">
                       {event.devices?.tracker_model}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Offline since: {new Date(event.offline_since).toLocaleString()}
+                      Offline since: {formatDistanceToNow(new Date(event.offline_since), { addSuffix: true })}
                     </p>
-                    {event.back_online_at && (
+                    {event.back_online_at && event.offline_duration_minutes && (
                       <p className="text-xs text-muted-foreground">
                         Duration: {event.offline_duration_minutes} minutes
                       </p>

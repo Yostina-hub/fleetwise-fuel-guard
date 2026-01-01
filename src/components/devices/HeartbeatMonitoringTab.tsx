@@ -1,14 +1,70 @@
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useDevices } from "@/hooks/useDevices";
-import { Activity, Signal, WifiOff, Wifi, AlertCircle, CheckCircle } from "lucide-react";
+import { useOrganization } from "@/hooks/useOrganization";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Activity, Signal, WifiOff, Wifi, AlertCircle, CheckCircle, Download, RefreshCw } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Progress } from "@/components/ui/progress";
 
 export const HeartbeatMonitoringTab = () => {
   const { devices, isLoading, testHeartbeat } = useDevices();
+  const { organizationId } = useOrganization();
+  const { toast } = useToast();
+  const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [isAutoRefreshEnabled, setIsAutoRefreshEnabled] = useState(true);
+
+  // Subscribe to realtime updates
+  useEffect(() => {
+    if (!organizationId) return;
+
+    const channel = supabase
+      .channel('heartbeat-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'devices',
+          filter: `organization_id=eq.${organizationId}`
+        },
+        () => {
+          setLastRefresh(new Date());
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'vehicle_telemetry',
+          filter: `organization_id=eq.${organizationId}`
+        },
+        () => {
+          setLastRefresh(new Date());
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [organizationId]);
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    if (!isAutoRefreshEnabled) return;
+
+    const interval = setInterval(() => {
+      setLastRefresh(new Date());
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [isAutoRefreshEnabled]);
 
   const isDeviceOnline = (lastHeartbeat?: string) => {
     if (!lastHeartbeat) return false;
@@ -27,7 +83,7 @@ export const HeartbeatMonitoringTab = () => {
     if (minutesSince <= 5) return 100;
     if (minutesSince <= 15) return 75;
     if (minutesSince <= 60) return 50;
-    if (minutesSince <= 1440) return 25; // 24 hours
+    if (minutesSince <= 1440) return 25;
     return 0;
   };
 
@@ -37,17 +93,73 @@ export const HeartbeatMonitoringTab = () => {
     ? devices.reduce((acc, d) => acc + getHealthScore(d), 0) / devices.length
     : 0;
 
+  const exportHealthReport = () => {
+    if (!devices || devices.length === 0) {
+      toast({
+        title: "No Data",
+        description: "No devices to export",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const headers = ["Vehicle", "IMEI", "Tracker Model", "SIM Card", "Last Heartbeat", "Health Score", "Status"];
+    const rows = devices.map(device => [
+      device.vehicles?.plate_number || "Unassigned",
+      device.imei,
+      device.tracker_model,
+      device.sim_msisdn || "No SIM",
+      device.last_heartbeat ? new Date(device.last_heartbeat).toISOString() : "Never",
+      `${getHealthScore(device)}%`,
+      isDeviceOnline(device.last_heartbeat) ? "Online" : "Offline"
+    ]);
+
+    const csvContent = [headers.join(","), ...rows.map(row => row.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `heartbeat-report-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Export Complete",
+      description: `Exported health report for ${devices.length} devices`,
+    });
+  };
+
   if (isLoading) {
-    return <div className="text-center py-8">Loading heartbeat data...</div>;
+    return <div className="text-center py-8 text-muted-foreground">Loading heartbeat data...</div>;
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Heartbeat Monitoring</h2>
-        <p className="text-muted-foreground">
-          Real-time device connectivity and health status
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Heartbeat Monitoring</h2>
+          <p className="text-muted-foreground">
+            Real-time device connectivity and health status
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Activity className={`h-4 w-4 ${isAutoRefreshEnabled ? 'text-emerald-500 animate-pulse' : ''}`} />
+            <span>Last updated: {lastRefresh.toLocaleTimeString()}</span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsAutoRefreshEnabled(!isAutoRefreshEnabled)}
+          >
+            <RefreshCw className={`h-4 w-4 mr-1 ${isAutoRefreshEnabled ? 'animate-spin' : ''}`} />
+            {isAutoRefreshEnabled ? 'Auto' : 'Paused'}
+          </Button>
+          <Button variant="outline" size="sm" onClick={exportHealthReport}>
+            <Download className="h-4 w-4 mr-1" />
+            Export
+          </Button>
+        </div>
       </div>
 
       {/* Statistics Cards */}
@@ -60,7 +172,7 @@ export const HeartbeatMonitoringTab = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
               {onlineDevices.length}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -77,7 +189,7 @@ export const HeartbeatMonitoringTab = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-destructive">
               {offlineDevices.length}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -112,15 +224,15 @@ export const HeartbeatMonitoringTab = () => {
             <div className="flex items-center gap-2">
               {offlineDevices.length > 0 ? (
                 <>
-                  <AlertCircle className="h-5 w-5 text-red-600" />
-                  <span className="text-xl font-bold text-red-600">
+                  <AlertCircle className="h-5 w-5 text-destructive" />
+                  <span className="text-xl font-bold text-destructive">
                     {offlineDevices.length} Issues
                   </span>
                 </>
               ) : (
                 <>
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <span className="text-xl font-bold text-green-600">
+                  <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
                     All Good
                   </span>
                 </>
@@ -134,7 +246,7 @@ export const HeartbeatMonitoringTab = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Wifi className="h-5 w-5 text-green-600" />
+            <Wifi className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
             Online Devices
           </CardTitle>
           <CardDescription>
@@ -160,14 +272,14 @@ export const HeartbeatMonitoringTab = () => {
                 return (
                   <TableRow key={device.id}>
                     <TableCell className="font-medium">
-                      {device.vehicles?.plate_number || "Unassigned"}
+                      {device.vehicles?.plate_number || <span className="text-muted-foreground italic">Unassigned</span>}
                     </TableCell>
                     <TableCell className="font-mono text-sm">{device.imei}</TableCell>
                     <TableCell>{device.tracker_model}</TableCell>
                     <TableCell className="font-mono text-sm">{device.sim_msisdn || "—"}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Signal className="h-4 w-4 text-green-600" />
+                        <Signal className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                         <span className="text-sm">
                           {formatDistanceToNow(new Date(device.last_heartbeat), { addSuffix: true })}
                         </span>
@@ -206,9 +318,9 @@ export const HeartbeatMonitoringTab = () => {
 
       {/* Offline Devices */}
       {offlineDevices.length > 0 && (
-        <Card className="border-red-200">
+        <Card className="border-destructive/50">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-red-600">
+            <CardTitle className="flex items-center gap-2 text-destructive">
               <WifiOff className="h-5 w-5" />
               Offline Devices
             </CardTitle>
@@ -231,17 +343,17 @@ export const HeartbeatMonitoringTab = () => {
               </TableHeader>
               <TableBody>
                 {offlineDevices.map((device) => (
-                  <TableRow key={device.id} className="bg-red-50">
+                  <TableRow key={device.id} className="bg-destructive/5">
                     <TableCell className="font-medium">
-                      {device.vehicles?.plate_number || "Unassigned"}
+                      {device.vehicles?.plate_number || <span className="text-muted-foreground italic">Unassigned</span>}
                     </TableCell>
                     <TableCell className="font-mono text-sm">{device.imei}</TableCell>
                     <TableCell>{device.tracker_model}</TableCell>
                     <TableCell className="font-mono text-sm">{device.sim_msisdn || "—"}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <WifiOff className="h-4 w-4 text-red-600" />
-                        <span className="text-sm text-red-600">
+                        <WifiOff className="h-4 w-4 text-destructive" />
+                        <span className="text-sm text-destructive">
                           {device.last_heartbeat 
                             ? formatDistanceToNow(new Date(device.last_heartbeat), { addSuffix: true })
                             : "Never"}
