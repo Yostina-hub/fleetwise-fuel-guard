@@ -36,10 +36,13 @@ interface VehicleItem {
   status: 'moving' | 'idle' | 'offline';
   fuel: number;
   odometer: number;
-  nextService: string;
+  nextService: string | null;
   vehicleType?: string;
   fuelType?: string;
   assignedDriver?: string;
+  speed?: number;
+  lastSeen?: string | null;
+  deviceConnected?: boolean;
 }
 
 interface VehicleVirtualGridProps {
@@ -47,6 +50,9 @@ interface VehicleVirtualGridProps {
   onVehicleClick: (vehicle: VehicleItem) => void;
   onEditVehicle?: (vehicle: VehicleItem) => void;
   onDeleteVehicle?: (vehicle: VehicleItem) => void;
+  onAssignDriver?: (vehicle: VehicleItem) => void;
+  onFuelHistory?: (vehicle: VehicleItem) => void;
+  onTripHistory?: (vehicle: VehicleItem) => void;
   hasMore: boolean;
   onLoadMore: () => void;
   loading: boolean;
@@ -60,6 +66,9 @@ export const VehicleVirtualGrid = ({
   onVehicleClick,
   onEditVehicle,
   onDeleteVehicle,
+  onAssignDriver,
+  onFuelHistory,
+  onTripHistory,
   hasMore,
   onLoadMore,
   loading,
