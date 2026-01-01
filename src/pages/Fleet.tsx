@@ -276,6 +276,7 @@ const Fleet = () => {
 
   const handlePageChange = useCallback((page: number) => {
     loadPage(page);
+    setSelectedIds([]); // Clear selection on page change
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [loadPage]);
 
@@ -396,7 +397,7 @@ const Fleet = () => {
             selectedIds={selectedIds}
             onClearSelection={() => setSelectedIds([])}
             onExport={handleExportSelected}
-            totalCount={vehicles.length}
+            totalCount={fleetStats.total}
           />
         )}
 
