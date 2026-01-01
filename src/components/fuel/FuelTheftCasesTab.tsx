@@ -6,7 +6,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertTriangle, MapPin, Clock, FileText, Loader2, Eye, CheckCircle } from "lucide-react";
 import { useFuelTheftCases } from "@/hooks/useFuelTheftCases";
 import { useFuelPageContext } from "@/pages/FuelMonitoring";
-import { useDrivers } from "@/hooks/useDrivers";
 import { format } from "date-fns";
 
 const FuelTheftCasesTab = () => {
@@ -17,14 +16,7 @@ const FuelTheftCasesTab = () => {
     status: statusFilter !== 'all' ? statusFilter : undefined,
     priority: priorityFilter !== 'all' ? priorityFilter : undefined,
   });
-  const { getVehiclePlate } = useFuelPageContext();
-  const { drivers } = useDrivers();
-
-  const getDriverName = (driverId?: string) => {
-    if (!driverId) return "Unknown";
-    const driver = drivers.find(d => d.id === driverId);
-    return driver ? `${driver.first_name} ${driver.last_name}` : "Unknown";
-  };
+  const { getVehiclePlate, getDriverName } = useFuelPageContext();
 
   const getStatusBadge = (status: string) => {
     switch (status) {

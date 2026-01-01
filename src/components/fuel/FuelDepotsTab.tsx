@@ -20,13 +20,11 @@ import {
 } from "lucide-react";
 import { useFuelDepots } from "@/hooks/useFuelDepots";
 import { useFuelPageContext } from "@/pages/FuelMonitoring";
-import { useDrivers } from "@/hooks/useDrivers";
 import { format } from "date-fns";
 
 const FuelDepotsTab = () => {
   const { depots, dispensingLogs, loading, createDepot, recordDispensing, updateDepotStock } = useFuelDepots();
-  const { vehicles, getVehiclePlate: getVehiclePlateFromContext } = useFuelPageContext();
-  const { drivers } = useDrivers();
+  const { vehicles, drivers, getVehiclePlate: getVehiclePlateFromContext, getDriverName: getDriverNameFromContext } = useFuelPageContext();
   
   const [showAddDepot, setShowAddDepot] = useState(false);
   const [showDispense, setShowDispense] = useState(false);
@@ -56,8 +54,7 @@ const FuelDepotsTab = () => {
 
   const getDriverName = (driverId?: string) => {
     if (!driverId) return "N/A";
-    const driver = drivers.find(d => d.id === driverId);
-    return driver ? `${driver.first_name} ${driver.last_name}` : "Unknown";
+    return getDriverNameFromContext(driverId);
   };
 
   const getStockPercentage = (current: number, capacity: number) => {

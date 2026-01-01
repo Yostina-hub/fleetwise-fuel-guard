@@ -76,7 +76,7 @@ export const useDrivers = () => {
 
     // Subscribe to realtime changes
     const channel = supabase
-      .channel('drivers-changes')
+      .channel(`drivers-${organizationId.slice(0, 8)}`)
       .on(
         'postgres_changes',
         {

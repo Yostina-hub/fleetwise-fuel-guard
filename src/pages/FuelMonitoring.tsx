@@ -5,16 +5,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Fuel, AlertTriangle, BarChart3, Loader2, Warehouse, FileText, Droplet, Bell } from "lucide-react";
 import { useFuelEvents } from "@/hooks/useFuelEvents";
 import { useVehicles } from "@/hooks/useVehicles";
+import { useDrivers, Driver } from "@/hooks/useDrivers";
 import FuelTransactionsTab from "@/components/fuel/FuelTransactionsTab";
 import FuelEventsTab from "@/components/fuel/FuelEventsTab";
 import FuelTheftCasesTab from "@/components/fuel/FuelTheftCasesTab";
 import FuelDepotsTab from "@/components/fuel/FuelDepotsTab";
 import FuelConsumptionAlertsCard from "@/components/fuel/FuelConsumptionAlertsCard";
 
-// Context to share vehicles data across fuel tabs
+// Context to share vehicles and drivers data across fuel tabs
 interface FuelPageContextType {
   vehicles: ReturnType<typeof useVehicles>["vehicles"];
+  drivers: Driver[];
   getVehiclePlate: (vehicleId: string) => string;
+  getDriverName: (driverId?: string) => string;
 }
 
 const FuelPageContext = createContext<FuelPageContextType | null>(null);
@@ -30,10 +33,17 @@ export const useFuelPageContext = () => {
 const FuelMonitoring = () => {
   const { fuelEvents: dbFuelEvents, loading } = useFuelEvents();
   const { vehicles } = useVehicles();
+  const { drivers } = useDrivers();
 
   const getVehiclePlate = (vehicleId: string) => {
     const vehicle = vehicles.find(v => v.id === vehicleId);
     return vehicle?.plate_number || "Unknown";
+  };
+
+  const getDriverName = (driverId?: string) => {
+    if (!driverId) return "Unknown";
+    const driver = drivers.find(d => d.id === driverId);
+    return driver ? `${driver.first_name} ${driver.last_name}` : "Unknown";
   };
 
   const stats = useMemo(() => {
@@ -73,8 +83,10 @@ const FuelMonitoring = () => {
 
   const contextValue = useMemo(() => ({
     vehicles,
-    getVehiclePlate
-  }), [vehicles]);
+    drivers,
+    getVehiclePlate,
+    getDriverName
+  }), [vehicles, drivers]);
 
   return (
     <FuelPageContext.Provider value={contextValue}>
