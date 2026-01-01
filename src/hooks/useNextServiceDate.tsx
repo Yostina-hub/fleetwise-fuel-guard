@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
 import { format } from "date-fns";
@@ -8,8 +8,12 @@ export function useNextServiceDate(vehicleIds: string[]) {
   const [nextServiceMap, setNextServiceMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
+  // Memoize the vehicle IDs key to prevent unnecessary re-renders
+  const vehicleIdsKey = useMemo(() => vehicleIds.join(","), [vehicleIds]);
+
   const fetchNextService = useCallback(async () => {
     if (!organizationId || vehicleIds.length === 0) {
+      setNextServiceMap({});
       setLoading(false);
       return;
     }
@@ -48,7 +52,7 @@ export function useNextServiceDate(vehicleIds: string[]) {
     } finally {
       setLoading(false);
     }
-  }, [organizationId, vehicleIds.join(",")]);
+  }, [organizationId, vehicleIdsKey]);
 
   useEffect(() => {
     fetchNextService();
