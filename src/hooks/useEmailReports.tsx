@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useOrganization } from "@/hooks/useOrganization";
 
 export interface EmailReportConfig {
   id: string;
@@ -21,31 +22,35 @@ export interface EmailReportConfig {
 export const useEmailReports = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganization();
 
   const { data: reportConfigs, isLoading } = useQuery({
-    queryKey: ["email-report-configs"],
+    queryKey: ["email-report-configs", organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("email_report_configs" as any)
         .select("*")
+        .eq("organization_id", organizationId!)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
       return data as unknown as EmailReportConfig[];
     },
+    enabled: !!organizationId,
   });
 
   const createReportConfig = useMutation({
     mutationFn: async (config: Omit<EmailReportConfig, 'id' | 'created_at' | 'updated_at' | 'created_by' | 'organization_id'>) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
+      if (!organizationId) throw new Error("Organization not found");
 
       const { data, error } = await supabase
         .from("email_report_configs" as any)
         .insert({
           ...config,
           created_by: user.id,
-          organization_id: user.id, // TODO: Replace with actual org ID
+          organization_id: organizationId,
         })
         .select()
         .single();

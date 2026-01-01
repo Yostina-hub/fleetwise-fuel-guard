@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -29,15 +29,31 @@ const PasswordPoliciesTab = () => {
   });
 
   const [formData, setFormData] = useState({
-    min_length: policy?.min_length || 8,
-    require_uppercase: policy?.require_uppercase ?? true,
-    require_lowercase: policy?.require_lowercase ?? true,
-    require_numbers: policy?.require_numbers ?? true,
-    require_special_chars: policy?.require_special_chars ?? false,
-    max_login_attempts: policy?.max_login_attempts || 5,
-    lockout_duration_minutes: policy?.lockout_duration_minutes || 30,
-    session_timeout_minutes: policy?.session_timeout_minutes || 480,
+    min_length: 8,
+    require_uppercase: true,
+    require_lowercase: true,
+    require_numbers: true,
+    require_special_chars: false,
+    max_login_attempts: 5,
+    lockout_duration_minutes: 30,
+    session_timeout_minutes: 480,
   });
+
+  // Sync form data when policy loads
+  useEffect(() => {
+    if (policy) {
+      setFormData({
+        min_length: policy.min_length ?? 8,
+        require_uppercase: policy.require_uppercase ?? true,
+        require_lowercase: policy.require_lowercase ?? true,
+        require_numbers: policy.require_numbers ?? true,
+        require_special_chars: policy.require_special_chars ?? false,
+        max_login_attempts: policy.max_login_attempts ?? 5,
+        lockout_duration_minutes: policy.lockout_duration_minutes ?? 30,
+        session_timeout_minutes: policy.session_timeout_minutes ?? 480,
+      });
+    }
+  }, [policy]);
 
   const saveMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
