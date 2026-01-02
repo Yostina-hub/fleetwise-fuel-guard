@@ -166,7 +166,7 @@ const InventoryTab = () => {
     createMutation.mutate(formData);
   };
 
-  if (isLoading) return <div role="status" aria-live="polite">Loading...</div>;
+  if (isLoading) return <div role="status" aria-live="polite" aria-label="Loading inventory">Loading...</div>;
 
   return (
     <div className="space-y-4">
@@ -309,7 +309,7 @@ const InventoryTab = () => {
           />
         </div>
         <Select value={categoryFilter} onValueChange={(value) => { setCategoryFilter(value); setCurrentPage(1); }}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px]" aria-label="Filter by category">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
@@ -326,7 +326,7 @@ const InventoryTab = () => {
           </SelectContent>
         </Select>
         <Select value={stockFilter} onValueChange={(value) => { setStockFilter(value); setCurrentPage(1); }}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px]" aria-label="Filter by stock level">
             <SelectValue placeholder="Stock Level" />
           </SelectTrigger>
           <SelectContent>
@@ -384,12 +384,14 @@ const InventoryTab = () => {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <Pagination>
+        <Pagination aria-label="Inventory pagination">
           <PaginationContent>
             <PaginationItem>
               <PaginationPrevious 
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                aria-label="Go to previous page"
+                aria-disabled={currentPage === 1}
               />
             </PaginationItem>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
@@ -398,6 +400,8 @@ const InventoryTab = () => {
                   onClick={() => setCurrentPage(page)}
                   isActive={currentPage === page}
                   className="cursor-pointer"
+                  aria-label={`Go to page ${page}`}
+                  aria-current={currentPage === page ? "page" : undefined}
                 >
                   {page}
                 </PaginationLink>
@@ -407,6 +411,8 @@ const InventoryTab = () => {
               <PaginationNext 
                 onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                 className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                aria-label="Go to next page"
+                aria-disabled={currentPage === totalPages}
               />
             </PaginationItem>
           </PaginationContent>
