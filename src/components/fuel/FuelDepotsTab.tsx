@@ -353,16 +353,20 @@ const FuelDepotsTab = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Depot Name</Label>
+              <Label htmlFor="new-depot-name">Depot Name</Label>
               <Input 
+                id="new-depot-name"
+                aria-label="Depot name"
                 value={newDepot.name}
                 onChange={e => setNewDepot({...newDepot, name: e.target.value})}
                 placeholder="Main Depot"
               />
             </div>
             <div>
-              <Label>Location</Label>
+              <Label htmlFor="new-depot-location">Location</Label>
               <Input 
+                id="new-depot-location"
+                aria-label="Depot location"
                 value={newDepot.location_name}
                 onChange={e => setNewDepot({...newDepot, location_name: e.target.value})}
                 placeholder="Warehouse A"
@@ -370,12 +374,12 @@ const FuelDepotsTab = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Fuel Type</Label>
+                <Label htmlFor="new-depot-fuel-type">Fuel Type</Label>
                 <Select 
                   value={newDepot.fuel_type}
                   onValueChange={v => setNewDepot({...newDepot, fuel_type: v})}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="new-depot-fuel-type" aria-label="Select fuel type">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -386,8 +390,10 @@ const FuelDepotsTab = () => {
                 </Select>
               </div>
               <div>
-                <Label>Capacity ({settings.fuel_unit === 'gallons' ? 'gal' : 'L'})</Label>
+                <Label htmlFor="new-depot-capacity">Capacity ({settings.fuel_unit === 'gallons' ? 'gal' : 'L'})</Label>
                 <Input 
+                  id="new-depot-capacity"
+                  aria-label={`Capacity in ${settings.fuel_unit === 'gallons' ? 'gallons' : 'liters'}`}
                   type="number"
                   value={newDepot.capacity_liters}
                   onChange={e => setNewDepot({...newDepot, capacity_liters: Number(e.target.value)})}
@@ -396,16 +402,20 @@ const FuelDepotsTab = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Current Stock ({settings.fuel_unit === 'gallons' ? 'gal' : 'L'})</Label>
+                <Label htmlFor="new-depot-stock">Current Stock ({settings.fuel_unit === 'gallons' ? 'gal' : 'L'})</Label>
                 <Input 
+                  id="new-depot-stock"
+                  aria-label={`Current stock in ${settings.fuel_unit === 'gallons' ? 'gallons' : 'liters'}`}
                   type="number"
                   value={newDepot.current_stock_liters}
                   onChange={e => setNewDepot({...newDepot, current_stock_liters: Number(e.target.value)})}
                 />
               </div>
               <div>
-                <Label>Min Threshold ({settings.fuel_unit === 'gallons' ? 'gal' : 'L'})</Label>
+                <Label htmlFor="new-depot-threshold">Min Threshold ({settings.fuel_unit === 'gallons' ? 'gal' : 'L'})</Label>
                 <Input 
+                  id="new-depot-threshold"
+                  aria-label={`Minimum threshold in ${settings.fuel_unit === 'gallons' ? 'gallons' : 'liters'}`}
                   type="number"
                   value={newDepot.min_stock_threshold}
                   onChange={e => setNewDepot({...newDepot, min_stock_threshold: Number(e.target.value)})}
@@ -433,12 +443,12 @@ const FuelDepotsTab = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Vehicle</Label>
+              <Label htmlFor="dispense-vehicle">Vehicle</Label>
               <Select 
                 value={dispenseData.vehicle_id}
                 onValueChange={v => setDispenseData({...dispenseData, vehicle_id: v})}
               >
-                <SelectTrigger>
+                <SelectTrigger id="dispense-vehicle" aria-label="Select vehicle">
                   <SelectValue placeholder="Select vehicle" />
                 </SelectTrigger>
                 <SelectContent>
@@ -449,12 +459,12 @@ const FuelDepotsTab = () => {
               </Select>
             </div>
             <div>
-              <Label>Driver</Label>
+              <Label htmlFor="dispense-driver">Driver</Label>
               <Select 
                 value={dispenseData.driver_id}
                 onValueChange={v => setDispenseData({...dispenseData, driver_id: v})}
               >
-                <SelectTrigger>
+                <SelectTrigger id="dispense-driver" aria-label="Select driver">
                   <SelectValue placeholder="Select driver" />
                 </SelectTrigger>
                 <SelectContent>
@@ -466,8 +476,10 @@ const FuelDepotsTab = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Liters</Label>
+                <Label htmlFor="dispense-liters">{settings.fuel_unit === 'gallons' ? 'Gallons' : 'Liters'}</Label>
                 <Input 
+                  id="dispense-liters"
+                  aria-label={`Amount in ${settings.fuel_unit === 'gallons' ? 'gallons' : 'liters'}`}
                   type="number"
                   value={dispenseData.liters_dispensed}
                   onChange={e => setDispenseData({...dispenseData, liters_dispensed: Number(e.target.value)})}
@@ -477,8 +489,10 @@ const FuelDepotsTab = () => {
                 )}
               </div>
               <div>
-                <Label>Odometer ({settings.distance_unit})</Label>
+                <Label htmlFor="dispense-odometer">Odometer ({settings.distance_unit})</Label>
                 <Input 
+                  id="dispense-odometer"
+                  aria-label={`Odometer reading in ${settings.distance_unit}`}
                   type="number"
                   value={dispenseData.odometer_km}
                   onChange={e => setDispenseData({...dispenseData, odometer_km: Number(e.target.value)})}
@@ -486,8 +500,10 @@ const FuelDepotsTab = () => {
               </div>
             </div>
             <div>
-              <Label>Pump Number</Label>
+              <Label htmlFor="dispense-pump">Pump Number</Label>
               <Input 
+                id="dispense-pump"
+                aria-label="Pump number"
                 value={dispenseData.pump_number}
                 onChange={e => setDispenseData({...dispenseData, pump_number: e.target.value})}
                 placeholder="Pump 1"

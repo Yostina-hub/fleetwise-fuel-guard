@@ -134,12 +134,12 @@ const AddTransactionDialog = ({ open, onOpenChange, onSubmit }: AddTransactionDi
         <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <Label>Vehicle *</Label>
+              <Label htmlFor="tx-vehicle">Vehicle *</Label>
               <Select 
                 value={formData.vehicle_id}
                 onValueChange={v => setFormData({...formData, vehicle_id: v})}
               >
-                <SelectTrigger>
+                <SelectTrigger id="tx-vehicle" aria-label="Select vehicle">
                   <SelectValue placeholder="Select vehicle" />
                 </SelectTrigger>
                 <SelectContent>
@@ -150,12 +150,12 @@ const AddTransactionDialog = ({ open, onOpenChange, onSubmit }: AddTransactionDi
               </Select>
             </div>
             <div>
-              <Label>Transaction Type</Label>
+              <Label htmlFor="tx-type">Transaction Type</Label>
               <Select 
                 value={formData.transaction_type}
                 onValueChange={v => setFormData({...formData, transaction_type: v})}
               >
-                <SelectTrigger>
+                <SelectTrigger id="tx-type" aria-label="Select transaction type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -167,16 +167,20 @@ const AddTransactionDialog = ({ open, onOpenChange, onSubmit }: AddTransactionDi
               </Select>
             </div>
             <div>
-              <Label>Date/Time</Label>
+              <Label htmlFor="tx-date">Date/Time</Label>
               <Input 
+                id="tx-date"
+                aria-label="Transaction date and time"
                 type="datetime-local"
                 value={formData.transaction_date}
                 onChange={e => setFormData({...formData, transaction_date: e.target.value})}
               />
             </div>
             <div>
-              <Label>{settings.fuel_unit === 'gallons' ? 'Gallons' : 'Liters'} *</Label>
+              <Label htmlFor="tx-liters">{settings.fuel_unit === 'gallons' ? 'Gallons' : 'Liters'} *</Label>
               <Input 
+                id="tx-liters"
+                aria-label={`Fuel amount in ${settings.fuel_unit === 'gallons' ? 'gallons' : 'liters'}`}
                 type="number"
                 step="0.1"
                 value={formData.fuel_amount_liters || ""}
@@ -185,8 +189,10 @@ const AddTransactionDialog = ({ open, onOpenChange, onSubmit }: AddTransactionDi
               />
             </div>
             <div>
-              <Label>Price/{fuelUnitLabel} ({getCurrencyLabel()})</Label>
+              <Label htmlFor="tx-price">Price/{fuelUnitLabel} ({getCurrencyLabel()})</Label>
               <Input 
+                id="tx-price"
+                aria-label={`Price per ${fuelUnitLabel}`}
                 type="number"
                 step="0.01"
                 value={formData.fuel_price_per_liter || ""}
@@ -194,8 +200,10 @@ const AddTransactionDialog = ({ open, onOpenChange, onSubmit }: AddTransactionDi
               />
             </div>
             <div>
-              <Label>Total Cost ({getCurrencyLabel()})</Label>
+              <Label htmlFor="tx-cost">Total Cost ({getCurrencyLabel()})</Label>
               <Input 
+                id="tx-cost"
+                aria-label="Total fuel cost"
                 type="number"
                 step="0.01"
                 value={formData.fuel_cost || ""}
@@ -203,8 +211,10 @@ const AddTransactionDialog = ({ open, onOpenChange, onSubmit }: AddTransactionDi
               />
             </div>
             <div>
-              <Label>Odometer ({distanceUnitLabel})</Label>
+              <Label htmlFor="tx-odometer">Odometer ({distanceUnitLabel})</Label>
               <Input 
+                id="tx-odometer"
+                aria-label={`Odometer reading in ${distanceUnitLabel}`}
                 type="number"
                 value={formData.odometer_km || ""}
                 onChange={e => setFormData({...formData, odometer_km: Number(e.target.value)})}
@@ -212,32 +222,40 @@ const AddTransactionDialog = ({ open, onOpenChange, onSubmit }: AddTransactionDi
               />
             </div>
             <div>
-              <Label>Location</Label>
+              <Label htmlFor="tx-location">Location</Label>
               <Input 
+                id="tx-location"
+                aria-label="Transaction location"
                 value={formData.location_name}
                 onChange={e => setFormData({...formData, location_name: e.target.value})}
                 placeholder="Station name or address"
               />
             </div>
             <div>
-              <Label>Vendor</Label>
+              <Label htmlFor="tx-vendor">Vendor</Label>
               <Input 
+                id="tx-vendor"
+                aria-label="Fuel vendor name"
                 value={formData.vendor_name}
                 onChange={e => setFormData({...formData, vendor_name: e.target.value})}
                 placeholder="TotalEnergies, NOC, etc."
               />
             </div>
             <div>
-              <Label>Receipt #</Label>
+              <Label htmlFor="tx-receipt">Receipt #</Label>
               <Input 
+                id="tx-receipt"
+                aria-label="Receipt number"
                 value={formData.receipt_number}
                 onChange={e => setFormData({...formData, receipt_number: e.target.value})}
                 placeholder="TRX-001-2025"
               />
             </div>
             <div className="col-span-2">
-              <Label>Notes</Label>
+              <Label htmlFor="tx-notes">Notes</Label>
               <Textarea 
+                id="tx-notes"
+                aria-label="Additional notes"
                 value={formData.notes}
                 onChange={e => setFormData({...formData, notes: e.target.value})}
                 placeholder="Additional notes..."
