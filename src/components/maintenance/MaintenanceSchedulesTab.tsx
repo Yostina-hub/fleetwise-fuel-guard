@@ -314,8 +314,18 @@ const MaintenanceSchedulesTab = () => {
             
             return (
               <Card 
-                key={schedule.id} 
-                className={`${status === 'overdue' ? 'border-destructive/50' : ''} hover:border-primary/50 transition-colors`}
+                key={schedule.id}
+                role="button"
+                tabIndex={0}
+                className={`${status === 'overdue' ? 'border-destructive/50' : ''} hover:border-primary/50 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2`}
+                onClick={() => handleEditClick(schedule)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleEditClick(schedule);
+                  }
+                }}
+                aria-label={`${schedule.service_type} for ${getVehiclePlate(schedule.vehicle_id)}, ${status === 'overdue' ? 'overdue' : status === 'due_soon' ? 'due soon' : 'scheduled'}`}
               >
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
@@ -378,7 +388,8 @@ const MaintenanceSchedulesTab = () => {
                       <Button 
                         size="sm" 
                         className="gap-1"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setSelectedSchedule(schedule);
                           setServiceData({
                             ...serviceData,
@@ -396,7 +407,7 @@ const MaintenanceSchedulesTab = () => {
                           size="sm" 
                           variant="outline"
                           className="flex-1"
-                          onClick={() => handleEditClick(schedule)}
+                          onClick={(e) => { e.stopPropagation(); handleEditClick(schedule); }}
                           aria-label={`Edit ${schedule.service_type} schedule`}
                         >
                           <Pencil className="w-4 h-4" />
@@ -405,7 +416,7 @@ const MaintenanceSchedulesTab = () => {
                           size="sm" 
                           variant="outline"
                           className="flex-1 text-destructive hover:text-destructive"
-                          onClick={() => handleDeleteClick(schedule)}
+                          onClick={(e) => { e.stopPropagation(); handleDeleteClick(schedule); }}
                           aria-label={`Delete ${schedule.service_type} schedule`}
                         >
                           <Trash2 className="w-4 h-4" />
