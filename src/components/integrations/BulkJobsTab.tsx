@@ -112,8 +112,8 @@ const BulkJobsTab = () => {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button aria-label="Create new bulk job">
+              <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
               New Job
             </Button>
           </DialogTrigger>
@@ -124,20 +124,20 @@ const BulkJobsTab = () => {
             <div className="space-y-4">
               <div>
                 <Label htmlFor="jobType">Job Type</Label>
-                <Select value={jobType} onValueChange={(v: any) => setJobType(v)}>
-                  <SelectTrigger>
+              <Select value={jobType} onValueChange={(v: any) => setJobType(v)}>
+                  <SelectTrigger aria-label="Select job type">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="import">
                       <div className="flex items-center gap-2">
-                        <Upload className="h-4 w-4" />
+                        <Upload className="h-4 w-4" aria-hidden="true" />
                         Import
                       </div>
                     </SelectItem>
                     <SelectItem value="export">
                       <div className="flex items-center gap-2">
-                        <Download className="h-4 w-4" />
+                        <Download className="h-4 w-4" aria-hidden="true" />
                         Export
                       </div>
                     </SelectItem>
@@ -147,7 +147,7 @@ const BulkJobsTab = () => {
               <div>
                 <Label htmlFor="entityType">Entity Type</Label>
                 <Select value={entityType} onValueChange={setEntityType}>
-                  <SelectTrigger>
+                  <SelectTrigger aria-label="Select entity type">
                     <SelectValue placeholder="Select entity" />
                   </SelectTrigger>
                   <SelectContent>
@@ -162,7 +162,7 @@ const BulkJobsTab = () => {
               <div>
                 <Label htmlFor="format">Format</Label>
                 <Select value={format} onValueChange={setFormat}>
-                  <SelectTrigger>
+                  <SelectTrigger aria-label="Select export format">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -187,7 +187,7 @@ const BulkJobsTab = () => {
       </div>
 
       {isLoading ? (
-        <p>Loading...</p>
+        <p role="status" aria-live="polite" aria-label="Loading bulk jobs...">Loading...</p>
       ) : (
         <Table>
           <TableHeader>
@@ -206,13 +206,13 @@ const BulkJobsTab = () => {
               <TableRow key={job.id}>
                 <TableCell className="capitalize">
                   {job.job_type === "import" ? (
-                    <Badge variant="secondary">
-                      <Upload className="h-3 w-3 mr-1" />
+                  <Badge variant="secondary">
+                      <Upload className="h-3 w-3 mr-1" aria-hidden="true" />
                       Import
                     </Badge>
                   ) : (
                     <Badge variant="outline">
-                      <Download className="h-3 w-3 mr-1" />
+                      <Download className="h-3 w-3 mr-1" aria-hidden="true" />
                       Export
                     </Badge>
                   )}
@@ -243,9 +243,9 @@ const BulkJobsTab = () => {
                  </TableCell>
                 <TableCell>
                   {job.status === "completed" && job.file_url && (
-                    <Button size="sm" variant="ghost" asChild>
+                    <Button size="sm" variant="ghost" asChild aria-label="Download exported file">
                       <a href={job.file_url} download>
-                        <Download className="h-4 w-4" />
+                        <Download className="h-4 w-4" aria-hidden="true" />
                       </a>
                     </Button>
                   )}
