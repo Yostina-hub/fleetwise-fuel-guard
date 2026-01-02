@@ -719,8 +719,8 @@ export const DeviceManagementTab = () => {
             Showing {paginatedDevices.length} of {filteredDevices.length} devices
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Table>
+        <CardContent className="overflow-x-auto">
+          <Table className="min-w-[1000px]">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-12">

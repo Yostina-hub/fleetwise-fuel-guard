@@ -253,8 +253,8 @@ export const HeartbeatMonitoringTab = () => {
             Devices actively sending heartbeat signals
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Table>
+        <CardContent className="overflow-x-auto">
+          <Table className="min-w-[900px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Vehicle</TableHead>
@@ -328,8 +328,8 @@ export const HeartbeatMonitoringTab = () => {
               Devices not sending heartbeat signals - requires attention
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Table>
+        <CardContent className="overflow-x-auto">
+          <Table className="min-w-[900px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Vehicle</TableHead>

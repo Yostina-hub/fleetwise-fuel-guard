@@ -790,15 +790,17 @@ const DeviceIntegration = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="devices" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="devices">Device Management</TabsTrigger>
-            <TabsTrigger value="heartbeat">Heartbeat Monitor</TabsTrigger>
-            <TabsTrigger value="realtime">Live Status</TabsTrigger>
-            <TabsTrigger value="alerts">Offline Alerts</TabsTrigger>
-            <TabsTrigger value="connected">Connected Devices</TabsTrigger>
-            <TabsTrigger value="templates">Device Templates</TabsTrigger>
-            <TabsTrigger value="guide">Setup Guide</TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto">
+            <TabsList className="w-max">
+              <TabsTrigger value="devices">Device Management</TabsTrigger>
+              <TabsTrigger value="heartbeat">Heartbeat Monitor</TabsTrigger>
+              <TabsTrigger value="realtime">Live Status</TabsTrigger>
+              <TabsTrigger value="alerts">Offline Alerts</TabsTrigger>
+              <TabsTrigger value="connected">Connected Devices</TabsTrigger>
+              <TabsTrigger value="templates">Device Templates</TabsTrigger>
+              <TabsTrigger value="guide">Setup Guide</TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="devices" className="space-y-4">
             <DeviceManagementTab />
