@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { format } from "date-fns";
 import {
   Table,
@@ -10,6 +11,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Gauge, MapPin, Clock, AlertTriangle } from "lucide-react";
+import { TablePagination } from "./TablePagination";
+
+const ITEMS_PER_PAGE = 10;
 
 interface SpeedViolation {
   id: string;
@@ -28,6 +32,12 @@ interface SpeedingEventsTableProps {
 }
 
 export const SpeedingEventsTable = ({ violations }: SpeedingEventsTableProps) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const totalItems = violations.length;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedViolations = violations.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
       case "critical":
@@ -60,7 +70,7 @@ export const SpeedingEventsTable = ({ violations }: SpeedingEventsTableProps) =>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Gauge className="w-5 h-5 text-destructive" />
-          Speeding Events ({violations.length})
+          Speeding Events ({totalItems})
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
@@ -79,7 +89,7 @@ export const SpeedingEventsTable = ({ violations }: SpeedingEventsTableProps) =>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {violations.map((v) => (
+            {paginatedViolations.map((v) => (
               <TableRow key={v.id}>
                 <TableCell className="whitespace-nowrap">
                   <div className="flex items-center gap-2">
@@ -116,6 +126,12 @@ export const SpeedingEventsTable = ({ violations }: SpeedingEventsTableProps) =>
             ))}
           </TableBody>
         </Table>
+        <TablePagination
+          currentPage={currentPage}
+          totalItems={totalItems}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
       </CardContent>
     </Card>
   );

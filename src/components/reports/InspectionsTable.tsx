@@ -1,7 +1,11 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ClipboardCheck, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { ClipboardCheck, CheckCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { TablePagination } from "./TablePagination";
+
+const ITEMS_PER_PAGE = 10;
 
 interface Inspection {
   id: string;
@@ -21,6 +25,12 @@ interface InspectionsTableProps {
 }
 
 export const InspectionsTable = ({ inspections }: InspectionsTableProps) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const totalItems = inspections.length;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedInspections = inspections.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   const passedCount = inspections.filter(i => i.certified_safe).length;
   const failedCount = inspections.filter(i => !i.certified_safe).length;
   const passRate = inspections.length > 0 ? (passedCount / inspections.length) * 100 : 0;
@@ -46,7 +56,7 @@ export const InspectionsTable = ({ inspections }: InspectionsTableProps) => {
         <Card className="bg-card/50">
           <CardContent className="pt-4">
             <div className="text-sm text-muted-foreground">Total Inspections</div>
-            <div className="text-2xl font-bold text-foreground">{inspections.length}</div>
+            <div className="text-2xl font-bold text-foreground">{totalItems}</div>
           </CardContent>
         </Card>
         <Card className="bg-card/50">
@@ -87,7 +97,7 @@ export const InspectionsTable = ({ inspections }: InspectionsTableProps) => {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">
             <ClipboardCheck className="w-5 h-5 text-primary" />
-            Vehicle Inspections ({inspections.length})
+            Vehicle Inspections ({totalItems})
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -106,7 +116,7 @@ export const InspectionsTable = ({ inspections }: InspectionsTableProps) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {inspections.map((inspection) => (
+                {paginatedInspections.map((inspection) => (
                   <tr key={inspection.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-3 text-sm">
                       {format(new Date(inspection.inspection_date), "MMM dd, yyyy")}
@@ -172,6 +182,12 @@ export const InspectionsTable = ({ inspections }: InspectionsTableProps) => {
               </tbody>
             </table>
           </div>
+          <TablePagination
+            currentPage={currentPage}
+            totalItems={totalItems}
+            itemsPerPage={ITEMS_PER_PAGE}
+            onPageChange={setCurrentPage}
+          />
         </CardContent>
       </Card>
     </div>

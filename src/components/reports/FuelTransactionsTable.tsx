@@ -1,7 +1,11 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Fuel, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { TablePagination } from "./TablePagination";
+
+const ITEMS_PER_PAGE = 10;
 
 interface FuelTransaction {
   id: string;
@@ -21,6 +25,12 @@ interface FuelTransactionsTableProps {
 }
 
 export const FuelTransactionsTable = ({ transactions }: FuelTransactionsTableProps) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const totalItems = transactions.length;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedTransactions = transactions.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   if (transactions.length === 0) {
     return (
       <Card>
@@ -40,7 +50,7 @@ export const FuelTransactionsTable = ({ transactions }: FuelTransactionsTablePro
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Fuel className="w-5 h-5 text-primary" />
-          Fuel Transactions ({transactions.length})
+          Fuel Transactions ({totalItems})
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
@@ -59,7 +69,7 @@ export const FuelTransactionsTable = ({ transactions }: FuelTransactionsTablePro
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {transactions.map((tx) => (
+              {paginatedTransactions.map((tx) => (
                 <tr key={tx.id} className="hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3 text-sm">
                     {format(new Date(tx.transaction_date), "MMM dd, yyyy HH:mm")}
@@ -98,6 +108,12 @@ export const FuelTransactionsTable = ({ transactions }: FuelTransactionsTablePro
             </tbody>
           </table>
         </div>
+        <TablePagination
+          currentPage={currentPage}
+          totalItems={totalItems}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
       </CardContent>
     </Card>
   );

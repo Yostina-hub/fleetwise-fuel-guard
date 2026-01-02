@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { format } from "date-fns";
 import {
   Table,
@@ -10,6 +11,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, Clock, LogIn, LogOut } from "lucide-react";
+import { TablePagination } from "./TablePagination";
+
+const ITEMS_PER_PAGE = 10;
 
 interface GeofenceEvent {
   id: string;
@@ -25,6 +29,12 @@ interface GeofenceEventsTableProps {
 }
 
 export const GeofenceEventsTable = ({ events }: GeofenceEventsTableProps) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const totalItems = events.length;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedEvents = events.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   if (events.length === 0) {
     return (
       <Card>
@@ -44,7 +54,7 @@ export const GeofenceEventsTable = ({ events }: GeofenceEventsTableProps) => {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <MapPin className="w-5 h-5 text-primary" />
-          Geofence Events ({events.length})
+          Geofence Events ({totalItems})
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
@@ -59,7 +69,7 @@ export const GeofenceEventsTable = ({ events }: GeofenceEventsTableProps) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {events.slice(0, 50).map((event) => (
+            {paginatedEvents.map((event) => (
               <TableRow key={event.id}>
                 <TableCell className="whitespace-nowrap">
                   <div className="flex items-center gap-2">
@@ -98,6 +108,12 @@ export const GeofenceEventsTable = ({ events }: GeofenceEventsTableProps) => {
             ))}
           </TableBody>
         </Table>
+        <TablePagination
+          currentPage={currentPage}
+          totalItems={totalItems}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
       </CardContent>
     </Card>
   );

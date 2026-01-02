@@ -1,7 +1,11 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Truck, CheckCircle, Clock, AlertCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { TablePagination } from "./TablePagination";
+
+const ITEMS_PER_PAGE = 10;
 
 interface DispatchJob {
   id: string;
@@ -43,6 +47,12 @@ const getStatusIcon = (status: string) => {
 };
 
 export const DispatchTable = ({ jobs }: DispatchTableProps) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const totalItems = jobs.length;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedJobs = jobs.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   const completedJobs = jobs.filter(j => j.status === "completed").length;
   const slaMetJobs = jobs.filter(j => j.sla_met === true).length;
   const slaTotal = jobs.filter(j => j.sla_met !== null).length;
@@ -69,7 +79,7 @@ export const DispatchTable = ({ jobs }: DispatchTableProps) => {
         <Card className="bg-card/50">
           <CardContent className="pt-4">
             <div className="text-sm text-muted-foreground">Total Jobs</div>
-            <div className="text-2xl font-bold text-foreground">{jobs.length}</div>
+            <div className="text-2xl font-bold text-foreground">{totalItems}</div>
           </CardContent>
         </Card>
         <Card className="bg-card/50">
@@ -104,7 +114,7 @@ export const DispatchTable = ({ jobs }: DispatchTableProps) => {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Truck className="w-5 h-5 text-primary" />
-            Dispatch Jobs ({jobs.length})
+            Dispatch Jobs ({totalItems})
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -123,7 +133,7 @@ export const DispatchTable = ({ jobs }: DispatchTableProps) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {jobs.map((job) => (
+                {paginatedJobs.map((job) => (
                   <tr key={job.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-3 font-mono text-sm">{job.job_number}</td>
                     <td className="px-4 py-3 text-sm capitalize">{job.job_type?.replace(/_/g, ' ')}</td>
@@ -170,6 +180,12 @@ export const DispatchTable = ({ jobs }: DispatchTableProps) => {
               </tbody>
             </table>
           </div>
+          <TablePagination
+            currentPage={currentPage}
+            totalItems={totalItems}
+            itemsPerPage={ITEMS_PER_PAGE}
+            onPageChange={setCurrentPage}
+          />
         </CardContent>
       </Card>
     </div>

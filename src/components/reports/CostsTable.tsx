@@ -1,7 +1,11 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { TablePagination } from "./TablePagination";
+
+const ITEMS_PER_PAGE = 10;
 
 interface VehicleCost {
   id: string;
@@ -39,6 +43,12 @@ const getCostTypeColor = (costType: string) => {
 };
 
 export const CostsTable = ({ costs }: CostsTableProps) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const totalItems = costs.length;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedCosts = costs.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   const totalCost = costs.reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
   
   // Group by cost type for summary
@@ -87,7 +97,7 @@ export const CostsTable = ({ costs }: CostsTableProps) => {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">
             <DollarSign className="w-5 h-5 text-primary" />
-            Vehicle Costs ({costs.length})
+            Vehicle Costs ({totalItems})
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -105,7 +115,7 @@ export const CostsTable = ({ costs }: CostsTableProps) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {costs.map((cost) => (
+                {paginatedCosts.map((cost) => (
                   <tr key={cost.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-3 text-sm">
                       {format(new Date(cost.cost_date), "MMM dd, yyyy")}
@@ -138,6 +148,12 @@ export const CostsTable = ({ costs }: CostsTableProps) => {
               </tbody>
             </table>
           </div>
+          <TablePagination
+            currentPage={currentPage}
+            totalItems={totalItems}
+            itemsPerPage={ITEMS_PER_PAGE}
+            onPageChange={setCurrentPage}
+          />
         </CardContent>
       </Card>
     </div>

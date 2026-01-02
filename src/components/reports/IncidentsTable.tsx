@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { format } from "date-fns";
 import {
   Table,
@@ -10,6 +11,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertOctagon, Clock, MapPin, DollarSign } from "lucide-react";
+import { TablePagination } from "./TablePagination";
+
+const ITEMS_PER_PAGE = 10;
 
 interface Incident {
   id: string;
@@ -30,6 +34,12 @@ interface IncidentsTableProps {
 }
 
 export const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const totalItems = incidents.length;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedIncidents = incidents.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
       case "critical":
@@ -92,7 +102,7 @@ export const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <AlertOctagon className="w-5 h-5 text-destructive" />
-          Incidents ({incidents.length})
+          Incidents ({totalItems})
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
@@ -111,7 +121,7 @@ export const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {incidents.map((incident) => (
+            {paginatedIncidents.map((incident) => (
               <TableRow key={incident.id}>
                 <TableCell className="font-mono text-xs">
                   {incident.incident_number}
@@ -151,6 +161,12 @@ export const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
             ))}
           </TableBody>
         </Table>
+        <TablePagination
+          currentPage={currentPage}
+          totalItems={totalItems}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
       </CardContent>
     </Card>
   );

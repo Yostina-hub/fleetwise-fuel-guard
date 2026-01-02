@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { format } from "date-fns";
 import {
   Table,
@@ -10,6 +11,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Route, Clock, Fuel, Gauge } from "lucide-react";
+import { TablePagination } from "./TablePagination";
+
+const ITEMS_PER_PAGE = 10;
 
 interface Trip {
   id: string;
@@ -31,6 +35,12 @@ interface TripsTableProps {
 }
 
 export const TripsTable = ({ trips }: TripsTableProps) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const totalItems = trips.length;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedTrips = trips.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "completed":
@@ -63,7 +73,7 @@ export const TripsTable = ({ trips }: TripsTableProps) => {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Route className="w-5 h-5 text-primary" />
-          Trips ({trips.length})
+          Trips ({totalItems})
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
@@ -82,7 +92,7 @@ export const TripsTable = ({ trips }: TripsTableProps) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {trips.slice(0, 50).map((trip) => (
+            {paginatedTrips.map((trip) => (
               <TableRow key={trip.id}>
                 <TableCell className="whitespace-nowrap">
                   <div className="flex items-center gap-2">
@@ -136,6 +146,12 @@ export const TripsTable = ({ trips }: TripsTableProps) => {
             ))}
           </TableBody>
         </Table>
+        <TablePagination
+          currentPage={currentPage}
+          totalItems={totalItems}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
       </CardContent>
     </Card>
   );

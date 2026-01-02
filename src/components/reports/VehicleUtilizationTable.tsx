@@ -1,7 +1,10 @@
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Truck, Clock, Fuel, Route } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useMemo } from "react";
+import { TablePagination } from "./TablePagination";
+
+const ITEMS_PER_PAGE = 10;
 
 interface Trip {
   vehicle_id: string;
@@ -17,7 +20,8 @@ interface VehicleUtilizationTableProps {
 }
 
 export const VehicleUtilizationTable = ({ trips }: VehicleUtilizationTableProps) => {
-  // Aggregate by vehicle
+  const [currentPage, setCurrentPage] = useState(1);
+
   const vehicleStats = useMemo(() => {
     const stats: Record<string, {
       plate_number: string;
@@ -63,6 +67,10 @@ export const VehicleUtilizationTable = ({ trips }: VehicleUtilizationTableProps)
       .sort((a, b) => b.totalDistance - a.totalDistance);
   }, [trips]);
 
+  const totalItems = vehicleStats.length;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedStats = vehicleStats.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   if (vehicleStats.length === 0) {
     return (
       <Card>
@@ -82,7 +90,7 @@ export const VehicleUtilizationTable = ({ trips }: VehicleUtilizationTableProps)
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Truck className="w-5 h-5 text-primary" />
-          Vehicle Utilization Report ({vehicleStats.length} vehicles)
+          Vehicle Utilization Report ({totalItems} vehicles)
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
@@ -93,29 +101,20 @@ export const VehicleUtilizationTable = ({ trips }: VehicleUtilizationTableProps)
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Vehicle</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Trips</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
-                  <div className="flex items-center gap-1">
-                    <Route className="w-3 h-3" />
-                    Distance
-                  </div>
+                  <div className="flex items-center gap-1"><Route className="w-3 h-3" />Distance</div>
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    Duration
-                  </div>
+                  <div className="flex items-center gap-1"><Clock className="w-3 h-3" />Duration</div>
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
-                  <div className="flex items-center gap-1">
-                    <Fuel className="w-3 h-3" />
-                    Fuel Used
-                  </div>
+                  <div className="flex items-center gap-1"><Fuel className="w-3 h-3" />Fuel Used</div>
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Efficiency</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Idle %</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {vehicleStats.map((v) => (
+              {paginatedStats.map((v) => (
                 <tr key={v.id} className="hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3">
                     <div>
@@ -125,27 +124,15 @@ export const VehicleUtilizationTable = ({ trips }: VehicleUtilizationTableProps)
                   </td>
                   <td className="px-4 py-3">{v.tripCount}</td>
                   <td className="px-4 py-3">{v.totalDistance.toFixed(1)} km</td>
-                  <td className="px-4 py-3">
-                    {Math.floor(v.totalDuration / 60)}h {v.totalDuration % 60}m
-                  </td>
+                  <td className="px-4 py-3">{Math.floor(v.totalDuration / 60)}h {v.totalDuration % 60}m</td>
                   <td className="px-4 py-3">{v.totalFuel.toFixed(1)} L</td>
                   <td className="px-4 py-3">
-                    <span className={cn(
-                      "font-medium",
-                      v.efficiency >= 12 ? "text-green-500" :
-                      v.efficiency >= 8 ? "text-amber-500" :
-                      v.efficiency > 0 ? "text-red-500" : "text-muted-foreground"
-                    )}>
+                    <span className={cn("font-medium", v.efficiency >= 12 ? "text-green-500" : v.efficiency >= 8 ? "text-amber-500" : v.efficiency > 0 ? "text-red-500" : "text-muted-foreground")}>
                       {v.efficiency > 0 ? `${v.efficiency.toFixed(1)} km/L` : "-"}
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={cn(
-                      "font-medium",
-                      v.idlePercent <= 10 ? "text-green-500" :
-                      v.idlePercent <= 20 ? "text-amber-500" :
-                      "text-red-500"
-                    )}>
+                    <span className={cn("font-medium", v.idlePercent <= 10 ? "text-green-500" : v.idlePercent <= 20 ? "text-amber-500" : "text-red-500")}>
                       {v.idlePercent.toFixed(1)}%
                     </span>
                   </td>
@@ -154,6 +141,7 @@ export const VehicleUtilizationTable = ({ trips }: VehicleUtilizationTableProps)
             </tbody>
           </table>
         </div>
+        <TablePagination currentPage={currentPage} totalItems={totalItems} itemsPerPage={ITEMS_PER_PAGE} onPageChange={setCurrentPage} />
       </CardContent>
     </Card>
   );

@@ -1,7 +1,11 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ClipboardList, Clock, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { TablePagination } from "./TablePagination";
+
+const ITEMS_PER_PAGE = 10;
 
 interface WorkOrder {
   id: string;
@@ -39,6 +43,12 @@ const getStatusIcon = (status: string) => {
 };
 
 export const WorkOrdersTable = ({ workOrders }: WorkOrdersTableProps) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const totalItems = workOrders.length;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedWorkOrders = workOrders.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   if (workOrders.length === 0) {
     return (
       <Card>
@@ -58,7 +68,7 @@ export const WorkOrdersTable = ({ workOrders }: WorkOrdersTableProps) => {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <ClipboardList className="w-5 h-5 text-primary" />
-          Work Orders ({workOrders.length})
+          Work Orders ({totalItems})
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
@@ -77,7 +87,7 @@ export const WorkOrdersTable = ({ workOrders }: WorkOrdersTableProps) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {workOrders.map((wo) => (
+              {paginatedWorkOrders.map((wo) => (
                 <tr key={wo.id} className="hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3 font-mono text-sm">{wo.work_order_number}</td>
                   <td className="px-4 py-3">
@@ -124,6 +134,12 @@ export const WorkOrdersTable = ({ workOrders }: WorkOrdersTableProps) => {
             </tbody>
           </table>
         </div>
+        <TablePagination
+          currentPage={currentPage}
+          totalItems={totalItems}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
       </CardContent>
     </Card>
   );

@@ -1,7 +1,11 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bell, AlertTriangle, AlertCircle, Info } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { TablePagination } from "./TablePagination";
+
+const ITEMS_PER_PAGE = 10;
 
 interface Alert {
   id: string;
@@ -33,6 +37,12 @@ const getSeverityIcon = (severity: string) => {
 };
 
 export const AlertsTable = ({ alerts }: AlertsTableProps) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const totalItems = alerts.length;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedAlerts = alerts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   if (alerts.length === 0) {
     return (
       <Card>
@@ -52,7 +62,7 @@ export const AlertsTable = ({ alerts }: AlertsTableProps) => {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Bell className="w-5 h-5 text-primary" />
-          System Alerts ({alerts.length})
+          System Alerts ({totalItems})
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
@@ -70,7 +80,7 @@ export const AlertsTable = ({ alerts }: AlertsTableProps) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {alerts.map((alert) => (
+              {paginatedAlerts.map((alert) => (
                 <tr key={alert.id} className="hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3 text-sm">
                     {format(new Date(alert.alert_time), "MMM dd, HH:mm")}
@@ -113,6 +123,12 @@ export const AlertsTable = ({ alerts }: AlertsTableProps) => {
             </tbody>
           </table>
         </div>
+        <TablePagination
+          currentPage={currentPage}
+          totalItems={totalItems}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
       </CardContent>
     </Card>
   );
