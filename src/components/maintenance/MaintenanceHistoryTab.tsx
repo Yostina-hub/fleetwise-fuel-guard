@@ -40,6 +40,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useVehicles } from "@/hooks/useVehicles";
 import { format } from "date-fns";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
 
 interface WorkOrder {
   id: string;
@@ -59,6 +60,8 @@ interface WorkOrder {
   odometer_at_service: number | null;
   vehicles?: { plate_number: string; make: string; model: string };
 }
+
+const ITEMS_PER_PAGE = 10;
 
 const MaintenanceHistoryTab = () => {
   const { organizationId } = useOrganization();
@@ -101,6 +104,9 @@ const MaintenanceHistoryTab = () => {
       return matchesSearch && matchesVehicle;
     });
   }, [completedWorkOrders, searchQuery, vehicleFilter]);
+
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(filteredHistory.length, ITEMS_PER_PAGE);
+  const paginatedHistory = filteredHistory.slice(startIndex, endIndex);
 
   const getVehicleLabel = (wo: WorkOrder) => {
     return wo.vehicles 
@@ -255,7 +261,7 @@ const MaintenanceHistoryTab = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredHistory.map((wo) => (
+                {paginatedHistory.map((wo) => (
                   <TableRow 
                     key={wo.id}
                     role="button"
@@ -297,6 +303,12 @@ const MaintenanceHistoryTab = () => {
                 ))}
               </TableBody>
             </Table>
+            <TablePagination
+              currentPage={currentPage}
+              totalItems={filteredHistory.length}
+              itemsPerPage={ITEMS_PER_PAGE}
+              onPageChange={setCurrentPage}
+            />
           </CardContent>
         </Card>
       )}

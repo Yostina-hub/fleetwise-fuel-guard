@@ -11,6 +11,9 @@ import { useOrganizationSettings } from "@/hooks/useOrganizationSettings";
 import { format } from "date-fns";
 import TheftCaseDetailDialog from "./TheftCaseDetailDialog";
 import { toast } from "sonner";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
+
+const ITEMS_PER_PAGE = 10;
 
 const FuelTheftCasesTab = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -45,6 +48,9 @@ const FuelTheftCasesTab = () => {
     
     return true;
   });
+  
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(filteredCases.length, ITEMS_PER_PAGE);
+  const paginatedCases = filteredCases.slice(startIndex, endIndex);
   
   const selectedCaseData = filteredCases.find(c => c.id === selectedCase);
 
@@ -226,7 +232,7 @@ const FuelTheftCasesTab = () => {
             </CardContent>
           </Card>
         ) : (
-          filteredCases.map(caseItem => (
+          paginatedCases.map(caseItem => (
             <Card key={caseItem.id} className={caseItem.status === 'open' ? 'border-destructive/50' : ''}>
               <CardContent className="p-6">
                 <div className="flex flex-col lg:flex-row items-start justify-between gap-4">
@@ -332,6 +338,14 @@ const FuelTheftCasesTab = () => {
           ))
         )}
       </div>
+
+      {/* Pagination */}
+      <TablePagination
+        currentPage={currentPage}
+        totalItems={filteredCases.length}
+        itemsPerPage={ITEMS_PER_PAGE}
+        onPageChange={setCurrentPage}
+      />
 
       {/* Detail Dialog */}
       <TheftCaseDetailDialog

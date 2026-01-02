@@ -27,9 +27,14 @@ import { format } from "date-fns";
 import ReceiveFuelDialog from "./ReceiveFuelDialog";
 import EditDepotDialog from "./EditDepotDialog";
 import { toast } from "sonner";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
+
+const ITEMS_PER_PAGE = 10;
 
 const FuelDepotsTab = () => {
   const { depots, dispensingLogs, loading, createDepot, recordDispensing, receiveFuel, updateDepot, deleteDepot } = useFuelDepots();
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(dispensingLogs.length, ITEMS_PER_PAGE);
+  const paginatedLogs = dispensingLogs.slice(startIndex, endIndex);
   const { vehicles, drivers, getVehiclePlate: getVehiclePlateFromContext, getDriverName: getDriverNameFromContext } = useFuelPageContext();
   const { formatFuel, formatDistance, formatCurrency, settings } = useOrganizationSettings();
   
@@ -310,14 +315,14 @@ const FuelDepotsTab = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {dispensingLogs.length === 0 ? (
+              {paginatedLogs.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                     No dispensing records yet
                   </TableCell>
                 </TableRow>
               ) : (
-                dispensingLogs.slice(0, 10).map(log => (
+                paginatedLogs.map(log => (
                   <TableRow key={log.id}>
                     <TableCell>{format(new Date(log.dispensed_at), "MMM dd, HH:mm")}</TableCell>
                     <TableCell>
@@ -345,6 +350,12 @@ const FuelDepotsTab = () => {
               )}
             </TableBody>
           </Table>
+          <TablePagination
+            currentPage={currentPage}
+            totalItems={dispensingLogs.length}
+            itemsPerPage={ITEMS_PER_PAGE}
+            onPageChange={setCurrentPage}
+          />
         </CardContent>
       </Card>
 

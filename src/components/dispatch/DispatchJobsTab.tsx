@@ -27,6 +27,9 @@ import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
 import { format } from "date-fns";
 import SLAIndicator from "./SLAIndicator";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
+
+const ITEMS_PER_PAGE = 10;
 
 const DispatchJobsTab = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -115,6 +118,9 @@ const DispatchJobsTab = () => {
       job.dropoff_location_name?.toLowerCase().includes(searchLower)
     );
   });
+
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(filteredJobs.length, ITEMS_PER_PAGE);
+  const paginatedJobs = filteredJobs.slice(startIndex, endIndex);
 
   const handleCreateJob = async () => {
     await createJob(newJob);
@@ -213,7 +219,7 @@ const DispatchJobsTab = () => {
             </CardContent>
           </Card>
         ) : (
-          filteredJobs.map(job => (
+          paginatedJobs.map(job => (
             <Card key={job.id} className={job.priority === 'urgent' ? 'border-destructive/50' : ''}>
               <CardContent className="p-6">
                 <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
@@ -347,6 +353,14 @@ const DispatchJobsTab = () => {
           ))
         )}
       </div>
+
+      {/* Pagination */}
+      <TablePagination
+        currentPage={currentPage}
+        totalItems={filteredJobs.length}
+        itemsPerPage={ITEMS_PER_PAGE}
+        onPageChange={setCurrentPage}
+      />
 
       {/* Create Job Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>

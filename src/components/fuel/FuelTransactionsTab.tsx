@@ -11,6 +11,9 @@ import { useFuelPageContext } from "@/contexts/FuelPageContext";
 import { useOrganizationSettings } from "@/hooks/useOrganizationSettings";
 import { format } from "date-fns";
 import AddTransactionDialog from "./AddTransactionDialog";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
+
+const ITEMS_PER_PAGE = 10;
 
 const FuelTransactionsTab = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,6 +39,9 @@ const FuelTransactionsTab = () => {
       t.location_name?.toLowerCase().includes(searchLower)
     );
   });
+
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(filteredTransactions.length, ITEMS_PER_PAGE);
+  const paginatedTransactions = filteredTransactions.slice(startIndex, endIndex);
 
   const handleReconcile = async (id: string) => {
     await reconcileTransaction(id, 0, "Manual reconciliation");
@@ -145,14 +151,14 @@ const FuelTransactionsTab = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredTransactions.length === 0 ? (
+              {paginatedTransactions.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                     No transactions found
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredTransactions.map(t => (
+                paginatedTransactions.map(t => (
                   <TableRow key={t.id}>
                     <TableCell className="font-medium">
                       {format(new Date(t.transaction_date), "MMM dd, yyyy HH:mm")}
@@ -192,6 +198,12 @@ const FuelTransactionsTab = () => {
               )}
             </TableBody>
           </Table>
+          <TablePagination
+            currentPage={currentPage}
+            totalItems={filteredTransactions.length}
+            itemsPerPage={ITEMS_PER_PAGE}
+            onPageChange={setCurrentPage}
+          />
         </CardContent>
       </Card>
 
