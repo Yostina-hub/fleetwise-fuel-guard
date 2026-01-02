@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { 
@@ -104,6 +104,7 @@ const Layout = ({ children }: LayoutProps) => {
   const { signOut, user } = useAuth();
   const { isSuperAdmin } = usePermissions();
   const { toast } = useToast();
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const handleSignOut = async () => {
     const { error } = await signOut();
@@ -122,6 +123,11 @@ const Layout = ({ children }: LayoutProps) => {
       });
     }
   };
+
+  useEffect(() => {
+    // Reset scroll positions between pages so horizontal scroll doesn't "carry" to the next route.
+    scrollRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [location.pathname, location.search]);
 
   return (
     <div className="flex h-screen bg-background overflow-hidden relative">
@@ -218,9 +224,11 @@ const Layout = ({ children }: LayoutProps) => {
       </aside>
 
       {/* Main Content - Scrollable container for all pages */}
-      <main className="flex-1 overflow-auto bg-background custom-scrollbar relative z-10">
-        <div className="min-h-full w-max min-w-full">
-          {children}
+      <main className="flex-1 bg-background relative z-10 overflow-hidden">
+        <div ref={scrollRef} className="h-full overflow-auto custom-scrollbar">
+          <div className="min-h-full w-max min-w-full">
+            {children}
+          </div>
         </div>
       </main>
       
