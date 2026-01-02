@@ -89,6 +89,7 @@ const Reports = () => {
   const mainTabs = [
     { id: "vehicle", label: "Vehicle", icon: Truck },
     { id: "driver", label: "Driver", icon: Users },
+    { id: "location", label: "Location", icon: MapPin },
     { id: "fuel", label: "Fuel", icon: Fuel },
     { id: "trips", label: "Trips", icon: Route },
     { id: "maintenance", label: "Maintenance", icon: Wrench },
@@ -112,6 +113,11 @@ const Reports = () => {
           { id: "speeding", label: "Speeding" },
           { id: "harsh_events", label: "Harsh Events" },
           { id: "incidents", label: "Incidents" },
+        ];
+      case "location":
+        return [
+          { id: "geofence", label: "Geofence Events" },
+          { id: "speeding", label: "Speeding by Location" },
         ];
       case "fuel":
         return [
@@ -151,6 +157,8 @@ const Reports = () => {
         return [{ id: "summary", label: "Summary" }, { id: "geofence", label: "Geofence Events" }];
       case "driver":
         return [{ id: "summary", label: "Summary" }, { id: "scores", label: "Behavior Scores" }, { id: "speeding", label: "Speeding" }, { id: "harsh_events", label: "Harsh Events" }, { id: "incidents", label: "Incidents" }];
+      case "location":
+        return [{ id: "geofence", label: "Geofence Events" }, { id: "speeding", label: "Speeding by Location" }];
       case "fuel":
         return [{ id: "transactions", label: "Transactions" }];
       case "trips":
@@ -351,6 +359,13 @@ const Reports = () => {
             return <IncidentsTable incidents={incidents} />;
           default:
             return <DriverSummaryTable drivers={filteredDrivers} />;
+        }
+      case "location":
+        switch (activeSubTab) {
+          case "speeding":
+            return <SpeedingEventsTable violations={speedViolations} />;
+          default:
+            return <GeofenceEventsTable events={geofenceEvents} />;
         }
       case "fuel":
         return <FuelTransactionsTable transactions={fuelTransactions} />;
