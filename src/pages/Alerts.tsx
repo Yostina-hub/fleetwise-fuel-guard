@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import AlertDetailModal from "@/components/AlertDetailModal";
+import { TablePagination } from "@/components/reports/TablePagination";
 import { 
   AlertTriangle, 
   AlertCircle, 
@@ -33,8 +34,6 @@ import {
   Download,
   Loader2,
   Search,
-  ChevronLeft,
-  ChevronRight,
   CalendarIcon,
   X,
   CheckCheck,
@@ -44,6 +43,8 @@ import { useAlerts, Alert } from "@/hooks/useAlerts";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
 import { format } from "date-fns";
+
+const ITEMS_PER_PAGE = 10;
 
 const Alerts = () => {
   const navigate = useNavigate();
@@ -55,7 +56,6 @@ const Alerts = () => {
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedAlerts, setSelectedAlerts] = useState<string[]>([]);
-  const itemsPerPage = 10;
   
   const { 
     alerts: dbAlerts, 
@@ -145,10 +145,10 @@ const Alerts = () => {
   }, [alerts, searchQuery]);
 
   // Pagination
-  const totalPages = Math.ceil(filteredAlerts.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredAlerts.length / ITEMS_PER_PAGE);
   const paginatedAlerts = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredAlerts.slice(start, start + itemsPerPage);
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredAlerts.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredAlerts, currentPage]);
 
   // Selection handlers
@@ -637,35 +637,12 @@ const Alerts = () => {
             )}
 
             {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-6 pt-6 border-t">
-                <div className="text-sm text-muted-foreground">
-                  Page {currentPage} of {totalPages}
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    aria-label="Go to previous page"
-                  >
-                    <ChevronLeft className="w-4 h-4" aria-hidden="true" />
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                    aria-label="Go to next page"
-                  >
-                    Next
-                    <ChevronRight className="w-4 h-4" aria-hidden="true" />
-                  </Button>
-                </div>
-              </div>
-            )}
+            <TablePagination
+              currentPage={currentPage}
+              totalItems={filteredAlerts.length}
+              itemsPerPage={ITEMS_PER_PAGE}
+              onPageChange={setCurrentPage}
+            />
           </CardContent>
         </Card>
       </div>

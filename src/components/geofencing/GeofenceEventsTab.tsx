@@ -17,6 +17,9 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
+
+const ITEMS_PER_PAGE = 10;
 
 const GeofenceEventsTab = () => {
   const { organizationId } = useOrganization();
@@ -55,7 +58,10 @@ const GeofenceEventsTab = () => {
       event.geofence?.name?.toLowerCase().includes(searchLower) ||
       event.vehicle?.plate_number?.toLowerCase().includes(searchLower)
     );
-  });
+  }) || [];
+
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(filteredEvents.length, ITEMS_PER_PAGE);
+  const paginatedEvents = filteredEvents.slice(startIndex, endIndex);
 
   const getEventIcon = (eventType: string) => {
     switch (eventType) {
@@ -159,8 +165,8 @@ const GeofenceEventsTab = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredEvents && filteredEvents.length > 0 ? (
-                  filteredEvents.map((event: any) => (
+                {paginatedEvents && paginatedEvents.length > 0 ? (
+                  paginatedEvents.map((event: any) => (
                     <TableRow key={event.id}>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -242,6 +248,12 @@ const GeofenceEventsTab = () => {
                 )}
               </TableBody>
             </Table>
+            <TablePagination
+              currentPage={currentPage}
+              totalItems={filteredEvents.length}
+              itemsPerPage={ITEMS_PER_PAGE}
+              onPageChange={setCurrentPage}
+            />
           </div>
         </CardContent>
       </Card>

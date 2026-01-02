@@ -10,6 +10,9 @@ import { useFuelPageContext } from "@/contexts/FuelPageContext";
 import { useOrganizationSettings } from "@/hooks/useOrganizationSettings";
 import { format, subDays, isWithinInterval, parseISO } from "date-fns";
 import { toast } from "sonner";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
+
+const ITEMS_PER_PAGE = 10;
 
 const FuelEventsTab = () => {
   const [vehicleFilter, setVehicleFilter] = useState<string>("all");
@@ -75,17 +78,20 @@ const FuelEventsTab = () => {
     }
   };
 
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(filteredEvents.length, ITEMS_PER_PAGE);
+  const paginatedEvents = filteredEvents.slice(startIndex, endIndex);
+
   const groupedEvents = useMemo(() => {
-    const groups: Record<string, typeof filteredEvents> = {};
-    filteredEvents.forEach(event => {
+    const groups: Record<string, typeof paginatedEvents> = {};
+    paginatedEvents.forEach(event => {
       const date = format(new Date(event.event_time), "yyyy-MM-dd");
       if (!groups[date]) groups[date] = [];
       groups[date].push(event);
     });
     return groups;
-  }, [filteredEvents]);
+  }, [paginatedEvents]);
 
-  // Export to CSV
+  // Export to CSV - exports all filtered events, not just current page
   const exportEventsCSV = () => {
     const headers = ["Date/Time", "Vehicle", "Event Type", "Status", "Fuel Change (L)", "Change %", "Location"];
     const rows = filteredEvents.map(e => [
@@ -288,6 +294,14 @@ const FuelEventsTab = () => {
           </div>
         ))
       )}
+
+      {/* Pagination */}
+      <TablePagination
+        currentPage={currentPage}
+        totalItems={filteredEvents.length}
+        itemsPerPage={ITEMS_PER_PAGE}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 };
