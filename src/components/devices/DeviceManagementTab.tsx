@@ -378,7 +378,7 @@ export const DeviceManagementTab = () => {
   const availableVehicles = vehiclesWithAssignmentStatus.unassigned;
 
   if (isLoading) {
-    return <div className="text-center py-8 text-muted-foreground">Loading devices...</div>;
+    return <div className="text-center py-8 text-muted-foreground" role="status" aria-live="polite">Loading devices...</div>;
   }
 
   return (
@@ -391,8 +391,8 @@ export const DeviceManagementTab = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={exportToCSV}>
-            <Download className="mr-2 h-4 w-4" />
+          <Button variant="outline" onClick={exportToCSV} aria-label="Export devices to CSV">
+            <Download className="mr-2 h-4 w-4" aria-hidden="true" />
             Export
           </Button>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -400,8 +400,8 @@ export const DeviceManagementTab = () => {
             if (!open) resetForm();
           }}>
             <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
+              <Button aria-label="Add new device">
+                <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
                 Add Device
               </Button>
             </DialogTrigger>
@@ -698,8 +698,8 @@ export const DeviceManagementTab = () => {
           className="max-w-md"
         />
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
-            <Filter className="h-4 w-4 mr-2" />
+          <SelectTrigger className="w-[180px]" aria-label="Filter devices by status">
+            <Filter className="h-4 w-4 mr-2" aria-hidden="true" />
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
           <SelectContent>
@@ -764,9 +764,9 @@ export const DeviceManagementTab = () => {
                           size="sm" 
                           className="h-6 w-6 p-0 text-muted-foreground hover:text-primary"
                           onClick={() => handleQuickAssign(device)}
-                          title="Change vehicle"
+                          aria-label={`Change vehicle assignment for ${device.vehicles.plate_number}`}
                         >
-                          <Edit className="h-3 w-3" />
+                          <Edit className="h-3 w-3" aria-hidden="true" />
                         </Button>
                       </div>
                     ) : (
@@ -775,8 +775,9 @@ export const DeviceManagementTab = () => {
                         size="sm" 
                         className="text-muted-foreground hover:text-primary"
                         onClick={() => handleQuickAssign(device)}
+                        aria-label={`Assign vehicle to device ${device.imei}`}
                       >
-                        <Car className="h-4 w-4 mr-1" />
+                        <Car className="h-4 w-4 mr-1" aria-hidden="true" />
                         Assign
                       </Button>
                     )}
@@ -787,7 +788,7 @@ export const DeviceManagementTab = () => {
                   <TableCell>{device.tracker_model}</TableCell>
                   <TableCell className="font-mono text-sm">
                     <div className="flex items-center gap-2">
-                      <Smartphone className="h-4 w-4 text-muted-foreground" />
+                      <Smartphone className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                       {device.sim_msisdn || <span className="text-muted-foreground">No SIM</span>}
                     </div>
                   </TableCell>
@@ -796,9 +797,9 @@ export const DeviceManagementTab = () => {
                       {device.last_heartbeat ? (
                         <div className="flex items-center gap-2">
                           {isDeviceOnline(device.last_heartbeat) ? (
-                            <Wifi className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                            <Wifi className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
                           ) : (
-                            <WifiOff className="h-4 w-4 text-destructive" />
+                            <WifiOff className="h-4 w-4 text-destructive" aria-hidden="true" />
                           )}
                           <span className="text-xs text-muted-foreground">
                             {formatDistanceToNow(new Date(device.last_heartbeat), { addSuffix: true })}
@@ -812,7 +813,7 @@ export const DeviceManagementTab = () => {
                   <TableCell>
                     {isDeviceOnline(device.last_heartbeat) ? (
                       <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 dark:text-emerald-400">
-                        <Signal className="h-3 w-3 mr-1" />
+                        <Signal className="h-3 w-3 mr-1" aria-hidden="true" />
                         Online
                       </Badge>
                     ) : (
@@ -828,25 +829,25 @@ export const DeviceManagementTab = () => {
                         variant="outline"
                         onClick={() => testHeartbeat.mutate(device.id)}
                         disabled={testHeartbeat.isPending}
-                        title={device.vehicle_id ? "Test Heartbeat" : "Assign to vehicle first"}
+                        aria-label={device.vehicle_id ? `Test heartbeat for device ${device.imei}` : "Assign to vehicle first to test heartbeat"}
                       >
-                        <Activity className="h-4 w-4" />
+                        <Activity className="h-4 w-4" aria-hidden="true" />
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => handleEdit(device)}
-                        title="Edit Device"
+                        aria-label={`Edit device ${device.imei}`}
                       >
-                        <Edit className="h-4 w-4" />
+                        <Edit className="h-4 w-4" aria-hidden="true" />
                       </Button>
                       <Button
                         size="sm"
                         variant="destructive"
                         onClick={() => handleDeleteClick(device)}
-                        title="Delete Device"
+                        aria-label={`Delete device ${device.imei}`}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4" aria-hidden="true" />
                       </Button>
                     </div>
                   </TableCell>
@@ -877,8 +878,9 @@ export const DeviceManagementTab = () => {
                   size="sm"
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
+                  aria-label="Go to previous page"
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <ChevronLeft className="h-4 w-4" aria-hidden="true" />
                   Previous
                 </Button>
                 <Button
@@ -886,9 +888,10 @@ export const DeviceManagementTab = () => {
                   size="sm"
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
+                  aria-label="Go to next page"
                 >
                   Next
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>
             </div>

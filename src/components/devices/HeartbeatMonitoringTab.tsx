@@ -130,7 +130,7 @@ export const HeartbeatMonitoringTab = () => {
   };
 
   if (isLoading) {
-    return <div className="text-center py-8 text-muted-foreground">Loading heartbeat data...</div>;
+    return <div className="text-center py-8 text-muted-foreground" role="status" aria-live="polite">Loading heartbeat data...</div>;
   }
 
   return (
@@ -144,19 +144,20 @@ export const HeartbeatMonitoringTab = () => {
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Activity className={`h-4 w-4 ${isAutoRefreshEnabled ? 'text-emerald-500 animate-pulse' : ''}`} />
+            <Activity className={`h-4 w-4 ${isAutoRefreshEnabled ? 'text-emerald-500 animate-pulse' : ''}`} aria-hidden="true" />
             <span>Last updated: {lastRefresh.toLocaleTimeString()}</span>
           </div>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setIsAutoRefreshEnabled(!isAutoRefreshEnabled)}
+            aria-label={isAutoRefreshEnabled ? "Pause auto-refresh" : "Enable auto-refresh"}
           >
-            <RefreshCw className={`h-4 w-4 mr-1 ${isAutoRefreshEnabled ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 mr-1 ${isAutoRefreshEnabled ? 'animate-spin' : ''}`} aria-hidden="true" />
             {isAutoRefreshEnabled ? 'Auto' : 'Paused'}
           </Button>
-          <Button variant="outline" size="sm" onClick={exportHealthReport}>
-            <Download className="h-4 w-4 mr-1" />
+          <Button variant="outline" size="sm" onClick={exportHealthReport} aria-label="Export health report">
+            <Download className="h-4 w-4 mr-1" aria-hidden="true" />
             Export
           </Button>
         </div>
@@ -167,7 +168,7 @@ export const HeartbeatMonitoringTab = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Signal className="h-4 w-4" />
+              <Signal className="h-4 w-4" aria-hidden="true" />
               Online Devices
             </CardTitle>
           </CardHeader>
@@ -184,7 +185,7 @@ export const HeartbeatMonitoringTab = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <WifiOff className="h-4 w-4" />
+              <WifiOff className="h-4 w-4" aria-hidden="true" />
               Offline Devices
             </CardTitle>
           </CardHeader>
@@ -201,7 +202,7 @@ export const HeartbeatMonitoringTab = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Activity className="h-4 w-4" />
+              <Activity className="h-4 w-4" aria-hidden="true" />
               Fleet Health
             </CardTitle>
           </CardHeader>
@@ -216,24 +217,24 @@ export const HeartbeatMonitoringTab = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <AlertCircle className="h-4 w-4" />
+              <AlertCircle className="h-4 w-4" aria-hidden="true" />
               Alert Status
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
               {offlineDevices.length > 0 ? (
-                <>
-                  <AlertCircle className="h-5 w-5 text-destructive" />
-                  <span className="text-xl font-bold text-destructive">
-                    {offlineDevices.length} Issues
-                  </span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                  <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
-                    All Good
+                  <>
+                    <AlertCircle className="h-5 w-5 text-destructive" aria-hidden="true" />
+                    <span className="text-xl font-bold text-destructive">
+                      {offlineDevices.length} Issues
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                    <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
+                      All Good
                   </span>
                 </>
               )}
@@ -246,7 +247,7 @@ export const HeartbeatMonitoringTab = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Wifi className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            <Wifi className="h-5 w-5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
             Online Devices
           </CardTitle>
           <CardDescription>
@@ -279,7 +280,7 @@ export const HeartbeatMonitoringTab = () => {
                     <TableCell className="font-mono text-sm">{device.sim_msisdn || "—"}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Signal className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                        <Signal className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
                         <span className="text-sm">
                           {formatDistanceToNow(new Date(device.last_heartbeat), { addSuffix: true })}
                         </span>
@@ -296,8 +297,9 @@ export const HeartbeatMonitoringTab = () => {
                         size="sm"
                         variant="outline"
                         onClick={() => testHeartbeat.mutate(device.id)}
+                        aria-label={`Test heartbeat for device ${device.imei}`}
                       >
-                        <Activity className="h-4 w-4 mr-1" />
+                        <Activity className="h-4 w-4 mr-1" aria-hidden="true" />
                         Test
                       </Button>
                     </TableCell>
@@ -306,7 +308,7 @@ export const HeartbeatMonitoringTab = () => {
               })}
               {onlineDevices.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8" role="status">
                     No online devices
                   </TableCell>
                 </TableRow>
@@ -321,7 +323,7 @@ export const HeartbeatMonitoringTab = () => {
         <Card className="border-destructive/50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-destructive">
-              <WifiOff className="h-5 w-5" />
+              <WifiOff className="h-5 w-5" aria-hidden="true" />
               Offline Devices
             </CardTitle>
             <CardDescription>
@@ -352,7 +354,7 @@ export const HeartbeatMonitoringTab = () => {
                     <TableCell className="font-mono text-sm">{device.sim_msisdn || "—"}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <WifiOff className="h-4 w-4 text-destructive" />
+                        <WifiOff className="h-4 w-4 text-destructive" aria-hidden="true" />
                         <span className="text-sm text-destructive">
                           {device.last_heartbeat 
                             ? formatDistanceToNow(new Date(device.last_heartbeat), { addSuffix: true })
@@ -362,7 +364,7 @@ export const HeartbeatMonitoringTab = () => {
                     </TableCell>
                     <TableCell>
                       <Badge variant="destructive">
-                        <AlertCircle className="h-3 w-3 mr-1" />
+                        <AlertCircle className="h-3 w-3 mr-1" aria-hidden="true" />
                         No Signal
                       </Badge>
                     </TableCell>
@@ -371,8 +373,9 @@ export const HeartbeatMonitoringTab = () => {
                         size="sm"
                         variant="outline"
                         onClick={() => testHeartbeat.mutate(device.id)}
+                        aria-label={`Test heartbeat for device ${device.imei}`}
                       >
-                        <Activity className="h-4 w-4 mr-1" />
+                        <Activity className="h-4 w-4 mr-1" aria-hidden="true" />
                         Test
                       </Button>
                     </TableCell>
