@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
-import { Activity, Signal, Wifi, Database, Car } from "lucide-react";
+import { Activity, Signal, Wifi, Database, Car, Filter } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 interface DeviceStatus {
@@ -24,6 +26,7 @@ export const DeviceStatusMonitor = () => {
   const { organizationId } = useOrganization();
   const [devices, setDevices] = useState<DeviceStatus[]>([]);
   const [realtimeUpdates, setRealtimeUpdates] = useState(0);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   useEffect(() => {
     if (!organizationId) return;
@@ -33,7 +36,7 @@ export const DeviceStatusMonitor = () => {
 
     // Subscribe to real-time updates for devices
     const devicesChannel = supabase
-      .channel('device-status-updates')
+      .channel(`device-status-${organizationId.slice(0, 8)}`)
       .on(
         'postgres_changes',
         {
@@ -70,15 +73,22 @@ export const DeviceStatusMonitor = () => {
   const loadDevices = async () => {
     if (!organizationId) return;
 
-    const { data: devicesData } = await supabase
+    // Build query based on status filter
+    let query = supabase
       .from("devices")
       .select(`
         *,
         vehicles(plate_number)
       `)
       .eq("organization_id", organizationId)
-      .eq("status", "active")
       .order("last_heartbeat", { ascending: false });
+
+    // Only filter by status if not "all"
+    if (statusFilter !== "all") {
+      query = query.eq("status", statusFilter);
+    }
+
+    const { data: devicesData } = await query;
 
     if (devicesData) {
       // Fetch latest telemetry for each device's vehicle
@@ -135,6 +145,11 @@ export const DeviceStatusMonitor = () => {
     }
   };
 
+  // Reload when filter changes
+  useEffect(() => {
+    loadDevices();
+  }, [statusFilter, organizationId]);
+
   const updateDeviceMetrics = (telemetry: any) => {
     setDevices(prev => prev.map(device => {
       if (device.vehicle_id === telemetry.vehicle_id) {
@@ -182,6 +197,15 @@ export const DeviceStatusMonitor = () => {
     return <Badge variant="destructive">Poor</Badge>;
   };
 
+  const getDeviceStatusBadge = (status: string) => {
+    switch (status) {
+      case "active": return <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 dark:text-emerald-400">Active</Badge>;
+      case "inactive": return <Badge variant="secondary">Inactive</Badge>;
+      case "maintenance": return <Badge className="bg-amber-500/10 text-amber-700 border-amber-500/20 dark:text-amber-400">Maintenance</Badge>;
+      default: return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -189,11 +213,25 @@ export const DeviceStatusMonitor = () => {
           <h2 className="text-2xl font-bold">Real-Time Device Status</h2>
           <p className="text-muted-foreground">Live monitoring of GPS devices</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Activity className="h-4 w-4 text-emerald-500 animate-pulse" />
-          <span className="text-sm text-muted-foreground">
-            {realtimeUpdates} live updates
-          </span>
+        <div className="flex items-center gap-4">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[180px]">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Devices</SelectItem>
+              <SelectItem value="active">Active Only</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+              <SelectItem value="maintenance">Maintenance</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="flex items-center gap-2">
+            <Activity className="h-4 w-4 text-emerald-500 animate-pulse" />
+            <span className="text-sm text-muted-foreground">
+              {realtimeUpdates} live updates
+            </span>
+          </div>
         </div>
       </div>
 
@@ -205,7 +243,10 @@ export const DeviceStatusMonitor = () => {
                 <CardTitle className="text-sm font-medium truncate max-w-[180px]">
                   {device.imei}
                 </CardTitle>
-                {getStatusBadge(device.connection_quality)}
+                <div className="flex items-center gap-2">
+                  {getDeviceStatusBadge(device.status)}
+                  {getStatusBadge(device.connection_quality)}
+                </div>
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span>{device.tracker_model}</span>
@@ -273,7 +314,11 @@ export const DeviceStatusMonitor = () => {
       {devices.length === 0 && (
         <Card>
           <CardContent className="flex items-center justify-center py-12">
-            <p className="text-muted-foreground">No active devices found</p>
+            <p className="text-muted-foreground">
+              {statusFilter === "all" 
+                ? "No devices found" 
+                : `No ${statusFilter} devices found`}
+            </p>
           </CardContent>
         </Card>
       )}

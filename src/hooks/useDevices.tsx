@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useOrganization } from "./useOrganization";
+import { useEffect } from "react";
 
 export interface Device {
   id: string;
@@ -30,7 +31,7 @@ export const useDevices = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: devices, isLoading } = useQuery({
+  const { data: devices, isLoading, refetch } = useQuery({
     queryKey: ["devices", organizationId],
     queryFn: async () => {
       if (!organizationId) return [];
@@ -49,6 +50,38 @@ export const useDevices = () => {
     },
     enabled: !!organizationId,
   });
+
+  // Real-time subscription for device updates
+  useEffect(() => {
+    if (!organizationId) return;
+
+    const channelName = `devices-hook-${organizationId.slice(0, 8)}`;
+    let debounceTimeout: NodeJS.Timeout;
+
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'devices',
+          filter: `organization_id=eq.${organizationId}`
+        },
+        () => {
+          clearTimeout(debounceTimeout);
+          debounceTimeout = setTimeout(() => {
+            refetch();
+          }, 500);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      clearTimeout(debounceTimeout);
+      supabase.removeChannel(channel);
+    };
+  }, [organizationId, refetch]);
 
   const createDevice = useMutation({
     mutationFn: async (device: Partial<Device>) => {
@@ -143,9 +176,8 @@ export const useDevices = () => {
         .single();
 
       if (deviceError) throw deviceError;
-      if (!device?.vehicle_id) throw new Error("Device not assigned to a vehicle");
-
-      // Update heartbeat
+      
+      // Update heartbeat regardless of vehicle assignment
       const { error: heartbeatError } = await supabase
         .from("devices")
         .update({ last_heartbeat: new Date().toISOString() })
@@ -153,34 +185,46 @@ export const useDevices = () => {
 
       if (heartbeatError) throw heartbeatError;
 
-      // Insert sample telemetry data
-      const { error: telemetryError } = await supabase
-        .from("vehicle_telemetry")
-        .insert({
-          vehicle_id: device.vehicle_id,
-          organization_id: device.organization_id,
-          latitude: 9.0214 + (Math.random() - 0.5) * 0.01, // Small random offset
-          longitude: 38.7624 + (Math.random() - 0.5) * 0.01,
-          speed_kmh: Math.random() * 80,
-          heading: Math.random() * 360,
-          fuel_level_percent: 50 + Math.random() * 50,
-          engine_on: true,
-          device_connected: true,
-          last_communication_at: new Date().toISOString(),
-          gps_satellites_count: 8 + Math.floor(Math.random() * 4),
-          gps_signal_strength: 70 + Math.floor(Math.random() * 30),
-          gps_fix_type: '3d_fix'
-        });
+      // Only insert telemetry if assigned to a vehicle
+      if (device?.vehicle_id) {
+        const { error: telemetryError } = await supabase
+          .from("vehicle_telemetry")
+          .insert({
+            vehicle_id: device.vehicle_id,
+            organization_id: device.organization_id,
+            latitude: 9.0214 + (Math.random() - 0.5) * 0.01,
+            longitude: 38.7624 + (Math.random() - 0.5) * 0.01,
+            speed_kmh: Math.random() * 80,
+            heading: Math.random() * 360,
+            fuel_level_percent: 50 + Math.random() * 50,
+            engine_on: true,
+            device_connected: true,
+            last_communication_at: new Date().toISOString(),
+            gps_satellites_count: 8 + Math.floor(Math.random() * 4),
+            gps_signal_strength: 70 + Math.floor(Math.random() * 30),
+            gps_fix_type: '3d_fix'
+          });
 
-      if (telemetryError) throw telemetryError;
+        if (telemetryError) throw telemetryError;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (_, deviceId) => {
       queryClient.invalidateQueries({ queryKey: ["devices"] });
       queryClient.invalidateQueries({ queryKey: ["vehicle-telemetry"] });
-      toast({
-        title: "Test successful",
-        description: "Device heartbeat and telemetry data sent",
-      });
+      
+      // Check if device was assigned to a vehicle
+      const device = devices?.find(d => d.id === deviceId);
+      if (device?.vehicle_id) {
+        toast({
+          title: "Test successful",
+          description: "Device heartbeat and telemetry data sent",
+        });
+      } else {
+        toast({
+          title: "Heartbeat updated",
+          description: "Device heartbeat sent. Assign to a vehicle to send telemetry data.",
+        });
+      }
     },
     onError: (error: Error) => {
       toast({
@@ -198,5 +242,6 @@ export const useDevices = () => {
     updateDevice,
     deleteDevice,
     testHeartbeat,
+    refetch,
   };
 };

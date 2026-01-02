@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useDevices } from "@/hooks/useDevices";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useToast } from "@/hooks/use-toast";
+import { useOrganization } from "@/hooks/useOrganization";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Plus, 
   Edit, 
@@ -25,15 +27,27 @@ import {
   Download,
   ChevronLeft,
   ChevronRight,
-  Filter
+  Filter,
+  Car
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 const ITEMS_PER_PAGE = 10;
 
+// Helper to escape CSV values
+const escapeCSV = (value: string | null | undefined): string => {
+  if (!value) return "";
+  const str = String(value);
+  if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+};
+
 export const DeviceManagementTab = () => {
   const { devices, isLoading, createDevice, updateDevice, deleteDevice, testHeartbeat } = useDevices();
   const { vehicles } = useVehicles();
+  const { organizationId } = useOrganization();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDevice, setEditingDevice] = useState<any>(null);
@@ -44,6 +58,9 @@ export const DeviceManagementTab = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deviceToDelete, setDeviceToDelete] = useState<any>(null);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [quickAssignDialogOpen, setQuickAssignDialogOpen] = useState(false);
+  const [deviceToAssign, setDeviceToAssign] = useState<any>(null);
+  const [assignVehicleId, setAssignVehicleId] = useState("");
 
   const [formData, setFormData] = useState({
     vehicle_id: "",
@@ -61,13 +78,60 @@ export const DeviceManagementTab = () => {
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  const validateForm = () => {
+  // Real-time subscription for device updates
+  useEffect(() => {
+    if (!organizationId) return;
+
+    const channelName = `devices-${organizationId.slice(0, 8)}`;
+    let debounceTimeout: NodeJS.Timeout;
+
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'devices',
+          filter: `organization_id=eq.${organizationId}`
+        },
+        () => {
+          // Debounce refetch to prevent rapid updates
+          clearTimeout(debounceTimeout);
+          debounceTimeout = setTimeout(() => {
+            // The useDevices hook uses react-query which will auto-refetch
+          }, 500);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      clearTimeout(debounceTimeout);
+      supabase.removeChannel(channel);
+    };
+  }, [organizationId]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+    setSelectedDevices([]); // Clear selection when filters change
+  }, [searchQuery, statusFilter]);
+
+  const validateForm = useCallback(() => {
     const errors: Record<string, string> = {};
     
     if (!formData.imei.trim()) {
       errors.imei = "IMEI is required";
     } else if (!/^\d{15}$/.test(formData.imei.trim())) {
       errors.imei = "IMEI must be exactly 15 digits";
+    } else {
+      // Check for duplicate IMEI (only when creating new device or IMEI changed)
+      const existingDevice = devices?.find(d => 
+        d.imei === formData.imei.trim() && d.id !== editingDevice?.id
+      );
+      if (existingDevice) {
+        errors.imei = "A device with this IMEI already exists";
+      }
     }
     
     if (!formData.tracker_model.trim()) {
@@ -76,7 +140,7 @@ export const DeviceManagementTab = () => {
     
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
-  };
+  }, [formData.imei, formData.tracker_model, devices, editingDevice]);
 
   const handleSubmit = () => {
     if (!validateForm()) {
@@ -147,14 +211,27 @@ export const DeviceManagementTab = () => {
     }
   };
 
-  const handleBulkDelete = () => {
-    selectedDevices.forEach(id => deleteDevice.mutate(id));
+  const handleBulkDelete = async () => {
+    const deletePromises = selectedDevices.map(id => 
+      supabase.from("devices").delete().eq("id", id)
+    );
+    
+    try {
+      await Promise.all(deletePromises);
+      toast({
+        title: "Devices Deleted",
+        description: `${selectedDevices.length} devices have been deleted`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Some devices could not be deleted",
+        variant: "destructive",
+      });
+    }
+    
     setSelectedDevices([]);
     setBulkDeleteDialogOpen(false);
-    toast({
-      title: "Devices Deleted",
-      description: `${selectedDevices.length} devices have been deleted`,
-    });
   };
 
   const handleSelectAll = (checked: boolean) => {
@@ -173,6 +250,24 @@ export const DeviceManagementTab = () => {
     }
   };
 
+  const handleQuickAssign = (device: any) => {
+    setDeviceToAssign(device);
+    setAssignVehicleId(device.vehicle_id || "");
+    setQuickAssignDialogOpen(true);
+  };
+
+  const confirmQuickAssign = () => {
+    if (deviceToAssign) {
+      updateDevice.mutate({ 
+        id: deviceToAssign.id, 
+        vehicle_id: assignVehicleId || null 
+      });
+      setQuickAssignDialogOpen(false);
+      setDeviceToAssign(null);
+      setAssignVehicleId("");
+    }
+  };
+
   const exportToCSV = () => {
     if (!filteredDevices || filteredDevices.length === 0) {
       toast({
@@ -185,11 +280,11 @@ export const DeviceManagementTab = () => {
 
     const headers = ["Status", "Vehicle", "IMEI", "Tracker Model", "SIM Card", "Last Heartbeat", "Connection"];
     const rows = filteredDevices.map(device => [
-      device.status,
-      device.vehicles?.plate_number || "Unassigned",
-      device.imei,
-      device.tracker_model,
-      device.sim_msisdn || "No SIM",
+      escapeCSV(device.status),
+      escapeCSV(device.vehicles?.plate_number || "Unassigned"),
+      escapeCSV(device.imei),
+      escapeCSV(device.tracker_model),
+      escapeCSV(device.sim_msisdn || "No SIM"),
       device.last_heartbeat ? new Date(device.last_heartbeat).toISOString() : "Never",
       isDeviceOnline(device.last_heartbeat) ? "Online" : "Offline"
     ]);
@@ -246,14 +341,22 @@ export const DeviceManagementTab = () => {
     currentPage * ITEMS_PER_PAGE
   );
 
-  // Reset to first page when filters change
-  useMemo(() => {
-    setCurrentPage(1);
-  }, [searchQuery, statusFilter]);
+  // Clear selection when page changes
+  useEffect(() => {
+    setSelectedDevices([]);
+  }, [currentPage]);
 
   const onlineCount = devices?.filter(d => isDeviceOnline(d.last_heartbeat)).length || 0;
   const activeCount = devices?.filter(d => d.status === 'active').length || 0;
   const maintenanceCount = devices?.filter(d => d.status === 'maintenance').length || 0;
+
+  // Get available vehicles (not already assigned to another device)
+  const availableVehicles = useMemo(() => {
+    const assignedVehicleIds = devices
+      ?.filter(d => d.vehicle_id && d.id !== editingDevice?.id && d.id !== deviceToAssign?.id)
+      .map(d => d.vehicle_id) || [];
+    return vehicles?.filter(v => !assignedVehicleIds.includes(v.id)) || [];
+  }, [vehicles, devices, editingDevice, deviceToAssign]);
 
   if (isLoading) {
     return <div className="text-center py-8 text-muted-foreground">Loading devices...</div>;
@@ -303,11 +406,17 @@ export const DeviceManagementTab = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">No vehicle assigned</SelectItem>
-                      {vehicles?.map((vehicle) => (
+                      {availableVehicles?.map((vehicle) => (
                         <SelectItem key={vehicle.id} value={vehicle.id}>
                           {vehicle.plate_number} - {vehicle.make} {vehicle.model}
                         </SelectItem>
                       ))}
+                      {/* Show currently assigned vehicle when editing */}
+                      {editingDevice?.vehicle_id && !availableVehicles?.find(v => v.id === editingDevice.vehicle_id) && (
+                        <SelectItem key={editingDevice.vehicle_id} value={editingDevice.vehicle_id}>
+                          {editingDevice.vehicles?.plate_number} (Current)
+                        </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -590,7 +699,19 @@ export const DeviceManagementTab = () => {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {device.vehicles?.plate_number || <span className="text-muted-foreground italic">Unassigned</span>}
+                    {device.vehicles?.plate_number ? (
+                      <span className="font-medium">{device.vehicles.plate_number}</span>
+                    ) : (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-muted-foreground hover:text-primary"
+                        onClick={() => handleQuickAssign(device)}
+                      >
+                        <Car className="h-4 w-4 mr-1" />
+                        Assign
+                      </Button>
+                    )}
                   </TableCell>
                   <TableCell className="font-mono text-sm">
                     {device.imei}
@@ -638,7 +759,8 @@ export const DeviceManagementTab = () => {
                         size="sm"
                         variant="outline"
                         onClick={() => testHeartbeat.mutate(device.id)}
-                        title="Test Heartbeat"
+                        disabled={testHeartbeat.isPending}
+                        title={device.vehicle_id ? "Test Heartbeat" : "Assign to vehicle first"}
                       >
                         <Activity className="h-4 w-4" />
                       </Button>
@@ -744,6 +866,45 @@ export const DeviceManagementTab = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Quick Assign Vehicle Dialog */}
+      <Dialog open={quickAssignDialogOpen} onOpenChange={setQuickAssignDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign Vehicle to Device</DialogTitle>
+            <DialogDescription>
+              Assign a vehicle to device IMEI: <span className="font-mono">{deviceToAssign?.imei}</span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="assign-vehicle">Vehicle</Label>
+            <Select
+              value={assignVehicleId}
+              onValueChange={setAssignVehicleId}
+            >
+              <SelectTrigger id="assign-vehicle">
+                <SelectValue placeholder="Select vehicle" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">No vehicle assigned</SelectItem>
+                {availableVehicles?.map((vehicle) => (
+                  <SelectItem key={vehicle.id} value={vehicle.id}>
+                    {vehicle.plate_number} - {vehicle.make} {vehicle.model}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setQuickAssignDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={confirmQuickAssign}>
+              Assign Vehicle
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
-import { Bell, Mail, MessageSquare, Save, RefreshCw } from "lucide-react";
+import { Bell, Mail, MessageSquare, Save, RefreshCw, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 
@@ -119,7 +119,15 @@ export const OfflineAlertsConfig = () => {
 
   const testMutation = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("monitor-device-connectivity");
+      // Get the current session to pass auth context
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const { data, error } = await supabase.functions.invoke("monitor-device-connectivity", {
+        headers: session ? {
+          Authorization: `Bearer ${session.access_token}`
+        } : undefined
+      });
+      
       if (error) throw error;
       return data;
     },
@@ -242,7 +250,10 @@ export const OfflineAlertsConfig = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent Offline Events</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5" />
+            Recent Offline Events
+          </CardTitle>
           <CardDescription>
             History of device connectivity issues
           </CardDescription>
