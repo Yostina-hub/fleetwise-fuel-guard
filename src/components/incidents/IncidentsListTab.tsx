@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { TablePagination } from "@/components/reports/TablePagination";
 import { 
   Plus, 
   Search, 
@@ -23,11 +24,14 @@ import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
 import { format } from "date-fns";
 
+const ITEMS_PER_PAGE = 10;
+
 const IncidentsListTab = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [severityFilter, setSeverityFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const { incidents, loading, createIncident, updateIncidentStatus } = useIncidentsManagement({
     status: statusFilter !== 'all' ? statusFilter : undefined,
@@ -98,6 +102,16 @@ const IncidentsListTab = () => {
       i.location?.toLowerCase().includes(searchLower)
     );
   });
+
+  // Pagination
+  const totalItems = filteredIncidents.length;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedIncidents = filteredIncidents.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, severityFilter, searchQuery]);
 
   const handleCreateIncident = async () => {
     await createIncident({
@@ -216,7 +230,7 @@ const IncidentsListTab = () => {
         </Card>
       ) : (
         <div className="space-y-4">
-          {filteredIncidents.map(incident => (
+          {paginatedIncidents.map(incident => (
             <Card key={incident.id} className={incident.severity === 'critical' ? 'border-destructive/50' : ''}>
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
@@ -292,6 +306,13 @@ const IncidentsListTab = () => {
               </CardContent>
             </Card>
           ))}
+          
+          <TablePagination
+            currentPage={currentPage}
+            totalItems={totalItems}
+            itemsPerPage={ITEMS_PER_PAGE}
+            onPageChange={setCurrentPage}
+          />
         </div>
       )}
 
