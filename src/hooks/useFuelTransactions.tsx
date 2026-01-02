@@ -38,6 +38,7 @@ export const useFuelTransactions = (filters?: {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
 
   const fetchTransactions = useCallback(async () => {
     if (!organizationId) {
@@ -68,12 +69,18 @@ export const useFuelTransactions = (filters?: {
         .limit(500);
 
       if (error) throw error;
-      setTransactions((data as FuelTransaction[]) || []);
+      if (isMountedRef.current) {
+        setTransactions((data as FuelTransaction[]) || []);
+      }
     } catch (err: any) {
       console.error("Error fetching fuel transactions:", err);
-      setError(err.message);
+      if (isMountedRef.current) {
+        setError(err.message);
+      }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   }, [organizationId, filters?.vehicleId, filters?.transactionType, filters?.isReconciled]);
 

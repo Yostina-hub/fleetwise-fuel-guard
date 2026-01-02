@@ -40,6 +40,7 @@ export const useFuelTheftCases = (filters?: {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
 
   const fetchCases = useCallback(async () => {
     if (!organizationId) {
@@ -70,12 +71,18 @@ export const useFuelTheftCases = (filters?: {
         .limit(200);
 
       if (error) throw error;
-      setCases((data as FuelTheftCase[]) || []);
+      if (isMountedRef.current) {
+        setCases((data as FuelTheftCase[]) || []);
+      }
     } catch (err: any) {
       console.error("Error fetching theft cases:", err);
-      setError(err.message);
+      if (isMountedRef.current) {
+        setError(err.message);
+      }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   }, [organizationId, filters?.status, filters?.priority, filters?.vehicleId]);
 

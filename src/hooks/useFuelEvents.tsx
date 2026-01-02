@@ -40,6 +40,7 @@ export const useFuelEvents = (filters?: {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
 
   const fetchFuelEvents = useCallback(async () => {
     if (!organizationId) {
@@ -74,12 +75,18 @@ export const useFuelEvents = (filters?: {
       const { data, error } = await query.order("event_time", { ascending: false }).limit(500);
 
       if (error) throw error;
-      setFuelEvents((data as any) || []);
+      if (isMountedRef.current) {
+        setFuelEvents((data as FuelEvent[]) || []);
+      }
     } catch (err: any) {
       console.error("Error fetching fuel events:", err);
-      setError(err.message);
+      if (isMountedRef.current) {
+        setError(err.message);
+      }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   }, [organizationId, filters?.vehicleId, filters?.eventType, filters?.status, filters?.startDate, filters?.endDate]);
 
