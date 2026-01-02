@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,123 @@ import { useToast } from "@/hooks/use-toast";
 import { Smartphone, Monitor, Globe, Trash2, Shield, Save } from "lucide-react";
 import { sessionManager, type SessionConfig, type SessionInfo } from "@/lib/security/sessionManagement";
 import { useAuth } from "@/hooks/useAuth";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
+
+const ITEMS_PER_PAGE = 10;
+
+interface SessionsTableProps {
+  sessions: SessionInfo[];
+  onTerminateSession: (sessionId: string) => void;
+  onTerminateOthers: () => void;
+  getDeviceIcon: (deviceInfo: string) => React.ReactNode;
+  formatDate: (date: Date) => string;
+}
+
+const SessionsTable = ({
+  sessions,
+  onTerminateSession,
+  onTerminateOthers,
+  getDeviceIcon,
+  formatDate,
+}: SessionsTableProps) => {
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(
+    sessions.length,
+    ITEMS_PER_PAGE
+  );
+
+  const paginatedSessions = useMemo(() => {
+    return sessions.slice(startIndex, endIndex);
+  }, [sessions, startIndex, endIndex]);
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Active Sessions ({sessions.length})</CardTitle>
+            <CardDescription>Manage your active login sessions across devices</CardDescription>
+          </div>
+          {sessions.length > 1 && (
+            <Button variant="outline" size="sm" onClick={onTerminateOthers}>
+              Sign out other sessions
+            </Button>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent>
+        {sessions.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-4" role="status" aria-label="No active sessions">
+            No active sessions found
+          </p>
+        ) : (
+          <>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Device</TableHead>
+                  <TableHead>IP Address</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Last Active</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedSessions.map((session) => (
+                  <TableRow key={session.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {getDeviceIcon(session.deviceInfo)}
+                        <span className="text-sm">{session.deviceInfo}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">{session.ipAddress}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Globe className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
+                        <span className="text-sm">{session.location || "Unknown"}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm">{formatDate(session.lastActiveAt)}</TableCell>
+                    <TableCell>
+                      {session.isCurrent ? (
+                        <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
+                          Current
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline">Active</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {!session.isCurrent && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onTerminateSession(session.id)}
+                          aria-label="Terminate this session"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" aria-hidden="true" />
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            {sessions.length > 0 && (
+              <TablePagination
+                currentPage={currentPage}
+                totalItems={sessions.length}
+                itemsPerPage={ITEMS_PER_PAGE}
+                onPageChange={setCurrentPage}
+              />
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
 
 const SessionManagementTab = () => {
   const { toast } = useToast();
@@ -123,82 +240,13 @@ const SessionManagementTab = () => {
       </div>
 
       {/* Active Sessions List */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Active Sessions</CardTitle>
-              <CardDescription>Manage your active login sessions across devices</CardDescription>
-            </div>
-            {sessions.length > 1 && (
-              <Button variant="outline" size="sm" onClick={handleTerminateOthers}>
-                Sign out other sessions
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {sessions.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4" role="status" aria-label="No active sessions">
-              No active sessions found
-            </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Device</TableHead>
-                  <TableHead>IP Address</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Last Active</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sessions.map((session) => (
-                  <TableRow key={session.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getDeviceIcon(session.deviceInfo)}
-                        <span className="text-sm">{session.deviceInfo}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">{session.ipAddress}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Globe className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
-                        <span className="text-sm">{session.location || "Unknown"}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm">{formatDate(session.lastActiveAt)}</TableCell>
-                    <TableCell>
-                      {session.isCurrent ? (
-                        <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
-                          Current
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline">Active</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {!session.isCurrent && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleTerminateSession(session.id)}
-                          aria-label="Terminate this session"
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" aria-hidden="true" />
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      <SessionsTable 
+        sessions={sessions}
+        onTerminateSession={handleTerminateSession}
+        onTerminateOthers={handleTerminateOthers}
+        getDeviceIcon={getDeviceIcon}
+        formatDate={formatDate}
+      />
 
       {/* Configuration */}
       <Card>

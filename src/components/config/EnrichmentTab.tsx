@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -12,6 +13,9 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Plus, CheckCircle2, XCircle } from "lucide-react";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
+
+const ITEMS_PER_PAGE = 10;
 
 const EnrichmentTab = () => {
   const { organizationId } = useOrganization();
@@ -31,13 +35,23 @@ const EnrichmentTab = () => {
     enabled: !!organizationId,
   });
 
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(
+    configs?.length || 0,
+    ITEMS_PER_PAGE
+  );
+
+  const paginatedConfigs = useMemo(() => {
+    if (!configs) return [];
+    return configs.slice(startIndex, endIndex);
+  }, [configs, startIndex, endIndex]);
+
   if (isLoading) return <div role="status" aria-live="polite" aria-label="Loading enrichment configurations">Loading...</div>;
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="text-lg font-semibold">Data Enrichment Configuration</h3>
+          <h3 className="text-lg font-semibold">Data Enrichment Configuration ({configs?.length || 0})</h3>
           <p className="text-sm text-muted-foreground">
             Configure map-matching, geofence evaluation, and driver binding
           </p>
@@ -60,7 +74,7 @@ const EnrichmentTab = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {configs?.map((config: any) => (
+          {paginatedConfigs.map((config: any) => (
             <TableRow key={config.id}>
               <TableCell className="font-medium">
                 {config.config_name}
@@ -114,6 +128,15 @@ const EnrichmentTab = () => {
           ))}
         </TableBody>
       </Table>
+
+      {configs && configs.length > 0 && (
+        <TablePagination
+          currentPage={currentPage}
+          totalItems={configs.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
+      )}
 
       {configs?.length === 0 && (
         <div className="text-center py-12 text-muted-foreground" role="status" aria-label="No enrichment configurations found">
