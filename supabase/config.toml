@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.gps-data-receiver]
 verify_jwt = false
+
+[functions.process-geofence-events]
+verify_jwt = false

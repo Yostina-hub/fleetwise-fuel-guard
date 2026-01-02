@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { LogIn, LogOut, Clock, Search, Filter, RefreshCw } from "lucide-react";
+import { LogIn, LogOut, Clock, Search, Filter, RefreshCw, Gauge, AlertTriangle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -64,9 +64,12 @@ const GeofenceEventsTab = () => {
       case "exit":
         return <LogOut className="h-4 w-4 text-orange-500" aria-hidden="true" />;
       case "dwell":
+      case "dwell_exceeded":
         return <Clock className="h-4 w-4 text-blue-500" aria-hidden="true" />;
+      case "speed_violation":
+        return <Gauge className="h-4 w-4 text-red-500" aria-hidden="true" />;
       default:
-        return <Clock className="h-4 w-4 text-muted-foreground" aria-hidden="true" />;
+        return <AlertTriangle className="h-4 w-4 text-muted-foreground" aria-hidden="true" />;
     }
   };
 
@@ -78,9 +81,21 @@ const GeofenceEventsTab = () => {
         return <Badge className="bg-orange-500/10 text-orange-500 hover:bg-orange-500/20">Exit</Badge>;
       case "dwell":
         return <Badge className="bg-blue-500/10 text-blue-500 hover:bg-blue-500/20">Dwell</Badge>;
+      case "dwell_exceeded":
+        return <Badge className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/20">Dwell Exceeded</Badge>;
+      case "speed_violation":
+        return <Badge className="bg-red-500/10 text-red-500 hover:bg-red-500/20">Speed Violation</Badge>;
       default:
         return <Badge variant="secondary">{eventType}</Badge>;
     }
+  };
+
+  const formatDuration = (minutes: number | null) => {
+    if (!minutes) return null;
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours}h ${mins}m`;
   };
 
   if (isLoading) {
@@ -117,7 +132,7 @@ const GeofenceEventsTab = () => {
               />
             </div>
             <Select value={eventTypeFilter} onValueChange={setEventTypeFilter}>
-              <SelectTrigger className="w-[150px]" aria-label="Filter by event type">
+              <SelectTrigger className="w-[180px]" aria-label="Filter by event type">
                 <Filter className="h-4 w-4 mr-2" aria-hidden="true" />
                 <SelectValue placeholder="Event type" />
               </SelectTrigger>
@@ -125,7 +140,8 @@ const GeofenceEventsTab = () => {
                 <SelectItem value="all">All Events</SelectItem>
                 <SelectItem value="entry">Entry</SelectItem>
                 <SelectItem value="exit">Exit</SelectItem>
-                <SelectItem value="dwell">Dwell</SelectItem>
+                <SelectItem value="speed_violation">Speed Violation</SelectItem>
+                <SelectItem value="dwell_exceeded">Dwell Exceeded</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -135,12 +151,11 @@ const GeofenceEventsTab = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12">Type</TableHead>
+                  <TableHead className="w-[140px]">Event</TableHead>
                   <TableHead>Geofence</TableHead>
                   <TableHead>Vehicle</TableHead>
                   <TableHead>Time</TableHead>
-                  <TableHead>Duration</TableHead>
-                  <TableHead>Speed</TableHead>
+                  <TableHead>Details</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -150,6 +165,7 @@ const GeofenceEventsTab = () => {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {getEventIcon(event.event_type)}
+                          {getEventBadge(event.event_type)}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -177,18 +193,35 @@ const GeofenceEventsTab = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {event.dwell_time_seconds ? (
-                          <span className="text-sm">
-                            {Math.floor(event.dwell_time_seconds / 60)}m {event.dwell_time_seconds % 60}s
-                          </span>
-                        ) : (
+                        {event.event_type === "speed_violation" && (
+                          <div className="text-sm">
+                            <span className="text-red-500 font-medium">{event.speed_kmh} km/h</span>
+                            {event.speed_limit_kmh && (
+                              <span className="text-muted-foreground"> / {event.speed_limit_kmh} limit</span>
+                            )}
+                          </div>
+                        )}
+                        {event.event_type === "exit" && event.dwell_time_minutes && (
+                          <div className="text-sm">
+                            <span className="text-muted-foreground">Stayed: </span>
+                            <span className="font-medium">{formatDuration(event.dwell_time_minutes)}</span>
+                          </div>
+                        )}
+                        {event.event_type === "dwell_exceeded" && event.dwell_time_minutes && (
+                          <div className="text-sm">
+                            <span className="text-amber-500 font-medium">{formatDuration(event.dwell_time_minutes)}</span>
+                            <span className="text-muted-foreground"> dwell time</span>
+                          </div>
+                        )}
+                        {event.event_type === "entry" && event.speed_kmh && (
+                          <div className="text-sm text-muted-foreground">
+                            {event.speed_kmh} km/h at entry
+                          </div>
+                        )}
+                        {!["speed_violation", "exit", "dwell_exceeded", "entry"].includes(event.event_type) && (
                           <span className="text-muted-foreground">-</span>
                         )}
-                      </TableCell>
-                      <TableCell>
-                        {event.speed_at_event ? (
-                          <span className="text-sm">{event.speed_at_event} km/h</span>
-                        ) : (
+                        {event.event_type === "entry" && !event.speed_kmh && (
                           <span className="text-muted-foreground">-</span>
                         )}
                       </TableCell>
@@ -196,7 +229,7 @@ const GeofenceEventsTab = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
+                    <TableCell colSpan={5} className="text-center py-8">
                       <div role="status" aria-label="No geofence events found">
                         <Clock className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" aria-hidden="true" />
                         <p className="text-sm text-muted-foreground">No geofence events recorded yet</p>
