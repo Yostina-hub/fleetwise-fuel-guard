@@ -43,6 +43,8 @@ import { GeofenceEventsTable } from "@/components/reports/GeofenceEventsTable";
 import { IncidentsTable } from "@/components/reports/IncidentsTable";
 import { TripsTable } from "@/components/reports/TripsTable";
 import { FuelTransactionsTable } from "@/components/reports/FuelTransactionsTable";
+import { FuelEventsTable } from "@/components/reports/FuelEventsTable";
+import { FuelTheftTable } from "@/components/reports/FuelTheftTable";
 import { AlertsTable } from "@/components/reports/AlertsTable";
 import { MaintenanceTable } from "@/components/reports/MaintenanceTable";
 import { WorkOrdersTable } from "@/components/reports/WorkOrdersTable";
@@ -50,6 +52,10 @@ import { CostsTable } from "@/components/reports/CostsTable";
 import { DriverScoresTable } from "@/components/reports/DriverScoresTable";
 import { DispatchTable } from "@/components/reports/DispatchTable";
 import { InspectionsTable } from "@/components/reports/InspectionsTable";
+import { VehicleUtilizationTable } from "@/components/reports/VehicleUtilizationTable";
+import { IdleTimeTable } from "@/components/reports/IdleTimeTable";
+import { DriverComplianceTable } from "@/components/reports/DriverComplianceTable";
+import { DocumentExpiryTable } from "@/components/reports/DocumentExpiryTable";
 
 const Reports = () => {
   const [activeReportTab, setActiveReportTab] = useState("vehicle");
@@ -75,6 +81,8 @@ const Reports = () => {
     incidents, 
     speedViolations,
     fuelTransactions,
+    fuelEvents,
+    fuelTheftCases,
     alerts,
     maintenanceSchedules,
     workOrders,
@@ -82,6 +90,7 @@ const Reports = () => {
     driverScores,
     dispatchJobs,
     vehicleInspections,
+    documents,
     loading 
   } = useReportData(dateRange);
 
@@ -96,6 +105,7 @@ const Reports = () => {
     { id: "dispatch", label: "Dispatch", icon: ClipboardList },
     { id: "costs", label: "Costs", icon: DollarSign },
     { id: "alerts", label: "Alerts", icon: Bell },
+    { id: "compliance", label: "Compliance", icon: FileText },
   ];
 
   // Sub-tabs based on main tab - memoized to prevent hook order issues
@@ -104,12 +114,14 @@ const Reports = () => {
       case "vehicle":
         return [
           { id: "summary", label: "Summary" },
+          { id: "utilization", label: "Utilization" },
           { id: "geofence", label: "Geofence Events" },
         ];
       case "driver":
         return [
           { id: "summary", label: "Summary" },
           { id: "scores", label: "Behavior Scores" },
+          { id: "compliance", label: "Compliance" },
           { id: "speeding", label: "Speeding" },
           { id: "harsh_events", label: "Harsh Events" },
           { id: "incidents", label: "Incidents" },
@@ -122,10 +134,13 @@ const Reports = () => {
       case "fuel":
         return [
           { id: "transactions", label: "Transactions" },
+          { id: "events", label: "Fill/Drain Events" },
+          { id: "theft", label: "Theft Cases" },
         ];
       case "trips":
         return [
           { id: "all_trips", label: "All Trips" },
+          { id: "idle_time", label: "Idle Time Analysis" },
         ];
       case "maintenance":
         return [
@@ -145,6 +160,11 @@ const Reports = () => {
         return [
           { id: "all_alerts", label: "All Alerts" },
         ];
+      case "compliance":
+        return [
+          { id: "driver_compliance", label: "Driver Compliance" },
+          { id: "document_expiry", label: "Document Expiry" },
+        ];
       default:
         return [];
     }
@@ -154,15 +174,15 @@ const Reports = () => {
   const getSubTabsForTab = (tabId: string) => {
     switch (tabId) {
       case "vehicle":
-        return [{ id: "summary", label: "Summary" }, { id: "geofence", label: "Geofence Events" }];
+        return [{ id: "summary", label: "Summary" }, { id: "utilization", label: "Utilization" }, { id: "geofence", label: "Geofence Events" }];
       case "driver":
-        return [{ id: "summary", label: "Summary" }, { id: "scores", label: "Behavior Scores" }, { id: "speeding", label: "Speeding" }, { id: "harsh_events", label: "Harsh Events" }, { id: "incidents", label: "Incidents" }];
+        return [{ id: "summary", label: "Summary" }, { id: "scores", label: "Behavior Scores" }, { id: "compliance", label: "Compliance" }, { id: "speeding", label: "Speeding" }, { id: "harsh_events", label: "Harsh Events" }, { id: "incidents", label: "Incidents" }];
       case "location":
         return [{ id: "geofence", label: "Geofence Events" }, { id: "speeding", label: "Speeding by Location" }];
       case "fuel":
-        return [{ id: "transactions", label: "Transactions" }];
+        return [{ id: "transactions", label: "Transactions" }, { id: "events", label: "Fill/Drain Events" }, { id: "theft", label: "Theft Cases" }];
       case "trips":
-        return [{ id: "all_trips", label: "All Trips" }];
+        return [{ id: "all_trips", label: "All Trips" }, { id: "idle_time", label: "Idle Time Analysis" }];
       case "maintenance":
         return [{ id: "schedules", label: "Schedules" }, { id: "work_orders", label: "Work Orders" }, { id: "inspections", label: "Inspections" }];
       case "dispatch":
@@ -171,6 +191,8 @@ const Reports = () => {
         return [{ id: "all_costs", label: "All Costs" }];
       case "alerts":
         return [{ id: "all_alerts", label: "All Alerts" }];
+      case "compliance":
+        return [{ id: "driver_compliance", label: "Driver Compliance" }, { id: "document_expiry", label: "Document Expiry" }];
       default:
         return [];
     }
@@ -342,6 +364,8 @@ const Reports = () => {
     switch (activeReportTab) {
       case "vehicle":
         switch (activeSubTab) {
+          case "utilization":
+            return <VehicleUtilizationTable trips={trips} />;
           case "geofence":
             return <GeofenceEventsTable events={geofenceEvents} />;
           default:
@@ -351,6 +375,8 @@ const Reports = () => {
         switch (activeSubTab) {
           case "scores":
             return <DriverScoresTable scores={driverScores} />;
+          case "compliance":
+            return <DriverComplianceTable drivers={drivers} />;
           case "speeding":
             return <SpeedingEventsTable violations={speedViolations} />;
           case "harsh_events":
@@ -368,9 +394,21 @@ const Reports = () => {
             return <GeofenceEventsTable events={geofenceEvents} />;
         }
       case "fuel":
-        return <FuelTransactionsTable transactions={fuelTransactions} />;
+        switch (activeSubTab) {
+          case "events":
+            return <FuelEventsTable events={fuelEvents} />;
+          case "theft":
+            return <FuelTheftTable cases={fuelTheftCases} />;
+          default:
+            return <FuelTransactionsTable transactions={fuelTransactions} />;
+        }
       case "trips":
-        return <TripsTable trips={trips} />;
+        switch (activeSubTab) {
+          case "idle_time":
+            return <IdleTimeTable trips={trips} />;
+          default:
+            return <TripsTable trips={trips} />;
+        }
       case "maintenance":
         switch (activeSubTab) {
           case "work_orders":
@@ -386,6 +424,13 @@ const Reports = () => {
         return <CostsTable costs={vehicleCosts} />;
       case "alerts":
         return <AlertsTable alerts={alerts} />;
+      case "compliance":
+        switch (activeSubTab) {
+          case "document_expiry":
+            return <DocumentExpiryTable documents={documents} />;
+          default:
+            return <DriverComplianceTable drivers={drivers} />;
+        }
       default:
         return <VehicleSummaryTable vehicles={filteredVehicles} />;
     }

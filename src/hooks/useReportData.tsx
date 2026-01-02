@@ -467,7 +467,21 @@ export const useReportData = (dateRange: DateRange) => {
     enabled: !!organizationId,
   });
 
-  // Calculate metrics
+  // Fetch documents for expiry tracking
+  const { data: documents, isLoading: documentsLoading } = useQuery({
+    queryKey: ['report-documents', organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data, error } = await supabase
+        .from('documents')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('expiry_date', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId,
+  });
   const metrics = useMemo<ReportMetrics>(() => {
     // Current period calculations
     const totalDistance = trips?.reduce((sum, t) => sum + (Number(t.distance_km) || 0), 0) || 0;
@@ -640,8 +654,10 @@ export const useReportData = (dateRange: DateRange) => {
     driverScores: driverScoresWithDrivers || [],
     dispatchJobs: dispatchJobs || [],
     vehicleInspections: vehicleInspections || [],
+    documents: documents || [],
     loading: tripsLoading || eventsLoading || geofenceLoading || incidentsLoading || 
              violationsLoading || fuelLoading || alertsLoading || maintenanceLoading ||
-             workOrdersLoading || costsLoading || scoresLoading || dispatchLoading || inspectionsLoading,
+             workOrdersLoading || costsLoading || scoresLoading || dispatchLoading || 
+             inspectionsLoading || documentsLoading,
   };
 };
