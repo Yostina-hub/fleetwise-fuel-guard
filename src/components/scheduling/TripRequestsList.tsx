@@ -22,6 +22,7 @@ import { useTripRequests } from "@/hooks/useTripRequests";
 import { ApprovalFlowViewer } from "@/components/scheduling/ApprovalFlowViewer";
 import { VehicleRecommendations } from "@/components/scheduling/VehicleRecommendations";
 import { useState } from "react";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
 
 interface TripRequestsListProps {
   requests: any[];
@@ -94,10 +95,13 @@ export const TripRequestsList = ({ requests, loading }: TripRequestsListProps) =
     );
   }
 
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(requests.length, 10);
+  const paginatedRequests = requests.slice(startIndex, endIndex);
+
   return (
     <>
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="pt-6 space-y-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -111,7 +115,7 @@ export const TripRequestsList = ({ requests, loading }: TripRequestsListProps) =
               </TableRow>
             </TableHeader>
             <TableBody>
-              {requests.map((request) => (
+              {paginatedRequests.map((request) => (
                 <TableRow key={request.id}>
                   <TableCell className="font-medium">
                     {request.request_number}
@@ -181,6 +185,12 @@ export const TripRequestsList = ({ requests, loading }: TripRequestsListProps) =
               ))}
             </TableBody>
           </Table>
+          <TablePagination
+            currentPage={currentPage}
+            totalItems={requests.length}
+            itemsPerPage={10}
+            onPageChange={setCurrentPage}
+          />
         </CardContent>
       </Card>
 

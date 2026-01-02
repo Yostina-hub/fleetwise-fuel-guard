@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useAuth } from "@/hooks/useAuth";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
 
 const WEBHOOK_EVENTS = [
   "alert.created",
@@ -203,77 +204,10 @@ const WebhooksTab = () => {
         </Dialog>
       </div>
 
-      {isLoading ? (
-        <p role="status" aria-live="polite">Loading...</p>
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>URL</TableHead>
-              <TableHead>Events</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {webhooks?.map((webhook) => (
-              <TableRow key={webhook.id}>
-                <TableCell className="font-medium">{webhook.name}</TableCell>
-                <TableCell>
-                  <code className="text-xs">{webhook.url}</code>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {webhook.events.slice(0, 2).map((event: string) => (
-                      <Badge key={event} variant="secondary" className="text-xs">
-                        {event}
-                      </Badge>
-                    ))}
-                    {webhook.events.length > 2 && (
-                      <Badge variant="secondary" className="text-xs">
-                        +{webhook.events.length - 2} more
-                      </Badge>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={webhook.is_active ? "default" : "secondary"}>
-                    {webhook.is_active ? "Active" : "Inactive"}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {format(new Date(webhook.created_at), "PP")}
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setSelectedWebhook(webhook.id);
-                        setDeliveryDialogOpen(true);
-                      }}
-                      aria-label="View webhook deliveries"
-                    >
-                      <Eye className="h-4 w-4" aria-hidden="true" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => deleteWebhookMutation.mutate(webhook.id)}
-                      aria-label="Delete webhook"
-                    >
-                      <Trash2 className="h-4 w-4" aria-hidden="true" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+      <WebhooksTable webhooks={webhooks || []} deleteWebhookMutation={deleteWebhookMutation} onViewDeliveries={(id) => {
+        setSelectedWebhook(id);
+        setDeliveryDialogOpen(true);
+      }} />
 
       <Dialog open={deliveryDialogOpen} onOpenChange={setDeliveryDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
@@ -316,6 +250,94 @@ const WebhooksTab = () => {
           </Table>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+};
+
+const WebhooksTable = ({ webhooks, deleteWebhookMutation, onViewDeliveries }: { webhooks: any[], deleteWebhookMutation: any, onViewDeliveries: (id: string) => void }) => {
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(webhooks.length, 10);
+  const paginatedWebhooks = webhooks.slice(startIndex, endIndex);
+
+  return (
+    <div className="space-y-0">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>URL</TableHead>
+            <TableHead>Events</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Created</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {paginatedWebhooks.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center text-muted-foreground" role="status">
+                No webhooks found.
+              </TableCell>
+            </TableRow>
+          ) : (
+            paginatedWebhooks.map((webhook) => (
+              <TableRow key={webhook.id}>
+                <TableCell className="font-medium">{webhook.name}</TableCell>
+                <TableCell>
+                  <code className="text-xs">{webhook.url}</code>
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-1">
+                    {webhook.events.slice(0, 2).map((event: string) => (
+                      <Badge key={event} variant="secondary" className="text-xs">
+                        {event}
+                      </Badge>
+                    ))}
+                    {webhook.events.length > 2 && (
+                      <Badge variant="secondary" className="text-xs">
+                        +{webhook.events.length - 2} more
+                      </Badge>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={webhook.is_active ? "default" : "secondary"}>
+                    {webhook.is_active ? "Active" : "Inactive"}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {format(new Date(webhook.created_at), "PP")}
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => onViewDeliveries(webhook.id)}
+                      aria-label="View webhook deliveries"
+                    >
+                      <Eye className="h-4 w-4" aria-hidden="true" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => deleteWebhookMutation.mutate(webhook.id)}
+                      aria-label="Delete webhook"
+                    >
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+      <TablePagination
+        currentPage={currentPage}
+        totalItems={webhooks.length}
+        itemsPerPage={10}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 };

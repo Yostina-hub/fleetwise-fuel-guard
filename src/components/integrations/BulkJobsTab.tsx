@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useAuth } from "@/hooks/useAuth";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
 
 const ENTITY_TYPES = [
   "vehicles",
@@ -83,23 +84,6 @@ const BulkJobsTab = () => {
     },
   });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "default";
-      case "processing":
-        return "secondary";
-      case "failed":
-        return "destructive";
-      default:
-        return "outline";
-    }
-  };
-
-  const getProgress = (job: any) => {
-    if (!job.total_records) return 0;
-    return (job.processed_records / job.total_records) * 100;
-  };
 
   return (
     <div className="space-y-4">
@@ -186,27 +170,60 @@ const BulkJobsTab = () => {
         </Dialog>
       </div>
 
-      {isLoading ? (
-        <p role="status" aria-live="polite" aria-label="Loading bulk jobs...">Loading...</p>
-      ) : (
-        <Table>
-          <TableHeader>
+      <BulkJobsTable jobs={jobs || []} />
+    </div>
+  );
+};
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "completed":
+      return "default";
+    case "processing":
+      return "secondary";
+    case "failed":
+      return "destructive";
+    default:
+      return "outline";
+  }
+};
+
+const getProgress = (job: any) => {
+  if (!job.total_records) return 0;
+  return (job.processed_records / job.total_records) * 100;
+};
+
+const BulkJobsTable = ({ jobs }: { jobs: any[] }) => {
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(jobs.length, 10);
+  const paginatedJobs = jobs.slice(startIndex, endIndex);
+
+  return (
+    <div className="space-y-0">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Type</TableHead>
+            <TableHead>Entity</TableHead>
+            <TableHead>Format</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Progress</TableHead>
+            <TableHead>Created</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {paginatedJobs.length === 0 ? (
             <TableRow>
-              <TableHead>Type</TableHead>
-              <TableHead>Entity</TableHead>
-              <TableHead>Format</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Progress</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableCell colSpan={7} className="text-center text-muted-foreground" role="status">
+                No bulk jobs found.
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {jobs?.map((job) => (
+          ) : (
+            paginatedJobs.map((job) => (
               <TableRow key={job.id}>
                 <TableCell className="capitalize">
                   {job.job_type === "import" ? (
-                  <Badge variant="secondary">
+                    <Badge variant="secondary">
                       <Upload className="h-3 w-3 mr-1" aria-hidden="true" />
                       Import
                     </Badge>
@@ -238,9 +255,9 @@ const BulkJobsTab = () => {
                     "-"
                   )}
                 </TableCell>
-                 <TableCell>
-                   {formatDate(new Date(job.created_at), "PPpp")}
-                 </TableCell>
+                <TableCell>
+                  {formatDate(new Date(job.created_at), "PPpp")}
+                </TableCell>
                 <TableCell>
                   {job.status === "completed" && job.file_url && (
                     <Button size="sm" variant="ghost" asChild aria-label="Download exported file">
@@ -251,10 +268,16 @@ const BulkJobsTab = () => {
                   )}
                 </TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+            ))
+          )}
+        </TableBody>
+      </Table>
+      <TablePagination
+        currentPage={currentPage}
+        totalItems={jobs.length}
+        itemsPerPage={10}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 };
