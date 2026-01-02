@@ -225,8 +225,8 @@ const Layout = ({ children }: LayoutProps) => {
 
       {/* Main Content - Scrollable container for all pages */}
       <main className="flex-1 bg-background relative z-10 overflow-hidden">
-        <div ref={scrollRef} className="h-full overflow-auto custom-scrollbar">
-          <div className="min-h-full w-max min-w-full">
+        <div ref={scrollRef} className="h-full overflow-x-auto overflow-y-auto custom-scrollbar">
+          <div className="min-h-full min-w-full">
             {children}
           </div>
         </div>
