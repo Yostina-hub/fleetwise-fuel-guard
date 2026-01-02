@@ -19,7 +19,8 @@ import {
   Loader2,
   Search,
   Pencil,
-  Trash2
+  Trash2,
+  Download
 } from "lucide-react";
 import { useMaintenanceSchedules, MaintenanceSchedule } from "@/hooks/useMaintenanceSchedules";
 import { useVehicles } from "@/hooks/useVehicles";
@@ -200,6 +201,35 @@ const MaintenanceSchedulesTab = () => {
     });
   };
 
+  const handleExportSchedules = () => {
+    if (!filteredSchedules.length) return;
+
+    const csvContent = [
+      ['Vehicle', 'Service Type', 'Interval Type', 'Interval Value', 'Priority', 'Next Due Date', 'Next Due Odometer', 'Last Service Date', 'Last Service Odometer', 'Status', 'Active'].join(','),
+      ...filteredSchedules.map(s => [
+        getVehiclePlate(s.vehicle_id),
+        s.service_type,
+        s.interval_type,
+        s.interval_value.toString(),
+        s.priority,
+        s.next_due_date ? format(new Date(s.next_due_date), 'yyyy-MM-dd') : '',
+        s.next_due_odometer?.toString() || '',
+        s.last_service_date ? format(new Date(s.last_service_date), 'yyyy-MM-dd') : '',
+        s.last_service_odometer?.toString() || '',
+        getScheduleStatus(s),
+        s.is_active !== false ? 'Yes' : 'No'
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `maintenance-schedules-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[300px]">
@@ -241,14 +271,26 @@ const MaintenanceSchedulesTab = () => {
             </Card>
           </div>
         </div>
-        <Button 
-          className="gap-2" 
-          onClick={() => setShowAddSchedule(true)}
-          aria-label="Add new maintenance schedule"
-        >
-          <Plus className="w-4 h-4" />
-          Add Schedule
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            className="gap-2"
+            onClick={handleExportSchedules}
+            disabled={filteredSchedules.length === 0}
+            aria-label="Export maintenance schedules to CSV"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </Button>
+          <Button 
+            className="gap-2" 
+            onClick={() => setShowAddSchedule(true)}
+            aria-label="Add new maintenance schedule"
+          >
+            <Plus className="w-4 h-4" />
+            Add Schedule
+          </Button>
+        </div>
       </div>
 
       {/* Schedules List */}

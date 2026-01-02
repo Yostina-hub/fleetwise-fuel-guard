@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
-import { Search, Eye, Trash2, CheckCircle, X } from "lucide-react";
+import { Search, Eye, Trash2, CheckCircle, X, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -464,11 +464,52 @@ const WorkOrdersTab = () => {
     );
   }
 
+  const handleExportWorkOrders = () => {
+    if (!filteredWorkOrders.length) return;
+
+    const csvContent = [
+      ['WO Number', 'Vehicle', 'Work Type', 'Status', 'Priority', 'Scheduled Date', 'Completed Date', 'Parts Cost', 'Labor Cost', 'Total Cost', 'Technician', 'Description'].join(','),
+      ...filteredWorkOrders.map(wo => [
+        wo.work_order_number,
+        wo.vehicles?.plate_number || '',
+        wo.work_type?.replace(/_/g, ' ') || '',
+        wo.status?.replace(/_/g, ' ') || '',
+        wo.priority || '',
+        wo.scheduled_date ? format(new Date(wo.scheduled_date), 'yyyy-MM-dd') : '',
+        wo.completed_date ? format(new Date(wo.completed_date), 'yyyy-MM-dd') : '',
+        wo.parts_cost?.toFixed(2) || '0.00',
+        wo.labor_cost?.toFixed(2) || '0.00',
+        wo.total_cost?.toFixed(2) || '0.00',
+        wo.technician_name || '',
+        `"${(wo.service_description || '').replace(/"/g, '""')}"`
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `work-orders-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-4">
         <h3 className="text-lg font-semibold">Work Orders ({filteredWorkOrders.length})</h3>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            className="gap-2"
+            onClick={handleExportWorkOrders}
+            disabled={filteredWorkOrders.length === 0}
+            aria-label="Export work orders to CSV"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button 
               onClick={resetForm} 
@@ -610,6 +651,7 @@ const WorkOrdersTab = () => {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Search and Filters */}
