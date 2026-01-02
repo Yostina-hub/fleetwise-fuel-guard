@@ -15,8 +15,8 @@ const DriverScoring = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/drivers")}>
-              <ArrowLeft className="w-5 h-5" />
+            <Button variant="ghost" size="icon" onClick={() => navigate("/drivers")} aria-label="Back to drivers">
+              <ArrowLeft className="w-5 h-5" aria-hidden="true" />
             </Button>
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
@@ -28,7 +28,7 @@ const DriverScoring = () => {
             </div>
           </div>
           <Button variant="outline" className="gap-2" onClick={() => navigate("/drivers")}>
-            <Users className="w-4 h-4" />
+            <Users className="w-4 h-4" aria-hidden="true" />
             Back to Drivers
           </Button>
         </div>
@@ -36,11 +36,11 @@ const DriverScoring = () => {
         <Tabs defaultValue="scoring" className="space-y-6">
           <TabsList>
             <TabsTrigger value="scoring" className="gap-2">
-              <TrendingUp className="w-4 h-4" />
+              <TrendingUp className="w-4 h-4" aria-hidden="true" />
               Scoring
             </TabsTrigger>
             <TabsTrigger value="coaching" className="gap-2">
-              <MessageSquare className="w-4 h-4" />
+              <MessageSquare className="w-4 h-4" aria-hidden="true" />
               Coaching
             </TabsTrigger>
           </TabsList>
