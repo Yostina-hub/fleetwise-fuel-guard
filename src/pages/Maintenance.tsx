@@ -46,8 +46,8 @@ const Maintenance = () => {
     return (
       <Layout>
         <div className="p-8 flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+          <div className="text-center" role="status" aria-label="Loading maintenance data">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" aria-hidden="true" />
             <p className="text-muted-foreground">Loading maintenance data...</p>
           </div>
         </div>
@@ -62,7 +62,7 @@ const Maintenance = () => {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 slide-in-right">
           <div className="flex items-center gap-4">
             <div className="p-4 rounded-2xl glass-strong glow">
-              <Wrench className="w-8 h-8 text-primary float-animation" />
+              <Wrench className="w-8 h-8 text-primary float-animation" aria-hidden="true" />
             </div>
             <div>
               <h1 className="text-4xl font-bold gradient-text">Maintenance Management</h1>
@@ -71,7 +71,7 @@ const Maintenance = () => {
           </div>
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
               <Input
                 id="maintenance-search"
                 aria-label="Search maintenance items"
@@ -87,7 +87,7 @@ const Maintenance = () => {
               onClick={() => navigate('/work-orders')}
               aria-label="Create new work order"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-5 h-5" aria-hidden="true" />
               <span className="font-semibold">New Work Order</span>
             </Button>
           </div>
@@ -99,28 +99,28 @@ const Maintenance = () => {
             title="Scheduled Services"
             value={metrics.totalScheduled.toString()}
             subtitle="active schedules"
-            icon={<Calendar className="w-5 h-5" />}
+            icon={<Calendar className="w-5 h-5" aria-hidden="true" />}
             variant="default"
           />
           <KPICard
             title="Overdue"
             value={metrics.overdueCount.toString()}
             subtitle="require immediate attention"
-            icon={<AlertCircle className="w-5 h-5" />}
+            icon={<AlertCircle className="w-5 h-5" aria-hidden="true" />}
             variant={metrics.overdueCount > 0 ? "warning" : "success"}
           />
           <KPICard
             title="Completed"
             value={metrics.completedThisMonth.toString()}
             subtitle="this month"
-            icon={<CheckCircle className="w-5 h-5" />}
+            icon={<CheckCircle className="w-5 h-5" aria-hidden="true" />}
             variant="success"
           />
           <KPICard
             title="Compliance Rate"
             value={`${Math.round(metrics.complianceRate)}%`}
             subtitle="on-schedule maintenance"
-            icon={<Clock className="w-5 h-5" />}
+            icon={<Clock className="w-5 h-5" aria-hidden="true" />}
             variant={metrics.complianceRate >= 90 ? "success" : metrics.complianceRate >= 70 ? "default" : "warning"}
           />
         </div>
@@ -129,15 +129,15 @@ const Maintenance = () => {
         <Tabs defaultValue="schedules" className="space-y-6">
           <TabsList className="grid w-full max-w-lg grid-cols-3">
             <TabsTrigger value="schedules" className="gap-2">
-              <Calendar className="w-4 h-4" />
+              <Calendar className="w-4 h-4" aria-hidden="true" />
               Schedules
             </TabsTrigger>
             <TabsTrigger value="inspections" className="gap-2">
-              <ClipboardCheck className="w-4 h-4" />
+              <ClipboardCheck className="w-4 h-4" aria-hidden="true" />
               Inspections
             </TabsTrigger>
             <TabsTrigger value="history" className="gap-2">
-              <ListChecks className="w-4 h-4" />
+              <ListChecks className="w-4 h-4" aria-hidden="true" />
               History
             </TabsTrigger>
           </TabsList>
