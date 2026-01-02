@@ -421,6 +421,8 @@ const Fleet = () => {
                 <div className="relative flex-1 min-w-[200px]">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
+                    id="fleet-search"
+                    aria-label="Search vehicles by plate, make, or model"
                     placeholder="Search plates, make, model..."
                     className="pl-9 h-9 bg-muted/30"
                     value={searchInput}
@@ -454,7 +456,14 @@ const Fleet = () => {
                 {/* Advanced Filters Popover */}
                 <Popover open={showAdvancedFilters} onOpenChange={setShowAdvancedFilters}>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2 h-9 relative">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="gap-2 h-9 relative"
+                      aria-label="Advanced filters"
+                      aria-expanded={showAdvancedFilters}
+                      aria-haspopup="dialog"
+                    >
                       <SlidersHorizontal className="w-4 h-4" />
                       <span className="hidden sm:inline">Filters</span>
                       {activeFilterCount > 0 && (

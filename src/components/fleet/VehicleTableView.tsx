@@ -333,6 +333,7 @@ export const VehicleTableView = ({
                     size="icon"
                     className="h-8 w-8"
                     onClick={() => onVehicleClick(vehicle)}
+                    aria-label={`View details for ${vehicle.plate}`}
                   >
                     <Eye className="w-4 h-4" />
                   </Button>
@@ -341,12 +342,13 @@ export const VehicleTableView = ({
                     size="icon"
                     className="h-8 w-8"
                     onClick={() => navigate("/map", { state: { selectedVehicleId: vehicle.vehicleId } })}
+                    aria-label={`Track ${vehicle.plate} on map`}
                   >
                     <MapPin className="w-4 h-4" />
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`More actions for ${vehicle.plate}`}>
                         <MoreHorizontal className="w-4 h-4" />
                       </Button>
                     </DropdownMenuTrigger>
