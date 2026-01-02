@@ -183,8 +183,8 @@ const Drivers = () => {
     return (
       <Layout>
         <div className="p-8 flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+          <div className="text-center" role="status" aria-live="polite">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" aria-hidden="true" />
             <p className="text-muted-foreground">Loading drivers...</p>
           </div>
         </div>
@@ -215,7 +215,7 @@ const Drivers = () => {
               className="gap-2"
               onClick={() => setImportDialogOpen(true)}
             >
-              <Upload className="w-4 h-4" />
+              <Upload className="w-4 h-4" aria-hidden="true" />
               Import
             </Button>
             <Button 
@@ -225,9 +225,9 @@ const Drivers = () => {
               disabled={isExporting}
             >
               {isExporting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
               ) : (
-                <Download className="w-4 h-4" />
+                <Download className="w-4 h-4" aria-hidden="true" />
               )}
               {isExporting ? "Exporting..." : "Export"}
             </Button>
@@ -236,14 +236,14 @@ const Drivers = () => {
               className="gap-2"
               onClick={() => navigate("/driver-scoring")}
             >
-              <Activity className="w-4 h-4" />
+              <Activity className="w-4 h-4" aria-hidden="true" />
               Driver Scoring
             </Button>
             <Button 
               className="gap-2 bg-gradient-to-r from-primary to-primary/80"
               onClick={() => setCreateDialogOpen(true)}
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4" aria-hidden="true" />
               Add Driver
             </Button>
           </div>
@@ -266,7 +266,7 @@ const Drivers = () => {
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 rounded-lg bg-primary/10">
-                  <Users className="w-6 h-6 text-primary" />
+                  <Users className="w-6 h-6 text-primary" aria-hidden="true" />
                 </div>
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Total Drivers</div>
@@ -280,7 +280,7 @@ const Drivers = () => {
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 rounded-lg bg-success/10">
-                  <UserCheck className="w-6 h-6 text-success" />
+                  <UserCheck className="w-6 h-6 text-success" aria-hidden="true" />
                 </div>
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Active</div>
@@ -294,7 +294,7 @@ const Drivers = () => {
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 rounded-lg bg-muted">
-                  <UserX className="w-6 h-6 text-muted-foreground" />
+                  <UserX className="w-6 h-6 text-muted-foreground" aria-hidden="true" />
                 </div>
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Inactive</div>
@@ -308,7 +308,7 @@ const Drivers = () => {
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 rounded-lg bg-destructive/10">
-                  <AlertTriangle className="w-6 h-6 text-destructive" />
+                  <AlertTriangle className="w-6 h-6 text-destructive" aria-hidden="true" />
                 </div>
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Suspended</div>
@@ -324,7 +324,7 @@ const Drivers = () => {
           <CardContent className="pt-6">
             <div className="flex gap-4">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
                 <Input 
                   id="driver-search"
                   aria-label="Search drivers by name, license, employee ID, or email"
@@ -336,7 +336,7 @@ const Drivers = () => {
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-[150px]">
-                  <Filter className="w-4 h-4 mr-2" />
+                  <Filter className="w-4 h-4 mr-2" aria-hidden="true" />
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -412,7 +412,7 @@ const Drivers = () => {
                     <TableCell onClick={() => handleViewDriver(driver)}>
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <CreditCard className="w-4 h-4 text-muted-foreground" />
+                          <CreditCard className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
                           <div>
                             <div className="text-sm font-medium">{driver.license_number}</div>
                             {driver.license_class && (
@@ -429,13 +429,13 @@ const Drivers = () => {
                       <div className="space-y-1">
                         {driver.phone && (
                           <div className="flex items-center gap-1 text-sm">
-                            <Phone className="w-3 h-3 text-muted-foreground" />
+                            <Phone className="w-3 h-3 text-muted-foreground" aria-hidden="true" />
                             {driver.phone}
                           </div>
                         )}
                         {driver.email && (
                           <div className="flex items-center gap-1 text-sm">
-                            <Mail className="w-3 h-3 text-muted-foreground" />
+                            <Mail className="w-3 h-3 text-muted-foreground" aria-hidden="true" />
                             {driver.email}
                           </div>
                         )}
@@ -461,27 +461,27 @@ const Drivers = () => {
                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
+                          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Actions for ${driver.first_name} ${driver.last_name}`}>
+                            <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => handleViewDriver(driver)}>
-                            <Eye className="w-4 h-4 mr-2" />
+                            <Eye className="w-4 h-4 mr-2" aria-hidden="true" />
                             View Details
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleEditDriver(driver)}>
-                            <Edit className="w-4 h-4 mr-2" />
+                            <Edit className="w-4 h-4 mr-2" aria-hidden="true" />
                             Edit Driver
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleAssignVehicle(driver)}>
-                            <Car className="w-4 h-4 mr-2" />
+                            <Car className="w-4 h-4 mr-2" aria-hidden="true" />
                             Assign Vehicle
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => navigate(`/driver-scoring`)}>
-                            <Activity className="w-4 h-4 mr-2" />
+                            <Activity className="w-4 h-4 mr-2" aria-hidden="true" />
                             View Scoring
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
@@ -489,7 +489,7 @@ const Drivers = () => {
                             onClick={() => handleDeleteDriver(driver)}
                             className="text-destructive focus:text-destructive"
                           >
-                            <Trash2 className="w-4 h-4 mr-2" />
+                            <Trash2 className="w-4 h-4 mr-2" aria-hidden="true" />
                             Delete Driver
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -500,11 +500,13 @@ const Drivers = () => {
                 {drivers.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-12">
-                      <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                      <h3 className="text-lg font-semibold mb-2">No drivers found</h3>
-                      <p className="text-muted-foreground text-sm">
-                        {searchQuery ? "Try adjusting your search criteria" : "Click 'Add Driver' to register a new driver"}
-                      </p>
+                      <div role="status" aria-live="polite">
+                        <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" aria-hidden="true" />
+                        <h3 className="text-lg font-semibold mb-2">No drivers found</h3>
+                        <p className="text-muted-foreground text-sm">
+                          {searchQuery ? "Try adjusting your search criteria" : "Click 'Add Driver' to register a new driver"}
+                        </p>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )}
