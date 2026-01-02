@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
 
 const statusColors: Record<string, string> = {
   scheduled: "bg-blue-500",
@@ -60,6 +61,8 @@ export const ActiveAssignments = () => {
       return data as any;
     },
   });
+
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(assignments?.length || 0, 10);
 
   const completeAssignment = useMutation({
     mutationFn: async (assignmentId: string) => {
@@ -145,7 +148,7 @@ export const ActiveAssignments = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {assignments.map((assignment: any) => (
+            {assignments.slice(startIndex, endIndex).map((assignment: any) => (
               <TableRow key={assignment.id}>
                 <TableCell>
                   <div className="font-medium">
@@ -221,6 +224,12 @@ export const ActiveAssignments = () => {
             ))}
           </TableBody>
         </Table>
+        <TablePagination
+          currentPage={currentPage}
+          totalItems={assignments.length}
+          itemsPerPage={10}
+          onPageChange={setCurrentPage}
+        />
       </CardContent>
     </Card>
   );
