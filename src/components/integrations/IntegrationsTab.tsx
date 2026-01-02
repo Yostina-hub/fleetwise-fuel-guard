@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,9 @@ import { format } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useAuth } from "@/hooks/useAuth";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
+
+const ITEMS_PER_PAGE = 10;
 
 const INTEGRATION_TYPES = [
   { value: "erp", label: "ERP System", providers: ["tele Erp", "Odoo", "SAP"] },
@@ -103,11 +106,21 @@ const IntegrationsTab = () => {
 
   const selectedTypeConfig = INTEGRATION_TYPES.find(t => t.value === integrationType);
 
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(
+    integrations?.length || 0,
+    ITEMS_PER_PAGE
+  );
+
+  const paginatedIntegrations = useMemo(() => {
+    if (!integrations) return [];
+    return integrations.slice(startIndex, endIndex);
+  }, [integrations, startIndex, endIndex]);
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-xl font-semibold">External Integrations</h2>
+          <h2 className="text-xl font-semibold">External Integrations ({integrations?.length || 0})</h2>
           <p className="text-sm text-muted-foreground">
             Connect with ERP, fuel cards, messaging, and device providers
           </p>
@@ -180,53 +193,63 @@ const IntegrationsTab = () => {
       {isLoading ? (
         <p>Loading...</p>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Provider</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Last Sync</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {integrations?.map((integration) => (
-              <TableRow key={integration.id}>
-                <TableCell className="font-medium">{integration.name}</TableCell>
-                <TableCell className="capitalize">
-                  {integration.integration_type.replace("_", " ")}
-                </TableCell>
-                <TableCell>{integration.provider}</TableCell>
-                <TableCell>
-                  <Badge variant={integration.is_active ? "default" : "secondary"}>
-                    {integration.is_active ? "Active" : "Inactive"}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {integration.last_sync_at
-                    ? format(new Date(integration.last_sync_at), "PP")
-                    : "Never"}
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="ghost">
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => deleteIntegrationMutation.mutate(integration.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
+        <>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Provider</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Last Sync</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {paginatedIntegrations.map((integration) => (
+                <TableRow key={integration.id}>
+                  <TableCell className="font-medium">{integration.name}</TableCell>
+                  <TableCell className="capitalize">
+                    {integration.integration_type.replace("_", " ")}
+                  </TableCell>
+                  <TableCell>{integration.provider}</TableCell>
+                  <TableCell>
+                    <Badge variant={integration.is_active ? "default" : "secondary"}>
+                      {integration.is_active ? "Active" : "Inactive"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {integration.last_sync_at
+                      ? format(new Date(integration.last_sync_at), "PP")
+                      : "Never"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="ghost">
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => deleteIntegrationMutation.mutate(integration.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          {integrations && integrations.length > 0 && (
+            <TablePagination
+              currentPage={currentPage}
+              totalItems={integrations.length}
+              itemsPerPage={ITEMS_PER_PAGE}
+              onPageChange={setCurrentPage}
+            />
+          )}
+        </>
       )}
     </div>
   );

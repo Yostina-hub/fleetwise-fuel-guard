@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
+
+const ITEMS_PER_PAGE = 10;
 
 export const TripTemplatesTab = () => {
   const { user } = useAuth();
@@ -98,6 +101,16 @@ export const TripTemplatesTab = () => {
     );
   }
 
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(
+    templates?.length || 0,
+    ITEMS_PER_PAGE
+  );
+
+  const paginatedTemplates = useMemo(() => {
+    if (!templates) return [];
+    return templates.slice(startIndex, endIndex);
+  }, [templates, startIndex, endIndex]);
+
   return (
     <Card>
       <CardHeader>
@@ -122,7 +135,7 @@ export const TripTemplatesTab = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {templates.map((template: any) => (
+            {paginatedTemplates.map((template: any) => (
               <TableRow key={template.id}>
                 <TableCell className="font-medium">
                   {template.template_name}
@@ -187,6 +200,14 @@ export const TripTemplatesTab = () => {
             ))}
           </TableBody>
         </Table>
+        {templates && templates.length > 0 && (
+          <TablePagination
+            currentPage={currentPage}
+            totalItems={templates.length}
+            itemsPerPage={ITEMS_PER_PAGE}
+            onPageChange={setCurrentPage}
+          />
+        )}
       </CardContent>
     </Card>
   );
