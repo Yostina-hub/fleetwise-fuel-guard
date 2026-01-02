@@ -23,6 +23,8 @@ interface DriverScore {
   recommendations: string[];
   score_period_start: string;
   score_period_end: string;
+  driver?: { first_name: string; last_name: string } | null;
+  vehicle?: { plate_number: string } | null;
 }
 
 interface DriverScoresTableProps {
@@ -145,6 +147,7 @@ export const DriverScoresTable = ({ scores }: DriverScoresTableProps) => {
               <thead className="bg-muted/50 border-y">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Rank</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Driver</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Overall</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Rating</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Speed</th>
@@ -168,6 +171,14 @@ export const DriverScoresTable = ({ scores }: DriverScoresTableProps) => {
                       )}>
                         {index + 1}
                       </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="font-medium">
+                        {score.driver ? `${score.driver.first_name} ${score.driver.last_name}` : "Unknown Driver"}
+                      </div>
+                      {score.vehicle?.plate_number && (
+                        <div className="text-xs text-muted-foreground">{score.vehicle.plate_number}</div>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <span className={cn("text-xl font-bold", getScoreColor(score.overall_score))}>

@@ -49,6 +49,7 @@ import { WorkOrdersTable } from "@/components/reports/WorkOrdersTable";
 import { CostsTable } from "@/components/reports/CostsTable";
 import { DriverScoresTable } from "@/components/reports/DriverScoresTable";
 import { DispatchTable } from "@/components/reports/DispatchTable";
+import { InspectionsTable } from "@/components/reports/InspectionsTable";
 
 const Reports = () => {
   const [activeReportTab, setActiveReportTab] = useState("vehicle");
@@ -80,6 +81,7 @@ const Reports = () => {
     vehicleCosts,
     driverScores,
     dispatchJobs,
+    vehicleInspections,
     loading 
   } = useReportData(dateRange);
 
@@ -123,6 +125,7 @@ const Reports = () => {
         return [
           { id: "schedules", label: "Schedules" },
           { id: "work_orders", label: "Work Orders" },
+          { id: "inspections", label: "Inspections" },
         ];
       case "dispatch":
         return [
@@ -153,7 +156,7 @@ const Reports = () => {
       case "trips":
         return [{ id: "all_trips", label: "All Trips" }];
       case "maintenance":
-        return [{ id: "schedules", label: "Schedules" }, { id: "work_orders", label: "Work Orders" }];
+        return [{ id: "schedules", label: "Schedules" }, { id: "work_orders", label: "Work Orders" }, { id: "inspections", label: "Inspections" }];
       case "dispatch":
         return [{ id: "jobs", label: "All Jobs" }];
       case "costs":
@@ -357,6 +360,8 @@ const Reports = () => {
         switch (activeSubTab) {
           case "work_orders":
             return <WorkOrdersTable workOrders={workOrders} />;
+          case "inspections":
+            return <InspectionsTable inspections={vehicleInspections} />;
           default:
             return <MaintenanceTable schedules={maintenanceSchedules} />;
         }

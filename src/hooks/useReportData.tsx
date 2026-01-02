@@ -380,7 +380,7 @@ export const useReportData = (dateRange: DateRange) => {
     enabled: !!organizationId,
   });
 
-  // Fetch driver behavior scores
+  // Fetch driver behavior scores (note: no FK to drivers table, so we fetch separately)
   const { data: driverScores, isLoading: scoresLoading } = useQuery({
     queryKey: ['report-driver-scores', organizationId],
     queryFn: async () => {
@@ -398,6 +398,31 @@ export const useReportData = (dateRange: DateRange) => {
     },
     enabled: !!organizationId,
   });
+
+  // Fetch drivers for score mapping
+  const { data: allDriversForScores } = useQuery({
+    queryKey: ['report-drivers-for-scores', organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data, error } = await supabase
+        .from('drivers')
+        .select('id, first_name, last_name')
+        .eq('organization_id', organizationId);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId,
+  });
+
+  // Merge driver info into scores
+  const driverScoresWithDrivers = useMemo(() => {
+    if (!driverScores) return [];
+    const driverMap = new Map(allDriversForScores?.map(d => [d.id, d]) || []);
+    return driverScores.map(score => ({
+      ...score,
+      driver: driverMap.get(score.driver_id) || null,
+    }));
+  }, [driverScores, allDriversForScores]);
 
   // Fetch dispatch jobs
   const { data: dispatchJobs, isLoading: dispatchLoading } = useQuery({
@@ -612,7 +637,7 @@ export const useReportData = (dateRange: DateRange) => {
     maintenanceSchedules: maintenanceSchedules || [],
     workOrders: workOrders || [],
     vehicleCosts: vehicleCosts || [],
-    driverScores: driverScores || [],
+    driverScores: driverScoresWithDrivers || [],
     dispatchJobs: dispatchJobs || [],
     vehicleInspections: vehicleInspections || [],
     loading: tripsLoading || eventsLoading || geofenceLoading || incidentsLoading || 
