@@ -148,7 +148,7 @@ export const OfflineAlertsConfig = () => {
   });
 
   if (isLoading) {
-    return <div className="text-center py-8 text-muted-foreground">Loading configuration...</div>;
+    return <div className="text-center py-8 text-muted-foreground" role="status" aria-live="polite">Loading configuration...</div>;
   }
 
   return (
@@ -158,7 +158,7 @@ export const OfflineAlertsConfig = () => {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
+                <Bell className="h-5 w-5" aria-hidden="true" />
                 Offline Device Alerts Configuration
               </CardTitle>
               <CardDescription>
@@ -169,8 +169,9 @@ export const OfflineAlertsConfig = () => {
               onClick={() => testMutation.mutate()} 
               variant="outline"
               disabled={testMutation.isPending}
+              aria-label="Test device connectivity now"
             >
-              <RefreshCw className={`h-4 w-4 mr-2 ${testMutation.isPending ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 mr-2 ${testMutation.isPending ? 'animate-spin' : ''}`} aria-hidden="true" />
               {testMutation.isPending ? "Checking..." : "Test Now"}
             </Button>
           </div>
@@ -207,7 +208,7 @@ export const OfflineAlertsConfig = () => {
 
           <div className="space-y-2">
             <Label htmlFor="emails" className="flex items-center gap-2">
-              <Mail className="h-4 w-4" />
+              <Mail className="h-4 w-4" aria-hidden="true" />
               Email Notifications
             </Label>
             <Input
@@ -223,7 +224,7 @@ export const OfflineAlertsConfig = () => {
 
           <div className="space-y-2">
             <Label htmlFor="sms" className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" />
+              <MessageSquare className="h-4 w-4" aria-hidden="true" />
               SMS Notifications (Optional)
             </Label>
             <Input
@@ -241,8 +242,9 @@ export const OfflineAlertsConfig = () => {
             onClick={() => saveMutation.mutate()} 
             disabled={saveMutation.isPending}
             className="w-full"
+            aria-label="Save offline alerts configuration"
           >
-            <Save className="h-4 w-4 mr-2" />
+            <Save className="h-4 w-4 mr-2" aria-hidden="true" />
             {saveMutation.isPending ? "Saving..." : "Save Configuration"}
           </Button>
         </CardContent>
@@ -251,7 +253,7 @@ export const OfflineAlertsConfig = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5" />
+            <AlertTriangle className="h-5 w-5" aria-hidden="true" />
             Recent Offline Events
           </CardTitle>
           <CardDescription>
@@ -298,7 +300,7 @@ export const OfflineAlertsConfig = () => {
                   </div>
                   {event.notification_sent && (
                     <Badge variant="outline">
-                      <Bell className="h-3 w-3 mr-1" />
+                      <Bell className="h-3 w-3 mr-1" aria-hidden="true" />
                       Notified
                     </Badge>
                   )}
@@ -306,7 +308,7 @@ export const OfflineAlertsConfig = () => {
               ))}
             </div>
           ) : (
-            <p className="text-center text-muted-foreground py-8">
+            <p className="text-center text-muted-foreground py-8" role="status">
               No offline events recorded
             </p>
           )}

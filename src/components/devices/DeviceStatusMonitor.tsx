@@ -215,8 +215,8 @@ export const DeviceStatusMonitor = () => {
         </div>
         <div className="flex items-center gap-4">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[180px]">
-              <Filter className="h-4 w-4 mr-2" />
+            <SelectTrigger className="w-[180px]" aria-label="Filter devices by status">
+              <Filter className="h-4 w-4 mr-2" aria-hidden="true" />
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
@@ -227,7 +227,7 @@ export const DeviceStatusMonitor = () => {
             </SelectContent>
           </Select>
           <div className="flex items-center gap-2">
-            <Activity className="h-4 w-4 text-emerald-500 animate-pulse" />
+            <Activity className="h-4 w-4 text-emerald-500 animate-pulse" aria-hidden="true" />
             <span className="text-sm text-muted-foreground">
               {realtimeUpdates} live updates
             </span>
@@ -252,7 +252,7 @@ export const DeviceStatusMonitor = () => {
                 <span>{device.tracker_model}</span>
               </div>
               <div className="flex items-center gap-2 mt-1">
-                <Car className="h-3.5 w-3.5 text-primary" />
+                <Car className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
                 <span className="text-sm font-medium text-primary">
                   {device.vehicle_plate}
                 </span>
@@ -262,7 +262,7 @@ export const DeviceStatusMonitor = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
-                    <Signal className={`h-4 w-4 ${getSignalColor(device.gps_signal)}`} />
+                    <Signal className={`h-4 w-4 ${getSignalColor(device.gps_signal)}`} aria-hidden="true" />
                     <span>GPS Signal</span>
                   </div>
                   <span className="font-medium">
@@ -280,7 +280,7 @@ export const DeviceStatusMonitor = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
-                    <Wifi className={`h-4 w-4 ${getSignalColor(device.connection_quality)}`} />
+                    <Wifi className={`h-4 w-4 ${getSignalColor(device.connection_quality)}`} aria-hidden="true" />
                     <span>Connection</span>
                   </div>
                   <span className="font-medium">{device.connection_quality}%</span>
@@ -291,7 +291,7 @@ export const DeviceStatusMonitor = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
-                    <Database className="h-4 w-4 text-primary" />
+                    <Database className="h-4 w-4 text-primary" aria-hidden="true" />
                     <span>Data Rate</span>
                   </div>
                   <span className="font-medium">
@@ -313,7 +313,7 @@ export const DeviceStatusMonitor = () => {
 
       {devices.length === 0 && (
         <Card>
-          <CardContent className="flex items-center justify-center py-12">
+          <CardContent className="flex items-center justify-center py-12" role="status">
             <p className="text-muted-foreground">
               {statusFilter === "all" 
                 ? "No devices found" 
