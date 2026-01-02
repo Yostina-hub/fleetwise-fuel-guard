@@ -441,19 +441,19 @@ const WorkOrdersTab = () => {
   };
 
   if (organizationLoading || permissionsLoading) {
-    return <div className="py-8 text-sm text-muted-foreground">Loading…</div>;
+    return <div className="py-8 text-sm text-muted-foreground" role="status" aria-live="polite">Loading…</div>;
   }
 
   if (!organizationId) {
     return (
-      <div className="py-8 text-sm text-muted-foreground">
+      <div className="py-8 text-sm text-muted-foreground" role="status">
         No organization found for your account.
       </div>
     );
   }
 
   if (workOrdersLoading) {
-    return <div className="py-8 text-sm text-muted-foreground">Loading work orders…</div>;
+    return <div className="py-8 text-sm text-muted-foreground" role="status" aria-live="polite">Loading work orders…</div>;
   }
 
   if (workOrdersError) {
@@ -506,7 +506,7 @@ const WorkOrdersTab = () => {
             disabled={filteredWorkOrders.length === 0}
             aria-label="Export work orders to CSV"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-4 h-4" aria-hidden="true" />
             Export CSV
           </Button>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -517,7 +517,7 @@ const WorkOrdersTab = () => {
               aria-label="Create new work order"
               title={!canCreateWorkOrder ? "You need super_admin, maintenance_lead, or operations_manager role" : undefined}
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
               Create Work Order
             </Button>
           </DialogTrigger>
@@ -657,7 +657,7 @@ const WorkOrdersTab = () => {
       {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
           <Input
             id="work-orders-search"
             aria-label="Search work orders by number, type, vehicle, or description"
@@ -754,7 +754,7 @@ const WorkOrdersTab = () => {
                       onClick={(e) => { e.stopPropagation(); handleViewWorkOrder(wo); }}
                       aria-label={`View details for ${wo.work_order_number}`}
                     >
-                      <Eye className="w-4 h-4" />
+                      <Eye className="w-4 h-4" aria-hidden="true" />
                     </Button>
                     {wo.status !== 'completed' && wo.status !== 'cancelled' && (
                       <Button
@@ -764,7 +764,7 @@ const WorkOrdersTab = () => {
                         onClick={(e) => { e.stopPropagation(); handleDeleteClick(wo); }}
                         aria-label={`Delete ${wo.work_order_number}`}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4" aria-hidden="true" />
                       </Button>
                     )}
                   </div>
