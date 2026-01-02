@@ -2838,10 +2838,16 @@ export type Database = {
           category: string
           center_lat: number | null
           center_lng: number | null
+          color: string | null
           created_at: string
+          description: string | null
+          enable_entry_alarm: boolean | null
+          enable_exit_alarm: boolean | null
+          enable_speed_alarm: boolean | null
           geometry_type: string
           id: string
           is_active: boolean | null
+          max_dwell_minutes: number | null
           name: string
           notes: string | null
           organization_id: string
@@ -2851,6 +2857,7 @@ export type Database = {
           schedule_enabled: boolean | null
           schedule_end_time: string | null
           schedule_start_time: string | null
+          speed_limit: number | null
           updated_at: string
         }
         Insert: {
@@ -2858,10 +2865,16 @@ export type Database = {
           category: string
           center_lat?: number | null
           center_lng?: number | null
+          color?: string | null
           created_at?: string
+          description?: string | null
+          enable_entry_alarm?: boolean | null
+          enable_exit_alarm?: boolean | null
+          enable_speed_alarm?: boolean | null
           geometry_type: string
           id?: string
           is_active?: boolean | null
+          max_dwell_minutes?: number | null
           name: string
           notes?: string | null
           organization_id: string
@@ -2871,6 +2884,7 @@ export type Database = {
           schedule_enabled?: boolean | null
           schedule_end_time?: string | null
           schedule_start_time?: string | null
+          speed_limit?: number | null
           updated_at?: string
         }
         Update: {
@@ -2878,10 +2892,16 @@ export type Database = {
           category?: string
           center_lat?: number | null
           center_lng?: number | null
+          color?: string | null
           created_at?: string
+          description?: string | null
+          enable_entry_alarm?: boolean | null
+          enable_exit_alarm?: boolean | null
+          enable_speed_alarm?: boolean | null
           geometry_type?: string
           id?: string
           is_active?: boolean | null
+          max_dwell_minutes?: number | null
           name?: string
           notes?: string | null
           organization_id?: string
@@ -2891,6 +2911,7 @@ export type Database = {
           schedule_enabled?: boolean | null
           schedule_end_time?: string | null
           schedule_start_time?: string | null
+          speed_limit?: number | null
           updated_at?: string
         }
         Relationships: [
