@@ -187,8 +187,8 @@ const VehicleInspectionsTab = () => {
   };
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[300px]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center min-h-[300px]" role="status" aria-live="polite" aria-label="Loading vehicle inspections">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden="true" />
       </div>
     );
   }
@@ -199,7 +199,7 @@ const VehicleInspectionsTab = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex flex-col sm:flex-row gap-4 flex-1">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
             <Input
               id="inspection-search"
               aria-label="Search inspections"
@@ -229,7 +229,7 @@ const VehicleInspectionsTab = () => {
             disabled={filteredInspections.length === 0}
             aria-label="Export inspections to CSV"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-4 h-4" aria-hidden="true" />
             Export CSV
           </Button>
           <Button 
@@ -237,7 +237,7 @@ const VehicleInspectionsTab = () => {
             onClick={() => setShowNewInspection(true)}
             aria-label="Create new vehicle inspection"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4" aria-hidden="true" />
             New Inspection
           </Button>
         </div>
@@ -249,7 +249,7 @@ const VehicleInspectionsTab = () => {
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-muted">
-                <ClipboardCheck className="w-5 h-5 text-primary" />
+                <ClipboardCheck className="w-5 h-5 text-primary" aria-hidden="true" />
               </div>
               <div>
                 <div className="text-2xl font-bold">{inspections.length}</div>
@@ -262,7 +262,7 @@ const VehicleInspectionsTab = () => {
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-success/10">
-                <CheckCircle className="w-5 h-5 text-success" />
+                <CheckCircle className="w-5 h-5 text-success" aria-hidden="true" />
               </div>
               <div>
                 <div className="text-2xl font-bold">{inspections.filter(i => i.status === 'passed').length}</div>
@@ -275,7 +275,7 @@ const VehicleInspectionsTab = () => {
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-destructive/10">
-                <XCircle className="w-5 h-5 text-destructive" />
+                <XCircle className="w-5 h-5 text-destructive" aria-hidden="true" />
               </div>
               <div>
                 <div className="text-2xl font-bold">{inspections.filter(i => i.status === 'failed').length}</div>
@@ -288,7 +288,7 @@ const VehicleInspectionsTab = () => {
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-warning/10">
-                <AlertTriangle className="w-5 h-5 text-warning" />
+                <AlertTriangle className="w-5 h-5 text-warning" aria-hidden="true" />
               </div>
               <div>
                 <div className="text-2xl font-bold">{inspections.filter(i => i.status === 'pending_repair').length}</div>
@@ -302,8 +302,8 @@ const VehicleInspectionsTab = () => {
       {/* Inspections List */}
       {filteredInspections.length === 0 ? (
         <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            <ClipboardCheck className="w-12 h-12 mx-auto mb-4 opacity-50" />
+          <CardContent className="py-12 text-center text-muted-foreground" role="status" aria-label="No inspections found">
+            <ClipboardCheck className="w-12 h-12 mx-auto mb-4 opacity-50" aria-hidden="true" />
             <p>{searchQuery || inspectionFilter !== 'all' ? "No inspections match your filters" : "No inspections found"}</p>
           </CardContent>
         </Card>
@@ -328,7 +328,7 @@ const VehicleInspectionsTab = () => {
                 <div className="flex items-start justify-between">
                   <div className="space-y-2">
                     <div className="flex items-center gap-3">
-                      <Truck className="w-5 h-5 text-muted-foreground" />
+                      <Truck className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
                       <span className="font-semibold">{getVehiclePlate(inspection.vehicle_id)}</span>
                       {getStatusBadge(inspection.status)}
                       <Badge variant="outline" className="capitalize">
@@ -338,7 +338,7 @@ const VehicleInspectionsTab = () => {
                     
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
+                        <Calendar className="w-4 h-4" aria-hidden="true" />
                         {format(new Date(inspection.inspection_date), "MMM dd, yyyy HH:mm")}
                       </span>
                       {inspection.driver_id && (
@@ -380,7 +380,7 @@ const VehicleInspectionsTab = () => {
                       onClick={(e) => { e.stopPropagation(); handleViewDetails(inspection); }}
                       aria-label={`View details for inspection on ${getVehiclePlate(inspection.vehicle_id)}`}
                     >
-                      <Eye className="w-4 h-4" />
+                      <Eye className="w-4 h-4" aria-hidden="true" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -389,7 +389,7 @@ const VehicleInspectionsTab = () => {
                       onClick={(e) => { e.stopPropagation(); handleDeleteClick(inspection); }}
                       aria-label={`Delete inspection for ${getVehiclePlate(inspection.vehicle_id)}`}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4" aria-hidden="true" />
                     </Button>
                   </div>
                 </div>
