@@ -12,7 +12,7 @@ const Security = () => {
     <Layout>
       <div className="p-8 space-y-6 animate-fade-in">
       <div className="flex items-center gap-3">
-        <Shield className="h-8 w-8 text-primary" />
+        <Shield className="h-8 w-8 text-primary" aria-hidden="true" />
         <div>
           <h1 className="text-3xl font-bold">Security & Compliance</h1>
           <p className="text-muted-foreground">
@@ -24,19 +24,19 @@ const Security = () => {
       <Tabs defaultValue="api-keys" className="space-y-4">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="api-keys" className="gap-2">
-            <Key className="h-4 w-4" />
+            <Key className="h-4 w-4" aria-hidden="true" />
             API Keys
           </TabsTrigger>
           <TabsTrigger value="audit-logs" className="gap-2">
-            <History className="h-4 w-4" />
+            <History className="h-4 w-4" aria-hidden="true" />
             Audit Logs
           </TabsTrigger>
           <TabsTrigger value="retention" className="gap-2">
-            <FileText className="h-4 w-4" />
+            <FileText className="h-4 w-4" aria-hidden="true" />
             Data Retention
           </TabsTrigger>
           <TabsTrigger value="gdpr" className="gap-2">
-            <Shield className="h-4 w-4" />
+            <Shield className="h-4 w-4" aria-hidden="true" />
             GDPR Requests
           </TabsTrigger>
         </TabsList>
