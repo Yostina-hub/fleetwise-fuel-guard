@@ -202,7 +202,7 @@ const RoutesTab = () => {
     setIsDialogOpen(true);
   };
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <div role="status" aria-live="polite" className="text-muted-foreground">Loading...</div>;
 
   return (
     <div className="space-y-4">
@@ -210,8 +210,8 @@ const RoutesTab = () => {
         <h3 className="text-lg font-semibold">Planned Routes ({filteredRoutes.length})</h3>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={resetForm}>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button onClick={resetForm} aria-label="Add new route">
+              <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
               Add Route
             </Button>
           </DialogTrigger>
@@ -290,7 +290,7 @@ const RoutesTab = () => {
       {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
           <Input
             placeholder="Search routes..."
             value={searchQuery}
@@ -350,15 +350,17 @@ const RoutesTab = () => {
                     variant="ghost"
                     size="sm"
                     onClick={() => handleEdit(route)}
+                    aria-label={`Edit ${route.route_name}`}
                   >
-                    <Pencil className="h-4 w-4" />
+                    <Pencil className="h-4 w-4" aria-hidden="true" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => deleteMutation.mutate(route.id)}
+                    aria-label={`Delete ${route.route_name}`}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
                   </Button>
                 </div>
               </TableCell>
