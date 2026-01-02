@@ -839,27 +839,29 @@ const DeviceIntegration = () => {
                       <Card key={device.id} className="hover:shadow-md transition-shadow">
                         <CardContent className="pt-6">
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-4 min-w-0">
                               <div className="p-3 bg-primary/10 rounded-lg">
                                 <Smartphone className="h-6 w-6 text-primary" />
                               </div>
-                              <div>
-                                <h4 className="font-semibold">{device.tracker_model}</h4>
-                                <div className="space-y-1 mt-1">
-                                  <p className="text-sm text-muted-foreground">IMEI: {device.imei}</p>
+                              <div className="min-w-0">
+                                <h4 className="font-semibold truncate" title={device.tracker_model}>
+                                  {device.tracker_model}
+                                </h4>
+                                <div className="space-y-1 mt-1 min-w-0">
+                                  <p className="text-sm text-muted-foreground font-mono truncate" title={device.imei}>
+                                    IMEI: {device.imei}
+                                  </p>
                                   {device.sim_msisdn && (
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="text-sm text-muted-foreground font-mono truncate" title={device.sim_msisdn}>
                                       SIM: {device.sim_msisdn}
                                     </p>
                                   )}
                                   {device.vehicles ? (
-                                    <p className="text-sm font-medium text-primary">
+                                    <p className="text-sm font-medium text-primary truncate" title={device.vehicles.plate_number}>
                                       🚗 {device.vehicles.plate_number}
                                     </p>
                                   ) : (
-                                    <p className="text-sm text-muted-foreground italic">
-                                      No vehicle assigned
-                                    </p>
+                                    <p className="text-sm text-muted-foreground italic">No vehicle assigned</p>
                                   )}
                                 </div>
                               </div>

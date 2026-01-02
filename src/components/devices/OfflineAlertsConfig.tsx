@@ -268,9 +268,12 @@ export const OfflineAlertsConfig = () => {
                     !event.back_online_at ? 'bg-destructive/5 border-destructive/30' : ''
                   }`}
                 >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className="font-medium truncate"
+                        title={event.vehicles?.plate_number || event.devices?.imei || "Unknown Device"}
+                      >
                         {event.vehicles?.plate_number || event.devices?.imei || "Unknown Device"}
                       </span>
                       {!event.back_online_at ? (
@@ -281,7 +284,7 @@ export const OfflineAlertsConfig = () => {
                         </Badge>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground truncate" title={event.devices?.tracker_model}>
                       {event.devices?.tracker_model}
                     </p>
                     <p className="text-xs text-muted-foreground">
