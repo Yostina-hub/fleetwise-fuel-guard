@@ -24,14 +24,14 @@ const TrendIndicator = ({ value, inverted = false }: { value: number; inverted?:
   return (
     <div className={cn(
       "flex items-center gap-1 text-sm",
-      isPositive ? "text-success" : isNegative ? "text-destructive" : "text-muted-foreground"
+      isPositive ? "text-green-500" : isNegative ? "text-destructive" : "text-muted-foreground"
     )}>
       {isPositive ? (
         <TrendingUp className="w-4 h-4" />
       ) : (
         <TrendingDown className="w-4 h-4" />
       )}
-      <span>{Math.abs(value).toFixed(1)}% vs previous period</span>
+      <span>{Math.abs(value).toFixed(1)}% vs previous</span>
     </div>
   );
 };
@@ -51,7 +51,7 @@ export const ReportKPICards = ({ metrics, activeTab }: ReportKPICardsProps) => {
             label: "Fuel Consumed",
             value: `${metrics.totalFuelConsumed.toFixed(1)} L`,
             trend: metrics.fuelTrend,
-            inverted: true, // Less fuel is better
+            inverted: true,
           },
           {
             label: "Avg Efficiency",
@@ -69,53 +69,53 @@ export const ReportKPICards = ({ metrics, activeTab }: ReportKPICardsProps) => {
       case "driver":
         return [
           {
+            label: "Avg Driver Score",
+            value: metrics.avgDriverScore.toFixed(0),
+            trend: 0,
+            inverted: false,
+          },
+          {
             label: "Speeding Events",
             value: metrics.speedingEvents.toString(),
             trend: metrics.safetyTrend,
-            inverted: true, // Less is better
+            inverted: true,
           },
           {
-            label: "Harsh Braking",
-            value: metrics.harshBrakingEvents.toString(),
+            label: "Harsh Events",
+            value: (metrics.harshBrakingEvents + metrics.harshAccelerationEvents).toString(),
             trend: 0,
             inverted: true,
           },
           {
-            label: "Harsh Acceleration",
-            value: metrics.harshAccelerationEvents.toString(),
-            trend: 0,
-            inverted: true,
-          },
-          {
-            label: "Total Incidents",
-            value: metrics.totalIncidents.toString(),
+            label: "Needs Coaching",
+            value: metrics.driversNeedingCoaching.toString(),
             trend: 0,
             inverted: true,
           },
         ];
-      case "location":
+      case "fuel":
         return [
           {
-            label: "Geofence Entries",
-            value: metrics.geofenceEntries.toString(),
+            label: "Total Fuel Cost",
+            value: `$${metrics.totalFuelCost.toFixed(2)}`,
+            trend: 0,
+            inverted: true,
+          },
+          {
+            label: "Transactions",
+            value: metrics.fuelTransactionCount.toString(),
             trend: 0,
             inverted: false,
           },
           {
-            label: "Geofence Exits",
-            value: metrics.geofenceExits.toString(),
+            label: "Avg Price/L",
+            value: `$${metrics.avgFuelPrice.toFixed(2)}`,
             trend: 0,
-            inverted: false,
+            inverted: true,
           },
           {
-            label: "Avg Dwell Time",
-            value: `${Math.round(metrics.avgDwellTime)} min`,
-            trend: 0,
-            inverted: false,
-          },
-          {
-            label: "Open Incidents",
-            value: metrics.openIncidents.toString(),
+            label: "Theft Cases",
+            value: metrics.fuelTheftCount.toString(),
             trend: 0,
             inverted: true,
           },
@@ -125,11 +125,11 @@ export const ReportKPICards = ({ metrics, activeTab }: ReportKPICardsProps) => {
           {
             label: "Total Trips",
             value: metrics.totalTrips.toString(),
-            trend: 0,
+            trend: metrics.tripsTrend,
             inverted: false,
           },
           {
-            label: "Completed Trips",
+            label: "Completed",
             value: metrics.completedTrips.toString(),
             trend: 0,
             inverted: false,
@@ -147,6 +147,116 @@ export const ReportKPICards = ({ metrics, activeTab }: ReportKPICardsProps) => {
             value: `${Math.round(metrics.avgTripDuration)} min`,
             trend: 0,
             inverted: false,
+          },
+        ];
+      case "maintenance":
+        return [
+          {
+            label: "Scheduled",
+            value: metrics.scheduledMaintenance.toString(),
+            trend: 0,
+            inverted: false,
+          },
+          {
+            label: "Overdue",
+            value: metrics.overdueMaintenance.toString(),
+            trend: 0,
+            inverted: true,
+          },
+          {
+            label: "Work Orders",
+            value: metrics.workOrdersTotal.toString(),
+            trend: 0,
+            inverted: false,
+          },
+          {
+            label: "Completed",
+            value: metrics.workOrdersCompleted.toString(),
+            trend: 0,
+            inverted: false,
+          },
+        ];
+      case "dispatch":
+        return [
+          {
+            label: "Total Jobs",
+            value: metrics.dispatchJobsTotal.toString(),
+            trend: 0,
+            inverted: false,
+          },
+          {
+            label: "Completed",
+            value: metrics.dispatchJobsCompleted.toString(),
+            trend: 0,
+            inverted: false,
+          },
+          {
+            label: "SLA Rate",
+            value: `${metrics.slaMetPercentage.toFixed(1)}%`,
+            trend: 0,
+            inverted: false,
+          },
+          {
+            label: "Completion Rate",
+            value: metrics.dispatchJobsTotal > 0
+              ? `${((metrics.dispatchJobsCompleted / metrics.dispatchJobsTotal) * 100).toFixed(1)}%`
+              : "0%",
+            trend: 0,
+            inverted: false,
+          },
+        ];
+      case "costs":
+        return [
+          {
+            label: "Total Costs",
+            value: `$${metrics.totalVehicleCosts.toFixed(2)}`,
+            trend: metrics.costTrend,
+            inverted: true,
+          },
+          {
+            label: "Maintenance",
+            value: `$${metrics.maintenanceCosts.toFixed(2)}`,
+            trend: 0,
+            inverted: true,
+          },
+          {
+            label: "Fuel Costs",
+            value: `$${metrics.totalFuelCost.toFixed(2)}`,
+            trend: 0,
+            inverted: true,
+          },
+          {
+            label: "Incidents",
+            value: metrics.totalIncidents.toString(),
+            trend: 0,
+            inverted: true,
+          },
+        ];
+      case "alerts":
+        return [
+          {
+            label: "Total Alerts",
+            value: metrics.totalAlerts.toString(),
+            trend: 0,
+            inverted: true,
+          },
+          {
+            label: "Critical",
+            value: metrics.criticalAlerts.toString(),
+            trend: 0,
+            inverted: true,
+          },
+          {
+            label: "Geofence Events",
+            value: (metrics.geofenceEntries + metrics.geofenceExits).toString(),
+            trend: 0,
+            inverted: false,
+          },
+          {
+            label: "Open Incidents",
+            value: metrics.openIncidents.toString(),
+            trend: 0,
+            inverted: true,
           },
         ];
       default:
