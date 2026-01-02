@@ -146,8 +146,9 @@ const DispatchJobsTab = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[300px]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center min-h-[300px]" role="status" aria-live="polite">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden="true" />
+        <span className="sr-only">Loading dispatch jobs...</span>
       </div>
     );
   }
@@ -158,7 +159,7 @@ const DispatchJobsTab = () => {
       <div className="flex flex-col md:flex-row gap-4 justify-between">
         <div className="flex gap-3 flex-1">
           <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <Input
               placeholder="Search jobs..."
               value={searchQuery}
@@ -181,8 +182,8 @@ const DispatchJobsTab = () => {
             </SelectContent>
           </Select>
         </div>
-        <Button className="gap-2" onClick={() => setShowCreateDialog(true)}>
-          <Plus className="w-4 h-4" />
+        <Button className="gap-2" onClick={() => setShowCreateDialog(true)} aria-label="Create new dispatch job">
+          <Plus className="w-4 h-4" aria-hidden="true" />
           Create Job
         </Button>
       </div>
@@ -205,8 +206,8 @@ const DispatchJobsTab = () => {
       <div className="space-y-4">
         {filteredJobs.length === 0 ? (
           <Card>
-            <CardContent className="py-12 text-center text-muted-foreground">
-              <Truck className="w-12 h-12 mx-auto mb-4 opacity-50" />
+            <CardContent className="py-12 text-center text-muted-foreground" role="status" aria-label="No dispatch jobs found">
+              <Truck className="w-12 h-12 mx-auto mb-4 opacity-50" aria-hidden="true" />
               <p>No dispatch jobs found</p>
             </CardContent>
           </Card>
@@ -231,7 +232,7 @@ const DispatchJobsTab = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Pickup */}
                       <div className="flex items-start gap-2">
-                        <MapPin className="w-4 h-4 text-success mt-0.5" />
+                        <MapPin className="w-4 h-4 text-success mt-0.5" aria-hidden="true" />
                         <div>
                           <div className="text-xs text-muted-foreground">Pickup</div>
                           <div className="font-medium">{job.pickup_location_name || 'Not specified'}</div>
@@ -244,7 +245,7 @@ const DispatchJobsTab = () => {
                       </div>
                       {/* Dropoff */}
                       <div className="flex items-start gap-2">
-                        <MapPin className="w-4 h-4 text-destructive mt-0.5" />
+                        <MapPin className="w-4 h-4 text-destructive mt-0.5" aria-hidden="true" />
                         <div>
                           <div className="text-xs text-muted-foreground">Dropoff</div>
                           <div className="font-medium">{job.dropoff_location_name || 'Not specified'}</div>
@@ -260,19 +261,19 @@ const DispatchJobsTab = () => {
                     <div className="flex items-center gap-6 text-sm">
                       {job.customer_name && (
                         <span className="flex items-center gap-1">
-                          <User className="w-4 h-4 text-muted-foreground" />
+                          <User className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
                           {job.customer_name}
                         </span>
                       )}
                       {job.customer_phone && (
                         <span className="flex items-center gap-1">
-                          <Phone className="w-4 h-4 text-muted-foreground" />
+                          <Phone className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
                           {job.customer_phone}
                         </span>
                       )}
                       {job.cargo_description && (
                         <span className="flex items-center gap-1">
-                          <Package className="w-4 h-4 text-muted-foreground" />
+                          <Package className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
                           {job.cargo_description}
                           {job.cargo_weight_kg && ` (${job.cargo_weight_kg}kg)`}
                         </span>
@@ -281,15 +282,15 @@ const DispatchJobsTab = () => {
 
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
-                        <Truck className="w-4 h-4" />
+                        <Truck className="w-4 h-4" aria-hidden="true" />
                         {getVehiclePlate(job.vehicle_id || undefined)}
                       </span>
                       <span className="flex items-center gap-1">
-                        <User className="w-4 h-4" />
+                        <User className="w-4 h-4" aria-hidden="true" />
                         {getDriverName(job.driver_id || undefined)}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
+                        <Clock className="w-4 h-4" aria-hidden="true" />
                         Created {format(new Date(job.created_at), "MMM dd, HH:mm")}
                       </span>
                     </div>
@@ -313,7 +314,7 @@ const DispatchJobsTab = () => {
                         className="gap-1"
                         onClick={() => handleStatusChange(job.id, 'en_route')}
                       >
-                        <Play className="w-4 h-4" />
+                        <Play className="w-4 h-4" aria-hidden="true" />
                         Start Trip
                       </Button>
                     )}
@@ -323,7 +324,7 @@ const DispatchJobsTab = () => {
                         className="gap-1"
                         onClick={() => handleStatusChange(job.id, 'arrived')}
                       >
-                        <Navigation className="w-4 h-4" />
+                        <Navigation className="w-4 h-4" aria-hidden="true" />
                         Mark Arrived
                       </Button>
                     )}
@@ -333,7 +334,7 @@ const DispatchJobsTab = () => {
                         className="gap-1 bg-success hover:bg-success/90"
                         onClick={() => handleStatusChange(job.id, 'completed')}
                       >
-                        <CheckCircle className="w-4 h-4" />
+                        <CheckCircle className="w-4 h-4" aria-hidden="true" />
                         Complete
                       </Button>
                     )}
