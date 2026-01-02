@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Search, FileSpreadsheet, Loader2, CheckCircle } from "lucide-react";
 import { useFuelTransactions } from "@/hooks/useFuelTransactions";
-import { useFuelPageContext } from "@/pages/FuelMonitoring";
+import { useFuelPageContext } from "@/contexts/FuelPageContext";
 import { format } from "date-fns";
 import AddTransactionDialog from "./AddTransactionDialog";
 

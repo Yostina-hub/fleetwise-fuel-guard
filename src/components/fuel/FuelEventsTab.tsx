@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Droplet, TrendingDown, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 import { useFuelEvents } from "@/hooks/useFuelEvents";
-import { useFuelPageContext } from "@/pages/FuelMonitoring";
+import { useFuelPageContext } from "@/contexts/FuelPageContext";
 import { format } from "date-fns";
 
 const FuelEventsTab = () => {

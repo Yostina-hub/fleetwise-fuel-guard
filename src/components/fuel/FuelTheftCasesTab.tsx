@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, MapPin, Clock, FileText, Loader2, Eye, Download } from "lucide-react";
 import { useFuelTheftCases } from "@/hooks/useFuelTheftCases";
-import { useFuelPageContext } from "@/pages/FuelMonitoring";
+import { useFuelPageContext } from "@/contexts/FuelPageContext";
 import { format } from "date-fns";
 import TheftCaseDetailDialog from "./TheftCaseDetailDialog";
 import { toast } from "sonner";
