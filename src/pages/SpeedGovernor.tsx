@@ -35,6 +35,7 @@ import { ViolationsTable } from "@/components/speedgovernor/ViolationsTable";
 import { ComplianceReportGenerator } from "@/components/speedgovernor/ComplianceReportGenerator";
 import { SpeedLimitZonesTab } from "@/components/speedgovernor/SpeedLimitZonesTab";
 import { AlertRulesTab } from "@/components/speedgovernor/AlertRulesTab";
+import { CommandHistoryCard } from "@/components/speedgovernor/CommandHistoryCard";
 
 const SpeedGovernor = () => {
   const { organizationId } = useOrganization();
@@ -47,37 +48,42 @@ const SpeedGovernor = () => {
   const { data: vehicles } = useQuery({
     queryKey: ["vehicles-with-governors", organizationId],
     queryFn: async () => {
-      // Fetch vehicles with speed governor devices
-      const { data: vehiclesWithDevices, error } = await supabase
-        .from("vehicles")
+      // Fetch vehicles that have speed governor configs
+      const { data: governorConfigs, error } = await supabase
+        .from("speed_governor_config")
         .select(`
           id,
-          plate_number,
-          devices!inner(
+          vehicle_id,
+          max_speed_limit,
+          governor_active,
+          updated_at,
+          vehicles:vehicle_id(
             id,
-            tracker_model,
-            status,
-            last_heartbeat
+            plate_number,
+            devices(
+              id,
+              status,
+              last_heartbeat
+            )
           )
         `)
-        .eq("organization_id", organizationId!)
-        .ilike("devices.tracker_model", "%Governor%");
+        .eq("organization_id", organizationId!);
 
       if (error) throw error;
 
       // Transform data to match UI format
-      return vehiclesWithDevices?.map((v: any) => ({
-        id: v.id,
-        plate: v.plate_number,
-        governorActive: v.devices?.[0]?.status === "active",
+      return governorConfigs?.map((config: any) => ({
+        id: config.vehicle_id,
+        plate: config.vehicles?.plate_number || "Unknown",
+        governorActive: config.governor_active,
         currentSpeed: 0, // Would come from real-time telemetry
-        maxSpeed: 80, // Would be stored in device config
-        violations: 0, // Would come from driver_events
-        lastUpdate: v.devices?.[0]?.last_heartbeat 
-          ? new Date(v.devices[0].last_heartbeat).toLocaleString()
+        maxSpeed: config.max_speed_limit,
+        violations: 0,
+        lastUpdate: config.vehicles?.devices?.[0]?.last_heartbeat 
+          ? new Date(config.vehicles.devices[0].last_heartbeat).toLocaleString()
           : "No signal",
-        deviceId: v.devices?.[0]?.id,
-        deviceModel: v.devices?.[0]?.tracker_model
+        deviceId: config.vehicles?.devices?.[0]?.id,
+        configId: config.id
       })) || [];
     },
     enabled: !!organizationId,
@@ -367,6 +373,9 @@ const SpeedGovernor = () => {
                 </CardContent>
               </Card>
             </div>
+            
+            {/* Command History */}
+            <CommandHistoryCard />
           </TabsContent>
 
           {/* Live Monitoring Tab */}
