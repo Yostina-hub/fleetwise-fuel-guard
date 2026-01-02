@@ -12,7 +12,7 @@ const Integrations = () => {
     <Layout>
       <div className="p-8 space-y-6 animate-fade-in">
       <div className="flex items-center gap-3">
-        <Plug className="h-8 w-8 text-primary" />
+        <Plug className="h-8 w-8 text-primary" aria-hidden="true" />
         <div>
           <h1 className="text-3xl font-bold">APIs & Integrations</h1>
           <p className="text-muted-foreground">
@@ -24,19 +24,19 @@ const Integrations = () => {
       <Tabs defaultValue="webhooks" className="space-y-4">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="webhooks" className="gap-2">
-            <Webhook className="h-4 w-4" />
+            <Webhook className="h-4 w-4" aria-hidden="true" />
             Webhooks
           </TabsTrigger>
           <TabsTrigger value="erpnext" className="gap-2">
-            <Database className="h-4 w-4" />
+            <Database className="h-4 w-4" aria-hidden="true" />
             tele Erp
           </TabsTrigger>
           <TabsTrigger value="integrations" className="gap-2">
-            <Plug className="h-4 w-4" />
+            <Plug className="h-4 w-4" aria-hidden="true" />
             Integrations
           </TabsTrigger>
           <TabsTrigger value="bulk-jobs" className="gap-2">
-            <Upload className="h-4 w-4" />
+            <Upload className="h-4 w-4" aria-hidden="true" />
             Bulk Jobs
           </TabsTrigger>
         </TabsList>
