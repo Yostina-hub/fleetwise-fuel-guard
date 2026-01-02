@@ -9,7 +9,7 @@ const Incidents = () => {
       <div className="p-8 space-y-6 animate-fade-in">
         <div className="flex items-center gap-3">
           <div className="p-3 rounded-xl bg-destructive/10">
-            <AlertTriangle className="h-8 w-8 text-destructive" />
+            <AlertTriangle className="h-8 w-8 text-destructive" aria-hidden="true" />
           </div>
           <div>
             <h1 className="text-3xl font-bold">Incident Management</h1>
@@ -22,15 +22,15 @@ const Incidents = () => {
         <Tabs defaultValue="incidents" className="space-y-6">
           <TabsList className="grid w-full max-w-lg grid-cols-3">
             <TabsTrigger value="incidents" className="gap-2">
-              <AlertTriangle className="w-4 h-4" />
+              <AlertTriangle className="w-4 h-4" aria-hidden="true" />
               Incidents
             </TabsTrigger>
             <TabsTrigger value="claims" className="gap-2">
-              <FileText className="w-4 h-4" />
+              <FileText className="w-4 h-4" aria-hidden="true" />
               Insurance Claims
             </TabsTrigger>
             <TabsTrigger value="violations" className="gap-2">
-              <Receipt className="w-4 h-4" />
+              <Receipt className="w-4 h-4" aria-hidden="true" />
               Violations
             </TabsTrigger>
           </TabsList>
@@ -40,16 +40,16 @@ const Incidents = () => {
           </TabsContent>
 
           <TabsContent value="claims">
-            <div className="text-center py-12 text-muted-foreground">
-              <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
+            <div className="text-center py-12 text-muted-foreground" role="status" aria-label="Insurance claims section">
+              <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" aria-hidden="true" />
               <h3 className="text-lg font-medium mb-2">Insurance Claims</h3>
               <p>Track and manage insurance claims linked to incidents.</p>
             </div>
           </TabsContent>
 
           <TabsContent value="violations">
-            <div className="text-center py-12 text-muted-foreground">
-              <Receipt className="w-12 h-12 mx-auto mb-4 opacity-50" />
+            <div className="text-center py-12 text-muted-foreground" role="status" aria-label="Traffic violations section">
+              <Receipt className="w-12 h-12 mx-auto mb-4 opacity-50" aria-hidden="true" />
               <h3 className="text-lg font-medium mb-2">Traffic Violations</h3>
               <p>Manage traffic tickets, fines, and payment tracking.</p>
             </div>
