@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Calendar, MapPin, Users, Send, Eye } from "lucide-react";
+import { DialogDescription } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { useTripRequests } from "@/hooks/useTripRequests";
 import { ApprovalFlowViewer } from "@/components/scheduling/ApprovalFlowViewer";
@@ -63,7 +64,7 @@ export const TripRequestsList = ({ requests, loading }: TripRequestsListProps) =
 
   if (loading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-4" role="status" aria-live="polite" aria-label="Loading trip requests">
         {[1, 2, 3].map((i) => (
           <Card key={i} className="animate-pulse">
             <CardHeader>
@@ -85,7 +86,7 @@ export const TripRequestsList = ({ requests, loading }: TripRequestsListProps) =
     return (
       <Card>
         <CardContent className="pt-6">
-          <div className="text-center text-muted-foreground">
+          <div className="text-center text-muted-foreground" role="status" aria-label="No trip requests">
             No trip requests found. Create your first request to get started.
           </div>
         </CardContent>
@@ -120,7 +121,7 @@ export const TripRequestsList = ({ requests, loading }: TripRequestsListProps) =
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1 text-sm">
-                      <Calendar className="w-3 h-3" />
+                      <Calendar className="w-3 h-3" aria-hidden="true" />
                       <div>
                         <div>{format(new Date(request.pickup_at), "MMM dd, HH:mm")}</div>
                         <div className="text-muted-foreground text-xs">
@@ -131,7 +132,7 @@ export const TripRequestsList = ({ requests, loading }: TripRequestsListProps) =
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1 text-sm">
-                      <MapPin className="w-3 h-3" />
+                      <MapPin className="w-3 h-3" aria-hidden="true" />
                       <div className="max-w-[150px] truncate">
                         {request.pickup_geofence?.name || "Not specified"}
                         {request.drop_geofence && ` → ${request.drop_geofence.name}`}
@@ -140,7 +141,7 @@ export const TripRequestsList = ({ requests, loading }: TripRequestsListProps) =
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      <Users className="w-3 h-3" />
+                      <Users className="w-3 h-3" aria-hidden="true" />
                       {request.passengers}
                     </div>
                   </TableCell>
@@ -157,8 +158,9 @@ export const TripRequestsList = ({ requests, loading }: TripRequestsListProps) =
                           variant="outline"
                           onClick={() => submitRequest.mutate(request.id)}
                           disabled={submitRequest.isPending}
+                          aria-label="Submit trip request"
                         >
-                          <Send className="w-3 h-3 mr-1" />
+                          <Send className="w-3 h-3 mr-1" aria-hidden="true" />
                           Submit
                         </Button>
                       )}
@@ -167,8 +169,9 @@ export const TripRequestsList = ({ requests, loading }: TripRequestsListProps) =
                           size="sm"
                           variant="ghost"
                           onClick={() => openDetails(request)}
+                          aria-label="View trip request details"
                         >
-                          <Eye className="w-3 h-3 mr-1" />
+                          <Eye className="w-3 h-3 mr-1" aria-hidden="true" />
                           View
                         </Button>
                       )}
@@ -188,6 +191,7 @@ export const TripRequestsList = ({ requests, loading }: TripRequestsListProps) =
             <DialogTitle>
               Trip Request: {selectedRequest?.request_number}
             </DialogTitle>
+            <DialogDescription>View trip request details, approval flow, and vehicle recommendations.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">

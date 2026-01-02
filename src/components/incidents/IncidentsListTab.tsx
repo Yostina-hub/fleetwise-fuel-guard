@@ -300,16 +300,17 @@ const IncidentsListTab = () => {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Report Incident</DialogTitle>
+            <p className="text-sm text-muted-foreground">Fill in the details to report a new incident.</p>
           </DialogHeader>
           <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Incident Type</Label>
+                <Label htmlFor="incident-type">Incident Type</Label>
                 <Select 
                   value={newIncident.incident_type}
                   onValueChange={v => setNewIncident({...newIncident, incident_type: v})}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="incident-type" aria-label="Select incident type">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -323,12 +324,12 @@ const IncidentsListTab = () => {
                 </Select>
               </div>
               <div>
-                <Label>Severity</Label>
+                <Label htmlFor="incident-severity">Severity</Label>
                 <Select 
                   value={newIncident.severity}
                   onValueChange={v => setNewIncident({...newIncident, severity: v})}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="incident-severity" aria-label="Select severity level">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -343,12 +344,12 @@ const IncidentsListTab = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Vehicle</Label>
+                <Label htmlFor="incident-vehicle">Vehicle</Label>
                 <Select 
                   value={newIncident.vehicle_id}
                   onValueChange={v => setNewIncident({...newIncident, vehicle_id: v})}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="incident-vehicle" aria-label="Select vehicle">
                     <SelectValue placeholder="Select vehicle" />
                   </SelectTrigger>
                   <SelectContent>
@@ -359,12 +360,12 @@ const IncidentsListTab = () => {
                 </Select>
               </div>
               <div>
-                <Label>Driver</Label>
+                <Label htmlFor="incident-driver">Driver</Label>
                 <Select 
                   value={newIncident.driver_id}
                   onValueChange={v => setNewIncident({...newIncident, driver_id: v})}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="incident-driver" aria-label="Select driver">
                     <SelectValue placeholder="Select driver" />
                   </SelectTrigger>
                   <SelectContent>
@@ -377,30 +378,36 @@ const IncidentsListTab = () => {
             </div>
 
             <div>
-              <Label>Date & Time</Label>
+              <Label htmlFor="incident-datetime">Date & Time</Label>
               <Input 
+                id="incident-datetime"
                 type="datetime-local"
                 value={newIncident.incident_time}
                 onChange={e => setNewIncident({...newIncident, incident_time: e.target.value})}
+                aria-label="Incident date and time"
               />
             </div>
 
             <div>
-              <Label>Location</Label>
+              <Label htmlFor="incident-location">Location</Label>
               <Input 
+                id="incident-location"
                 value={newIncident.location}
                 onChange={e => setNewIncident({...newIncident, location: e.target.value})}
                 placeholder="Enter incident location"
+                aria-label="Incident location"
               />
             </div>
 
             <div>
-              <Label>Description</Label>
+              <Label htmlFor="incident-description">Description</Label>
               <Textarea 
+                id="incident-description"
                 value={newIncident.description}
                 onChange={e => setNewIncident({...newIncident, description: e.target.value})}
                 placeholder="Describe what happened..."
                 rows={3}
+                aria-label="Incident description"
               />
             </div>
           </div>
