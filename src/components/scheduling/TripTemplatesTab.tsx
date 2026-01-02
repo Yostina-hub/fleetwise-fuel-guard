@@ -72,7 +72,7 @@ export const TripTemplatesTab = () => {
     return (
       <Card>
         <CardContent className="pt-6">
-          <div className="text-center text-muted-foreground">Loading templates...</div>
+          <div className="text-center text-muted-foreground" role="status" aria-live="polite" aria-label="Loading trip templates">Loading templates...</div>
         </CardContent>
       </Card>
     );
@@ -88,8 +88,8 @@ export const TripTemplatesTab = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-muted-foreground">
-            <FileText className="h-12 w-12 mx-auto mb-2 opacity-30" />
+          <div className="text-center py-8 text-muted-foreground" role="status" aria-label="No templates available">
+            <FileText className="h-12 w-12 mx-auto mb-2 opacity-30" aria-hidden="true" />
             <p>No templates yet</p>
             <p className="text-sm">Create a trip request and save it as a template</p>
           </div>
@@ -102,7 +102,7 @@ export const TripTemplatesTab = () => {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5" />
+          <FileText className="h-5 w-5" aria-hidden="true" />
           Trip Templates ({templates.length})
         </CardTitle>
         <CardDescription>
@@ -148,7 +148,7 @@ export const TripTemplatesTab = () => {
                 <TableCell>
                   {template.is_recurring ? (
                     <Badge variant="secondary" className="gap-1">
-                      <Calendar className="w-3 h-3" />
+                      <Calendar className="w-3 h-3" aria-hidden="true" />
                       Recurring
                     </Badge>
                   ) : (
@@ -164,8 +164,9 @@ export const TripTemplatesTab = () => {
                       size="sm"
                       variant="default"
                       onClick={() => useTemplate(template)}
+                      aria-label={`Use template ${template.template_name}`}
                     >
-                      <Copy className="w-3 h-3 mr-1" />
+                      <Copy className="w-3 h-3 mr-1" aria-hidden="true" />
                       Use
                     </Button>
                     {template.created_by === user?.id && (
@@ -175,8 +176,9 @@ export const TripTemplatesTab = () => {
                         className="text-destructive"
                         onClick={() => deleteTemplate.mutate(template.id)}
                         disabled={deleteTemplate.isPending}
+                        aria-label={`Delete template ${template.template_name}`}
                       >
-                        <Trash2 className="w-3 h-3" />
+                        <Trash2 className="w-3 h-3" aria-hidden="true" />
                       </Button>
                     )}
                   </div>
