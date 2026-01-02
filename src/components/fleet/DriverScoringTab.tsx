@@ -127,8 +127,8 @@ export const DriverScoringTab = () => {
       ["Rank", "Driver", "Vehicle", "Overall Score", "Safety Rating", "Speed Violations", "Harsh Braking", "Harsh Acceleration"].join(","),
       ...driverScores.map((score, idx) => [
         idx + 1,
-        getDriverName(score.driver_id),
-        getVehiclePlate(score.vehicle_id),
+        `"${getDriverName(score)}"`,
+        `"${getVehiclePlate(score)}"`,
         score.overall_score,
         score.safety_rating,
         score.speed_violations,
