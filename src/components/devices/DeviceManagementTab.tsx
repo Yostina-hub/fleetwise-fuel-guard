@@ -113,7 +113,7 @@ export const DeviceManagementTab = () => {
     return Object.keys(errors).length === 0;
   }, [formData.imei, formData.tracker_model, devices, editingDevice]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validateForm()) {
       toast({
         title: "Validation Error",
@@ -121,6 +121,14 @@ export const DeviceManagementTab = () => {
         variant: "destructive",
       });
       return;
+    }
+
+    // If selecting a vehicle that's assigned to another device, unassign it first
+    if (formData.vehicle_id) {
+      const assignedDevice = devices?.find(d => d.vehicle_id === formData.vehicle_id && d.id !== editingDevice?.id);
+      if (assignedDevice) {
+        await supabase.from("devices").update({ vehicle_id: null }).eq("id", assignedDevice.id);
+      }
     }
 
     if (editingDevice) {
@@ -229,11 +237,22 @@ export const DeviceManagementTab = () => {
     setQuickAssignDialogOpen(true);
   };
 
-  const confirmQuickAssign = () => {
+  const confirmQuickAssign = async () => {
     if (deviceToAssign) {
+      const selectedVehicleId = assignVehicleId === "none" ? null : assignVehicleId;
+      
+      // If vehicle is assigned to another device, unassign it first
+      if (selectedVehicleId) {
+        const assignedDevice = devices?.find(d => d.vehicle_id === selectedVehicleId && d.id !== deviceToAssign.id);
+        if (assignedDevice) {
+          // Unassign from the other device first
+          await supabase.from("devices").update({ vehicle_id: null }).eq("id", assignedDevice.id);
+        }
+      }
+      
       updateDevice.mutate({ 
         id: deviceToAssign.id, 
-        vehicle_id: assignVehicleId === "none" ? null : assignVehicleId 
+        vehicle_id: selectedVehicleId 
       });
       setQuickAssignDialogOpen(false);
       setDeviceToAssign(null);
@@ -323,13 +342,40 @@ export const DeviceManagementTab = () => {
   const activeCount = devices?.filter(d => d.status === 'active').length || 0;
   const maintenanceCount = devices?.filter(d => d.status === 'maintenance').length || 0;
 
-  // Get available vehicles (not already assigned to another device)
-  const availableVehicles = useMemo(() => {
-    const assignedVehicleIds = devices
-      ?.filter(d => d.vehicle_id && d.id !== editingDevice?.id && d.id !== deviceToAssign?.id)
-      .map(d => d.vehicle_id) || [];
-    return vehicles?.filter(v => !assignedVehicleIds.includes(v.id)) || [];
+  // Get vehicles with assignment status - unassigned first, then assigned
+  const vehiclesWithAssignmentStatus = useMemo(() => {
+    if (!vehicles) return { unassigned: [], assigned: [] };
+    
+    // Get map of vehicle_id -> device info for assigned vehicles
+    const vehicleAssignments = new Map<string, { deviceId: string; imei: string }>();
+    devices?.forEach(d => {
+      if (d.vehicle_id) {
+        vehicleAssignments.set(d.vehicle_id, { deviceId: d.id, imei: d.imei });
+      }
+    });
+    
+    const unassigned: typeof vehicles = [];
+    const assigned: (typeof vehicles[0] & { assignedToDevice: { deviceId: string; imei: string } })[] = [];
+    
+    vehicles.forEach(v => {
+      const assignment = vehicleAssignments.get(v.id);
+      if (assignment) {
+        // Skip if assigned to current device being edited/assigned
+        if (assignment.deviceId === editingDevice?.id || assignment.deviceId === deviceToAssign?.id) {
+          unassigned.push(v); // Treat as available for current device
+        } else {
+          assigned.push({ ...v, assignedToDevice: assignment });
+        }
+      } else {
+        unassigned.push(v);
+      }
+    });
+    
+    return { unassigned, assigned };
   }, [vehicles, devices, editingDevice, deviceToAssign]);
+
+  // For backward compatibility
+  const availableVehicles = vehiclesWithAssignmentStatus.unassigned;
 
   if (isLoading) {
     return <div className="text-center py-8 text-muted-foreground">Loading devices...</div>;
@@ -379,16 +425,28 @@ export const DeviceManagementTab = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">No vehicle assigned</SelectItem>
-                      {availableVehicles?.map((vehicle) => (
-                        <SelectItem key={vehicle.id} value={vehicle.id}>
-                          {vehicle.plate_number} - {vehicle.make} {vehicle.model}
-                        </SelectItem>
-                      ))}
-                      {/* Show currently assigned vehicle when editing */}
-                      {editingDevice?.vehicle_id && !availableVehicles?.find(v => v.id === editingDevice.vehicle_id) && (
-                        <SelectItem key={editingDevice.vehicle_id} value={editingDevice.vehicle_id}>
-                          {editingDevice.vehicles?.plate_number} (Current)
-                        </SelectItem>
+                      {vehiclesWithAssignmentStatus.unassigned.length > 0 && (
+                        <>
+                          <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">Available Vehicles</div>
+                          {vehiclesWithAssignmentStatus.unassigned.map((vehicle) => (
+                            <SelectItem key={vehicle.id} value={vehicle.id}>
+                              {vehicle.plate_number} - {vehicle.make} {vehicle.model}
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
+                      {vehiclesWithAssignmentStatus.assigned.length > 0 && (
+                        <>
+                          <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground border-t mt-1 pt-2">
+                            Assigned to Other Devices (will be reassigned)
+                          </div>
+                          {vehiclesWithAssignmentStatus.assigned.map((vehicle) => (
+                            <SelectItem key={vehicle.id} value={vehicle.id} className="text-amber-600 dark:text-amber-400">
+                              {vehicle.plate_number} - {vehicle.make} {vehicle.model}
+                              <span className="text-xs ml-1 opacity-70">(Device: {vehicle.assignedToDevice.imei.slice(-6)})</span>
+                            </SelectItem>
+                          ))}
+                        </>
                       )}
                     </SelectContent>
                   </Select>
@@ -860,11 +918,29 @@ export const DeviceManagementTab = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">No vehicle assigned</SelectItem>
-                {availableVehicles?.map((vehicle) => (
-                  <SelectItem key={vehicle.id} value={vehicle.id}>
-                    {vehicle.plate_number} - {vehicle.make} {vehicle.model}
-                  </SelectItem>
-                ))}
+                {vehiclesWithAssignmentStatus.unassigned.length > 0 && (
+                  <>
+                    <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">Available Vehicles</div>
+                    {vehiclesWithAssignmentStatus.unassigned.map((vehicle) => (
+                      <SelectItem key={vehicle.id} value={vehicle.id}>
+                        {vehicle.plate_number} - {vehicle.make} {vehicle.model}
+                      </SelectItem>
+                    ))}
+                  </>
+                )}
+                {vehiclesWithAssignmentStatus.assigned.length > 0 && (
+                  <>
+                    <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground border-t mt-1 pt-2">
+                      Assigned to Other Devices (will be reassigned)
+                    </div>
+                    {vehiclesWithAssignmentStatus.assigned.map((vehicle) => (
+                      <SelectItem key={vehicle.id} value={vehicle.id} className="text-amber-600 dark:text-amber-400">
+                        {vehicle.plate_number} - {vehicle.make} {vehicle.model}
+                        <span className="text-xs ml-1 opacity-70">(Device: {vehicle.assignedToDevice.imei.slice(-6)})</span>
+                      </SelectItem>
+                    ))}
+                  </>
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -873,7 +949,7 @@ export const DeviceManagementTab = () => {
               Cancel
             </Button>
             <Button onClick={confirmQuickAssign}>
-              Assign Vehicle
+              {vehiclesWithAssignmentStatus.assigned.some(v => v.id === assignVehicleId) ? "Reassign Vehicle" : "Assign Vehicle"}
             </Button>
           </DialogFooter>
         </DialogContent>
