@@ -44,7 +44,9 @@ export const useFuelDepots = () => {
   const [dispensingLogs, setDispensingLogs] = useState<FuelDepotDispensing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const depotsDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const dispensingDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
 
   const fetchDepots = useCallback(async () => {
     if (!organizationId) {
@@ -62,12 +64,18 @@ export const useFuelDepots = () => {
         .order("name");
 
       if (error) throw error;
-      setDepots((data as FuelDepot[]) || []);
+      if (isMountedRef.current) {
+        setDepots((data as FuelDepot[]) || []);
+      }
     } catch (err: any) {
       console.error("Error fetching fuel depots:", err);
-      setError(err.message);
+      if (isMountedRef.current) {
+        setError(err.message);
+      }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   }, [organizationId]);
 
@@ -89,7 +97,9 @@ export const useFuelDepots = () => {
         .limit(100);
 
       if (error) throw error;
-      setDispensingLogs((data as FuelDepotDispensing[]) || []);
+      if (isMountedRef.current) {
+        setDispensingLogs((data as FuelDepotDispensing[]) || []);
+      }
     } catch (err: any) {
       console.error("Error fetching dispensing logs:", err);
     }
@@ -116,10 +126,10 @@ export const useFuelDepots = () => {
           filter: `organization_id=eq.${organizationId}`
         },
         () => {
-          if (debounceRef.current) {
-            clearTimeout(debounceRef.current);
+          if (depotsDebounceRef.current) {
+            clearTimeout(depotsDebounceRef.current);
           }
-          debounceRef.current = setTimeout(() => {
+          depotsDebounceRef.current = setTimeout(() => {
             fetchDepots();
           }, 500);
         }
@@ -137,19 +147,24 @@ export const useFuelDepots = () => {
           filter: `organization_id=eq.${organizationId}`
         },
         () => {
-          if (debounceRef.current) {
-            clearTimeout(debounceRef.current);
+          if (dispensingDebounceRef.current) {
+            clearTimeout(dispensingDebounceRef.current);
           }
-          debounceRef.current = setTimeout(() => {
+          dispensingDebounceRef.current = setTimeout(() => {
             fetchDispensingLogs();
           }, 500);
         }
       )
       .subscribe();
 
+    isMountedRef.current = true;
     return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
+      isMountedRef.current = false;
+      if (depotsDebounceRef.current) {
+        clearTimeout(depotsDebounceRef.current);
+      }
+      if (dispensingDebounceRef.current) {
+        clearTimeout(dispensingDebounceRef.current);
       }
       supabase.removeChannel(depotsChannel);
       supabase.removeChannel(dispensingChannel);
