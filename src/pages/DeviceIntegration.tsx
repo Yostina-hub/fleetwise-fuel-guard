@@ -463,8 +463,8 @@ const DeviceIntegration = () => {
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button size="lg" className="gap-2">
-                <Plus className="h-5 w-5" />
+              <Button size="lg" className="gap-2" aria-label="Add new device">
+                <Plus className="h-5 w-5" aria-hidden="true" />
                 Add Device
               </Button>
             </DialogTrigger>
@@ -694,7 +694,7 @@ const DeviceIntegration = () => {
                   <Card className="bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800">
                     <CardContent className="pt-6">
                       <div className="flex items-start gap-3">
-                        <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                        <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" aria-hidden="true" />
                         <div className="space-y-1">
                           <p className="font-semibold text-green-900 dark:text-green-100">
                             Automatic Configuration Enabled
@@ -735,7 +735,7 @@ const DeviceIntegration = () => {
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-primary/10 rounded-lg">
-                  <Zap className="h-6 w-6 text-primary" />
+                  <Zap className="h-6 w-6 text-primary" aria-hidden="true" />
                 </div>
                 <div>
                   <div className="text-2xl font-bold">3 Steps</div>
@@ -749,7 +749,7 @@ const DeviceIntegration = () => {
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-green-500/10 rounded-lg">
-                  <CheckCircle className="h-6 w-6 text-green-600" />
+                  <CheckCircle className="h-6 w-6 text-green-600" aria-hidden="true" />
                 </div>
                 <div>
                   <div className="text-2xl font-bold">Auto Config</div>
@@ -763,7 +763,7 @@ const DeviceIntegration = () => {
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-blue-500/10 rounded-lg">
-                  <Smartphone className="h-6 w-6 text-blue-600" />
+                  <Smartphone className="h-6 w-6 text-blue-600" aria-hidden="true" />
                 </div>
                 <div>
                   <div className="text-2xl font-bold">{deviceTemplates.length}+</div>
@@ -777,7 +777,7 @@ const DeviceIntegration = () => {
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-orange-500/10 rounded-lg">
-                  <Fuel className="h-6 w-6 text-orange-600" />
+                  <Fuel className="h-6 w-6 text-orange-600" aria-hidden="true" />
                 </div>
                 <div>
                   <div className="text-2xl font-bold">{devices?.length || 0}</div>
@@ -826,8 +826,8 @@ const DeviceIntegration = () => {
               </CardHeader>
               <CardContent>
                 {!devices || devices.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Smartphone className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <div className="text-center py-12" role="status" aria-label="No devices connected">
+                    <Smartphone className="h-16 w-16 text-muted-foreground mx-auto mb-4" aria-hidden="true" />
                     <h3 className="text-lg font-semibold mb-2">No Devices Yet</h3>
                     <p className="text-muted-foreground mb-4">
                       Click "Add Device" to connect your first GPS tracker or fuel sensor
@@ -841,7 +841,7 @@ const DeviceIntegration = () => {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4 min-w-0">
                               <div className="p-3 bg-primary/10 rounded-lg">
-                                <Smartphone className="h-6 w-6 text-primary" />
+                                <Smartphone className="h-6 w-6 text-primary" aria-hidden="true" />
                               </div>
                               <div className="min-w-0">
                                 <h4 className="font-semibold truncate" title={device.tracker_model}>
@@ -877,8 +877,9 @@ const DeviceIntegration = () => {
                                 variant="ghost" 
                                 size="icon"
                                 onClick={() => handleEditDevice(device)}
+                                aria-label={`Edit device ${device.tracker_model}`}
                               >
-                                <Settings className="h-4 w-4" />
+                                <Settings className="h-4 w-4" aria-hidden="true" />
                               </Button>
                             </div>
                           </div>
@@ -1038,7 +1039,7 @@ const DeviceIntegration = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <h4 className="font-semibold mb-3 flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-primary" />
+                          <MapPin className="h-4 w-4 text-primary" aria-hidden="true" />
                           Location & Movement
                         </h4>
                         <ul className="space-y-1.5 text-sm text-muted-foreground">
@@ -1054,7 +1055,7 @@ const DeviceIntegration = () => {
 
                       <div>
                         <h4 className="font-semibold mb-3 flex items-center gap-2">
-                          <Fuel className="h-4 w-4 text-orange-600" />
+                          <Fuel className="h-4 w-4 text-orange-600" aria-hidden="true" />
                           Fuel Management (Critical for Ethiopia)
                         </h4>
                         <ul className="space-y-1.5 text-sm text-muted-foreground">
@@ -1070,7 +1071,7 @@ const DeviceIntegration = () => {
 
                       <div>
                         <h4 className="font-semibold mb-3 flex items-center gap-2">
-                          <Zap className="h-4 w-4 text-yellow-600" />
+                          <Zap className="h-4 w-4 text-yellow-600" aria-hidden="true" />
                           Engine & Vehicle Status
                         </h4>
                         <ul className="space-y-1.5 text-sm text-muted-foreground">
@@ -1089,7 +1090,7 @@ const DeviceIntegration = () => {
 
                       <div>
                         <h4 className="font-semibold mb-3 flex items-center gap-2">
-                          <Smartphone className="h-4 w-4 text-green-600" />
+                          <Smartphone className="h-4 w-4 text-green-600" aria-hidden="true" />
                           Driver & Safety
                         </h4>
                         <ul className="space-y-1.5 text-sm text-muted-foreground">
