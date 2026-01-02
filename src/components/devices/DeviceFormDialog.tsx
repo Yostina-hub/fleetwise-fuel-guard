@@ -268,7 +268,7 @@ export const DeviceFormDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
             {editingDevice ? "Edit Device" : step === 1 ? "Step 1: Select Device Type" : "Step 2: Configure Device"}
@@ -354,7 +354,7 @@ export const DeviceFormDialog = ({
 
         {/* Step 2: Device Configuration Form */}
         {step === 2 && (
-          <ScrollArea className="flex-1 -mx-6 px-6">
+          <ScrollArea className="max-h-[55vh] -mx-6 px-6">
             {/* Selected Template Info */}
             {selectedTemplate && (
               <div className="bg-muted/50 border rounded-lg p-3 mb-4 flex items-center justify-between">
