@@ -11,7 +11,7 @@ const RoutesPage = () => {
       <div className="p-8 space-y-6 animate-fade-in">
         <div className="flex items-center gap-3 slide-in-left">
           <div className="p-4 rounded-2xl glass-strong glow">
-            <Route className="h-8 w-8 text-primary animate-float" />
+            <Route className="h-8 w-8 text-primary animate-float" aria-hidden="true" />
           </div>
           <div>
             <h1 className="text-4xl font-bold gradient-text">Routes & Dispatch</h1>
@@ -24,11 +24,11 @@ const RoutesPage = () => {
         <Tabs defaultValue="routes" className="space-y-4">
           <TabsList className="grid w-full grid-cols-2 glass p-1 h-14">
             <TabsTrigger value="routes" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg">
-              <Route className="h-5 w-5" />
+              <Route className="h-5 w-5" aria-hidden="true" />
               <span className="font-semibold">Routes</span>
             </TabsTrigger>
             <TabsTrigger value="sites" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg">
-              <MapPin className="h-5 w-5" />
+              <MapPin className="h-5 w-5" aria-hidden="true" />
               <span className="font-semibold">Customer Sites</span>
             </TabsTrigger>
           </TabsList>
