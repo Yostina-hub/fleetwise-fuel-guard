@@ -49,12 +49,14 @@ const Geofencing = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [selectedGeofence, setSelectedGeofence] = useState<any>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingGeofenceId, setEditingGeofenceId] = useState<string | null>(null);
   const [drawingMode, setDrawingMode] = useState<'circle' | 'polygon' | null>(null);
   const [mapToken, setMapToken] = useState<string>("");
   const envToken = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const drawRef = useRef<MapboxDraw | null>(null);
+  const geofenceLayersRef = useRef<string[]>([]);
   
   useEffect(() => {
     const token = localStorage.getItem('mapbox_token') || envToken || '';
@@ -171,6 +173,92 @@ const Geofencing = () => {
     enabled: !!organizationId,
   });
 
+  // Render geofences on map when data changes
+  useEffect(() => {
+    if (!mapRef.current || !geofences) return;
+    const map = mapRef.current;
+
+    // Wait for map style to load
+    const renderGeofences = () => {
+      // Remove existing geofence layers
+      geofenceLayersRef.current.forEach(layerId => {
+        if (map.getLayer(layerId)) map.removeLayer(layerId);
+        if (map.getSource(layerId)) map.removeSource(layerId);
+      });
+      geofenceLayersRef.current = [];
+
+      geofences.forEach((fence: any) => {
+        const sourceId = `geofence-${fence.id}`;
+        const fillLayerId = `geofence-fill-${fence.id}`;
+        const outlineLayerId = `geofence-outline-${fence.id}`;
+        const color = fence.color || '#3B82F6';
+
+        let geojsonData: GeoJSON.Feature;
+
+        if (fence.geometry_type === 'circle' && fence.center_lat && fence.center_lng) {
+          // Create circle polygon
+          const center = [fence.center_lng, fence.center_lat];
+          const radius = fence.radius_meters || 500;
+          const points = 64;
+          const coords = [];
+          for (let i = 0; i <= points; i++) {
+            const angle = (i / points) * 2 * Math.PI;
+            const dx = radius * Math.cos(angle);
+            const dy = radius * Math.sin(angle);
+            const lat = fence.center_lat + (dy / 111320);
+            const lng = fence.center_lng + (dx / (111320 * Math.cos(fence.center_lat * Math.PI / 180)));
+            coords.push([lng, lat]);
+          }
+          geojsonData = {
+            type: 'Feature',
+            properties: { name: fence.name },
+            geometry: { type: 'Polygon', coordinates: [coords] }
+          };
+        } else if (fence.geometry_type === 'polygon' && fence.polygon_points?.length >= 3) {
+          const coords = fence.polygon_points.map((p: any) => [p.lng, p.lat]);
+          coords.push(coords[0]); // Close polygon
+          geojsonData = {
+            type: 'Feature',
+            properties: { name: fence.name },
+            geometry: { type: 'Polygon', coordinates: [coords] }
+          };
+        } else {
+          return; // Skip invalid geofences
+        }
+
+        map.addSource(sourceId, { type: 'geojson', data: geojsonData });
+
+        map.addLayer({
+          id: fillLayerId,
+          type: 'fill',
+          source: sourceId,
+          paint: {
+            'fill-color': color,
+            'fill-opacity': 0.2
+          }
+        });
+
+        map.addLayer({
+          id: outlineLayerId,
+          type: 'line',
+          source: sourceId,
+          paint: {
+            'line-color': color,
+            'line-width': 2
+          }
+        });
+
+        geofenceLayersRef.current.push(sourceId, fillLayerId, outlineLayerId);
+      });
+    };
+
+    if (map.isStyleLoaded()) {
+      renderGeofences();
+    } else {
+      map.once('style.load', renderGeofences);
+    }
+  }, [geofences]);
+
   const createGeofenceMutation = useMutation({
     mutationFn: async (data: any) => {
       const { error } = await supabase
@@ -188,6 +276,34 @@ const Geofencing = () => {
         description: "New geofence has been successfully created.",
       });
       setIsCreateDialogOpen(false);
+      resetForm();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateGeofenceMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const { error } = await supabase
+        .from("geofences")
+        .update(data)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["geofences"] });
+      toast({
+        title: "Geofence Updated",
+        description: "Geofence has been successfully updated.",
+      });
+      setIsCreateDialogOpen(false);
+      setIsEditMode(false);
+      setEditingGeofenceId(null);
       resetForm();
     },
     onError: (error: any) => {
@@ -233,6 +349,29 @@ const Geofencing = () => {
       enable_speed_alarm: false,
     });
     setDrawingMode(null);
+    setIsEditMode(false);
+    setEditingGeofenceId(null);
+  };
+
+  const handleEditGeofence = (fence: any) => {
+    setFormData({
+      name: fence.name || "",
+      category: fence.category || "customer_site",
+      geometry_type: fence.geometry_type || "circle",
+      center_lat: fence.center_lat,
+      center_lng: fence.center_lng,
+      radius_meters: fence.radius_meters || 500,
+      polygon_points: fence.polygon_points || [],
+      address: fence.address || "",
+      notes: fence.notes || "",
+      speed_limit: fence.speed_limit,
+      enable_entry_alarm: fence.enable_entry_alarm ?? true,
+      enable_exit_alarm: fence.enable_exit_alarm ?? true,
+      enable_speed_alarm: fence.enable_speed_alarm ?? false,
+    });
+    setEditingGeofenceId(fence.id);
+    setIsEditMode(true);
+    setIsCreateDialogOpen(true);
   };
 
   const handleAddCoordinate = () => {
@@ -284,7 +423,7 @@ const Geofencing = () => {
       return;
     }
 
-    createGeofenceMutation.mutate({
+    const geofenceData = {
       name: formData.name,
       category: formData.category,
       geometry_type: formData.geometry_type,
@@ -294,7 +433,17 @@ const Geofencing = () => {
       polygon_points: formData.polygon_points.length > 0 ? formData.polygon_points : null,
       address: formData.address,
       notes: formData.notes,
-    });
+      speed_limit: formData.speed_limit,
+      enable_entry_alarm: formData.enable_entry_alarm,
+      enable_exit_alarm: formData.enable_exit_alarm,
+      enable_speed_alarm: formData.enable_speed_alarm,
+    };
+
+    if (isEditMode && editingGeofenceId) {
+      updateGeofenceMutation.mutate({ id: editingGeofenceId, data: geofenceData });
+    } else {
+      createGeofenceMutation.mutate(geofenceData);
+    }
   };
 
   return (
@@ -367,7 +516,10 @@ const Geofencing = () => {
                   Manage virtual boundaries and alerts
                 </p>
               </div>
-              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
+                setIsCreateDialogOpen(open);
+                if (!open) resetForm();
+              }}>
                 <DialogTrigger asChild>
                   <Button className="gap-2" aria-label="Create new geofence">
                     <Plus className="h-4 w-4" aria-hidden="true" />
@@ -376,7 +528,7 @@ const Geofencing = () => {
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>Create New Geofence</DialogTitle>
+                    <DialogTitle>{isEditMode ? 'Edit Geofence' : 'Create New Geofence'}</DialogTitle>
                     <DialogDescription>
                       Define a virtual boundary with custom alerts and speed limits
                     </DialogDescription>
@@ -626,12 +778,19 @@ const Geofencing = () => {
                   </Tabs>
 
                   <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                    <Button variant="outline" onClick={() => { setIsCreateDialogOpen(false); resetForm(); }}>
                       Cancel
                     </Button>
-                    <Button onClick={handleSubmit} disabled={createGeofenceMutation.isPending} aria-label="Create geofence">
+                    <Button 
+                      onClick={handleSubmit} 
+                      disabled={createGeofenceMutation.isPending || updateGeofenceMutation.isPending} 
+                      aria-label={isEditMode ? "Update geofence" : "Create geofence"}
+                    >
                       <Save className="h-4 w-4 mr-2" aria-hidden="true" />
-                      {createGeofenceMutation.isPending ? "Creating..." : "Create Geofence"}
+                      {isEditMode 
+                        ? (updateGeofenceMutation.isPending ? "Updating..." : "Update Geofence")
+                        : (createGeofenceMutation.isPending ? "Creating..." : "Create Geofence")
+                      }
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -661,7 +820,12 @@ const Geofencing = () => {
                           </div>
                         </div>
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" aria-label={`Edit ${fence.name}`}>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => handleEditGeofence(fence)}
+                            aria-label={`Edit ${fence.name}`}
+                          >
                             <Edit className="h-4 w-4" aria-hidden="true" />
                           </Button>
                           <Button 
