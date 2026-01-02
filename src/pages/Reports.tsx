@@ -399,7 +399,7 @@ const Reports = () => {
               ))}
             </SelectContent>
           </Select>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" aria-label="Report settings">
             <Settings2 className="w-5 h-5" aria-hidden="true" />
           </Button>
         </div>
@@ -432,7 +432,7 @@ const Reports = () => {
                   vehicleTableData.map((vehicle) => (
                     <TableRow key={vehicle.id}>
                       <TableCell>
-                        <button className="text-primary hover:underline flex items-center gap-1">
+                        <button className="text-primary hover:underline flex items-center gap-1" aria-label={`View details for ${vehicle.plateNumber}`}>
                           {vehicle.plateNumber}
                           <ChevronRight className="w-3 h-3" aria-hidden="true" />
                         </button>
