@@ -148,8 +148,9 @@ const FuelDepotsTab = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[300px]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center min-h-[300px]" role="status" aria-live="polite">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden="true" />
+        <span className="sr-only">Loading fuel depots...</span>
       </div>
     );
   }
@@ -158,8 +159,8 @@ const FuelDepotsTab = () => {
     <div className="space-y-6">
       {/* Header Actions */}
       <div className="flex justify-end">
-        <Button className="gap-2" onClick={() => setShowAddDepot(true)}>
-          <Plus className="w-4 h-4" />
+        <Button className="gap-2" onClick={() => setShowAddDepot(true)} aria-label="Add new fuel depot">
+          <Plus className="w-4 h-4" aria-hidden="true" />
           Add Fuel Depot
         </Button>
       </div>
@@ -168,8 +169,8 @@ const FuelDepotsTab = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {depots.length === 0 ? (
           <Card className="col-span-full">
-            <CardContent className="py-12 text-center text-muted-foreground">
-              <Fuel className="w-12 h-12 mx-auto mb-4 opacity-50" />
+            <CardContent className="py-12 text-center text-muted-foreground" role="status" aria-label="No fuel depots configured">
+              <Fuel className="w-12 h-12 mx-auto mb-4 opacity-50" aria-hidden="true" />
               <p>No fuel depots configured</p>
               <Button className="mt-4" onClick={() => setShowAddDepot(true)}>
                 Add Your First Depot
@@ -190,13 +191,13 @@ const FuelDepotsTab = () => {
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <CardTitle className="flex items-center gap-2">
-                        <Fuel className="w-5 h-5 shrink-0" />
+                    <CardTitle className="flex items-center gap-2">
+                        <Fuel className="w-5 h-5 shrink-0" aria-hidden="true" />
                         <span className="truncate" title={depot.name}>{depot.name}</span>
                       </CardTitle>
                       {depot.location_name && (
                         <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                          <MapPin className="w-3 h-3 shrink-0" />
+                          <MapPin className="w-3 h-3 shrink-0" aria-hidden="true" />
                           <span className="truncate" title={depot.location_name}>{depot.location_name}</span>
                         </p>
                       )}
@@ -233,7 +234,7 @@ const FuelDepotsTab = () => {
                   {/* Stock Warning */}
                   {stockStatus === 'critical' && (
                     <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 p-2 rounded-lg">
-                      <AlertTriangle className="w-4 h-4 shrink-0" />
+                      <AlertTriangle className="w-4 h-4 shrink-0" aria-hidden="true" />
                       <span>Below minimum threshold ({formatFuel(depot.min_stock_threshold || 0)})</span>
                     </div>
                   )}
@@ -247,8 +248,9 @@ const FuelDepotsTab = () => {
                         setSelectedDepot(depot.id);
                         setShowDispense(true);
                       }}
+                      aria-label={`Dispense fuel from ${depot.name}`}
                     >
-                      <TrendingDown className="w-4 h-4" />
+                      <TrendingDown className="w-4 h-4" aria-hidden="true" />
                       Dispense
                     </Button>
                     <Button 
@@ -259,8 +261,9 @@ const FuelDepotsTab = () => {
                         setSelectedDepot(depot.id);
                         setShowReceive(true);
                       }}
+                      aria-label={`Receive fuel at ${depot.name}`}
                     >
-                      <Droplet className="w-4 h-4" />
+                      <Droplet className="w-4 h-4" aria-hidden="true" />
                       Receive
                     </Button>
                     <Button
@@ -270,8 +273,9 @@ const FuelDepotsTab = () => {
                         setSelectedDepot(depot.id);
                         setShowEdit(true);
                       }}
+                      aria-label={`Edit ${depot.name}`}
                     >
-                      <Edit className="w-4 h-4" />
+                      <Edit className="w-4 h-4" aria-hidden="true" />
                     </Button>
                   </div>
                 </CardContent>
@@ -285,8 +289,8 @@ const FuelDepotsTab = () => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Recent Dispensing</CardTitle>
-          <Button size="sm" variant="outline" className="gap-2" onClick={exportDispensingCSV}>
-            <Download className="w-4 h-4" />
+          <Button size="sm" variant="outline" className="gap-2" onClick={exportDispensingCSV} aria-label="Export dispensing logs to CSV">
+            <Download className="w-4 h-4" aria-hidden="true" />
             Export CSV
           </Button>
         </CardHeader>

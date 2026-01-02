@@ -138,7 +138,7 @@ export const DeviceFormDialog = ({
         {/* Automatic Configuration Info Box */}
         <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4 my-4">
           <div className="flex items-start gap-3">
-            <CheckCircle2 className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+            <CheckCircle2 className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" aria-hidden="true" />
             <div className="space-y-1">
               <h4 className="font-medium text-emerald-600 dark:text-emerald-400">Automatic Configuration</h4>
               <p className="text-sm text-muted-foreground">
@@ -259,7 +259,7 @@ export const DeviceFormDialog = ({
 
           <div className="col-span-2 pt-2">
             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-3">
-              <Info className="h-4 w-4" />
+              <Info className="h-4 w-4" aria-hidden="true" />
               SIM Card Information
             </div>
           </div>
