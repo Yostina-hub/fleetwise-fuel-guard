@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
 import { toast } from "@/hooks/use-toast";
@@ -39,8 +39,9 @@ export const useFuelTheftCases = (filters?: {
   const [cases, setCases] = useState<FuelTheftCase[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  const fetchCases = async () => {
+  const fetchCases = useCallback(async () => {
     if (!organizationId) {
       setCases([]);
       setLoading(false);
@@ -66,7 +67,7 @@ export const useFuelTheftCases = (filters?: {
 
       const { data, error } = await query
         .order("detected_at", { ascending: false })
-        .limit(100);
+        .limit(200);
 
       if (error) throw error;
       setCases((data as FuelTheftCase[]) || []);
@@ -76,14 +77,14 @@ export const useFuelTheftCases = (filters?: {
     } finally {
       setLoading(false);
     }
-  };
+  }, [organizationId, filters?.status, filters?.priority, filters?.vehicleId]);
 
   useEffect(() => {
     fetchCases();
 
     if (!organizationId) return;
 
-    // Subscribe to realtime changes
+    // Subscribe to realtime changes with debounce
     const channelName = `fuel-theft-cases-${organizationId.slice(0, 8)}`;
     const channel = supabase
       .channel(channelName)
@@ -96,15 +97,23 @@ export const useFuelTheftCases = (filters?: {
           filter: `organization_id=eq.${organizationId}`
         },
         () => {
-          fetchCases();
+          if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+          }
+          debounceRef.current = setTimeout(() => {
+            fetchCases();
+          }, 500);
         }
       )
       .subscribe();
 
     return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
       supabase.removeChannel(channel);
     };
-  }, [organizationId, filters?.status, filters?.priority, filters?.vehicleId]);
+  }, [organizationId, filters?.status, filters?.priority, filters?.vehicleId, fetchCases]);
 
   const createCase = async (caseData: Omit<FuelTheftCase, 'id' | 'organization_id' | 'created_at' | 'updated_at'>) => {
     if (!organizationId) return null;
@@ -133,7 +142,6 @@ export const useFuelTheftCases = (filters?: {
 
       if (error) throw error;
       toast({ title: "Case created", description: "Fuel theft case opened for investigation" });
-      fetchCases();
       return data;
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -150,7 +158,6 @@ export const useFuelTheftCases = (filters?: {
 
       if (error) throw error;
       toast({ title: "Case updated", description: "Investigation details saved" });
-      fetchCases();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
@@ -170,7 +177,6 @@ export const useFuelTheftCases = (filters?: {
 
       if (error) throw error;
       toast({ title: "Case closed", description: `Case marked as ${resolution}` });
-      fetchCases();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
