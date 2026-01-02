@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -261,18 +261,67 @@ const DeviceIntegration = () => {
     enabled: !!organizationId,
   });
 
+  // Categorize vehicles by assignment status
+  const vehiclesWithAssignmentStatus = useMemo(() => {
+    if (!vehicles || !devices) return { unassigned: [], assigned: [] };
+    
+    const assignedVehicleIds = new Set(
+      devices
+        .filter(d => d.vehicle_id && (!editingDevice || d.id !== editingDevice.id))
+        .map(d => d.vehicle_id)
+    );
+    
+    const unassigned = vehicles.filter(v => !assignedVehicleIds.has(v.id));
+    const assigned = vehicles
+      .filter(v => assignedVehicleIds.has(v.id))
+      .map(v => {
+        const device = devices.find(d => d.vehicle_id === v.id);
+        return {
+          ...v,
+          assignedDeviceId: device?.id,
+          assignedDeviceImei: device?.imei,
+        };
+      });
+    
+    return { unassigned, assigned };
+  }, [vehicles, devices, editingDevice]);
+
   const addDeviceMutation = useMutation({
     mutationFn: async (data: any) => {
-      // Check if device with this IMEI already exists
-      const { data: existingDevice } = await supabase
-        .from("devices")
-        .select("id")
-        .eq("imei", data.imei)
-        .eq("organization_id", organizationId!)
-        .maybeSingle();
+      // Check if device with this IMEI already exists (for new devices only)
+      if (!editingDevice) {
+        const { data: existingDevice } = await supabase
+          .from("devices")
+          .select("id, imei")
+          .eq("imei", data.imei)
+          .eq("organization_id", organizationId!)
+          .maybeSingle();
+
+        if (existingDevice) {
+          throw new Error(`A device with IMEI ${data.imei} already exists`);
+        }
+      }
+
+      // If vehicle is selected, unassign it from any other device first
+      if (data.vehicle_id) {
+        const { data: deviceWithVehicle } = await supabase
+          .from("devices")
+          .select("id")
+          .eq("vehicle_id", data.vehicle_id)
+          .eq("organization_id", organizationId!)
+          .neq("id", editingDevice?.id || "00000000-0000-0000-0000-000000000000")
+          .maybeSingle();
+
+        if (deviceWithVehicle) {
+          await supabase
+            .from("devices")
+            .update({ vehicle_id: null })
+            .eq("id", deviceWithVehicle.id);
+        }
+      }
 
       // Create device protocol if not exists
-      const { data: protocolData, error: protocolError } = await (supabase as any)
+      const { data: protocolData } = await (supabase as any)
         .from("device_protocols")
         .select("id")
         .eq("protocol_name", selectedTemplate.protocol)
@@ -301,7 +350,7 @@ const DeviceIntegration = () => {
         protocolId = newProtocol.id;
       }
 
-      if (existingDevice) {
+      if (editingDevice) {
         // Update existing device
         const { error: updateError } = await supabase
           .from("devices")
@@ -313,7 +362,7 @@ const DeviceIntegration = () => {
             protocol_id: protocolId,
             status: "active",
           })
-          .eq("id", existingDevice.id);
+          .eq("id", editingDevice.id);
 
         if (updateError) throw updateError;
       } else {
@@ -338,7 +387,9 @@ const DeviceIntegration = () => {
       queryClient.invalidateQueries({ queryKey: ["devices"] });
       toast({
         title: "Device Saved Successfully!",
-        description: "Your device information has been updated.",
+        description: editingDevice 
+          ? "Your device information has been updated."
+          : "Your device has been added and is ready to receive data.",
       });
       setIsDialogOpen(false);
       resetForm();
@@ -533,22 +584,80 @@ const DeviceIntegration = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="vehicle">Assign to Vehicle (Optional)</Label>
+                      <Label htmlFor="vehicle">
+                        Assign to Vehicle (Optional)
+                        <span className="text-xs text-muted-foreground ml-2">
+                          ({vehiclesWithAssignmentStatus.unassigned.length} available)
+                        </span>
+                      </Label>
                       <Select
                         value={formData.vehicle_id}
-                        onValueChange={(value) => setFormData({ ...formData, vehicle_id: value })}
+                        onValueChange={(value) => setFormData({ ...formData, vehicle_id: value === "none" ? "" : value })}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select vehicle (optional)" />
+                          <SelectValue placeholder="Select vehicle (optional)">
+                            {formData.vehicle_id && vehicles?.find(v => v.id === formData.vehicle_id) && (
+                              <span className="flex items-center gap-2">
+                                <Badge variant="outline" className="font-mono">
+                                  {vehicles.find(v => v.id === formData.vehicle_id)?.plate_number}
+                                </Badge>
+                                <span className="text-muted-foreground">
+                                  {vehicles.find(v => v.id === formData.vehicle_id)?.make} {vehicles.find(v => v.id === formData.vehicle_id)?.model}
+                                </span>
+                              </span>
+                            )}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                          {vehicles?.map((vehicle) => (
-                            <SelectItem key={vehicle.id} value={vehicle.id}>
-                              {vehicle.plate_number} - {vehicle.make} {vehicle.model}
-                            </SelectItem>
-                          ))}
+                          <SelectItem value="none">
+                            <span className="text-muted-foreground">No vehicle assigned</span>
+                          </SelectItem>
+                          
+                          {vehiclesWithAssignmentStatus.unassigned.length > 0 && (
+                            <>
+                              <div className="px-2 py-1.5 text-xs font-semibold text-green-600 bg-green-50 dark:bg-green-950">
+                                ✓ Available Vehicles ({vehiclesWithAssignmentStatus.unassigned.length})
+                              </div>
+                              {vehiclesWithAssignmentStatus.unassigned.map((vehicle) => (
+                                <SelectItem key={vehicle.id} value={vehicle.id}>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className="font-mono text-green-600 border-green-300">
+                                      {vehicle.plate_number}
+                                    </Badge>
+                                    <span>{vehicle.make} {vehicle.model}</span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </>
+                          )}
+                          
+                          {vehiclesWithAssignmentStatus.assigned.length > 0 && (
+                            <>
+                              <div className="px-2 py-1.5 text-xs font-semibold text-amber-600 bg-amber-50 dark:bg-amber-950 mt-1">
+                                ⚠ Assigned to Other Devices ({vehiclesWithAssignmentStatus.assigned.length})
+                              </div>
+                              {vehiclesWithAssignmentStatus.assigned.map((vehicle: any) => (
+                                <SelectItem key={vehicle.id} value={vehicle.id}>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className="font-mono text-amber-600 border-amber-300">
+                                      {vehicle.plate_number}
+                                    </Badge>
+                                    <span>{vehicle.make} {vehicle.model}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                      (IMEI: ...{vehicle.assignedDeviceImei?.slice(-6)})
+                                    </span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </>
+                          )}
                         </SelectContent>
                       </Select>
+                      {formData.vehicle_id && vehiclesWithAssignmentStatus.assigned.find((v: any) => v.id === formData.vehicle_id) && (
+                        <p className="text-xs text-amber-600 mt-1">
+                          ⚠ This vehicle will be unassigned from its current device and reassigned to this one.
+                        </p>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
