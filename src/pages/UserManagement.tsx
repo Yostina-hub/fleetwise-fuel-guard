@@ -187,7 +187,7 @@ const UserManagement = () => {
       <Layout>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <Shield className="w-16 h-16 mx-auto mb-4 text-destructive" />
+            <Shield className="w-16 h-16 mx-auto mb-4 text-destructive" aria-hidden="true" />
             <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
             <p className="text-muted-foreground">
               Only Super Admins can access user management
@@ -215,7 +215,7 @@ const UserManagement = () => {
           <CardContent className="pt-6">
             <div className="flex gap-4">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
                 <Input 
                   placeholder="Search users..." 
                   className="pl-10" 
@@ -224,6 +224,7 @@ const UserManagement = () => {
                     setSearchQuery(e.target.value);
                     setCurrentPage(1);
                   }}
+                  aria-label="Search users"
                 />
               </div>
               <Select value={roleFilter} onValueChange={(value) => { setRoleFilter(value); setCurrentPage(1); }}>
@@ -250,9 +251,9 @@ const UserManagement = () => {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="text-center py-8">Loading users...</div>
+              <div className="text-center py-8" role="status" aria-label="Loading users">Loading users...</div>
             ) : paginatedUsers.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">No users found</div>
+              <div className="text-center py-8 text-muted-foreground" role="status" aria-label="No users found">No users found</div>
             ) : (
               <div className="space-y-4">
                 {paginatedUsers.map((user) => (
@@ -262,7 +263,7 @@ const UserManagement = () => {
                   >
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <User className="w-5 h-5 text-primary" />
+                        <User className="w-5 h-5 text-primary" aria-hidden="true" />
                       </div>
                       <div>
                         <div className="font-semibold">
@@ -304,7 +305,7 @@ const UserManagement = () => {
                             className="gap-2"
                             onClick={() => setSelectedUser(user.id)}
                           >
-                            <UserPlus className="w-4 h-4" />
+                            <UserPlus className="w-4 h-4" aria-hidden="true" />
                             Assign Role
                           </Button>
                         </DialogTrigger>
