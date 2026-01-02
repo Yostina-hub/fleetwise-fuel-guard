@@ -238,7 +238,7 @@ const SpeedGovernor = () => {
                         <SelectValue placeholder="Choose vehicle" />
                       </SelectTrigger>
                       <SelectContent>
-                        {vehicles?.map((v) => (
+                        {vehicles?.filter((v) => v.id).map((v) => (
                           <SelectItem key={v.id} value={v.id}>
                             {v.plate} - Current: {v.maxSpeed} km/h
                           </SelectItem>
