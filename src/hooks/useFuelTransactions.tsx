@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
 import { toast } from "@/hooks/use-toast";
@@ -37,8 +37,9 @@ export const useFuelTransactions = (filters?: {
   const [transactions, setTransactions] = useState<FuelTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     if (!organizationId) {
       setTransactions([]);
       setLoading(false);
@@ -64,7 +65,7 @@ export const useFuelTransactions = (filters?: {
 
       const { data, error } = await query
         .order("transaction_date", { ascending: false })
-        .limit(200);
+        .limit(500);
 
       if (error) throw error;
       setTransactions((data as FuelTransaction[]) || []);
@@ -74,14 +75,14 @@ export const useFuelTransactions = (filters?: {
     } finally {
       setLoading(false);
     }
-  };
+  }, [organizationId, filters?.vehicleId, filters?.transactionType, filters?.isReconciled]);
 
   useEffect(() => {
     fetchTransactions();
 
     if (!organizationId) return;
 
-    // Subscribe to realtime changes
+    // Subscribe to realtime changes with debounce
     const channelName = `fuel-transactions-${organizationId.slice(0, 8)}`;
     const channel = supabase
       .channel(channelName)
@@ -94,15 +95,23 @@ export const useFuelTransactions = (filters?: {
           filter: `organization_id=eq.${organizationId}`
         },
         () => {
-          fetchTransactions();
+          if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+          }
+          debounceRef.current = setTimeout(() => {
+            fetchTransactions();
+          }, 500);
         }
       )
       .subscribe();
 
     return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
       supabase.removeChannel(channel);
     };
-  }, [organizationId, filters?.vehicleId, filters?.transactionType, filters?.isReconciled]);
+  }, [organizationId, filters?.vehicleId, filters?.transactionType, filters?.isReconciled, fetchTransactions]);
 
   const createTransaction = async (transaction: Omit<FuelTransaction, 'id' | 'organization_id' | 'created_at' | 'updated_at'>) => {
     if (!organizationId) return null;
@@ -119,7 +128,6 @@ export const useFuelTransactions = (filters?: {
 
       if (error) throw error;
       toast({ title: "Transaction created", description: "Fuel transaction recorded successfully" });
-      fetchTransactions();
       return data;
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -141,7 +149,6 @@ export const useFuelTransactions = (filters?: {
 
       if (error) throw error;
       toast({ title: "Reconciled", description: "Transaction marked as reconciled" });
-      fetchTransactions();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }

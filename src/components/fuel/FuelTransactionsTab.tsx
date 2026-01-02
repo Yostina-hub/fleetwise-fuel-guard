@@ -5,17 +5,19 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Upload, FileSpreadsheet, Loader2, CheckCircle, XCircle } from "lucide-react";
+import { Plus, Search, FileSpreadsheet, Loader2, CheckCircle } from "lucide-react";
 import { useFuelTransactions } from "@/hooks/useFuelTransactions";
 import { useFuelPageContext } from "@/pages/FuelMonitoring";
 import { format } from "date-fns";
+import AddTransactionDialog from "./AddTransactionDialog";
 
 const FuelTransactionsTab = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [vehicleFilter, setVehicleFilter] = useState<string>("all");
   const [reconcileFilter, setReconcileFilter] = useState<string>("all");
+  const [showAddDialog, setShowAddDialog] = useState(false);
   
-  const { transactions, loading, reconcileTransaction } = useFuelTransactions({
+  const { transactions, loading, reconcileTransaction, createTransaction } = useFuelTransactions({
     vehicleId: vehicleFilter !== 'all' ? vehicleFilter : undefined,
     isReconciled: reconcileFilter === 'all' ? undefined : reconcileFilter === 'reconciled',
   });
@@ -37,6 +39,33 @@ const FuelTransactionsTab = () => {
     await reconcileTransaction(id, 0, "Manual reconciliation");
   };
 
+  const handleExport = () => {
+    const csvContent = [
+      ["Date", "Vehicle", "Type", "Liters", "Cost", "Vendor", "Odometer", "Status"].join(","),
+      ...filteredTransactions.map(t => [
+        format(new Date(t.transaction_date), "yyyy-MM-dd HH:mm"),
+        `"${getVehiclePlate(t.vehicle_id)}"`,
+        t.transaction_type,
+        t.fuel_amount_liters,
+        t.fuel_cost || "",
+        `"${t.vendor_name || ""}"`,
+        t.odometer_km || "",
+        t.is_reconciled ? "Reconciled" : "Pending"
+      ].join(","))
+    ].join("\n");
+    
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `fuel-transactions-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.click();
+  };
+
+  const handleAddTransaction = async (data: any) => {
+    await createTransaction(data);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[300px]">
@@ -47,7 +76,6 @@ const FuelTransactionsTab = () => {
 
   return (
     <div className="space-y-6">
-      {/* Actions Bar */}
       <div className="flex flex-col md:flex-row gap-4 justify-between">
         <div className="flex gap-3 flex-1">
           <div className="relative flex-1 max-w-sm">
@@ -82,22 +110,17 @@ const FuelTransactionsTab = () => {
           </Select>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="gap-2">
-            <Upload className="w-4 h-4" />
-            Import
-          </Button>
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" className="gap-2" onClick={handleExport}>
             <FileSpreadsheet className="w-4 h-4" />
             Export
           </Button>
-          <Button className="gap-2">
+          <Button className="gap-2" onClick={() => setShowAddDialog(true)}>
             <Plus className="w-4 h-4" />
             Add Transaction
           </Button>
         </div>
       </div>
 
-      {/* Transactions Table */}
       <Card>
         <CardHeader>
           <CardTitle>Fuel Transactions ({filteredTransactions.length})</CardTitle>
@@ -132,39 +155,24 @@ const FuelTransactionsTab = () => {
                     </TableCell>
                     <TableCell>{getVehiclePlate(t.vehicle_id)}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="capitalize">
-                        {t.transaction_type}
-                      </Badge>
+                      <Badge variant="outline" className="capitalize">{t.transaction_type}</Badge>
                     </TableCell>
                     <TableCell className="font-medium">{t.fuel_amount_liters.toFixed(1)}L</TableCell>
-                    <TableCell>
-                      {t.fuel_cost ? `$${t.fuel_cost.toFixed(2)}` : '-'}
-                    </TableCell>
+                    <TableCell>{t.fuel_cost ? `$${t.fuel_cost.toFixed(2)}` : '-'}</TableCell>
                     <TableCell>{t.vendor_name || t.location_name || '-'}</TableCell>
-                    <TableCell>
-                      {t.odometer_km ? `${t.odometer_km.toLocaleString()} km` : '-'}
-                    </TableCell>
+                    <TableCell>{t.odometer_km ? `${t.odometer_km.toLocaleString()} km` : '-'}</TableCell>
                     <TableCell>
                       {t.is_reconciled ? (
                         <Badge className="bg-success/10 text-success border-success/20">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Reconciled
+                          <CheckCircle className="w-3 h-3 mr-1" />Reconciled
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="text-warning border-warning/20">
-                          Pending
-                        </Badge>
+                        <Badge variant="outline" className="text-warning border-warning/20">Pending</Badge>
                       )}
                     </TableCell>
                     <TableCell>
                       {!t.is_reconciled && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleReconcile(t.id)}
-                        >
-                          Reconcile
-                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => handleReconcile(t.id)}>Reconcile</Button>
                       )}
                     </TableCell>
                   </TableRow>
@@ -174,6 +182,12 @@ const FuelTransactionsTab = () => {
           </Table>
         </CardContent>
       </Card>
+
+      <AddTransactionDialog 
+        open={showAddDialog} 
+        onOpenChange={setShowAddDialog}
+        onSubmit={handleAddTransaction}
+      />
     </div>
   );
 };

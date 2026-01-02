@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
 import { toast } from "@/hooks/use-toast";
@@ -44,8 +44,9 @@ export const useFuelDepots = () => {
   const [dispensingLogs, setDispensingLogs] = useState<FuelDepotDispensing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  const fetchDepots = async () => {
+  const fetchDepots = useCallback(async () => {
     if (!organizationId) {
       setDepots([]);
       setLoading(false);
@@ -68,9 +69,9 @@ export const useFuelDepots = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [organizationId]);
 
-  const fetchDispensingLogs = async (depotId?: string) => {
+  const fetchDispensingLogs = useCallback(async (depotId?: string) => {
     if (!organizationId) return;
 
     try {
@@ -92,7 +93,7 @@ export const useFuelDepots = () => {
     } catch (err: any) {
       console.error("Error fetching dispensing logs:", err);
     }
-  };
+  }, [organizationId]);
 
   useEffect(() => {
     fetchDepots();
@@ -100,7 +101,7 @@ export const useFuelDepots = () => {
 
     if (!organizationId) return;
 
-    // Subscribe to realtime changes
+    // Subscribe to realtime changes with debounce
     const depotsChannelName = `fuel-depots-${organizationId.slice(0, 8)}`;
     const dispensingChannelName = `fuel-dispensing-${organizationId.slice(0, 8)}`;
     
@@ -115,7 +116,12 @@ export const useFuelDepots = () => {
           filter: `organization_id=eq.${organizationId}`
         },
         () => {
-          fetchDepots();
+          if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+          }
+          debounceRef.current = setTimeout(() => {
+            fetchDepots();
+          }, 500);
         }
       )
       .subscribe();
@@ -131,16 +137,24 @@ export const useFuelDepots = () => {
           filter: `organization_id=eq.${organizationId}`
         },
         () => {
-          fetchDispensingLogs();
+          if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+          }
+          debounceRef.current = setTimeout(() => {
+            fetchDispensingLogs();
+          }, 500);
         }
       )
       .subscribe();
 
     return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
       supabase.removeChannel(depotsChannel);
       supabase.removeChannel(dispensingChannel);
     };
-  }, [organizationId]);
+  }, [organizationId, fetchDepots, fetchDispensingLogs]);
 
   const createDepot = async (depot: Omit<FuelDepot, 'id' | 'organization_id' | 'created_at' | 'updated_at'>) => {
     if (!organizationId) return null;
@@ -157,11 +171,38 @@ export const useFuelDepots = () => {
 
       if (error) throw error;
       toast({ title: "Depot created", description: "Fuel depot added successfully" });
-      fetchDepots();
       return data;
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
       return null;
+    }
+  };
+
+  const updateDepot = async (id: string, updates: Partial<FuelDepot>) => {
+    try {
+      const { error } = await supabase
+        .from("fuel_depots")
+        .update(updates)
+        .eq("id", id);
+
+      if (error) throw error;
+      toast({ title: "Depot updated", description: "Fuel depot updated successfully" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const deleteDepot = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("fuel_depots")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      toast({ title: "Depot deleted", description: "Fuel depot removed" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     }
   };
 
@@ -194,12 +235,29 @@ export const useFuelDepots = () => {
         .eq("id", dispensing.depot_id);
 
       toast({ title: "Fuel dispensed", description: `${dispensing.liters_dispensed}L recorded` });
-      fetchDepots();
-      fetchDispensingLogs();
       return data;
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
       return null;
+    }
+  };
+
+  const receiveFuel = async (depotId: string, litersReceived: number, notes?: string) => {
+    try {
+      const depot = depots.find(d => d.id === depotId);
+      if (!depot) throw new Error("Depot not found");
+
+      const newStock = depot.current_stock_liters + litersReceived;
+
+      const { error } = await supabase
+        .from("fuel_depots")
+        .update({ current_stock_liters: newStock })
+        .eq("id", depotId);
+
+      if (error) throw error;
+      toast({ title: "Fuel received", description: `${litersReceived}L added to ${depot.name}` });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     }
   };
 
@@ -212,7 +270,6 @@ export const useFuelDepots = () => {
 
       if (error) throw error;
       toast({ title: "Stock updated", description: "Depot stock level updated" });
-      fetchDepots();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
@@ -224,7 +281,10 @@ export const useFuelDepots = () => {
     loading,
     error,
     createDepot,
+    updateDepot,
+    deleteDepot,
     recordDispensing,
+    receiveFuel,
     updateDepotStock,
     refetch: fetchDepots,
     refetchDispensing: fetchDispensingLogs,
