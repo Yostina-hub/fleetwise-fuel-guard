@@ -16,12 +16,17 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useVehicles } from "@/hooks/useVehicles";
+import { useMaintenanceMetrics } from "@/hooks/useMaintenanceMetrics";
 import MaintenanceSchedulesTab from "@/components/maintenance/MaintenanceSchedulesTab";
 import VehicleInspectionsTab from "@/components/maintenance/VehicleInspectionsTab";
+import MaintenanceHistoryTab from "@/components/maintenance/MaintenanceHistoryTab";
 
 const Maintenance = () => {
   const navigate = useNavigate();
-  const { loading } = useVehicles();
+  const { loading: vehiclesLoading } = useVehicles();
+  const { metrics, loading: metricsLoading } = useMaintenanceMetrics();
+
+  const loading = vehiclesLoading || metricsLoading;
 
   if (loading) {
     return (
@@ -50,43 +55,45 @@ const Maintenance = () => {
               <p className="text-muted-foreground mt-1 text-lg">Track service schedules, inspections and work orders</p>
             </div>
           </div>
-          <Button className="gap-2 glass-strong hover:scale-105 transition-all duration-300 glow" onClick={() => navigate('/work-orders')}>
+          <Button 
+            className="gap-2 glass-strong hover:scale-105 transition-all duration-300 glow" 
+            onClick={() => navigate('/work-orders')}
+            aria-label="Create new work order"
+          >
             <Plus className="w-5 h-5" />
             <span className="font-semibold">New Work Order</span>
           </Button>
         </div>
 
-        {/* KPI Grid */}
+        {/* KPI Grid - Now using real data */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <KPICard
             title="Scheduled Services"
-            value="12"
-            subtitle="next 30 days"
+            value={metrics.totalScheduled.toString()}
+            subtitle="active schedules"
             icon={<Calendar className="w-5 h-5" />}
             variant="default"
           />
           <KPICard
             title="Overdue"
-            value="2"
+            value={metrics.overdueCount.toString()}
             subtitle="require immediate attention"
             icon={<AlertCircle className="w-5 h-5" />}
-            variant="warning"
+            variant={metrics.overdueCount > 0 ? "warning" : "success"}
           />
           <KPICard
-            title="Maintenance Cost"
-            value="$8,250"
+            title="Completed"
+            value={metrics.completedThisMonth.toString()}
             subtitle="this month"
             icon={<DollarSign className="w-5 h-5" />}
-            trend={{ value: -12.5, label: "vs last month" }}
             variant="success"
           />
           <KPICard
-            title="Avg. Downtime"
-            value="2.3 days"
-            subtitle="per repair"
+            title="Compliance Rate"
+            value={`${Math.round(metrics.complianceRate)}%`}
+            subtitle="on-schedule maintenance"
             icon={<Clock className="w-5 h-5" />}
-            trend={{ value: -15, label: "improvement" }}
-            variant="success"
+            variant={metrics.complianceRate >= 90 ? "success" : metrics.complianceRate >= 70 ? "default" : "warning"}
           />
         </div>
 
@@ -116,19 +123,7 @@ const Maintenance = () => {
           </TabsContent>
 
           <TabsContent value="history">
-            <Card>
-              <CardHeader>
-                <CardTitle>Maintenance History</CardTitle>
-              </CardHeader>
-              <CardContent className="text-center py-12 text-muted-foreground">
-                <ListChecks className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <h3 className="text-lg font-medium mb-2">Service History</h3>
-                <p>View complete maintenance history for all vehicles.</p>
-                <Button variant="outline" className="mt-4" onClick={() => navigate('/work-orders')}>
-                  View Work Orders
-                </Button>
-              </CardContent>
-            </Card>
+            <MaintenanceHistoryTab />
           </TabsContent>
         </Tabs>
       </div>

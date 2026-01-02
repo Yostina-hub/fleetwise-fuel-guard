@@ -136,7 +136,7 @@ const VehicleInspectionsTab = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <Select value={inspectionFilter} onValueChange={setInspectionFilter}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-40" aria-label="Filter inspections by status">
             <SelectValue placeholder="All Status" />
           </SelectTrigger>
           <SelectContent>
@@ -146,7 +146,11 @@ const VehicleInspectionsTab = () => {
             <SelectItem value="pending_repair">Pending Repair</SelectItem>
           </SelectContent>
         </Select>
-        <Button className="gap-2" onClick={() => setShowNewInspection(true)}>
+        <Button 
+          className="gap-2" 
+          onClick={() => setShowNewInspection(true)}
+          aria-label="Create new vehicle inspection"
+        >
           <Plus className="w-4 h-4" />
           New Inspection
         </Button>
@@ -280,9 +284,12 @@ const VehicleInspectionsTab = () => {
 
       {/* New Inspection Dialog */}
       <Dialog open={showNewInspection} onOpenChange={setShowNewInspection}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" aria-describedby="inspection-dialog-description">
           <DialogHeader>
             <DialogTitle>New Vehicle Inspection</DialogTitle>
+            <p id="inspection-dialog-description" className="text-sm text-muted-foreground">
+              Complete a pre-trip or post-trip vehicle inspection checklist.
+            </p>
           </DialogHeader>
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">

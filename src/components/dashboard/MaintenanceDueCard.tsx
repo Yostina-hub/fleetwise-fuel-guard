@@ -33,7 +33,7 @@ const MaintenanceDueCard = () => {
           .from('work_orders')
           .select(`
             id,
-            service_type,
+            work_type,
             scheduled_date,
             vehicle_id,
             vehicles!inner(plate_number)
@@ -47,7 +47,7 @@ const MaintenanceDueCard = () => {
         const maintenanceItems: MaintenanceItem[] = (workOrders || []).map((wo: any) => ({
           id: wo.id,
           vehiclePlate: wo.vehicles?.plate_number || 'Unknown',
-          serviceType: wo.service_type,
+          serviceType: wo.work_type?.replace(/_/g, ' ') || 'Unknown',
           dueDate: wo.scheduled_date,
           isOverdue: isBefore(new Date(wo.scheduled_date), today),
         }));

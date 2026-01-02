@@ -160,7 +160,11 @@ const MaintenanceSchedulesTab = () => {
             </div>
           </Card>
         </div>
-        <Button className="gap-2" onClick={() => setShowAddSchedule(true)}>
+        <Button 
+          className="gap-2" 
+          onClick={() => setShowAddSchedule(true)}
+          aria-label="Add new maintenance schedule"
+        >
           <Plus className="w-4 h-4" />
           Add Schedule
         </Button>
@@ -251,11 +255,18 @@ const MaintenanceSchedulesTab = () => {
                           });
                           setShowRecordService(true);
                         }}
+                        aria-label={`Record service for ${schedule.service_type}`}
                       >
                         <CheckCircle className="w-4 h-4" />
                         Record Service
                       </Button>
-                      <Button size="sm" variant="outline">Edit</Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        aria-label={`Edit ${schedule.service_type} schedule`}
+                      >
+                        Edit
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -267,9 +278,12 @@ const MaintenanceSchedulesTab = () => {
 
       {/* Add Schedule Dialog */}
       <Dialog open={showAddSchedule} onOpenChange={setShowAddSchedule}>
-        <DialogContent>
+        <DialogContent aria-describedby="add-schedule-description">
           <DialogHeader>
             <DialogTitle>Add Maintenance Schedule</DialogTitle>
+            <p id="add-schedule-description" className="text-sm text-muted-foreground">
+              Create a recurring maintenance schedule for a vehicle.
+            </p>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -352,9 +366,12 @@ const MaintenanceSchedulesTab = () => {
 
       {/* Record Service Dialog */}
       <Dialog open={showRecordService} onOpenChange={setShowRecordService}>
-        <DialogContent>
+        <DialogContent aria-describedby="record-service-description">
           <DialogHeader>
             <DialogTitle>Record Service Completion</DialogTitle>
+            <p id="record-service-description" className="text-sm text-muted-foreground">
+              Log when a scheduled maintenance service was performed.
+            </p>
           </DialogHeader>
           <div className="space-y-4">
             <div>
