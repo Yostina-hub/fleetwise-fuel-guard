@@ -3,20 +3,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, MapPin, Clock, FileText, Loader2, Eye, CheckCircle } from "lucide-react";
+import { AlertTriangle, MapPin, Clock, FileText, Loader2, Eye, Download } from "lucide-react";
 import { useFuelTheftCases } from "@/hooks/useFuelTheftCases";
 import { useFuelPageContext } from "@/pages/FuelMonitoring";
 import { format } from "date-fns";
+import TheftCaseDetailDialog from "./TheftCaseDetailDialog";
+import { toast } from "sonner";
 
 const FuelTheftCasesTab = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  const [selectedCase, setSelectedCase] = useState<string | null>(null);
+  const [showDetail, setShowDetail] = useState(false);
   
   const { cases, loading, updateCase, closeCase } = useFuelTheftCases({
     status: statusFilter !== 'all' ? statusFilter : undefined,
     priority: priorityFilter !== 'all' ? priorityFilter : undefined,
   });
-  const { getVehiclePlate, getDriverName } = useFuelPageContext();
+  const { getVehiclePlate, getDriverName, vehicles, drivers } = useFuelPageContext();
+  
+  const selectedCaseData = cases.find(c => c.id === selectedCase);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -58,6 +64,32 @@ const FuelTheftCasesTab = () => {
     await closeCase(id, confirmed ? 'confirmed' : 'false_positive', 'Case reviewed and closed');
   };
 
+  const exportCasesCSV = () => {
+    const headers = ["Case Number", "Status", "Priority", "Vehicle", "Driver", "Fuel Lost (L)", "Est. Value ($)", "Detected At", "Location", "Notes"];
+    const rows = cases.map(c => [
+      c.case_number,
+      c.status,
+      c.priority || "",
+      getVehiclePlate(c.vehicle_id),
+      getDriverName(c.driver_id || undefined),
+      c.fuel_lost_liters,
+      c.estimated_value || 0,
+      format(new Date(c.detected_at), "yyyy-MM-dd HH:mm"),
+      c.location_name || "",
+      c.investigation_notes || ""
+    ]);
+    
+    const csvContent = [headers.join(","), ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `theft-cases-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Theft cases exported");
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[300px]">
@@ -69,32 +101,38 @@ const FuelTheftCasesTab = () => {
   return (
     <div className="space-y-6">
       {/* Filters */}
-      <div className="flex gap-4">
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="open">Open</SelectItem>
-            <SelectItem value="investigating">Investigating</SelectItem>
-            <SelectItem value="confirmed">Confirmed</SelectItem>
-            <SelectItem value="false_positive">False Positive</SelectItem>
-            <SelectItem value="closed">Closed</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Priority" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Priority</SelectItem>
-            <SelectItem value="critical">Critical</SelectItem>
-            <SelectItem value="high">High</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="low">Low</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="flex justify-between gap-4">
+        <div className="flex gap-4">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="open">Open</SelectItem>
+              <SelectItem value="investigating">Investigating</SelectItem>
+              <SelectItem value="confirmed">Confirmed</SelectItem>
+              <SelectItem value="false_positive">False Positive</SelectItem>
+              <SelectItem value="closed">Closed</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="All Priority" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Priority</SelectItem>
+              <SelectItem value="critical">Critical</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="low">Low</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <Button size="sm" variant="outline" className="gap-2" onClick={exportCasesCSV}>
+          <Download className="w-4 h-4" />
+          Export CSV
+        </Button>
       </div>
 
       {/* Cases Stats */}
@@ -195,7 +233,15 @@ const FuelTheftCasesTab = () => {
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <Button size="sm" variant="outline" className="gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="gap-2"
+                      onClick={() => {
+                        setSelectedCase(caseItem.id);
+                        setShowDetail(true);
+                      }}
+                    >
                       <Eye className="w-4 h-4" />
                       View Details
                     </Button>
@@ -233,6 +279,20 @@ const FuelTheftCasesTab = () => {
           ))
         )}
       </div>
+
+      {/* Detail Dialog */}
+      <TheftCaseDetailDialog
+        open={showDetail}
+        onOpenChange={setShowDetail}
+        caseItem={selectedCaseData || null}
+        getVehiclePlate={getVehiclePlate}
+        getDriverName={getDriverName}
+        onUpdateNotes={async (id, notes) => {
+          await updateCase(id, { investigation_notes: notes });
+        }}
+        onStartInvestigation={handleStartInvestigation}
+        onCloseCase={handleCloseCase}
+      />
     </div>
   );
 };
