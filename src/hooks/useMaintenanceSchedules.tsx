@@ -331,7 +331,8 @@ export const useMaintenanceSchedules = (vehicleId?: string) => {
     createInspection,
     updateInspection,
     deleteInspection,
-    refetch: fetchSchedules,
+    refetchSchedules: fetchSchedules,
     refetchInspections: fetchInspections,
+    refetch: fetchSchedules, // alias for backwards compatibility
   };
 };

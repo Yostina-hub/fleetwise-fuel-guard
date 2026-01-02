@@ -66,18 +66,23 @@ const MaintenanceDueCard = () => {
   const overdueCount = items.filter(i => i.isOverdue).length;
 
   return (
-    <Card className={overdueCount > 0 ? "border-warning/30" : ""}>
+    <Card className={overdueCount > 0 ? "border-warning/30" : ""} aria-label="Maintenance due card">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <Wrench className="w-4 h-4 text-warning" />
+          <Wrench className="w-4 h-4 text-warning" aria-hidden="true" />
           Maintenance Due
           {overdueCount > 0 && (
-            <span className="text-xs bg-destructive text-destructive-foreground px-1.5 py-0.5 rounded-full">
+            <span className="text-xs bg-destructive text-destructive-foreground px-1.5 py-0.5 rounded-full" aria-label={`${overdueCount} overdue items`}>
               {overdueCount} overdue
             </span>
           )}
         </CardTitle>
-        <Button variant="ghost" size="sm" onClick={() => navigate('/maintenance')}>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => navigate('/maintenance')}
+          aria-label="View all maintenance"
+        >
           <ChevronRight className="w-4 h-4" />
         </Button>
       </CardHeader>
@@ -93,23 +98,33 @@ const MaintenanceDueCard = () => {
             No upcoming maintenance
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-2" role="list" aria-label="Upcoming maintenance items">
             {items.map((item) => (
               <div
                 key={item.id}
-                className={`flex items-center justify-between p-2 rounded-lg border ${
+                role="button"
+                tabIndex={0}
+                className={`flex items-center justify-between p-2 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors ${
                   item.isOverdue ? 'border-destructive/30 bg-destructive/5' : 'border-border'
                 }`}
+                onClick={() => navigate('/maintenance')}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    navigate('/maintenance');
+                  }
+                }}
+                aria-label={`${item.vehiclePlate} - ${item.serviceType}, due ${format(new Date(item.dueDate), 'MMM d')}${item.isOverdue ? ', overdue' : ''}`}
               >
                 <div className="flex items-center gap-2">
                   {item.isOverdue ? (
-                    <AlertTriangle className="w-4 h-4 text-destructive" />
+                    <AlertTriangle className="w-4 h-4 text-destructive" aria-hidden="true" />
                   ) : (
-                    <Calendar className="w-4 h-4 text-muted-foreground" />
+                    <Calendar className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
                   )}
                   <div>
                     <p className="text-sm font-medium">{item.vehiclePlate}</p>
-                    <p className="text-xs text-muted-foreground">{item.serviceType}</p>
+                    <p className="text-xs text-muted-foreground capitalize">{item.serviceType}</p>
                   </div>
                 </div>
                 <span className={`text-xs ${item.isOverdue ? 'text-destructive' : 'text-muted-foreground'}`}>
