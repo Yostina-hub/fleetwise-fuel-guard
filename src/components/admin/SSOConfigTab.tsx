@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -5,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
 
 const SSOConfigTab = () => {
   const { organizationId } = useOrganization();
+  const ITEMS_PER_PAGE = 10;
 
   const { data: ssoConfigs, isLoading } = useQuery({
     queryKey: ["sso_configurations", organizationId],
@@ -24,13 +27,23 @@ const SSOConfigTab = () => {
     enabled: !!organizationId,
   });
 
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(
+    ssoConfigs?.length || 0,
+    ITEMS_PER_PAGE
+  );
+
+  const paginatedConfigs = useMemo(() => {
+    if (!ssoConfigs) return [];
+    return ssoConfigs.slice(startIndex, endIndex);
+  }, [ssoConfigs, startIndex, endIndex]);
+
   if (isLoading) return <div role="status" aria-live="polite" aria-label="Loading SSO configurations">Loading...</div>;
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="text-lg font-semibold">Single Sign-On (SSO) Configuration</h3>
+          <h3 className="text-lg font-semibold">Single Sign-On Configuration ({ssoConfigs?.length || 0})</h3>
           <p className="text-sm text-muted-foreground">
             Configure SAML 2.0 or OIDC authentication providers
           </p>
@@ -51,7 +64,7 @@ const SSOConfigTab = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {ssoConfigs?.map((config: any) => (
+          {paginatedConfigs.map((config: any) => (
             <TableRow key={config.id}>
               <TableCell className="font-medium">{config.provider_name}</TableCell>
               <TableCell className="uppercase">{config.provider_name}</TableCell>
@@ -73,6 +86,15 @@ const SSOConfigTab = () => {
           ))}
         </TableBody>
       </Table>
+
+      {ssoConfigs && ssoConfigs.length > 0 && (
+        <TablePagination
+          currentPage={currentPage}
+          totalItems={ssoConfigs.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
+      )}
 
       {ssoConfigs?.length === 0 && (
         <div className="text-center py-12 text-muted-foreground" role="status" aria-label="No SSO providers configured">
