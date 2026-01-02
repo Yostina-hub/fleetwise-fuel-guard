@@ -160,7 +160,7 @@ const SpeedGovernor = () => {
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent flex items-center gap-3">
               <div className="p-2 rounded-lg bg-gradient-to-br from-red-500/10 to-orange-500/10">
-                <Gauge className="w-8 h-8 text-red-600" />
+                <Gauge className="w-8 h-8 text-red-600" aria-hidden="true" />
               </div>
               Speed Governor Control
             </h1>
@@ -169,7 +169,7 @@ const SpeedGovernor = () => {
             </p>
           </div>
           <Button onClick={handleGenerateReport} className="gap-2">
-            <Download className="h-4 w-4" />
+            <Download className="h-4 w-4" aria-hidden="true" />
             Compliance Report
           </Button>
         </div>
@@ -185,7 +185,7 @@ const SpeedGovernor = () => {
                   <p className="text-xs text-success mt-1">67% Compliance</p>
                 </div>
                 <div className="p-3 bg-green-500/10 rounded-lg">
-                  <CheckCircle className="h-8 w-8 text-green-600" />
+                  <CheckCircle className="h-8 w-8 text-green-600" aria-hidden="true" />
                 </div>
               </div>
             </CardContent>
@@ -200,7 +200,7 @@ const SpeedGovernor = () => {
                   <p className="text-xs text-warning mt-1">-23% from yesterday</p>
                 </div>
                 <div className="p-3 bg-orange-500/10 rounded-lg">
-                  <AlertTriangle className="h-8 w-8 text-orange-600" />
+                  <AlertTriangle className="h-8 w-8 text-orange-600" aria-hidden="true" />
                 </div>
               </div>
             </CardContent>
@@ -215,7 +215,7 @@ const SpeedGovernor = () => {
                   <p className="text-xs text-muted-foreground mt-1">Fleet average</p>
                 </div>
                 <div className="p-3 bg-blue-500/10 rounded-lg">
-                  <Gauge className="h-8 w-8 text-blue-600" />
+                  <Gauge className="h-8 w-8 text-blue-600" aria-hidden="true" />
                 </div>
               </div>
             </CardContent>
@@ -230,7 +230,7 @@ const SpeedGovernor = () => {
                   <p className="text-xs text-muted-foreground mt-1">Last 24 hours</p>
                 </div>
                 <div className="p-3 bg-purple-500/10 rounded-lg">
-                  <Bell className="h-8 w-8 text-purple-600" />
+                  <Bell className="h-8 w-8 text-purple-600" aria-hidden="true" />
                 </div>
               </div>
             </CardContent>
@@ -255,8 +255,8 @@ const SpeedGovernor = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Settings className="h-5 w-5 text-primary" />
+                <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-5 w-5 text-primary" aria-hidden="true" />
                     Remote Speed Configuration
                   </CardTitle>
                   <CardDescription>
@@ -292,7 +292,7 @@ const SpeedGovernor = () => {
                         max={120}
                       />
                       <Button onClick={handleSendCommand} disabled={!selectedVehicle}>
-                        <Send className="h-4 w-4 mr-2" />
+                        <Send className="h-4 w-4 mr-2" aria-hidden="true" />
                         Send
                       </Button>
                     </div>
@@ -318,7 +318,7 @@ const SpeedGovernor = () => {
                   <Card className="bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800">
                     <CardContent className="pt-4">
                       <div className="flex gap-3">
-                        <Shield className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                        <Shield className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
                         <div>
                           <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
                             Ethiopian Traffic Regulations
@@ -335,14 +335,14 @@ const SpeedGovernor = () => {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Activity className="h-5 w-5 text-primary" />
+                <CardTitle className="flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-primary" aria-hidden="true" />
                     Governor Features
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <CheckCircle className="h-5 w-5 text-green-600" aria-hidden="true" />
                     <div>
                       <p className="font-medium">GPS Tracking</p>
                       <p className="text-xs text-muted-foreground">Real-time position & speed</p>
@@ -350,7 +350,7 @@ const SpeedGovernor = () => {
                   </div>
 
                   <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <CheckCircle className="h-5 w-5 text-green-600" aria-hidden="true" />
                     <div>
                       <p className="font-medium">Speed Limiting</p>
                       <p className="text-xs text-muted-foreground">Automatic throttle control</p>
@@ -358,7 +358,7 @@ const SpeedGovernor = () => {
                   </div>
 
                   <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <CheckCircle className="h-5 w-5 text-green-600" aria-hidden="true" />
                     <div>
                       <p className="font-medium">Remote Speed Control</p>
                       <p className="text-xs text-muted-foreground">Change limits over-the-air</p>
@@ -366,7 +366,7 @@ const SpeedGovernor = () => {
                   </div>
 
                   <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <CheckCircle className="h-5 w-5 text-green-600" aria-hidden="true" />
                     <div>
                       <p className="font-medium">Over-speed Prevention</p>
                       <p className="text-xs text-muted-foreground">Physical engine limitation</p>
@@ -374,7 +374,7 @@ const SpeedGovernor = () => {
                   </div>
 
                   <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <CheckCircle className="h-5 w-5 text-green-600" aria-hidden="true" />
                     <div>
                       <p className="font-medium">Compliance Reports</p>
                       <p className="text-xs text-muted-foreground">Audit trail for authorities</p>
@@ -382,7 +382,7 @@ const SpeedGovernor = () => {
                   </div>
 
                   <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <CheckCircle className="h-5 w-5 text-green-600" aria-hidden="true" />
                     <div>
                       <p className="font-medium">Driver Alerts</p>
                       <p className="text-xs text-muted-foreground">Visual & audio warnings</p>
@@ -390,7 +390,7 @@ const SpeedGovernor = () => {
                   </div>
 
                   <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <CheckCircle className="h-5 w-5 text-green-600" aria-hidden="true" />
                     <div>
                       <p className="font-medium">Voice Warnings</p>
                       <p className="text-xs text-muted-foreground">In-cab speed announcements</p>
@@ -406,7 +406,7 @@ const SpeedGovernor = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-primary" />
+                  <Activity className="h-5 w-5 text-primary" aria-hidden="true" />
                   Live Vehicle Telemetry
                 </CardTitle>
                 <CardDescription>
@@ -415,8 +415,8 @@ const SpeedGovernor = () => {
               </CardHeader>
               <CardContent>
                 {!vehicles || vehicles.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Gauge className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <div className="text-center py-12" role="status" aria-label="No speed governors found">
+                    <Gauge className="h-16 w-16 text-muted-foreground mx-auto mb-4" aria-hidden="true" />
                     <h3 className="text-lg font-semibold mb-2">No Speed Governors Found</h3>
                     <p className="text-muted-foreground">
                       Add vehicles with speed governor devices to see live telemetry
@@ -444,7 +444,7 @@ const SpeedGovernor = () => {
               <CardContent className="pt-6">
                 <div className="flex items-start gap-4">
                   <div className="p-3 bg-primary/10 rounded-lg">
-                    <Activity className="h-6 w-6 text-primary" />
+                    <Activity className="h-6 w-6 text-primary" aria-hidden="true" />
                   </div>
                   <div className="flex-1">
                     <h3 className="font-semibold mb-2">Real-time Updates</h3>
@@ -454,15 +454,15 @@ const SpeedGovernor = () => {
                     </p>
                     <div className="flex flex-wrap gap-2 text-xs">
                       <Badge variant="outline" className="gap-1">
-                        <Activity className="h-3 w-3" />
+                        <Activity className="h-3 w-3" aria-hidden="true" />
                         Live Speed Tracking
                       </Badge>
                       <Badge variant="outline" className="gap-1">
-                        <MapPin className="h-3 w-3" />
+                        <MapPin className="h-3 w-3" aria-hidden="true" />
                         GPS Position
                       </Badge>
                       <Badge variant="outline" className="gap-1">
-                        <Shield className="h-3 w-3" />
+                        <Shield className="h-3 w-3" aria-hidden="true" />
                         Governor Status
                       </Badge>
                     </div>
@@ -506,7 +506,7 @@ const SpeedGovernor = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-primary" />
+                  <Activity className="h-5 w-5 text-primary" aria-hidden="true" />
                   Historical Route Playback
                 </CardTitle>
                 <CardDescription>
@@ -515,8 +515,8 @@ const SpeedGovernor = () => {
               </CardHeader>
               <CardContent>
                 {!vehicles || vehicles.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Clock className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <div className="text-center py-12" role="status" aria-label="No vehicles found">
+                    <Clock className="h-16 w-16 text-muted-foreground mx-auto mb-4" aria-hidden="true" />
                     <h3 className="text-lg font-semibold mb-2">No Vehicles Found</h3>
                     <p className="text-muted-foreground">
                       Add vehicles with speed governor devices to view route history
@@ -554,8 +554,8 @@ const SpeedGovernor = () => {
 
                     {!selectedVehicle && (
                       <Card className="border-dashed">
-                        <CardContent className="pt-12 pb-12 text-center">
-                          <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <CardContent className="pt-12 pb-12 text-center" role="status" aria-label="Select a vehicle">
+                          <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" aria-hidden="true" />
                           <p className="text-muted-foreground">
                             Select a vehicle above to view its route history and playback
                           </p>
@@ -573,7 +573,7 @@ const SpeedGovernor = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
+                  <TrendingUp className="h-5 w-5 text-primary" aria-hidden="true" />
                   Multi-Vehicle Route Comparison
                 </CardTitle>
                 <CardDescription>
@@ -597,7 +597,7 @@ const SpeedGovernor = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                  <AlertTriangle className="h-5 w-5 text-destructive" aria-hidden="true" />
                   Speed Violations Log
                 </CardTitle>
                 <CardDescription>Track and review all over-speed events</CardDescription>
@@ -653,8 +653,8 @@ const SpeedGovernor = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-primary" />
+                <CardTitle className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-primary" aria-hidden="true" />
                     Generate Compliance Report
                   </CardTitle>
                 </CardHeader>
@@ -706,7 +706,7 @@ const SpeedGovernor = () => {
                   </div>
 
                   <Button className="w-full" onClick={handleGenerateReport}>
-                    <Download className="h-4 w-4 mr-2" />
+                    <Download className="h-4 w-4 mr-2" aria-hidden="true" />
                     Generate Report
                   </Button>
                 </CardContent>
@@ -718,35 +718,35 @@ const SpeedGovernor = () => {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <CheckCircle className="h-4 w-4 text-green-600" aria-hidden="true" />
                     <span>Governor activation status per vehicle</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <CheckCircle className="h-4 w-4 text-green-600" aria-hidden="true" />
                     <span>Speed limit configuration history</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <CheckCircle className="h-4 w-4 text-green-600" aria-hidden="true" />
                     <span>Total over-speed violations</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <CheckCircle className="h-4 w-4 text-green-600" aria-hidden="true" />
                     <span>Violation severity breakdown</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <CheckCircle className="h-4 w-4 text-green-600" aria-hidden="true" />
                     <span>Compliance rate calculations</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <CheckCircle className="h-4 w-4 text-green-600" aria-hidden="true" />
                     <span>Ethiopian regulation adherence</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <CheckCircle className="h-4 w-4 text-green-600" aria-hidden="true" />
                     <span>Driver alert statistics</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <CheckCircle className="h-4 w-4 text-green-600" aria-hidden="true" />
                     <span>GPS tracking verification</span>
                   </div>
 

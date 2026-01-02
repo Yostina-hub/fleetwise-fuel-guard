@@ -11,7 +11,7 @@ const WorkOrders = () => {
       <div className="p-8 space-y-6 animate-fade-in">
         <div className="flex items-center gap-3 slide-in-right">
           <div className="p-4 rounded-2xl glass-strong glow-strong">
-            <ClipboardList className="h-8 w-8 text-primary float-animation" />
+            <ClipboardList className="h-8 w-8 text-primary float-animation" aria-hidden="true" />
           </div>
           <div>
             <h1 className="text-4xl font-bold gradient-text">Work Orders & Inventory</h1>
@@ -24,11 +24,11 @@ const WorkOrders = () => {
         <Tabs defaultValue="orders" className="space-y-4">
           <TabsList className="grid w-full grid-cols-2 glass p-1 h-14">
             <TabsTrigger value="orders" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg">
-              <ClipboardList className="h-5 w-5" />
+              <ClipboardList className="h-5 w-5" aria-hidden="true" />
               <span className="font-semibold">Work Orders</span>
             </TabsTrigger>
             <TabsTrigger value="inventory" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg">
-              <Package className="h-5 w-5" />
+              <Package className="h-5 w-5" aria-hidden="true" />
               <span className="font-semibold">Inventory</span>
             </TabsTrigger>
           </TabsList>
