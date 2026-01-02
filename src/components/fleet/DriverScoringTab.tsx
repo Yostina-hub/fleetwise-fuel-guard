@@ -65,7 +65,7 @@ const getTrendIcon = (trend: string) => {
 
 export const DriverScoringTab = () => {
   const { driverScores, scoreHistory, isLoading, calculateScore } = useDriverScores();
-  const { drivers } = useDrivers();
+  const { drivers } = useDrivers(); // Needed for calculate dialog
   const { vehicles } = useVehicles();
   const [isCalculateDialogOpen, setIsCalculateDialogOpen] = useState(false);
   const [selectedDriverScore, setSelectedDriverScore] = useState<any>(null);
@@ -90,7 +90,9 @@ export const DriverScoringTab = () => {
   const filteredScores = useMemo(() => {
     if (!driverScores) return [];
     return driverScores.filter((score) => {
-      const driverName = getDriverName(score.driver_id).toLowerCase();
+      const driverName = score.driver 
+        ? `${score.driver.first_name} ${score.driver.last_name}`.toLowerCase() 
+        : "";
       const matchesSearch = searchQuery === "" || driverName.includes(searchQuery.toLowerCase());
       const matchesRating = ratingFilter === "all" || score.safety_rating === ratingFilter;
       return matchesSearch && matchesRating;
@@ -103,18 +105,20 @@ export const DriverScoringTab = () => {
     setCalcForm({ driverId: "", vehicleId: "", startDate: "", endDate: "" });
   };
 
-  const getDriverName = (driverId: string) => {
-    const driver = drivers?.find(d => d.id === driverId);
-    return driver ? `${driver.first_name} ${driver.last_name}` : "Unknown Driver";
+  const getDriverName = (score: any) => {
+    return score.driver 
+      ? `${score.driver.first_name} ${score.driver.last_name}` 
+      : "Unknown Driver";
   };
 
-  const getDriver = (driverId: string) => {
-    return drivers?.find(d => d.id === driverId);
+  const getDriverInitials = (score: any) => {
+    return score.driver 
+      ? `${score.driver.first_name.charAt(0)}${score.driver.last_name.charAt(0)}` 
+      : "??";
   };
 
-  const getVehiclePlate = (vehicleId: string) => {
-    const vehicle = vehicles?.find(v => v.id === vehicleId);
-    return vehicle?.plate_number || "Unknown Vehicle";
+  const getVehiclePlate = (score: any) => {
+    return score.vehicle?.plate_number || "Unknown Vehicle";
   };
 
   const handleExportScores = () => {
@@ -297,7 +301,6 @@ export const DriverScoringTab = () => {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {topPerformers.map((score, index) => {
-                const driver = getDriver(score.driver_id);
                 const medals = ["🥇", "🥈", "🥉"];
                 return (
                   <div 
@@ -311,14 +314,14 @@ export const DriverScoringTab = () => {
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">{medals[index]}</span>
                       <Avatar>
-                        <AvatarImage src={driver?.avatar_url || undefined} />
+                        <AvatarImage src={score.driver?.avatar_url || undefined} />
                         <AvatarFallback className="bg-primary/10 text-primary">
-                          {driver ? `${driver.first_name.charAt(0)}${driver.last_name.charAt(0)}` : "??"}
+                          {getDriverInitials(score)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
-                        <div className="font-medium">{getDriverName(score.driver_id)}</div>
-                        <div className="text-xs text-muted-foreground">{getVehiclePlate(score.vehicle_id)}</div>
+                        <div className="font-medium">{getDriverName(score)}</div>
+                        <div className="text-xs text-muted-foreground">{getVehiclePlate(score)}</div>
                       </div>
                       <div className="text-right">
                         <div className="text-2xl font-bold text-primary">{score.overall_score}</div>
@@ -433,7 +436,6 @@ export const DriverScoringTab = () => {
                 </TableHeader>
                 <TableBody>
                   {filteredScores.map((score, index) => {
-                    const driver = getDriver(score.driver_id);
                     return (
                       <TableRow key={score.id}>
                         <TableCell className="font-medium">
@@ -446,15 +448,15 @@ export const DriverScoringTab = () => {
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <Avatar className="h-8 w-8">
-                              <AvatarImage src={driver?.avatar_url || undefined} />
+                              <AvatarImage src={score.driver?.avatar_url || undefined} />
                               <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                                {driver ? `${driver.first_name.charAt(0)}${driver.last_name.charAt(0)}` : "??"}
+                                {getDriverInitials(score)}
                               </AvatarFallback>
                             </Avatar>
-                            <span>{getDriverName(score.driver_id)}</span>
+                            <span>{getDriverName(score)}</span>
                           </div>
                         </TableCell>
-                        <TableCell>{getVehiclePlate(score.vehicle_id)}</TableCell>
+                        <TableCell>{getVehiclePlate(score)}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Progress value={score.overall_score} className="w-20" />

@@ -35,11 +35,28 @@ export const useDriverScores = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("latest_driver_scores" as any)
-        .select("*")
+        .select(`
+          *,
+          driver:driver_id (
+            id,
+            first_name,
+            last_name,
+            avatar_url
+          ),
+          vehicle:vehicle_id (
+            id,
+            plate_number,
+            make,
+            model
+          )
+        `)
         .order("overall_score", { ascending: true });
 
       if (error) throw error;
-      return data as unknown as DriverScore[];
+      return data as unknown as (DriverScore & {
+        driver: { id: string; first_name: string; last_name: string; avatar_url: string | null } | null;
+        vehicle: { id: string; plate_number: string; make: string; model: string } | null;
+      })[];
     },
   });
 
@@ -48,12 +65,21 @@ export const useDriverScores = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("driver_behavior_scores" as any)
-        .select("*")
+        .select(`
+          *,
+          driver:driver_id (
+            id,
+            first_name,
+            last_name
+          )
+        `)
         .order("score_period_end", { ascending: false })
         .limit(100);
 
       if (error) throw error;
-      return data as unknown as DriverScore[];
+      return data as unknown as (DriverScore & {
+        driver: { id: string; first_name: string; last_name: string } | null;
+      })[];
     },
   });
 
