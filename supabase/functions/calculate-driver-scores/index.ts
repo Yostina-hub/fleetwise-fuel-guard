@@ -7,10 +7,12 @@ const corsHeaders = {
 };
 
 interface TelemetryData {
-  speed: number;
-  timestamp: string;
+  speed_kmh: number | null;
+  created_at: string;
   latitude?: number;
   longitude?: number;
+  engine_on?: boolean;
+  device_connected?: boolean;
 }
 
 serve(async (req) => {
@@ -54,8 +56,16 @@ serve(async (req) => {
     // Calculate scores
     const scores = calculateScores(metrics);
     
-    // Generate AI insights
-    const insights = await generateInsights(metrics, scores);
+    // Get historical scores for trend calculation
+    const { data: historicalScores } = await supabase
+      .from("driver_behavior_scores")
+      .select("overall_score, created_at")
+      .eq("driver_id", driverId)
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    // Generate insights with historical context
+    const insights = generateInsights(metrics, scores, historicalScores || []);
 
     // Get user's organization
     const authHeader = req.headers.get("Authorization");
@@ -217,7 +227,7 @@ function calculateScores(metrics: any) {
   };
 }
 
-async function generateInsights(metrics: any, scores: any) {
+function generateInsights(metrics: any, scores: any, historicalScores: any[]) {
   const riskFactors: string[] = [];
   const recommendations: string[] = [];
   
@@ -242,10 +252,28 @@ async function generateInsights(metrics: any, scores: any) {
     recommendations.push("Reduce unnecessary engine idling to save fuel and reduce emissions");
   }
   
-  // Determine trend (would need historical data for real implementation)
+  // Determine trend based on historical data
   let trend = "stable";
-  if (scores.overall >= 80) trend = "improving";
-  else if (scores.overall < 50) trend = "declining";
+  if (historicalScores.length >= 2) {
+    // Calculate average of previous scores
+    const previousScores = historicalScores.slice(0, Math.min(3, historicalScores.length));
+    const avgPreviousScore = previousScores.reduce((sum, s) => sum + s.overall_score, 0) / previousScores.length;
+    
+    const scoreDiff = scores.overall - avgPreviousScore;
+    if (scoreDiff >= 5) {
+      trend = "improving";
+    } else if (scoreDiff <= -5) {
+      trend = "declining";
+    }
+  } else if (historicalScores.length === 1) {
+    // Compare with single previous score
+    const scoreDiff = scores.overall - historicalScores[0].overall_score;
+    if (scoreDiff >= 5) {
+      trend = "improving";
+    } else if (scoreDiff <= -5) {
+      trend = "declining";
+    }
+  }
   
   return {
     riskFactors,
