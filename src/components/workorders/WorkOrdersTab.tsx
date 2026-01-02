@@ -448,6 +448,8 @@ const WorkOrdersTab = () => {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
+            id="work-orders-search"
+            aria-label="Search work orders by number, type, vehicle, or description"
             placeholder="Search work orders..."
             value={searchQuery}
             onChange={(e) => {
@@ -458,7 +460,7 @@ const WorkOrdersTab = () => {
           />
         </div>
         <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value); setCurrentPage(1); }}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px]" aria-label="Filter by status">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -471,7 +473,7 @@ const WorkOrdersTab = () => {
           </SelectContent>
         </Select>
         <Select value={priorityFilter} onValueChange={(value) => { setPriorityFilter(value); setCurrentPage(1); }}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px]" aria-label="Filter by priority">
             <SelectValue placeholder="Priority" />
           </SelectTrigger>
           <SelectContent>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
 import { toast } from "@/hooks/use-toast";
@@ -51,16 +51,26 @@ export const useMaintenanceSchedules = (vehicleId?: string) => {
   const [inspections, setInspections] = useState<VehicleInspection[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isMounted = useRef(true);
 
-  const fetchSchedules = async () => {
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  const fetchSchedules = useCallback(async () => {
     if (!organizationId) {
-      setSchedules([]);
-      setLoading(false);
+      if (isMounted.current) {
+        setSchedules([]);
+        setLoading(false);
+      }
       return;
     }
 
     try {
-      setLoading(true);
+      if (isMounted.current) setLoading(true);
       let query = supabase
         .from("maintenance_schedules")
         .select("*")
@@ -73,16 +83,18 @@ export const useMaintenanceSchedules = (vehicleId?: string) => {
       const { data, error } = await query.order("next_due_date", { ascending: true });
 
       if (error) throw error;
-      setSchedules((data as MaintenanceSchedule[]) || []);
+      if (isMounted.current) {
+        setSchedules((data as MaintenanceSchedule[]) || []);
+      }
     } catch (err: any) {
       console.error("Error fetching maintenance schedules:", err);
-      setError(err.message);
+      if (isMounted.current) setError(err.message);
     } finally {
-      setLoading(false);
+      if (isMounted.current) setLoading(false);
     }
-  };
+  }, [organizationId, vehicleId]);
 
-  const fetchInspections = async () => {
+  const fetchInspections = useCallback(async () => {
     if (!organizationId) return;
 
     try {
@@ -100,11 +112,13 @@ export const useMaintenanceSchedules = (vehicleId?: string) => {
         .limit(50);
 
       if (error) throw error;
-      setInspections((data as VehicleInspection[]) || []);
+      if (isMounted.current) {
+        setInspections((data as VehicleInspection[]) || []);
+      }
     } catch (err: any) {
       console.error("Error fetching inspections:", err);
     }
-  };
+  }, [organizationId, vehicleId]);
 
   useEffect(() => {
     if (!organizationId) return;
