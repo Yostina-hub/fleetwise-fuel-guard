@@ -11,6 +11,7 @@ import {
 import { CheckCircle, XCircle, AlertTriangle, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { useApprovals } from "@/hooks/useApprovals";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
 
 const actionIcons = {
   approve: CheckCircle,
@@ -35,6 +36,7 @@ const actionLabels = {
 
 export const ApprovalHistory = () => {
   const { approvalHistory, loading } = useApprovals();
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(approvalHistory?.length || 0, 10);
 
   if (loading) {
     return (
@@ -77,7 +79,7 @@ export const ApprovalHistory = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {approvalHistory.map((approval: any) => {
+            {approvalHistory.slice(startIndex, endIndex).map((approval: any) => {
               const ActionIcon = actionIcons[approval.action as keyof typeof actionIcons];
               return (
                 <TableRow key={approval.id}>
@@ -116,6 +118,12 @@ export const ApprovalHistory = () => {
             })}
           </TableBody>
         </Table>
+        <TablePagination
+          currentPage={currentPage}
+          totalItems={approvalHistory.length}
+          itemsPerPage={10}
+          onPageChange={setCurrentPage}
+        />
       </CardContent>
     </Card>
   );

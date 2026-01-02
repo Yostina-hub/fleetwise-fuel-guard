@@ -11,6 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useOrganization } from "@/hooks/useOrganization";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
 
 const AVAILABLE_TABLES = [
   "telemetry",
@@ -21,8 +23,6 @@ const AVAILABLE_TABLES = [
   "fuel_events",
   "geofence_events",
 ];
-
-import { useOrganization } from "@/hooks/useOrganization";
 
 const DataRetentionTab = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -44,6 +44,8 @@ const DataRetentionTab = () => {
       return data;
     },
   });
+
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(policies?.length || 0, 10);
 
   const createPolicyMutation = useMutation({
     mutationFn: async () => {
@@ -157,6 +159,7 @@ const DataRetentionTab = () => {
       {isLoading ? (
         <p role="status" aria-live="polite" aria-label="Loading retention policies">Loading...</p>
       ) : (
+        <>
         <Table>
           <TableHeader>
             <TableRow>
@@ -169,7 +172,7 @@ const DataRetentionTab = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {policies?.map((policy) => (
+            {policies?.slice(startIndex, endIndex).map((policy) => (
               <TableRow key={policy.id}>
                 <TableCell className="font-medium">{policy.table_name}</TableCell>
                 <TableCell>{policy.retention_days} days</TableCell>
@@ -200,6 +203,13 @@ const DataRetentionTab = () => {
             ))}
           </TableBody>
         </Table>
+        <TablePagination
+          currentPage={currentPage}
+          totalItems={policies?.length || 0}
+          itemsPerPage={10}
+          onPageChange={setCurrentPage}
+        />
+        </>
       )}
     </div>
   );

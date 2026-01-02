@@ -12,9 +12,9 @@ import { format } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { usePermissions } from "@/hooks/usePermissions";
-
 import { useOrganization } from "@/hooks/useOrganization";
 import { useAuth } from "@/hooks/useAuth";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
 
 const GdprRequestsTab = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -38,6 +38,8 @@ const GdprRequestsTab = () => {
       return data;
     },
   });
+
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(requests?.length || 0, 10);
 
   const createRequestMutation = useMutation({
     mutationFn: async () => {
@@ -165,6 +167,7 @@ const GdprRequestsTab = () => {
       {isLoading ? (
         <p role="status" aria-live="polite" aria-label="Loading GDPR requests">Loading...</p>
       ) : (
+        <>
         <Table>
           <TableHeader>
             <TableRow>
@@ -176,7 +179,7 @@ const GdprRequestsTab = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {requests?.map((request) => (
+            {requests?.slice(startIndex, endIndex).map((request) => (
               <TableRow key={request.id}>
                 <TableCell className="font-medium capitalize">
                   {request.request_type}
@@ -232,6 +235,13 @@ const GdprRequestsTab = () => {
             ))}
           </TableBody>
         </Table>
+        <TablePagination
+          currentPage={currentPage}
+          totalItems={requests?.length || 0}
+          itemsPerPage={10}
+          onPageChange={setCurrentPage}
+        />
+        </>
       )}
     </div>
   );

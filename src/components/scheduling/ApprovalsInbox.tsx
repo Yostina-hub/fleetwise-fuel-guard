@@ -22,6 +22,7 @@ import { CheckCircle, XCircle, Clock, AlertCircle, Calendar, Users } from "lucid
 import { format, differenceInHours } from "date-fns";
 import { useApprovals } from "@/hooks/useApprovals";
 import { Label } from "@/components/ui/label";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
 
 interface ApprovalDialogData {
   approvalId: string;
@@ -37,6 +38,7 @@ export const ApprovalsInbox = () => {
   const [dialogData, setDialogData] = useState<ApprovalDialogData | null>(null);
   const [comment, setComment] = useState("");
   const [processing, setProcessing] = useState(false);
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(pendingApprovals?.length || 0, 10);
 
   const openApprovalDialog = (approval: any, action: 'approve' | 'reject') => {
     setDialogData({
@@ -144,7 +146,7 @@ export const ApprovalsInbox = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pendingApprovals.map((approval: any) => {
+              {pendingApprovals.slice(startIndex, endIndex).map((approval: any) => {
                 const sla = getSLAStatus(approval.trip_request?.sla_deadline_at);
                 return (
                   <TableRow key={approval.id}>
@@ -204,6 +206,12 @@ export const ApprovalsInbox = () => {
               })}
             </TableBody>
           </Table>
+          <TablePagination
+            currentPage={currentPage}
+            totalItems={pendingApprovals.length}
+            itemsPerPage={10}
+            onPageChange={setCurrentPage}
+          />
         </CardContent>
       </Card>
 
