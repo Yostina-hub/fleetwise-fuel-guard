@@ -1,34 +1,17 @@
-import { useMemo, createContext, useContext } from "react";
+import { useMemo } from "react";
 import Layout from "@/components/Layout";
 import KPICard from "@/components/KPICard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Fuel, AlertTriangle, BarChart3, Loader2, Warehouse, FileText, Droplet, Bell } from "lucide-react";
+import { Fuel, AlertTriangle, BarChart3, Loader2, Warehouse, FileText, Droplet } from "lucide-react";
 import { useFuelEvents } from "@/hooks/useFuelEvents";
 import { useVehicles } from "@/hooks/useVehicles";
-import { useDrivers, Driver } from "@/hooks/useDrivers";
+import { useDrivers } from "@/hooks/useDrivers";
 import FuelTransactionsTab from "@/components/fuel/FuelTransactionsTab";
 import FuelEventsTab from "@/components/fuel/FuelEventsTab";
 import FuelTheftCasesTab from "@/components/fuel/FuelTheftCasesTab";
 import FuelDepotsTab from "@/components/fuel/FuelDepotsTab";
 import FuelConsumptionAlertsCard from "@/components/fuel/FuelConsumptionAlertsCard";
-
-// Context to share vehicles and drivers data across fuel tabs
-interface FuelPageContextType {
-  vehicles: ReturnType<typeof useVehicles>["vehicles"];
-  drivers: Driver[];
-  getVehiclePlate: (vehicleId: string) => string;
-  getDriverName: (driverId?: string) => string;
-}
-
-const FuelPageContext = createContext<FuelPageContextType | null>(null);
-
-export const useFuelPageContext = () => {
-  const context = useContext(FuelPageContext);
-  if (!context) {
-    throw new Error("useFuelPageContext must be used within FuelMonitoring");
-  }
-  return context;
-};
+import { FuelPageContext } from "@/contexts/FuelPageContext";
 
 const FuelMonitoring = () => {
   const { fuelEvents: dbFuelEvents, loading } = useFuelEvents();

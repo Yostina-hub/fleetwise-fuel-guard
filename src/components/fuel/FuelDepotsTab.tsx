@@ -20,7 +20,7 @@ import {
   Edit
 } from "lucide-react";
 import { useFuelDepots } from "@/hooks/useFuelDepots";
-import { useFuelPageContext } from "@/pages/FuelMonitoring";
+import { useFuelPageContext } from "@/contexts/FuelPageContext";
 import { format } from "date-fns";
 import ReceiveFuelDialog from "./ReceiveFuelDialog";
 import EditDepotDialog from "./EditDepotDialog";
