@@ -11,7 +11,7 @@ const SystemConfig = () => {
     <Layout>
       <div className="p-8 space-y-6 animate-fade-in">
       <div className="flex items-center gap-3">
-        <Settings2 className="h-8 w-8 text-primary" />
+        <Settings2 className="h-8 w-8 text-primary" aria-hidden="true" />
         <div>
           <h1 className="text-3xl font-bold">System Configuration</h1>
           <p className="text-muted-foreground">
@@ -23,15 +23,15 @@ const SystemConfig = () => {
       <Tabs defaultValue="protocols" className="space-y-4">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="protocols" className="gap-2">
-            <Radio className="h-4 w-4" />
+            <Radio className="h-4 w-4" aria-hidden="true" />
             Device Protocols
           </TabsTrigger>
           <TabsTrigger value="fuel" className="gap-2">
-            <Droplet className="h-4 w-4" />
+            <Droplet className="h-4 w-4" aria-hidden="true" />
             Fuel Detection
           </TabsTrigger>
           <TabsTrigger value="enrichment" className="gap-2">
-            <Settings2 className="h-4 w-4" />
+            <Settings2 className="h-4 w-4" aria-hidden="true" />
             Data Enrichment
           </TabsTrigger>
         </TabsList>

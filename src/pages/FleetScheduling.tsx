@@ -69,12 +69,12 @@ const FleetScheduling = () => {
             </p>
           </div>
           <div className="flex gap-2 items-center flex-wrap">
-            <Button variant="outline" onClick={() => setExportDialogOpen(true)} className="gap-2">
-              <Download className="w-4 h-4" />
+            <Button variant="outline" onClick={() => setExportDialogOpen(true)} className="gap-2" aria-label="Export schedule">
+              <Download className="w-4 h-4" aria-hidden="true" />
               <span className="hidden sm:inline">Export</span>
             </Button>
-            <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
-              <Plus className="w-4 h-4" />
+            <Button onClick={() => setCreateDialogOpen(true)} className="gap-2" aria-label="Create new trip request">
+              <Plus className="w-4 h-4" aria-hidden="true" />
               <span className="hidden sm:inline">New Trip Request</span>
               <span className="sm:hidden">New</span>
             </Button>
@@ -87,7 +87,7 @@ const FleetScheduling = () => {
             <Card key={stat.title}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                <stat.icon className={`w-4 h-4 ${stat.color}`} />
+                <stat.icon className={`w-4 h-4 ${stat.color}`} aria-hidden="true" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stat.value}</div>
