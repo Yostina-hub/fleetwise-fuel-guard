@@ -175,14 +175,16 @@ const MapView = () => {
           <div className="absolute top-4 left-4 z-10">
             <div className="flex flex-col gap-2">
               {/* Map Style Toggle */}
-              <div className="bg-background/90 backdrop-blur-sm rounded-lg border shadow-lg p-1 flex">
+              <div className="bg-background/90 backdrop-blur-sm rounded-lg border shadow-lg p-1 flex" role="group" aria-label="Map style selection">
                 <Button
                   variant={mapStyle === 'satellite' ? 'default' : 'ghost'}
                   size="sm"
                   className="h-8 px-3 gap-2"
                   onClick={() => setMapStyle('satellite')}
+                  aria-label="Satellite map view"
+                  aria-pressed={mapStyle === 'satellite'}
                 >
-                  <Satellite className="w-4 h-4" />
+                  <Satellite className="w-4 h-4" aria-hidden="true" />
                   <span className="hidden sm:inline">Satellite</span>
                 </Button>
                 <Button
@@ -190,29 +192,31 @@ const MapView = () => {
                   size="sm"
                   className="h-8 px-3 gap-2"
                   onClick={() => setMapStyle('streets')}
+                  aria-label="Streets map view"
+                  aria-pressed={mapStyle === 'streets'}
                 >
-                  <Map className="w-4 h-4" />
+                  <Map className="w-4 h-4" aria-hidden="true" />
                   <span className="hidden sm:inline">Streets</span>
                 </Button>
               </div>
 
               {/* Status Legend - Compact */}
-              <div className="bg-background/95 backdrop-blur-md rounded-lg border border-border/50 shadow-lg px-4 py-2.5">
+              <div className="bg-background/95 backdrop-blur-md rounded-lg border border-border/50 shadow-lg px-4 py-2.5" role="img" aria-label="Vehicle status legend: Moving (green), Idle (amber), Stopped (gray), Offline (red)">
                 <div className="flex items-center gap-5 text-xs font-medium">
                   <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/40" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/40" aria-hidden="true" />
                     <span className="text-foreground/80">Moving</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm shadow-amber-500/40" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm shadow-amber-500/40" aria-hidden="true" />
                     <span className="text-foreground/80">Idle</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-slate-400" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-slate-400" aria-hidden="true" />
                     <span className="text-foreground/80">Stopped</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm shadow-rose-500/40" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm shadow-rose-500/40" aria-hidden="true" />
                     <span className="text-foreground/80">Offline</span>
                   </div>
                 </div>
@@ -229,8 +233,10 @@ const MapView = () => {
               sidebarCollapsed ? "right-0" : "right-80"
             )}
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            aria-label={sidebarCollapsed ? "Expand vehicle sidebar" : "Collapse vehicle sidebar"}
+            aria-expanded={!sidebarCollapsed}
           >
-            {sidebarCollapsed ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            {sidebarCollapsed ? <ChevronLeft className="w-4 h-4" aria-hidden="true" /> : <ChevronRight className="w-4 h-4" aria-hidden="true" />}
           </Button>
         </div>
 
@@ -260,19 +266,22 @@ const MapView = () => {
 
             {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
               <Input
                 placeholder="Search vehicles..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 pr-9 h-9 bg-muted/50"
+                aria-label="Search vehicles by plate number"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
                   className="absolute right-3 top-1/2 -translate-y-1/2"
+                  aria-label="Clear search"
+                  type="button"
                 >
-                  <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                  <X className="w-4 h-4 text-muted-foreground hover:text-foreground" aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -280,9 +289,9 @@ const MapView = () => {
             {/* Refresh Control */}
             <div className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
-                <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
+                <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
                 <Select value={autoRefresh} onValueChange={setAutoRefresh}>
-                  <SelectTrigger className="h-7 w-20 text-xs border-0 bg-transparent p-0">
+                  <SelectTrigger className="h-7 w-20 text-xs border-0 bg-transparent p-0" aria-label="Auto-refresh interval">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -293,7 +302,7 @@ const MapView = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <span className="text-muted-foreground">
+              <span className="text-muted-foreground" aria-label="Last updated time">
                 {lastUpdate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
@@ -306,7 +315,7 @@ const MapView = () => {
                 <MapSidebarSkeleton count={6} />
               </div>
             ) : filteredVehicles.length === 0 ? (
-              <div className="p-6 text-center text-muted-foreground">
+              <div className="p-6 text-center text-muted-foreground" role="status" aria-live="polite">
                 <p className="text-sm">No vehicles found</p>
               </div>
             ) : (
@@ -341,6 +350,11 @@ const MapView = () => {
                           vehicle.isOffline && "opacity-50"
                         )}
                         onClick={() => handleVehicleClick(vehicle)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleVehicleClick(vehicle); } }}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`${vehicle.plate}, ${vehicle.isOffline ? 'Offline' : vehicle.status}, ${!vehicle.isOffline ? `${vehicle.speed} km/h, ${vehicle.fuel}% fuel` : ''}`}
+                        aria-selected={isSelected}
                       >
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
