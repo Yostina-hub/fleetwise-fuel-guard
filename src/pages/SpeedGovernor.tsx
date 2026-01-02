@@ -14,12 +14,10 @@ import {
   CheckCircle,
   Settings,
   Send,
-  Download,
   Bell,
   Activity,
   Shield,
   Clock,
-  TrendingUp,
   MapPin,
   Loader2
 } from "lucide-react";
@@ -31,11 +29,12 @@ import { useSpeedGovernor } from "@/hooks/useSpeedGovernor";
 import { LiveTelemetryCard } from "@/components/speedgovernor/LiveTelemetryCard";
 import { GovernorMapView } from "@/components/speedgovernor/GovernorMapView";
 import { RoutePlaybackMap } from "@/components/speedgovernor/RoutePlaybackMap";
-import { RouteComparisonMap } from "@/components/speedgovernor/RouteComparisonMap";
 import { GpsSignalHistoryChart } from "@/components/speedgovernor/GpsSignalHistoryChart";
 import { TrafficFlowAnalysis } from "@/components/speedgovernor/TrafficFlowAnalysis";
 import { ViolationsTable } from "@/components/speedgovernor/ViolationsTable";
 import { ComplianceReportGenerator } from "@/components/speedgovernor/ComplianceReportGenerator";
+import { SpeedLimitZonesTab } from "@/components/speedgovernor/SpeedLimitZonesTab";
+import { AlertRulesTab } from "@/components/speedgovernor/AlertRulesTab";
 
 const SpeedGovernor = () => {
   const { organizationId } = useOrganization();
@@ -200,14 +199,15 @@ const SpeedGovernor = () => {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="control" className="space-y-6">
-          <TabsList>
+          <TabsList className="flex-wrap">
             <TabsTrigger value="control">Remote Control</TabsTrigger>
             <TabsTrigger value="monitoring">Live Monitoring</TabsTrigger>
             <TabsTrigger value="map">Map View</TabsTrigger>
+            <TabsTrigger value="zones">Speed Zones</TabsTrigger>
             <TabsTrigger value="analytics">Traffic Analytics</TabsTrigger>
             <TabsTrigger value="playback">Route Playback</TabsTrigger>
-            <TabsTrigger value="comparison">Route Comparison</TabsTrigger>
             <TabsTrigger value="violations">Violations Log</TabsTrigger>
+            <TabsTrigger value="alerts">Alert Rules</TabsTrigger>
             <TabsTrigger value="compliance">Compliance Reports</TabsTrigger>
           </TabsList>
 
@@ -462,6 +462,11 @@ const SpeedGovernor = () => {
             />
           </TabsContent>
 
+          {/* Speed Zones Tab */}
+          <TabsContent value="zones" className="space-y-4">
+            <SpeedLimitZonesTab />
+          </TabsContent>
+
           {/* Traffic Analytics Tab */}
           <TabsContent value="analytics" className="space-y-4">
             {organizationId && (
@@ -536,33 +541,14 @@ const SpeedGovernor = () => {
             </Card>
           </TabsContent>
 
-          {/* Route Comparison Tab */}
-          <TabsContent value="comparison" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" aria-hidden="true" />
-                  Multi-Vehicle Route Comparison
-                </CardTitle>
-                <CardDescription>
-                  Compare routes and driving patterns across multiple vehicles with synchronized playback
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <RouteComparisonMap
-                  availableVehicles={(vehicles || []).map(v => ({
-                    id: v.id,
-                    plate: v.plate,
-                    maxSpeed: v.maxSpeed
-                  }))}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           {/* Violations Log Tab */}
           <TabsContent value="violations">
             <ViolationsTable vehicles={(vehicles || []).map(v => ({ id: v.id, plate: v.plate }))} />
+          </TabsContent>
+
+          {/* Alert Rules Tab */}
+          <TabsContent value="alerts">
+            <AlertRulesTab />
           </TabsContent>
 
           {/* Compliance Reports Tab */}

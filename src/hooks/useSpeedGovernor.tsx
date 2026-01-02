@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useToast } from "@/hooks/use-toast";
 import { startOfDay, subDays } from "date-fns";
+import type { Json } from "@/integrations/supabase/types";
 
 export interface SpeedGovernorConfig {
   id: string;
@@ -40,6 +41,13 @@ export interface GovernorKPIs {
   yesterdayViolations: number;
   avgSpeedLimit: number;
   alertsSent24h: number;
+}
+
+export interface ViolationFilters {
+  vehicleId?: string;
+  severity?: string;
+  dateFrom?: Date;
+  dateTo?: Date;
 }
 
 export const useSpeedGovernor = () => {
@@ -106,49 +114,6 @@ export const useSpeedGovernor = () => {
     refetchInterval: 30000,
   });
 
-  // Fetch speed violations with pagination
-  const useViolations = (page: number = 0, pageSize: number = 20, filters?: {
-    vehicleId?: string;
-    severity?: string;
-    dateFrom?: Date;
-    dateTo?: Date;
-  }) => {
-    return useQuery({
-      queryKey: ["speed-violations", organizationId, page, pageSize, filters],
-      queryFn: async () => {
-        let query = supabase
-          .from("speed_violations")
-          .select(`
-            *,
-            vehicles(plate_number),
-            drivers(first_name, last_name)
-          `, { count: "exact" })
-          .eq("organization_id", organizationId!)
-          .order("violation_time", { ascending: false })
-          .range(page * pageSize, (page + 1) * pageSize - 1);
-
-        if (filters?.vehicleId) {
-          query = query.eq("vehicle_id", filters.vehicleId);
-        }
-        if (filters?.severity) {
-          query = query.eq("severity", filters.severity);
-        }
-        if (filters?.dateFrom) {
-          query = query.gte("violation_time", filters.dateFrom.toISOString());
-        }
-        if (filters?.dateTo) {
-          query = query.lte("violation_time", filters.dateTo.toISOString());
-        }
-
-        const { data, error, count } = await query;
-        if (error) throw error;
-
-        return { violations: data as SpeedViolation[], totalCount: count || 0 };
-      },
-      enabled: !!organizationId,
-    });
-  };
-
   // Fetch governor configs
   const { data: governorConfigs, isLoading: configsLoading } = useQuery({
     queryKey: ["speed-governor-configs", organizationId],
@@ -174,6 +139,8 @@ export const useSpeedGovernor = () => {
       maxSpeedLimit?: number;
       governorActive?: boolean;
     }) => {
+      if (!organizationId) throw new Error("Organization not found");
+      
       // Check if config exists
       const { data: existing } = await supabase
         .from("speed_governor_config")
@@ -181,7 +148,7 @@ export const useSpeedGovernor = () => {
         .eq("vehicle_id", vehicleId)
         .single();
 
-      const updateData: any = {
+      const updateData: { [key: string]: Json } = {
         last_config_update: new Date().toISOString(),
       };
       if (maxSpeedLimit !== undefined) updateData.max_speed_limit = maxSpeedLimit;
@@ -196,27 +163,26 @@ export const useSpeedGovernor = () => {
       } else {
         const { error } = await supabase
           .from("speed_governor_config")
-          .insert({
+          .insert([{
             organization_id: organizationId,
             vehicle_id: vehicleId,
             max_speed_limit: maxSpeedLimit || 80,
             governor_active: governorActive ?? false,
-          });
+          }]);
         if (error) throw error;
       }
 
       // Log the command
-      const { error: logError } = await supabase
+      await supabase
         .from("governor_command_logs")
-        .insert({
+        .insert([{
           organization_id: organizationId,
           vehicle_id: vehicleId,
           command_type: maxSpeedLimit !== undefined ? "set_speed_limit" : "toggle_governor",
-          command_data: updateData,
+          command_data: updateData as Json,
           status: "sent",
           sent_at: new Date().toISOString(),
-        });
-      if (logError) console.error("Failed to log command:", logError);
+        }]);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["speed-governor-configs"] });
@@ -265,8 +231,52 @@ export const useSpeedGovernor = () => {
     kpisLoading,
     governorConfigs,
     configsLoading,
-    useViolations,
     updateConfig,
     acknowledgeViolation,
+    organizationId,
   };
+};
+
+// Separate hook for violations with pagination
+export const useSpeedViolations = (
+  page: number = 0, 
+  pageSize: number = 20, 
+  filters?: ViolationFilters
+) => {
+  const { organizationId } = useOrganization();
+  
+  return useQuery({
+    queryKey: ["speed-violations", organizationId, page, pageSize, filters],
+    queryFn: async () => {
+      let query = supabase
+        .from("speed_violations")
+        .select(`
+          *,
+          vehicles(plate_number),
+          drivers(first_name, last_name)
+        `, { count: "exact" })
+        .eq("organization_id", organizationId!)
+        .order("violation_time", { ascending: false })
+        .range(page * pageSize, (page + 1) * pageSize - 1);
+
+      if (filters?.vehicleId) {
+        query = query.eq("vehicle_id", filters.vehicleId);
+      }
+      if (filters?.severity) {
+        query = query.eq("severity", filters.severity);
+      }
+      if (filters?.dateFrom) {
+        query = query.gte("violation_time", filters.dateFrom.toISOString());
+      }
+      if (filters?.dateTo) {
+        query = query.lte("violation_time", filters.dateTo.toISOString());
+      }
+
+      const { data, error, count } = await query;
+      if (error) throw error;
+
+      return { violations: data as SpeedViolation[], totalCount: count || 0 };
+    },
+    enabled: !!organizationId,
+  });
 };
