@@ -299,10 +299,11 @@ const RoutesTab = () => {
               setCurrentPage(1);
             }}
             className="pl-10"
+            aria-label="Search routes"
           />
         </div>
         <Select value={frequencyFilter} onValueChange={(value) => { setFrequencyFilter(value); setCurrentPage(1); }}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px]" aria-label="Filter by frequency">
             <SelectValue placeholder="Frequency" />
           </SelectTrigger>
           <SelectContent>
@@ -327,7 +328,7 @@ const RoutesTab = () => {
         <TableBody>
           {paginatedRoutes.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={5} className="text-center text-muted-foreground py-8" role="status" aria-label="No routes found">
                 No routes found
               </TableCell>
             </TableRow>
@@ -372,12 +373,14 @@ const RoutesTab = () => {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <Pagination>
+        <Pagination aria-label="Routes pagination">
           <PaginationContent>
             <PaginationItem>
               <PaginationPrevious 
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                aria-label="Go to previous page"
+                aria-disabled={currentPage === 1}
               />
             </PaginationItem>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
@@ -386,6 +389,8 @@ const RoutesTab = () => {
                   onClick={() => setCurrentPage(page)}
                   isActive={currentPage === page}
                   className="cursor-pointer"
+                  aria-label={`Go to page ${page}`}
+                  aria-current={currentPage === page ? "page" : undefined}
                 >
                   {page}
                 </PaginationLink>
@@ -395,6 +400,8 @@ const RoutesTab = () => {
               <PaginationNext 
                 onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                 className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                aria-label="Go to next page"
+                aria-disabled={currentPage === totalPages}
               />
             </PaginationItem>
           </PaginationContent>

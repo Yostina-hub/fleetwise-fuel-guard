@@ -713,7 +713,7 @@ const WorkOrdersTab = () => {
         <TableBody>
           {paginatedWorkOrders.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={8} className="text-center text-muted-foreground py-8" role="status" aria-label="No work orders found">
                 No work orders found
               </TableCell>
             </TableRow>
@@ -777,13 +777,14 @@ const WorkOrdersTab = () => {
 
       {/* Pagination with ellipsis */}
       {totalPages > 1 && (
-        <Pagination>
+        <Pagination aria-label="Work orders pagination">
           <PaginationContent>
             <PaginationItem>
               <PaginationPrevious 
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                 aria-disabled={currentPage === 1}
+                aria-label="Go to previous page"
               />
             </PaginationItem>
             {getPaginationItems().map((item, index) => (
@@ -796,6 +797,7 @@ const WorkOrdersTab = () => {
                     isActive={currentPage === item}
                     className="cursor-pointer"
                     aria-current={currentPage === item ? "page" : undefined}
+                    aria-label={`Go to page ${item}`}
                   >
                     {item}
                   </PaginationLink>
@@ -807,6 +809,7 @@ const WorkOrdersTab = () => {
                 onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                 className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                 aria-disabled={currentPage === totalPages}
+                aria-label="Go to next page"
               />
             </PaginationItem>
           </PaginationContent>

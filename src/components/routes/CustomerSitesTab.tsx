@@ -386,13 +386,13 @@ const CustomerSitesTab = () => {
             onClick={handleExport}
             aria-label="Export customer sites to CSV"
           >
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 mr-2" aria-hidden="true" />
             Export
           </Button>
           <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
             <DialogTrigger asChild>
               <Button onClick={resetForm} aria-label="Add new customer site">
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
                 Add Site
               </Button>
             </DialogTrigger>
@@ -555,7 +555,7 @@ const CustomerSitesTab = () => {
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
         <Input
           placeholder="Search customer sites..."
           value={searchQuery}
@@ -622,7 +622,7 @@ const CustomerSitesTab = () => {
                       onClick={(e) => { e.stopPropagation(); handleView(site); }}
                       aria-label={`View ${site.site_name} details`}
                     >
-                      <Eye className="h-4 w-4" />
+                      <Eye className="h-4 w-4" aria-hidden="true" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -630,7 +630,7 @@ const CustomerSitesTab = () => {
                       onClick={(e) => { e.stopPropagation(); handleEdit(site); }}
                       aria-label={`Edit ${site.site_name}`}
                     >
-                      <Pencil className="h-4 w-4" />
+                      <Pencil className="h-4 w-4" aria-hidden="true" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -638,7 +638,7 @@ const CustomerSitesTab = () => {
                       onClick={(e) => handleDeleteClick(site, e)}
                       aria-label={`Delete ${site.site_name}`}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
                     </Button>
                   </div>
                 </TableCell>
