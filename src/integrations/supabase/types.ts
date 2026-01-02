@@ -2834,6 +2834,9 @@ export type Database = {
       }
       geofences: {
         Row: {
+          active_days: number[] | null
+          active_end_time: string | null
+          active_start_time: string | null
           address: string | null
           category: string
           center_lat: number | null
@@ -2861,6 +2864,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          active_days?: number[] | null
+          active_end_time?: string | null
+          active_start_time?: string | null
           address?: string | null
           category: string
           center_lat?: number | null
@@ -2888,6 +2894,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          active_days?: number[] | null
+          active_end_time?: string | null
+          active_start_time?: string | null
           address?: string | null
           category?: string
           center_lat?: number | null
