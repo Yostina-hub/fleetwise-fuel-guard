@@ -31,7 +31,7 @@ const DeviceProtocolsTab = () => {
     enabled: !!organizationId,
   });
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <div role="status" aria-live="polite" aria-label="Loading device protocols">Loading...</div>;
 
   return (
     <div className="space-y-4">
@@ -42,8 +42,8 @@ const DeviceProtocolsTab = () => {
             Configure AVL codec parsers and vendor-specific decoders
           </p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
+        <Button aria-label="Add new device protocol">
+          <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
           Add Protocol
         </Button>
       </div>
@@ -80,7 +80,7 @@ const DeviceProtocolsTab = () => {
       </Table>
 
       {protocols?.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
+        <div className="text-center py-12 text-muted-foreground" role="status" aria-label="No device protocols configured">
           <p>No device protocols configured</p>
           <p className="text-sm mt-2">Add protocols to decode tracker data</p>
         </div>

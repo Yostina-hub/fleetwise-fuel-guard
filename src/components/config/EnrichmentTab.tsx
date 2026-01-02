@@ -31,7 +31,7 @@ const EnrichmentTab = () => {
     enabled: !!organizationId,
   });
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <div role="status" aria-live="polite" aria-label="Loading enrichment configurations">Loading...</div>;
 
   return (
     <div className="space-y-4">
@@ -42,8 +42,8 @@ const EnrichmentTab = () => {
             Configure map-matching, geofence evaluation, and driver binding
           </p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
+        <Button aria-label="Add new enrichment configuration">
+          <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
           Add Config
         </Button>
       </div>
@@ -72,35 +72,35 @@ const EnrichmentTab = () => {
               </TableCell>
               <TableCell>
                 {config.enable_geofence_matching ? (
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  <CheckCircle2 className="h-5 w-5 text-green-600" aria-hidden="true" aria-label="Geofencing enabled" />
                 ) : (
-                  <XCircle className="h-5 w-5 text-muted-foreground" />
+                  <XCircle className="h-5 w-5 text-muted-foreground" aria-hidden="true" aria-label="Geofencing disabled" />
                 )}
               </TableCell>
               <TableCell>
                 {config.enable_map_matching ? (
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    <CheckCircle2 className="h-5 w-5 text-green-600" aria-hidden="true" />
                     <span className="text-sm text-muted-foreground">
                       {config.map_provider}
                     </span>
                   </div>
                 ) : (
-                  <XCircle className="h-5 w-5 text-muted-foreground" />
+                  <XCircle className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
                 )}
               </TableCell>
               <TableCell>
                 {config.enable_driver_binding ? (
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  <CheckCircle2 className="h-5 w-5 text-green-600" aria-hidden="true" />
                 ) : (
-                  <XCircle className="h-5 w-5 text-muted-foreground" />
+                  <XCircle className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
                 )}
               </TableCell>
               <TableCell>
                 {config.enable_reverse_geocoding ? (
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  <CheckCircle2 className="h-5 w-5 text-green-600" aria-hidden="true" />
                 ) : (
-                  <XCircle className="h-5 w-5 text-muted-foreground" />
+                  <XCircle className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
                 )}
               </TableCell>
               <TableCell>
@@ -116,7 +116,7 @@ const EnrichmentTab = () => {
       </Table>
 
       {configs?.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
+        <div className="text-center py-12 text-muted-foreground" role="status" aria-label="No enrichment configurations found">
           <p>No enrichment configs found</p>
           <p className="text-sm mt-2">
             Create configs to enrich telemetry data
