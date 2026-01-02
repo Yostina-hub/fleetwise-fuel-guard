@@ -8,23 +8,6 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { 
   Gauge,
   AlertTriangle,
@@ -32,35 +15,35 @@ import {
   Settings,
   Send,
   Download,
-  FileText,
   Bell,
   Activity,
   Shield,
   Clock,
   TrendingUp,
-  AlertCircle,
-  MapPin
+  MapPin,
+  Loader2
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
+import { useSpeedGovernor } from "@/hooks/useSpeedGovernor";
 import { LiveTelemetryCard } from "@/components/speedgovernor/LiveTelemetryCard";
 import { GovernorMapView } from "@/components/speedgovernor/GovernorMapView";
 import { RoutePlaybackMap } from "@/components/speedgovernor/RoutePlaybackMap";
 import { RouteComparisonMap } from "@/components/speedgovernor/RouteComparisonMap";
 import { GpsSignalHistoryChart } from "@/components/speedgovernor/GpsSignalHistoryChart";
 import { TrafficFlowAnalysis } from "@/components/speedgovernor/TrafficFlowAnalysis";
+import { ViolationsTable } from "@/components/speedgovernor/ViolationsTable";
+import { ComplianceReportGenerator } from "@/components/speedgovernor/ComplianceReportGenerator";
 
 const SpeedGovernor = () => {
   const { organizationId } = useOrganization();
-  const { toast } = useToast();
   const { telemetry, isVehicleOnline } = useVehicleTelemetry();
+  const { kpis, kpisLoading, updateConfig } = useSpeedGovernor();
   const [selectedVehicle, setSelectedVehicle] = useState<string>("");
   const [speedLimit, setSpeedLimit] = useState<number>(80);
   const [isGovernorActive, setIsGovernorActive] = useState(true);
-  const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
 
   const { data: vehicles } = useQuery({
     queryKey: ["vehicles-with-governors", organizationId],
@@ -101,54 +84,12 @@ const SpeedGovernor = () => {
     enabled: !!organizationId,
   });
 
-  // Fetch real speed violation events
-  const { data: violations = [] } = useQuery({
-    queryKey: ["speed-violations", organizationId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("driver_events")
-        .select(`
-          id,
-          event_time,
-          speed_kmh,
-          speed_limit_kmh,
-          address,
-          vehicle_id,
-          vehicles(plate_number)
-        `)
-        .eq("organization_id", organizationId!)
-        .eq("event_type", "speeding")
-        .order("event_time", { ascending: false })
-        .limit(50);
-
-      if (error) throw error;
-
-      return data?.map((event: any) => ({
-        id: event.id,
-        vehicle: event.vehicles?.plate_number || "Unknown",
-        time: new Date(event.event_time).toLocaleString(),
-        speed: event.speed_kmh,
-        limit: event.speed_limit_kmh || 80,
-        duration: "N/A", // Calculate from event data if available
-        location: event.address || "Location unknown",
-        severity: event.speed_kmh > (event.speed_limit_kmh || 80) + 15 ? "high" : "medium"
-      })) || [];
-    },
-    enabled: !!organizationId,
-  });
-
   const handleSendCommand = () => {
-    toast({
-      title: "Command Sent",
-      description: `Speed limit of ${speedLimit} km/h has been sent to the vehicle.`,
-    });
-    setIsConfigDialogOpen(false);
-  };
-
-  const handleGenerateReport = () => {
-    toast({
-      title: "Generating Report",
-      description: "Compliance report is being generated...",
+    if (!selectedVehicle) return;
+    updateConfig.mutate({ 
+      vehicleId: selectedVehicle, 
+      maxSpeedLimit: speedLimit,
+      governorActive: isGovernorActive 
     });
   };
 
@@ -168,10 +109,10 @@ const SpeedGovernor = () => {
               Ethiopian Compliance • Remote Speed Management • Real-time Monitoring
             </p>
           </div>
-          <Button onClick={handleGenerateReport} className="gap-2">
-            <Download className="h-4 w-4" aria-hidden="true" />
-            Compliance Report
-          </Button>
+          <Badge variant="outline" className="gap-2 px-3 py-1.5">
+            <Gauge className="h-4 w-4" />
+            Ethiopian Transport Authority Compliant
+          </Badge>
         </div>
 
         {/* KPI Cards */}
@@ -181,8 +122,12 @@ const SpeedGovernor = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Active Governors</p>
-                  <p className="text-3xl font-bold">2/3</p>
-                  <p className="text-xs text-success mt-1">67% Compliance</p>
+                  {kpisLoading ? (
+                    <div className="h-9 w-16 bg-muted animate-pulse rounded" />
+                  ) : (
+                    <p className="text-3xl font-bold">{kpis?.activeGovernors || 0}/{kpis?.totalGovernors || 0}</p>
+                  )}
+                  <p className="text-xs text-green-600 mt-1">{kpis?.complianceRate || 0}% Compliance</p>
                 </div>
                 <div className="p-3 bg-green-500/10 rounded-lg">
                   <CheckCircle className="h-8 w-8 text-green-600" aria-hidden="true" />
@@ -196,8 +141,16 @@ const SpeedGovernor = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Today's Violations</p>
-                  <p className="text-3xl font-bold">15</p>
-                  <p className="text-xs text-warning mt-1">-23% from yesterday</p>
+                  {kpisLoading ? (
+                    <div className="h-9 w-12 bg-muted animate-pulse rounded" />
+                  ) : (
+                    <p className="text-3xl font-bold">{kpis?.todayViolations || 0}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {kpis && kpis.yesterdayViolations > 0 
+                      ? `${Math.round(((kpis.todayViolations - kpis.yesterdayViolations) / kpis.yesterdayViolations) * 100)}% from yesterday`
+                      : "vs yesterday"}
+                  </p>
                 </div>
                 <div className="p-3 bg-orange-500/10 rounded-lg">
                   <AlertTriangle className="h-8 w-8 text-orange-600" aria-hidden="true" />
@@ -211,7 +164,11 @@ const SpeedGovernor = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Avg Speed Limit</p>
-                  <p className="text-3xl font-bold">75 km/h</p>
+                  {kpisLoading ? (
+                    <div className="h-9 w-20 bg-muted animate-pulse rounded" />
+                  ) : (
+                    <p className="text-3xl font-bold">{kpis?.avgSpeedLimit || 80} km/h</p>
+                  )}
                   <p className="text-xs text-muted-foreground mt-1">Fleet average</p>
                 </div>
                 <div className="p-3 bg-blue-500/10 rounded-lg">
@@ -226,7 +183,11 @@ const SpeedGovernor = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Alerts Sent</p>
-                  <p className="text-3xl font-bold">28</p>
+                  {kpisLoading ? (
+                    <div className="h-9 w-12 bg-muted animate-pulse rounded" />
+                  ) : (
+                    <p className="text-3xl font-bold">{kpis?.alertsSent24h || 0}</p>
+                  )}
                   <p className="text-xs text-muted-foreground mt-1">Last 24 hours</p>
                 </div>
                 <div className="p-3 bg-purple-500/10 rounded-lg">
@@ -291,8 +252,15 @@ const SpeedGovernor = () => {
                         min={30}
                         max={120}
                       />
-                      <Button onClick={handleSendCommand} disabled={!selectedVehicle}>
-                        <Send className="h-4 w-4 mr-2" aria-hidden="true" />
+                      <Button 
+                        onClick={handleSendCommand} 
+                        disabled={!selectedVehicle || updateConfig.isPending}
+                      >
+                        {updateConfig.isPending ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
+                        ) : (
+                          <Send className="h-4 w-4 mr-2" aria-hidden="true" />
+                        )}
                         Send
                       </Button>
                     </div>
@@ -594,175 +562,12 @@ const SpeedGovernor = () => {
 
           {/* Violations Log Tab */}
           <TabsContent value="violations">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5 text-destructive" aria-hidden="true" />
-                  Speed Violations Log
-                </CardTitle>
-                <CardDescription>Track and review all over-speed events</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Vehicle</TableHead>
-                      <TableHead>Speed</TableHead>
-                      <TableHead>Limit</TableHead>
-                      <TableHead>Excess</TableHead>
-                      <TableHead>Duration</TableHead>
-                      <TableHead>Location</TableHead>
-                      <TableHead>Severity</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {violations.map((violation) => (
-                      <TableRow key={violation.id}>
-                        <TableCell className="font-mono text-xs">{violation.time}</TableCell>
-                        <TableCell className="font-medium">{violation.vehicle}</TableCell>
-                        <TableCell className="text-destructive font-semibold">
-                          {violation.speed} km/h
-                        </TableCell>
-                        <TableCell>{violation.limit} km/h</TableCell>
-                        <TableCell className="text-destructive">
-                          +{violation.speed - violation.limit}
-                        </TableCell>
-                        <TableCell>{violation.duration}</TableCell>
-                        <TableCell className="text-sm">{violation.location}</TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={
-                              violation.severity === 'high' ? 'destructive' : 
-                              violation.severity === 'medium' ? 'default' : 'outline'
-                            }
-                          >
-                            {violation.severity}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <ViolationsTable vehicles={(vehicles || []).map(v => ({ id: v.id, plate: v.plate }))} />
           </TabsContent>
 
           {/* Compliance Reports Tab */}
           <TabsContent value="compliance">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-primary" aria-hidden="true" />
-                    Generate Compliance Report
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label>Report Period</Label>
-                    <Select defaultValue="week">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="day">Today</SelectItem>
-                        <SelectItem value="week">This Week</SelectItem>
-                        <SelectItem value="month">This Month</SelectItem>
-                        <SelectItem value="quarter">This Quarter</SelectItem>
-                        <SelectItem value="year">This Year</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label>Vehicle Selection</Label>
-                    <Select defaultValue="all">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Vehicles</SelectItem>
-                        <SelectItem value="governors">Governor-Equipped Only</SelectItem>
-                        {vehicles?.map((v) => (
-                          <SelectItem key={v.id} value={v.id}>{v.plate}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label>Report Format</Label>
-                    <Select defaultValue="pdf">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pdf">PDF Report</SelectItem>
-                        <SelectItem value="excel">Excel Spreadsheet</SelectItem>
-                        <SelectItem value="csv">CSV Data</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <Button className="w-full" onClick={handleGenerateReport}>
-                    <Download className="h-4 w-4 mr-2" aria-hidden="true" />
-                    Generate Report
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Report Contents</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-600" aria-hidden="true" />
-                    <span>Governor activation status per vehicle</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-600" aria-hidden="true" />
-                    <span>Speed limit configuration history</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-600" aria-hidden="true" />
-                    <span>Total over-speed violations</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-600" aria-hidden="true" />
-                    <span>Violation severity breakdown</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-600" aria-hidden="true" />
-                    <span>Compliance rate calculations</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-600" aria-hidden="true" />
-                    <span>Ethiopian regulation adherence</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-600" aria-hidden="true" />
-                    <span>Driver alert statistics</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-600" aria-hidden="true" />
-                    <span>GPS tracking verification</span>
-                  </div>
-
-                  <Card className="mt-4 bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
-                    <CardContent className="pt-4">
-                      <p className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                        📋 Regulatory Compliance
-                      </p>
-                      <p className="text-xs text-blue-700 dark:text-blue-200">
-                        Reports include all data required by Ethiopian Transport Authority for speed governor compliance verification
-                      </p>
-                    </CardContent>
-                  </Card>
-                </CardContent>
-              </Card>
-            </div>
+            <ComplianceReportGenerator vehicles={(vehicles || []).map(v => ({ id: v.id, plate: v.plate, maxSpeed: v.maxSpeed }))} />
           </TabsContent>
         </Tabs>
       </div>
