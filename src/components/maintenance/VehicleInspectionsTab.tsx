@@ -310,7 +310,20 @@ const VehicleInspectionsTab = () => {
       ) : (
         <div className="space-y-4">
           {filteredInspections.map(inspection => (
-            <Card key={inspection.id}>
+            <Card 
+              key={inspection.id}
+              role="button"
+              tabIndex={0}
+              className="cursor-pointer hover:border-primary/50 transition-colors"
+              onClick={() => handleViewDetails(inspection)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleViewDetails(inspection);
+                }
+              }}
+              aria-label={`View inspection for ${getVehiclePlate(inspection.vehicle_id)} on ${format(new Date(inspection.inspection_date), "MMM dd, yyyy")}`}
+            >
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
                   <div className="space-y-2">
@@ -364,7 +377,7 @@ const VehicleInspectionsTab = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleViewDetails(inspection)}
+                      onClick={(e) => { e.stopPropagation(); handleViewDetails(inspection); }}
                       aria-label={`View details for inspection on ${getVehiclePlate(inspection.vehicle_id)}`}
                     >
                       <Eye className="w-4 h-4" />
@@ -373,7 +386,7 @@ const VehicleInspectionsTab = () => {
                       variant="ghost"
                       size="sm"
                       className="text-destructive hover:text-destructive"
-                      onClick={() => handleDeleteClick(inspection)}
+                      onClick={(e) => { e.stopPropagation(); handleDeleteClick(inspection); }}
                       aria-label={`Delete inspection for ${getVehiclePlate(inspection.vehicle_id)}`}
                     >
                       <Trash2 className="w-4 h-4" />

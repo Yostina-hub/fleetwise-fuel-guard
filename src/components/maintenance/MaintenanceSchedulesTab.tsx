@@ -313,7 +313,10 @@ const MaintenanceSchedulesTab = () => {
             const currentOdo = getVehicleOdometer(schedule.vehicle_id);
             
             return (
-              <Card key={schedule.id} className={status === 'overdue' ? 'border-destructive/50' : ''}>
+              <Card 
+                key={schedule.id} 
+                className={`${status === 'overdue' ? 'border-destructive/50' : ''} hover:border-primary/50 transition-colors`}
+              >
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="space-y-3">
