@@ -11,24 +11,31 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { 
   Plus, 
   Fuel, 
-  Gauge, 
   AlertTriangle, 
   Loader2,
   Droplet,
   TrendingDown,
-  MapPin
+  MapPin,
+  Download,
+  Edit
 } from "lucide-react";
 import { useFuelDepots } from "@/hooks/useFuelDepots";
 import { useFuelPageContext } from "@/pages/FuelMonitoring";
 import { format } from "date-fns";
+import ReceiveFuelDialog from "./ReceiveFuelDialog";
+import EditDepotDialog from "./EditDepotDialog";
+import { toast } from "sonner";
 
 const FuelDepotsTab = () => {
-  const { depots, dispensingLogs, loading, createDepot, recordDispensing, updateDepotStock } = useFuelDepots();
+  const { depots, dispensingLogs, loading, createDepot, recordDispensing, receiveFuel, updateDepot, deleteDepot } = useFuelDepots();
   const { vehicles, drivers, getVehiclePlate: getVehiclePlateFromContext, getDriverName: getDriverNameFromContext } = useFuelPageContext();
   
   const [showAddDepot, setShowAddDepot] = useState(false);
   const [showDispense, setShowDispense] = useState(false);
+  const [showReceive, setShowReceive] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
   const [selectedDepot, setSelectedDepot] = useState<string | null>(null);
+  const selectedDepotData = depots.find(d => d.id === selectedDepot);
   
   const [newDepot, setNewDepot] = useState({
     name: "",
@@ -101,6 +108,31 @@ const FuelDepotsTab = () => {
       odometer_km: 0,
       pump_number: "",
     });
+  };
+
+  const exportDispensingCSV = () => {
+    const headers = ["Date/Time", "Depot", "Vehicle", "Driver", "Liters", "Odometer", "Pump", "Stock Before", "Stock After"];
+    const rows = dispensingLogs.map(log => [
+      format(new Date(log.dispensed_at), "yyyy-MM-dd HH:mm"),
+      depots.find(d => d.id === log.depot_id)?.name || "Unknown",
+      getVehiclePlate(log.vehicle_id || undefined),
+      getDriverName(log.driver_id || undefined),
+      log.liters_dispensed,
+      log.odometer_km || "",
+      log.pump_number || "",
+      log.stock_before_liters || "",
+      log.stock_after_liters || ""
+    ]);
+    
+    const csvContent = [headers.join(","), ...rows.map(r => r.map(c => `"${c}"`).join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `dispensing-logs-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Dispensing logs exported");
   };
 
   if (loading) {
@@ -208,9 +240,27 @@ const FuelDepotsTab = () => {
                       <TrendingDown className="w-4 h-4" />
                       Dispense
                     </Button>
-                    <Button size="sm" variant="outline" className="flex-1 gap-1">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1 gap-1"
+                      onClick={() => {
+                        setSelectedDepot(depot.id);
+                        setShowReceive(true);
+                      }}
+                    >
                       <Droplet className="w-4 h-4" />
                       Receive
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setSelectedDepot(depot.id);
+                        setShowEdit(true);
+                      }}
+                    >
+                      <Edit className="w-4 h-4" />
                     </Button>
                   </div>
                 </CardContent>
@@ -222,8 +272,12 @@ const FuelDepotsTab = () => {
 
       {/* Recent Dispensing Logs */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Recent Dispensing</CardTitle>
+          <Button size="sm" variant="outline" className="gap-2" onClick={exportDispensingCSV}>
+            <Download className="w-4 h-4" />
+            Export CSV
+          </Button>
         </CardHeader>
         <CardContent>
           <Table>
@@ -234,13 +288,16 @@ const FuelDepotsTab = () => {
                 <TableHead>Vehicle</TableHead>
                 <TableHead>Driver</TableHead>
                 <TableHead>Liters</TableHead>
+                <TableHead>Odometer</TableHead>
                 <TableHead>Pump</TableHead>
+                <TableHead>Stock Before</TableHead>
+                <TableHead>Stock After</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {dispensingLogs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                     No dispensing records yet
                   </TableCell>
                 </TableRow>
@@ -252,7 +309,10 @@ const FuelDepotsTab = () => {
                     <TableCell>{getVehiclePlate(log.vehicle_id || undefined)}</TableCell>
                     <TableCell>{getDriverName(log.driver_id || undefined)}</TableCell>
                     <TableCell className="font-medium">{log.liters_dispensed}L</TableCell>
+                    <TableCell>{log.odometer_km ? `${log.odometer_km.toLocaleString()} km` : '-'}</TableCell>
                     <TableCell>{log.pump_number || '-'}</TableCell>
+                    <TableCell>{log.stock_before_liters ? `${log.stock_before_liters.toLocaleString()}L` : '-'}</TableCell>
+                    <TableCell>{log.stock_after_liters ? `${log.stock_after_liters.toLocaleString()}L` : '-'}</TableCell>
                   </TableRow>
                 ))
               )}
@@ -410,6 +470,23 @@ const FuelDepotsTab = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Receive Fuel Dialog */}
+      <ReceiveFuelDialog
+        open={showReceive}
+        onOpenChange={setShowReceive}
+        depot={selectedDepotData || null}
+        onSubmit={receiveFuel}
+      />
+
+      {/* Edit Depot Dialog */}
+      <EditDepotDialog
+        open={showEdit}
+        onOpenChange={setShowEdit}
+        depot={selectedDepotData || null}
+        onSubmit={updateDepot}
+        onDelete={deleteDepot}
+      />
     </div>
   );
 };
