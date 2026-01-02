@@ -2939,6 +2939,63 @@ export type Database = {
           },
         ]
       }
+      governor_command_logs: {
+        Row: {
+          acknowledged_at: string | null
+          command_data: Json | null
+          command_type: string
+          created_at: string
+          created_by: string | null
+          error_message: string | null
+          id: string
+          organization_id: string
+          sent_at: string | null
+          status: string
+          vehicle_id: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          command_data?: Json | null
+          command_type: string
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          id?: string
+          organization_id: string
+          sent_at?: string | null
+          status?: string
+          vehicle_id: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          command_data?: Json | null
+          command_type?: string
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          id?: string
+          organization_id?: string
+          sent_at?: string | null
+          status?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "governor_command_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "governor_command_logs_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       incidents: {
         Row: {
           actual_cost: number | null
@@ -4211,6 +4268,142 @@ export type Database = {
           },
           {
             foreignKeyName: "sos_alerts_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      speed_governor_config: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          device_model: string | null
+          firmware_version: string | null
+          governor_active: boolean
+          id: string
+          last_config_update: string | null
+          max_speed_limit: number
+          organization_id: string
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          device_model?: string | null
+          firmware_version?: string | null
+          governor_active?: boolean
+          id?: string
+          last_config_update?: string | null
+          max_speed_limit?: number
+          organization_id: string
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          device_model?: string | null
+          firmware_version?: string | null
+          governor_active?: boolean
+          id?: string
+          last_config_update?: string | null
+          max_speed_limit?: number
+          organization_id?: string
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "speed_governor_config_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "speed_governor_config_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: true
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      speed_violations: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          created_at: string
+          driver_id: string | null
+          duration_seconds: number | null
+          id: string
+          is_acknowledged: boolean | null
+          lat: number | null
+          lng: number | null
+          location_name: string | null
+          organization_id: string
+          severity: string
+          speed_kmh: number
+          speed_limit_kmh: number
+          vehicle_id: string
+          violation_time: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          created_at?: string
+          driver_id?: string | null
+          duration_seconds?: number | null
+          id?: string
+          is_acknowledged?: boolean | null
+          lat?: number | null
+          lng?: number | null
+          location_name?: string | null
+          organization_id: string
+          severity?: string
+          speed_kmh: number
+          speed_limit_kmh: number
+          vehicle_id: string
+          violation_time: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          created_at?: string
+          driver_id?: string | null
+          duration_seconds?: number | null
+          id?: string
+          is_acknowledged?: boolean | null
+          lat?: number | null
+          lng?: number | null
+          location_name?: string | null
+          organization_id?: string
+          severity?: string
+          speed_kmh?: number
+          speed_limit_kmh?: number
+          vehicle_id?: string
+          violation_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "speed_violations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "speed_violations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "speed_violations_vehicle_id_fkey"
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
