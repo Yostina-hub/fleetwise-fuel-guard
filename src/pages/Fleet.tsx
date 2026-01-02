@@ -330,11 +330,11 @@ const Fleet = () => {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" className="gap-2" onClick={() => setImportDialogOpen(true)}>
-              <Upload className="w-4 h-4" />
+              <Upload className="w-4 h-4" aria-hidden="true" />
               <span className="hidden sm:inline">Import</span>
             </Button>
             <Button variant="outline" size="sm" className="gap-2" onClick={handleExportAll}>
-              <Download className="w-4 h-4" />
+              <Download className="w-4 h-4" aria-hidden="true" />
               <span className="hidden sm:inline">Export</span>
             </Button>
             <Button
@@ -342,7 +342,7 @@ const Fleet = () => {
               className="gap-2"
               onClick={() => setCreateDialogOpen(true)}
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4" aria-hidden="true" />
               Add Vehicle
             </Button>
           </div>
@@ -419,7 +419,7 @@ const Fleet = () => {
               <div className="flex gap-3 flex-wrap items-center">
                 {/* Search */}
                 <div className="relative flex-1 min-w-[200px]">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
                   <Input
                     id="fleet-search"
                     aria-label="Search vehicles by plate, make, or model"
@@ -434,8 +434,9 @@ const Fleet = () => {
                       size="icon"
                       className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7"
                       onClick={() => setSearchInput("")}
+                      aria-label="Clear search"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-4 h-4" aria-hidden="true" />
                     </Button>
                   )}
                 </div>
@@ -464,7 +465,7 @@ const Fleet = () => {
                       aria-expanded={showAdvancedFilters}
                       aria-haspopup="dialog"
                     >
-                      <SlidersHorizontal className="w-4 h-4" />
+                      <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
                       <span className="hidden sm:inline">Filters</span>
                       {activeFilterCount > 0 && (
                         <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs">
@@ -575,10 +576,10 @@ const Fleet = () => {
                     className="border rounded-lg h-9"
                   >
                     <ToggleGroupItem value="grid" aria-label="Grid view" className="px-3 h-8">
-                      <LayoutGrid className="w-4 h-4" />
+                      <LayoutGrid className="w-4 h-4" aria-hidden="true" />
                     </ToggleGroupItem>
                     <ToggleGroupItem value="table" aria-label="Table view" className="px-3 h-8">
-                      <List className="w-4 h-4" />
+                      <List className="w-4 h-4" aria-hidden="true" />
                     </ToggleGroupItem>
                   </ToggleGroup>
                 </div>
@@ -591,37 +592,49 @@ const Fleet = () => {
                   {searchInput && (
                     <Badge variant="secondary" className="gap-1">
                       Search: "{searchInput}"
-                      <X className="w-3 h-3 cursor-pointer" onClick={() => setSearchInput("")} />
+                      <button type="button" onClick={() => setSearchInput("")} aria-label="Remove search filter">
+                        <X className="w-3 h-3 cursor-pointer" aria-hidden="true" />
+                      </button>
                     </Badge>
                   )}
                   {statusFilter !== "all" && (
                     <Badge variant="secondary" className="gap-1">
                       Status: {statusFilter}
-                      <X className="w-3 h-3 cursor-pointer" onClick={() => setStatusFilter("all")} />
+                      <button type="button" onClick={() => setStatusFilter("all")} aria-label="Remove status filter">
+                        <X className="w-3 h-3 cursor-pointer" aria-hidden="true" />
+                      </button>
                     </Badge>
                   )}
                   {vehicleTypeFilter !== "all" && (
                     <Badge variant="secondary" className="gap-1">
                       Type: {VEHICLE_TYPES.find(t => t.value === vehicleTypeFilter)?.label}
-                      <X className="w-3 h-3 cursor-pointer" onClick={() => setVehicleTypeFilter("all")} />
+                      <button type="button" onClick={() => setVehicleTypeFilter("all")} aria-label="Remove vehicle type filter">
+                        <X className="w-3 h-3 cursor-pointer" aria-hidden="true" />
+                      </button>
                     </Badge>
                   )}
                   {fuelTypeFilter !== "all" && (
                     <Badge variant="secondary" className="gap-1">
                       Fuel: {FUEL_TYPES.find(t => t.value === fuelTypeFilter)?.label}
-                      <X className="w-3 h-3 cursor-pointer" onClick={() => setFuelTypeFilter("all")} />
+                      <button type="button" onClick={() => setFuelTypeFilter("all")} aria-label="Remove fuel type filter">
+                        <X className="w-3 h-3 cursor-pointer" aria-hidden="true" />
+                      </button>
                     </Badge>
                   )}
                   {ownershipFilter !== "all" && (
                     <Badge variant="secondary" className="gap-1">
                       Ownership: {OWNERSHIP_TYPES.find(t => t.value === ownershipFilter)?.label}
-                      <X className="w-3 h-3 cursor-pointer" onClick={() => setOwnershipFilter("all")} />
+                      <button type="button" onClick={() => setOwnershipFilter("all")} aria-label="Remove ownership filter">
+                        <X className="w-3 h-3 cursor-pointer" aria-hidden="true" />
+                      </button>
                     </Badge>
                   )}
                   {driverFilter !== "all" && (
                     <Badge variant="secondary" className="gap-1">
                       Driver: {DRIVER_FILTER.find(t => t.value === driverFilter)?.label}
-                      <X className="w-3 h-3 cursor-pointer" onClick={() => setDriverFilter("all")} />
+                      <button type="button" onClick={() => setDriverFilter("all")} aria-label="Remove driver filter">
+                        <X className="w-3 h-3 cursor-pointer" aria-hidden="true" />
+                      </button>
                     </Badge>
                   )}
                 </div>
@@ -638,8 +651,8 @@ const Fleet = () => {
           </div>
         ) : vehicles.length === 0 ? (
           <Card className="p-12">
-            <div className="text-center text-muted-foreground">
-              <Truck className="w-16 h-16 mx-auto mb-4 opacity-50" />
+            <div className="text-center text-muted-foreground" role="status" aria-live="polite">
+              <Truck className="w-16 h-16 mx-auto mb-4 opacity-50" aria-hidden="true" />
               <h3 className="text-lg font-semibold mb-2">No vehicles found</h3>
               <p className="text-sm">Try adjusting your search criteria</p>
               {activeFilterCount > 0 && (
@@ -702,7 +715,7 @@ const Fleet = () => {
                     {driverFilter !== "all" && vehicles.length < PAGE_SIZE && ` (${vehicles.length} after driver filter)`}
                   </p>
                   {loading && (
-                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" role="status" aria-label="Loading vehicles" />
                   )}
                 </div>
                 <div className="flex items-center gap-2">
@@ -711,8 +724,9 @@ const Fleet = () => {
                     size="sm"
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage <= 1 || loading}
+                    aria-label="Go to previous page"
                   >
-                    <ChevronLeft className="w-4 h-4" />
+                    <ChevronLeft className="w-4 h-4" aria-hidden="true" />
                     Previous
                   </Button>
                   <div className="flex items-center gap-1">
@@ -746,9 +760,10 @@ const Fleet = () => {
                     size="sm"
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage >= totalPages || loading}
+                    aria-label="Go to next page"
                   >
                     Next
-                    <ChevronRight className="w-4 h-4" />
+                    <ChevronRight className="w-4 h-4" aria-hidden="true" />
                   </Button>
                 </div>
               </div>
