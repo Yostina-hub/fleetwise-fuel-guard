@@ -15,6 +15,7 @@ import { useVehicles } from "@/hooks/useVehicles";
 import { useToast } from "@/hooks/use-toast";
 import { useOrganization } from "@/hooks/useOrganization";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { 
   Plus, 
   Edit, 
@@ -49,6 +50,7 @@ export const DeviceManagementTab = () => {
   const { vehicles } = useVehicles();
   const { organizationId } = useOrganization();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDevice, setEditingDevice] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -78,38 +80,7 @@ export const DeviceManagementTab = () => {
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  // Real-time subscription for device updates
-  useEffect(() => {
-    if (!organizationId) return;
-
-    const channelName = `devices-${organizationId.slice(0, 8)}`;
-    let debounceTimeout: NodeJS.Timeout;
-
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'devices',
-          filter: `organization_id=eq.${organizationId}`
-        },
-        () => {
-          // Debounce refetch to prevent rapid updates
-          clearTimeout(debounceTimeout);
-          debounceTimeout = setTimeout(() => {
-            // The useDevices hook uses react-query which will auto-refetch
-          }, 500);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      clearTimeout(debounceTimeout);
-      supabase.removeChannel(channel);
-    };
-  }, [organizationId]);
+  // Real-time subscription is already handled by useDevices hook
 
   // Reset page when filters change
   useEffect(() => {
@@ -218,6 +189,8 @@ export const DeviceManagementTab = () => {
     
     try {
       await Promise.all(deletePromises);
+      // Invalidate queries to refresh device list - useDevices uses ["devices"] as base key
+      queryClient.invalidateQueries({ queryKey: ["devices"] });
       toast({
         title: "Devices Deleted",
         description: `${selectedDevices.length} devices have been deleted`,
@@ -252,7 +225,7 @@ export const DeviceManagementTab = () => {
 
   const handleQuickAssign = (device: any) => {
     setDeviceToAssign(device);
-    setAssignVehicleId(device.vehicle_id || "");
+    setAssignVehicleId(device.vehicle_id || "none");
     setQuickAssignDialogOpen(true);
   };
 
@@ -260,11 +233,11 @@ export const DeviceManagementTab = () => {
     if (deviceToAssign) {
       updateDevice.mutate({ 
         id: deviceToAssign.id, 
-        vehicle_id: assignVehicleId || null 
+        vehicle_id: assignVehicleId === "none" ? null : assignVehicleId 
       });
       setQuickAssignDialogOpen(false);
       setDeviceToAssign(null);
-      setAssignVehicleId("");
+      setAssignVehicleId("none");
     }
   };
 
@@ -886,7 +859,7 @@ export const DeviceManagementTab = () => {
                 <SelectValue placeholder="Select vehicle" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No vehicle assigned</SelectItem>
+                <SelectItem value="none">No vehicle assigned</SelectItem>
                 {availableVehicles?.map((vehicle) => (
                   <SelectItem key={vehicle.id} value={vehicle.id}>
                     {vehicle.plate_number} - {vehicle.make} {vehicle.model}
