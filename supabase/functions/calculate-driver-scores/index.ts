@@ -35,9 +35,9 @@ serve(async (req) => {
       .from("vehicle_telemetry")
       .select("*")
       .eq("vehicle_id", vehicleId)
-      .gte("timestamp", startDate)
-      .lte("timestamp", endDate)
-      .order("timestamp", { ascending: true });
+      .gte("created_at", startDate)
+      .lte("created_at", endDate)
+      .order("created_at", { ascending: true });
 
     if (telemetryError) throw telemetryError;
 
@@ -132,24 +132,26 @@ function calculateMetrics(telemetryData: any[]) {
 
   for (let i = 0; i < telemetryData.length; i++) {
     const current = telemetryData[i];
+    const currentSpeed = current.speed_kmh || 0;
     
     // Speed violations
-    if (current.speed > speedLimit) {
+    if (currentSpeed > speedLimit) {
       speedViolations++;
     }
     
     // Idle time (speed < 2 km/h but engine on)
-    if (current.speed < idleSpeedThreshold && current.device_connected) {
+    if (currentSpeed < idleSpeedThreshold && current.engine_on) {
       totalIdleTime += 1; // Assuming 1 second per record
     }
     
     // Calculate acceleration/deceleration
     if (i > 0) {
       const previous = telemetryData[i - 1];
-      const timeDiff = (new Date(current.timestamp).getTime() - new Date(previous.timestamp).getTime()) / 1000;
+      const previousSpeed = previous.speed_kmh || 0;
+      const timeDiff = (new Date(current.created_at).getTime() - new Date(previous.created_at).getTime()) / 1000;
       
-      if (timeDiff > 0) {
-        const acceleration = ((current.speed - previous.speed) * 1000 / 3600) / timeDiff;
+      if (timeDiff > 0 && timeDiff < 60) { // Only consider if time diff is reasonable (< 60 seconds)
+        const acceleration = ((currentSpeed - previousSpeed) * 1000 / 3600) / timeDiff;
         
         if (acceleration < harshBrakingThreshold) {
           harshBraking++;
@@ -159,8 +161,11 @@ function calculateMetrics(telemetryData: any[]) {
       }
       
       // Calculate distance (approximate)
-      const avgSpeed = (current.speed + previous.speed) / 2;
-      totalDistance += (avgSpeed * timeDiff) / 3600; // km
+      const avgSpeed = (currentSpeed + previousSpeed) / 2;
+      const timeDiffHours = timeDiff / 3600;
+      if (timeDiffHours < 1) { // Only count reasonable time gaps
+        totalDistance += avgSpeed * timeDiffHours; // km
+      }
     }
   }
   
