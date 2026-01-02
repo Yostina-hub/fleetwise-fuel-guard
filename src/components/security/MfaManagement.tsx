@@ -90,7 +90,7 @@ export const MfaManagement = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" />
+            <Shield className="h-5 w-5 text-primary" aria-hidden="true" />
             Multi-Factor Authentication
           </CardTitle>
           <CardDescription>
@@ -136,27 +136,29 @@ export const MfaManagement = () => {
       {showTotpSetup && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <QrCode className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2">
+              <QrCode className="h-5 w-5" aria-hidden="true" />
               Setup Authenticator App
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex justify-center p-4 bg-muted rounded-lg">
-              <div className="w-48 h-48 bg-background border-2 border-dashed rounded-lg flex items-center justify-center">
-                <QrCode className="h-24 w-24 text-muted-foreground" />
+              <div className="w-48 h-48 bg-background border-2 border-dashed rounded-lg flex items-center justify-center" aria-label="QR code for authenticator app">
+                <QrCode className="h-24 w-24 text-muted-foreground" aria-hidden="true" />
               </div>
             </div>
             <p className="text-sm text-muted-foreground text-center">
               Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)
             </p>
             <div className="space-y-2">
-              <Label>Enter verification code</Label>
+              <Label htmlFor="totp-code">Enter verification code</Label>
               <Input
+                id="totp-code"
                 placeholder="000000"
                 value={totpCode}
                 onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 className="text-center text-2xl tracking-widest"
+                aria-label="6-digit verification code"
               />
             </div>
             <div className="flex gap-2">
@@ -174,8 +176,8 @@ export const MfaManagement = () => {
       {backupCodes.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Key className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2">
+              <Key className="h-5 w-5" aria-hidden="true" />
               Backup Codes
             </CardTitle>
             <CardDescription>
@@ -194,11 +196,12 @@ export const MfaManagement = () => {
                     variant="ghost"
                     size="sm"
                     onClick={() => copyCode(code)}
+                    aria-label={`Copy backup code ${code}`}
                   >
                     {copiedCode === code ? (
-                      <Check className="h-4 w-4 text-green-600" />
+                      <Check className="h-4 w-4 text-green-600" aria-hidden="true" />
                     ) : (
-                      <Copy className="h-4 w-4" />
+                      <Copy className="h-4 w-4" aria-hidden="true" />
                     )}
                   </Button>
                 </div>
