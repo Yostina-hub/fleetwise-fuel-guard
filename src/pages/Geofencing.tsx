@@ -317,9 +317,10 @@ const Geofencing = () => {
                   placeholder="pk.eyJ..."
                   value={mapToken}
                   onChange={(e) => setMapToken(e.target.value)}
+                  aria-label="Mapbox public token"
                 />
                 <div className="flex gap-2">
-                  <Button size="sm" onClick={() => { localStorage.setItem('mapbox_token', mapToken); window.location.reload(); }}>Save</Button>
+                  <Button size="sm" onClick={() => { localStorage.setItem('mapbox_token', mapToken); window.location.reload(); }} aria-label="Save Mapbox token">Save</Button>
                 </div>
                 <p className="text-xs text-muted-foreground">Get your token at mapbox.com → Tokens.</p>
               </Card>
@@ -335,16 +336,20 @@ const Geofencing = () => {
                   variant={drawingMode === 'circle' ? 'default' : 'outline'}
                   className="w-full justify-start gap-2"
                   onClick={() => setDrawingMode('circle')}
+                  aria-label="Draw circular geofence"
+                  aria-pressed={drawingMode === 'circle'}
                 >
-                  <Circle className="w-4 h-4" />
+                  <Circle className="w-4 h-4" aria-hidden="true" />
                   Draw Circle
                 </Button>
                 <Button
                   variant={drawingMode === 'polygon' ? 'default' : 'outline'}
                   className="w-full justify-start gap-2"
                   onClick={() => setDrawingMode('polygon')}
+                  aria-label="Draw polygon geofence"
+                  aria-pressed={drawingMode === 'polygon'}
                 >
-                  <Square className="w-4 h-4" />
+                  <Square className="w-4 h-4" aria-hidden="true" />
                   Draw Polygon
                 </Button>
               </div>
@@ -505,8 +510,8 @@ const Geofencing = () => {
                         <>
                           <div className="flex justify-between items-center">
                             <Label>Polygon Points ({formData.polygon_points.length})</Label>
-                            <Button variant="outline" size="sm" onClick={handleAddCoordinate}>
-                              <Plus className="h-4 w-4 mr-2" />
+                            <Button variant="outline" size="sm" onClick={handleAddCoordinate} aria-label="Add polygon coordinate point">
+                              <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
                               Add Point
                             </Button>
                           </div>
@@ -536,8 +541,9 @@ const Geofencing = () => {
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => handleRemoveCoordinate(index)}
+                                        aria-label={`Remove point ${index + 1}`}
                                       >
-                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                        <Trash2 className="h-4 w-4 text-destructive" aria-hidden="true" />
                                       </Button>
                                     </TableCell>
                                   </TableRow>
@@ -623,8 +629,8 @@ const Geofencing = () => {
                     <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                       Cancel
                     </Button>
-                    <Button onClick={handleSubmit} disabled={createGeofenceMutation.isPending}>
-                      <Save className="h-4 w-4 mr-2" />
+                    <Button onClick={handleSubmit} disabled={createGeofenceMutation.isPending} aria-label="Create geofence">
+                      <Save className="h-4 w-4 mr-2" aria-hidden="true" />
                       {createGeofenceMutation.isPending ? "Creating..." : "Create Geofence"}
                     </Button>
                   </DialogFooter>
@@ -640,7 +646,7 @@ const Geofencing = () => {
                     <CardContent className="pt-6">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-start gap-3">
-                          <div className="p-2 bg-primary/10 rounded-lg">
+                          <div className="p-2 bg-primary/10 rounded-lg" aria-hidden="true">
                             {fence.geometry_type === 'circle' ? (
                               <Circle className="h-5 w-5 text-primary" />
                             ) : (
@@ -655,15 +661,16 @@ const Geofencing = () => {
                           </div>
                         </div>
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="icon">
-                            <Edit className="h-4 w-4" />
+                          <Button variant="ghost" size="icon" aria-label={`Edit ${fence.name}`}>
+                            <Edit className="h-4 w-4" aria-hidden="true" />
                           </Button>
                           <Button 
                             variant="ghost" 
                             size="icon"
                             onClick={() => deleteGeofenceMutation.mutate(fence.id)}
+                            aria-label={`Delete ${fence.name}`}
                           >
-                            <Trash2 className="h-4 w-4 text-destructive" />
+                            <Trash2 className="h-4 w-4 text-destructive" aria-hidden="true" />
                           </Button>
                         </div>
                       </div>
@@ -671,7 +678,7 @@ const Geofencing = () => {
                       <div className="space-y-2 text-sm">
                         {fence.address && (
                           <div className="flex items-center gap-2 text-muted-foreground">
-                            <MapPin className="h-3 w-3" />
+                            <MapPin className="h-3 w-3" aria-hidden="true" />
                             <span className="text-xs">{fence.address}</span>
                           </div>
                         )}
@@ -691,8 +698,8 @@ const Geofencing = () => {
                 ))
               ) : (
                 <Card>
-                  <CardContent className="pt-12 pb-12 text-center">
-                    <MapPin className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+                  <CardContent className="pt-12 pb-12 text-center" role="status" aria-label="No geofences available">
+                    <MapPin className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" aria-hidden="true" />
                     <p className="text-sm text-muted-foreground">
                       No geofences created yet
                     </p>
