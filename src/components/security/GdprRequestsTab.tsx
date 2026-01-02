@@ -118,8 +118,8 @@ const GdprRequestsTab = () => {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button aria-label="Create new GDPR request">
+              <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
               New Request
             </Button>
           </DialogTrigger>
@@ -131,7 +131,7 @@ const GdprRequestsTab = () => {
               <div>
                 <Label htmlFor="requestType">Request Type</Label>
                 <Select value={requestType} onValueChange={(v: any) => setRequestType(v)}>
-                  <SelectTrigger>
+                  <SelectTrigger aria-label="Select GDPR request type">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -163,7 +163,7 @@ const GdprRequestsTab = () => {
       </div>
 
       {isLoading ? (
-        <p>Loading...</p>
+        <p role="status" aria-live="polite" aria-label="Loading GDPR requests">Loading...</p>
       ) : (
         <Table>
           <TableHeader>
@@ -196,34 +196,36 @@ const GdprRequestsTab = () => {
                 </TableCell>
                 {isSuperAdmin && (
                   <TableCell>
-                    {request.status === "pending" && (
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            updateRequestMutation.mutate({
-                              id: request.id,
-                              status: "completed",
-                            })
-                          }
-                        >
-                          <CheckCircle className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            updateRequestMutation.mutate({
-                              id: request.id,
-                              status: "rejected",
-                            })
-                          }
-                        >
-                          <XCircle className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
+                      {request.status === "pending" && (
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              updateRequestMutation.mutate({
+                                id: request.id,
+                                status: "completed",
+                              })
+                            }
+                            aria-label="Mark request as completed"
+                          >
+                            <CheckCircle className="h-4 w-4" aria-hidden="true" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              updateRequestMutation.mutate({
+                                id: request.id,
+                                status: "rejected",
+                              })
+                            }
+                            aria-label="Reject request"
+                          >
+                            <XCircle className="h-4 w-4" aria-hidden="true" />
+                          </Button>
+                        </div>
+                      )}
                   </TableCell>
                 )}
               </TableRow>

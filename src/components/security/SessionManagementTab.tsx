@@ -61,9 +61,9 @@ const SessionManagementTab = () => {
   const getDeviceIcon = (deviceInfo: string) => {
     const lower = deviceInfo.toLowerCase();
     if (lower.includes("mobile") || lower.includes("android") || lower.includes("iphone")) {
-      return <Smartphone className="h-4 w-4" />;
+      return <Smartphone className="h-4 w-4" aria-hidden="true" />;
     }
-    return <Monitor className="h-4 w-4" />;
+    return <Monitor className="h-4 w-4" aria-hidden="true" />;
   };
 
   const formatDate = (date: Date) => {
@@ -139,7 +139,7 @@ const SessionManagementTab = () => {
         </CardHeader>
         <CardContent>
           {sessions.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
+            <p className="text-sm text-muted-foreground text-center py-4" role="status" aria-label="No active sessions">
               No active sessions found
             </p>
           ) : (
@@ -166,7 +166,7 @@ const SessionManagementTab = () => {
                     <TableCell className="font-mono text-sm">{session.ipAddress}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <Globe className="h-3 w-3 text-muted-foreground" />
+                        <Globe className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
                         <span className="text-sm">{session.location || "Unknown"}</span>
                       </div>
                     </TableCell>
@@ -186,8 +186,9 @@ const SessionManagementTab = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleTerminateSession(session.id)}
+                          aria-label="Terminate this session"
                         >
-                          <Trash2 className="h-4 w-4 text-destructive" />
+                          <Trash2 className="h-4 w-4 text-destructive" aria-hidden="true" />
                         </Button>
                       )}
                     </TableCell>
@@ -280,7 +281,7 @@ const SessionManagementTab = () => {
           </div>
 
           <Button onClick={handleSave}>
-            <Save className="h-4 w-4 mr-2" />
+            <Save className="h-4 w-4 mr-2" aria-hidden="true" />
             Save Configuration
           </Button>
         </CardContent>

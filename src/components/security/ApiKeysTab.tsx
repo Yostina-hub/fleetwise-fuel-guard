@@ -176,8 +176,8 @@ const ApiKeysTab = () => {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button aria-label="Create new API key">
+              <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
               Create API Key
             </Button>
           </DialogTrigger>
@@ -197,8 +197,9 @@ const ApiKeysTab = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => copyToClipboard(generatedKey)}
+                      aria-label="Copy API key to clipboard"
                     >
-                      <Copy className="h-4 w-4" />
+                      <Copy className="h-4 w-4" aria-hidden="true" />
                     </Button>
                   </div>
                   <p className="text-xs text-destructive mt-2">
@@ -226,7 +227,7 @@ const ApiKeysTab = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="expiresAt" className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
+                        <Calendar className="h-4 w-4" aria-hidden="true" />
                         Expires At
                       </Label>
                       <Input
@@ -238,7 +239,7 @@ const ApiKeysTab = () => {
                     </div>
                     <div>
                       <Label htmlFor="rateLimit" className="flex items-center gap-2">
-                        <Settings className="h-4 w-4" />
+                        <Settings className="h-4 w-4" aria-hidden="true" />
                         Rate Limit (per hour)
                       </Label>
                       <Input
@@ -305,7 +306,7 @@ const ApiKeysTab = () => {
       </div>
 
       {isLoading ? (
-        <p>Loading...</p>
+        <p role="status" aria-live="polite" aria-label="Loading API keys">Loading...</p>
       ) : (
         <Table>
           <TableHeader>
@@ -324,7 +325,7 @@ const ApiKeysTab = () => {
           <TableBody>
             {apiKeys?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-muted-foreground">
+                <TableCell colSpan={9} className="text-center text-muted-foreground" role="status" aria-label="No API keys found">
                   No API keys found. Create one to get started.
                 </TableCell>
               </TableRow>
@@ -379,8 +380,9 @@ const ApiKeysTab = () => {
                       size="sm"
                       variant="ghost"
                       onClick={() => deleteKeyMutation.mutate(key.id)}
+                      aria-label={`Delete API key ${key.name}`}
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                      <Trash2 className="h-4 w-4 text-destructive" aria-hidden="true" />
                     </Button>
                   </TableCell>
                 </TableRow>
