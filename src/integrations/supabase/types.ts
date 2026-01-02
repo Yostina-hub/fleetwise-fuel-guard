@@ -2767,6 +2767,7 @@ export type Database = {
       geofence_events: {
         Row: {
           created_at: string
+          dwell_time_minutes: number | null
           event_time: string
           event_type: string
           geofence_id: string
@@ -2774,11 +2775,13 @@ export type Database = {
           lat: number | null
           lng: number | null
           organization_id: string
+          speed_limit_kmh: number | null
           trip_id: string | null
           vehicle_id: string
         }
         Insert: {
           created_at?: string
+          dwell_time_minutes?: number | null
           event_time: string
           event_type: string
           geofence_id: string
@@ -2786,11 +2789,13 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           organization_id: string
+          speed_limit_kmh?: number | null
           trip_id?: string | null
           vehicle_id: string
         }
         Update: {
           created_at?: string
+          dwell_time_minutes?: number | null
           event_time?: string
           event_type?: string
           geofence_id?: string
@@ -2798,6 +2803,7 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           organization_id?: string
+          speed_limit_kmh?: number | null
           trip_id?: string | null
           vehicle_id?: string
         }
@@ -5151,6 +5157,45 @@ export type Database = {
           },
           {
             foreignKeyName: "vehicle_costs_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_geofence_states: {
+        Row: {
+          created_at: string
+          entered_at: string
+          geofence_id: string
+          id: string
+          vehicle_id: string
+        }
+        Insert: {
+          created_at?: string
+          entered_at?: string
+          geofence_id: string
+          id?: string
+          vehicle_id: string
+        }
+        Update: {
+          created_at?: string
+          entered_at?: string
+          geofence_id?: string
+          id?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_geofence_states_geofence_id_fkey"
+            columns: ["geofence_id"]
+            isOneToOne: false
+            referencedRelation: "geofences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_geofence_states_vehicle_id_fkey"
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
