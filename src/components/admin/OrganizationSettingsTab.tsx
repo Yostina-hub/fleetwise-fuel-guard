@@ -83,7 +83,7 @@ const OrganizationSettingsTab = () => {
     saveMutation.mutate(formData);
   };
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <div role="status" aria-live="polite" aria-label="Loading organization settings">Loading...</div>;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -132,7 +132,7 @@ const OrganizationSettingsTab = () => {
               value={formData.default_language}
               onValueChange={(value) => setFormData({ ...formData, default_language: value })}
             >
-              <SelectTrigger>
+              <SelectTrigger aria-label="Select default language">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -150,7 +150,7 @@ const OrganizationSettingsTab = () => {
               value={formData.default_timezone}
               onValueChange={(value) => setFormData({ ...formData, default_timezone: value })}
             >
-              <SelectTrigger>
+              <SelectTrigger aria-label="Select default timezone">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -168,7 +168,7 @@ const OrganizationSettingsTab = () => {
               value={formData.currency}
               onValueChange={(value) => setFormData({ ...formData, currency: value })}
             >
-              <SelectTrigger>
+              <SelectTrigger aria-label="Select currency">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -186,7 +186,7 @@ const OrganizationSettingsTab = () => {
               value={formData.distance_unit}
               onValueChange={(value) => setFormData({ ...formData, distance_unit: value })}
             >
-              <SelectTrigger>
+              <SelectTrigger aria-label="Select distance unit">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

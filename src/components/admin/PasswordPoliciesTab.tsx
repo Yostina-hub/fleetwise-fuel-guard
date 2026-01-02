@@ -79,7 +79,7 @@ const PasswordPoliciesTab = () => {
     saveMutation.mutate(formData);
   };
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <div role="status" aria-live="polite" aria-label="Loading password policies">Loading...</div>;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -99,29 +99,33 @@ const PasswordPoliciesTab = () => {
           </div>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label>Require uppercase letters (A-Z)</Label>
+              <Label htmlFor="require_uppercase">Require uppercase letters (A-Z)</Label>
               <Switch
+                id="require_uppercase"
                 checked={formData.require_uppercase}
                 onCheckedChange={(checked) => setFormData({ ...formData, require_uppercase: checked })}
               />
             </div>
             <div className="flex items-center justify-between">
-              <Label>Require lowercase letters (a-z)</Label>
+              <Label htmlFor="require_lowercase">Require lowercase letters (a-z)</Label>
               <Switch
+                id="require_lowercase"
                 checked={formData.require_lowercase}
                 onCheckedChange={(checked) => setFormData({ ...formData, require_lowercase: checked })}
               />
             </div>
             <div className="flex items-center justify-between">
-              <Label>Require numbers (0-9)</Label>
+              <Label htmlFor="require_numbers">Require numbers (0-9)</Label>
               <Switch
+                id="require_numbers"
                 checked={formData.require_numbers}
                 onCheckedChange={(checked) => setFormData({ ...formData, require_numbers: checked })}
               />
             </div>
             <div className="flex items-center justify-between">
-              <Label>Require special characters (!@#$%)</Label>
+              <Label htmlFor="require_special_chars">Require special characters (!@#$%)</Label>
               <Switch
+                id="require_special_chars"
                 checked={formData.require_special_chars}
                 onCheckedChange={(checked) => setFormData({ ...formData, require_special_chars: checked })}
               />

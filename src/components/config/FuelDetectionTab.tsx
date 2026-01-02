@@ -31,7 +31,7 @@ const FuelDetectionTab = () => {
     enabled: !!organizationId,
   });
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <div role="status" aria-live="polite" aria-label="Loading fuel detection configurations">Loading...</div>;
 
   return (
     <div className="space-y-4">
@@ -42,8 +42,8 @@ const FuelDetectionTab = () => {
             Configure refuel/theft detection thresholds and filters per vehicle
           </p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
+        <Button aria-label="Configure fuel detection for vehicle">
+          <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
           Configure Vehicle
         </Button>
       </div>
@@ -91,8 +91,8 @@ const FuelDetectionTab = () => {
                 )}
               </TableCell>
               <TableCell>
-                <Button variant="ghost" size="sm">
-                  <Settings className="h-4 w-4" />
+                <Button variant="ghost" size="sm" aria-label={`Configure fuel detection settings for ${config.vehicles?.plate_number || 'vehicle'}`}>
+                  <Settings className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </TableCell>
             </TableRow>
@@ -101,7 +101,7 @@ const FuelDetectionTab = () => {
       </Table>
 
       {configs?.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
+        <div className="text-center py-12 text-muted-foreground" role="status" aria-label="No fuel detection configurations found">
           <p>No fuel detection configs found</p>
           <p className="text-sm mt-2">
             Configure algorithms to detect refuel/theft events
