@@ -25,7 +25,7 @@ const LegalHoldsTab = () => {
     enabled: !!organizationId,
   });
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <div role="status" aria-live="polite" aria-label="Loading legal holds">Loading...</div>;
 
   return (
     <div className="space-y-4">
@@ -36,8 +36,8 @@ const LegalHoldsTab = () => {
             Prevent data deletion for legal compliance and litigation
           </p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
+        <Button aria-label="Create new legal hold">
+          <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
           Create Legal Hold
         </Button>
       </div>
@@ -72,7 +72,7 @@ const LegalHoldsTab = () => {
       </Table>
 
       {legalHolds?.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
+        <div className="text-center py-12 text-muted-foreground" role="status" aria-label="No legal holds in place">
           <p>No legal holds in place</p>
           <p className="text-sm mt-2">Create holds to preserve data for legal purposes</p>
         </div>

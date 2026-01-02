@@ -24,7 +24,7 @@ const SSOConfigTab = () => {
     enabled: !!organizationId,
   });
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <div role="status" aria-live="polite" aria-label="Loading SSO configurations">Loading...</div>;
 
   return (
     <div className="space-y-4">
@@ -35,8 +35,8 @@ const SSOConfigTab = () => {
             Configure SAML 2.0 or OIDC authentication providers
           </p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
+        <Button aria-label="Add new SSO provider">
+          <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
           Add SSO Provider
         </Button>
       </div>
@@ -75,7 +75,7 @@ const SSOConfigTab = () => {
       </Table>
 
       {ssoConfigs?.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
+        <div className="text-center py-12 text-muted-foreground" role="status" aria-label="No SSO providers configured">
           <p>No SSO providers configured</p>
           <p className="text-sm mt-2">Add SAML or OIDC providers for enterprise authentication</p>
         </div>

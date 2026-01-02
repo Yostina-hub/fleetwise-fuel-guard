@@ -34,7 +34,7 @@ const LoginHistoryTab = () => {
     return <Badge variant={variants[status] || "default"}>{status}</Badge>;
   };
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <div role="status" aria-live="polite" aria-label="Loading login history">Loading...</div>;
 
   return (
     <div className="space-y-4">
@@ -75,7 +75,7 @@ const LoginHistoryTab = () => {
       </Table>
 
       {loginHistory?.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
+        <div className="text-center py-12 text-muted-foreground" role="status" aria-label="No login history available">
           <p>No login history available</p>
         </div>
       )}
