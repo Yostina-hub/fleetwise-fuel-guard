@@ -160,6 +160,31 @@ const VehicleInspectionsTab = () => {
     });
   }, [inspections, inspectionFilter, searchQuery, vehicles, drivers]);
 
+  const handleExportInspections = () => {
+    if (!filteredInspections.length) return;
+
+    const csvContent = [
+      ['Vehicle', 'Type', 'Date', 'Inspector', 'Status', 'Odometer (km)', 'Certified Safe', 'Notes'].join(','),
+      ...filteredInspections.map(i => [
+        getVehiclePlate(i.vehicle_id),
+        i.inspection_type.replace('_', ' '),
+        format(new Date(i.inspection_date), 'yyyy-MM-dd HH:mm'),
+        getDriverName(i.driver_id),
+        i.status,
+        i.odometer_km?.toString() || '',
+        i.certified_safe ? 'Yes' : 'No',
+        `"${(i.mechanic_notes || '').replace(/"/g, '""')}"`
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `vehicle-inspections-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[300px]">
@@ -196,14 +221,26 @@ const VehicleInspectionsTab = () => {
             </SelectContent>
           </Select>
         </div>
-        <Button 
-          className="gap-2" 
-          onClick={() => setShowNewInspection(true)}
-          aria-label="Create new vehicle inspection"
-        >
-          <Plus className="w-4 h-4" />
-          New Inspection
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            className="gap-2"
+            onClick={handleExportInspections}
+            disabled={filteredInspections.length === 0}
+            aria-label="Export inspections to CSV"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </Button>
+          <Button 
+            className="gap-2" 
+            onClick={() => setShowNewInspection(true)}
+            aria-label="Create new vehicle inspection"
+          >
+            <Plus className="w-4 h-4" />
+            New Inspection
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
