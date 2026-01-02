@@ -2,10 +2,12 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, MapPin, Clock, FileText, Loader2, Eye, Download } from "lucide-react";
+import { AlertTriangle, MapPin, Clock, FileText, Loader2, Eye, Download, Search } from "lucide-react";
 import { useFuelTheftCases } from "@/hooks/useFuelTheftCases";
 import { useFuelPageContext } from "@/contexts/FuelPageContext";
+import { useOrganizationSettings } from "@/hooks/useOrganizationSettings";
 import { format } from "date-fns";
 import TheftCaseDetailDialog from "./TheftCaseDetailDialog";
 import { toast } from "sonner";
@@ -13,6 +15,8 @@ import { toast } from "sonner";
 const FuelTheftCasesTab = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  const [vehicleFilter, setVehicleFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedCase, setSelectedCase] = useState<string | null>(null);
   const [showDetail, setShowDetail] = useState(false);
   
@@ -21,8 +25,28 @@ const FuelTheftCasesTab = () => {
     priority: priorityFilter !== 'all' ? priorityFilter : undefined,
   });
   const { getVehiclePlate, getDriverName, vehicles, drivers } = useFuelPageContext();
+  const { formatCurrency, formatFuel, settings } = useOrganizationSettings();
   
-  const selectedCaseData = cases.find(c => c.id === selectedCase);
+  // Filter by vehicle and search
+  const filteredCases = cases.filter(c => {
+    if (vehicleFilter !== 'all' && c.vehicle_id !== vehicleFilter) return false;
+    
+    if (searchQuery) {
+      const plate = getVehiclePlate(c.vehicle_id);
+      const driver = getDriverName(c.driver_id || undefined);
+      const searchLower = searchQuery.toLowerCase();
+      return (
+        c.case_number?.toLowerCase().includes(searchLower) ||
+        plate?.toLowerCase().includes(searchLower) ||
+        driver?.toLowerCase().includes(searchLower) ||
+        c.location_name?.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    return true;
+  });
+  
+  const selectedCaseData = filteredCases.find(c => c.id === selectedCase);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -65,8 +89,8 @@ const FuelTheftCasesTab = () => {
   };
 
   const exportCasesCSV = () => {
-    const headers = ["Case Number", "Status", "Priority", "Vehicle", "Driver", "Fuel Lost (L)", "Est. Value ($)", "Detected At", "Location", "Notes"];
-    const rows = cases.map(c => [
+    const headers = ["Case Number", "Status", "Priority", "Vehicle", "Driver", "Fuel Lost (L)", "Est. Value", "Detected At", "Location", "Notes"];
+    const rows = filteredCases.map(c => [
       c.case_number,
       c.status,
       c.priority || "",
@@ -101,10 +125,31 @@ const FuelTheftCasesTab = () => {
   return (
     <div className="space-y-6">
       {/* Filters */}
-      <div className="flex justify-between gap-4">
-        <div className="flex gap-4">
+      <div className="flex flex-col md:flex-row justify-between gap-4">
+        <div className="flex flex-wrap gap-3 flex-1">
+          <div className="relative flex-1 max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search cases..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+              aria-label="Search theft cases"
+            />
+          </div>
+          <Select value={vehicleFilter} onValueChange={setVehicleFilter}>
+            <SelectTrigger className="w-40" aria-label="Filter by vehicle">
+              <SelectValue placeholder="All Vehicles" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Vehicles</SelectItem>
+              {vehicles.map(v => (
+                <SelectItem key={v.id} value={v.id}>{v.plate_number}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-40" aria-label="Filter by status">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
             <SelectContent>
@@ -117,7 +162,7 @@ const FuelTheftCasesTab = () => {
             </SelectContent>
           </Select>
           <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-40" aria-label="Filter by priority">
               <SelectValue placeholder="All Priority" />
             </SelectTrigger>
             <SelectContent>
@@ -140,7 +185,7 @@ const FuelTheftCasesTab = () => {
         <Card className="bg-destructive/5 border-destructive/20">
           <CardContent className="pt-4">
             <div className="text-2xl font-bold text-destructive">
-              {cases.filter(c => c.status === 'open').length}
+              {filteredCases.filter(c => c.status === 'open').length}
             </div>
             <div className="text-sm text-muted-foreground">Open Cases</div>
           </CardContent>
@@ -148,7 +193,7 @@ const FuelTheftCasesTab = () => {
         <Card className="bg-warning/5 border-warning/20">
           <CardContent className="pt-4">
             <div className="text-2xl font-bold text-warning">
-              {cases.filter(c => c.status === 'investigating').length}
+              {filteredCases.filter(c => c.status === 'investigating').length}
             </div>
             <div className="text-sm text-muted-foreground">Investigating</div>
           </CardContent>
@@ -156,7 +201,7 @@ const FuelTheftCasesTab = () => {
         <Card>
           <CardContent className="pt-4">
             <div className="text-2xl font-bold">
-              {cases.reduce((sum, c) => sum + c.fuel_lost_liters, 0).toFixed(0)}L
+              {formatFuel(filteredCases.reduce((sum, c) => sum + c.fuel_lost_liters, 0))}
             </div>
             <div className="text-sm text-muted-foreground">Total Fuel Lost</div>
           </CardContent>
@@ -164,7 +209,7 @@ const FuelTheftCasesTab = () => {
         <Card>
           <CardContent className="pt-4">
             <div className="text-2xl font-bold">
-              ${cases.reduce((sum, c) => sum + (c.estimated_value || 0), 0).toFixed(0)}
+              {formatCurrency(filteredCases.reduce((sum, c) => sum + (c.estimated_value || 0), 0))}
             </div>
             <div className="text-sm text-muted-foreground">Estimated Loss</div>
           </CardContent>
@@ -173,7 +218,7 @@ const FuelTheftCasesTab = () => {
 
       {/* Cases List */}
       <div className="space-y-4">
-        {cases.length === 0 ? (
+        {filteredCases.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center text-muted-foreground">
               <AlertTriangle className="w-12 h-12 mx-auto mb-4 opacity-50" />
@@ -181,58 +226,66 @@ const FuelTheftCasesTab = () => {
             </CardContent>
           </Card>
         ) : (
-          cases.map(caseItem => (
+          filteredCases.map(caseItem => (
             <Card key={caseItem.id} className={caseItem.status === 'open' ? 'border-destructive/50' : ''}>
               <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono font-semibold">{caseItem.case_number}</span>
+                <div className="flex flex-col lg:flex-row items-start justify-between gap-4">
+                  <div className="space-y-3 min-w-0 flex-1">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <span className="font-mono font-semibold truncate" title={caseItem.case_number}>
+                        {caseItem.case_number}
+                      </span>
                       {getStatusBadge(caseItem.status)}
                       {getPriorityBadge(caseItem.priority || undefined)}
                     </div>
                     
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div>
+                      <div className="min-w-0">
                         <span className="text-muted-foreground">Vehicle:</span>
-                        <div className="font-medium">{getVehiclePlate(caseItem.vehicle_id)}</div>
+                        <div className="font-medium truncate" title={getVehiclePlate(caseItem.vehicle_id)}>
+                          {getVehiclePlate(caseItem.vehicle_id)}
+                        </div>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <span className="text-muted-foreground">Driver:</span>
-                        <div className="font-medium">{getDriverName(caseItem.driver_id || undefined)}</div>
+                        <div className="font-medium truncate" title={getDriverName(caseItem.driver_id || undefined)}>
+                          {getDriverName(caseItem.driver_id || undefined)}
+                        </div>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Fuel Lost:</span>
-                        <div className="font-medium text-destructive">{caseItem.fuel_lost_liters.toFixed(1)}L</div>
+                        <div className="font-medium text-destructive">{formatFuel(caseItem.fuel_lost_liters)}</div>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Est. Value:</span>
-                        <div className="font-medium">${(caseItem.estimated_value || 0).toFixed(2)}</div>
+                        <div className="font-medium">{formatCurrency(caseItem.estimated_value || 0)}</div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
                       <span className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
+                        <Clock className="w-4 h-4 shrink-0" />
                         {format(new Date(caseItem.detected_at), "MMM dd, yyyy HH:mm")}
                       </span>
                       {caseItem.location_name && (
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
-                          {caseItem.location_name}
+                        <span className="flex items-center gap-1 min-w-0">
+                          <MapPin className="w-4 h-4 shrink-0" />
+                          <span className="truncate" title={caseItem.location_name}>
+                            {caseItem.location_name}
+                          </span>
                         </span>
                       )}
                     </div>
 
                     {caseItem.investigation_notes && (
                       <div className="text-sm bg-muted/50 p-3 rounded-lg">
-                        <FileText className="w-4 h-4 inline mr-2" />
-                        {caseItem.investigation_notes}
+                        <FileText className="w-4 h-4 inline mr-2 shrink-0" />
+                        <span className="line-clamp-2">{caseItem.investigation_notes}</span>
                       </div>
                     )}
                   </div>
 
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-row lg:flex-col gap-2 shrink-0">
                     <Button 
                       size="sm" 
                       variant="outline" 

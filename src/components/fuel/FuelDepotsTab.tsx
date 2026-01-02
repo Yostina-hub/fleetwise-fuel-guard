@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { 
   Plus, 
   Fuel, 
@@ -21,6 +22,7 @@ import {
 } from "lucide-react";
 import { useFuelDepots } from "@/hooks/useFuelDepots";
 import { useFuelPageContext } from "@/contexts/FuelPageContext";
+import { useOrganizationSettings } from "@/hooks/useOrganizationSettings";
 import { format } from "date-fns";
 import ReceiveFuelDialog from "./ReceiveFuelDialog";
 import EditDepotDialog from "./EditDepotDialog";
@@ -29,11 +31,13 @@ import { toast } from "sonner";
 const FuelDepotsTab = () => {
   const { depots, dispensingLogs, loading, createDepot, recordDispensing, receiveFuel, updateDepot, deleteDepot } = useFuelDepots();
   const { vehicles, drivers, getVehiclePlate: getVehiclePlateFromContext, getDriverName: getDriverNameFromContext } = useFuelPageContext();
+  const { formatFuel, formatDistance, formatCurrency, settings } = useOrganizationSettings();
   
   const [showAddDepot, setShowAddDepot] = useState(false);
   const [showDispense, setShowDispense] = useState(false);
   const [showReceive, setShowReceive] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
+  const [showStockWarning, setShowStockWarning] = useState(false);
   const [selectedDepot, setSelectedDepot] = useState<string | null>(null);
   const selectedDepotData = depots.find(d => d.id === selectedDepot);
   
@@ -90,7 +94,14 @@ const FuelDepotsTab = () => {
   };
 
   const handleDispense = async () => {
-    if (!selectedDepot) return;
+    if (!selectedDepot || !selectedDepotData) return;
+    
+    // Validate stock
+    if (dispenseData.liters_dispensed > selectedDepotData.current_stock_liters) {
+      setShowStockWarning(true);
+      return;
+    }
+    
     await recordDispensing({
       depot_id: selectedDepot,
       vehicle_id: dispenseData.vehicle_id || undefined,
@@ -177,20 +188,20 @@ const FuelDepotsTab = () => {
             return (
               <Card key={depot.id} className={stockStatus === 'critical' ? 'border-destructive/50' : ''}>
                 <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
                       <CardTitle className="flex items-center gap-2">
-                        <Fuel className="w-5 h-5" />
-                        {depot.name}
+                        <Fuel className="w-5 h-5 shrink-0" />
+                        <span className="truncate" title={depot.name}>{depot.name}</span>
                       </CardTitle>
                       {depot.location_name && (
                         <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                          <MapPin className="w-3 h-3" />
-                          {depot.location_name}
+                          <MapPin className="w-3 h-3 shrink-0" />
+                          <span className="truncate" title={depot.location_name}>{depot.location_name}</span>
                         </p>
                       )}
                     </div>
-                    <Badge variant="outline" className="capitalize">{depot.fuel_type}</Badge>
+                    <Badge variant="outline" className="capitalize shrink-0">{depot.fuel_type}</Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -214,16 +225,16 @@ const FuelDepotsTab = () => {
                       }`}
                     />
                     <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                      <span>{depot.current_stock_liters.toLocaleString()}L</span>
-                      <span>{depot.capacity_liters.toLocaleString()}L capacity</span>
+                      <span>{formatFuel(depot.current_stock_liters)}</span>
+                      <span>{formatFuel(depot.capacity_liters)} capacity</span>
                     </div>
                   </div>
 
                   {/* Stock Warning */}
                   {stockStatus === 'critical' && (
                     <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 p-2 rounded-lg">
-                      <AlertTriangle className="w-4 h-4" />
-                      <span>Below minimum threshold ({depot.min_stock_threshold}L)</span>
+                      <AlertTriangle className="w-4 h-4 shrink-0" />
+                      <span>Below minimum threshold ({formatFuel(depot.min_stock_threshold || 0)})</span>
                     </div>
                   )}
 
@@ -279,19 +290,19 @@ const FuelDepotsTab = () => {
             Export CSV
           </Button>
         </CardHeader>
-        <CardContent>
-          <Table>
+        <CardContent className="overflow-x-auto">
+          <Table className="min-w-[900px]">
             <TableHeader>
               <TableRow>
-                <TableHead>Date/Time</TableHead>
-                <TableHead>Depot</TableHead>
-                <TableHead>Vehicle</TableHead>
-                <TableHead>Driver</TableHead>
-                <TableHead>Liters</TableHead>
-                <TableHead>Odometer</TableHead>
-                <TableHead>Pump</TableHead>
-                <TableHead>Stock Before</TableHead>
-                <TableHead>Stock After</TableHead>
+                <TableHead className="min-w-[120px]">Date/Time</TableHead>
+                <TableHead className="min-w-[100px]">Depot</TableHead>
+                <TableHead className="min-w-[100px]">Vehicle</TableHead>
+                <TableHead className="min-w-[120px]">Driver</TableHead>
+                <TableHead className="min-w-[80px]">Liters</TableHead>
+                <TableHead className="min-w-[100px]">Odometer</TableHead>
+                <TableHead className="min-w-[80px]">Pump</TableHead>
+                <TableHead className="min-w-[100px]">Stock Before</TableHead>
+                <TableHead className="min-w-[100px]">Stock After</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -305,14 +316,26 @@ const FuelDepotsTab = () => {
                 dispensingLogs.slice(0, 10).map(log => (
                   <TableRow key={log.id}>
                     <TableCell>{format(new Date(log.dispensed_at), "MMM dd, HH:mm")}</TableCell>
-                    <TableCell>{depots.find(d => d.id === log.depot_id)?.name || 'Unknown'}</TableCell>
-                    <TableCell>{getVehiclePlate(log.vehicle_id || undefined)}</TableCell>
-                    <TableCell>{getDriverName(log.driver_id || undefined)}</TableCell>
-                    <TableCell className="font-medium">{log.liters_dispensed}L</TableCell>
-                    <TableCell>{log.odometer_km ? `${log.odometer_km.toLocaleString()} km` : '-'}</TableCell>
+                    <TableCell>
+                      <span className="truncate block max-w-[100px]" title={depots.find(d => d.id === log.depot_id)?.name}>
+                        {depots.find(d => d.id === log.depot_id)?.name || 'Unknown'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="truncate block max-w-[100px]" title={getVehiclePlate(log.vehicle_id || undefined)}>
+                        {getVehiclePlate(log.vehicle_id || undefined)}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="truncate block max-w-[120px]" title={getDriverName(log.driver_id || undefined)}>
+                        {getDriverName(log.driver_id || undefined)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="font-medium">{formatFuel(log.liters_dispensed)}</TableCell>
+                    <TableCell>{log.odometer_km ? formatDistance(log.odometer_km) : '-'}</TableCell>
                     <TableCell>{log.pump_number || '-'}</TableCell>
-                    <TableCell>{log.stock_before_liters ? `${log.stock_before_liters.toLocaleString()}L` : '-'}</TableCell>
-                    <TableCell>{log.stock_after_liters ? `${log.stock_after_liters.toLocaleString()}L` : '-'}</TableCell>
+                    <TableCell>{log.stock_before_liters ? formatFuel(log.stock_before_liters) : '-'}</TableCell>
+                    <TableCell>{log.stock_after_liters ? formatFuel(log.stock_after_liters) : '-'}</TableCell>
                   </TableRow>
                 ))
               )}
@@ -326,6 +349,7 @@ const FuelDepotsTab = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Fuel Depot</DialogTitle>
+            <DialogDescription>Create a new fuel depot to track inventory and dispensing.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -362,7 +386,7 @@ const FuelDepotsTab = () => {
                 </Select>
               </div>
               <div>
-                <Label>Capacity (L)</Label>
+                <Label>Capacity ({settings.fuel_unit === 'gallons' ? 'gal' : 'L'})</Label>
                 <Input 
                   type="number"
                   value={newDepot.capacity_liters}
@@ -372,7 +396,7 @@ const FuelDepotsTab = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Current Stock (L)</Label>
+                <Label>Current Stock ({settings.fuel_unit === 'gallons' ? 'gal' : 'L'})</Label>
                 <Input 
                   type="number"
                   value={newDepot.current_stock_liters}
@@ -380,7 +404,7 @@ const FuelDepotsTab = () => {
                 />
               </div>
               <div>
-                <Label>Min Threshold (L)</Label>
+                <Label>Min Threshold ({settings.fuel_unit === 'gallons' ? 'gal' : 'L'})</Label>
                 <Input 
                   type="number"
                   value={newDepot.min_stock_threshold}
@@ -401,6 +425,11 @@ const FuelDepotsTab = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Dispense Fuel</DialogTitle>
+            <DialogDescription>
+              {selectedDepotData && (
+                <span>Available stock: {formatFuel(selectedDepotData.current_stock_liters)}</span>
+              )}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -443,9 +472,12 @@ const FuelDepotsTab = () => {
                   value={dispenseData.liters_dispensed}
                   onChange={e => setDispenseData({...dispenseData, liters_dispensed: Number(e.target.value)})}
                 />
+                {selectedDepotData && dispenseData.liters_dispensed > selectedDepotData.current_stock_liters && (
+                  <p className="text-xs text-destructive mt-1">Exceeds available stock</p>
+                )}
               </div>
               <div>
-                <Label>Odometer (km)</Label>
+                <Label>Odometer ({settings.distance_unit})</Label>
                 <Input 
                   type="number"
                   value={dispenseData.odometer_km}
@@ -464,12 +496,30 @@ const FuelDepotsTab = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDispense(false)}>Cancel</Button>
-            <Button onClick={handleDispense} disabled={!dispenseData.liters_dispensed}>
+            <Button 
+              onClick={handleDispense} 
+              disabled={!dispenseData.liters_dispensed || (selectedDepotData && dispenseData.liters_dispensed > selectedDepotData.current_stock_liters)}
+            >
               Record Dispensing
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Stock Warning Dialog */}
+      <AlertDialog open={showStockWarning} onOpenChange={setShowStockWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Insufficient Stock</AlertDialogTitle>
+            <AlertDialogDescription>
+              The requested amount exceeds the available stock. Please reduce the dispense amount or receive more fuel first.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowStockWarning(false)}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Receive Fuel Dialog */}
       <ReceiveFuelDialog

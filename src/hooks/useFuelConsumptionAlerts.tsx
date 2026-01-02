@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
 import { useAuth } from "./useAuth";
@@ -39,13 +39,15 @@ export const useFuelConsumptionAlerts = (filters?: UseFuelAlertsFilters) => {
   const [alerts, setAlerts] = useState<FuelConsumptionAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
 
   const fetchAlerts = async () => {
     if (!organizationId) return;
 
     try {
       setLoading(true);
-      let query = (supabase as any)
+      let query = supabase
         .from("fuel_consumption_alerts")
         .select("*")
         .eq("organization_id", organizationId)
@@ -67,21 +69,31 @@ export const useFuelConsumptionAlerts = (filters?: UseFuelAlertsFilters) => {
       const { data, error: fetchError } = await query;
 
       if (fetchError) throw fetchError;
-      setAlerts(data || []);
+      if (isMountedRef.current) {
+        setAlerts((data || []) as FuelConsumptionAlert[]);
+      }
     } catch (err: any) {
-      setError(err.message);
+      if (isMountedRef.current) {
+        setError(err.message);
+      }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
+    isMountedRef.current = true;
     if (organizationId) {
       fetchAlerts();
     }
+    return () => {
+      isMountedRef.current = false;
+    };
   }, [organizationId, filters?.vehicleId, filters?.alertType, filters?.isResolved, filters?.severity]);
 
-  // Subscribe to real-time updates
+  // Subscribe to real-time updates with debounce
   useEffect(() => {
     if (!organizationId) return;
 
@@ -108,14 +120,22 @@ export const useFuelConsumptionAlerts = (filters?: UseFuelAlertsFilters) => {
               });
             }
           } else {
-            // Refetch on UPDATE/DELETE
-            fetchAlerts();
+            // Debounce refetch on UPDATE/DELETE
+            if (debounceRef.current) {
+              clearTimeout(debounceRef.current);
+            }
+            debounceRef.current = setTimeout(() => {
+              fetchAlerts();
+            }, 500);
           }
         }
       )
       .subscribe();
 
     return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
       supabase.removeChannel(channel);
     };
   }, [organizationId]);
@@ -126,7 +146,7 @@ export const useFuelConsumptionAlerts = (filters?: UseFuelAlertsFilters) => {
     if (!organizationId) return null;
 
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("fuel_consumption_alerts")
         .insert({
           ...alert,
@@ -136,7 +156,7 @@ export const useFuelConsumptionAlerts = (filters?: UseFuelAlertsFilters) => {
         .single();
 
       if (error) throw error;
-      return data;
+      return data as FuelConsumptionAlert;
     } catch (err: any) {
       toast.error("Failed to create alert: " + err.message);
       return null;
@@ -147,7 +167,7 @@ export const useFuelConsumptionAlerts = (filters?: UseFuelAlertsFilters) => {
     if (!user) return;
 
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("fuel_consumption_alerts")
         .update({
           is_acknowledged: true,
@@ -175,7 +195,7 @@ export const useFuelConsumptionAlerts = (filters?: UseFuelAlertsFilters) => {
     if (!user) return;
 
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("fuel_consumption_alerts")
         .update({
           is_resolved: true,
