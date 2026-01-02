@@ -70,8 +70,9 @@ const FuelTransactionsTab = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[300px]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center min-h-[300px]" role="status" aria-live="polite">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden="true" />
+        <span className="sr-only">Loading fuel transactions...</span>
       </div>
     );
   }
@@ -81,7 +82,7 @@ const FuelTransactionsTab = () => {
       <div className="flex flex-col md:flex-row gap-4 justify-between">
         <div className="flex gap-3 flex-1">
           <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <Input
               placeholder="Search transactions..."
               value={searchQuery}
@@ -113,12 +114,12 @@ const FuelTransactionsTab = () => {
           </Select>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="gap-2" onClick={handleExport}>
-            <FileSpreadsheet className="w-4 h-4" />
+          <Button variant="outline" className="gap-2" onClick={handleExport} aria-label="Export fuel transactions to CSV">
+            <FileSpreadsheet className="w-4 h-4" aria-hidden="true" />
             Export
           </Button>
-          <Button className="gap-2" onClick={() => setShowAddDialog(true)}>
-            <Plus className="w-4 h-4" />
+          <Button className="gap-2" onClick={() => setShowAddDialog(true)} aria-label="Add new fuel transaction">
+            <Plus className="w-4 h-4" aria-hidden="true" />
             Add Transaction
           </Button>
         </div>
@@ -175,7 +176,7 @@ const FuelTransactionsTab = () => {
                     <TableCell>
                       {t.is_reconciled ? (
                         <Badge className="bg-success/10 text-success border-success/20">
-                          <CheckCircle className="w-3 h-3 mr-1" />Reconciled
+                          <CheckCircle className="w-3 h-3 mr-1" aria-hidden="true" />Reconciled
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="text-warning border-warning/20">Pending</Badge>
