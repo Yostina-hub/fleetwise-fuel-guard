@@ -51,23 +51,23 @@ const Settings = () => {
         <Tabs defaultValue="general" className="space-y-6">
           <TabsList className="grid w-full grid-cols-5 lg:w-auto">
             <TabsTrigger value="general" className="gap-2">
-              <SettingsIcon className="w-4 h-4" />
+              <SettingsIcon className="w-4 h-4" aria-hidden="true" />
               General
             </TabsTrigger>
             <TabsTrigger value="api" className="gap-2">
-              <Key className="w-4 h-4" />
+              <Key className="w-4 h-4" aria-hidden="true" />
               API Keys
             </TabsTrigger>
             <TabsTrigger value="alerts" className="gap-2">
-              <Bell className="w-4 h-4" />
+              <Bell className="w-4 h-4" aria-hidden="true" />
               Alerts
             </TabsTrigger>
             <TabsTrigger value="fuel" className="gap-2">
-              <Fuel className="w-4 h-4" />
+              <Fuel className="w-4 h-4" aria-hidden="true" />
               Fuel
             </TabsTrigger>
             <TabsTrigger value="users" className="gap-2">
-              <User className="w-4 h-4" />
+              <User className="w-4 h-4" aria-hidden="true" />
               Users
             </TabsTrigger>
           </TabsList>
@@ -78,7 +78,7 @@ const Settings = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <MapPin className="w-5 h-5" />
+                  <MapPin className="w-5 h-5" aria-hidden="true" />
                   Mapping Services
                 </CardTitle>
               </CardHeader>
@@ -124,7 +124,7 @@ const Settings = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Globe className="w-5 h-5" />
+                  <Globe className="w-5 h-5" aria-hidden="true" />
                   Weather Services
                 </CardTitle>
               </CardHeader>
@@ -152,7 +152,7 @@ const Settings = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Bell className="w-5 h-5" />
+                  <Bell className="w-5 h-5" aria-hidden="true" />
                   Communication Services
                 </CardTitle>
               </CardHeader>
@@ -197,7 +197,7 @@ const Settings = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Shield className="w-5 h-5" />
+                  <Shield className="w-5 h-5" aria-hidden="true" />
                   AI Services
                 </CardTitle>
               </CardHeader>
