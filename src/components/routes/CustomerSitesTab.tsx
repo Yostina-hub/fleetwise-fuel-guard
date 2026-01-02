@@ -101,7 +101,7 @@ const CustomerSitesTab = () => {
     contact_email: "",
   });
 
-  const { data: sites, isLoading } = useQuery({
+  const { data: sites, isLoading, isError, refetch } = useQuery({
     queryKey: ["customer_sites", organizationId],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
@@ -114,6 +114,7 @@ const CustomerSitesTab = () => {
       return data as CustomerSite[];
     },
     enabled: !!organizationId,
+    retry: 2,
   });
 
   // Filter and search
@@ -366,7 +367,14 @@ const CustomerSitesTab = () => {
     toast({ title: "Export successful" });
   };
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <div role="status" aria-live="polite" className="flex items-center justify-center py-8 text-muted-foreground">Loading customer sites...</div>;
+  
+  if (isError) return (
+    <div role="alert" className="flex flex-col items-center justify-center py-8 gap-4">
+      <p className="text-destructive">Failed to load customer sites</p>
+      <Button variant="outline" onClick={() => refetch()} aria-label="Retry loading customer sites">Retry</Button>
+    </div>
+  );
 
   return (
     <div className="space-y-4">
@@ -405,9 +413,10 @@ const CustomerSitesTab = () => {
                       <Input
                         id="customer_name"
                         value={formData.customer_name}
-                        onChange={(e) =>
-                          setFormData({ ...formData, customer_name: e.target.value })
-                        }
+                        onChange={(e) => {
+                          setFormData({ ...formData, customer_name: e.target.value });
+                          if (formErrors.customer_name) setFormErrors((prev) => ({ ...prev, customer_name: undefined }));
+                        }}
                         required
                         aria-invalid={!!formErrors.customer_name}
                         aria-describedby={formErrors.customer_name ? "customer_name-error" : undefined}
@@ -423,9 +432,10 @@ const CustomerSitesTab = () => {
                       <Input
                         id="site_name"
                         value={formData.site_name}
-                        onChange={(e) =>
-                          setFormData({ ...formData, site_name: e.target.value })
-                        }
+                        onChange={(e) => {
+                          setFormData({ ...formData, site_name: e.target.value });
+                          if (formErrors.site_name) setFormErrors((prev) => ({ ...prev, site_name: undefined }));
+                        }}
                         required
                         aria-invalid={!!formErrors.site_name}
                         aria-describedby={formErrors.site_name ? "site_name-error" : undefined}
@@ -442,9 +452,10 @@ const CustomerSitesTab = () => {
                     <Input
                       id="site_code"
                       value={formData.site_code}
-                      onChange={(e) =>
-                        setFormData({ ...formData, site_code: e.target.value })
-                      }
+                      onChange={(e) => {
+                        setFormData({ ...formData, site_code: e.target.value });
+                        if (formErrors.site_code) setFormErrors((prev) => ({ ...prev, site_code: undefined }));
+                      }}
                       aria-invalid={!!formErrors.site_code}
                       aria-describedby={formErrors.site_code ? "site_code-error" : undefined}
                     />
@@ -459,9 +470,10 @@ const CustomerSitesTab = () => {
                     <Textarea
                       id="address"
                       value={formData.address}
-                      onChange={(e) =>
-                        setFormData({ ...formData, address: e.target.value })
-                      }
+                      onChange={(e) => {
+                        setFormData({ ...formData, address: e.target.value });
+                        if (formErrors.address) setFormErrors((prev) => ({ ...prev, address: undefined }));
+                      }}
                       rows={2}
                       aria-invalid={!!formErrors.address}
                       aria-describedby={formErrors.address ? "address-error" : undefined}
@@ -478,9 +490,10 @@ const CustomerSitesTab = () => {
                       <Input
                         id="contact_person"
                         value={formData.contact_person}
-                        onChange={(e) =>
-                          setFormData({ ...formData, contact_person: e.target.value })
-                        }
+                        onChange={(e) => {
+                          setFormData({ ...formData, contact_person: e.target.value });
+                          if (formErrors.contact_person) setFormErrors((prev) => ({ ...prev, contact_person: undefined }));
+                        }}
                         aria-invalid={!!formErrors.contact_person}
                         aria-describedby={formErrors.contact_person ? "contact_person-error" : undefined}
                       />
@@ -495,9 +508,10 @@ const CustomerSitesTab = () => {
                       <Input
                         id="contact_phone"
                         value={formData.contact_phone}
-                        onChange={(e) =>
-                          setFormData({ ...formData, contact_phone: e.target.value })
-                        }
+                        onChange={(e) => {
+                          setFormData({ ...formData, contact_phone: e.target.value });
+                          if (formErrors.contact_phone) setFormErrors((prev) => ({ ...prev, contact_phone: undefined }));
+                        }}
                         aria-invalid={!!formErrors.contact_phone}
                         aria-describedby={formErrors.contact_phone ? "contact_phone-error" : undefined}
                       />
@@ -513,9 +527,10 @@ const CustomerSitesTab = () => {
                         id="contact_email"
                         type="email"
                         value={formData.contact_email}
-                        onChange={(e) =>
-                          setFormData({ ...formData, contact_email: e.target.value })
-                        }
+                        onChange={(e) => {
+                          setFormData({ ...formData, contact_email: e.target.value });
+                          if (formErrors.contact_email) setFormErrors((prev) => ({ ...prev, contact_email: undefined }));
+                        }}
                         aria-invalid={!!formErrors.contact_email}
                         aria-describedby={formErrors.contact_email ? "contact_email-error" : undefined}
                       />
@@ -553,7 +568,7 @@ const CustomerSitesTab = () => {
         />
       </div>
 
-      <Table>
+      <Table aria-label="Customer sites list">
         <TableHeader>
           <TableRow>
             <TableHead>Customer</TableHead>
@@ -567,7 +582,7 @@ const CustomerSitesTab = () => {
         <TableBody>
           {paginatedSites.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={6} className="text-center text-muted-foreground py-8" role="status" aria-live="polite">
                 No customer sites found
               </TableCell>
             </TableRow>
@@ -592,6 +607,7 @@ const CustomerSitesTab = () => {
                       checked={site.is_active}
                       onCheckedChange={(checked) => toggleStatusMutation.mutate({ id: site.id, isActive: checked })}
                       aria-label={`Toggle status for ${site.site_name}`}
+                      disabled={toggleStatusMutation.isPending}
                     />
                     <Badge variant={site.is_active ? "default" : "secondary"}>
                       {site.is_active ? "Active" : "Inactive"}
@@ -744,12 +760,14 @@ const CustomerSitesTab = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeletingSite(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setDeletingSite(null)} autoFocus>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deletingSite && deleteMutation.mutate(deletingSite.id)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              aria-label="Confirm delete customer site"
+              disabled={deleteMutation.isPending}
             >
-              Delete
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
