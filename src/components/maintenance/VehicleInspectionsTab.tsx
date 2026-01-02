@@ -20,14 +20,16 @@ import {
   Truck,
   Search,
   Eye,
-  Trash2
+  Trash2,
+  Download
 } from "lucide-react";
 import { useMaintenanceSchedules, VehicleInspection } from "@/hooks/useMaintenanceSchedules";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
 import { format } from "date-fns";
 
-const INSPECTION_CHECKLIST = [
+// Default checklist - can be overridden by database configuration
+const DEFAULT_INSPECTION_CHECKLIST = [
   { key: 'tires', label: 'Tires & Wheels', items: ['Tire pressure', 'Tread depth', 'Wheel nuts'] },
   { key: 'brakes', label: 'Brakes', items: ['Brake fluid level', 'Brake pads', 'Parking brake'] },
   { key: 'lights', label: 'Lights & Signals', items: ['Headlights', 'Tail lights', 'Turn signals', 'Hazard lights'] },
@@ -35,6 +37,9 @@ const INSPECTION_CHECKLIST = [
   { key: 'exterior', label: 'Exterior', items: ['Body damage', 'Mirrors', 'Wipers', 'Windows'] },
   { key: 'interior', label: 'Interior', items: ['Seatbelts', 'Horn', 'Dashboard warnings', 'Fire extinguisher'] },
 ];
+
+// TODO: Fetch checklist from database once inspection_checklists table is created
+const INSPECTION_CHECKLIST = DEFAULT_INSPECTION_CHECKLIST;
 
 const VehicleInspectionsTab = () => {
   const { inspections, loading, createInspection, deleteInspection } = useMaintenanceSchedules();
