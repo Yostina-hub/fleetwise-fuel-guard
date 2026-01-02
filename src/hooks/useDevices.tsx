@@ -85,6 +85,27 @@ export const useDevices = () => {
 
   const createDevice = useMutation({
     mutationFn: async (device: Partial<Device>) => {
+      // Server-side duplicate IMEI check
+      const { data: existing } = await supabase
+        .from("devices")
+        .select("id, imei")
+        .eq("organization_id", organizationId!)
+        .eq("imei", device.imei!)
+        .maybeSingle();
+
+      if (existing) {
+        throw new Error(`A device with IMEI ${device.imei} already exists`);
+      }
+
+      // If assigning a vehicle, unassign it from any other device first
+      if (device.vehicle_id) {
+        await supabase
+          .from("devices")
+          .update({ vehicle_id: null })
+          .eq("organization_id", organizationId!)
+          .eq("vehicle_id", device.vehicle_id);
+      }
+
       const { data, error } = await supabase
         .from("devices")
         .insert([{
@@ -115,6 +136,31 @@ export const useDevices = () => {
 
   const updateDevice = useMutation({
     mutationFn: async ({ id, ...device }: Partial<Device> & { id: string }) => {
+      // Server-side duplicate IMEI check (if IMEI is being changed)
+      if (device.imei) {
+        const { data: existing } = await supabase
+          .from("devices")
+          .select("id, imei")
+          .eq("organization_id", organizationId!)
+          .eq("imei", device.imei)
+          .neq("id", id)
+          .maybeSingle();
+
+        if (existing) {
+          throw new Error(`A device with IMEI ${device.imei} already exists`);
+        }
+      }
+
+      // If assigning a vehicle, unassign it from any other device first
+      if (device.vehicle_id) {
+        await supabase
+          .from("devices")
+          .update({ vehicle_id: null })
+          .eq("organization_id", organizationId!)
+          .eq("vehicle_id", device.vehicle_id)
+          .neq("id", id);
+      }
+
       const { data, error } = await supabase
         .from("devices")
         .update(device)
