@@ -5,8 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, Info, FileText, Settings2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { CheckCircle2, Info } from "lucide-react";
 
 interface DeviceFormData {
   vehicle_id: string;
@@ -53,40 +52,6 @@ const initialFormData: DeviceFormData = {
   notes: "",
 };
 
-// Predefined device templates
-const deviceTemplates = [
-  {
-    id: "ytwl-ca100f",
-    name: "YTWL CA100F Speed Governor",
-    tracker_model: "YTWL CA100F Speed Governor",
-    apn: "internet.ethionet.et",
-    description: "GPS speed governor with fuel monitoring",
-  },
-  {
-    id: "gt06n",
-    name: "GT06N GPS Tracker",
-    tracker_model: "GT06N",
-    apn: "internet",
-    description: "Compact vehicle GPS tracker",
-  },
-  {
-    id: "tk103",
-    name: "TK103 GPS Tracker",
-    tracker_model: "TK103",
-    apn: "internet",
-    description: "Standard vehicle GPS tracker with relay",
-  },
-  {
-    id: "concox-gt06e",
-    name: "Concox GT06E",
-    tracker_model: "Concox GT06E",
-    apn: "internet",
-    description: "Advanced GPS tracker with multiple I/O",
-  },
-];
-
-type AddMode = "template" | "manual";
-
 export const DeviceFormDialog = ({
   open,
   onOpenChange,
@@ -98,8 +63,6 @@ export const DeviceFormDialog = ({
 }: DeviceFormDialogProps) => {
   const [formData, setFormData] = useState<DeviceFormData>(initialFormData);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const [addMode, setAddMode] = useState<AddMode>("template");
-  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
 
   // Reset form when dialog opens/closes or editing device changes
   useEffect(() => {
@@ -118,27 +81,11 @@ export const DeviceFormDialog = ({
         notes: editingDevice.notes || "",
       });
       setFormErrors({});
-      setAddMode("manual"); // Always use manual mode when editing
     } else if (!open) {
       setFormData(initialFormData);
       setFormErrors({});
-      setSelectedTemplate("");
-      setAddMode("template");
     }
   }, [open, editingDevice]);
-
-  // Apply template when selected
-  const handleTemplateSelect = (templateId: string) => {
-    setSelectedTemplate(templateId);
-    const template = deviceTemplates.find(t => t.id === templateId);
-    if (template) {
-      setFormData(prev => ({
-        ...prev,
-        tracker_model: template.tracker_model,
-        apn: template.apn,
-      }));
-    }
-  };
 
   const validateForm = useCallback(() => {
     const errors: Record<string, string> = {};
@@ -178,77 +125,18 @@ export const DeviceFormDialog = ({
     return vehicles?.filter(v => !assignedVehicleIds.includes(v.id)) || [];
   }, [vehicles, devices, editingDevice]);
 
-  const isEditing = !!editingDevice;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Edit" : "Add"} Device</DialogTitle>
+          <DialogTitle>{editingDevice ? "Edit" : "Add"} Device</DialogTitle>
           <DialogDescription>
             Configure GPS tracker device with SIM card and connection details
           </DialogDescription>
         </DialogHeader>
-
-        {/* Mode Selector - Only show when adding new device */}
-        {!isEditing && (
-          <div className="flex gap-2 p-1 bg-muted rounded-lg">
-            <button
-              type="button"
-              onClick={() => setAddMode("template")}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-all",
-                addMode === "template"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <FileText className="h-4 w-4" />
-              From Template
-            </button>
-            <button
-              type="button"
-              onClick={() => setAddMode("manual")}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-all",
-                addMode === "manual"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <Settings2 className="h-4 w-4" />
-              Manual Entry
-            </button>
-          </div>
-        )}
-
-        {/* Template Selection - Only show in template mode when adding */}
-        {!isEditing && addMode === "template" && (
-          <div className="space-y-3">
-            <Label>Select Device Template</Label>
-            <div className="grid grid-cols-2 gap-3">
-              {deviceTemplates.map((template) => (
-                <button
-                  key={template.id}
-                  type="button"
-                  onClick={() => handleTemplateSelect(template.id)}
-                  className={cn(
-                    "p-4 rounded-lg border text-left transition-all",
-                    selectedTemplate === template.id
-                      ? "border-primary bg-primary/5 ring-1 ring-primary"
-                      : "border-border hover:border-primary/50 hover:bg-muted/50"
-                  )}
-                >
-                  <div className="font-medium text-sm">{template.name}</div>
-                  <div className="text-xs text-muted-foreground mt-1">{template.description}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
         
         {/* Automatic Configuration Info Box */}
-        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4">
+        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4 my-4">
           <div className="flex items-start gap-3">
             <CheckCircle2 className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
             <div className="space-y-1">
@@ -441,7 +329,7 @@ export const DeviceFormDialog = ({
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isEditing ? "Update" : "Create"} Device
+            {editingDevice ? "Update" : "Create"} Device
           </Button>
         </DialogFooter>
       </DialogContent>
