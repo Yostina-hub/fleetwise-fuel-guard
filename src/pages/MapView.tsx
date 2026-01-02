@@ -252,14 +252,14 @@ const MapView = () => {
                 <h2 className="text-lg font-semibold">Vehicles</h2>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
                   <span className="flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" aria-hidden="true" />
                     {onlineCount} online
                   </span>
                   <span>{movingCount} moving</span>
                 </div>
               </div>
               <Badge variant="outline" className="gap-1.5 text-xs font-normal">
-                <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" aria-hidden="true" />
                 Live
               </Badge>
             </div>
@@ -365,9 +365,9 @@ const MapView = () => {
                             )} />
                             <span className="font-medium text-sm">{vehicle.plate}</span>
                           </div>
-                          {vehicle.isOffline ? (
+                        {vehicle.isOffline ? (
                             <Badge variant="secondary" className="text-xs h-5 px-1.5 gap-1">
-                              <WifiOff className="w-3 h-3" />
+                              <WifiOff className="w-3 h-3" aria-hidden="true" />
                               Offline
                             </Badge>
                           ) : (
@@ -378,11 +378,11 @@ const MapView = () => {
                         {!vehicle.isOffline && (
                           <div className="flex items-center gap-4 text-xs text-muted-foreground">
                             <div className="flex items-center gap-1">
-                              <Navigation className="w-3 h-3" />
+                              <Navigation className="w-3 h-3" aria-hidden="true" />
                               <span>{vehicle.speed} km/h</span>
                             </div>
                             <div className="flex items-center gap-1">
-                              <Fuel className="w-3 h-3" />
+                              <Fuel className="w-3 h-3" aria-hidden="true" />
                               <span>{vehicle.fuel}%</span>
                             </div>
                           </div>
