@@ -15,7 +15,7 @@ const Administration = () => {
     <Layout>
       <div className="p-8 space-y-6 animate-fade-in">
       <div className="flex items-center gap-3">
-        <Settings className="h-8 w-8 text-primary" />
+        <Settings className="h-8 w-8 text-primary" aria-hidden="true" />
         <div>
           <h1 className="text-3xl font-bold">Administration</h1>
           <p className="text-muted-foreground">
@@ -27,31 +27,31 @@ const Administration = () => {
       <Tabs defaultValue="org-settings" className="space-y-4">
         <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="org-settings" className="gap-2">
-            <Globe className="h-4 w-4" />
+            <Globe className="h-4 w-4" aria-hidden="true" />
             Organization
           </TabsTrigger>
           <TabsTrigger value="sso" className="gap-2">
-            <Shield className="h-4 w-4" />
+            <Shield className="h-4 w-4" aria-hidden="true" />
             SSO
           </TabsTrigger>
           <TabsTrigger value="password" className="gap-2">
-            <Lock className="h-4 w-4" />
+            <Lock className="h-4 w-4" aria-hidden="true" />
             Password
           </TabsTrigger>
           <TabsTrigger value="ip-allowlist" className="gap-2">
-            <Shield className="h-4 w-4" />
+            <Shield className="h-4 w-4" aria-hidden="true" />
             IP Allowlist
           </TabsTrigger>
           <TabsTrigger value="legal" className="gap-2">
-            <Scale className="h-4 w-4" />
+            <Scale className="h-4 w-4" aria-hidden="true" />
             Legal Holds
           </TabsTrigger>
           <TabsTrigger value="history" className="gap-2">
-            <History className="h-4 w-4" />
+            <History className="h-4 w-4" aria-hidden="true" />
             Login History
           </TabsTrigger>
           <TabsTrigger value="email-reports" className="gap-2">
-            <Mail className="h-4 w-4" />
+            <Mail className="h-4 w-4" aria-hidden="true" />
             Email Reports
           </TabsTrigger>
         </TabsList>
