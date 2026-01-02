@@ -135,8 +135,8 @@ const MaintenanceHistoryTab = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[300px]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center min-h-[300px]" role="status" aria-live="polite" aria-label="Loading maintenance history...">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden="true" />
       </div>
     );
   }
@@ -147,7 +147,7 @@ const MaintenanceHistoryTab = () => {
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
         <div className="flex flex-col sm:flex-row gap-4 flex-1 w-full">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
             <Input
               id="history-search"
               aria-label="Search maintenance history"
@@ -178,7 +178,7 @@ const MaintenanceHistoryTab = () => {
           disabled={filteredHistory.length === 0}
           aria-label="Export maintenance history to CSV"
         >
-          <Download className="w-4 h-4" />
+          <Download className="w-4 h-4" aria-hidden="true" />
           Export CSV
         </Button>
       </div>
@@ -189,7 +189,7 @@ const MaintenanceHistoryTab = () => {
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-muted">
-                <ListChecks className="w-5 h-5 text-primary" />
+                <ListChecks className="w-5 h-5 text-primary" aria-hidden="true" />
               </div>
               <div>
                 <div className="text-2xl font-bold">{filteredHistory.length}</div>
@@ -202,7 +202,7 @@ const MaintenanceHistoryTab = () => {
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-success/10">
-                <DollarSign className="w-5 h-5 text-success" />
+                <DollarSign className="w-5 h-5 text-success" aria-hidden="true" />
               </div>
               <div>
                 <div className="text-2xl font-bold">
@@ -217,7 +217,7 @@ const MaintenanceHistoryTab = () => {
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-primary/10">
-                <Truck className="w-5 h-5 text-primary" />
+                <Truck className="w-5 h-5 text-primary" aria-hidden="true" />
               </div>
               <div>
                 <div className="text-2xl font-bold">
@@ -233,8 +233,8 @@ const MaintenanceHistoryTab = () => {
       {/* History Table */}
       {filteredHistory.length === 0 ? (
         <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            <ListChecks className="w-12 h-12 mx-auto mb-4 opacity-50" />
+          <CardContent className="py-12 text-center text-muted-foreground" role="status" aria-label="No service history">
+            <ListChecks className="w-12 h-12 mx-auto mb-4 opacity-50" aria-hidden="true" />
             <h3 className="text-lg font-medium mb-2">No Service History</h3>
             <p>Completed work orders will appear here.</p>
           </CardContent>
@@ -290,7 +290,7 @@ const MaintenanceHistoryTab = () => {
                           setSelectedWorkOrder(wo);
                         }}
                       >
-                        <FileText className="w-4 h-4" />
+                        <FileText className="w-4 h-4" aria-hidden="true" />
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -306,7 +306,7 @@ const MaintenanceHistoryTab = () => {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5" />
+              <FileText className="w-5 h-5" aria-hidden="true" />
               {selectedWorkOrder?.work_order_number}
             </DialogTitle>
             <DialogDescription>

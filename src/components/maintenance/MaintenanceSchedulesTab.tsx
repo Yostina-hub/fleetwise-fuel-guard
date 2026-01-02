@@ -232,8 +232,8 @@ const MaintenanceSchedulesTab = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[300px]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center min-h-[300px]" role="status" aria-live="polite" aria-label="Loading maintenance schedules...">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden="true" />
       </div>
     );
   }
@@ -244,7 +244,7 @@ const MaintenanceSchedulesTab = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
             <Input
               id="schedule-search"
               aria-label="Search maintenance schedules"
@@ -257,14 +257,14 @@ const MaintenanceSchedulesTab = () => {
           <div className="flex gap-2">
             <Card className="bg-destructive/5 border-destructive/20 px-4 py-2">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-destructive" />
+                <AlertTriangle className="w-4 h-4 text-destructive" aria-hidden="true" />
                 <span className="font-semibold text-destructive">{overdueSchedules.length}</span>
                 <span className="text-sm text-muted-foreground">Overdue</span>
               </div>
             </Card>
             <Card className="bg-warning/5 border-warning/20 px-4 py-2">
               <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-warning" />
+                <Clock className="w-4 h-4 text-warning" aria-hidden="true" />
                 <span className="font-semibold text-warning">{dueSoonSchedules.length}</span>
                 <span className="text-sm text-muted-foreground">Due Soon</span>
               </div>
@@ -279,7 +279,7 @@ const MaintenanceSchedulesTab = () => {
             disabled={filteredSchedules.length === 0}
             aria-label="Export maintenance schedules to CSV"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-4 h-4" aria-hidden="true" />
             Export CSV
           </Button>
           <Button 
@@ -287,7 +287,7 @@ const MaintenanceSchedulesTab = () => {
             onClick={() => setShowAddSchedule(true)}
             aria-label="Add new maintenance schedule"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4" aria-hidden="true" />
             Add Schedule
           </Button>
         </div>
@@ -296,8 +296,8 @@ const MaintenanceSchedulesTab = () => {
       {/* Schedules List */}
       {filteredSchedules.length === 0 ? (
         <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
+          <CardContent className="py-12 text-center text-muted-foreground" role="status" aria-label={searchQuery ? "No schedules match your search" : "No maintenance schedules configured"}>
+            <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" aria-hidden="true" />
             <p>{searchQuery ? "No schedules match your search" : "No maintenance schedules configured"}</p>
             {!searchQuery && (
               <Button className="mt-4" onClick={() => setShowAddSchedule(true)}>
@@ -331,7 +331,7 @@ const MaintenanceSchedulesTab = () => {
                   <div className="flex items-start justify-between">
                     <div className="space-y-3">
                       <div className="flex items-center gap-3">
-                        <Wrench className="w-5 h-5 text-primary" />
+                        <Wrench className="w-5 h-5 text-primary" aria-hidden="true" />
                         <span className="font-semibold text-lg">{schedule.service_type}</span>
                         {getStatusBadge(status)}
                         <span className={`text-xs font-semibold uppercase ${getPriorityColor(schedule.priority)}`}>
@@ -366,7 +366,7 @@ const MaintenanceSchedulesTab = () => {
 
                       {schedule.interval_type === 'calendar' && schedule.next_due_date && (
                         <div className="flex items-center gap-2 text-sm">
-                          <Calendar className="w-4 h-4 text-muted-foreground" />
+                          <Calendar className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
                           <span>Due: {format(new Date(schedule.next_due_date), "MMM dd, yyyy")}</span>
                           {isPast(new Date(schedule.next_due_date)) ? (
                             <span className="text-destructive">({Math.abs(differenceInDays(new Date(schedule.next_due_date), new Date()))} days overdue)</span>
@@ -399,7 +399,7 @@ const MaintenanceSchedulesTab = () => {
                         }}
                         aria-label={`Record service for ${schedule.service_type}`}
                       >
-                        <CheckCircle className="w-4 h-4" />
+                        <CheckCircle className="w-4 h-4" aria-hidden="true" />
                         Record Service
                       </Button>
                       <div className="flex gap-1">
@@ -410,7 +410,7 @@ const MaintenanceSchedulesTab = () => {
                           onClick={(e) => { e.stopPropagation(); handleEditClick(schedule); }}
                           aria-label={`Edit ${schedule.service_type} schedule`}
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Pencil className="w-4 h-4" aria-hidden="true" />
                         </Button>
                         <Button 
                           size="sm" 
@@ -419,7 +419,7 @@ const MaintenanceSchedulesTab = () => {
                           onClick={(e) => { e.stopPropagation(); handleDeleteClick(schedule); }}
                           aria-label={`Delete ${schedule.service_type} schedule`}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4" aria-hidden="true" />
                         </Button>
                       </div>
                     </div>
