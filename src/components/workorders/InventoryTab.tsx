@@ -166,7 +166,7 @@ const InventoryTab = () => {
     createMutation.mutate(formData);
   };
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <div role="status" aria-live="polite">Loading...</div>;
 
   return (
     <div className="space-y-4">
@@ -174,8 +174,8 @@ const InventoryTab = () => {
         <h3 className="text-lg font-semibold">Parts Inventory</h3>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={resetForm}>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button onClick={resetForm} aria-label="Add new inventory part">
+              <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
               Add Part
             </Button>
           </DialogTrigger>
@@ -296,7 +296,7 @@ const InventoryTab = () => {
       {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
           <Input
             placeholder="Search parts..."
             value={searchQuery}
@@ -305,6 +305,7 @@ const InventoryTab = () => {
               setCurrentPage(1);
             }}
             className="pl-10"
+            aria-label="Search inventory parts"
           />
         </div>
         <Select value={categoryFilter} onValueChange={(value) => { setCategoryFilter(value); setCurrentPage(1); }}>
@@ -359,7 +360,7 @@ const InventoryTab = () => {
                 <div className="flex items-center gap-2">
                   {item.current_quantity} {item.unit_of_measure}
                   {isLowStock(item) && (
-                    <AlertTriangle className="h-4 w-4 text-orange-500" />
+                    <AlertTriangle className="h-4 w-4 text-orange-500" aria-hidden="true" />
                   )}
                 </div>
               </TableCell>
