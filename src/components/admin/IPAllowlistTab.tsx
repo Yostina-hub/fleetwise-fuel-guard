@@ -24,7 +24,7 @@ const IPAllowlistTab = () => {
     enabled: !!organizationId,
   });
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <div role="status" aria-live="polite" aria-label="Loading IP allowlists">Loading...</div>;
 
   return (
     <div className="space-y-4">
@@ -35,8 +35,8 @@ const IPAllowlistTab = () => {
             Restrict access to specific IP addresses or ranges (CIDR notation supported)
           </p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
+        <Button aria-label="Add new IP range to allowlist">
+          <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
           Add IP Range
         </Button>
       </div>
@@ -69,7 +69,7 @@ const IPAllowlistTab = () => {
       </Table>
 
       {ipAllowlists?.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
+        <div className="text-center py-12 text-muted-foreground" role="status" aria-label="No IP allowlists configured">
           <p>No IP allowlists configured</p>
           <p className="text-sm mt-2">Add IP addresses to restrict access</p>
         </div>

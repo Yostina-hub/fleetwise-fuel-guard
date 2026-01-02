@@ -92,8 +92,8 @@ export const EmailReportsTab = () => {
           if (!open) resetForm();
         }}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
+            <Button aria-label="Create new email report schedule">
+              <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
               Create Report Schedule
             </Button>
           </DialogTrigger>
@@ -235,7 +235,7 @@ export const EmailReportsTab = () => {
       </div>
 
       {isLoading ? (
-        <div className="text-center py-8">Loading...</div>
+        <div className="text-center py-8" role="status" aria-live="polite" aria-label="Loading email reports">Loading...</div>
       ) : (
         <div className="grid gap-4">
           {reportConfigs?.map((config) => (
@@ -244,7 +244,7 @@ export const EmailReportsTab = () => {
                 <div className="flex items-start justify-between">
                   <div>
                     <CardTitle className="flex items-center gap-2">
-                      <Mail className="h-5 w-5" />
+                      <Mail className="h-5 w-5" aria-hidden="true" />
                       {config.name}
                       {config.is_active ? (
                         <Badge variant="default">Active</Badge>
@@ -261,14 +261,16 @@ export const EmailReportsTab = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => testReport.mutate(config.id)}
+                      aria-label={`Test report ${config.name}`}
                     >
-                      <Play className="h-4 w-4 mr-1" />
+                      <Play className="h-4 w-4 mr-1" aria-hidden="true" />
                       Test
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleEdit(config)}
+                      aria-label={`Edit report ${config.name}`}
                     >
                       Edit
                     </Button>
@@ -276,8 +278,9 @@ export const EmailReportsTab = () => {
                       size="sm"
                       variant="destructive"
                       onClick={() => deleteReportConfig.mutate(config.id)}
+                      aria-label={`Delete report ${config.name}`}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
                     </Button>
                   </div>
                 </div>
@@ -302,7 +305,7 @@ export const EmailReportsTab = () => {
           
           {reportConfigs?.length === 0 && (
             <Card>
-              <CardContent className="py-8 text-center text-muted-foreground">
+              <CardContent className="py-8 text-center text-muted-foreground" role="status" aria-label="No email reports configured">
                 No email report schedules configured yet
               </CardContent>
             </Card>
