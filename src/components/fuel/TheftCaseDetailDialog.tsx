@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Clock, MapPin, FileText, Car, User, Fuel, DollarSign } from "lucide-react";
 import { format } from "date-fns";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useOrganizationSettings } from "@/hooks/useOrganizationSettings";
 
 interface TheftCase {
   id: string;
@@ -43,8 +44,16 @@ const TheftCaseDetailDialog = ({
   onStartInvestigation,
   onCloseCase,
 }: TheftCaseDetailDialogProps) => {
-  const [notes, setNotes] = useState(caseItem?.investigation_notes || "");
+  const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const { formatCurrency, formatFuel } = useOrganizationSettings();
+
+  // Sync notes when caseItem changes
+  useEffect(() => {
+    if (caseItem) {
+      setNotes(caseItem.investigation_notes || "");
+    }
+  }, [caseItem]);
 
   if (!caseItem) return null;
 
@@ -93,46 +102,53 @@ const TheftCaseDetailDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
-            <span className="font-mono">{caseItem.case_number}</span>
+          <DialogTitle className="flex items-center gap-3 flex-wrap">
+            <span className="font-mono truncate" title={caseItem.case_number}>{caseItem.case_number}</span>
             {getStatusBadge(caseItem.status)}
             {getPriorityBadge(caseItem.priority)}
           </DialogTitle>
+          <DialogDescription>View and manage theft case details</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Case Details Grid */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex items-center gap-2 text-sm">
-              <Car className="w-4 h-4 text-muted-foreground" />
-              <span className="text-muted-foreground">Vehicle:</span>
-              <span className="font-medium">{getVehiclePlate(caseItem.vehicle_id)}</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex items-center gap-2 text-sm min-w-0">
+              <Car className="w-4 h-4 text-muted-foreground shrink-0" />
+              <span className="text-muted-foreground shrink-0">Vehicle:</span>
+              <span className="font-medium truncate" title={getVehiclePlate(caseItem.vehicle_id)}>
+                {getVehiclePlate(caseItem.vehicle_id)}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-sm min-w-0">
+              <User className="w-4 h-4 text-muted-foreground shrink-0" />
+              <span className="text-muted-foreground shrink-0">Driver:</span>
+              <span className="font-medium truncate" title={getDriverName(caseItem.driver_id)}>
+                {getDriverName(caseItem.driver_id)}
+              </span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <User className="w-4 h-4 text-muted-foreground" />
-              <span className="text-muted-foreground">Driver:</span>
-              <span className="font-medium">{getDriverName(caseItem.driver_id)}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Fuel className="w-4 h-4 text-muted-foreground" />
+              <Fuel className="w-4 h-4 text-muted-foreground shrink-0" />
               <span className="text-muted-foreground">Fuel Lost:</span>
-              <span className="font-medium text-destructive">{caseItem.fuel_lost_liters.toFixed(1)}L</span>
+              <span className="font-medium text-destructive">{formatFuel(caseItem.fuel_lost_liters)}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <DollarSign className="w-4 h-4 text-muted-foreground" />
+              <DollarSign className="w-4 h-4 text-muted-foreground shrink-0" />
               <span className="text-muted-foreground">Est. Value:</span>
-              <span className="font-medium">${(caseItem.estimated_value || 0).toFixed(2)}</span>
+              <span className="font-medium">{formatCurrency(caseItem.estimated_value || 0)}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <Clock className="w-4 h-4 text-muted-foreground" />
+              <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
               <span className="text-muted-foreground">Detected:</span>
               <span className="font-medium">{format(new Date(caseItem.detected_at), "MMM dd, yyyy HH:mm")}</span>
             </div>
             {caseItem.location_name && (
-              <div className="flex items-center gap-2 text-sm">
-                <MapPin className="w-4 h-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Location:</span>
-                <span className="font-medium">{caseItem.location_name}</span>
+              <div className="flex items-center gap-2 text-sm min-w-0">
+                <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
+                <span className="text-muted-foreground shrink-0">Location:</span>
+                <span className="font-medium truncate" title={caseItem.location_name}>
+                  {caseItem.location_name}
+                </span>
               </div>
             )}
           </div>
@@ -164,7 +180,7 @@ const TheftCaseDetailDialog = ({
           <Separator />
 
           {/* Actions */}
-          <div className="flex gap-2 justify-end">
+          <div className="flex gap-2 justify-end flex-wrap">
             {caseItem.status === 'open' && (
               <Button 
                 onClick={() => {

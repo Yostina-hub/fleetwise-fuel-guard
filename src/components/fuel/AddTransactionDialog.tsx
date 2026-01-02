@@ -1,11 +1,12 @@
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useFuelPageContext } from "@/contexts/FuelPageContext";
+import { useOrganizationSettings } from "@/hooks/useOrganizationSettings";
 
 interface AddTransactionDialogProps {
   open: boolean;
@@ -27,6 +28,7 @@ interface AddTransactionDialogProps {
 
 const AddTransactionDialog = ({ open, onOpenChange, onSubmit }: AddTransactionDialogProps) => {
   const { vehicles } = useFuelPageContext();
+  const { settings, formatCurrency } = useOrganizationSettings();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     vehicle_id: "",
@@ -34,13 +36,21 @@ const AddTransactionDialog = ({ open, onOpenChange, onSubmit }: AddTransactionDi
     transaction_date: new Date().toISOString().slice(0, 16),
     fuel_amount_liters: 0,
     fuel_cost: 0,
-    fuel_price_per_liter: 50,
+    fuel_price_per_liter: settings.fuel_price_per_liter,
     odometer_km: 0,
     location_name: "",
     vendor_name: "",
     receipt_number: "",
     notes: "",
   });
+
+  // Update price when settings change
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      fuel_price_per_liter: settings.fuel_price_per_liter,
+    }));
+  }, [settings.fuel_price_per_liter]);
 
   const handleSubmit = async () => {
     if (!formData.vehicle_id || !formData.fuel_amount_liters) return;
@@ -71,7 +81,7 @@ const AddTransactionDialog = ({ open, onOpenChange, onSubmit }: AddTransactionDi
       transaction_date: new Date().toISOString().slice(0, 16),
       fuel_amount_liters: 0,
       fuel_cost: 0,
-      fuel_price_per_liter: 50,
+      fuel_price_per_liter: settings.fuel_price_per_liter,
       odometer_km: 0,
       location_name: "",
       vendor_name: "",
@@ -97,11 +107,29 @@ const AddTransactionDialog = ({ open, onOpenChange, onSubmit }: AddTransactionDi
     }));
   };
 
+  // Get currency symbol for display
+  const getCurrencyLabel = () => {
+    const symbols: Record<string, string> = {
+      USD: 'USD',
+      EUR: 'EUR',
+      GBP: 'GBP',
+      KES: 'KES',
+      NGN: 'NGN',
+      ZAR: 'ZAR',
+      ETB: 'ETB',
+    };
+    return symbols[settings.currency] || settings.currency;
+  };
+
+  const fuelUnitLabel = settings.fuel_unit === 'gallons' ? 'gal' : 'L';
+  const distanceUnitLabel = settings.distance_unit === 'miles' ? 'mi' : 'km';
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Add Fuel Transaction</DialogTitle>
+          <DialogDescription>Record a new fuel purchase or transaction.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
           <div className="grid grid-cols-2 gap-4">
@@ -147,7 +175,7 @@ const AddTransactionDialog = ({ open, onOpenChange, onSubmit }: AddTransactionDi
               />
             </div>
             <div>
-              <Label>Liters *</Label>
+              <Label>{settings.fuel_unit === 'gallons' ? 'Gallons' : 'Liters'} *</Label>
               <Input 
                 type="number"
                 step="0.1"
@@ -157,7 +185,7 @@ const AddTransactionDialog = ({ open, onOpenChange, onSubmit }: AddTransactionDi
               />
             </div>
             <div>
-              <Label>Price/Liter (ETB)</Label>
+              <Label>Price/{fuelUnitLabel} ({getCurrencyLabel()})</Label>
               <Input 
                 type="number"
                 step="0.01"
@@ -166,7 +194,7 @@ const AddTransactionDialog = ({ open, onOpenChange, onSubmit }: AddTransactionDi
               />
             </div>
             <div>
-              <Label>Total Cost (ETB)</Label>
+              <Label>Total Cost ({getCurrencyLabel()})</Label>
               <Input 
                 type="number"
                 step="0.01"
@@ -175,7 +203,7 @@ const AddTransactionDialog = ({ open, onOpenChange, onSubmit }: AddTransactionDi
               />
             </div>
             <div>
-              <Label>Odometer (km)</Label>
+              <Label>Odometer ({distanceUnitLabel})</Label>
               <Input 
                 type="number"
                 value={formData.odometer_km || ""}

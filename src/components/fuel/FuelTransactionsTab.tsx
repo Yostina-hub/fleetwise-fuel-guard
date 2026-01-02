@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Search, FileSpreadsheet, Loader2, CheckCircle } from "lucide-react";
 import { useFuelTransactions } from "@/hooks/useFuelTransactions";
 import { useFuelPageContext } from "@/contexts/FuelPageContext";
+import { useOrganizationSettings } from "@/hooks/useOrganizationSettings";
 import { format } from "date-fns";
 import AddTransactionDialog from "./AddTransactionDialog";
 
@@ -22,6 +23,7 @@ const FuelTransactionsTab = () => {
     isReconciled: reconcileFilter === 'all' ? undefined : reconcileFilter === 'reconciled',
   });
   const { vehicles, getVehiclePlate } = useFuelPageContext();
+  const { formatCurrency, formatFuel, formatDistance, settings } = useOrganizationSettings();
 
   const filteredTransactions = transactions.filter(t => {
     if (!searchQuery) return true;
@@ -85,10 +87,11 @@ const FuelTransactionsTab = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
+              aria-label="Search fuel transactions"
             />
           </div>
           <Select value={vehicleFilter} onValueChange={setVehicleFilter}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-40" aria-label="Filter by vehicle">
               <SelectValue placeholder="All Vehicles" />
             </SelectTrigger>
             <SelectContent>
@@ -99,7 +102,7 @@ const FuelTransactionsTab = () => {
             </SelectContent>
           </Select>
           <Select value={reconcileFilter} onValueChange={setReconcileFilter}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-40" aria-label="Filter by status">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
             <SelectContent>
@@ -125,19 +128,19 @@ const FuelTransactionsTab = () => {
         <CardHeader>
           <CardTitle>Fuel Transactions ({filteredTransactions.length})</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
+        <CardContent className="overflow-x-auto">
+          <Table className="min-w-[900px]">
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Vehicle</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Liters</TableHead>
-                <TableHead>Cost</TableHead>
-                <TableHead>Vendor</TableHead>
-                <TableHead>Odometer</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="min-w-[140px]">Date</TableHead>
+                <TableHead className="min-w-[100px]">Vehicle</TableHead>
+                <TableHead className="min-w-[80px]">Type</TableHead>
+                <TableHead className="min-w-[80px]">Liters</TableHead>
+                <TableHead className="min-w-[100px]">Cost</TableHead>
+                <TableHead className="min-w-[120px]">Vendor</TableHead>
+                <TableHead className="min-w-[100px]">Odometer</TableHead>
+                <TableHead className="min-w-[100px]">Status</TableHead>
+                <TableHead className="min-w-[80px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -153,14 +156,22 @@ const FuelTransactionsTab = () => {
                     <TableCell className="font-medium">
                       {format(new Date(t.transaction_date), "MMM dd, yyyy HH:mm")}
                     </TableCell>
-                    <TableCell>{getVehiclePlate(t.vehicle_id)}</TableCell>
+                    <TableCell>
+                      <span className="truncate block max-w-[100px]" title={getVehiclePlate(t.vehicle_id)}>
+                        {getVehiclePlate(t.vehicle_id)}
+                      </span>
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="capitalize">{t.transaction_type}</Badge>
                     </TableCell>
-                    <TableCell className="font-medium">{t.fuel_amount_liters.toFixed(1)}L</TableCell>
-                    <TableCell>{t.fuel_cost ? `$${t.fuel_cost.toFixed(2)}` : '-'}</TableCell>
-                    <TableCell>{t.vendor_name || t.location_name || '-'}</TableCell>
-                    <TableCell>{t.odometer_km ? `${t.odometer_km.toLocaleString()} km` : '-'}</TableCell>
+                    <TableCell className="font-medium">{formatFuel(t.fuel_amount_liters)}</TableCell>
+                    <TableCell>{t.fuel_cost ? formatCurrency(t.fuel_cost) : '-'}</TableCell>
+                    <TableCell>
+                      <span className="truncate block max-w-[120px]" title={t.vendor_name || t.location_name || undefined}>
+                        {t.vendor_name || t.location_name || '-'}
+                      </span>
+                    </TableCell>
+                    <TableCell>{t.odometer_km ? formatDistance(t.odometer_km) : '-'}</TableCell>
                     <TableCell>
                       {t.is_reconciled ? (
                         <Badge className="bg-success/10 text-success border-success/20">
