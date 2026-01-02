@@ -36,13 +36,18 @@ import {
   Square,
   Bell,
   Settings,
-  Save
+  Save,
+  History,
+  List
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useToast } from "@/hooks/use-toast";
 import LiveTrackingMap from "@/components/map/LiveTrackingMap";
+import GeofenceEventsTab from "@/components/geofencing/GeofenceEventsTab";
+import ScheduleConfigSection from "@/components/geofencing/ScheduleConfigSection";
+import ColorPicker from "@/components/geofencing/ColorPicker";
 
 const Geofencing = () => {
   const { organizationId } = useOrganization();
@@ -142,6 +147,9 @@ const Geofencing = () => {
     }
   }, [drawingMode]);
   
+  // Main view tab
+  const [activeTab, setActiveTab] = useState<"map" | "events">("map");
+  
   // Form state
   const [formData, setFormData] = useState({
     name: "",
@@ -157,6 +165,13 @@ const Geofencing = () => {
     enable_entry_alarm: true,
     enable_exit_alarm: true,
     enable_speed_alarm: false,
+    color: "#3B82F6",
+    description: "",
+    max_dwell_minutes: null as number | null,
+    schedule_enabled: false,
+    active_days: [1, 2, 3, 4, 5] as number[],
+    active_start_time: "08:00",
+    active_end_time: "18:00",
   });
 
   const { data: geofences } = useQuery({
@@ -347,6 +362,13 @@ const Geofencing = () => {
       enable_entry_alarm: true,
       enable_exit_alarm: true,
       enable_speed_alarm: false,
+      color: "#3B82F6",
+      description: "",
+      max_dwell_minutes: null,
+      schedule_enabled: false,
+      active_days: [1, 2, 3, 4, 5],
+      active_start_time: "08:00",
+      active_end_time: "18:00",
     });
     setDrawingMode(null);
     setIsEditMode(false);
@@ -368,6 +390,13 @@ const Geofencing = () => {
       enable_entry_alarm: fence.enable_entry_alarm ?? true,
       enable_exit_alarm: fence.enable_exit_alarm ?? true,
       enable_speed_alarm: fence.enable_speed_alarm ?? false,
+      color: fence.color || "#3B82F6",
+      description: fence.description || "",
+      max_dwell_minutes: fence.max_dwell_minutes,
+      schedule_enabled: fence.schedule_enabled ?? false,
+      active_days: fence.active_days || [1, 2, 3, 4, 5],
+      active_start_time: fence.active_start_time || "08:00",
+      active_end_time: fence.active_end_time || "18:00",
     });
     setEditingGeofenceId(fence.id);
     setIsEditMode(true);
@@ -437,6 +466,13 @@ const Geofencing = () => {
       enable_entry_alarm: formData.enable_entry_alarm,
       enable_exit_alarm: formData.enable_exit_alarm,
       enable_speed_alarm: formData.enable_speed_alarm,
+      color: formData.color,
+      description: formData.description,
+      max_dwell_minutes: formData.max_dwell_minutes,
+      schedule_enabled: formData.schedule_enabled,
+      active_days: formData.active_days,
+      active_start_time: formData.active_start_time,
+      active_end_time: formData.active_end_time,
     };
 
     if (isEditMode && editingGeofenceId) {
@@ -535,10 +571,11 @@ const Geofencing = () => {
                   </DialogHeader>
 
                   <Tabs defaultValue="general" className="w-full">
-                    <TabsList className="grid w-full grid-cols-3">
+                    <TabsList className="grid w-full grid-cols-4">
                       <TabsTrigger value="general">General</TabsTrigger>
                       <TabsTrigger value="coordinates">Coordinates</TabsTrigger>
                       <TabsTrigger value="alerts">Alerts</TabsTrigger>
+                      <TabsTrigger value="schedule">Schedule</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="general" className="space-y-4">
@@ -588,6 +625,21 @@ const Geofencing = () => {
                             <SelectItem value="polygon">Polygon</SelectItem>
                           </SelectContent>
                         </Select>
+                      </div>
+
+                      <ColorPicker
+                        value={formData.color}
+                        onChange={(color) => setFormData({ ...formData, color })}
+                      />
+
+                      <div>
+                        <Label htmlFor="description">Description</Label>
+                        <Input
+                          id="description"
+                          value={formData.description}
+                          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                          placeholder="Detailed description of this geofence"
+                        />
                       </div>
 
                       <div>
@@ -725,6 +777,23 @@ const Geofencing = () => {
                         </p>
                       </div>
 
+                      <div>
+                        <Label htmlFor="max_dwell">Max Dwell Time (minutes) - Optional</Label>
+                        <Input
+                          id="max_dwell"
+                          type="number"
+                          value={formData.max_dwell_minutes || ""}
+                          onChange={(e) => setFormData({ 
+                            ...formData, 
+                            max_dwell_minutes: parseInt(e.target.value) || null 
+                          })}
+                          placeholder="e.g., 30"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Alert when a vehicle stays longer than this duration
+                        </p>
+                      </div>
+
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
                           <div>
@@ -775,6 +844,27 @@ const Geofencing = () => {
                         </div>
                       </div>
                     </TabsContent>
+
+                    <TabsContent value="schedule" className="space-y-4">
+                      <ScheduleConfigSection
+                        scheduleEnabled={formData.schedule_enabled}
+                        activeDays={formData.active_days}
+                        activeStartTime={formData.active_start_time}
+                        activeEndTime={formData.active_end_time}
+                        onScheduleEnabledChange={(enabled) => 
+                          setFormData({ ...formData, schedule_enabled: enabled })
+                        }
+                        onActiveDaysChange={(days) => 
+                          setFormData({ ...formData, active_days: days })
+                        }
+                        onActiveStartTimeChange={(time) => 
+                          setFormData({ ...formData, active_start_time: time })
+                        }
+                        onActiveEndTimeChange={(time) => 
+                          setFormData({ ...formData, active_end_time: time })
+                        }
+                      />
+                    </TabsContent>
                   </Tabs>
 
                   <DialogFooter>
@@ -797,8 +887,22 @@ const Geofencing = () => {
               </Dialog>
             </div>
 
-            {/* Geofences List */}
-            <div className="space-y-3">
+            {/* Main Tabs for Geofences List and Events */}
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "map" | "events")} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="map" className="gap-2">
+                  <List className="h-4 w-4" aria-hidden="true" />
+                  Geofences
+                </TabsTrigger>
+                <TabsTrigger value="events" className="gap-2">
+                  <History className="h-4 w-4" aria-hidden="true" />
+                  Events
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="map">
+                {/* Geofences List */}
+                <div className="space-y-3">
               {geofences && geofences.length > 0 ? (
                 geofences.map((fence: any) => (
                   <Card key={fence.id} className="hover:shadow-md transition-shadow">
@@ -873,7 +977,13 @@ const Geofencing = () => {
                   </CardContent>
                 </Card>
               )}
-            </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="events">
+                <GeofenceEventsTab />
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </div>
