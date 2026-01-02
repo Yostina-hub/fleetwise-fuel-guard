@@ -46,35 +46,35 @@ const SecurityDashboard = () => {
   const [securityScore] = useState(78);
   
   const securityFeatures: SecurityFeature[] = [
-    { id: '1', name: 'Password Validation', description: 'Strength checking & policy enforcement', status: 'active', category: 'auth', icon: <Key className="h-4 w-4" /> },
-    { id: '2', name: 'Password History', description: 'Prevents password reuse', status: 'active', category: 'auth', icon: <Clock className="h-4 w-4" /> },
-    { id: '3', name: 'MFA Authentication', description: 'Multi-factor authentication', status: 'warning', category: 'auth', icon: <Smartphone className="h-4 w-4" /> },
-    { id: '4', name: 'Session Fingerprinting', description: 'Device/browser identification', status: 'active', category: 'session', icon: <Fingerprint className="h-4 w-4" /> },
-    { id: '5', name: 'Session Timeout', description: 'Auto-logout on inactivity', status: 'active', category: 'session', icon: <Clock className="h-4 w-4" /> },
-    { id: '6', name: 'Device Trust', description: 'Trusted device management', status: 'active', category: 'session', icon: <Smartphone className="h-4 w-4" /> },
-    { id: '7', name: 'Threat Detection', description: 'Real-time threat monitoring', status: 'active', category: 'threat', icon: <AlertTriangle className="h-4 w-4" /> },
-    { id: '8', name: 'Anomaly Detection', description: 'Unusual behavior detection', status: 'active', category: 'threat', icon: <Activity className="h-4 w-4" /> },
-    { id: '9', name: 'Rate Limiting', description: 'Request throttling', status: 'active', category: 'threat', icon: <RefreshCw className="h-4 w-4" /> },
-    { id: '10', name: 'Geo-Blocking', description: 'Country-based access control', status: 'inactive', category: 'access', icon: <Globe className="h-4 w-4" /> },
-    { id: '11', name: 'VPN Detection', description: 'VPN/proxy identification', status: 'warning', category: 'access', icon: <Globe className="h-4 w-4" /> },
-    { id: '12', name: 'IP Reputation', description: 'IP risk assessment', status: 'active', category: 'access', icon: <Shield className="h-4 w-4" /> },
-    { id: '13', name: 'File Upload Validation', description: 'Type/size verification', status: 'active', category: 'data', icon: <FileCheck className="h-4 w-4" /> },
-    { id: '14', name: 'Input Sanitization', description: 'XSS/injection prevention', status: 'active', category: 'data', icon: <Shield className="h-4 w-4" /> },
-    { id: '15', name: 'CAPTCHA Protection', description: 'Bot prevention', status: 'active', category: 'bot', icon: <Shield className="h-4 w-4" /> },
-    { id: '16', name: 'Security Headers', description: 'CSP/HSTS configuration', status: 'active', category: 'headers', icon: <Lock className="h-4 w-4" /> },
-    { id: '17', name: 'Audit Logging', description: 'Activity tracking', status: 'active', category: 'audit', icon: <Activity className="h-4 w-4" /> },
-    { id: '18', name: 'Account Lockout', description: 'Brute force protection', status: 'active', category: 'auth', icon: <Lock className="h-4 w-4" /> },
-    { id: '19', name: 'Generic Auth Errors', description: 'Prevents user enumeration', status: 'active', category: 'auth', icon: <Shield className="h-4 w-4" /> },
+    { id: '1', name: 'Password Validation', description: 'Strength checking & policy enforcement', status: 'active', category: 'auth', icon: <Key className="h-4 w-4" aria-hidden="true" /> },
+    { id: '2', name: 'Password History', description: 'Prevents password reuse', status: 'active', category: 'auth', icon: <Clock className="h-4 w-4" aria-hidden="true" /> },
+    { id: '3', name: 'MFA Authentication', description: 'Multi-factor authentication', status: 'warning', category: 'auth', icon: <Smartphone className="h-4 w-4" aria-hidden="true" /> },
+    { id: '4', name: 'Session Fingerprinting', description: 'Device/browser identification', status: 'active', category: 'session', icon: <Fingerprint className="h-4 w-4" aria-hidden="true" /> },
+    { id: '5', name: 'Session Timeout', description: 'Auto-logout on inactivity', status: 'active', category: 'session', icon: <Clock className="h-4 w-4" aria-hidden="true" /> },
+    { id: '6', name: 'Device Trust', description: 'Trusted device management', status: 'active', category: 'session', icon: <Smartphone className="h-4 w-4" aria-hidden="true" /> },
+    { id: '7', name: 'Threat Detection', description: 'Real-time threat monitoring', status: 'active', category: 'threat', icon: <AlertTriangle className="h-4 w-4" aria-hidden="true" /> },
+    { id: '8', name: 'Anomaly Detection', description: 'Unusual behavior detection', status: 'active', category: 'threat', icon: <Activity className="h-4 w-4" aria-hidden="true" /> },
+    { id: '9', name: 'Rate Limiting', description: 'Request throttling', status: 'active', category: 'threat', icon: <RefreshCw className="h-4 w-4" aria-hidden="true" /> },
+    { id: '10', name: 'Geo-Blocking', description: 'Country-based access control', status: 'inactive', category: 'access', icon: <Globe className="h-4 w-4" aria-hidden="true" /> },
+    { id: '11', name: 'VPN Detection', description: 'VPN/proxy identification', status: 'warning', category: 'access', icon: <Globe className="h-4 w-4" aria-hidden="true" /> },
+    { id: '12', name: 'IP Reputation', description: 'IP risk assessment', status: 'active', category: 'access', icon: <Shield className="h-4 w-4" aria-hidden="true" /> },
+    { id: '13', name: 'File Upload Validation', description: 'Type/size verification', status: 'active', category: 'data', icon: <FileCheck className="h-4 w-4" aria-hidden="true" /> },
+    { id: '14', name: 'Input Sanitization', description: 'XSS/injection prevention', status: 'active', category: 'data', icon: <Shield className="h-4 w-4" aria-hidden="true" /> },
+    { id: '15', name: 'CAPTCHA Protection', description: 'Bot prevention', status: 'active', category: 'bot', icon: <Shield className="h-4 w-4" aria-hidden="true" /> },
+    { id: '16', name: 'Security Headers', description: 'CSP/HSTS configuration', status: 'active', category: 'headers', icon: <Lock className="h-4 w-4" aria-hidden="true" /> },
+    { id: '17', name: 'Audit Logging', description: 'Activity tracking', status: 'active', category: 'audit', icon: <Activity className="h-4 w-4" aria-hidden="true" /> },
+    { id: '18', name: 'Account Lockout', description: 'Brute force protection', status: 'active', category: 'auth', icon: <Lock className="h-4 w-4" aria-hidden="true" /> },
+    { id: '19', name: 'Generic Auth Errors', description: 'Prevents user enumeration', status: 'active', category: 'auth', icon: <Shield className="h-4 w-4" aria-hidden="true" /> },
   ];
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return <Badge className="bg-green-500/10 text-green-600 border-green-500/20"><CheckCircle2 className="h-3 w-3 mr-1" />Active</Badge>;
+        return <Badge className="bg-green-500/10 text-green-600 border-green-500/20"><CheckCircle2 className="h-3 w-3 mr-1" aria-hidden="true" />Active</Badge>;
       case 'inactive':
-        return <Badge variant="outline" className="text-muted-foreground"><XCircle className="h-3 w-3 mr-1" />Inactive</Badge>;
+        return <Badge variant="outline" className="text-muted-foreground"><XCircle className="h-3 w-3 mr-1" aria-hidden="true" />Inactive</Badge>;
       case 'warning':
-        return <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20"><AlertCircle className="h-3 w-3 mr-1" />Needs Attention</Badge>;
+        return <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20"><AlertCircle className="h-3 w-3 mr-1" aria-hidden="true" />Needs Attention</Badge>;
       default:
         return null;
     }
@@ -89,7 +89,7 @@ const SecurityDashboard = () => {
       <div className="p-8 space-y-6 animate-fade-in">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Shield className="h-8 w-8 text-primary" />
+            <Shield className="h-8 w-8 text-primary" aria-hidden="true" />
             <div>
               <h1 className="text-3xl font-bold">Security Dashboard</h1>
               <p className="text-muted-foreground">
@@ -98,7 +98,7 @@ const SecurityDashboard = () => {
             </div>
           </div>
           <Button>
-            <RefreshCw className="h-4 w-4 mr-2" />
+            <RefreshCw className="h-4 w-4 mr-2" aria-hidden="true" />
             Run Security Scan
           </Button>
         </div>
@@ -158,7 +158,7 @@ const SecurityDashboard = () => {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                <AlertTriangle className="h-4 w-4 text-yellow-600" aria-hidden="true" />
                 Threats Blocked
               </CardTitle>
             </CardHeader>
@@ -171,7 +171,7 @@ const SecurityDashboard = () => {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
-                <Lock className="h-4 w-4 text-destructive" />
+                <Lock className="h-4 w-4 text-destructive" aria-hidden="true" />
                 Failed Logins
               </CardTitle>
             </CardHeader>
