@@ -62,8 +62,8 @@ const FuelMonitoring = () => {
     return (
       <Layout>
         <div className="p-8 flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+          <div className="text-center" role="status" aria-label="Loading fuel data">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" aria-hidden="true" />
             <p className="text-muted-foreground">Loading fuel data...</p>
           </div>
         </div>
@@ -78,7 +78,7 @@ const FuelMonitoring = () => {
           {/* Header */}
           <div className="flex items-center gap-4">
             <div className="p-4 rounded-2xl glass-strong glow">
-              <Fuel className="w-8 h-8 text-primary float-animation" />
+              <Fuel className="w-8 h-8 text-primary float-animation" aria-hidden="true" />
             </div>
             <div>
               <h1 className="text-4xl font-bold gradient-text">Fuel Management</h1>
@@ -92,28 +92,28 @@ const FuelMonitoring = () => {
               title="Total Consumption"
               value={`${stats.totalConsumption}L`}
               subtitle="total refuels"
-              icon={<Fuel className="w-5 h-5" />}
+              icon={<Fuel className="w-5 h-5" aria-hidden="true" />}
               variant="default"
             />
             <KPICard
               title="Fuel Events"
               value={dbFuelEvents.length.toString()}
               subtitle="total events tracked"
-              icon={<Droplet className="w-5 h-5" />}
+              icon={<Droplet className="w-5 h-5" aria-hidden="true" />}
               variant="default"
             />
             <KPICard
               title="Avg. Efficiency"
               value={stats.avgEfficiency ? `${stats.avgEfficiency} L/100km` : "—"}
               subtitle="fleet average"
-              icon={<BarChart3 className="w-5 h-5" />}
+              icon={<BarChart3 className="w-5 h-5" aria-hidden="true" />}
               variant="default"
             />
             <KPICard
               title="Anomalies"
               value={stats.anomalyCount.toString()}
               subtitle="suspected theft/leaks"
-              icon={<AlertTriangle className="w-5 h-5" />}
+              icon={<AlertTriangle className="w-5 h-5" aria-hidden="true" />}
               variant={stats.anomalyCount > 0 ? "warning" : "success"}
             />
           </div>
@@ -125,19 +125,19 @@ const FuelMonitoring = () => {
           <Tabs defaultValue="events" className="space-y-6">
             <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
               <TabsTrigger value="events" className="gap-2">
-                <Droplet className="w-4 h-4" />
+                <Droplet className="w-4 h-4" aria-hidden="true" />
                 Fuel Events
               </TabsTrigger>
               <TabsTrigger value="transactions" className="gap-2">
-                <FileText className="w-4 h-4" />
+                <FileText className="w-4 h-4" aria-hidden="true" />
                 Transactions
               </TabsTrigger>
               <TabsTrigger value="theft" className="gap-2">
-                <AlertTriangle className="w-4 h-4" />
+                <AlertTriangle className="w-4 h-4" aria-hidden="true" />
                 Theft Cases
               </TabsTrigger>
               <TabsTrigger value="depots" className="gap-2">
-                <Warehouse className="w-4 h-4" />
+                <Warehouse className="w-4 h-4" aria-hidden="true" />
                 Depots
               </TabsTrigger>
             </TabsList>
