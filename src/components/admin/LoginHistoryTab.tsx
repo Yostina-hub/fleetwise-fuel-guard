@@ -4,6 +4,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
 
 const LoginHistoryTab = () => {
   const { organizationId } = useOrganization();
@@ -34,6 +35,9 @@ const LoginHistoryTab = () => {
     return <Badge variant={variants[status] || "default"}>{status}</Badge>;
   };
 
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(loginHistory?.length || 0, 10);
+  const paginatedHistory = loginHistory?.slice(startIndex, endIndex) || [];
+
   if (isLoading) return <div role="status" aria-live="polite" aria-label="Loading login history">Loading...</div>;
 
   return (
@@ -45,40 +49,50 @@ const LoginHistoryTab = () => {
         </p>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Date & Time</TableHead>
-            <TableHead>User</TableHead>
-            <TableHead>IP Address</TableHead>
-            <TableHead>Device</TableHead>
-            <TableHead>Location</TableHead>
-            <TableHead>Status</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {loginHistory?.map((log: any) => (
-            <TableRow key={log.id}>
-              <TableCell>{format(new Date(log.login_time), "MMM dd, yyyy HH:mm:ss")}</TableCell>
-              <TableCell>{log.user_id?.substring(0, 8)}...</TableCell>
-              <TableCell className="font-mono">{log.ip_address || "-"}</TableCell>
-              <TableCell className="capitalize">{log.device_type || "-"}</TableCell>
-              <TableCell>
-                {log.location_city && log.location_country
-                  ? `${log.location_city}, ${log.location_country}`
-                  : "-"}
-              </TableCell>
-              <TableCell>{getStatusBadge(log.status)}</TableCell>
+      <div className="space-y-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date & Time</TableHead>
+              <TableHead>User</TableHead>
+              <TableHead>IP Address</TableHead>
+              <TableHead>Device</TableHead>
+              <TableHead>Location</TableHead>
+              <TableHead>Status</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-
-      {loginHistory?.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground" role="status" aria-label="No login history available">
-          <p>No login history available</p>
-        </div>
-      )}
+          </TableHeader>
+          <TableBody>
+            {paginatedHistory.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-12 text-muted-foreground" role="status" aria-label="No login history available">
+                  No login history available
+                </TableCell>
+              </TableRow>
+            ) : (
+              paginatedHistory.map((log: any) => (
+                <TableRow key={log.id}>
+                  <TableCell>{format(new Date(log.login_time), "MMM dd, yyyy HH:mm:ss")}</TableCell>
+                  <TableCell>{log.user_id?.substring(0, 8)}...</TableCell>
+                  <TableCell className="font-mono">{log.ip_address || "-"}</TableCell>
+                  <TableCell className="capitalize">{log.device_type || "-"}</TableCell>
+                  <TableCell>
+                    {log.location_city && log.location_country
+                      ? `${log.location_city}, ${log.location_country}`
+                      : "-"}
+                  </TableCell>
+                  <TableCell>{getStatusBadge(log.status)}</TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+        <TablePagination
+          currentPage={currentPage}
+          totalItems={loginHistory?.length || 0}
+          itemsPerPage={10}
+          onPageChange={setCurrentPage}
+        />
+      </div>
     </div>
   );
 };

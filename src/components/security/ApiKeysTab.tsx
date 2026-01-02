@@ -15,6 +15,7 @@ import { format } from "date-fns";
 
 import { useOrganization } from "@/hooks/useOrganization";
 import { useAuth } from "@/hooks/useAuth";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
 
 interface ApiKeyFormData {
   name: string;
@@ -308,89 +309,106 @@ const ApiKeysTab = () => {
       {isLoading ? (
         <p role="status" aria-live="polite" aria-label="Loading API keys">Loading...</p>
       ) : (
-        <Table>
-          <TableHeader>
+        <ApiKeysTable apiKeys={apiKeys || []} deleteKeyMutation={deleteKeyMutation} />
+      )}
+    </div>
+  );
+};
+
+const ApiKeysTable = ({ apiKeys, deleteKeyMutation }: { apiKeys: any[], deleteKeyMutation: any }) => {
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(apiKeys.length, 10);
+  const paginatedKeys = apiKeys.slice(startIndex, endIndex);
+
+  return (
+    <div className="space-y-0">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Key Prefix</TableHead>
+            <TableHead>Scopes</TableHead>
+            <TableHead>Rate Limit</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Expires</TableHead>
+            <TableHead>Last Used</TableHead>
+            <TableHead>Created</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {paginatedKeys.length === 0 ? (
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Key Prefix</TableHead>
-              <TableHead>Scopes</TableHead>
-              <TableHead>Rate Limit</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Expires</TableHead>
-              <TableHead>Last Used</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableCell colSpan={9} className="text-center text-muted-foreground" role="status" aria-label="No API keys found">
+                No API keys found. Create one to get started.
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {apiKeys?.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={9} className="text-center text-muted-foreground" role="status" aria-label="No API keys found">
-                  No API keys found. Create one to get started.
+          ) : (
+            paginatedKeys.map((key) => (
+              <TableRow key={key.id}>
+                <TableCell className="font-medium">{key.name}</TableCell>
+                <TableCell>
+                  <code className="text-xs bg-muted px-2 py-1 rounded">{key.key_prefix}...</code>
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-1">
+                    {(key.scopes as string[])?.length > 0 ? (
+                      (key.scopes as string[]).slice(0, 2).map((scope) => (
+                        <Badge key={scope} variant="outline" className="text-xs">
+                          {scope.split(':')[0]}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-xs text-muted-foreground">None</span>
+                    )}
+                    {(key.scopes as string[])?.length > 2 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{(key.scopes as string[]).length - 2}
+                      </Badge>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="text-sm">
+                  {key.rate_limit_per_hour || 1000}/hr
+                </TableCell>
+                <TableCell>
+                  <Badge variant={key.is_active ? "default" : "secondary"}>
+                    {key.is_active ? "Active" : "Inactive"}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-sm">
+                  {key.expires_at
+                    ? format(new Date(key.expires_at), "PP")
+                    : "Never"}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {key.last_used_at
+                    ? format(new Date(key.last_used_at), "PP p")
+                    : "Never"}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {format(new Date(key.created_at), "PP")}
+                </TableCell>
+                <TableCell>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => deleteKeyMutation.mutate(key.id)}
+                    aria-label={`Delete API key ${key.name}`}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" aria-hidden="true" />
+                  </Button>
                 </TableCell>
               </TableRow>
-            ) : (
-              apiKeys?.map((key) => (
-                <TableRow key={key.id}>
-                  <TableCell className="font-medium">{key.name}</TableCell>
-                  <TableCell>
-                    <code className="text-xs bg-muted px-2 py-1 rounded">{key.key_prefix}...</code>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {(key.scopes as string[])?.length > 0 ? (
-                        (key.scopes as string[]).slice(0, 2).map((scope) => (
-                          <Badge key={scope} variant="outline" className="text-xs">
-                            {scope.split(':')[0]}
-                          </Badge>
-                        ))
-                      ) : (
-                        <span className="text-xs text-muted-foreground">None</span>
-                      )}
-                      {(key.scopes as string[])?.length > 2 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{(key.scopes as string[]).length - 2}
-                        </Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {key.rate_limit_per_hour || 1000}/hr
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={key.is_active ? "default" : "secondary"}>
-                      {key.is_active ? "Active" : "Inactive"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {key.expires_at
-                      ? format(new Date(key.expires_at), "PP")
-                      : "Never"}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {key.last_used_at
-                      ? format(new Date(key.last_used_at), "PP p")
-                      : "Never"}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {format(new Date(key.created_at), "PP")}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => deleteKeyMutation.mutate(key.id)}
-                      aria-label={`Delete API key ${key.name}`}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" aria-hidden="true" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      )}
+            ))
+          )}
+        </TableBody>
+      </Table>
+      <TablePagination
+        currentPage={currentPage}
+        totalItems={apiKeys.length}
+        itemsPerPage={10}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 };
