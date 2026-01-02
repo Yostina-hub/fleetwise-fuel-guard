@@ -91,6 +91,7 @@ export const useFuelEvents = (filters?: {
   }, [organizationId, filters?.vehicleId, filters?.eventType, filters?.status, filters?.startDate, filters?.endDate]);
 
   useEffect(() => {
+    isMountedRef.current = true;
     fetchFuelEvents();
 
     if (!organizationId) return;

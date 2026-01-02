@@ -85,6 +85,7 @@ export const useFuelTransactions = (filters?: {
   }, [organizationId, filters?.vehicleId, filters?.transactionType, filters?.isReconciled]);
 
   useEffect(() => {
+    isMountedRef.current = true;
     fetchTransactions();
 
     if (!organizationId) return;

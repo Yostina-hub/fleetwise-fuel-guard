@@ -87,6 +87,7 @@ export const useFuelTheftCases = (filters?: {
   }, [organizationId, filters?.status, filters?.priority, filters?.vehicleId]);
 
   useEffect(() => {
+    isMountedRef.current = true;
     fetchCases();
 
     if (!organizationId) return;
