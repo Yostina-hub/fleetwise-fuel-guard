@@ -15,12 +15,12 @@ const QuickActionsCard = () => {
   const navigate = useNavigate();
 
   const actions = [
-    { icon: Plus, label: "Add Vehicle", onClick: () => navigate('/fleet'), color: "text-primary" },
-    { icon: Users, label: "Add Driver", onClick: () => navigate('/drivers'), color: "text-success" },
-    { icon: MapPin, label: "Live Map", onClick: () => navigate('/map'), color: "text-info" },
-    { icon: Wrench, label: "Schedule Service", onClick: () => navigate('/maintenance'), color: "text-warning" },
-    { icon: AlertTriangle, label: "View Alerts", onClick: () => navigate('/alerts'), color: "text-destructive" },
-    { icon: FileText, label: "Generate Report", onClick: () => navigate('/reports'), color: "text-muted-foreground" },
+    { id: "add-vehicle", icon: Plus, label: "Add Vehicle", onClick: () => navigate('/fleet'), color: "text-primary" },
+    { id: "add-driver", icon: Users, label: "Add Driver", onClick: () => navigate('/drivers'), color: "text-success" },
+    { id: "live-map", icon: MapPin, label: "Live Map", onClick: () => navigate('/map'), color: "text-info" },
+    { id: "schedule-service", icon: Wrench, label: "Schedule Service", onClick: () => navigate('/maintenance'), color: "text-warning" },
+    { id: "view-alerts", icon: AlertTriangle, label: "View Alerts", onClick: () => navigate('/alerts'), color: "text-destructive" },
+    { id: "generate-report", icon: FileText, label: "Generate Report", onClick: () => navigate('/reports'), color: "text-muted-foreground" },
   ];
 
   return (
@@ -33,13 +33,14 @@ const QuickActionsCard = () => {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-3 gap-2">
-          {actions.map((action, idx) => (
+          {actions.map((action) => (
             <Button
-              key={idx}
+              key={action.id}
               variant="outline"
               size="sm"
               className="flex flex-col h-16 gap-1 hover:border-primary/50"
               onClick={action.onClick}
+              aria-label={action.label}
             >
               <action.icon className={`w-4 h-4 ${action.color}`} />
               <span className="text-xs">{action.label}</span>

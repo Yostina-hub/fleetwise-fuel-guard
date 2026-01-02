@@ -127,7 +127,13 @@ const DashboardSearch = () => {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="w-64 justify-start gap-2 text-muted-foreground">
+        <Button 
+          variant="outline" 
+          className="w-64 justify-start gap-2 text-muted-foreground"
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          aria-label="Search vehicles, drivers, and geofences"
+        >
           <Search className="w-4 h-4" />
           Search vehicles, drivers...
         </Button>
@@ -138,6 +144,7 @@ const DashboardSearch = () => {
             placeholder="Search..." 
             value={query}
             onValueChange={setQuery}
+            aria-label="Search query"
           />
           <CommandList>
             {loading && (
