@@ -120,8 +120,8 @@ const IncidentsListTab = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[300px]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center min-h-[300px]" role="status" aria-live="polite" aria-label="Loading incidents...">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden="true" />
       </div>
     );
   }
@@ -132,16 +132,17 @@ const IncidentsListTab = () => {
       <div className="flex flex-col md:flex-row gap-4 justify-between">
         <div className="flex gap-3 flex-1">
           <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <Input
               placeholder="Search incidents..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
+              aria-label="Search incidents"
             />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-36">
+            <SelectTrigger className="w-36" aria-label="Filter by status">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -153,7 +154,7 @@ const IncidentsListTab = () => {
             </SelectContent>
           </Select>
           <Select value={severityFilter} onValueChange={setSeverityFilter}>
-            <SelectTrigger className="w-36">
+            <SelectTrigger className="w-36" aria-label="Filter by severity">
               <SelectValue placeholder="Severity" />
             </SelectTrigger>
             <SelectContent>
@@ -165,8 +166,8 @@ const IncidentsListTab = () => {
             </SelectContent>
           </Select>
         </div>
-        <Button className="gap-2" onClick={() => setShowCreateDialog(true)}>
-          <Plus className="w-4 h-4" />
+        <Button className="gap-2" onClick={() => setShowCreateDialog(true)} aria-label="Report new incident">
+          <Plus className="w-4 h-4" aria-hidden="true" />
           Report Incident
         </Button>
       </div>
@@ -208,8 +209,8 @@ const IncidentsListTab = () => {
       {/* Incidents List */}
       {filteredIncidents.length === 0 ? (
         <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            <AlertTriangle className="w-12 h-12 mx-auto mb-4 opacity-50" />
+          <CardContent className="py-12 text-center text-muted-foreground" role="status" aria-label="No incidents found">
+            <AlertTriangle className="w-12 h-12 mx-auto mb-4 opacity-50" aria-hidden="true" />
             <p>No incidents found</p>
           </CardContent>
         </Card>
@@ -233,21 +234,21 @@ const IncidentsListTab = () => {
 
                     <div className="flex items-center gap-6 text-sm text-muted-foreground flex-wrap">
                       <span className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
+                        <Clock className="w-4 h-4" aria-hidden="true" />
                         {format(new Date(incident.incident_time), "MMM dd, yyyy HH:mm")}
                       </span>
                       {incident.location && (
                         <span className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
+                          <MapPin className="w-4 h-4" aria-hidden="true" />
                           {incident.location}
                         </span>
                       )}
                       <span className="flex items-center gap-1">
-                        <Car className="w-4 h-4" />
+                        <Car className="w-4 h-4" aria-hidden="true" />
                         {getVehiclePlate(incident.vehicle_id || undefined)}
                       </span>
                       <span className="flex items-center gap-1">
-                        <User className="w-4 h-4" />
+                        <User className="w-4 h-4" aria-hidden="true" />
                         {getDriverName(incident.driver_id || undefined)}
                       </span>
                     </div>
@@ -265,8 +266,8 @@ const IncidentsListTab = () => {
                   </div>
 
                   <div className="flex flex-col gap-2 min-w-[140px]">
-                    <Button size="sm" variant="outline" className="gap-1">
-                      <FileText className="w-4 h-4" />
+                    <Button size="sm" variant="outline" className="gap-1" aria-label="View incident details">
+                      <FileText className="w-4 h-4" aria-hidden="true" />
                       View Details
                     </Button>
                     {incident.status === 'reported' && (
