@@ -95,8 +95,8 @@ const Reports = () => {
     { id: "alerts", label: "Alerts", icon: Bell },
   ];
 
-  // Sub-tabs based on main tab
-  const getSubTabs = () => {
+  // Sub-tabs based on main tab - memoized to prevent hook order issues
+  const subTabs = useMemo(() => {
     switch (activeReportTab) {
       case "vehicle":
         return [
@@ -136,6 +136,30 @@ const Reports = () => {
         return [
           { id: "all_alerts", label: "All Alerts" },
         ];
+      default:
+        return [];
+    }
+  }, [activeReportTab]);
+
+  // Get sub-tabs for a specific tab (used in click handler)
+  const getSubTabsForTab = (tabId: string) => {
+    switch (tabId) {
+      case "vehicle":
+        return [{ id: "summary", label: "Summary" }, { id: "geofence", label: "Geofence Events" }];
+      case "driver":
+        return [{ id: "summary", label: "Summary" }, { id: "scores", label: "Behavior Scores" }, { id: "speeding", label: "Speeding" }, { id: "harsh_events", label: "Harsh Events" }, { id: "incidents", label: "Incidents" }];
+      case "fuel":
+        return [{ id: "transactions", label: "Transactions" }];
+      case "trips":
+        return [{ id: "all_trips", label: "All Trips" }];
+      case "maintenance":
+        return [{ id: "schedules", label: "Schedules" }, { id: "work_orders", label: "Work Orders" }];
+      case "dispatch":
+        return [{ id: "jobs", label: "All Jobs" }];
+      case "costs":
+        return [{ id: "all_costs", label: "All Costs" }];
+      case "alerts":
+        return [{ id: "all_alerts", label: "All Alerts" }];
       default:
         return [];
     }
@@ -373,7 +397,8 @@ const Reports = () => {
                 key={tab.id}
                 onClick={() => {
                   setActiveReportTab(tab.id);
-                  setActiveSubTab(getSubTabs()[0]?.id || "summary");
+                  const newSubTabs = getSubTabsForTab(tab.id);
+                  setActiveSubTab(newSubTabs[0]?.id || "summary");
                 }}
                 className={cn(
                   "flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap",
@@ -390,9 +415,9 @@ const Reports = () => {
         </div>
 
         {/* Sub Tabs */}
-        {getSubTabs().length > 0 && (
+        {subTabs.length > 0 && (
           <div className="flex items-center gap-4 flex-wrap">
-            {getSubTabs().map((tab) => (
+            {subTabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveSubTab(tab.id)}
