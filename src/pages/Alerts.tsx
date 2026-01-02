@@ -229,8 +229,8 @@ const Alerts = () => {
     return (
       <Layout>
         <div className="p-8 flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+          <div className="text-center" role="status" aria-label="Loading alerts">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" aria-hidden="true" />
             <p className="text-muted-foreground">Loading alerts...</p>
           </div>
         </div>
@@ -245,7 +245,7 @@ const Alerts = () => {
         <div className="flex items-center justify-between slide-in-left">
           <div className="flex items-center gap-4">
             <div className="p-4 rounded-2xl glass-strong pulse-glow">
-              <AlertTriangle className="w-8 h-8 text-destructive animate-float" />
+              <AlertTriangle className="w-8 h-8 text-destructive animate-float" aria-hidden="true" />
             </div>
             <div>
               <h1 className="text-4xl font-bold bg-gradient-to-r from-destructive via-warning to-destructive bg-clip-text text-transparent">
@@ -261,8 +261,9 @@ const Alerts = () => {
               variant="outline" 
               className="gap-2 glass hover:bg-primary hover:text-primary-foreground transition-all duration-300"
               onClick={handleExport}
+              aria-label="Export alerts to CSV"
             >
-              <Download className="w-4 h-4" />
+              <Download className="w-4 h-4" aria-hidden="true" />
               Export
             </Button>
           </div>
@@ -274,7 +275,7 @@ const Alerts = () => {
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-destructive/10 rounded-lg">
-                  <AlertTriangle className="w-6 h-6 text-destructive" />
+                  <AlertTriangle className="w-6 h-6 text-destructive" aria-hidden="true" />
                 </div>
                 <div>
                   <div className="text-2xl font-bold">{stats.critical}</div>
@@ -288,7 +289,7 @@ const Alerts = () => {
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-warning/10 rounded-lg">
-                  <AlertCircle className="w-6 h-6 text-warning" />
+                  <AlertCircle className="w-6 h-6 text-warning" aria-hidden="true" />
                 </div>
                 <div>
                   <div className="text-2xl font-bold">{stats.warning}</div>
@@ -302,7 +303,7 @@ const Alerts = () => {
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-primary/10 rounded-lg">
-                  <Info className="w-6 h-6 text-primary" />
+                  <Info className="w-6 h-6 text-primary" aria-hidden="true" />
                 </div>
                 <div>
                   <div className="text-2xl font-bold">{stats.info}</div>
@@ -316,7 +317,7 @@ const Alerts = () => {
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-yellow-500/10 rounded-lg">
-                  <Clock className="w-6 h-6 text-yellow-500" />
+                  <Clock className="w-6 h-6 text-yellow-500" aria-hidden="true" />
                 </div>
                 <div>
                   <div className="text-2xl font-bold">{stats.unacknowledged}</div>
@@ -330,7 +331,7 @@ const Alerts = () => {
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-success/10 rounded-lg">
-                  <CheckCircle className="w-6 h-6 text-success" />
+                  <CheckCircle className="w-6 h-6 text-success" aria-hidden="true" />
                 </div>
                 <div>
                   <div className="text-2xl font-bold">{stats.resolved}</div>
@@ -352,7 +353,7 @@ const Alerts = () => {
               <div className="flex-1 min-w-[200px]">
                 <label className="text-sm text-muted-foreground mb-2 block">Search</label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
                   <Input
                     id="alerts-search"
                     placeholder="Search alerts..."
@@ -420,8 +421,8 @@ const Alerts = () => {
                 <label className="text-sm text-muted-foreground mb-2 block">From Date</label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start text-left font-normal">
-                      <CalendarIcon className="mr-2 h-4 w-4" />
+                    <Button variant="outline" className="w-full justify-start text-left font-normal" aria-label="Select start date">
+                      <CalendarIcon className="mr-2 h-4 w-4" aria-hidden="true" />
                       {dateFrom ? format(dateFrom, "PP") : "Pick date"}
                     </Button>
                   </PopoverTrigger>
@@ -436,8 +437,8 @@ const Alerts = () => {
                 <label className="text-sm text-muted-foreground mb-2 block">To Date</label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start text-left font-normal">
-                      <CalendarIcon className="mr-2 h-4 w-4" />
+                    <Button variant="outline" className="w-full justify-start text-left font-normal" aria-label="Select end date">
+                      <CalendarIcon className="mr-2 h-4 w-4" aria-hidden="true" />
                       {dateTo ? format(dateTo, "PP") : "Pick date"}
                     </Button>
                   </PopoverTrigger>
@@ -449,8 +450,8 @@ const Alerts = () => {
 
               {/* Clear Filters */}
               {hasActiveFilters && (
-                <Button variant="ghost" onClick={clearFilters} className="gap-2">
-                  <X className="w-4 h-4" />
+                <Button variant="ghost" onClick={clearFilters} className="gap-2" aria-label="Clear all filters">
+                  <X className="w-4 h-4" aria-hidden="true" />
                   Clear Filters
                 </Button>
               )}
@@ -463,12 +464,12 @@ const Alerts = () => {
           <div className="flex items-center gap-4 p-4 bg-primary/10 rounded-lg border border-primary/20">
             <span className="font-medium">{selectedAlerts.length} alert(s) selected</span>
             <div className="flex gap-2">
-              <Button size="sm" onClick={handleBulkAcknowledge} className="gap-2">
-                <CheckCheck className="w-4 h-4" />
+              <Button size="sm" onClick={handleBulkAcknowledge} className="gap-2" aria-label="Acknowledge all selected alerts">
+                <CheckCheck className="w-4 h-4" aria-hidden="true" />
                 Acknowledge All
               </Button>
-              <Button size="sm" variant="outline" onClick={handleBulkResolve} className="gap-2">
-                <CheckCircle className="w-4 h-4" />
+              <Button size="sm" variant="outline" onClick={handleBulkResolve} className="gap-2" aria-label="Resolve all selected alerts">
+                <CheckCircle className="w-4 h-4" aria-hidden="true" />
                 Resolve All
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setSelectedAlerts([])}>
@@ -504,8 +505,8 @@ const Alerts = () => {
 
             {/* Empty State */}
             {paginatedAlerts.length === 0 ? (
-              <div className="text-center py-12">
-                <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+              <div className="text-center py-12" role="status" aria-label="No alerts found">
+                <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" aria-hidden="true" />
                 <h3 className="text-lg font-medium mb-2">No alerts found</h3>
                 <p className="text-muted-foreground">
                   {hasActiveFilters 
@@ -569,11 +570,11 @@ const Alerts = () => {
 
                     <div className="flex items-center gap-6 ml-12 text-sm text-muted-foreground">
                       <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
+                        <Clock className="w-4 h-4" aria-hidden="true" />
                         <span>{alert.formattedTime}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <MapPin className="w-4 h-4" />
+                        <MapPin className="w-4 h-4" aria-hidden="true" />
                         <span>{alert.location_name || "Unknown location"}</span>
                       </div>
                       {alert.lat && alert.lng && (
@@ -647,8 +648,9 @@ const Alerts = () => {
                     size="sm"
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
+                    aria-label="Go to previous page"
                   >
-                    <ChevronLeft className="w-4 h-4" />
+                    <ChevronLeft className="w-4 h-4" aria-hidden="true" />
                     Previous
                   </Button>
                   <Button
@@ -656,9 +658,10 @@ const Alerts = () => {
                     size="sm"
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
+                    aria-label="Go to next page"
                   >
                     Next
-                    <ChevronRight className="w-4 h-4" />
+                    <ChevronRight className="w-4 h-4" aria-hidden="true" />
                   </Button>
                 </div>
               </div>
