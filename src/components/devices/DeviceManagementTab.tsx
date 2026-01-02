@@ -415,41 +415,63 @@ export const DeviceManagementTab = () => {
               
               <div className="grid grid-cols-2 gap-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="vehicle">Vehicle</Label>
+                  <Label htmlFor="vehicle">Vehicle (Plate Number)</Label>
                   <Select
                     value={formData.vehicle_id}
                     onValueChange={(value) => setFormData({ ...formData, vehicle_id: value === "none" ? "" : value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select vehicle" />
+                      <SelectValue placeholder="Select vehicle by plate number" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">No vehicle assigned</SelectItem>
+                      <SelectItem value="none">
+                        <span className="text-muted-foreground">No vehicle assigned</span>
+                      </SelectItem>
                       {vehiclesWithAssignmentStatus.unassigned.length > 0 && (
                         <>
-                          <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">Available Vehicles</div>
+                          <div className="px-2 py-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 rounded mx-1 my-1">
+                            Available Vehicles ({vehiclesWithAssignmentStatus.unassigned.length})
+                          </div>
                           {vehiclesWithAssignmentStatus.unassigned.map((vehicle) => (
                             <SelectItem key={vehicle.id} value={vehicle.id}>
-                              {vehicle.plate_number} - {vehicle.make} {vehicle.model}
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono font-semibold">{vehicle.plate_number}</span>
+                                <span className="text-muted-foreground">•</span>
+                                <span className="text-muted-foreground">{vehicle.make} {vehicle.model}</span>
+                              </div>
                             </SelectItem>
                           ))}
                         </>
                       )}
                       {vehiclesWithAssignmentStatus.assigned.length > 0 && (
                         <>
-                          <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground border-t mt-1 pt-2">
-                            Assigned to Other Devices (will be reassigned)
+                          <div className="px-2 py-1.5 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 rounded mx-1 my-1 mt-2">
+                            Assigned to Other Devices ({vehiclesWithAssignmentStatus.assigned.length})
                           </div>
                           {vehiclesWithAssignmentStatus.assigned.map((vehicle) => (
                             <SelectItem key={vehicle.id} value={vehicle.id} className="text-amber-600 dark:text-amber-400">
-                              {vehicle.plate_number} - {vehicle.make} {vehicle.model}
-                              <span className="text-xs ml-1 opacity-70">(Device: {vehicle.assignedToDevice.imei.slice(-6)})</span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono font-semibold">{vehicle.plate_number}</span>
+                                <span className="text-muted-foreground">•</span>
+                                <span className="text-muted-foreground">{vehicle.make} {vehicle.model}</span>
+                                <Badge variant="outline" className="text-[10px] h-5 ml-1">
+                                  IMEI: ...{vehicle.assignedToDevice.imei.slice(-6)}
+                                </Badge>
+                              </div>
                             </SelectItem>
                           ))}
                         </>
                       )}
                     </SelectContent>
                   </Select>
+                  {formData.vehicle_id && formData.vehicle_id !== "" && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {(() => {
+                        const selected = [...vehiclesWithAssignmentStatus.unassigned, ...vehiclesWithAssignmentStatus.assigned].find(v => v.id === formData.vehicle_id);
+                        return selected ? `Selected: ${selected.plate_number}` : null;
+                      })()}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -731,7 +753,20 @@ export const DeviceManagementTab = () => {
                   </TableCell>
                   <TableCell>
                     {device.vehicles?.plate_number ? (
-                      <span className="font-medium">{device.vehicles.plate_number}</span>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="font-mono font-semibold text-sm px-2 py-1">
+                          {device.vehicles.plate_number}
+                        </Badge>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 w-6 p-0 text-muted-foreground hover:text-primary"
+                          onClick={() => handleQuickAssign(device)}
+                          title="Change vehicle"
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                      </div>
                     ) : (
                       <Button 
                         variant="ghost" 
@@ -904,51 +939,106 @@ export const DeviceManagementTab = () => {
           <DialogHeader>
             <DialogTitle>Assign Vehicle to Device</DialogTitle>
             <DialogDescription>
-              Assign a vehicle to device IMEI: <span className="font-mono">{deviceToAssign?.imei}</span>
+              Assign a vehicle to device IMEI: <span className="font-mono font-semibold">{deviceToAssign?.imei}</span>
+              {deviceToAssign?.sim_msisdn && (
+                <span className="block mt-1">
+                  SIM: <span className="font-mono">{deviceToAssign.sim_msisdn}</span>
+                </span>
+              )}
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="assign-vehicle">Vehicle</Label>
+          
+          {/* Current Assignment Display */}
+          {deviceToAssign?.vehicles?.plate_number && (
+            <div className="rounded-lg border bg-muted/50 p-3">
+              <p className="text-xs text-muted-foreground mb-1">Currently Assigned</p>
+              <p className="font-semibold text-lg">{deviceToAssign.vehicles.plate_number}</p>
+              <p className="text-sm text-muted-foreground">
+                {deviceToAssign.vehicles.make} {deviceToAssign.vehicles.model}
+              </p>
+            </div>
+          )}
+          
+          <div className="py-2">
+            <Label htmlFor="assign-vehicle">Select Vehicle</Label>
             <Select
               value={assignVehicleId}
               onValueChange={setAssignVehicleId}
             >
-              <SelectTrigger id="assign-vehicle">
-                <SelectValue placeholder="Select vehicle" />
+              <SelectTrigger id="assign-vehicle" className="mt-1.5">
+                <SelectValue placeholder="Select vehicle by plate number" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">No vehicle assigned</SelectItem>
+                <SelectItem value="none">
+                  <span className="text-muted-foreground">No vehicle assigned</span>
+                </SelectItem>
                 {vehiclesWithAssignmentStatus.unassigned.length > 0 && (
                   <>
-                    <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">Available Vehicles</div>
+                    <div className="px-2 py-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 rounded mx-1 my-1">
+                      Available Vehicles ({vehiclesWithAssignmentStatus.unassigned.length})
+                    </div>
                     {vehiclesWithAssignmentStatus.unassigned.map((vehicle) => (
                       <SelectItem key={vehicle.id} value={vehicle.id}>
-                        {vehicle.plate_number} - {vehicle.make} {vehicle.model}
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-semibold">{vehicle.plate_number}</span>
+                          <span className="text-muted-foreground">•</span>
+                          <span className="text-muted-foreground">{vehicle.make} {vehicle.model}</span>
+                        </div>
                       </SelectItem>
                     ))}
                   </>
                 )}
                 {vehiclesWithAssignmentStatus.assigned.length > 0 && (
                   <>
-                    <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground border-t mt-1 pt-2">
-                      Assigned to Other Devices (will be reassigned)
+                    <div className="px-2 py-1.5 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 rounded mx-1 my-1 mt-2">
+                      Assigned to Other Devices ({vehiclesWithAssignmentStatus.assigned.length})
                     </div>
                     {vehiclesWithAssignmentStatus.assigned.map((vehicle) => (
                       <SelectItem key={vehicle.id} value={vehicle.id} className="text-amber-600 dark:text-amber-400">
-                        {vehicle.plate_number} - {vehicle.make} {vehicle.model}
-                        <span className="text-xs ml-1 opacity-70">(Device: {vehicle.assignedToDevice.imei.slice(-6)})</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-semibold">{vehicle.plate_number}</span>
+                          <span className="text-muted-foreground">•</span>
+                          <span className="text-muted-foreground">{vehicle.make} {vehicle.model}</span>
+                          <Badge variant="outline" className="text-[10px] h-5 ml-1">
+                            IMEI: ...{vehicle.assignedToDevice.imei.slice(-6)}
+                          </Badge>
+                        </div>
                       </SelectItem>
                     ))}
                   </>
                 )}
               </SelectContent>
             </Select>
+            
+            {/* Selected vehicle preview */}
+            {assignVehicleId && assignVehicleId !== "none" && (
+              <div className="mt-3 rounded-lg border p-3 bg-primary/5">
+                {(() => {
+                  const selectedVehicle = [...vehiclesWithAssignmentStatus.unassigned, ...vehiclesWithAssignmentStatus.assigned].find(v => v.id === assignVehicleId);
+                  const isReassigning = vehiclesWithAssignmentStatus.assigned.some(v => v.id === assignVehicleId);
+                  return selectedVehicle ? (
+                    <>
+                      <p className="text-xs text-muted-foreground mb-1">
+                        {isReassigning ? "Will reassign from another device" : "Will assign"}
+                      </p>
+                      <p className="font-mono font-bold text-xl">{selectedVehicle.plate_number}</p>
+                      <p className="text-sm text-muted-foreground">{selectedVehicle.make} {selectedVehicle.model}</p>
+                    </>
+                  ) : null;
+                })()}
+              </div>
+            )}
           </div>
+          
           <DialogFooter>
             <Button variant="outline" onClick={() => setQuickAssignDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={confirmQuickAssign}>
+            <Button 
+              onClick={confirmQuickAssign}
+              variant={vehiclesWithAssignmentStatus.assigned.some(v => v.id === assignVehicleId) ? "default" : "default"}
+              className={vehiclesWithAssignmentStatus.assigned.some(v => v.id === assignVehicleId) ? "bg-amber-600 hover:bg-amber-700" : ""}
+            >
               {vehiclesWithAssignmentStatus.assigned.some(v => v.id === assignVehicleId) ? "Reassign Vehicle" : "Assign Vehicle"}
             </Button>
           </DialogFooter>
