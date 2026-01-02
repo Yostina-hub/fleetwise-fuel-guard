@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { 
   Plus, 
   Calendar, 
@@ -15,18 +16,24 @@ import {
   Wrench, 
   AlertTriangle,
   CheckCircle,
-  Loader2
+  Loader2,
+  Search,
+  Pencil,
+  Trash2
 } from "lucide-react";
-import { useMaintenanceSchedules } from "@/hooks/useMaintenanceSchedules";
+import { useMaintenanceSchedules, MaintenanceSchedule } from "@/hooks/useMaintenanceSchedules";
 import { useVehicles } from "@/hooks/useVehicles";
 import { format, differenceInDays, isPast } from "date-fns";
 
 const MaintenanceSchedulesTab = () => {
-  const { schedules, loading, createSchedule, recordService } = useMaintenanceSchedules();
+  const { schedules, loading, createSchedule, updateSchedule, deleteSchedule, recordService } = useMaintenanceSchedules();
   const { vehicles } = useVehicles();
   const [showAddSchedule, setShowAddSchedule] = useState(false);
+  const [showEditSchedule, setShowEditSchedule] = useState(false);
   const [showRecordService, setShowRecordService] = useState(false);
-  const [selectedSchedule, setSelectedSchedule] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] = useState<MaintenanceSchedule | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [newSchedule, setNewSchedule] = useState({
     vehicle_id: '',
@@ -36,6 +43,24 @@ const MaintenanceSchedulesTab = () => {
     priority: 'medium' as const,
     reminder_days_before: 7,
     reminder_km_before: 500,
+  });
+
+  const [editSchedule, setEditSchedule] = useState<{
+    service_type: string;
+    interval_type: 'mileage' | 'hours' | 'calendar';
+    interval_value: number;
+    priority: 'low' | 'medium' | 'high';
+    reminder_days_before: number;
+    reminder_km_before: number;
+    is_active: boolean;
+  }>({
+    service_type: '',
+    interval_type: 'mileage',
+    interval_value: 10000,
+    priority: 'medium',
+    reminder_days_before: 7,
+    reminder_km_before: 500,
+    is_active: true,
   });
 
   const [serviceData, setServiceData] = useState({
@@ -54,7 +79,7 @@ const MaintenanceSchedulesTab = () => {
     return vehicle?.odometer_km || 0;
   };
 
-  const getScheduleStatus = (schedule: typeof schedules[0]) => {
+  const getScheduleStatus = (schedule: MaintenanceSchedule) => {
     if (schedule.interval_type === 'calendar' && schedule.next_due_date) {
       const daysUntil = differenceInDays(new Date(schedule.next_due_date), new Date());
       if (daysUntil < 0) return 'overdue';
@@ -97,6 +122,21 @@ const MaintenanceSchedulesTab = () => {
     }
   };
 
+  // Filter schedules based on search
+  const filteredSchedules = useMemo(() => {
+    if (!searchQuery) return schedules;
+    const query = searchQuery.toLowerCase();
+    return schedules.filter(s => 
+      s.service_type.toLowerCase().includes(query) ||
+      getVehiclePlate(s.vehicle_id).toLowerCase().includes(query)
+    );
+  }, [schedules, searchQuery, vehicles]);
+
+  // Group filtered schedules by status
+  const overdueSchedules = filteredSchedules.filter(s => getScheduleStatus(s) === 'overdue');
+  const dueSoonSchedules = filteredSchedules.filter(s => getScheduleStatus(s) === 'due_soon');
+  const scheduledSchedules = filteredSchedules.filter(s => getScheduleStatus(s) === 'scheduled');
+
   const handleCreateSchedule = async () => {
     await createSchedule(newSchedule);
     setShowAddSchedule(false);
@@ -111,10 +151,43 @@ const MaintenanceSchedulesTab = () => {
     });
   };
 
+  const handleEditClick = (schedule: MaintenanceSchedule) => {
+    setSelectedSchedule(schedule);
+    setEditSchedule({
+      service_type: schedule.service_type,
+      interval_type: schedule.interval_type as 'mileage' | 'hours' | 'calendar',
+      interval_value: schedule.interval_value,
+      priority: schedule.priority as 'low' | 'medium' | 'high',
+      reminder_days_before: schedule.reminder_days_before || 7,
+      reminder_km_before: schedule.reminder_km_before || 500,
+      is_active: schedule.is_active !== false,
+    });
+    setShowEditSchedule(true);
+  };
+
+  const handleUpdateSchedule = async () => {
+    if (!selectedSchedule) return;
+    await updateSchedule(selectedSchedule.id, editSchedule);
+    setShowEditSchedule(false);
+    setSelectedSchedule(null);
+  };
+
+  const handleDeleteClick = (schedule: MaintenanceSchedule) => {
+    setSelectedSchedule(schedule);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedSchedule) return;
+    await deleteSchedule(selectedSchedule.id);
+    setShowDeleteConfirm(false);
+    setSelectedSchedule(null);
+  };
+
   const handleRecordService = async () => {
     if (!selectedSchedule) return;
     await recordService(
-      selectedSchedule, 
+      selectedSchedule.id, 
       new Date(serviceData.service_date).toISOString(),
       serviceData.odometer_km || undefined,
       serviceData.hours || undefined
@@ -127,11 +200,6 @@ const MaintenanceSchedulesTab = () => {
     });
   };
 
-  // Group schedules by status
-  const overdueSchedules = schedules.filter(s => getScheduleStatus(s) === 'overdue');
-  const dueSoonSchedules = schedules.filter(s => getScheduleStatus(s) === 'due_soon');
-  const scheduledSchedules = schedules.filter(s => getScheduleStatus(s) === 'scheduled');
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[300px]">
@@ -143,22 +211,35 @@ const MaintenanceSchedulesTab = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div className="flex gap-4">
-          <Card className="bg-destructive/5 border-destructive/20 px-4 py-2">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-destructive" />
-              <span className="font-semibold text-destructive">{overdueSchedules.length}</span>
-              <span className="text-sm text-muted-foreground">Overdue</span>
-            </div>
-          </Card>
-          <Card className="bg-warning/5 border-warning/20 px-4 py-2">
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-warning" />
-              <span className="font-semibold text-warning">{dueSoonSchedules.length}</span>
-              <span className="text-sm text-muted-foreground">Due Soon</span>
-            </div>
-          </Card>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="schedule-search"
+              aria-label="Search maintenance schedules"
+              placeholder="Search schedules..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 w-64"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Card className="bg-destructive/5 border-destructive/20 px-4 py-2">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-destructive" />
+                <span className="font-semibold text-destructive">{overdueSchedules.length}</span>
+                <span className="text-sm text-muted-foreground">Overdue</span>
+              </div>
+            </Card>
+            <Card className="bg-warning/5 border-warning/20 px-4 py-2">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-warning" />
+                <span className="font-semibold text-warning">{dueSoonSchedules.length}</span>
+                <span className="text-sm text-muted-foreground">Due Soon</span>
+              </div>
+            </Card>
+          </div>
         </div>
         <Button 
           className="gap-2" 
@@ -171,14 +252,16 @@ const MaintenanceSchedulesTab = () => {
       </div>
 
       {/* Schedules List */}
-      {schedules.length === 0 ? (
+      {filteredSchedules.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
             <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>No maintenance schedules configured</p>
-            <Button className="mt-4" onClick={() => setShowAddSchedule(true)}>
-              Create Your First Schedule
-            </Button>
+            <p>{searchQuery ? "No schedules match your search" : "No maintenance schedules configured"}</p>
+            {!searchQuery && (
+              <Button className="mt-4" onClick={() => setShowAddSchedule(true)}>
+                Create Your First Schedule
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -199,6 +282,9 @@ const MaintenanceSchedulesTab = () => {
                         <span className={`text-xs font-semibold uppercase ${getPriorityColor(schedule.priority)}`}>
                           {schedule.priority}
                         </span>
+                        {schedule.is_active === false && (
+                          <Badge variant="secondary">Inactive</Badge>
+                        )}
                       </div>
                       
                       <div className="flex items-center gap-6 text-sm">
@@ -248,7 +334,7 @@ const MaintenanceSchedulesTab = () => {
                         size="sm" 
                         className="gap-1"
                         onClick={() => {
-                          setSelectedSchedule(schedule.id);
+                          setSelectedSchedule(schedule);
                           setServiceData({
                             ...serviceData,
                             odometer_km: currentOdo,
@@ -260,13 +346,26 @@ const MaintenanceSchedulesTab = () => {
                         <CheckCircle className="w-4 h-4" />
                         Record Service
                       </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        aria-label={`Edit ${schedule.service_type} schedule`}
-                      >
-                        Edit
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => handleEditClick(schedule)}
+                          aria-label={`Edit ${schedule.service_type} schedule`}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          className="flex-1 text-destructive hover:text-destructive"
+                          onClick={() => handleDeleteClick(schedule)}
+                          aria-label={`Delete ${schedule.service_type} schedule`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -278,21 +377,21 @@ const MaintenanceSchedulesTab = () => {
 
       {/* Add Schedule Dialog */}
       <Dialog open={showAddSchedule} onOpenChange={setShowAddSchedule}>
-        <DialogContent aria-describedby="add-schedule-description">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Maintenance Schedule</DialogTitle>
-            <p id="add-schedule-description" className="text-sm text-muted-foreground">
+            <DialogDescription>
               Create a recurring maintenance schedule for a vehicle.
-            </p>
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Vehicle</Label>
+              <Label htmlFor="add-vehicle">Vehicle</Label>
               <Select 
                 value={newSchedule.vehicle_id}
                 onValueChange={v => setNewSchedule({...newSchedule, vehicle_id: v})}
               >
-                <SelectTrigger>
+                <SelectTrigger id="add-vehicle">
                   <SelectValue placeholder="Select vehicle" />
                 </SelectTrigger>
                 <SelectContent>
@@ -305,8 +404,9 @@ const MaintenanceSchedulesTab = () => {
               </Select>
             </div>
             <div>
-              <Label>Service Type</Label>
+              <Label htmlFor="add-service-type">Service Type</Label>
               <Input 
+                id="add-service-type"
                 value={newSchedule.service_type}
                 onChange={e => setNewSchedule({...newSchedule, service_type: e.target.value})}
                 placeholder="e.g., Oil Change, Tire Rotation"
@@ -314,12 +414,12 @@ const MaintenanceSchedulesTab = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Interval Type</Label>
+                <Label htmlFor="add-interval-type">Interval Type</Label>
                 <Select 
                   value={newSchedule.interval_type}
                   onValueChange={v => setNewSchedule({...newSchedule, interval_type: v as any})}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="add-interval-type">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -330,8 +430,9 @@ const MaintenanceSchedulesTab = () => {
                 </Select>
               </div>
               <div>
-                <Label>Interval Value</Label>
+                <Label htmlFor="add-interval-value">Interval Value</Label>
                 <Input 
+                  id="add-interval-value"
                   type="number"
                   value={newSchedule.interval_value}
                   onChange={e => setNewSchedule({...newSchedule, interval_value: Number(e.target.value)})}
@@ -339,12 +440,12 @@ const MaintenanceSchedulesTab = () => {
               </div>
             </div>
             <div>
-              <Label>Priority</Label>
+              <Label htmlFor="add-priority">Priority</Label>
               <Select 
                 value={newSchedule.priority}
                 onValueChange={v => setNewSchedule({...newSchedule, priority: v as any})}
               >
-                <SelectTrigger>
+                <SelectTrigger id="add-priority">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -364,35 +465,120 @@ const MaintenanceSchedulesTab = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Record Service Dialog */}
-      <Dialog open={showRecordService} onOpenChange={setShowRecordService}>
-        <DialogContent aria-describedby="record-service-description">
+      {/* Edit Schedule Dialog */}
+      <Dialog open={showEditSchedule} onOpenChange={setShowEditSchedule}>
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Record Service Completion</DialogTitle>
-            <p id="record-service-description" className="text-sm text-muted-foreground">
-              Log when a scheduled maintenance service was performed.
-            </p>
+            <DialogTitle>Edit Maintenance Schedule</DialogTitle>
+            <DialogDescription>
+              Update the maintenance schedule settings.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Service Date</Label>
+              <Label htmlFor="edit-service-type">Service Type</Label>
               <Input 
+                id="edit-service-type"
+                value={editSchedule.service_type}
+                onChange={e => setEditSchedule({...editSchedule, service_type: e.target.value})}
+                placeholder="e.g., Oil Change, Tire Rotation"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-interval-type">Interval Type</Label>
+                <Select 
+                  value={editSchedule.interval_type}
+                  onValueChange={v => setEditSchedule({...editSchedule, interval_type: v as any})}
+                >
+                  <SelectTrigger id="edit-interval-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mileage">Mileage (km)</SelectItem>
+                    <SelectItem value="hours">Engine Hours</SelectItem>
+                    <SelectItem value="calendar">Calendar (days)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="edit-interval-value">Interval Value</Label>
+                <Input 
+                  id="edit-interval-value"
+                  type="number"
+                  value={editSchedule.interval_value}
+                  onChange={e => setEditSchedule({...editSchedule, interval_value: Number(e.target.value)})}
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="edit-priority">Priority</Label>
+              <Select 
+                value={editSchedule.priority}
+                onValueChange={v => setEditSchedule({...editSchedule, priority: v as any})}
+              >
+                <SelectTrigger id="edit-priority">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="edit-is-active"
+                checked={editSchedule.is_active}
+                onChange={e => setEditSchedule({...editSchedule, is_active: e.target.checked})}
+                className="rounded border-input"
+              />
+              <Label htmlFor="edit-is-active" className="cursor-pointer">Active</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditSchedule(false)}>Cancel</Button>
+            <Button onClick={handleUpdateSchedule} disabled={!editSchedule.service_type}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Record Service Dialog */}
+      <Dialog open={showRecordService} onOpenChange={setShowRecordService}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Record Service Completion</DialogTitle>
+            <DialogDescription>
+              Log when a scheduled maintenance service was performed.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="service-date">Service Date</Label>
+              <Input 
+                id="service-date"
                 type="date"
                 value={serviceData.service_date}
                 onChange={e => setServiceData({...serviceData, service_date: e.target.value})}
               />
             </div>
             <div>
-              <Label>Odometer (km)</Label>
+              <Label htmlFor="service-odometer">Odometer (km)</Label>
               <Input 
+                id="service-odometer"
                 type="number"
                 value={serviceData.odometer_km}
                 onChange={e => setServiceData({...serviceData, odometer_km: Number(e.target.value)})}
               />
             </div>
             <div>
-              <Label>Engine Hours (if applicable)</Label>
+              <Label htmlFor="service-hours">Engine Hours (if applicable)</Label>
               <Input 
+                id="service-hours"
                 type="number"
                 value={serviceData.hours}
                 onChange={e => setServiceData({...serviceData, hours: Number(e.target.value)})}
@@ -405,6 +591,24 @@ const MaintenanceSchedulesTab = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Maintenance Schedule</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this schedule for "{selectedSchedule?.service_type}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

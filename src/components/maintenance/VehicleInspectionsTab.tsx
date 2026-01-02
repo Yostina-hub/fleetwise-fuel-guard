@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,9 +17,12 @@ import {
   AlertTriangle,
   Loader2,
   Calendar,
-  Truck
+  Truck,
+  Search,
+  Eye,
+  Trash2
 } from "lucide-react";
-import { useMaintenanceSchedules } from "@/hooks/useMaintenanceSchedules";
+import { useMaintenanceSchedules, VehicleInspection } from "@/hooks/useMaintenanceSchedules";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
 import { format } from "date-fns";
@@ -33,11 +37,15 @@ const INSPECTION_CHECKLIST = [
 ];
 
 const VehicleInspectionsTab = () => {
-  const { inspections, loading, createInspection } = useMaintenanceSchedules();
+  const { inspections, loading, createInspection, deleteInspection } = useMaintenanceSchedules();
   const { vehicles } = useVehicles();
   const { drivers } = useDrivers();
   const [showNewInspection, setShowNewInspection] = useState(false);
+  const [showInspectionDetail, setShowInspectionDetail] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [selectedInspection, setSelectedInspection] = useState<VehicleInspection | null>(null);
   const [inspectionFilter, setInspectionFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [newInspection, setNewInspection] = useState({
     vehicle_id: '',
@@ -118,10 +126,34 @@ const VehicleInspectionsTab = () => {
     });
   };
 
-  const filteredInspections = inspections.filter(i => {
-    if (inspectionFilter === 'all') return true;
-    return i.status === inspectionFilter;
-  });
+  const handleViewDetails = (inspection: VehicleInspection) => {
+    setSelectedInspection(inspection);
+    setShowInspectionDetail(true);
+  };
+
+  const handleDeleteClick = (inspection: VehicleInspection) => {
+    setSelectedInspection(inspection);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedInspection) return;
+    await deleteInspection(selectedInspection.id);
+    setShowDeleteConfirm(false);
+    setSelectedInspection(null);
+  };
+
+  // Filter inspections
+  const filteredInspections = useMemo(() => {
+    return inspections.filter(i => {
+      const matchesStatus = inspectionFilter === 'all' || i.status === inspectionFilter;
+      const matchesSearch = searchQuery === '' || 
+        getVehiclePlate(i.vehicle_id).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        getDriverName(i.driver_id).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        i.inspection_type.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesStatus && matchesSearch;
+    });
+  }, [inspections, inspectionFilter, searchQuery, vehicles, drivers]);
 
   if (loading) {
     return (
@@ -134,18 +166,31 @@ const VehicleInspectionsTab = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <Select value={inspectionFilter} onValueChange={setInspectionFilter}>
-          <SelectTrigger className="w-40" aria-label="Filter inspections by status">
-            <SelectValue placeholder="All Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="passed">Passed</SelectItem>
-            <SelectItem value="failed">Failed</SelectItem>
-            <SelectItem value="pending_repair">Pending Repair</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-col sm:flex-row gap-4 flex-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="inspection-search"
+              aria-label="Search inspections"
+              placeholder="Search inspections..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 w-64"
+            />
+          </div>
+          <Select value={inspectionFilter} onValueChange={setInspectionFilter}>
+            <SelectTrigger className="w-40" aria-label="Filter inspections by status">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="passed">Passed</SelectItem>
+              <SelectItem value="failed">Failed</SelectItem>
+              <SelectItem value="pending_repair">Pending Repair</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <Button 
           className="gap-2" 
           onClick={() => setShowNewInspection(true)}
@@ -217,7 +262,7 @@ const VehicleInspectionsTab = () => {
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
             <ClipboardCheck className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>No inspections found</p>
+            <p>{searchQuery || inspectionFilter !== 'all' ? "No inspections match your filters" : "No inspections found"}</p>
           </CardContent>
         </Card>
       ) : (
@@ -256,7 +301,7 @@ const VehicleInspectionsTab = () => {
                     )}
 
                     {inspection.mechanic_notes && (
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-sm text-muted-foreground line-clamp-1">
                         Notes: {inspection.mechanic_notes}
                       </div>
                     )}
@@ -274,6 +319,23 @@ const VehicleInspectionsTab = () => {
                         Not Certified
                       </Badge>
                     )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleViewDetails(inspection)}
+                      aria-label={`View details for inspection on ${getVehiclePlate(inspection.vehicle_id)}`}
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => handleDeleteClick(inspection)}
+                      aria-label={`Delete inspection for ${getVehiclePlate(inspection.vehicle_id)}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -282,24 +344,94 @@ const VehicleInspectionsTab = () => {
         </div>
       )}
 
+      {/* Inspection Detail Dialog */}
+      <Dialog open={showInspectionDetail} onOpenChange={setShowInspectionDetail}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardCheck className="w-5 h-5" />
+              Inspection Details
+            </DialogTitle>
+            <DialogDescription>
+              Full inspection record for {selectedInspection && getVehiclePlate(selectedInspection.vehicle_id)}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedInspection && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-muted-foreground">Vehicle</label>
+                  <p className="font-medium">{getVehiclePlate(selectedInspection.vehicle_id)}</p>
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Type</label>
+                  <p className="font-medium capitalize">{selectedInspection.inspection_type.replace('_', ' ')}</p>
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Date</label>
+                  <p className="font-medium">{format(new Date(selectedInspection.inspection_date), "MMM dd, yyyy HH:mm")}</p>
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Inspector</label>
+                  <p className="font-medium">{getDriverName(selectedInspection.driver_id)}</p>
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Status</label>
+                  <div className="mt-1">{getStatusBadge(selectedInspection.status)}</div>
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Odometer</label>
+                  <p className="font-medium">{selectedInspection.odometer_km?.toLocaleString() || '-'} km</p>
+                </div>
+              </div>
+
+              {selectedInspection.checklist_data && Object.keys(selectedInspection.checklist_data).length > 0 && (
+                <div className="border-t pt-4">
+                  <label className="text-sm text-muted-foreground">Checklist Results</label>
+                  <div className="mt-2 space-y-2">
+                    {Object.entries(selectedInspection.checklist_data as Record<string, Record<string, boolean>>).map(([category, items]) => (
+                      <div key={category} className="text-sm">
+                        <span className="font-medium capitalize">{category}:</span>{' '}
+                        {Object.entries(items).map(([item, passed]) => (
+                          <span key={item} className={passed ? 'text-success' : 'text-destructive'}>
+                            {item} {passed ? '✓' : '✗'}{' '}
+                          </span>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedInspection.mechanic_notes && (
+                <div className="border-t pt-4">
+                  <label className="text-sm text-muted-foreground">Notes</label>
+                  <p className="mt-1 text-sm">{selectedInspection.mechanic_notes}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* New Inspection Dialog */}
       <Dialog open={showNewInspection} onOpenChange={setShowNewInspection}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" aria-describedby="inspection-dialog-description">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>New Vehicle Inspection</DialogTitle>
-            <p id="inspection-dialog-description" className="text-sm text-muted-foreground">
+            <DialogDescription>
               Complete a pre-trip or post-trip vehicle inspection checklist.
-            </p>
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Vehicle</Label>
+                <Label htmlFor="insp-vehicle">Vehicle</Label>
                 <Select 
                   value={newInspection.vehicle_id}
                   onValueChange={v => setNewInspection({...newInspection, vehicle_id: v})}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="insp-vehicle">
                     <SelectValue placeholder="Select vehicle" />
                   </SelectTrigger>
                   <SelectContent>
@@ -312,12 +444,12 @@ const VehicleInspectionsTab = () => {
                 </Select>
               </div>
               <div>
-                <Label>Inspector</Label>
+                <Label htmlFor="insp-inspector">Inspector</Label>
                 <Select 
                   value={newInspection.driver_id}
                   onValueChange={v => setNewInspection({...newInspection, driver_id: v})}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="insp-inspector">
                     <SelectValue placeholder="Select inspector" />
                   </SelectTrigger>
                   <SelectContent>
@@ -333,12 +465,12 @@ const VehicleInspectionsTab = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Inspection Type</Label>
+                <Label htmlFor="insp-type">Inspection Type</Label>
                 <Select 
                   value={newInspection.inspection_type}
                   onValueChange={v => setNewInspection({...newInspection, inspection_type: v})}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="insp-type">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -352,8 +484,9 @@ const VehicleInspectionsTab = () => {
                 </Select>
               </div>
               <div>
-                <Label>Odometer (km)</Label>
+                <Label htmlFor="insp-odometer">Odometer (km)</Label>
                 <Input 
+                  id="insp-odometer"
                   type="number"
                   value={newInspection.odometer_km}
                   onChange={e => setNewInspection({...newInspection, odometer_km: Number(e.target.value)})}
@@ -390,8 +523,9 @@ const VehicleInspectionsTab = () => {
             </div>
 
             <div>
-              <Label>Notes / Defects Found</Label>
+              <Label htmlFor="insp-notes">Notes / Defects Found</Label>
               <Textarea 
+                id="insp-notes"
                 value={newInspection.mechanic_notes}
                 onChange={e => setNewInspection({...newInspection, mechanic_notes: e.target.value})}
                 placeholder="Describe any defects or issues found..."
@@ -418,6 +552,24 @@ const VehicleInspectionsTab = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Inspection</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this inspection record? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

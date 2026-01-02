@@ -251,6 +251,21 @@ export const useMaintenanceSchedules = (vehicleId?: string) => {
     }
   };
 
+  const deleteSchedule = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("maintenance_schedules")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      toast({ title: "Schedule deleted", description: "Maintenance schedule removed" });
+      fetchSchedules();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
   const createInspection = async (inspection: Omit<VehicleInspection, 'id' | 'organization_id' | 'created_at'>) => {
     if (!organizationId) return null;
 
@@ -274,6 +289,36 @@ export const useMaintenanceSchedules = (vehicleId?: string) => {
     }
   };
 
+  const updateInspection = async (id: string, updates: Partial<VehicleInspection>) => {
+    try {
+      const { error } = await supabase
+        .from("vehicle_inspections")
+        .update(updates)
+        .eq("id", id);
+
+      if (error) throw error;
+      toast({ title: "Inspection updated", description: "Vehicle inspection updated" });
+      fetchInspections();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const deleteInspection = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("vehicle_inspections")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      toast({ title: "Inspection deleted", description: "Vehicle inspection removed" });
+      fetchInspections();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
   return {
     schedules,
     inspections,
@@ -281,8 +326,12 @@ export const useMaintenanceSchedules = (vehicleId?: string) => {
     error,
     createSchedule,
     updateSchedule,
+    deleteSchedule,
     recordService,
     createInspection,
+    updateInspection,
+    deleteInspection,
     refetch: fetchSchedules,
+    refetchInspections: fetchInspections,
   };
 };
