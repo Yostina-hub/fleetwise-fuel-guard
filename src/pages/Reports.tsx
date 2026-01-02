@@ -20,10 +20,12 @@ import {
   Users,
   MapPin,
   Route,
-  Gauge,
-  AlertTriangle,
-  Clock,
+  Fuel,
+  Wrench,
+  DollarSign,
   BarChart3,
+  Bell,
+  ClipboardList,
 } from "lucide-react";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
@@ -40,6 +42,13 @@ import { DriverEventsTable } from "@/components/reports/DriverEventsTable";
 import { GeofenceEventsTable } from "@/components/reports/GeofenceEventsTable";
 import { IncidentsTable } from "@/components/reports/IncidentsTable";
 import { TripsTable } from "@/components/reports/TripsTable";
+import { FuelTransactionsTable } from "@/components/reports/FuelTransactionsTable";
+import { AlertsTable } from "@/components/reports/AlertsTable";
+import { MaintenanceTable } from "@/components/reports/MaintenanceTable";
+import { WorkOrdersTable } from "@/components/reports/WorkOrdersTable";
+import { CostsTable } from "@/components/reports/CostsTable";
+import { DriverScoresTable } from "@/components/reports/DriverScoresTable";
+import { DispatchTable } from "@/components/reports/DispatchTable";
 
 const Reports = () => {
   const [activeReportTab, setActiveReportTab] = useState("vehicle");
@@ -64,15 +73,26 @@ const Reports = () => {
     geofenceEvents, 
     incidents, 
     speedViolations,
+    fuelTransactions,
+    alerts,
+    maintenanceSchedules,
+    workOrders,
+    vehicleCosts,
+    driverScores,
+    dispatchJobs,
     loading 
   } = useReportData(dateRange);
 
   // Main report tabs with icons
   const mainTabs = [
-    { id: "vehicle", label: "Vehicle Reports", icon: Truck },
-    { id: "driver", label: "Driver Reports", icon: Users },
-    { id: "location", label: "Location Reports", icon: MapPin },
-    { id: "trips", label: "Trip Reports", icon: Route },
+    { id: "vehicle", label: "Vehicle", icon: Truck },
+    { id: "driver", label: "Driver", icon: Users },
+    { id: "fuel", label: "Fuel", icon: Fuel },
+    { id: "trips", label: "Trips", icon: Route },
+    { id: "maintenance", label: "Maintenance", icon: Wrench },
+    { id: "dispatch", label: "Dispatch", icon: ClipboardList },
+    { id: "costs", label: "Costs", icon: DollarSign },
+    { id: "alerts", label: "Alerts", icon: Bell },
   ];
 
   // Sub-tabs based on main tab
@@ -81,26 +101,40 @@ const Reports = () => {
       case "vehicle":
         return [
           { id: "summary", label: "Summary" },
-          { id: "fuel", label: "Fuel Consumption" },
-          { id: "idling", label: "Idling Analysis" },
+          { id: "geofence", label: "Geofence Events" },
         ];
       case "driver":
         return [
           { id: "summary", label: "Summary" },
-          { id: "speeding", label: "Speeding Events" },
-          { id: "harsh_braking", label: "Harsh Braking" },
-          { id: "harsh_acceleration", label: "Harsh Acceleration" },
+          { id: "scores", label: "Behavior Scores" },
+          { id: "speeding", label: "Speeding" },
+          { id: "harsh_events", label: "Harsh Events" },
           { id: "incidents", label: "Incidents" },
         ];
-      case "location":
+      case "fuel":
         return [
-          { id: "summary", label: "Summary" },
-          { id: "geofence", label: "Geofence Events" },
+          { id: "transactions", label: "Transactions" },
         ];
       case "trips":
         return [
-          { id: "summary", label: "Summary" },
           { id: "all_trips", label: "All Trips" },
+        ];
+      case "maintenance":
+        return [
+          { id: "schedules", label: "Schedules" },
+          { id: "work_orders", label: "Work Orders" },
+        ];
+      case "dispatch":
+        return [
+          { id: "jobs", label: "All Jobs" },
+        ];
+      case "costs":
+        return [
+          { id: "all_costs", label: "All Costs" },
+        ];
+      case "alerts":
+        return [
+          { id: "all_alerts", label: "All Alerts" },
         ];
       default:
         return [];
@@ -168,15 +202,16 @@ const Reports = () => {
           filename = "driver_report";
         }
         break;
-      case "location":
-        data = geofenceEvents.map(e => ({
-          time: format(new Date(e.event_time), "yyyy-MM-dd HH:mm"),
-          event_type: e.event_type,
-          vehicle: e.vehicle?.plate_number || "Unknown",
-          geofence: e.geofence?.name || "Unknown",
-          dwell_time: e.dwell_time_minutes,
+      case "fuel":
+        data = fuelTransactions.map(t => ({
+          date: format(new Date(t.transaction_date), "yyyy-MM-dd HH:mm"),
+          vehicle: t.vehicle?.plate_number || "Unknown",
+          liters: t.fuel_amount_liters,
+          cost: t.fuel_cost,
+          price_per_liter: t.fuel_price_per_liter,
+          location: t.location_name,
         }));
-        filename = "location_report";
+        filename = "fuel_report";
         break;
       case "trips":
         data = trips.map(t => ({
@@ -188,6 +223,47 @@ const Reports = () => {
           status: t.status,
         }));
         filename = "trips_report";
+        break;
+      case "maintenance":
+        data = workOrders.map(w => ({
+          work_order: w.work_order_number,
+          service: w.service_description,
+          status: w.status,
+          priority: w.priority,
+          parts_cost: w.parts_cost,
+          labor_cost: w.labor_cost,
+          total_cost: w.total_cost,
+        }));
+        filename = "maintenance_report";
+        break;
+      case "dispatch":
+        data = dispatchJobs.map(j => ({
+          job_number: j.job_number,
+          customer: j.customer_name,
+          status: j.status,
+          sla_met: j.sla_met,
+        }));
+        filename = "dispatch_report";
+        break;
+      case "costs":
+        data = vehicleCosts.map(c => ({
+          date: format(new Date(c.cost_date), "yyyy-MM-dd"),
+          type: c.cost_type,
+          category: c.category,
+          description: c.description,
+          amount: c.amount,
+        }));
+        filename = "costs_report";
+        break;
+      case "alerts":
+        data = alerts.map(a => ({
+          time: format(new Date(a.alert_time), "yyyy-MM-dd HH:mm"),
+          title: a.title,
+          type: a.alert_type,
+          severity: a.severity,
+          status: a.status,
+        }));
+        filename = "alerts_report";
         break;
     }
 
@@ -229,29 +305,44 @@ const Reports = () => {
     }
 
     switch (activeReportTab) {
+      case "vehicle":
+        switch (activeSubTab) {
+          case "geofence":
+            return <GeofenceEventsTable events={geofenceEvents} />;
+          default:
+            return <VehicleSummaryTable vehicles={filteredVehicles} />;
+        }
       case "driver":
         switch (activeSubTab) {
+          case "scores":
+            return <DriverScoresTable scores={driverScores} />;
           case "speeding":
             return <SpeedingEventsTable violations={speedViolations} />;
-          case "harsh_braking":
-            return <DriverEventsTable events={driverEvents} eventType="harsh_braking" title="Harsh Braking Events" />;
-          case "harsh_acceleration":
-            return <DriverEventsTable events={driverEvents} eventType="harsh_acceleration" title="Harsh Acceleration Events" />;
+          case "harsh_events":
+            return <DriverEventsTable events={driverEvents} eventType="all" title="All Harsh Events" />;
           case "incidents":
             return <IncidentsTable incidents={incidents} />;
           default:
             return <DriverSummaryTable drivers={filteredDrivers} />;
         }
-      case "location":
-        switch (activeSubTab) {
-          case "geofence":
-            return <GeofenceEventsTable events={geofenceEvents} />;
-          default:
-            return <GeofenceEventsTable events={geofenceEvents} />;
-        }
+      case "fuel":
+        return <FuelTransactionsTable transactions={fuelTransactions} />;
       case "trips":
         return <TripsTable trips={trips} />;
-      default: // vehicle
+      case "maintenance":
+        switch (activeSubTab) {
+          case "work_orders":
+            return <WorkOrdersTable workOrders={workOrders} />;
+          default:
+            return <MaintenanceTable schedules={maintenanceSchedules} />;
+        }
+      case "dispatch":
+        return <DispatchTable jobs={dispatchJobs} />;
+      case "costs":
+        return <CostsTable costs={vehicleCosts} />;
+      case "alerts":
+        return <AlertsTable alerts={alerts} />;
+      default:
         return <VehicleSummaryTable vehicles={filteredVehicles} />;
     }
   };
@@ -275,17 +366,17 @@ const Reports = () => {
         </div>
 
         {/* Main Report Tabs */}
-        <div className="border-b border-border">
-          <nav className="flex gap-1">
+        <div className="border-b border-border overflow-x-auto">
+          <nav className="flex gap-1 min-w-max">
             {mainTabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => {
                   setActiveReportTab(tab.id);
-                  setActiveSubTab("summary");
+                  setActiveSubTab(getSubTabs()[0]?.id || "summary");
                 }}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all",
+                  "flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap",
                   activeReportTab === tab.id
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
@@ -299,22 +390,24 @@ const Reports = () => {
         </div>
 
         {/* Sub Tabs */}
-        <div className="flex items-center gap-4 flex-wrap">
-          {getSubTabs().map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveSubTab(tab.id)}
-              className={cn(
-                "px-3 py-1.5 text-sm rounded-full transition-all",
-                activeSubTab === tab.id
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {getSubTabs().length > 0 && (
+          <div className="flex items-center gap-4 flex-wrap">
+            {getSubTabs().map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveSubTab(tab.id)}
+                className={cn(
+                  "px-3 py-1.5 text-sm rounded-full transition-all",
+                  activeSubTab === tab.id
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Date Range & Export */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -481,13 +574,13 @@ const DriverSummaryTable = ({ drivers }: { drivers: any[] }) => {
           <table className="w-full">
             <thead className="bg-muted/50 border-y">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Driver</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Name</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Employee ID</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">License</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Safety Score</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Total Trips</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Distance</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Total Distance</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -500,23 +593,21 @@ const DriverSummaryTable = ({ drivers }: { drivers: any[] }) => {
                     <span className={cn(
                       "px-2 py-1 rounded-full text-xs font-medium",
                       d.status === "active" ? "bg-green-500/20 text-green-500" :
-                      d.status === "suspended" ? "bg-red-500/20 text-red-500" :
+                      d.status === "on_leave" ? "bg-amber-500/20 text-amber-600" :
                       "bg-muted text-muted-foreground"
                     )}>
                       {d.status}
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <div className={cn(
-                        "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold",
-                        d.safety_score >= 80 ? "bg-green-500/20 text-green-500" :
-                        d.safety_score >= 60 ? "bg-yellow-500/20 text-yellow-600" :
-                        "bg-red-500/20 text-red-500"
-                      )}>
-                        {d.safety_score ?? "-"}
-                      </div>
-                    </div>
+                    <span className={cn(
+                      "font-medium",
+                      (d.safety_score || 0) >= 90 ? "text-green-500" :
+                      (d.safety_score || 0) >= 70 ? "text-amber-500" :
+                      "text-red-500"
+                    )}>
+                      {d.safety_score || "-"}
+                    </span>
                   </td>
                   <td className="px-4 py-3">{d.total_trips || 0}</td>
                   <td className="px-4 py-3">{d.total_distance_km ? `${d.total_distance_km.toLocaleString()} km` : "-"}</td>
