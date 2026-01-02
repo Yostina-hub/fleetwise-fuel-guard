@@ -23,7 +23,7 @@ import {
   Clock
 } from "lucide-react";
 import { format } from "date-fns";
-import { useSpeedGovernor, SpeedViolation } from "@/hooks/useSpeedGovernor";
+import { useSpeedGovernor, useSpeedViolations, SpeedViolation } from "@/hooks/useSpeedGovernor";
 import { Skeleton } from "@/components/ui/skeleton";
 import jsPDF from "jspdf";
 
@@ -38,14 +38,14 @@ export const ViolationsTable = ({ vehicles }: ViolationsTableProps) => {
   const [severityFilter, setSeverityFilter] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
 
-  const { useViolations, acknowledgeViolation } = useSpeedGovernor();
+  const { acknowledgeViolation } = useSpeedGovernor();
   
   const filters = {
     vehicleId: vehicleFilter || undefined,
     severity: severityFilter || undefined,
   };
 
-  const { data, isLoading } = useViolations(page, pageSize, filters);
+  const { data, isLoading } = useSpeedViolations(page, pageSize, filters);
   const violations = data?.violations || [];
   const totalCount = data?.totalCount || 0;
   const totalPages = Math.ceil(totalCount / pageSize);

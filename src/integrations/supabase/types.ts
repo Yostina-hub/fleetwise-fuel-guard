@@ -4332,6 +4332,69 @@ export type Database = {
           },
         ]
       }
+      speed_limit_zones: {
+        Row: {
+          created_at: string
+          days_active: number[] | null
+          description: string | null
+          end_time: string | null
+          geofence_id: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          organization_id: string
+          speed_limit_kmh: number
+          start_time: string | null
+          updated_at: string
+          zone_type: string
+        }
+        Insert: {
+          created_at?: string
+          days_active?: number[] | null
+          description?: string | null
+          end_time?: string | null
+          geofence_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          organization_id: string
+          speed_limit_kmh?: number
+          start_time?: string | null
+          updated_at?: string
+          zone_type?: string
+        }
+        Update: {
+          created_at?: string
+          days_active?: number[] | null
+          description?: string | null
+          end_time?: string | null
+          geofence_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          organization_id?: string
+          speed_limit_kmh?: number
+          start_time?: string | null
+          updated_at?: string
+          zone_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "speed_limit_zones_geofence_id_fkey"
+            columns: ["geofence_id"]
+            isOneToOne: false
+            referencedRelation: "geofences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "speed_limit_zones_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       speed_violations: {
         Row: {
           acknowledged_at: string | null
