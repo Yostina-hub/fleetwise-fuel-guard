@@ -127,9 +127,11 @@ export const useMaintenanceSchedules = (vehicleId?: string) => {
     fetchInspections();
 
     let debounceTimer: NodeJS.Timeout;
+    let schedulesChannel: ReturnType<typeof supabase.channel> | null = null;
+    let inspectionsChannel: ReturnType<typeof supabase.channel> | null = null;
 
     // Subscribe to realtime changes for schedules
-    const schedulesChannel = supabase
+    schedulesChannel = supabase
       .channel(`maintenance-schedules-${organizationId.slice(0, 8)}`)
       .on(
         'postgres_changes',
@@ -147,7 +149,7 @@ export const useMaintenanceSchedules = (vehicleId?: string) => {
       .subscribe();
 
     // Subscribe to realtime changes for inspections
-    const inspectionsChannel = supabase
+    inspectionsChannel = supabase
       .channel(`vehicle-inspections-${organizationId.slice(0, 8)}`)
       .on(
         'postgres_changes',
@@ -166,10 +168,10 @@ export const useMaintenanceSchedules = (vehicleId?: string) => {
 
     return () => {
       clearTimeout(debounceTimer);
-      supabase.removeChannel(schedulesChannel);
-      supabase.removeChannel(inspectionsChannel);
+      if (schedulesChannel) supabase.removeChannel(schedulesChannel);
+      if (inspectionsChannel) supabase.removeChannel(inspectionsChannel);
     };
-  }, [organizationId, vehicleId]);
+  }, [organizationId, vehicleId, fetchSchedules, fetchInspections]);
 
   const createSchedule = async (schedule: Omit<MaintenanceSchedule, 'id' | 'organization_id' | 'created_at' | 'updated_at'>) => {
     if (!organizationId) return null;
