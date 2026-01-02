@@ -326,6 +326,8 @@ const Drivers = () => {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input 
+                  id="driver-search"
+                  aria-label="Search drivers by name, license, employee ID, or email"
                   placeholder="Search by name, license, employee ID, or email..." 
                   className="pl-10 focus-visible:ring-primary"
                   value={searchQuery}
@@ -364,6 +366,7 @@ const Drivers = () => {
                     <Checkbox
                       checked={selectedDrivers.length === drivers.length && drivers.length > 0}
                       onCheckedChange={handleSelectAll}
+                      aria-label="Select all drivers"
                     />
                   </TableHead>
                   <TableHead>Driver</TableHead>
@@ -382,6 +385,7 @@ const Drivers = () => {
                       <Checkbox
                         checked={selectedDrivers.some(d => d.id === driver.id)}
                         onCheckedChange={(checked) => handleSelectDriver(driver, !!checked)}
+                        aria-label={`Select ${driver.first_name} ${driver.last_name}`}
                       />
                     </TableCell>
                     <TableCell onClick={() => handleViewDriver(driver)}>
