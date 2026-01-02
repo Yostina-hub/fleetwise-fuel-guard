@@ -454,9 +454,11 @@ export const DeviceManagementTab = () => {
                                 <span className="font-mono font-semibold">{vehicle.plate_number}</span>
                                 <span className="text-muted-foreground">•</span>
                                 <span className="text-muted-foreground">{vehicle.make} {vehicle.model}</span>
-                                <Badge variant="outline" className="text-[10px] h-5 ml-1">
-                                  IMEI: ...{vehicle.assignedToDevice.imei.slice(-6)}
-                                </Badge>
+                                {vehicle.assignedToDevice.imei && (
+                                  <Badge variant="outline" className="text-[10px] h-5 ml-1">
+                                    IMEI: ...{vehicle.assignedToDevice.imei.slice(-6)}
+                                  </Badge>
+                                )}
                               </div>
                             </SelectItem>
                           ))}

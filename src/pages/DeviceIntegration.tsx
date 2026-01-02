@@ -643,9 +643,11 @@ const DeviceIntegration = () => {
                                       {vehicle.plate_number}
                                     </Badge>
                                     <span>{vehicle.make} {vehicle.model}</span>
-                                    <span className="text-xs text-muted-foreground">
-                                      (IMEI: ...{vehicle.assignedDeviceImei?.slice(-6)})
-                                    </span>
+                                    {vehicle.assignedDeviceImei && (
+                                      <span className="text-xs text-muted-foreground">
+                                        (IMEI: ...{vehicle.assignedDeviceImei.slice(-6)})
+                                      </span>
+                                    )}
                                   </div>
                                 </SelectItem>
                               ))}
