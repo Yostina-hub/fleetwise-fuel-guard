@@ -55,10 +55,11 @@ const AuditLogsTab = () => {
         placeholder="Search by action or resource type..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
+        aria-label="Search audit logs"
       />
 
       {isLoading ? (
-        <p>Loading...</p>
+        <p role="status" aria-live="polite" aria-label="Loading audit logs">Loading...</p>
       ) : (
         <Table>
           <TableHeader>

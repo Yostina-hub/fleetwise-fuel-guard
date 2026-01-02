@@ -107,8 +107,8 @@ const DataRetentionTab = () => {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button aria-label="Add new retention policy">
+              <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
               Add Policy
             </Button>
           </DialogTrigger>
@@ -120,7 +120,7 @@ const DataRetentionTab = () => {
               <div>
                 <Label htmlFor="table">Table</Label>
                 <Select value={selectedTable} onValueChange={setSelectedTable}>
-                  <SelectTrigger>
+                  <SelectTrigger aria-label="Select table for retention policy">
                     <SelectValue placeholder="Select a table" />
                   </SelectTrigger>
                   <SelectContent>
@@ -155,7 +155,7 @@ const DataRetentionTab = () => {
       </div>
 
       {isLoading ? (
-        <p>Loading...</p>
+        <p role="status" aria-live="polite" aria-label="Loading retention policies">Loading...</p>
       ) : (
         <Table>
           <TableHeader>
@@ -191,8 +191,9 @@ const DataRetentionTab = () => {
                     size="sm"
                     variant="ghost"
                     onClick={() => deletePolicyMutation.mutate(policy.id)}
+                    aria-label={`Delete retention policy for ${policy.table_name}`}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
                   </Button>
                 </TableCell>
               </TableRow>
