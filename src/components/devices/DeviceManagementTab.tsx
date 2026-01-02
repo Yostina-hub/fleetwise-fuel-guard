@@ -62,7 +62,7 @@ export const DeviceManagementTab = () => {
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [quickAssignDialogOpen, setQuickAssignDialogOpen] = useState(false);
   const [deviceToAssign, setDeviceToAssign] = useState<any>(null);
-  const [assignVehicleId, setAssignVehicleId] = useState("");
+  const [assignVehicleId, setAssignVehicleId] = useState("none");
 
   const [formData, setFormData] = useState({
     vehicle_id: "",
