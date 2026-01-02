@@ -65,7 +65,7 @@ const VehicleHealthStatusCard = ({ vehicles }: VehicleHealthStatusCardProps) => 
       </CardHeader>
       <CardContent>
         <div className="flex items-center gap-6">
-          <div className="relative">
+          <div className="relative" role="img" aria-label={`Vehicle health chart: ${healthData.map(d => `${d.name}: ${d.value}`).join(', ')}`}>
             <ResponsiveContainer width={160} height={160}>
               <PieChart>
                 <Pie
@@ -83,7 +83,7 @@ const VehicleHealthStatusCard = ({ vehicles }: VehicleHealthStatusCardProps) => 
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <div className="absolute inset-0 flex flex-col items-center justify-center" aria-hidden="true">
               <span className="text-3xl font-bold">{upToDatePercent}%</span>
               <span className="text-xs text-muted-foreground">Up to Date</span>
             </div>
@@ -95,8 +95,9 @@ const VehicleHealthStatusCard = ({ vehicles }: VehicleHealthStatusCardProps) => 
                   <div
                     className="w-3 h-3 rounded-sm"
                     style={{ backgroundColor: item.color }}
+                    aria-hidden="true"
                   />
-                  <span className={item.value > 0 ? "text-primary hover:underline cursor-pointer" : "text-muted-foreground"}>
+                  <span className={item.value > 0 ? "text-foreground" : "text-muted-foreground"}>
                     {item.name}
                   </span>
                 </div>

@@ -342,24 +342,26 @@ const Dashboard = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <PieChart>
-                      <Pie
-                        data={vehicleStatusData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={75}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {vehicleStatusData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <div role="img" aria-label={`Fleet status chart: ${vehicleStatusData.map(d => `${d.name}: ${d.value}`).join(', ')}`}>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <PieChart>
+                        <Pie
+                          data={vehicleStatusData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={75}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {vehicleStatusData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
                   <div className="grid grid-cols-3 gap-2 mt-2">
                     {vehicleStatusData.map((item, index) => (
                       <div key={index} className="flex items-center gap-2">
@@ -425,8 +427,12 @@ const Dashboard = () => {
                     {vehicles.map((vehicle) => (
                       <div 
                         key={vehicle.id} 
-                        className="group flex items-center justify-between p-3 border border-border rounded-lg hover:shadow-md hover:border-primary/50 transition-all cursor-pointer bg-gradient-to-r hover:from-primary/5 hover:to-transparent"
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`View details for vehicle ${vehicle.plate}`}
+                        className="group flex items-center justify-between p-3 border border-border rounded-lg hover:shadow-md hover:border-primary/50 transition-all cursor-pointer bg-gradient-to-r hover:from-primary/5 hover:to-transparent focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                         onClick={() => setSelectedVehicle(vehicle)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedVehicle(vehicle); } }}
                       >
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg group-hover:scale-110 transition-transform">
@@ -476,10 +482,15 @@ const Dashboard = () => {
                   <div className="space-y-3">
                     {recentAlerts.map((alert) => (
                       <div 
-                        key={alert.id} 
-                        className={`p-3 border rounded-lg hover:shadow-md transition-all cursor-pointer ${
+                        key={alert.id}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`${alert.type === 'critical' ? 'Critical' : 'Warning'} alert: ${alert.message}`}
+                        className={`p-3 border rounded-lg hover:shadow-md transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
                           alert.type === 'critical' ? 'border-destructive/30 bg-destructive/5' : 'border-warning/30 bg-warning/5'
                         }`}
+                        onClick={() => navigate('/alerts')}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/alerts'); } }}
                       >
                         <div className="flex items-start gap-2">
                           <AlertTriangle className={`w-4 h-4 mt-0.5 ${alert.type === 'critical' ? 'text-destructive animate-pulse' : 'text-warning'}`} />

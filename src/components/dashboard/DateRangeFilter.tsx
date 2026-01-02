@@ -44,7 +44,13 @@ const DateRangeFilter = ({ dateRange, onDateRangeChange }: DateRangeFilterProps)
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="gap-2 min-w-[200px] justify-start">
+        <Button 
+          variant="outline" 
+          className="gap-2 min-w-[200px] justify-start"
+          aria-label={`Date range: ${formatRange()}`}
+          aria-expanded={open}
+          aria-haspopup="dialog"
+        >
           <CalendarDays className="w-4 h-4" />
           <span className="truncate">{formatRange()}</span>
         </Button>

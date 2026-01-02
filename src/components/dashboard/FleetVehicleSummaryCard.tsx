@@ -51,7 +51,7 @@ const FleetVehicleSummaryCard = ({ vehicles }: FleetVehicleSummaryCardProps) => 
       </CardHeader>
       <CardContent>
         <div className="flex items-center gap-6">
-          <div className="relative">
+          <div className="relative" role="img" aria-label={`Fleet summary chart: ${vehiclesByModel.map(d => `${d.name}: ${d.value}`).join(', ')}`}>
             <ResponsiveContainer width={160} height={160}>
               <PieChart>
                 <Pie
@@ -69,7 +69,7 @@ const FleetVehicleSummaryCard = ({ vehicles }: FleetVehicleSummaryCardProps) => 
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <div className="absolute inset-0 flex flex-col items-center justify-center" aria-hidden="true">
               <span className="text-3xl font-bold">{totalVehicles}</span>
               <span className="text-xs text-muted-foreground">Fleet Total</span>
             </div>
@@ -81,8 +81,9 @@ const FleetVehicleSummaryCard = ({ vehicles }: FleetVehicleSummaryCardProps) => 
                   <div
                     className="w-3 h-3 rounded-sm"
                     style={{ backgroundColor: item.color }}
+                    aria-hidden="true"
                   />
-                  <span className="text-primary hover:underline cursor-pointer">
+                  <span className="text-foreground">
                     {item.name}
                   </span>
                 </div>
