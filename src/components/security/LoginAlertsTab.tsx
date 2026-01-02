@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Bell, AlertTriangle, MapPin, Smartphone, Clock, 
@@ -14,6 +13,102 @@ import {
 } from "lucide-react";
 import { loginAlerts, type LoginAlertConfig, type LoginEvent } from "@/lib/security/loginAlerts";
 import { useAuth } from "@/hooks/useAuth";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
+
+const ITEMS_PER_PAGE = 10;
+
+// Extracted Login History component with pagination
+const LoginHistorySection = ({ 
+  history, 
+  formatDate, 
+  getRiskBadge 
+}: { 
+  history: LoginEvent[];
+  formatDate: (date: Date) => string;
+  getRiskBadge: (level: LoginEvent["riskLevel"]) => JSX.Element;
+}) => {
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(
+    history.length,
+    ITEMS_PER_PAGE
+  );
+
+  const paginatedHistory = useMemo(() => {
+    return history.slice(startIndex, endIndex);
+  }, [history, startIndex, endIndex]);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Login History ({history.length})</CardTitle>
+        <CardDescription>Recent login attempts for your account</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Time</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Risk</TableHead>
+              <TableHead>IP Address</TableHead>
+              <TableHead>Device</TableHead>
+              <TableHead>Flags</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedHistory.map((event) => (
+              <TableRow key={event.id}>
+                <TableCell className="text-sm">{formatDate(event.timestamp)}</TableCell>
+                <TableCell>
+                  {event.success ? (
+                    <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
+                      Success
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive">Failed</Badge>
+                  )}
+                </TableCell>
+                <TableCell>{getRiskBadge(event.riskLevel)}</TableCell>
+                <TableCell className="font-mono text-sm">{event.ipAddress}</TableCell>
+                <TableCell className="text-sm">{event.deviceInfo}</TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    {event.isNewDevice && (
+                      <Badge variant="outline" className="text-xs">
+                        <Smartphone className="h-3 w-3 mr-1" aria-hidden="true" />
+                        New Device
+                      </Badge>
+                    )}
+                    {event.isNewLocation && (
+                      <Badge variant="outline" className="text-xs">
+                        <MapPin className="h-3 w-3 mr-1" aria-hidden="true" />
+                        New Location
+                      </Badge>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+            {history.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-8" role="status" aria-label="No login history">
+                  No login history found
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+        {history.length > 0 && (
+          <TablePagination
+            currentPage={currentPage}
+            totalItems={history.length}
+            itemsPerPage={ITEMS_PER_PAGE}
+            onPageChange={setCurrentPage}
+          />
+        )}
+      </CardContent>
+    </Card>
+  );
+};
 
 const LoginAlertsTab = () => {
   const { toast } = useToast();
@@ -199,70 +294,7 @@ const LoginAlertsTab = () => {
       )}
 
       {/* Login History */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Login History</CardTitle>
-          <CardDescription>Recent login attempts for your account</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-[300px]">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Time</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Risk</TableHead>
-                  <TableHead>IP Address</TableHead>
-                  <TableHead>Device</TableHead>
-                  <TableHead>Flags</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {history.map((event) => (
-                  <TableRow key={event.id}>
-                    <TableCell className="text-sm">{formatDate(event.timestamp)}</TableCell>
-                    <TableCell>
-                      {event.success ? (
-                        <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
-                          Success
-                        </Badge>
-                      ) : (
-                        <Badge variant="destructive">Failed</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>{getRiskBadge(event.riskLevel)}</TableCell>
-                    <TableCell className="font-mono text-sm">{event.ipAddress}</TableCell>
-                    <TableCell className="text-sm">{event.deviceInfo}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {event.isNewDevice && (
-                          <Badge variant="outline" className="text-xs">
-                            <Smartphone className="h-3 w-3 mr-1" aria-hidden="true" />
-                            New Device
-                          </Badge>
-                        )}
-                        {event.isNewLocation && (
-                          <Badge variant="outline" className="text-xs">
-                            <MapPin className="h-3 w-3 mr-1" aria-hidden="true" />
-                            New Location
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {history.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8" role="status" aria-label="No login history">
-                      No login history found
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </ScrollArea>
-        </CardContent>
-      </Card>
+      <LoginHistorySection history={history} formatDate={formatDate} getRiskBadge={getRiskBadge} />
 
       {/* Alert Configuration */}
       <Card>

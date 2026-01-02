@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -6,9 +7,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
 import { format } from "date-fns";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
 
 const LegalHoldsTab = () => {
   const { organizationId } = useOrganization();
+  const ITEMS_PER_PAGE = 10;
 
   const { data: legalHolds, isLoading } = useQuery({
     queryKey: ["legal_holds", organizationId],
@@ -25,13 +28,23 @@ const LegalHoldsTab = () => {
     enabled: !!organizationId,
   });
 
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(
+    legalHolds?.length || 0,
+    ITEMS_PER_PAGE
+  );
+
+  const paginatedHolds = useMemo(() => {
+    if (!legalHolds) return [];
+    return legalHolds.slice(startIndex, endIndex);
+  }, [legalHolds, startIndex, endIndex]);
+
   if (isLoading) return <div role="status" aria-live="polite" aria-label="Loading legal holds">Loading...</div>;
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="text-lg font-semibold">Legal Holds</h3>
+          <h3 className="text-lg font-semibold">Legal Holds ({legalHolds?.length || 0})</h3>
           <p className="text-sm text-muted-foreground">
             Prevent data deletion for legal compliance and litigation
           </p>
@@ -53,7 +66,7 @@ const LegalHoldsTab = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {legalHolds?.map((hold: any) => (
+          {paginatedHolds.map((hold: any) => (
             <TableRow key={hold.id}>
               <TableCell className="font-medium">{hold.hold_name}</TableCell>
               <TableCell>{hold.case_number || "-"}</TableCell>
@@ -70,6 +83,15 @@ const LegalHoldsTab = () => {
           ))}
         </TableBody>
       </Table>
+
+      {legalHolds && legalHolds.length > 0 && (
+        <TablePagination
+          currentPage={currentPage}
+          totalItems={legalHolds.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
+      )}
 
       {legalHolds?.length === 0 && (
         <div className="text-center py-12 text-muted-foreground" role="status" aria-label="No legal holds in place">

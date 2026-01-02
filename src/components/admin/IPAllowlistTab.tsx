@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -5,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
 
 const IPAllowlistTab = () => {
   const { organizationId } = useOrganization();
+  const ITEMS_PER_PAGE = 10;
 
   const { data: ipAllowlists, isLoading } = useQuery({
     queryKey: ["ip_allowlists", organizationId],
@@ -24,13 +27,23 @@ const IPAllowlistTab = () => {
     enabled: !!organizationId,
   });
 
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(
+    ipAllowlists?.length || 0,
+    ITEMS_PER_PAGE
+  );
+
+  const paginatedIPs = useMemo(() => {
+    if (!ipAllowlists) return [];
+    return ipAllowlists.slice(startIndex, endIndex);
+  }, [ipAllowlists, startIndex, endIndex]);
+
   if (isLoading) return <div role="status" aria-live="polite" aria-label="Loading IP allowlists">Loading...</div>;
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="text-lg font-semibold">IP Address Allowlists</h3>
+          <h3 className="text-lg font-semibold">IP Address Allowlists ({ipAllowlists?.length || 0})</h3>
           <p className="text-sm text-muted-foreground">
             Restrict access to specific IP addresses or ranges (CIDR notation supported)
           </p>
@@ -51,7 +64,7 @@ const IPAllowlistTab = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {ipAllowlists?.map((ip: any) => (
+          {paginatedIPs.map((ip: any) => (
             <TableRow key={ip.id}>
               <TableCell className="font-medium">{ip.name}</TableCell>
               <TableCell className="font-mono">{ip.ip_address}</TableCell>
@@ -67,6 +80,15 @@ const IPAllowlistTab = () => {
           ))}
         </TableBody>
       </Table>
+
+      {ipAllowlists && ipAllowlists.length > 0 && (
+        <TablePagination
+          currentPage={currentPage}
+          totalItems={ipAllowlists.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
+      )}
 
       {ipAllowlists?.length === 0 && (
         <div className="text-center py-12 text-muted-foreground" role="status" aria-label="No IP allowlists configured">
