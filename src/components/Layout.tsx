@@ -46,6 +46,24 @@ const navItems = [
       { label: "Device Management", path: "/devices" },
     ]
   },
+  { icon: Fuel, label: "Fuel Monitoring", path: "/fuel" },
+  { 
+    icon: ShieldCheck, 
+    label: "Safety & Compliance", 
+    subItems: [
+      { label: "Speed Governor", path: "/speed-governor" },
+      { label: "Incidents", path: "/incidents" },
+    ]
+  },
+  { 
+    icon: MapPinned, 
+    label: "Routes & Locations", 
+    subItems: [
+      { label: "Customer Sites", path: "/routes" },
+      { label: "Journey History", path: "/route-history" },
+      { label: "Geofences", path: "/geofencing" },
+    ]
+  },
   { icon: Bell, label: "Alerts", path: "/alerts" },
   { 
     icon: Wrench, 
@@ -64,24 +82,6 @@ const navItems = [
       { label: "Dispatch Jobs", path: "/dispatch" },
       { label: "Pending Approvals", path: "/fleet-scheduling?tab=approvals" },
       { label: "Assignments", path: "/fleet-scheduling?tab=assignments" },
-    ]
-  },
-  { icon: Fuel, label: "Fuel Monitoring", path: "/fuel" },
-  { 
-    icon: ShieldCheck, 
-    label: "Safety & Compliance", 
-    subItems: [
-      { label: "Speed Governor", path: "/speed-governor" },
-      { label: "Incidents", path: "/incidents" },
-    ]
-  },
-  { 
-    icon: MapPinned, 
-    label: "Routes & Locations", 
-    subItems: [
-      { label: "Customer Sites", path: "/routes" },
-      { label: "Journey History", path: "/route-history" },
-      { label: "Geofences", path: "/geofencing" },
     ]
   },
   { icon: BarChart3, label: "Reports", path: "/reports" },
