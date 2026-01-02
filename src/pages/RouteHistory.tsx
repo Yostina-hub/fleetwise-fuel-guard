@@ -1,9 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   Play, 
   Pause, 
@@ -15,12 +19,28 @@ import {
   MapPin,
   Navigation,
   Fuel,
-  Gauge
+  Gauge,
+  Route,
+  Timer,
+  AlertCircle,
+  Loader2
 } from "lucide-react";
 import LiveTrackingMap from "@/components/map/LiveTrackingMap";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
+import { format, parseISO, differenceInMinutes } from "date-fns";
+
+interface TelemetryPoint {
+  id: string;
+  latitude: number | null;
+  longitude: number | null;
+  speed_kmh: number | null;
+  fuel_level_percent: number | null;
+  heading: number | null;
+  last_communication_at: string;
+  engine_on: boolean | null;
+}
 
 const RouteHistory = () => {
   const { organizationId } = useOrganization();
@@ -29,8 +49,10 @@ const RouteHistory = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackProgress, setPlaybackProgress] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { data: vehicles } = useQuery({
+  // Fetch vehicles
+  const { data: vehicles, isLoading: vehiclesLoading, isError: vehiclesError } = useQuery({
     queryKey: ["vehicles", organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -44,35 +66,131 @@ const RouteHistory = () => {
     enabled: !!organizationId,
   });
 
-  // Mock route history data - would be replaced with actual GPS data
-  const routeHistory = [
-    { lat: 9.03, lng: 38.74, speed: 45, fuel: 75, time: "08:00:00", heading: 45 },
-    { lat: 9.04, lng: 38.75, speed: 52, fuel: 74, time: "08:15:00", heading: 60 },
-    { lat: 9.05, lng: 38.76, speed: 48, fuel: 73, time: "08:30:00", heading: 75 },
-    { lat: 9.06, lng: 38.77, speed: 0, fuel: 73, time: "08:45:00", heading: 75 },
-    { lat: 9.06, lng: 38.77, speed: 0, fuel: 73, time: "09:00:00", heading: 75 },
-    { lat: 9.07, lng: 38.78, speed: 55, fuel: 72, time: "09:15:00", heading: 90 },
-    { lat: 9.08, lng: 38.79, speed: 60, fuel: 71, time: "09:30:00", heading: 95 },
-  ];
+  // Fetch telemetry for selected vehicle and date
+  const { data: telemetryData, isLoading: telemetryLoading, isError: telemetryError } = useQuery({
+    queryKey: ["route-history-telemetry", selectedVehicle, selectedDate],
+    queryFn: async () => {
+      const startOfDay = `${selectedDate}T00:00:00.000Z`;
+      const endOfDay = `${selectedDate}T23:59:59.999Z`;
+      
+      const { data, error } = await supabase
+        .from("vehicle_telemetry")
+        .select("id, latitude, longitude, speed_kmh, fuel_level_percent, heading, last_communication_at, engine_on")
+        .eq("vehicle_id", selectedVehicle)
+        .gte("last_communication_at", startOfDay)
+        .lte("last_communication_at", endOfDay)
+        .order("last_communication_at", { ascending: true });
+      
+      if (error) throw error;
+      return (data || []).filter(p => p.latitude != null && p.longitude != null) as TelemetryPoint[];
+    },
+    enabled: !!selectedVehicle && !!selectedDate,
+  });
 
-  const currentPosition = routeHistory[Math.floor((playbackProgress / 100) * (routeHistory.length - 1))];
+  const routeHistory = telemetryData || [];
+  const hasData = routeHistory.length > 0;
 
-  const handlePlayPause = () => {
-    setIsPlaying(!isPlaying);
-    if (!isPlaying) {
-      // Simulate playback
-      const interval = setInterval(() => {
+  // Calculate current position based on playback progress
+  const currentIndex = Math.floor((playbackProgress / 100) * Math.max(0, routeHistory.length - 1));
+  const currentPosition = hasData ? routeHistory[currentIndex] : null;
+
+  // Calculate trip summary statistics
+  const tripSummary = useMemo(() => {
+    if (!hasData) return null;
+
+    const firstPoint = routeHistory[0];
+    const lastPoint = routeHistory[routeHistory.length - 1];
+    const durationMinutes = differenceInMinutes(
+      parseISO(lastPoint.last_communication_at),
+      parseISO(firstPoint.last_communication_at)
+    );
+
+    const totalPoints = routeHistory.length;
+    const movingPoints = routeHistory.filter(p => (p.speed_kmh || 0) > 2).length;
+    const stoppedPoints = totalPoints - movingPoints;
+    const avgSpeed = routeHistory.reduce((sum, p) => sum + (p.speed_kmh || 0), 0) / totalPoints;
+    const maxSpeed = Math.max(...routeHistory.map(p => p.speed_kmh || 0));
+    const fuelStart = firstPoint.fuel_level_percent || 0;
+    const fuelEnd = lastPoint.fuel_level_percent || 0;
+    const fuelConsumed = fuelStart - fuelEnd;
+
+    // Approximate distance calculation (Haversine)
+    let totalDistanceKm = 0;
+    for (let i = 1; i < routeHistory.length; i++) {
+      const prev = routeHistory[i - 1];
+      const curr = routeHistory[i];
+      const R = 6371;
+      const prevLat = prev.latitude || 0;
+      const prevLng = prev.longitude || 0;
+      const currLat = curr.latitude || 0;
+      const currLng = curr.longitude || 0;
+      const dLat = (currLat - prevLat) * Math.PI / 180;
+      const dLng = (currLng - prevLng) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) ** 2 + 
+                Math.cos(prevLat * Math.PI / 180) * Math.cos(currLat * Math.PI / 180) * 
+                Math.sin(dLng / 2) ** 2;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      totalDistanceKm += R * c;
+    }
+
+    return {
+      durationMinutes,
+      totalPoints,
+      movingPoints,
+      stoppedPoints,
+      avgSpeed: avgSpeed.toFixed(1),
+      maxSpeed,
+      fuelConsumed: fuelConsumed.toFixed(1),
+      totalDistanceKm: totalDistanceKm.toFixed(2),
+      startTime: format(parseISO(firstPoint.last_communication_at), "HH:mm:ss"),
+      endTime: format(parseISO(lastPoint.last_communication_at), "HH:mm:ss"),
+    };
+  }, [routeHistory, hasData]);
+
+  // Cleanup interval on unmount or when stopping
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, []);
+
+  // Handle playback
+  useEffect(() => {
+    if (isPlaying && hasData) {
+      intervalRef.current = setInterval(() => {
         setPlaybackProgress((prev) => {
           if (prev >= 100) {
             setIsPlaying(false);
-            clearInterval(interval);
+            if (intervalRef.current) {
+              clearInterval(intervalRef.current);
+              intervalRef.current = null;
+            }
             return 100;
           }
           return prev + (playbackSpeed * 0.5);
         });
       }, 100);
-      return () => clearInterval(interval);
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [isPlaying, playbackSpeed, hasData]);
+
+  const handlePlayPause = () => {
+    if (!hasData) return;
+    setIsPlaying(!isPlaying);
   };
 
   const handleReset = () => {
@@ -87,6 +205,8 @@ const RouteHistory = () => {
   const handleSkipBack = () => {
     setPlaybackProgress(Math.max(0, playbackProgress - 10));
   };
+
+  const selectedVehicleData = vehicles?.find(v => v.id === selectedVehicle);
 
   return (
     <Layout>
@@ -105,38 +225,57 @@ const RouteHistory = () => {
           {/* Filters */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
             <div>
-              <label className="text-sm font-medium mb-2 block">Select Vehicle</label>
+              <Label htmlFor="vehicle-select" className="text-sm font-medium mb-2 block">
+                Select Vehicle
+              </Label>
               <Select value={selectedVehicle} onValueChange={setSelectedVehicle}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a vehicle" />
+                <SelectTrigger id="vehicle-select" aria-label="Select a vehicle">
+                  {vehiclesLoading ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                      <span>Loading...</span>
+                    </span>
+                  ) : (
+                    <SelectValue placeholder="Choose a vehicle" />
+                  )}
                 </SelectTrigger>
                 <SelectContent>
-                  {vehicles?.map((vehicle) => (
-                    <SelectItem key={vehicle.id} value={vehicle.id}>
-                      {vehicle.plate_number} - {vehicle.make} {vehicle.model}
-                    </SelectItem>
-                  ))}
+                  {vehiclesError ? (
+                    <div className="p-2 text-sm text-destructive">Failed to load vehicles</div>
+                  ) : (
+                    vehicles?.map((vehicle) => (
+                      <SelectItem key={vehicle.id} value={vehicle.id}>
+                        {vehicle.plate_number} - {vehicle.make} {vehicle.model}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-2 block">Date</label>
+              <Label htmlFor="date-input" className="text-sm font-medium mb-2 block">
+                Date
+              </Label>
               <div className="relative">
-                <input
+                <Input
+                  id="date-input"
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                  aria-label="Select date for route history"
+                  className="pr-10"
                 />
-                <Calendar className="absolute right-3 top-2.5 h-5 w-5 text-muted-foreground pointer-events-none" />
+                <Calendar className="absolute right-3 top-2.5 h-5 w-5 text-muted-foreground pointer-events-none" aria-hidden="true" />
               </div>
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-2 block">Playback Speed</label>
+              <Label htmlFor="speed-select" className="text-sm font-medium mb-2 block">
+                Playback Speed
+              </Label>
               <Select value={playbackSpeed.toString()} onValueChange={(v) => setPlaybackSpeed(Number(v))}>
-                <SelectTrigger>
+                <SelectTrigger id="speed-select" aria-label="Select playback speed">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -155,22 +294,40 @@ const RouteHistory = () => {
         <div className="flex-1 flex">
           {/* Map */}
           <div className="flex-1 relative">
+            {telemetryLoading && selectedVehicle && (
+              <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-20" role="status" aria-live="polite">
+                <div className="flex flex-col items-center gap-2">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
+                  <span className="text-sm text-muted-foreground">Loading route data...</span>
+                </div>
+              </div>
+            )}
+
+            {telemetryError && (
+              <div className="absolute top-4 left-4 right-4 z-20">
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>Failed to load route history. Please try again.</AlertDescription>
+                </Alert>
+              </div>
+            )}
+
             <LiveTrackingMap
               vehicles={currentPosition ? [{
                 id: "playback",
-                plate: selectedVehicle || "Vehicle",
-                status: currentPosition.speed > 0 ? "moving" : "stopped",
-                fuel: currentPosition.fuel,
-                speed: currentPosition.speed,
-                lat: currentPosition.lat,
-                lng: currentPosition.lng,
-                engine_on: currentPosition.speed > 0,
-                heading: currentPosition.heading
+                plate: selectedVehicleData?.plate_number || "Vehicle",
+                status: (currentPosition.speed_kmh || 0) > 2 ? "moving" : "stopped",
+                fuel: currentPosition.fuel_level_percent || 0,
+                speed: currentPosition.speed_kmh || 0,
+                lat: currentPosition.latitude || 0,
+                lng: currentPosition.longitude || 0,
+                engine_on: currentPosition.engine_on || false,
+                heading: currentPosition.heading || 0
               }] : []}
             />
 
             {/* Playback Controls */}
-            <Card className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[600px] bg-card/95 backdrop-blur z-10">
+            <Card className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[600px] max-w-[calc(100%-3rem)] bg-card/95 backdrop-blur z-10">
               <CardContent className="pt-6">
                 {/* Progress Bar */}
                 <div className="mb-4">
@@ -180,29 +337,54 @@ const RouteHistory = () => {
                     max={100}
                     step={0.1}
                     className="w-full"
+                    aria-label="Playback progress"
+                    disabled={!hasData}
                   />
                   <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                    <span>{currentPosition?.time || "00:00:00"}</span>
+                    <span>{currentPosition ? format(parseISO(currentPosition.last_communication_at), "HH:mm:ss") : "00:00:00"}</span>
                     <span>{playbackProgress.toFixed(0)}%</span>
-                    <span>23:59:59</span>
+                    <span>{tripSummary?.endTime || "23:59:59"}</span>
                   </div>
                 </div>
 
                 {/* Control Buttons */}
                 <div className="flex items-center justify-center gap-2">
-                  <Button variant="outline" size="icon" onClick={handleReset}>
-                    <RotateCcw className="h-4 w-4" />
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={handleReset}
+                    aria-label="Reset playback"
+                    disabled={!hasData}
+                  >
+                    <RotateCcw className="h-4 w-4" aria-hidden="true" />
                   </Button>
-                  <Button variant="outline" size="icon" onClick={handleSkipBack}>
-                    <SkipBack className="h-4 w-4" />
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={handleSkipBack}
+                    aria-label="Skip back 10%"
+                    disabled={!hasData}
+                  >
+                    <SkipBack className="h-4 w-4" aria-hidden="true" />
                   </Button>
-                  <Button size="icon" onClick={handlePlayPause}>
-                    {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                  <Button 
+                    size="icon" 
+                    onClick={handlePlayPause}
+                    aria-label={isPlaying ? "Pause playback" : "Play playback"}
+                    disabled={!hasData}
+                  >
+                    {isPlaying ? <Pause className="h-5 w-5" aria-hidden="true" /> : <Play className="h-5 w-5" aria-hidden="true" />}
                   </Button>
-                  <Button variant="outline" size="icon" onClick={handleSkipForward}>
-                    <SkipForward className="h-4 w-4" />
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={handleSkipForward}
+                    aria-label="Skip forward 10%"
+                    disabled={!hasData}
+                  >
+                    <SkipForward className="h-4 w-4" aria-hidden="true" />
                   </Button>
-                  <Button variant="outline" size="sm" className="ml-4">
+                  <Button variant="outline" size="sm" className="ml-4" disabled aria-label={`Current playback speed: ${playbackSpeed}x`}>
                     {playbackSpeed}x Speed
                   </Button>
                 </div>
@@ -215,17 +397,24 @@ const RouteHistory = () => {
             <div className="p-6">
               <h3 className="font-semibold mb-4">Current Position Data</h3>
               
-              {currentPosition ? (
+              {telemetryLoading && selectedVehicle ? (
+                <div className="space-y-4" role="status" aria-live="polite">
+                  <Skeleton className="h-20 w-full" />
+                  <Skeleton className="h-20 w-full" />
+                  <Skeleton className="h-20 w-full" />
+                  <span className="sr-only">Loading position data...</span>
+                </div>
+              ) : currentPosition ? (
                 <div className="space-y-4">
                   <Card className="bg-muted/30">
                     <CardContent className="pt-4">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-primary/10 rounded-lg">
-                          <Clock className="w-5 h-5 text-primary" />
+                          <Clock className="w-5 h-5 text-primary" aria-hidden="true" />
                         </div>
                         <div>
                           <div className="text-xs text-muted-foreground">Time</div>
-                          <div className="font-semibold">{currentPosition.time}</div>
+                          <div className="font-semibold">{format(parseISO(currentPosition.last_communication_at), "HH:mm:ss")}</div>
                         </div>
                       </div>
                     </CardContent>
@@ -235,11 +424,11 @@ const RouteHistory = () => {
                     <CardContent className="pt-4">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-green-500/10 rounded-lg">
-                          <Gauge className="w-5 h-5 text-green-600" />
+                          <Gauge className="w-5 h-5 text-green-600" aria-hidden="true" />
                         </div>
                         <div>
                           <div className="text-xs text-muted-foreground">Speed</div>
-                          <div className="font-semibold">{currentPosition.speed} km/h</div>
+                          <div className="font-semibold">{currentPosition.speed_kmh || 0} km/h</div>
                         </div>
                       </div>
                     </CardContent>
@@ -249,11 +438,11 @@ const RouteHistory = () => {
                     <CardContent className="pt-4">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-orange-500/10 rounded-lg">
-                          <Fuel className="w-5 h-5 text-orange-600" />
+                          <Fuel className="w-5 h-5 text-orange-600" aria-hidden="true" />
                         </div>
                         <div>
                           <div className="text-xs text-muted-foreground">Fuel Level</div>
-                          <div className="font-semibold">{currentPosition.fuel}%</div>
+                          <div className="font-semibold">{currentPosition.fuel_level_percent || 0}%</div>
                         </div>
                       </div>
                     </CardContent>
@@ -263,11 +452,11 @@ const RouteHistory = () => {
                     <CardContent className="pt-4">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-blue-500/10 rounded-lg">
-                          <Navigation className="w-5 h-5 text-blue-600" />
+                          <Navigation className="w-5 h-5 text-blue-600" aria-hidden="true" />
                         </div>
                         <div>
                           <div className="text-xs text-muted-foreground">Heading</div>
-                          <div className="font-semibold">{currentPosition.heading}°</div>
+                          <div className="font-semibold">{currentPosition.heading || 0}°</div>
                         </div>
                       </div>
                     </CardContent>
@@ -277,22 +466,63 @@ const RouteHistory = () => {
                     <CardContent className="pt-4">
                       <div className="flex items-start gap-3">
                         <div className="p-2 bg-purple-500/10 rounded-lg">
-                          <MapPin className="w-5 h-5 text-purple-600" />
+                          <MapPin className="w-5 h-5 text-purple-600" aria-hidden="true" />
                         </div>
                         <div className="flex-1">
                           <div className="text-xs text-muted-foreground mb-1">GPS Coordinates</div>
                           <div className="text-xs font-mono break-all">
-                            {currentPosition.lat.toFixed(6)}, {currentPosition.lng.toFixed(6)}
+                            {(currentPosition.latitude || 0).toFixed(6)}, {(currentPosition.longitude || 0).toFixed(6)}
                           </div>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
+
+                  {/* Trip Summary */}
+                  {tripSummary && (
+                    <>
+                      <div className="border-t border-border my-4" />
+                      <h4 className="font-semibold mb-3 flex items-center gap-2">
+                        <Route className="w-4 h-4" aria-hidden="true" />
+                        Trip Summary
+                      </h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Duration</span>
+                          <span className="font-medium">{tripSummary.durationMinutes} min</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Distance</span>
+                          <span className="font-medium">{tripSummary.totalDistanceKm} km</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Avg Speed</span>
+                          <span className="font-medium">{tripSummary.avgSpeed} km/h</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Max Speed</span>
+                          <span className="font-medium">{tripSummary.maxSpeed} km/h</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Fuel Used</span>
+                          <span className="font-medium">{tripSummary.fuelConsumed}%</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Data Points</span>
+                          <span className="font-medium">{tripSummary.totalPoints}</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               ) : (
-                <div className="text-center py-12 text-muted-foreground">
-                  <MapPin className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p className="text-sm">Select a vehicle and date to view route history</p>
+                <div className="text-center py-12 text-muted-foreground" role="status">
+                  <MapPin className="w-12 h-12 mx-auto mb-3 opacity-50" aria-hidden="true" />
+                  <p className="text-sm">
+                    {!selectedVehicle 
+                      ? "Select a vehicle to view route history" 
+                      : "No route data found for the selected date"}
+                  </p>
                 </div>
               )}
             </div>
