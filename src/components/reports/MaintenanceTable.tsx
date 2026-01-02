@@ -1,7 +1,11 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Wrench, AlertCircle, Clock, CheckCircle } from "lucide-react";
-import { format, isPast, isFuture, addDays } from "date-fns";
+import { format, isPast, addDays } from "date-fns";
 import { cn } from "@/lib/utils";
+import { TablePagination } from "./TablePagination";
+
+const ITEMS_PER_PAGE = 10;
 
 interface MaintenanceSchedule {
   id: string;
@@ -37,6 +41,8 @@ const getStatusInfo = (nextDueDate: string | null) => {
 };
 
 export const MaintenanceTable = ({ schedules }: MaintenanceTableProps) => {
+  const [currentPage, setCurrentPage] = useState(1);
+
   if (schedules.length === 0) {
     return (
       <Card>
@@ -58,12 +64,16 @@ export const MaintenanceTable = ({ schedules }: MaintenanceTableProps) => {
     return new Date(a.next_due_date).getTime() - new Date(b.next_due_date).getTime();
   });
 
+  const totalItems = sortedSchedules.length;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedSchedules = sortedSchedules.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   return (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Wrench className="w-5 h-5 text-primary" />
-          Maintenance Schedules ({schedules.length})
+          Maintenance Schedules ({totalItems})
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
@@ -81,7 +91,7 @@ export const MaintenanceTable = ({ schedules }: MaintenanceTableProps) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {sortedSchedules.map((schedule) => {
+              {paginatedSchedules.map((schedule) => {
                 const statusInfo = getStatusInfo(schedule.next_due_date);
                 const StatusIcon = statusInfo.icon;
                 
@@ -152,6 +162,12 @@ export const MaintenanceTable = ({ schedules }: MaintenanceTableProps) => {
             </tbody>
           </table>
         </div>
+        <TablePagination
+          currentPage={currentPage}
+          totalItems={totalItems}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
       </CardContent>
     </Card>
   );

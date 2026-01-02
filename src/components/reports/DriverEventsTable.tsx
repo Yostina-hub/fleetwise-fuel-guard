@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { format } from "date-fns";
 import {
   Table,
@@ -10,6 +11,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, Clock, MapPin, Activity } from "lucide-react";
+import { TablePagination } from "./TablePagination";
+
+const ITEMS_PER_PAGE = 10;
 
 interface DriverEvent {
   id: string;
@@ -31,9 +35,15 @@ interface DriverEventsTableProps {
 }
 
 export const DriverEventsTable = ({ events, eventType, title }: DriverEventsTableProps) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  
   const filteredEvents = eventType === "all" 
     ? events 
     : events.filter(e => e.event_type === eventType);
+
+  const totalItems = filteredEvents.length;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedEvents = filteredEvents.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
@@ -82,7 +92,7 @@ export const DriverEventsTable = ({ events, eventType, title }: DriverEventsTabl
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <AlertTriangle className="w-5 h-5 text-orange-500" />
-          {title} ({filteredEvents.length})
+          {title} ({totalItems})
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
@@ -98,7 +108,7 @@ export const DriverEventsTable = ({ events, eventType, title }: DriverEventsTabl
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredEvents.slice(0, 50).map((event) => (
+            {paginatedEvents.map((event) => (
               <TableRow key={event.id}>
                 <TableCell className="whitespace-nowrap">
                   <div className="flex items-center gap-2">
@@ -124,6 +134,12 @@ export const DriverEventsTable = ({ events, eventType, title }: DriverEventsTabl
             ))}
           </TableBody>
         </Table>
+        <TablePagination
+          currentPage={currentPage}
+          totalItems={totalItems}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
       </CardContent>
     </Card>
   );

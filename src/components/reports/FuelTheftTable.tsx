@@ -1,7 +1,11 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShieldAlert } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { TablePagination } from "./TablePagination";
+
+const ITEMS_PER_PAGE = 10;
 
 interface FuelTheftCase {
   id: string;
@@ -18,6 +22,12 @@ interface FuelTheftTableProps {
 }
 
 export const FuelTheftTable = ({ cases }: FuelTheftTableProps) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const totalItems = cases.length;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedCases = cases.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   if (cases.length === 0) {
     return (
       <Card>
@@ -37,7 +47,7 @@ export const FuelTheftTable = ({ cases }: FuelTheftTableProps) => {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <ShieldAlert className="w-5 h-5 text-destructive" />
-          Fuel Theft Cases ({cases.length})
+          Fuel Theft Cases ({totalItems})
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
@@ -54,7 +64,7 @@ export const FuelTheftTable = ({ cases }: FuelTheftTableProps) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {cases.map((c) => (
+              {paginatedCases.map((c) => (
                 <tr key={c.id} className="hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3 text-sm">
                     {format(new Date(c.detected_at), "MMM d, yyyy HH:mm")}
@@ -87,6 +97,12 @@ export const FuelTheftTable = ({ cases }: FuelTheftTableProps) => {
             </tbody>
           </table>
         </div>
+        <TablePagination
+          currentPage={currentPage}
+          totalItems={totalItems}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
       </CardContent>
     </Card>
   );

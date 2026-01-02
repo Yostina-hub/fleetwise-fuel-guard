@@ -1,7 +1,11 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, TrendingUp, TrendingDown, Minus, Award, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { TablePagination } from "./TablePagination";
+
+const ITEMS_PER_PAGE = 10;
 
 interface DriverScore {
   id: string;
@@ -64,6 +68,8 @@ const getRatingBadge = (rating: string) => {
 };
 
 export const DriverScoresTable = ({ scores }: DriverScoresTableProps) => {
+  const [currentPage, setCurrentPage] = useState(1);
+
   // Get latest score per driver
   const latestScores = Object.values(
     scores.reduce((acc, score) => {
@@ -74,6 +80,10 @@ export const DriverScoresTable = ({ scores }: DriverScoresTableProps) => {
       return acc;
     }, {} as Record<string, DriverScore>)
   ).sort((a, b) => b.overall_score - a.overall_score);
+
+  const totalItems = latestScores.length;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedScores = latestScores.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   const avgScore = latestScores.length > 0
     ? latestScores.reduce((sum, s) => sum + s.overall_score, 0) / latestScores.length
@@ -102,7 +112,7 @@ export const DriverScoresTable = ({ scores }: DriverScoresTableProps) => {
         <Card className="bg-card/50">
           <CardContent className="pt-4">
             <div className="text-sm text-muted-foreground">Drivers Scored</div>
-            <div className="text-2xl font-bold text-foreground">{latestScores.length}</div>
+            <div className="text-2xl font-bold text-foreground">{totalItems}</div>
           </CardContent>
         </Card>
         <Card className="bg-card/50">
@@ -138,7 +148,7 @@ export const DriverScoresTable = ({ scores }: DriverScoresTableProps) => {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Users className="w-5 h-5 text-primary" />
-            Driver Behavior Scores
+            Driver Behavior Scores ({totalItems})
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -159,76 +169,85 @@ export const DriverScoresTable = ({ scores }: DriverScoresTableProps) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {latestScores.map((score, index) => (
-                  <tr key={score.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3">
-                      <span className={cn(
-                        "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
-                        index === 0 ? "bg-amber-500 text-white" :
-                        index === 1 ? "bg-gray-400 text-white" :
-                        index === 2 ? "bg-amber-700 text-white" :
-                        "bg-muted text-muted-foreground"
-                      )}>
-                        {index + 1}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="font-medium">
-                        {score.driver ? `${score.driver.first_name} ${score.driver.last_name}` : "Unknown Driver"}
-                      </div>
-                      {score.vehicle?.plate_number && (
-                        <div className="text-xs text-muted-foreground">{score.vehicle.plate_number}</div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={cn("text-xl font-bold", getScoreColor(score.overall_score))}>
-                        {score.overall_score}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={cn(
-                        "px-2 py-1 rounded-full text-xs font-medium capitalize",
-                        getRatingBadge(score.safety_rating)
-                      )}>
-                        {score.safety_rating}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={cn("font-medium", getScoreColor(score.speeding_score))}>
-                        {score.speeding_score}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={cn("font-medium", getScoreColor(score.braking_score))}>
-                        {score.braking_score}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={cn("font-medium", getScoreColor(score.acceleration_score))}>
-                        {score.acceleration_score}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      <div className="flex flex-col gap-1 text-xs">
-                        <span>Speed: {score.speed_violations}</span>
-                        <span>Brake: {score.harsh_braking_events}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        {getTrendIcon(score.trend)}
-                        <span className="text-xs capitalize">{score.trend || "stable"}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {format(new Date(score.score_period_start), "MMM dd")} - 
-                      {format(new Date(score.score_period_end), "MMM dd")}
-                    </td>
-                  </tr>
-                ))}
+                {paginatedScores.map((score, index) => {
+                  const globalIndex = startIndex + index;
+                  return (
+                    <tr key={score.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-3">
+                        <span className={cn(
+                          "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
+                          globalIndex === 0 ? "bg-amber-500 text-white" :
+                          globalIndex === 1 ? "bg-gray-400 text-white" :
+                          globalIndex === 2 ? "bg-amber-700 text-white" :
+                          "bg-muted text-muted-foreground"
+                        )}>
+                          {globalIndex + 1}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="font-medium">
+                          {score.driver ? `${score.driver.first_name} ${score.driver.last_name}` : "Unknown Driver"}
+                        </div>
+                        {score.vehicle?.plate_number && (
+                          <div className="text-xs text-muted-foreground">{score.vehicle.plate_number}</div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={cn("text-xl font-bold", getScoreColor(score.overall_score))}>
+                          {score.overall_score}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={cn(
+                          "px-2 py-1 rounded-full text-xs font-medium capitalize",
+                          getRatingBadge(score.safety_rating)
+                        )}>
+                          {score.safety_rating}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={cn("font-medium", getScoreColor(score.speeding_score))}>
+                          {score.speeding_score}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={cn("font-medium", getScoreColor(score.braking_score))}>
+                          {score.braking_score}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={cn("font-medium", getScoreColor(score.acceleration_score))}>
+                          {score.acceleration_score}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <div className="flex flex-col gap-1 text-xs">
+                          <span>Speed: {score.speed_violations}</span>
+                          <span>Brake: {score.harsh_braking_events}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          {getTrendIcon(score.trend)}
+                          <span className="text-xs capitalize">{score.trend || "stable"}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">
+                        {format(new Date(score.score_period_start), "MMM dd")} - 
+                        {format(new Date(score.score_period_end), "MMM dd")}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
+          <TablePagination
+            currentPage={currentPage}
+            totalItems={totalItems}
+            itemsPerPage={ITEMS_PER_PAGE}
+            onPageChange={setCurrentPage}
+          />
         </CardContent>
       </Card>
     </div>
