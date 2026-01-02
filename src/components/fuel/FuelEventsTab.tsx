@@ -110,7 +110,7 @@ const FuelEventsTab = () => {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-[300px]"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    return <div className="flex items-center justify-center min-h-[300px]" role="status" aria-live="polite" aria-label="Loading fuel events..."><Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden="true" /></div>;
   }
 
   return (
@@ -119,7 +119,7 @@ const FuelEventsTab = () => {
       <div className="flex flex-col md:flex-row gap-4 justify-between">
         <div className="flex flex-wrap gap-3 flex-1">
           <div className="relative flex-1 max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <Input
               placeholder="Search events..."
               value={searchQuery}
@@ -163,7 +163,7 @@ const FuelEventsTab = () => {
           </Select>
           <Select value={dateRange} onValueChange={setDateRange}>
             <SelectTrigger className="w-36" aria-label="Filter by date range">
-              <Calendar className="w-4 h-4 mr-2" />
+              <Calendar className="w-4 h-4 mr-2" aria-hidden="true" />
               <SelectValue placeholder="Date Range" />
             </SelectTrigger>
             <SelectContent>
@@ -174,8 +174,8 @@ const FuelEventsTab = () => {
             </SelectContent>
           </Select>
         </div>
-        <Button variant="outline" className="gap-2" onClick={exportEventsCSV}>
-          <Download className="w-4 h-4" />
+        <Button variant="outline" className="gap-2" onClick={exportEventsCSV} aria-label="Export fuel events to CSV">
+          <Download className="w-4 h-4" aria-hidden="true" />
           Export CSV
         </Button>
       </div>
@@ -186,7 +186,7 @@ const FuelEventsTab = () => {
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-success/10">
-                <Droplet className="w-5 h-5 text-success" />
+                <Droplet className="w-5 h-5 text-success" aria-hidden="true" />
               </div>
               <div>
                 <div className="text-2xl font-bold">{filteredEvents.filter(e => e.event_type === 'refuel').length}</div>
@@ -199,7 +199,7 @@ const FuelEventsTab = () => {
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-destructive/10">
-                <AlertTriangle className="w-5 h-5 text-destructive" />
+                <AlertTriangle className="w-5 h-5 text-destructive" aria-hidden="true" />
               </div>
               <div>
                 <div className="text-2xl font-bold">{filteredEvents.filter(e => e.event_type === 'theft' || e.event_type === 'drain').length}</div>
@@ -212,7 +212,7 @@ const FuelEventsTab = () => {
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-warning/10">
-                <TrendingDown className="w-5 h-5 text-warning" />
+                <TrendingDown className="w-5 h-5 text-warning" aria-hidden="true" />
               </div>
               <div>
                 <div className="text-2xl font-bold">{filteredEvents.filter(e => e.event_type === 'leak').length}</div>
@@ -225,7 +225,7 @@ const FuelEventsTab = () => {
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-primary/10">
-                <Clock className="w-5 h-5 text-primary" />
+                <Clock className="w-5 h-5 text-primary" aria-hidden="true" />
               </div>
               <div>
                 <div className="text-2xl font-bold">{filteredEvents.filter(e => e.status === 'pending').length}</div>
@@ -238,7 +238,7 @@ const FuelEventsTab = () => {
 
       {/* Events Timeline */}
       {Object.keys(groupedEvents).length === 0 ? (
-        <Card><CardContent className="py-12 text-center text-muted-foreground"><Droplet className="w-12 h-12 mx-auto mb-4 opacity-50" /><p>No fuel events recorded yet</p></CardContent></Card>
+        <Card><CardContent className="py-12 text-center text-muted-foreground" role="status" aria-label="No fuel events recorded"><Droplet className="w-12 h-12 mx-auto mb-4 opacity-50" aria-hidden="true" /><p>No fuel events recorded yet</p></CardContent></Card>
       ) : (
         Object.entries(groupedEvents).map(([date, events]) => (
           <div key={date}>
@@ -250,7 +250,7 @@ const FuelEventsTab = () => {
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-start gap-4 min-w-0 flex-1">
                         <div className={`p-2 rounded-lg shrink-0 ${event.event_type === 'refuel' ? 'bg-success/10' : event.event_type === 'theft' || event.event_type === 'drain' ? 'bg-destructive/10' : 'bg-warning/10'}`}>
-                          <Droplet className={`w-5 h-5 ${event.event_type === 'refuel' ? 'text-success' : event.event_type === 'theft' || event.event_type === 'drain' ? 'text-destructive' : 'text-warning'}`} />
+                          <Droplet className={`w-5 h-5 ${event.event_type === 'refuel' ? 'text-success' : event.event_type === 'theft' || event.event_type === 'drain' ? 'text-destructive' : 'text-warning'}`} aria-hidden="true" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">

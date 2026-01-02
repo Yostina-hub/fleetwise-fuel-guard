@@ -143,8 +143,8 @@ const WebhooksTab = () => {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button aria-label="Create new webhook">
+              <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
               Create Webhook
             </Button>
           </DialogTrigger>
@@ -204,7 +204,7 @@ const WebhooksTab = () => {
       </div>
 
       {isLoading ? (
-        <p>Loading...</p>
+        <p role="status" aria-live="polite">Loading...</p>
       ) : (
         <Table>
           <TableHeader>
@@ -255,15 +255,17 @@ const WebhooksTab = () => {
                         setSelectedWebhook(webhook.id);
                         setDeliveryDialogOpen(true);
                       }}
+                      aria-label="View webhook deliveries"
                     >
-                      <Eye className="h-4 w-4" />
+                      <Eye className="h-4 w-4" aria-hidden="true" />
                     </Button>
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={() => deleteWebhookMutation.mutate(webhook.id)}
+                      aria-label="Delete webhook"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
                     </Button>
                   </div>
                 </TableCell>
