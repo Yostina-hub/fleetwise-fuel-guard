@@ -229,7 +229,7 @@ const Reports = () => {
             <div>
               <label className="text-xs text-muted-foreground block mb-1">Start Date</label>
               <div className="flex items-center gap-2 border border-border rounded-md px-3 py-2">
-                <Calendar className="w-4 h-4 text-muted-foreground" />
+                <Calendar className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
                 <input
                   type="date"
                   value={startDate}
@@ -241,7 +241,7 @@ const Reports = () => {
             <div>
               <label className="text-xs text-muted-foreground block mb-1">End Date</label>
               <div className="flex items-center gap-2 border border-border rounded-md px-3 py-2">
-                <Calendar className="w-4 h-4 text-muted-foreground" />
+                <Calendar className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
                 <input
                   type="date"
                   value={endDate}
@@ -254,7 +254,7 @@ const Reports = () => {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button className="gap-2">
-                <Download className="w-4 h-4" />
+                <Download className="w-4 h-4" aria-hidden="true" />
                 EXPORT
               </Button>
             </DropdownMenuTrigger>
@@ -266,7 +266,7 @@ const Reports = () => {
                   toast.success("Fleet report exported to CSV");
                 }}
               >
-                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                <FileSpreadsheet className="w-4 h-4 mr-2" aria-hidden="true" />
                 Export as CSV
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -290,7 +290,7 @@ const Reports = () => {
                   toast.success("Fleet report exported to PDF");
                 }}
               >
-                <FileText className="w-4 h-4 mr-2" />
+                <FileText className="w-4 h-4 mr-2" aria-hidden="true" />
                 Export as PDF
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -306,7 +306,7 @@ const Reports = () => {
               </div>
               <div className="text-3xl font-bold">{summaryMetrics.distanceMiles.toLocaleString()}</div>
               <div className="flex items-center gap-1 mt-2 text-sm">
-                <TrendingUp className="w-4 h-4 text-success" />
+                <TrendingUp className="w-4 h-4 text-success" aria-hidden="true" />
                 <span className="text-success">+{summaryMetrics.distanceChange}</span>
                 <span className="text-muted-foreground">increase since last week</span>
               </div>
@@ -320,7 +320,7 @@ const Reports = () => {
               </div>
               <div className="text-3xl font-bold">{summaryMetrics.fuelGallons}</div>
               <div className="flex items-center gap-1 mt-2 text-sm">
-                <TrendingUp className="w-4 h-4 text-success" />
+                <TrendingUp className="w-4 h-4 text-success" aria-hidden="true" />
                 <span className="text-success">+{summaryMetrics.fuelChange}</span>
                 <span className="text-muted-foreground">increase since last week</span>
               </div>
@@ -334,7 +334,7 @@ const Reports = () => {
               </div>
               <div className="text-3xl font-bold">{summaryMetrics.efficiencyMpg}</div>
               <div className="flex items-center gap-1 mt-2 text-sm">
-                <TrendingUp className="w-4 h-4 text-success" />
+                <TrendingUp className="w-4 h-4 text-success" aria-hidden="true" />
                 <span className="text-success">{summaryMetrics.efficiencyChange}</span>
                 <span className="text-muted-foreground">improvement since last week</span>
               </div>
@@ -347,14 +347,14 @@ const Reports = () => {
                 <div className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
                   Idle Fuel Cost ($)
                 </div>
-                <Info className="w-3 h-3 text-muted-foreground" />
+                <Info className="w-3 h-3 text-muted-foreground" aria-hidden="true" />
               </div>
               <div className="flex items-baseline gap-2">
                 <div className="text-3xl font-bold">${summaryMetrics.idleFuelCost}</div>
                 <span className="text-xs text-muted-foreground">Gasoline: Current: $5/gallon</span>
               </div>
               <div className="flex items-center gap-1 mt-2 text-sm">
-                <TrendingDown className="w-4 h-4 text-destructive" />
+                <TrendingDown className="w-4 h-4 text-destructive" aria-hidden="true" />
                 <span className="text-destructive">${summaryMetrics.costChange}</span>
                 <span className="text-muted-foreground">worse than last week</span>
               </div>
@@ -365,7 +365,7 @@ const Reports = () => {
         {/* Search and Filters */}
         <div className="flex items-center gap-4">
           <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <Input
               placeholder="Search"
               value={searchQuery}
@@ -400,7 +400,7 @@ const Reports = () => {
             </SelectContent>
           </Select>
           <Button variant="ghost" size="icon">
-            <Settings2 className="w-5 h-5" />
+            <Settings2 className="w-5 h-5" aria-hidden="true" />
           </Button>
         </div>
 
@@ -434,7 +434,7 @@ const Reports = () => {
                       <TableCell>
                         <button className="text-primary hover:underline flex items-center gap-1">
                           {vehicle.plateNumber}
-                          <ChevronRight className="w-3 h-3" />
+                          <ChevronRight className="w-3 h-3" aria-hidden="true" />
                         </button>
                       </TableCell>
                       <TableCell>{vehicle.year}</TableCell>
