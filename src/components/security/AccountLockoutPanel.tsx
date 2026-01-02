@@ -81,7 +81,7 @@ export const AccountLockoutPanel = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <ShieldAlert className="h-5 w-5 text-primary" />
+            <ShieldAlert className="h-5 w-5 text-primary" aria-hidden="true" />
             Account Lockout Policy
           </CardTitle>
           <CardDescription>
@@ -194,7 +194,7 @@ export const AccountLockoutPanel = () => {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Lock className="h-5 w-5 text-destructive" />
+                <Lock className="h-5 w-5 text-destructive" aria-hidden="true" />
                 Locked Accounts
               </CardTitle>
               <CardDescription>
@@ -202,8 +202,8 @@ export const AccountLockoutPanel = () => {
               </CardDescription>
             </div>
             {lockedAccounts.length > 0 && (
-              <Button variant="outline" size="sm" onClick={unlockAllAccounts}>
-                <Unlock className="h-4 w-4 mr-2" />
+              <Button variant="outline" size="sm" onClick={unlockAllAccounts} aria-label="Unlock all locked accounts">
+                <Unlock className="h-4 w-4 mr-2" aria-hidden="true" />
                 Unlock All
               </Button>
             )}
@@ -211,8 +211,8 @@ export const AccountLockoutPanel = () => {
         </CardHeader>
         <CardContent>
           {lockedAccounts.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <div className="text-center py-8 text-muted-foreground" role="status" aria-label="No locked accounts">
+              <Users className="h-12 w-12 mx-auto mb-4 opacity-50" aria-hidden="true" />
               <p>No locked accounts</p>
             </div>
           ) : (
@@ -230,11 +230,11 @@ export const AccountLockoutPanel = () => {
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground flex items-center gap-1">
-                      <AlertTriangle className="h-3 w-3" />
+                      <AlertTriangle className="h-3 w-3" aria-hidden="true" />
                       {account.reason}
                     </p>
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
+                      <Clock className="h-3 w-3" aria-hidden="true" />
                       Locked at: {new Date(account.lockedAt).toLocaleString()}
                       {account.unlockAt && (
                         <span className="ml-2">
@@ -247,8 +247,9 @@ export const AccountLockoutPanel = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => unlockAccount(account.id)}
+                    aria-label={`Unlock account ${account.email}`}
                   >
-                    <Unlock className="h-4 w-4 mr-2" />
+                    <Unlock className="h-4 w-4 mr-2" aria-hidden="true" />
                     Unlock
                   </Button>
                 </div>
@@ -262,21 +263,21 @@ export const AccountLockoutPanel = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <RefreshCw className="h-5 w-5" />
+            <RefreshCw className="h-5 w-5" aria-hidden="true" />
             Quick Actions
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Button variant="outline" className="w-full justify-start">
-            <Lock className="h-4 w-4 mr-2" />
+          <Button variant="outline" className="w-full justify-start" aria-label="Lock a specific account">
+            <Lock className="h-4 w-4 mr-2" aria-hidden="true" />
             Lock Specific Account
           </Button>
-          <Button variant="outline" className="w-full justify-start">
-            <RefreshCw className="h-4 w-4 mr-2" />
+          <Button variant="outline" className="w-full justify-start" aria-label="Reset failed attempt counters">
+            <RefreshCw className="h-4 w-4 mr-2" aria-hidden="true" />
             Reset Failed Attempt Counters
           </Button>
-          <Button variant="outline" className="w-full justify-start text-destructive">
-            <ShieldAlert className="h-4 w-4 mr-2" />
+          <Button variant="outline" className="w-full justify-start text-destructive" aria-label="Emergency lock all non-admin accounts">
+            <ShieldAlert className="h-4 w-4 mr-2" aria-hidden="true" />
             Emergency: Lock All Non-Admin Accounts
           </Button>
         </CardContent>

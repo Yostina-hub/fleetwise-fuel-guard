@@ -89,7 +89,7 @@ const LoginAlertsTab = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-600" />
+              <CheckCircle className="h-4 w-4 text-green-600" aria-hidden="true" />
               Successful
             </CardTitle>
           </CardHeader>
@@ -101,7 +101,7 @@ const LoginAlertsTab = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <XCircle className="h-4 w-4 text-destructive" />
+              <XCircle className="h-4 w-4 text-destructive" aria-hidden="true" />
               Failed
             </CardTitle>
           </CardHeader>
@@ -113,7 +113,7 @@ const LoginAlertsTab = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Smartphone className="h-4 w-4" />
+              <Smartphone className="h-4 w-4" aria-hidden="true" />
               Devices
             </CardTitle>
           </CardHeader>
@@ -125,7 +125,7 @@ const LoginAlertsTab = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertTriangle className="h-4 w-4 text-yellow-600" aria-hidden="true" />
               High Risk
             </CardTitle>
           </CardHeader>
@@ -144,7 +144,7 @@ const LoginAlertsTab = () => {
                 <Bell className="h-5 w-5 text-yellow-600" />
                 <CardTitle>Pending Alerts ({pendingAlerts.length})</CardTitle>
               </div>
-              <Button variant="outline" size="sm" onClick={handleDismissAll}>
+              <Button variant="outline" size="sm" onClick={handleDismissAll} aria-label="Dismiss all pending alerts">
                 Dismiss All
               </Button>
             </div>
@@ -172,12 +172,12 @@ const LoginAlertsTab = () => {
                     </div>
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
-                        <Globe className="h-3 w-3" />
+                        <Globe className="h-3 w-3" aria-hidden="true" />
                         {alert.ipAddress}
                       </span>
                       {alert.location && (
                         <span className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
+                          <MapPin className="h-3 w-3" aria-hidden="true" />
                           {alert.location}
                         </span>
                       )}
@@ -187,8 +187,9 @@ const LoginAlertsTab = () => {
                     variant="ghost"
                     size="sm"
                     onClick={() => handleDismissAlert(alert.id)}
+                    aria-label="Dismiss this alert"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
                   </Button>
                 </div>
               ))}
@@ -236,13 +237,13 @@ const LoginAlertsTab = () => {
                       <div className="flex gap-1">
                         {event.isNewDevice && (
                           <Badge variant="outline" className="text-xs">
-                            <Smartphone className="h-3 w-3 mr-1" />
+                            <Smartphone className="h-3 w-3 mr-1" aria-hidden="true" />
                             New Device
                           </Badge>
                         )}
                         {event.isNewLocation && (
                           <Badge variant="outline" className="text-xs">
-                            <MapPin className="h-3 w-3 mr-1" />
+                            <MapPin className="h-3 w-3 mr-1" aria-hidden="true" />
                             New Location
                           </Badge>
                         )}
@@ -252,7 +253,7 @@ const LoginAlertsTab = () => {
                 ))}
                 {history.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8" role="status" aria-label="No login history">
                       No login history found
                     </TableCell>
                   </TableRow>
@@ -371,8 +372,8 @@ const LoginAlertsTab = () => {
             </div>
           )}
 
-          <Button onClick={handleSave}>
-            <Save className="h-4 w-4 mr-2" />
+          <Button onClick={handleSave} aria-label="Save login alert configuration">
+            <Save className="h-4 w-4 mr-2" aria-hidden="true" />
             Save Configuration
           </Button>
         </CardContent>

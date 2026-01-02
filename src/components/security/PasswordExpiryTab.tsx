@@ -75,17 +75,17 @@ const PasswordExpiryTab = () => {
               <div className="flex items-center gap-2">
                 {userExpiry.isExpired ? (
                   <Badge variant="destructive">
-                    <AlertTriangle className="h-3 w-3 mr-1" />
+                    <AlertTriangle className="h-3 w-3 mr-1" aria-hidden="true" />
                     Password Expired
                   </Badge>
                 ) : userExpiry.isWarning ? (
                   <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
-                    <Clock className="h-3 w-3 mr-1" />
+                    <Clock className="h-3 w-3 mr-1" aria-hidden="true" />
                     Expiring Soon
                   </Badge>
                 ) : (
                   <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
-                    <CheckCircle className="h-3 w-3 mr-1" />
+                    <CheckCircle className="h-3 w-3 mr-1" aria-hidden="true" />
                     Valid
                   </Badge>
                 )}
@@ -100,7 +100,7 @@ const PasswordExpiryTab = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-destructive" />
+              <AlertTriangle className="h-4 w-4 text-destructive" aria-hidden="true" />
               Expired
             </CardTitle>
           </CardHeader>
@@ -113,7 +113,7 @@ const PasswordExpiryTab = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Clock className="h-4 w-4 text-yellow-600" />
+              <Clock className="h-4 w-4 text-yellow-600" aria-hidden="true" />
               Expiring Soon
             </CardTitle>
           </CardHeader>
@@ -128,8 +128,8 @@ const PasswordExpiryTab = () => {
       {userExpiry.isExpired && (
         <Card className="border-destructive/50 bg-destructive/5">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" aria-hidden="true" />
               Password Expired
             </CardTitle>
             <CardDescription>
@@ -233,8 +233,8 @@ const PasswordExpiryTab = () => {
           )}
 
           <div className="flex gap-2 pt-4">
-            <Button onClick={handleSave}>
-              <Save className="h-4 w-4 mr-2" />
+            <Button onClick={handleSave} aria-label="Save password expiry policy">
+              <Save className="h-4 w-4 mr-2" aria-hidden="true" />
               Save Policy
             </Button>
             <Button variant="outline" onClick={handleResetPassword}>

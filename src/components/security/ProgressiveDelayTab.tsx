@@ -63,7 +63,7 @@ const ProgressiveDelayTab = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Clock className="h-4 w-4" />
+              <Clock className="h-4 w-4" aria-hidden="true" />
               Active Delays
             </CardTitle>
           </CardHeader>
@@ -76,7 +76,7 @@ const ProgressiveDelayTab = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Shield className="h-4 w-4 text-destructive" />
+              <Shield className="h-4 w-4 text-destructive" aria-hidden="true" />
               Locked Accounts
             </CardTitle>
           </CardHeader>
@@ -89,7 +89,7 @@ const ProgressiveDelayTab = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertTriangle className="h-4 w-4 text-yellow-600" aria-hidden="true" />
               Max Attempts
             </CardTitle>
           </CardHeader>
@@ -111,12 +111,12 @@ const ProgressiveDelayTab = () => {
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label>Base Delay (First failure)</Label>
+              <Label htmlFor="base-delay">Base Delay (First failure)</Label>
               <Select
                 value={config.baseDelayMs.toString()}
                 onValueChange={(v) => setConfig({ ...config, baseDelayMs: parseInt(v) })}
               >
-                <SelectTrigger>
+                <SelectTrigger id="base-delay" aria-label="Select base delay time">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -133,12 +133,12 @@ const ProgressiveDelayTab = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>Maximum Delay</Label>
+              <Label htmlFor="max-delay">Maximum Delay</Label>
               <Select
                 value={config.maxDelayMs.toString()}
                 onValueChange={(v) => setConfig({ ...config, maxDelayMs: parseInt(v) })}
               >
-                <SelectTrigger>
+                <SelectTrigger id="max-delay" aria-label="Select maximum delay time">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -207,8 +207,8 @@ const ProgressiveDelayTab = () => {
           </div>
 
           <div className="flex gap-2 pt-4">
-            <Button onClick={handleSave}>
-              <Save className="h-4 w-4 mr-2" />
+            <Button onClick={handleSave} aria-label="Save progressive delay configuration">
+              <Save className="h-4 w-4 mr-2" aria-hidden="true" />
               Save Configuration
             </Button>
             <Button variant="outline" onClick={handleClear}>
