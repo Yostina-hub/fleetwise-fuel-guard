@@ -89,7 +89,15 @@ export const useAlerts = (filters?: AlertFilters) => {
   }, [organizationId, filters?.severity, filters?.status, filters?.vehicleId, filters?.alertType, filters?.dateFrom, filters?.dateTo]);
 
   useEffect(() => {
-    fetchAlerts();
+    let isMounted = true;
+    
+    const doFetch = async () => {
+      await fetchAlerts();
+    };
+    
+    if (isMounted) {
+      doFetch();
+    }
 
     if (!organizationId) return;
 
@@ -114,6 +122,7 @@ export const useAlerts = (filters?: AlertFilters) => {
       .subscribe();
 
     return () => {
+      isMounted = false;
       clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };

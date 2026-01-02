@@ -1,6 +1,7 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -127,6 +128,9 @@ const AlertDetailModal = ({
             </div>
             <div className="flex-1">
               <DialogTitle className="text-2xl">{alert.alert_type}</DialogTitle>
+              <DialogDescription className="sr-only">
+                Details for {alert.alert_type} alert with {alert.severity} severity
+              </DialogDescription>
               <div className="flex items-center gap-2 mt-2">
                 <Badge variant={getSeverityColor() as any}>
                   {alert.severity?.toUpperCase() || 'UNKNOWN'}
@@ -232,15 +236,17 @@ const AlertDetailModal = ({
           {/* Add Notes */}
           {(alert?.status === "unacknowledged" || alert?.status === "acknowledged") && (
             <div className="space-y-3">
-              <Label className="flex items-center gap-2">
+              <Label htmlFor="alert-resolution-notes" className="flex items-center gap-2">
                 <MessageSquare className="w-4 h-4" />
                 Add Notes (Optional)
               </Label>
               <Textarea
+                id="alert-resolution-notes"
                 placeholder="Enter any observations or actions taken..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
+                aria-describedby="alert-notes-description"
               />
             </div>
           )}

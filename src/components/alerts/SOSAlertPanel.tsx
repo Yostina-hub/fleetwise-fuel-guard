@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { AlertTriangle, MapPin, Clock, CheckCircle, XCircle, User, Car } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
@@ -180,13 +181,13 @@ export function SOSAlertPanel() {
                           {alert.vehicle_id && (
                             <div className="flex items-center gap-1">
                               <Car className="w-3 h-3" />
-                              Vehicle
+                              <span>Vehicle ID: {alert.vehicle_id.slice(0, 8)}...</span>
                             </div>
                           )}
                           {alert.driver_id && (
                             <div className="flex items-center gap-1">
                               <User className="w-3 h-3" />
-                              Driver
+                              <span>Driver ID: {alert.driver_id.slice(0, 8)}...</span>
                             </div>
                           )}
                         </div>
@@ -276,15 +277,20 @@ export function SOSAlertPanel() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Resolve SOS Alert</DialogTitle>
+            <DialogDescription>
+              Provide details about how this SOS alert was handled and resolved.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div>
-              <label className="text-sm font-medium">Resolution Notes</label>
+            <div className="space-y-2">
+              <Label htmlFor="sos-resolution-notes">Resolution Notes</Label>
               <Textarea
+                id="sos-resolution-notes"
                 value={resolutionNotes}
                 onChange={(e) => setResolutionNotes(e.target.value)}
                 placeholder="Describe how the alert was resolved..."
                 rows={4}
+                aria-describedby="resolution-notes-hint"
               />
             </div>
           </div>

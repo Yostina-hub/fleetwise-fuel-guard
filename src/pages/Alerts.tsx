@@ -354,6 +354,7 @@ const Alerts = () => {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
+                    id="alerts-search"
                     placeholder="Search alerts..."
                     value={searchQuery}
                     onChange={(e) => {
@@ -361,6 +362,7 @@ const Alerts = () => {
                       setCurrentPage(1);
                     }}
                     className="pl-9"
+                    aria-label="Search alerts by type, message, vehicle, or location"
                   />
                 </div>
               </div>
@@ -489,10 +491,14 @@ const Alerts = () => {
             {paginatedAlerts.length > 0 && (
               <div className="flex items-center gap-2 mb-4 pb-4 border-b">
                 <Checkbox
+                  id="select-all-alerts"
                   checked={selectedAlerts.length === paginatedAlerts.length && paginatedAlerts.length > 0}
                   onCheckedChange={toggleSelectAll}
+                  aria-label="Select all alerts on this page"
                 />
-                <span className="text-sm text-muted-foreground">Select all on this page</span>
+                <label htmlFor="select-all-alerts" className="text-sm text-muted-foreground cursor-pointer">
+                  Select all on this page
+                </label>
               </div>
             )}
 
@@ -524,9 +530,11 @@ const Alerts = () => {
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-start gap-3 flex-1">
                         <Checkbox
+                          id={`alert-${alert.id}`}
                           checked={selectedAlerts.includes(alert.id)}
                           onCheckedChange={() => toggleSelectAlert(alert.id)}
                           onClick={(e) => e.stopPropagation()}
+                          aria-label={`Select ${alert.alert_type} alert`}
                         />
                         <div 
                           className="flex items-start gap-3 flex-1 cursor-pointer"
