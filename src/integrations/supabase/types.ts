@@ -4462,6 +4462,71 @@ export type Database = {
           },
         ]
       }
+      smtp_configurations: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          last_test_status: string | null
+          last_tested_at: string | null
+          name: string
+          organization_id: string
+          smtp_from_email: string
+          smtp_from_name: string | null
+          smtp_host: string
+          smtp_password: string
+          smtp_port: number
+          smtp_user: string
+          updated_at: string
+          use_tls: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          last_test_status?: string | null
+          last_tested_at?: string | null
+          name?: string
+          organization_id: string
+          smtp_from_email: string
+          smtp_from_name?: string | null
+          smtp_host: string
+          smtp_password: string
+          smtp_port?: number
+          smtp_user: string
+          updated_at?: string
+          use_tls?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          last_test_status?: string | null
+          last_tested_at?: string | null
+          name?: string
+          organization_id?: string
+          smtp_from_email?: string
+          smtp_from_name?: string | null
+          smtp_host?: string
+          smtp_password?: string
+          smtp_port?: number
+          smtp_user?: string
+          updated_at?: string
+          use_tls?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smtp_configurations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sos_alerts: {
         Row: {
           acknowledged_at: string | null

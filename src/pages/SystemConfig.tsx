@@ -2,10 +2,11 @@ import { useState } from "react";
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { Settings2, Radio, Droplet } from "lucide-react";
+import { Settings2, Radio, Droplet, Mail } from "lucide-react";
 import DeviceProtocolsTab from "@/components/config/DeviceProtocolsTab";
 import FuelDetectionTab from "@/components/config/FuelDetectionTab";
 import EnrichmentTab from "@/components/config/EnrichmentTab";
+import SmtpConfigTab from "@/components/config/SmtpConfigTab";
 import ConfigQuickStats from "@/components/config/ConfigQuickStats";
 import ConfigQuickActions from "@/components/config/ConfigQuickActions";
 import { toast } from "sonner";
@@ -65,7 +66,7 @@ const SystemConfig = () => {
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3 glass p-1 h-14">
+          <TabsList className="grid w-full grid-cols-4 glass p-1 h-14">
             <TabsTrigger value="protocols" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg">
               <Radio className="h-4 w-4" aria-hidden="true" />
               Device Protocols
@@ -77,6 +78,10 @@ const SystemConfig = () => {
             <TabsTrigger value="enrichment" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg">
               <Settings2 className="h-4 w-4" aria-hidden="true" />
               Data Enrichment
+            </TabsTrigger>
+            <TabsTrigger value="smtp" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg">
+              <Mail className="h-4 w-4" aria-hidden="true" />
+              SMTP / Email
             </TabsTrigger>
           </TabsList>
 
@@ -95,6 +100,12 @@ const SystemConfig = () => {
           <TabsContent value="enrichment" className="animate-scale-in">
             <Card className="p-6 glass-strong border-2 hover:border-primary/50 transition-all duration-300">
               <EnrichmentTab />
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="smtp" className="animate-scale-in">
+            <Card className="p-6 glass-strong border-2 hover:border-primary/50 transition-all duration-300">
+              <SmtpConfigTab />
             </Card>
           </TabsContent>
         </Tabs>
