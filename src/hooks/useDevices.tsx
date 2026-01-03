@@ -48,6 +48,7 @@ export interface TestEndpointResult {
     fuel: number;
     ignition: string;
     altitude?: number;
+    gps_signal?: number;
   };
 }
 
@@ -322,7 +323,7 @@ export const useDevices = () => {
         ignition: '1',
         heading: Math.floor(Math.random() * 360),
         satellites: 8 + Math.floor(Math.random() * 4),
-        signal_strength: 70 + Math.floor(Math.random() * 30),
+        gps_signal: 70 + Math.floor(Math.random() * 30),
         altitude: 2200 + Math.floor(Math.random() * 300),
         odometer: 50000 + Math.floor(Math.random() * 10000),
       };
