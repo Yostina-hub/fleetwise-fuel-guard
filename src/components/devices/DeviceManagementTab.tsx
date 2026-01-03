@@ -1003,7 +1003,7 @@ export const DeviceManagementTab = () => {
               ))}
               {paginatedDevices.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                     {filteredDevices.length === 0 && devices?.length ? 
                       "No devices match your filters" : 
                       "No devices found. Click 'Add Device' to add your first GPS tracker."
@@ -1276,6 +1276,11 @@ export const DeviceManagementTab = () => {
                     <MapPin className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                     <span className="text-muted-foreground">Lng:</span>
                     <span className="font-mono">{testResult.request.lng.toFixed(6)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Mountain className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                    <span className="text-muted-foreground">Alt:</span>
+                    <span className="font-semibold">{testResult.request.altitude || 0}m</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Zap className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
