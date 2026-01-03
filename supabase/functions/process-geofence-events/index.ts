@@ -16,11 +16,11 @@ interface VehicleTelemetry {
 interface Geofence {
   id: string;
   name: string;
-  fence_type: string;
+  geometry_type: string;
   center_lat: number | null;
   center_lng: number | null;
   radius_meters: number | null;
-  polygon_coords: number[][] | null;
+  polygon_points: Array<{lat: number, lng: number}> | null;
   speed_limit: number | null;
   enable_entry_alarm: boolean;
   enable_exit_alarm: boolean;
@@ -90,11 +90,13 @@ function isWithinSchedule(geofence: Geofence): boolean {
 
 // Check if vehicle is inside geofence
 function isVehicleInGeofence(telemetry: VehicleTelemetry, geofence: Geofence): boolean {
-  if (geofence.fence_type === 'circle' && geofence.center_lat && geofence.center_lng && geofence.radius_meters) {
+  if (geofence.geometry_type === 'circle' && geofence.center_lat && geofence.center_lng && geofence.radius_meters) {
     const distance = haversineDistance(telemetry.lat, telemetry.lng, geofence.center_lat, geofence.center_lng);
     return distance <= geofence.radius_meters;
-  } else if (geofence.fence_type === 'polygon' && geofence.polygon_coords) {
-    return isPointInPolygon(telemetry.lat, telemetry.lng, geofence.polygon_coords);
+  } else if (geofence.geometry_type === 'polygon' && geofence.polygon_points && geofence.polygon_points.length >= 3) {
+    // Convert polygon_points to the format expected by isPointInPolygon
+    const coords = geofence.polygon_points.map(p => [p.lat, p.lng]);
+    return isPointInPolygon(telemetry.lat, telemetry.lng, coords);
   }
   return false;
 }
