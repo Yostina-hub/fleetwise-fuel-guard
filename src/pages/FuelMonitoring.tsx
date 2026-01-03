@@ -1,8 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, useState, useRef } from "react";
 import Layout from "@/components/Layout";
-import KPICard from "@/components/KPICard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Fuel, AlertTriangle, BarChart3, Loader2, Warehouse, FileText, Droplet, MapPin } from "lucide-react";
+import { Fuel, AlertTriangle, Loader2, Warehouse, FileText, Droplet, MapPin } from "lucide-react";
 import { useFuelEvents } from "@/hooks/useFuelEvents";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
@@ -12,12 +11,18 @@ import FuelTheftCasesTab from "@/components/fuel/FuelTheftCasesTab";
 import FuelDepotsTab from "@/components/fuel/FuelDepotsTab";
 import FuelConsumptionAlertsCard from "@/components/fuel/FuelConsumptionAlertsCard";
 import ApprovedFuelStationsTab from "@/components/fuel/ApprovedFuelStationsTab";
+import FuelQuickStats from "@/components/fuel/FuelQuickStats";
+import FuelInsightsCard from "@/components/fuel/FuelInsightsCard";
+import FuelQuickActions from "@/components/fuel/FuelQuickActions";
+import FuelTrendChart from "@/components/fuel/FuelTrendChart";
+import IdleTimeImpactCard from "@/components/fuel/IdleTimeImpactCard";
 import { FuelPageContext } from "@/contexts/FuelPageContext";
-
 const FuelMonitoring = () => {
   const { fuelEvents: dbFuelEvents, loading } = useFuelEvents();
   const { vehicles } = useVehicles();
   const { drivers } = useDrivers();
+  const [activeTab, setActiveTab] = useState("events");
+  const tabsRef = useRef<HTMLDivElement>(null);
 
   const getVehiclePlate = (vehicleId: string) => {
     const vehicle = vehicles.find(v => v.id === vehicleId);
@@ -39,16 +44,15 @@ const FuelMonitoring = () => {
       .filter(e => e.event_type === 'theft' || e.event_type === 'leak')
       .length;
 
-    // Calculate average efficiency from refuel events with distance data
     const refuelEvents = dbFuelEvents.filter(e => e.event_type === 'refuel' && e.fuel_change_liters > 0);
     const avgEfficiency = refuelEvents.length > 0 
-      ? (totalConsumption / Math.max(refuelEvents.length * 150, 1) * 100).toFixed(1) // rough estimate
+      ? (totalConsumption / Math.max(refuelEvents.length * 150, 1) * 100).toFixed(1)
       : null;
 
     return {
-      totalConsumption: totalConsumption.toFixed(0),
+      totalConsumption: parseFloat(totalConsumption.toFixed(0)),
       anomalyCount,
-      avgEfficiency
+      avgEfficiency: avgEfficiency ? `${avgEfficiency} L/100km` : null
     };
   }, [dbFuelEvents]);
 
@@ -58,6 +62,19 @@ const FuelMonitoring = () => {
     getVehiclePlate,
     getDriverName
   }), [vehicles, drivers]);
+
+  const handleQuickAction = (action: string) => {
+    if (action === 'transactions') {
+      setActiveTab('transactions');
+      tabsRef.current?.scrollIntoView({ behavior: 'smooth' });
+    } else if (action === 'anomalies') {
+      setActiveTab('theft');
+      tabsRef.current?.scrollIntoView({ behavior: 'smooth' });
+    } else if (action === 'depots') {
+      setActiveTab('depots');
+      tabsRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   if (loading) {
     return (
@@ -75,7 +92,7 @@ const FuelMonitoring = () => {
   return (
     <FuelPageContext.Provider value={contextValue}>
       <Layout>
-        <div className="p-8 space-y-8">
+        <div className="p-8 space-y-6">
           {/* Header */}
           <div className="flex items-center gap-4">
             <div className="p-4 rounded-2xl glass-strong glow">
@@ -87,82 +104,76 @@ const FuelMonitoring = () => {
             </div>
           </div>
 
-          {/* KPI Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <KPICard
-              title="Total Consumption"
-              value={`${stats.totalConsumption}L`}
-              subtitle="total refuels"
-              icon={<Fuel className="w-5 h-5" aria-hidden="true" />}
-              variant="default"
-            />
-            <KPICard
-              title="Fuel Events"
-              value={dbFuelEvents.length.toString()}
-              subtitle="total events tracked"
-              icon={<Droplet className="w-5 h-5" aria-hidden="true" />}
-              variant="default"
-            />
-            <KPICard
-              title="Avg. Efficiency"
-              value={stats.avgEfficiency ? `${stats.avgEfficiency} L/100km` : "—"}
-              subtitle="fleet average"
-              icon={<BarChart3 className="w-5 h-5" aria-hidden="true" />}
-              variant="default"
-            />
-            <KPICard
-              title="Anomalies"
-              value={stats.anomalyCount.toString()}
-              subtitle="suspected theft/leaks"
-              icon={<AlertTriangle className="w-5 h-5" aria-hidden="true" />}
-              variant={stats.anomalyCount > 0 ? "warning" : "success"}
-            />
+          {/* Quick Stats Bar */}
+          <FuelQuickStats 
+            totalConsumption={stats.totalConsumption}
+            anomalyCount={stats.anomalyCount}
+            avgEfficiency={stats.avgEfficiency}
+            eventsCount={dbFuelEvents.length}
+          />
+
+          {/* Quick Actions */}
+          <FuelQuickActions 
+            onAddTransaction={() => handleQuickAction('transactions')}
+            onViewAnomalies={() => handleQuickAction('anomalies')}
+            onManageDepots={() => handleQuickAction('depots')}
+          />
+
+          {/* Insights & Trend Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <FuelTrendChart fuelEvents={dbFuelEvents} />
+            <FuelInsightsCard />
           </div>
 
-          {/* Fuel Alerts Panel */}
-          <FuelConsumptionAlertsCard getVehiclePlateFromContext={getVehiclePlate} />
+          {/* Idle Impact & Alerts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <IdleTimeImpactCard />
+            <FuelConsumptionAlertsCard getVehiclePlateFromContext={getVehiclePlate} />
+          </div>
 
           {/* Tabbed Content */}
-          <Tabs defaultValue="events" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
-              <TabsTrigger value="events" className="gap-2">
-                <Droplet className="w-4 h-4" aria-hidden="true" />
-                <span className="hidden sm:inline">Fuel</span> Events
-              </TabsTrigger>
-              <TabsTrigger value="transactions" className="gap-2">
-                <FileText className="w-4 h-4" aria-hidden="true" />
-                Transactions
-              </TabsTrigger>
-              <TabsTrigger value="theft" className="gap-2">
-                <AlertTriangle className="w-4 h-4" aria-hidden="true" />
-                <span className="hidden sm:inline">Theft</span> Cases
-              </TabsTrigger>
-              <TabsTrigger value="depots" className="gap-2">
-                <Warehouse className="w-4 h-4" aria-hidden="true" />
-                Depots
-              </TabsTrigger>
-              <TabsTrigger value="stations" className="gap-2">
-                <MapPin className="w-4 h-4" aria-hidden="true" />
-                Stations
-              </TabsTrigger>
-            </TabsList>
+          <div ref={tabsRef}>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+              <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
+                <TabsTrigger value="events" className="gap-2">
+                  <Droplet className="w-4 h-4" aria-hidden="true" />
+                  <span className="hidden sm:inline">Fuel</span> Events
+                </TabsTrigger>
+                <TabsTrigger value="transactions" className="gap-2">
+                  <FileText className="w-4 h-4" aria-hidden="true" />
+                  Transactions
+                </TabsTrigger>
+                <TabsTrigger value="theft" className="gap-2">
+                  <AlertTriangle className="w-4 h-4" aria-hidden="true" />
+                  <span className="hidden sm:inline">Theft</span> Cases
+                </TabsTrigger>
+                <TabsTrigger value="depots" className="gap-2">
+                  <Warehouse className="w-4 h-4" aria-hidden="true" />
+                  Depots
+                </TabsTrigger>
+                <TabsTrigger value="stations" className="gap-2">
+                  <MapPin className="w-4 h-4" aria-hidden="true" />
+                  Stations
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="events">
-              <FuelEventsTab />
-            </TabsContent>
-            <TabsContent value="transactions">
-              <FuelTransactionsTab />
-            </TabsContent>
-            <TabsContent value="theft">
-              <FuelTheftCasesTab />
-            </TabsContent>
-            <TabsContent value="depots">
-              <FuelDepotsTab />
-            </TabsContent>
-            <TabsContent value="stations">
-              <ApprovedFuelStationsTab />
-            </TabsContent>
-          </Tabs>
+              <TabsContent value="events">
+                <FuelEventsTab />
+              </TabsContent>
+              <TabsContent value="transactions">
+                <FuelTransactionsTab />
+              </TabsContent>
+              <TabsContent value="theft">
+                <FuelTheftCasesTab />
+              </TabsContent>
+              <TabsContent value="depots">
+                <FuelDepotsTab />
+              </TabsContent>
+              <TabsContent value="stations">
+                <ApprovedFuelStationsTab />
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
       </Layout>
     </FuelPageContext.Provider>
