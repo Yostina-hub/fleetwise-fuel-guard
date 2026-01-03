@@ -29,9 +29,18 @@ import {
   ChevronLeft,
   ChevronRight,
   Filter,
-  Car
+  Car,
+  Zap,
+  CheckCircle,
+  XCircle,
+  Clock,
+  MapPin,
+  Gauge,
+  Fuel,
+  Radio
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { TestEndpointResult } from "@/hooks/useDevices";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -46,7 +55,7 @@ const escapeCSV = (value: string | null | undefined): string => {
 };
 
 export const DeviceManagementTab = () => {
-  const { devices, isLoading, createDevice, updateDevice, deleteDevice, testHeartbeat } = useDevices();
+  const { devices, isLoading, createDevice, updateDevice, deleteDevice, testHeartbeat, testEndpoint } = useDevices();
   const { vehicles } = useVehicles();
   const { organizationId } = useOrganization();
   const { toast } = useToast();
@@ -63,6 +72,9 @@ export const DeviceManagementTab = () => {
   const [quickAssignDialogOpen, setQuickAssignDialogOpen] = useState(false);
   const [deviceToAssign, setDeviceToAssign] = useState<any>(null);
   const [assignVehicleId, setAssignVehicleId] = useState("none");
+  const [testResultDialogOpen, setTestResultDialogOpen] = useState(false);
+  const [testResult, setTestResult] = useState<TestEndpointResult | null>(null);
+  const [testingDeviceId, setTestingDeviceId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     vehicle_id: "",
@@ -257,6 +269,21 @@ export const DeviceManagementTab = () => {
       setQuickAssignDialogOpen(false);
       setDeviceToAssign(null);
       setAssignVehicleId("none");
+    }
+  };
+
+  const handleTestEndpoint = async (device: any) => {
+    setTestingDeviceId(device.id);
+    try {
+      const result = await testEndpoint.mutateAsync({
+        id: device.id,
+        imei: device.imei,
+        vehicle_id: device.vehicle_id,
+      });
+      setTestResult(result);
+      setTestResultDialogOpen(true);
+    } finally {
+      setTestingDeviceId(null);
     }
   };
 
@@ -823,13 +850,28 @@ export const DeviceManagementTab = () => {
                     )}
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="bg-primary hover:bg-primary/90 gap-1"
+                        onClick={() => handleTestEndpoint(device)}
+                        disabled={testingDeviceId === device.id || testEndpoint.isPending}
+                        aria-label={`Test GPS endpoint for device ${device.imei}`}
+                      >
+                        {testingDeviceId === device.id ? (
+                          <Activity className="h-4 w-4 animate-pulse" aria-hidden="true" />
+                        ) : (
+                          <Zap className="h-4 w-4" aria-hidden="true" />
+                        )}
+                        Test
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => testHeartbeat.mutate(device.id)}
                         disabled={testHeartbeat.isPending}
-                        aria-label={device.vehicle_id ? `Test heartbeat for device ${device.imei}` : "Assign to vehicle first to test heartbeat"}
+                        aria-label={device.vehicle_id ? `Quick heartbeat for device ${device.imei}` : "Assign to vehicle first"}
                       >
                         <Activity className="h-4 w-4" aria-hidden="true" />
                       </Button>
@@ -1045,6 +1087,138 @@ export const DeviceManagementTab = () => {
               className={vehiclesWithAssignmentStatus.assigned.some(v => v.id === assignVehicleId) ? "bg-amber-600 hover:bg-amber-700" : ""}
             >
               {vehiclesWithAssignmentStatus.assigned.some(v => v.id === assignVehicleId) ? "Reassign Vehicle" : "Assign Vehicle"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Test Result Dialog */}
+      <Dialog open={testResultDialogOpen} onOpenChange={setTestResultDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {testResult?.success ? (
+                <CheckCircle className="h-5 w-5 text-emerald-500" aria-hidden="true" />
+              ) : (
+                <XCircle className="h-5 w-5 text-destructive" aria-hidden="true" />
+              )}
+              GPS Endpoint Test {testResult?.success ? "Successful" : "Failed"}
+            </DialogTitle>
+            <DialogDescription>
+              Results from sending test data to the GPS receiver endpoint
+            </DialogDescription>
+          </DialogHeader>
+          
+          {testResult && (
+            <div className="space-y-4">
+              {/* Status Summary */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-lg border p-3 text-center">
+                  <div className={`text-2xl font-bold ${testResult.success ? 'text-emerald-500' : 'text-destructive'}`}>
+                    {testResult.status}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Status Code</div>
+                </div>
+                <div className="rounded-lg border p-3 text-center">
+                  <div className="text-2xl font-bold text-primary">
+                    {testResult.responseTime}ms
+                  </div>
+                  <div className="text-xs text-muted-foreground">Response Time</div>
+                </div>
+                <div className="rounded-lg border p-3 text-center">
+                  <div className={`text-2xl font-bold ${testResult.success ? 'text-emerald-500' : 'text-destructive'}`}>
+                    {testResult.success ? '✓' : '✗'}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Result</div>
+                </div>
+              </div>
+
+              {/* Request Data */}
+              <div className="rounded-lg border p-4 bg-muted/30">
+                <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                  <Radio className="h-4 w-4" aria-hidden="true" />
+                  Test Data Sent
+                </h4>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Smartphone className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                    <span className="text-muted-foreground">IMEI:</span>
+                    <span className="font-mono">{testResult.request.imei}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Gauge className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                    <span className="text-muted-foreground">Speed:</span>
+                    <span className="font-semibold">{testResult.request.speed} km/h</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                    <span className="text-muted-foreground">Lat:</span>
+                    <span className="font-mono">{testResult.request.lat.toFixed(6)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Fuel className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                    <span className="text-muted-foreground">Fuel:</span>
+                    <span className="font-semibold">{testResult.request.fuel}%</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                    <span className="text-muted-foreground">Lng:</span>
+                    <span className="font-mono">{testResult.request.lng.toFixed(6)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                    <span className="text-muted-foreground">Ignition:</span>
+                    <Badge variant="outline" className="h-5">
+                      {testResult.request.ignition === '1' ? 'ON' : 'OFF'}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              {/* Response Data */}
+              <div className="rounded-lg border p-4">
+                <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                  <Clock className="h-4 w-4" aria-hidden="true" />
+                  Server Response
+                </h4>
+                <pre className="text-xs bg-muted/50 p-3 rounded overflow-x-auto">
+                  {JSON.stringify(testResult.response, null, 2)}
+                </pre>
+              </div>
+
+              {/* What happened */}
+              {testResult.success && (
+                <div className="rounded-lg border border-emerald-500/30 p-4 bg-emerald-500/5">
+                  <h4 className="font-semibold text-sm text-emerald-600 dark:text-emerald-400 mb-2">
+                    ✓ What was processed:
+                  </h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Device heartbeat updated</li>
+                    <li>• GPS telemetry data stored in database</li>
+                    <li>• Speed limits checked against governor config</li>
+                    <li>• Geofence events processed</li>
+                  </ul>
+                </div>
+              )}
+
+              {!testResult.success && (
+                <div className="rounded-lg border border-destructive/30 p-4 bg-destructive/5">
+                  <h4 className="font-semibold text-sm text-destructive mb-2">
+                    Troubleshooting Tips:
+                  </h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Verify the device IMEI is registered correctly</li>
+                    <li>• Ensure the device is assigned to a vehicle for telemetry</li>
+                    <li>• Check that the device status is 'active'</li>
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button onClick={() => setTestResultDialogOpen(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
