@@ -115,15 +115,15 @@ serve(async (req) => {
         );
       }
 
-      // Get speed limit from speed governor config
+      // Get speed limit from speed governor config for this specific vehicle
       const { data: governorConfig } = await supabase
         .from('speed_governor_config')
-        .select('max_speed_kmh')
-        .eq('organization_id', device.organization_id)
-        .eq('is_active', true)
+        .select('max_speed_limit, governor_active')
+        .eq('vehicle_id', device.vehicle_id)
+        .eq('governor_active', true)
         .single();
 
-      const speedLimit = governorConfig?.max_speed_kmh || 80;
+      const speedLimit = governorConfig?.max_speed_limit || 80;
 
       // Check for overspeed and trigger penalty
       if (speedValue > speedLimit) {
