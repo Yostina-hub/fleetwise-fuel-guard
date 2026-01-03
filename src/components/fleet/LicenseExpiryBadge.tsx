@@ -27,10 +27,12 @@ export default function LicenseExpiryBadge({ expiryDate, showDays = true }: Lice
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Badge variant="destructive" className="gap-1">
-              <AlertTriangle className="w-3 h-3" />
-              Expired
-            </Badge>
+            <span className="inline-flex">
+              <Badge variant="destructive" className="gap-1">
+                <AlertTriangle className="w-3 h-3" />
+                Expired
+              </Badge>
+            </span>
           </TooltipTrigger>
           <TooltipContent>
             <p>Expired on {format(expiry, "MMM d, yyyy")}</p>
@@ -47,10 +49,12 @@ export default function LicenseExpiryBadge({ expiryDate, showDays = true }: Lice
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Badge className="bg-warning/10 text-warning border-warning/20 gap-1">
-              <Clock className="w-3 h-3" />
-              {showDays ? `${daysUntilExpiry}d` : "Expiring"}
-            </Badge>
+            <span className="inline-flex">
+              <Badge className="bg-warning/10 text-warning border-warning/20 gap-1">
+                <Clock className="w-3 h-3" />
+                {showDays ? `${daysUntilExpiry}d` : "Expiring"}
+              </Badge>
+            </span>
           </TooltipTrigger>
           <TooltipContent>
             <p>Expires on {format(expiry, "MMM d, yyyy")}</p>
@@ -67,10 +71,12 @@ export default function LicenseExpiryBadge({ expiryDate, showDays = true }: Lice
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Badge variant="outline" className="gap-1">
-              <Clock className="w-3 h-3" />
-              {showDays ? `${daysUntilExpiry}d` : format(expiry, "MMM yyyy")}
-            </Badge>
+            <span className="inline-flex">
+              <Badge variant="outline" className="gap-1">
+                <Clock className="w-3 h-3" />
+                {showDays ? `${daysUntilExpiry}d` : format(expiry, "MMM yyyy")}
+              </Badge>
+            </span>
           </TooltipTrigger>
           <TooltipContent>
             <p>Expires on {format(expiry, "MMM d, yyyy")}</p>
@@ -86,10 +92,12 @@ export default function LicenseExpiryBadge({ expiryDate, showDays = true }: Lice
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Badge className="bg-success/10 text-success border-success/20 gap-1">
-            <CheckCircle className="w-3 h-3" />
-            Valid
-          </Badge>
+          <span className="inline-flex">
+            <Badge className="bg-success/10 text-success border-success/20 gap-1">
+              <CheckCircle className="w-3 h-3" />
+              Valid
+            </Badge>
+          </span>
         </TooltipTrigger>
         <TooltipContent>
           <p>Expires on {format(expiry, "MMM d, yyyy")}</p>

@@ -527,54 +527,61 @@ export default function DriverDetailDialog({ open, onOpenChange, driver }: Drive
               )}
 
               {/* Behavior Scores */}
-              {latestScore && (
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Activity className="w-5 h-5 text-primary" />
-                      Behavior Scores
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Speeding Score</span>
-                      <span className={`font-medium ${getScoreColor(latestScore.speeding_score)}`}>
-                        {latestScore.speeding_score}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Braking Score</span>
-                      <span className={`font-medium ${getScoreColor(latestScore.braking_score)}`}>
-                        {latestScore.braking_score}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Acceleration Score</span>
-                      <span className={`font-medium ${getScoreColor(latestScore.acceleration_score)}`}>
-                        {latestScore.acceleration_score}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Idle Score</span>
-                      <span className={`font-medium ${getScoreColor(latestScore.idle_score)}`}>
-                        {latestScore.idle_score}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-
-            {/* Recent Trips */}
-            {recentTrips.length > 0 && (
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <Route className="w-5 h-5 text-primary" />
-                    Recent Trips
+                    <Activity className="w-5 h-5 text-primary" />
+                    Behavior Scores
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-3">
+                  {latestScore ? (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Speeding Score</span>
+                        <span className={`font-medium ${getScoreColor(latestScore.speeding_score)}`}>
+                          {latestScore.speeding_score}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Braking Score</span>
+                        <span className={`font-medium ${getScoreColor(latestScore.braking_score)}`}>
+                          {latestScore.braking_score}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Acceleration Score</span>
+                        <span className={`font-medium ${getScoreColor(latestScore.acceleration_score)}`}>
+                          {latestScore.acceleration_score}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Idle Score</span>
+                        <span className={`font-medium ${getScoreColor(latestScore.idle_score)}`}>
+                          {latestScore.idle_score}
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-4 text-center">
+                      <Gauge className="w-8 h-8 text-muted-foreground/30 mb-2" />
+                      <p className="text-sm text-muted-foreground">No behavior scores calculated</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Recent Trips */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Route className="w-5 h-5 text-primary" />
+                  Recent Trips
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {recentTrips.length > 0 ? (
                   <div className="space-y-3">
                     {recentTrips.map((trip) => (
                       <div key={trip.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
@@ -598,20 +605,25 @@ export default function DriverDetailDialog({ open, onOpenChange, driver }: Drive
                       </div>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Route className="w-10 h-10 text-muted-foreground/30 mb-2" />
+                    <p className="text-sm text-muted-foreground">No trips recorded yet</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Recent Events */}
-            {recentEvents.length > 0 && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5 text-primary" />
-                    Recent Events
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-primary" />
+                  Recent Events
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {recentEvents.length > 0 ? (
                   <div className="space-y-2">
                     {recentEvents.map((event) => (
                       <div key={event.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
@@ -638,9 +650,15 @@ export default function DriverDetailDialog({ open, onOpenChange, driver }: Drive
                       </div>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Activity className="w-10 h-10 text-muted-foreground/30 mb-2" />
+                    <p className="text-sm text-muted-foreground">No driving events recorded</p>
+                    <p className="text-xs text-muted-foreground">Events like speeding, harsh braking will appear here</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Notes */}
             {driver.notes && (
