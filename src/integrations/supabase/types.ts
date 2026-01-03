@@ -743,6 +743,8 @@ export type Database = {
       devices: {
         Row: {
           apn: string | null
+          auth_token: string | null
+          auth_token_created_at: string | null
           created_at: string
           firmware_version: string | null
           id: string
@@ -764,6 +766,8 @@ export type Database = {
         }
         Insert: {
           apn?: string | null
+          auth_token?: string | null
+          auth_token_created_at?: string | null
           created_at?: string
           firmware_version?: string | null
           id?: string
@@ -785,6 +789,8 @@ export type Database = {
         }
         Update: {
           apn?: string | null
+          auth_token?: string | null
+          auth_token_created_at?: string | null
           created_at?: string
           firmware_version?: string | null
           id?: string
@@ -5927,6 +5933,7 @@ export type Database = {
       }
       vehicle_telemetry: {
         Row: {
+          altitude_meters: number | null
           created_at: string
           device_connected: boolean | null
           engine_on: boolean | null
@@ -5939,15 +5946,18 @@ export type Database = {
           gps_spoofing_detected: boolean | null
           heading: number | null
           id: string
+          ignition_on: boolean | null
           last_communication_at: string | null
           latitude: number | null
           longitude: number | null
+          odometer_km: number | null
           organization_id: string
           speed_kmh: number | null
           updated_at: string
           vehicle_id: string
         }
         Insert: {
+          altitude_meters?: number | null
           created_at?: string
           device_connected?: boolean | null
           engine_on?: boolean | null
@@ -5960,15 +5970,18 @@ export type Database = {
           gps_spoofing_detected?: boolean | null
           heading?: number | null
           id?: string
+          ignition_on?: boolean | null
           last_communication_at?: string | null
           latitude?: number | null
           longitude?: number | null
+          odometer_km?: number | null
           organization_id: string
           speed_kmh?: number | null
           updated_at?: string
           vehicle_id: string
         }
         Update: {
+          altitude_meters?: number | null
           created_at?: string
           device_connected?: boolean | null
           engine_on?: boolean | null
@@ -5981,9 +5994,11 @@ export type Database = {
           gps_spoofing_detected?: boolean | null
           heading?: number | null
           id?: string
+          ignition_on?: boolean | null
           last_communication_at?: string | null
           latitude?: number | null
           longitude?: number | null
+          odometer_km?: number | null
           organization_id?: string
           speed_kmh?: number | null
           updated_at?: string

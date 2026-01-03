@@ -12,6 +12,7 @@ export interface VehicleTelemetry {
   heading?: number;
   fuel_level_percent?: number;
   engine_on: boolean;
+  ignition_on?: boolean;
   device_connected: boolean;
   last_communication_at: string;
   created_at: string;
@@ -22,6 +23,8 @@ export interface VehicleTelemetry {
   gps_fix_type?: 'no_fix' | '2d_fix' | '3d_fix';
   gps_jamming_detected?: boolean;
   gps_spoofing_detected?: boolean;
+  altitude_meters?: number;
+  odometer_km?: number;
 }
 
 export const useVehicleTelemetry = () => {

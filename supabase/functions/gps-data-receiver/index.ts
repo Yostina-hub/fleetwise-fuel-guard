@@ -3,8 +3,404 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-device-token',
 };
+
+// Protocol detection patterns
+const PROTOCOL_PATTERNS = {
+  GT06: /^7878/i,           // GT06 hex prefix
+  TK103: /^imei:/i,         // TK103 IMEI prefix
+  H02: /^\*HQ/,             // H02/Sinotrack protocol
+  OSMAND: /^id=/i,          // OsmAnd/Traccar format
+  TELTONIKA: /^00000000/,   // Teltonika header
+};
+
+// CRC16 checksum calculation for GT06 protocol
+function calculateCRC16(data: Uint8Array): number {
+  const polynomial = 0x8408;
+  let crc = 0xFFFF;
+  for (let i = 0; i < data.length; i++) {
+    crc ^= data[i];
+    for (let j = 0; j < 8; j++) {
+      if (crc & 1) {
+        crc = (crc >> 1) ^ polynomial;
+      } else {
+        crc >>= 1;
+      }
+    }
+  }
+  return crc ^ 0xFFFF;
+}
+
+// Detect protocol from raw data
+function detectProtocol(data: string): string {
+  for (const [protocol, pattern] of Object.entries(PROTOCOL_PATTERNS)) {
+    if (pattern.test(data)) {
+      return protocol;
+    }
+  }
+  // Check if it's JSON
+  try {
+    JSON.parse(data);
+    return 'JSON';
+  } catch {
+    // Check if URL-encoded
+    if (data.includes('=') && (data.includes('imei') || data.includes('lat'))) {
+      return 'URL_ENCODED';
+    }
+  }
+  return 'UNKNOWN';
+}
+
+// Parse different protocol formats
+function parseProtocolData(rawData: string, protocol: string): Record<string, any> | null {
+  switch (protocol) {
+    case 'JSON':
+      return JSON.parse(rawData);
+    
+    case 'URL_ENCODED':
+      const params = new URLSearchParams(rawData);
+      return Object.fromEntries(params.entries());
+    
+    case 'TK103':
+      // Format: imei:355442200988256,tracker,1,0,1,9.0214,38.7624,45.2,90
+      const tk103Match = rawData.match(/imei:(\d+),\w+,(\d+),(\d+),(\d+),([0-9.-]+),([0-9.-]+),([0-9.]+),(\d+)/);
+      if (tk103Match) {
+        return {
+          imei: tk103Match[1],
+          lat: tk103Match[5],
+          lng: tk103Match[6],
+          speed: tk103Match[7],
+          heading: tk103Match[8],
+          ignition: tk103Match[3],
+        };
+      }
+      return null;
+    
+    case 'H02':
+      // Format: *HQ,355442200988256,V1,123456,A,0902.1400,N,03845.7440,E,045.20,090,010123,FFFFFFFF#
+      const h02Match = rawData.match(/\*HQ,(\d+),V1,\d+,A,([0-9.]+),([NS]),([0-9.]+),([EW]),([0-9.]+),(\d+)/);
+      if (h02Match) {
+        let lat = parseFloat(h02Match[2].slice(0, 2)) + parseFloat(h02Match[2].slice(2)) / 60;
+        let lng = parseFloat(h02Match[4].slice(0, 3)) + parseFloat(h02Match[4].slice(3)) / 60;
+        if (h02Match[3] === 'S') lat = -lat;
+        if (h02Match[5] === 'W') lng = -lng;
+        return {
+          imei: h02Match[1],
+          lat: lat.toString(),
+          lng: lng.toString(),
+          speed: h02Match[6],
+          heading: h02Match[7],
+        };
+      }
+      return null;
+    
+    case 'OSMAND':
+      // Format: id=355442200988256&lat=9.0214&lon=38.7624&speed=45&heading=90&altitude=2400
+      const osmandParams = new URLSearchParams(rawData);
+      return {
+        imei: osmandParams.get('id') || osmandParams.get('deviceId'),
+        lat: osmandParams.get('lat'),
+        lng: osmandParams.get('lon') || osmandParams.get('lng'),
+        speed: osmandParams.get('speed'),
+        heading: osmandParams.get('heading') || osmandParams.get('bearing'),
+        altitude: osmandParams.get('altitude') || osmandParams.get('alt'),
+        fuel: osmandParams.get('fuel'),
+        ignition: osmandParams.get('ignition'),
+      };
+    
+    default:
+      return null;
+  }
+}
+
+// Check if this telemetry indicates trip start/end
+async function detectTripTransition(
+  supabase: any,
+  vehicleId: string,
+  organizationId: string,
+  currentIgnition: boolean,
+  lat: number,
+  lng: number
+) {
+  // Get the last telemetry for this vehicle
+  const { data: lastTelemetry } = await supabase
+    .from('vehicle_telemetry')
+    .select('ignition_on, latitude, longitude, created_at')
+    .eq('vehicle_id', vehicleId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  const previousIgnition = lastTelemetry?.ignition_on ?? false;
+
+  // Trip start: ignition turned ON
+  if (currentIgnition && !previousIgnition) {
+    // Get driver for this vehicle
+    const { data: vehicle } = await supabase
+      .from('vehicles')
+      .select('assigned_driver_id')
+      .eq('id', vehicleId)
+      .single();
+
+    const { error: tripError } = await supabase
+      .from('trips')
+      .insert({
+        organization_id: organizationId,
+        vehicle_id: vehicleId,
+        driver_id: vehicle?.assigned_driver_id || null,
+        start_time: new Date().toISOString(),
+        start_location: { lat, lng },
+        status: 'in_progress',
+      });
+
+    if (tripError) {
+      console.error('Error creating trip:', tripError);
+    } else {
+      console.log('Trip started for vehicle:', vehicleId);
+    }
+  }
+
+  // Trip end: ignition turned OFF
+  if (!currentIgnition && previousIgnition) {
+    // Find the active trip and complete it
+    const { data: activeTrip } = await supabase
+      .from('trips')
+      .select('id, start_location, start_time')
+      .eq('vehicle_id', vehicleId)
+      .eq('status', 'in_progress')
+      .order('start_time', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (activeTrip) {
+      const startTime = new Date(activeTrip.start_time);
+      const endTime = new Date();
+      const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / 60000);
+
+      // Calculate approximate distance (simplified - for actual use, sum telemetry points)
+      const startLat = activeTrip.start_location?.lat || lat;
+      const startLng = activeTrip.start_location?.lng || lng;
+      const distance = calculateDistance(startLat, startLng, lat, lng);
+
+      const { error: updateError } = await supabase
+        .from('trips')
+        .update({
+          end_time: endTime.toISOString(),
+          end_location: { lat, lng },
+          duration_minutes: durationMinutes,
+          distance_km: distance,
+          status: 'completed',
+        })
+        .eq('id', activeTrip.id);
+
+      if (updateError) {
+        console.error('Error completing trip:', updateError);
+      } else {
+        console.log('Trip completed for vehicle:', vehicleId);
+      }
+    }
+  }
+}
+
+// Haversine formula to calculate distance between two points
+function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLng/2) * Math.sin(dLng/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return Math.round(R * c * 100) / 100; // Round to 2 decimal places
+}
+
+// Process a single GPS data point
+async function processGPSData(
+  supabase: any,
+  data: Record<string, any>,
+  rawData: string,
+  protocol: string,
+  deviceToken?: string
+) {
+  const {
+    imei,
+    lat,
+    lng,
+    speed,
+    fuel,
+    ignition,
+    altitude,
+    heading,
+    satellites,
+    signal_strength,
+    odometer,
+    hdop,
+    battery,
+  } = data;
+
+  if (!imei || !lat || !lng) {
+    return { error: 'Missing required fields: imei, lat, lng', status: 400 };
+  }
+
+  // Find device by IMEI (optionally verify auth token)
+  let deviceQuery = supabase
+    .from('devices')
+    .select('id, vehicle_id, organization_id, auth_token')
+    .eq('imei', imei);
+
+  const { data: device, error: deviceError } = await deviceQuery.single();
+
+  if (deviceError || !device) {
+    console.error('Device not found:', imei, deviceError);
+    return { error: 'Device not found with IMEI: ' + imei, status: 404 };
+  }
+
+  // Verify auth token if provided and device has one configured
+  if (device.auth_token && deviceToken && device.auth_token !== deviceToken) {
+    console.error('Invalid device token for IMEI:', imei);
+    return { error: 'Invalid device authentication token', status: 401 };
+  }
+
+  // Log raw telemetry for debugging
+  const { error: rawLogError } = await supabase
+    .from('telemetry_raw')
+    .insert({
+      organization_id: device.organization_id,
+      device_id: device.id,
+      protocol: protocol,
+      raw_hex: rawData.substring(0, 1000), // Limit to 1000 chars
+      parsed_payload: data,
+      processing_status: 'processed',
+    });
+
+  if (rawLogError) {
+    console.warn('Error logging raw telemetry:', rawLogError);
+  }
+
+  // Update device heartbeat
+  const { error: heartbeatError } = await supabase
+    .from('devices')
+    .update({ last_heartbeat: new Date().toISOString() })
+    .eq('id', device.id);
+
+  if (heartbeatError) {
+    console.error('Error updating heartbeat:', heartbeatError);
+  }
+
+  // Insert telemetry data if vehicle is linked
+  if (device.vehicle_id) {
+    const speedValue = speed ? parseFloat(speed) : 0;
+    const ignitionState = ignition === '1' || ignition === 'true' || ignition === true;
+    const latValue = parseFloat(lat);
+    const lngValue = parseFloat(lng);
+    
+    // Detect trip start/end based on ignition
+    await detectTripTransition(
+      supabase,
+      device.vehicle_id,
+      device.organization_id,
+      ignitionState,
+      latValue,
+      lngValue
+    );
+
+    const telemetryData = {
+      vehicle_id: device.vehicle_id,
+      organization_id: device.organization_id,
+      latitude: latValue,
+      longitude: lngValue,
+      speed_kmh: speedValue,
+      fuel_level_percent: fuel ? parseFloat(fuel) : null,
+      engine_on: ignitionState,
+      ignition_on: ignitionState,
+      heading: heading ? parseFloat(heading) : null,
+      altitude_meters: altitude ? parseFloat(altitude) : null,
+      odometer_km: odometer ? parseFloat(odometer) : null,
+      gps_satellites_count: satellites ? parseInt(satellites) : null,
+      gps_signal_strength: signal_strength ? parseInt(signal_strength) : null,
+      gps_hdop: hdop ? parseFloat(hdop) : null,
+      device_connected: true,
+      last_communication_at: new Date().toISOString(),
+    };
+
+    console.log('Inserting telemetry data:', telemetryData);
+
+    const { error: telemetryError } = await supabase
+      .from('vehicle_telemetry')
+      .insert(telemetryData);
+
+    if (telemetryError) {
+      console.error('Error inserting telemetry:', telemetryError);
+      return { error: 'Failed to store telemetry data', details: telemetryError.message, status: 500 };
+    }
+
+    // Get speed limit from speed governor config
+    const { data: governorConfig } = await supabase
+      .from('speed_governor_config')
+      .select('max_speed_limit, governor_active')
+      .eq('vehicle_id', device.vehicle_id)
+      .eq('governor_active', true)
+      .single();
+
+    const speedLimit = governorConfig?.max_speed_limit || 80;
+
+    // Check for overspeed and trigger penalty
+    if (speedValue > speedLimit) {
+      const { data: vehicleData } = await supabase
+        .from('vehicles')
+        .select('assigned_driver_id')
+        .eq('id', device.vehicle_id)
+        .single();
+
+      if (vehicleData?.assigned_driver_id) {
+        try {
+          await supabase.functions.invoke('process-driver-penalties', {
+            body: {
+              action: 'process_overspeed',
+              data: {
+                organization_id: device.organization_id,
+                driver_id: vehicleData.assigned_driver_id,
+                vehicle_id: device.vehicle_id,
+                speed_kmh: speedValue,
+                speed_limit_kmh: speedLimit,
+                lat: latValue,
+                lng: lngValue,
+                violation_time: new Date().toISOString(),
+              },
+            },
+          });
+          console.log('Overspeed penalty triggered for driver:', vehicleData.assigned_driver_id);
+        } catch (penaltyError) {
+          console.error('Error triggering overspeed penalty:', penaltyError);
+        }
+      }
+    }
+
+    // Trigger geofence processing
+    try {
+      await supabase.functions.invoke('process-geofence-events', {
+        body: {
+          vehicle_id: device.vehicle_id,
+          lat: latValue,
+          lng: lngValue,
+          speed_kmh: speedValue,
+          organization_id: device.organization_id,
+        },
+      });
+    } catch (geofenceError) {
+      console.error('Error processing geofence events:', geofenceError);
+    }
+  }
+
+  return { 
+    success: true, 
+    message: 'GPS data received successfully',
+    device_id: device.id,
+    protocol: protocol,
+  };
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -17,169 +413,85 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Get optional device token from header
+    const deviceToken = req.headers.get('x-device-token') || undefined;
+
     // Parse incoming GPS data
     const contentType = req.headers.get('content-type');
-    let data;
+    let rawData: string;
+    let parsedData: Record<string, any> | null = null;
+    let protocol = 'UNKNOWN';
 
     if (contentType?.includes('application/json')) {
-      data = await req.json();
+      rawData = await req.text();
+      const jsonData = JSON.parse(rawData);
+      
+      // Check for batch data
+      if (Array.isArray(jsonData)) {
+        // Batch processing
+        console.log(`Processing batch of ${jsonData.length} GPS records`);
+        const results = [];
+        
+        for (const item of jsonData) {
+          const result = await processGPSData(supabase, item, JSON.stringify(item), 'JSON', deviceToken);
+          results.push(result);
+        }
+        
+        const successCount = results.filter(r => r.success).length;
+        const errorCount = results.length - successCount;
+        
+        return new Response(
+          JSON.stringify({ 
+            success: true,
+            batch: true,
+            total: results.length,
+            successful: successCount,
+            failed: errorCount,
+            results: results.slice(0, 10), // Return first 10 results
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      protocol = 'JSON';
+      parsedData = jsonData;
     } else {
       // Handle URL-encoded or text data
-      const text = await req.text();
-      console.log('Received GPS data:', text);
+      rawData = await req.text();
+      console.log('Received GPS data:', rawData);
       
-      // Parse common GPS tracker formats (GT06, YTWL protocol)
-      // Example expected format: imei=355442200988256&lat=9.0214&lng=38.7624&speed=45&fuel=75&ignition=1
-      const params = new URLSearchParams(text);
-      data = Object.fromEntries(params.entries());
+      // Detect protocol
+      protocol = detectProtocol(rawData);
+      console.log('Detected protocol:', protocol);
+      
+      // Parse based on detected protocol
+      parsedData = parseProtocolData(rawData, protocol);
     }
 
-    console.log('Parsed GPS data:', data);
-
-    const {
-      imei,
-      lat,
-      lng,
-      speed,
-      fuel,
-      ignition,
-      altitude,
-      heading,
-      satellites,
-      signal_strength
-    } = data;
-
-    if (!imei || !lat || !lng) {
+    if (!parsedData) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: imei, lat, lng' }),
+        JSON.stringify({ 
+          error: 'Unable to parse GPS data',
+          protocol: protocol,
+          hint: 'Supported formats: JSON, URL-encoded, TK103, H02, OsmAnd'
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Find device by IMEI
-    const { data: device, error: deviceError } = await supabase
-      .from('devices')
-      .select('id, vehicle_id, organization_id')
-      .eq('imei', imei)
-      .single();
+    console.log('Parsed GPS data:', parsedData);
 
-    if (deviceError || !device) {
-      console.error('Device not found:', imei, deviceError);
+    const result = await processGPSData(supabase, parsedData, rawData, protocol, deviceToken);
+    
+    if (result.error) {
       return new Response(
-        JSON.stringify({ error: 'Device not found with IMEI: ' + imei }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify(result),
+        { status: result.status || 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Update device heartbeat
-    const { error: heartbeatError } = await supabase
-      .from('devices')
-      .update({ last_heartbeat: new Date().toISOString() })
-      .eq('id', device.id);
-
-    if (heartbeatError) {
-      console.error('Error updating heartbeat:', heartbeatError);
-    }
-
-    // Insert telemetry data if vehicle is linked
-    if (device.vehicle_id) {
-      const speedValue = speed ? parseFloat(speed) : 0;
-      
-      // Map to correct column names matching vehicle_telemetry table schema
-      const telemetryData = {
-        vehicle_id: device.vehicle_id,
-        organization_id: device.organization_id,
-        latitude: parseFloat(lat),
-        longitude: parseFloat(lng),
-        speed_kmh: speedValue,
-        fuel_level_percent: fuel ? parseFloat(fuel) : null,
-        engine_on: ignition === '1' || ignition === 'true',
-        heading: heading ? parseFloat(heading) : null,
-        gps_satellites_count: satellites ? parseInt(satellites) : null,
-        gps_signal_strength: signal_strength ? parseInt(signal_strength) : null,
-        device_connected: true,
-        last_communication_at: new Date().toISOString(),
-      };
-
-      console.log('Inserting telemetry data:', telemetryData);
-
-      const { error: telemetryError } = await supabase
-        .from('vehicle_telemetry')
-        .insert(telemetryData);
-
-      if (telemetryError) {
-        console.error('Error inserting telemetry:', telemetryError);
-        return new Response(
-          JSON.stringify({ error: 'Failed to store telemetry data', details: telemetryError.message }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      // Get speed limit from speed governor config for this specific vehicle
-      const { data: governorConfig } = await supabase
-        .from('speed_governor_config')
-        .select('max_speed_limit, governor_active')
-        .eq('vehicle_id', device.vehicle_id)
-        .eq('governor_active', true)
-        .single();
-
-      const speedLimit = governorConfig?.max_speed_limit || 80;
-
-      // Check for overspeed and trigger penalty
-      if (speedValue > speedLimit) {
-        // Get driver_id for the vehicle
-        const { data: vehicleData } = await supabase
-          .from('vehicles')
-          .select('assigned_driver_id')
-          .eq('id', device.vehicle_id)
-          .single();
-
-        if (vehicleData?.assigned_driver_id) {
-          try {
-            await supabase.functions.invoke('process-driver-penalties', {
-              body: {
-                action: 'process_overspeed',
-                data: {
-                  organization_id: device.organization_id,
-                  driver_id: vehicleData.assigned_driver_id,
-                  vehicle_id: device.vehicle_id,
-                  speed_kmh: speedValue,
-                  speed_limit_kmh: speedLimit,
-                  lat: parseFloat(lat),
-                  lng: parseFloat(lng),
-                  violation_time: new Date().toISOString(),
-                },
-              },
-            });
-            console.log('Overspeed penalty triggered for driver:', vehicleData.assigned_driver_id);
-          } catch (penaltyError) {
-            console.error('Error triggering overspeed penalty:', penaltyError);
-          }
-        }
-      }
-
-      // Trigger geofence processing
-      try {
-        await supabase.functions.invoke('process-geofence-events', {
-          body: {
-            vehicle_id: device.vehicle_id,
-            lat: parseFloat(lat),
-            lng: parseFloat(lng),
-            speed_kmh: speedValue,
-            organization_id: device.organization_id,
-          },
-        });
-      } catch (geofenceError) {
-        console.error('Error processing geofence events:', geofenceError);
-      }
-    }
-
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: 'GPS data received successfully',
-        device_id: device.id 
-      }),
+      JSON.stringify(result),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
