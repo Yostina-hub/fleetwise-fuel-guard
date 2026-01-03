@@ -65,7 +65,8 @@ export const useDevices = () => {
         .from("devices")
         .select(`
           *,
-          vehicles(plate_number, make, model)
+          vehicles(plate_number, make, model),
+          device_protocols(id, vendor, protocol_name, version, is_active)
         `)
         .eq("organization_id", organizationId)
         .order("created_at", { ascending: false });

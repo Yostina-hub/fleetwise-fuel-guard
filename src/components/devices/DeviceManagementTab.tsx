@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useDevices } from "@/hooks/useDevices";
 import { useVehicles } from "@/hooks/useVehicles";
+import { useDeviceProtocols } from "@/hooks/useDeviceProtocols";
 import { useToast } from "@/hooks/use-toast";
 import { useOrganization } from "@/hooks/useOrganization";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,6 +63,7 @@ const escapeCSV = (value: string | null | undefined): string => {
 export const DeviceManagementTab = () => {
   const { devices, isLoading, createDevice, updateDevice, deleteDevice, testHeartbeat, testEndpoint, generateAuthToken, revokeAuthToken } = useDevices();
   const { vehicles } = useVehicles();
+  const { protocols } = useDeviceProtocols();
   const { organizationId } = useOrganization();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -87,6 +89,7 @@ export const DeviceManagementTab = () => {
 
   const [formData, setFormData] = useState({
     vehicle_id: "",
+    protocol_id: "",
     imei: "",
     tracker_model: "",
     serial_number: "",
@@ -163,6 +166,7 @@ export const DeviceManagementTab = () => {
   const resetForm = () => {
     setFormData({
       vehicle_id: "",
+      protocol_id: "",
       imei: "",
       tracker_model: "",
       serial_number: "",
@@ -183,6 +187,7 @@ export const DeviceManagementTab = () => {
     setEditingDevice(device);
     setFormData({
       vehicle_id: device.vehicle_id || "",
+      protocol_id: device.protocol_id || "",
       imei: device.imei || "",
       tracker_model: device.tracker_model || "",
       serial_number: device.serial_number || "",
@@ -589,6 +594,34 @@ export const DeviceManagementTab = () => {
                   )}
                 </div>
 
+                <div className="space-y-2 col-span-2">
+                  <Label htmlFor="protocol">Device Protocol</Label>
+                  <Select
+                    value={formData.protocol_id || "none"}
+                    onValueChange={(value) => setFormData({ ...formData, protocol_id: value === "none" ? "" : value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select protocol" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Auto-detect protocol</SelectItem>
+                      {protocols?.filter(p => p.is_active !== false).map((protocol) => (
+                        <SelectItem key={protocol.id} value={protocol.id}>
+                          <div className="flex items-center gap-2">
+                            <span>{protocol.vendor}</span>
+                            <Badge variant="outline" className="text-xs">
+                              {protocol.protocol_name}
+                            </Badge>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Select a configured protocol decoder or leave as auto-detect
+                  </p>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="serial_number">Serial Number</Label>
                   <Input
@@ -801,6 +834,7 @@ export const DeviceManagementTab = () => {
                 <TableHead>Vehicle</TableHead>
                 <TableHead>IMEI</TableHead>
                 <TableHead>Tracker Model</TableHead>
+                <TableHead>Protocol</TableHead>
                 <TableHead>SIM Card</TableHead>
                 <TableHead>Heartbeat</TableHead>
                 <TableHead>Connection</TableHead>
@@ -854,6 +888,15 @@ export const DeviceManagementTab = () => {
                     {device.imei}
                   </TableCell>
                   <TableCell>{device.tracker_model}</TableCell>
+                  <TableCell>
+                    {device.device_protocols ? (
+                      <Badge variant="outline" className="text-xs">
+                        {device.device_protocols.protocol_name}
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Not set</span>
+                    )}
+                  </TableCell>
                   <TableCell className="font-mono text-sm">
                     <div className="flex items-center gap-2">
                       <Smartphone className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
