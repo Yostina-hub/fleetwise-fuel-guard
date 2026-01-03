@@ -399,6 +399,19 @@ async function processGPSData(
     return { error: 'Invalid device authentication token', status: 401 };
   }
 
+  // Update device last_heartbeat
+  const { error: heartbeatError } = await supabase
+    .from('devices')
+    .update({ 
+      last_heartbeat: new Date().toISOString(),
+      status: 'active'
+    })
+    .eq('id', device.id);
+
+  if (heartbeatError) {
+    console.warn('Error updating device heartbeat:', heartbeatError);
+  }
+
   // Log raw telemetry for debugging
   const { error: rawLogError } = await supabase
     .from('telemetry_raw')
@@ -441,6 +454,23 @@ async function processGPSData(
       lngValue
     );
 
+    // Extract extended telemetry fields
+    const {
+      engine_hours,
+      battery_voltage,
+      external_voltage,
+      gsm_signal,
+      temperature_1,
+      temperature_2,
+      driver_rfid,
+      harsh_acceleration,
+      harsh_braking,
+      harsh_cornering,
+      dtc_codes,
+      can_data,
+      io_elements,
+    } = data;
+
     const telemetryData = {
       vehicle_id: device.vehicle_id,
       organization_id: device.organization_id,
@@ -458,6 +488,20 @@ async function processGPSData(
       gps_hdop: hdop ? parseFloat(hdop) : null,
       device_connected: true,
       last_communication_at: new Date().toISOString(),
+      // Extended telemetry fields
+      engine_hours: engine_hours ? parseFloat(engine_hours) : null,
+      battery_voltage: battery_voltage ? parseFloat(battery_voltage) : null,
+      external_voltage: external_voltage ? parseFloat(external_voltage) : null,
+      gsm_signal_strength: gsm_signal ? parseInt(gsm_signal) : null,
+      temperature_1: temperature_1 ? parseFloat(temperature_1) : null,
+      temperature_2: temperature_2 ? parseFloat(temperature_2) : null,
+      driver_rfid: driver_rfid || null,
+      harsh_acceleration: harsh_acceleration === true || harsh_acceleration === '1',
+      harsh_braking: harsh_braking === true || harsh_braking === '1',
+      harsh_cornering: harsh_cornering === true || harsh_cornering === '1',
+      dtc_codes: dtc_codes || null,
+      can_data: can_data || null,
+      io_elements: io_elements || null,
     };
 
     console.log('Inserting telemetry data:', telemetryData);

@@ -4,15 +4,18 @@
  * Receives raw GPS data and forwards parsed telemetry to Supabase Edge Function.
  * 
  * Supported Protocols with FULL PARSING:
- * - GT06/Concox (Binary) - Port 5001 - Login, Location, Heartbeat, Alarm
- * - TK103 (Text) - Port 5013 - Multiple formats supported
- * - H02/Sinotrack (Text) - Port 5023 - V1, V4, HTBT commands
- * - Teltonika Codec 8/8E (Binary) - Port 5027 - Full AVL data parsing
+ * - GT06/Concox (Binary) - Port 5001 (TCP+UDP) - Login, Location, Heartbeat, Alarm
+ * - TK103 (Text) - Port 5013 (TCP+UDP) - Multiple formats supported
+ * - H02/Sinotrack (Text) - Port 5023 (TCP+UDP) - V1, V4, HTBT commands
+ * - Teltonika Codec 8/8E (Binary) - Port 5027 (TCP) - Full AVL data parsing
+ * - Queclink (Text) - Port 5030 (TCP) - AT-style commands, GV series
+ * - Ruptela (Binary) - Port 5031 (TCP) - Binary with IO elements
+ * - YTWL Speed Governor (Text) - Port 5032 (TCP) - Speed limiter devices
  * 
  * Environment variables:
  *   SUPABASE_URL - Your Supabase project URL
  *   SUPABASE_ANON_KEY - Your Supabase anon key
- *   GT06_PORT, TK103_PORT, H02_PORT, TELTONIKA_PORT - Protocol ports
+ *   GT06_PORT, TK103_PORT, H02_PORT, TELTONIKA_PORT, QUECLINK_PORT, RUPTELA_PORT, YTWL_PORT - Protocol ports
  *   HEALTH_PORT - Health check HTTP port (default: 8080)
  *   LOG_LEVEL - debug, info, warn, error (default: info)
  */
@@ -33,6 +36,9 @@ const config = {
     tk103: parseInt(process.env.TK103_PORT) || 5013,
     h02: parseInt(process.env.H02_PORT) || 5023,
     teltonika: parseInt(process.env.TELTONIKA_PORT) || 5027,
+    queclink: parseInt(process.env.QUECLINK_PORT) || 5030,
+    ruptela: parseInt(process.env.RUPTELA_PORT) || 5031,
+    ytwl: parseInt(process.env.YTWL_PORT) || 5032,
     health: parseInt(process.env.HEALTH_PORT) || 8080
   }
 };
@@ -43,6 +49,9 @@ const stats = {
   tk103: { received: 0, forwarded: 0, errors: 0, parsed: 0 },
   h02: { received: 0, forwarded: 0, errors: 0, parsed: 0 },
   teltonika: { received: 0, forwarded: 0, errors: 0, parsed: 0 },
+  queclink: { received: 0, forwarded: 0, errors: 0, parsed: 0 },
+  ruptela: { received: 0, forwarded: 0, errors: 0, parsed: 0 },
+  ytwl: { received: 0, forwarded: 0, errors: 0, parsed: 0 },
   startTime: new Date()
 };
 
@@ -424,6 +433,250 @@ function generateTeltonikaResponse(type, recordCount) {
   return resp;
 }
 
+// ==================== QUECLINK PROTOCOL PARSER ====================
+
+function parseQueclink(data) {
+  try {
+    const text = data.toString().trim();
+    const result = { protocol: 'queclink', raw: text };
+    
+    // Queclink uses AT command style: +RESP:GTFRI,... or +ACK:...
+    if (text.startsWith('+RESP:') || text.startsWith('+BUFF:')) {
+      const parts = text.split(',');
+      const msgType = parts[0].split(':')[1];
+      
+      result.messageType = msgType;
+      result.protocolVersion = parts[1];
+      result.imei = parts[2];
+      
+      if (msgType === 'GTFRI' || msgType === 'GTGEO' || msgType === 'GTSPD') {
+        result.type = 'location';
+        // Parse FRI message: accuracy, speed, heading, altitude, lng, lat, timestamp
+        const gpsIdx = parts.findIndex((p, i) => i > 5 && /^-?\d+\.\d+$/.test(p));
+        if (gpsIdx > 0 && gpsIdx + 1 < parts.length) {
+          result.longitude = parseFloat(parts[gpsIdx]);
+          result.latitude = parseFloat(parts[gpsIdx + 1]);
+          result.altitude = parseFloat(parts[gpsIdx - 1]) || 0;
+          result.course = parseFloat(parts[gpsIdx - 2]) || 0;
+          result.speed = parseFloat(parts[gpsIdx - 3]) || 0;
+        }
+        // Mileage and engine hours if available
+        if (parts.length > gpsIdx + 5) {
+          result.odometer = parseFloat(parts[gpsIdx + 4]) || null;
+          result.engineHours = parseFloat(parts[gpsIdx + 5]) || null;
+        }
+        log('info', 'queclink', 'Location', { lat: result.latitude, lng: result.longitude });
+      } else if (msgType === 'GTHBD') {
+        result.type = 'heartbeat';
+      } else if (msgType === 'GTINF') {
+        result.type = 'info';
+      }
+      
+      return result;
+    }
+    
+    // ACK response
+    if (text.startsWith('+ACK:')) {
+      result.type = 'ack';
+      return result;
+    }
+    
+    result.type = 'unknown';
+    return result;
+  } catch (e) {
+    log('error', 'queclink', 'Parse error', { error: e.message });
+    return null;
+  }
+}
+
+function generateQueclinkResponse(type) {
+  // Queclink requires +SACK response for FRI messages
+  return Buffer.from('+SACK:GTHBD,,0001$');
+}
+
+// ==================== RUPTELA PROTOCOL PARSER ====================
+
+function parseRuptela(buffer) {
+  try {
+    if (buffer.length < 10) return null;
+    
+    const result = { protocol: 'ruptela', raw: buffer.toString('hex') };
+    
+    // Ruptela format: 2-byte length + IMEI (8 bytes BCD) + command + data + CRC
+    const packetLength = buffer.readUInt16BE(0);
+    
+    if (buffer.length < packetLength + 2) return null;
+    
+    // Extract IMEI (8 bytes, BCD encoded)
+    const imeiBcd = buffer.slice(2, 10);
+    result.imei = imeiBcd.toString('hex').replace(/^0+/, '');
+    
+    const commandId = buffer.readUInt8(10);
+    
+    if (commandId === 0x01) {
+      result.type = 'records';
+      const recordCount = buffer.readUInt8(11);
+      result.recordCount = recordCount;
+      result.records = [];
+      
+      let offset = 12;
+      for (let i = 0; i < recordCount && offset + 21 < buffer.length; i++) {
+        const record = {};
+        record.timestamp = new Date(buffer.readUInt32BE(offset) * 1000).toISOString();
+        offset += 4;
+        record.priority = buffer.readUInt8(offset++);
+        record.longitude = buffer.readInt32BE(offset) / 10000000;
+        offset += 4;
+        record.latitude = buffer.readInt32BE(offset) / 10000000;
+        offset += 4;
+        record.altitude = buffer.readInt16BE(offset);
+        offset += 2;
+        record.course = buffer.readUInt16BE(offset);
+        offset += 2;
+        record.satellites = buffer.readUInt8(offset++);
+        record.speed = buffer.readUInt16BE(offset);
+        offset += 2;
+        record.hdop = buffer.readUInt8(offset++) / 10;
+        
+        // IO elements
+        const ioCount = buffer.readUInt8(offset++);
+        record.ioElements = {};
+        for (let j = 0; j < ioCount && offset + 3 <= buffer.length; j++) {
+          const ioId = buffer.readUInt8(offset++);
+          const ioValue = buffer.readUInt16BE(offset);
+          offset += 2;
+          record.ioElements[ioId] = ioValue;
+        }
+        
+        result.records.push(record);
+      }
+      
+      if (result.records.length > 0) {
+        const r = result.records[0];
+        Object.assign(result, {
+          latitude: r.latitude, longitude: r.longitude, speed: r.speed,
+          course: r.course, altitude: r.altitude, satellites: r.satellites,
+          timestamp: r.timestamp, ioElements: r.ioElements
+        });
+        result.type = 'location';
+      }
+      
+      log('info', 'ruptela', 'Records parsed', { count: recordCount, lat: result.latitude });
+    } else if (commandId === 0x00) {
+      result.type = 'heartbeat';
+    }
+    
+    return result;
+  } catch (e) {
+    log('error', 'ruptela', 'Parse error', { error: e.message });
+    return null;
+  }
+}
+
+function generateRuptelaResponse(type, recordCount) {
+  // Ruptela ACK: 2-byte length + command + record count
+  const resp = Buffer.alloc(5);
+  resp.writeUInt16BE(2, 0);
+  resp.writeUInt8(0x64, 2); // ACK command
+  resp.writeUInt8(recordCount || 0, 3);
+  resp.writeUInt8(0x00, 4); // CRC placeholder
+  return resp;
+}
+
+// ==================== YTWL SPEED GOVERNOR PARSER ====================
+
+function parseYTWL(data) {
+  try {
+    const text = data.toString().trim();
+    const result = { protocol: 'ytwl', raw: text };
+    
+    // YTWL format varies - common: *IMEI,CMD,DATA#
+    // Example: *866771044567890,V1,123456,A,0902.1400,N,03845.7440,E,45.2,090,010125#
+    
+    let match = text.match(/^\*(\d+),(\w+),(.*)#$/);
+    if (match) {
+      result.imei = match[1];
+      const cmd = match[2];
+      const dataStr = match[3];
+      
+      if (cmd === 'V1' || cmd === 'V2' || cmd === 'GPS') {
+        result.type = 'location';
+        
+        // Parse GPS data: time,valid,lat,N/S,lng,E/W,speed,course,date
+        const parts = dataStr.split(',');
+        if (parts.length >= 9) {
+          const valid = parts[1];
+          result.gpsValid = valid === 'A';
+          
+          let latVal = parseFloat(parts[2]);
+          result.latitude = Math.floor(latVal / 100) + (latVal % 100) / 60;
+          if (parts[3] === 'S') result.latitude = -result.latitude;
+          
+          let lngVal = parseFloat(parts[4]);
+          result.longitude = Math.floor(lngVal / 100) + (lngVal % 100) / 60;
+          if (parts[5] === 'W') result.longitude = -result.longitude;
+          
+          result.speed = parseFloat(parts[6]) || 0;
+          result.course = parseFloat(parts[7]) || 0;
+          
+          // Parse timestamp from time and date fields
+          if (parts[0] && parts[8]) {
+            const time = parts[0];
+            const date = parts[8];
+            result.timestamp = new Date(
+              2000 + parseInt(date.substring(4, 6)),
+              parseInt(date.substring(2, 4)) - 1,
+              parseInt(date.substring(0, 2)),
+              parseInt(time.substring(0, 2)),
+              parseInt(time.substring(2, 4)),
+              parseInt(time.substring(4, 6))
+            ).toISOString();
+          }
+          
+          // Speed governor specific fields
+          if (parts.length > 9) {
+            result.speedLimit = parseFloat(parts[9]) || null;
+            result.governorActive = parts[10] === '1';
+          }
+        }
+        
+        log('info', 'ytwl', 'Location', { lat: result.latitude, lng: result.longitude, speed: result.speed });
+      } else if (cmd === 'HB' || cmd === 'HEATBEAT') {
+        result.type = 'heartbeat';
+      } else if (cmd === 'LK' || cmd === 'LOGIN') {
+        result.type = 'login';
+      } else if (cmd === 'ALARM') {
+        result.type = 'alarm';
+        result.alarmType = dataStr;
+      }
+      
+      return result;
+    }
+    
+    // Alternative JSON-like format from HTTP config
+    if (text.startsWith('{')) {
+      try {
+        const json = JSON.parse(text);
+        result.type = 'location';
+        result.imei = json.imei || json.id;
+        result.latitude = parseFloat(json.lat);
+        result.longitude = parseFloat(json.lng || json.lon);
+        result.speed = parseFloat(json.speed) || 0;
+        result.course = parseFloat(json.heading || json.course) || 0;
+        result.ignition = json.ignition === true || json.ignition === '1';
+        result.timestamp = json.timestamp || new Date().toISOString();
+        return result;
+      } catch {}
+    }
+    
+    result.type = 'unknown';
+    return result;
+  } catch (e) {
+    log('error', 'ytwl', 'Parse error', { error: e.message });
+    return null;
+  }
+}
+
 // ==================== FORWARD TO EDGE FUNCTION ====================
 
 async function forwardToEdgeFunction(protocol, parsed, rawData) {
@@ -570,22 +823,64 @@ const healthServer = http.createServer((req, res) => {
   }
 });
 
+// ==================== UDP SERVER FACTORY ====================
+
+function createUDPServer(protocol, port, parser) {
+  const server = dgram.createSocket('udp4');
+  
+  server.on('message', async (msg, rinfo) => {
+    stats[protocol].received++;
+    log('debug', protocol, 'UDP received', { from: `${rinfo.address}:${rinfo.port}`, length: msg.length });
+    
+    try {
+      const parsed = parser(msg);
+      if (parsed && parsed.imei) {
+        stats[protocol].parsed++;
+        
+        if (parsed.type === 'location' || parsed.type === 'login') {
+          await forwardToEdgeFunction(protocol, parsed, msg);
+        }
+      }
+    } catch (e) {
+      stats[protocol].errors++;
+      log('error', protocol, 'UDP processing error', { error: e.message });
+    }
+  });
+  
+  server.on('error', (e) => log('error', protocol, 'UDP server error', { error: e.message }));
+  server.bind(port, () => log('info', protocol, `UDP listening on port ${port}`));
+  return server;
+}
+
 // ==================== START ALL SERVERS ====================
 
-console.log('╔════════════════════════════════════════════════════════════╗');
-console.log('║       GPS TCP Gateway - Full Protocol Parsing              ║');
-console.log('╠════════════════════════════════════════════════════════════╣');
-console.log(`║ GT06/Concox   (TCP) → Port ${config.ports.gt06.toString().padEnd(5)} │ Binary, full parsing  ║`);
-console.log(`║ TK103         (TCP) → Port ${config.ports.tk103.toString().padEnd(5)} │ Text, multi-format    ║`);
-console.log(`║ H02/Sinotrack (TCP) → Port ${config.ports.h02.toString().padEnd(5)} │ Text, full parsing    ║`);
-console.log(`║ Teltonika     (TCP) → Port ${config.ports.teltonika.toString().padEnd(5)} │ Codec 8/8E, AVL data  ║`);
-console.log(`║ Health Check  (HTTP)→ Port ${config.ports.health.toString().padEnd(5)} │ /health, /stats       ║`);
-console.log('╚════════════════════════════════════════════════════════════╝');
+console.log('╔════════════════════════════════════════════════════════════════╗');
+console.log('║       GPS TCP/UDP Gateway - Full Protocol Parsing              ║');
+console.log('╠════════════════════════════════════════════════════════════════╣');
+console.log(`║ GT06/Concox   (TCP/UDP) → Port ${config.ports.gt06.toString().padEnd(5)} │ Binary, full parsing  ║`);
+console.log(`║ TK103         (TCP/UDP) → Port ${config.ports.tk103.toString().padEnd(5)} │ Text, multi-format    ║`);
+console.log(`║ H02/Sinotrack (TCP/UDP) → Port ${config.ports.h02.toString().padEnd(5)} │ Text, full parsing    ║`);
+console.log(`║ Teltonika     (TCP)     → Port ${config.ports.teltonika.toString().padEnd(5)} │ Codec 8/8E, AVL data  ║`);
+console.log(`║ Queclink      (TCP)     → Port ${config.ports.queclink.toString().padEnd(5)} │ AT-style commands     ║`);
+console.log(`║ Ruptela       (TCP)     → Port ${config.ports.ruptela.toString().padEnd(5)} │ Binary with IO        ║`);
+console.log(`║ YTWL Gov      (TCP)     → Port ${config.ports.ytwl.toString().padEnd(5)} │ Speed governor        ║`);
+console.log(`║ Health Check  (HTTP)    → Port ${config.ports.health.toString().padEnd(5)} │ /health, /stats       ║`);
+console.log('╚════════════════════════════════════════════════════════════════╝');
 
+// TCP Servers
 createTCPServer('gt06', config.ports.gt06, parseGT06, generateGT06Response);
 createTCPServer('tk103', config.ports.tk103, parseTK103, generateTK103Response);
 createTCPServer('h02', config.ports.h02, parseH02, null);
 createTCPServer('teltonika', config.ports.teltonika, parseTeltonika, generateTeltonikaResponse);
+createTCPServer('queclink', config.ports.queclink, parseQueclink, generateQueclinkResponse);
+createTCPServer('ruptela', config.ports.ruptela, parseRuptela, generateRuptelaResponse);
+createTCPServer('ytwl', config.ports.ytwl, parseYTWL, null);
+
+// UDP Servers (for protocols that support it)
+createUDPServer('gt06', config.ports.gt06, parseGT06);
+createUDPServer('tk103', config.ports.tk103, parseTK103);
+createUDPServer('h02', config.ports.h02, parseH02);
+
 healthServer.listen(config.ports.health, () => log('info', 'health', `Listening on port ${config.ports.health}`));
 
 process.on('SIGTERM', () => process.exit(0));
