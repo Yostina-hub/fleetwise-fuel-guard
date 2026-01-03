@@ -1,7 +1,7 @@
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { Settings, Shield, Lock, Globe, Scale, History, Mail } from "lucide-react";
+import { Settings, Shield, Lock, Globe, Scale, History, Mail, AlertTriangle } from "lucide-react";
 import OrganizationSettingsTab from "@/components/admin/OrganizationSettingsTab";
 import SSOConfigTab from "@/components/admin/SSOConfigTab";
 import PasswordPoliciesTab from "@/components/admin/PasswordPoliciesTab";
@@ -9,6 +9,8 @@ import IPAllowlistTab from "@/components/admin/IPAllowlistTab";
 import LegalHoldsTab from "@/components/admin/LegalHoldsTab";
 import LoginHistoryTab from "@/components/admin/LoginHistoryTab";
 import { EmailReportsTab } from "@/components/admin/EmailReportsTab";
+import { PenaltyConfigTab } from "@/components/admin/PenaltyConfigTab";
+import { DriverPenaltiesTab } from "@/components/admin/DriverPenaltiesTab";
 
 const Administration = () => {
   return (
@@ -25,7 +27,7 @@ const Administration = () => {
       </div>
 
       <Tabs defaultValue="org-settings" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="flex flex-wrap w-full gap-1">
           <TabsTrigger value="org-settings" className="gap-2">
             <Globe className="h-4 w-4" aria-hidden="true" />
             Organization
@@ -53,6 +55,14 @@ const Administration = () => {
           <TabsTrigger value="email-reports" className="gap-2">
             <Mail className="h-4 w-4" aria-hidden="true" />
             Email Reports
+          </TabsTrigger>
+          <TabsTrigger value="penalty-config" className="gap-2">
+            <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+            Penalty Rules
+          </TabsTrigger>
+          <TabsTrigger value="penalties" className="gap-2">
+            <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+            Driver Penalties
           </TabsTrigger>
         </TabsList>
 
@@ -96,6 +106,14 @@ const Administration = () => {
           <Card className="p-6">
             <EmailReportsTab />
           </Card>
+        </TabsContent>
+
+        <TabsContent value="penalty-config">
+          <PenaltyConfigTab />
+        </TabsContent>
+
+        <TabsContent value="penalties">
+          <DriverPenaltiesTab />
         </TabsContent>
       </Tabs>
     </div>

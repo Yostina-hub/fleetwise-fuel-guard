@@ -1401,6 +1401,204 @@ export type Database = {
           },
         ]
       }
+      driver_penalties: {
+        Row: {
+          appeal_reason: string | null
+          appeal_submitted_at: string | null
+          created_at: string
+          driver_id: string
+          geofence_id: string | null
+          geofence_name: string | null
+          id: string
+          is_auto_applied: boolean | null
+          lat: number | null
+          lng: number | null
+          location_name: string | null
+          monetary_fine: number | null
+          organization_id: string
+          penalty_config_id: string | null
+          penalty_points: number
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          severity: string
+          speed_kmh: number | null
+          speed_limit_kmh: number | null
+          status: string
+          updated_at: string
+          vehicle_id: string | null
+          violation_details: Json | null
+          violation_time: string
+          violation_type: string
+        }
+        Insert: {
+          appeal_reason?: string | null
+          appeal_submitted_at?: string | null
+          created_at?: string
+          driver_id: string
+          geofence_id?: string | null
+          geofence_name?: string | null
+          id?: string
+          is_auto_applied?: boolean | null
+          lat?: number | null
+          lng?: number | null
+          location_name?: string | null
+          monetary_fine?: number | null
+          organization_id: string
+          penalty_config_id?: string | null
+          penalty_points?: number
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          severity?: string
+          speed_kmh?: number | null
+          speed_limit_kmh?: number | null
+          status?: string
+          updated_at?: string
+          vehicle_id?: string | null
+          violation_details?: Json | null
+          violation_time: string
+          violation_type: string
+        }
+        Update: {
+          appeal_reason?: string | null
+          appeal_submitted_at?: string | null
+          created_at?: string
+          driver_id?: string
+          geofence_id?: string | null
+          geofence_name?: string | null
+          id?: string
+          is_auto_applied?: boolean | null
+          lat?: number | null
+          lng?: number | null
+          location_name?: string | null
+          monetary_fine?: number | null
+          organization_id?: string
+          penalty_config_id?: string | null
+          penalty_points?: number
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          severity?: string
+          speed_kmh?: number | null
+          speed_limit_kmh?: number | null
+          status?: string
+          updated_at?: string
+          vehicle_id?: string | null
+          violation_details?: Json | null
+          violation_time?: string
+          violation_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_penalties_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_penalties_geofence_id_fkey"
+            columns: ["geofence_id"]
+            isOneToOne: false
+            referencedRelation: "geofences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_penalties_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_penalties_penalty_config_id_fkey"
+            columns: ["penalty_config_id"]
+            isOneToOne: false
+            referencedRelation: "penalty_configurations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_penalties_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_penalty_summary: {
+        Row: {
+          created_at: string
+          driver_id: string
+          geofence_count: number
+          id: string
+          is_suspended: boolean | null
+          last_violation_at: string | null
+          organization_id: string
+          overspeed_count: number
+          suspension_count: number
+          suspension_end_date: string | null
+          suspension_start_date: string | null
+          total_fines: number
+          total_penalty_points: number
+          total_violations: number
+          updated_at: string
+          warning_count: number
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          geofence_count?: number
+          id?: string
+          is_suspended?: boolean | null
+          last_violation_at?: string | null
+          organization_id: string
+          overspeed_count?: number
+          suspension_count?: number
+          suspension_end_date?: string | null
+          suspension_start_date?: string | null
+          total_fines?: number
+          total_penalty_points?: number
+          total_violations?: number
+          updated_at?: string
+          warning_count?: number
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          geofence_count?: number
+          id?: string
+          is_suspended?: boolean | null
+          last_violation_at?: string | null
+          organization_id?: string
+          overspeed_count?: number
+          suspension_count?: number
+          suspension_end_date?: string | null
+          suspension_start_date?: string | null
+          total_fines?: number
+          total_penalty_points?: number
+          total_violations?: number
+          updated_at?: string
+          warning_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_penalty_summary_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_penalty_summary_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_shift_schedules: {
         Row: {
           created_at: string
@@ -3959,6 +4157,65 @@ export type Database = {
             foreignKeyName: "password_policies_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      penalty_configurations: {
+        Row: {
+          auto_apply: boolean | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          monetary_fine: number | null
+          organization_id: string
+          penalty_points: number
+          severity: string
+          speed_threshold_kmh: number | null
+          suspension_days: number | null
+          updated_at: string
+          violation_type: string
+          warning_count_before_suspension: number | null
+        }
+        Insert: {
+          auto_apply?: boolean | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          monetary_fine?: number | null
+          organization_id: string
+          penalty_points?: number
+          severity?: string
+          speed_threshold_kmh?: number | null
+          suspension_days?: number | null
+          updated_at?: string
+          violation_type: string
+          warning_count_before_suspension?: number | null
+        }
+        Update: {
+          auto_apply?: boolean | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          monetary_fine?: number | null
+          organization_id?: string
+          penalty_points?: number
+          severity?: string
+          speed_threshold_kmh?: number | null
+          suspension_days?: number | null
+          updated_at?: string
+          violation_type?: string
+          warning_count_before_suspension?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "penalty_configurations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
