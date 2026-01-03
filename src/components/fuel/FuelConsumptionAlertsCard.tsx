@@ -7,25 +7,31 @@ import {
   AlertTriangle,
   TrendingUp,
   TrendingDown,
-  CheckCircle,
   Bell,
   Loader2,
 } from "lucide-react";
 import { useFuelConsumptionAlerts } from "@/hooks/useFuelConsumptionAlerts";
 import { useVehicles } from "@/hooks/useVehicles";
 import { formatDistanceToNow } from "date-fns";
+import { useNavigate } from "react-router-dom";
+import FuelConsumptionAlertsEmptyState from "./FuelConsumptionAlertsEmptyState";
 
 interface FuelConsumptionAlertsCardProps {
   getVehiclePlateFromContext?: (vehicleId: string) => string;
 }
 
 export default function FuelConsumptionAlertsCard({ getVehiclePlateFromContext }: FuelConsumptionAlertsCardProps) {
+  const navigate = useNavigate();
   const { alerts, loading, acknowledgeAlert, resolveAlert, getAlertStats } = useFuelConsumptionAlerts({
     isResolved: false,
   });
   
   // Only call useVehicles if context function is not provided
   const { vehicles } = useVehicles(!getVehiclePlateFromContext);
+  
+  const handleSetupClick = () => {
+    navigate("/system-config");
+  };
   
   const getVehiclePlate = (vehicleId: string) => {
     if (getVehiclePlateFromContext) {
@@ -111,11 +117,7 @@ export default function FuelConsumptionAlertsCard({ getVehiclePlateFromContext }
 
         <ScrollArea className="h-[300px]">
           {alerts.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <CheckCircle className="w-12 h-12 mx-auto mb-3 text-success/50" />
-              <p className="font-medium">No Active Alerts</p>
-              <p className="text-sm">Fuel consumption is within normal parameters</p>
-            </div>
+            <FuelConsumptionAlertsEmptyState onSetupClick={handleSetupClick} />
           ) : (
             <div className="space-y-3">
               {alerts.slice(0, 10).map((alert) => (
