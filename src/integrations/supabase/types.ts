@@ -3147,7 +3147,9 @@ export type Database = {
           error_message: string | null
           id: string
           organization_id: string
+          phone_number: string | null
           sent_at: string | null
+          sms_content: string | null
           status: string
           vehicle_id: string
         }
@@ -3160,7 +3162,9 @@ export type Database = {
           error_message?: string | null
           id?: string
           organization_id: string
+          phone_number?: string | null
           sent_at?: string | null
+          sms_content?: string | null
           status?: string
           vehicle_id: string
         }
@@ -3173,7 +3177,9 @@ export type Database = {
           error_message?: string | null
           id?: string
           organization_id?: string
+          phone_number?: string | null
           sent_at?: string | null
+          sms_content?: string | null
           status?: string
           vehicle_id?: string
         }
