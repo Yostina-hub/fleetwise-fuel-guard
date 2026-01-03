@@ -48,6 +48,9 @@ import LiveTrackingMap from "@/components/map/LiveTrackingMap";
 import GeofenceEventsTab from "@/components/geofencing/GeofenceEventsTab";
 import ScheduleConfigSection from "@/components/geofencing/ScheduleConfigSection";
 import ColorPicker from "@/components/geofencing/ColorPicker";
+import GeofenceQuickStats from "@/components/geofencing/GeofenceQuickStats";
+import GeofenceInsightsCard from "@/components/geofencing/GeofenceInsightsCard";
+import { startOfDay, subDays } from "date-fns";
 
 const Geofencing = () => {
   const { organizationId } = useOrganization();
@@ -187,6 +190,32 @@ const Geofencing = () => {
     },
     enabled: !!organizationId,
   });
+
+  // Fetch recent geofence events for stats
+  const { data: recentEvents } = useQuery({
+    queryKey: ["geofence-events-stats", organizationId],
+    queryFn: async () => {
+      const today = startOfDay(new Date()).toISOString();
+      const { data, error } = await supabase
+        .from("geofence_events")
+        .select("*")
+        .eq("organization_id", organizationId!)
+        .gte("event_time", today);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!organizationId,
+  });
+
+  // Calculate stats
+  const geofenceStats = {
+    totalGeofences: geofences?.length || 0,
+    activeGeofences: geofences?.filter(g => g.is_active !== false).length || 0,
+    eventsToday: recentEvents?.length || 0,
+    entryEvents: recentEvents?.filter(e => e.event_type === 'entry').length || 0,
+    exitEvents: recentEvents?.filter(e => e.event_type === 'exit').length || 0,
+    dwellAlerts: recentEvents?.filter(e => e.event_type === 'dwell_exceeded').length || 0,
+  };
 
   // Render geofences on map when data changes
   useEffect(() => {
@@ -543,15 +572,41 @@ const Geofencing = () => {
         </div>
 
         {/* Side Panel */}
-        <div className="w-[450px] border-l border-border bg-card overflow-auto">
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
+        <div className="w-[500px] border-l border-border bg-card overflow-auto">
+          <div className="p-6 space-y-6">
+            {/* Header */}
+            <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold">Geofences</h2>
                 <p className="text-sm text-muted-foreground mt-1">
                   Manage virtual boundaries and alerts
                 </p>
               </div>
+            </div>
+
+            {/* Quick Stats - Compact for side panel */}
+            <div className="grid grid-cols-3 gap-2">
+              <Card className="glass-strong">
+                <CardContent className="p-3 text-center">
+                  <p className="text-xl font-bold">{geofenceStats.totalGeofences}</p>
+                  <p className="text-xs text-muted-foreground">Total</p>
+                </CardContent>
+              </Card>
+              <Card className="glass-strong">
+                <CardContent className="p-3 text-center">
+                  <p className="text-xl font-bold text-success">{geofenceStats.activeGeofences}</p>
+                  <p className="text-xs text-muted-foreground">Active</p>
+                </CardContent>
+              </Card>
+              <Card className="glass-strong">
+                <CardContent className="p-3 text-center">
+                  <p className="text-xl font-bold text-warning">{geofenceStats.eventsToday}</p>
+                  <p className="text-xs text-muted-foreground">Events Today</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Create Button & Dialog */}
               <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
                 setIsCreateDialogOpen(open);
                 if (!open) resetForm();
@@ -885,7 +940,6 @@ const Geofencing = () => {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
-            </div>
 
             {/* Main Tabs for Geofences List and Events */}
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "map" | "events")} className="w-full">
@@ -977,8 +1031,8 @@ const Geofencing = () => {
                   </CardContent>
                 </Card>
               )}
-                </div>
-              </TabsContent>
+              </div>
+            </TabsContent>
 
               <TabsContent value="events">
                 <GeofenceEventsTab />

@@ -1,16 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import KPICard from "@/components/KPICard";
 import { 
   Wrench, 
   Calendar,
-  AlertCircle,
-  Clock,
-  CheckCircle,
-  Plus,
   Loader2,
   ClipboardCheck,
   ListChecks,
@@ -19,11 +14,16 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useMaintenanceMetrics } from "@/hooks/useMaintenanceMetrics";
+import { useMaintenanceSchedules } from "@/hooks/useMaintenanceSchedules";
 import MaintenanceSchedulesTab from "@/components/maintenance/MaintenanceSchedulesTab";
 import VehicleInspectionsTab from "@/components/maintenance/VehicleInspectionsTab";
 import MaintenanceHistoryTab from "@/components/maintenance/MaintenanceHistoryTab";
+import MaintenanceQuickStats from "@/components/maintenance/MaintenanceQuickStats";
+import MaintenanceQuickActions from "@/components/maintenance/MaintenanceQuickActions";
+import MaintenanceInsightsCard from "@/components/maintenance/MaintenanceInsightsCard";
+import MaintenanceTrendChart from "@/components/maintenance/MaintenanceTrendChart";
 import DateRangeFilter from "@/components/dashboard/DateRangeFilter";
-import { subDays } from "date-fns";
+import { subDays, differenceInDays, parseISO, isAfter } from "date-fns";
 
 interface DateRange {
   start: Date;
@@ -34,13 +34,24 @@ const Maintenance = () => {
   const navigate = useNavigate();
   const { loading: vehiclesLoading } = useVehicles();
   const { metrics, loading: metricsLoading } = useMaintenanceMetrics();
+  const { schedules } = useMaintenanceSchedules();
   const [dateRange, setDateRange] = useState<DateRange>({
     start: subDays(new Date(), 30),
     end: new Date(),
   });
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("schedules");
+  const tabsRef = useRef<HTMLDivElement>(null);
 
   const loading = vehiclesLoading || metricsLoading;
+
+  // Calculate additional stats
+  const upcomingThisWeek = schedules?.filter(s => {
+    if (!s.next_due_date) return false;
+    const dueDate = parseISO(s.next_due_date);
+    const daysUntil = differenceInDays(dueDate, new Date());
+    return daysUntil >= 0 && daysUntil <= 7;
+  }).length || 0;
 
   if (loading) {
     return (
@@ -82,78 +93,73 @@ const Maintenance = () => {
               />
             </div>
             <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
-            <Button 
-              className="gap-2 glass-strong hover:scale-105 transition-all duration-300 glow" 
-              onClick={() => navigate('/work-orders')}
-              aria-label="Create new work order"
-            >
-              <Plus className="w-5 h-5" aria-hidden="true" />
-              <span className="font-semibold">New Work Order</span>
-            </Button>
           </div>
         </div>
 
-        {/* KPI Grid - Now using real data */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <KPICard
-            title="Scheduled Services"
-            value={metrics.totalScheduled.toString()}
-            subtitle="active schedules"
-            icon={<Calendar className="w-5 h-5" aria-hidden="true" />}
-            variant="default"
-          />
-          <KPICard
-            title="Overdue"
-            value={metrics.overdueCount.toString()}
-            subtitle="require immediate attention"
-            icon={<AlertCircle className="w-5 h-5" aria-hidden="true" />}
-            variant={metrics.overdueCount > 0 ? "warning" : "success"}
-          />
-          <KPICard
-            title="Completed"
-            value={metrics.completedThisMonth.toString()}
-            subtitle="this month"
-            icon={<CheckCircle className="w-5 h-5" aria-hidden="true" />}
-            variant="success"
-          />
-          <KPICard
-            title="Compliance Rate"
-            value={`${Math.round(metrics.complianceRate)}%`}
-            subtitle="on-schedule maintenance"
-            icon={<Clock className="w-5 h-5" aria-hidden="true" />}
-            variant={metrics.complianceRate >= 90 ? "success" : metrics.complianceRate >= 70 ? "default" : "warning"}
-          />
+        {/* Quick Stats Bar */}
+        <MaintenanceQuickStats
+          totalScheduled={metrics.totalScheduled}
+          overdueCount={metrics.overdueCount}
+          completedThisMonth={metrics.completedThisMonth}
+          complianceRate={metrics.complianceRate}
+          upcomingThisWeek={upcomingThisWeek}
+        />
+
+        {/* Quick Actions */}
+        <MaintenanceQuickActions
+          onNewWorkOrder={() => navigate('/work-orders')}
+          onScheduleService={() => {
+            setActiveTab('schedules');
+            tabsRef.current?.scrollIntoView({ behavior: 'smooth' });
+          }}
+          onNewInspection={() => {
+            setActiveTab('inspections');
+            tabsRef.current?.scrollIntoView({ behavior: 'smooth' });
+          }}
+          onViewOverdue={() => {
+            setActiveTab('schedules');
+            tabsRef.current?.scrollIntoView({ behavior: 'smooth' });
+          }}
+        />
+
+        {/* Insights & Trend Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <MaintenanceTrendChart />
+          <MaintenanceInsightsCard />
         </div>
 
-        {/* Tabs for different maintenance modules */}
-        <Tabs defaultValue="schedules" className="space-y-6">
-          <TabsList className="grid w-full max-w-lg grid-cols-3">
-            <TabsTrigger value="schedules" className="gap-2">
-              <Calendar className="w-4 h-4" aria-hidden="true" />
-              Schedules
-            </TabsTrigger>
-            <TabsTrigger value="inspections" className="gap-2">
-              <ClipboardCheck className="w-4 h-4" aria-hidden="true" />
-              Inspections
-            </TabsTrigger>
-            <TabsTrigger value="history" className="gap-2">
-              <ListChecks className="w-4 h-4" aria-hidden="true" />
-              History
-            </TabsTrigger>
-          </TabsList>
 
-          <TabsContent value="schedules">
-            <MaintenanceSchedulesTab />
-          </TabsContent>
+        {/* Tabbed Content */}
+        <div ref={tabsRef}>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className="grid w-full max-w-lg grid-cols-3">
+              <TabsTrigger value="schedules" className="gap-2">
+                <Calendar className="w-4 h-4" aria-hidden="true" />
+                Schedules
+              </TabsTrigger>
+              <TabsTrigger value="inspections" className="gap-2">
+                <ClipboardCheck className="w-4 h-4" aria-hidden="true" />
+                Inspections
+              </TabsTrigger>
+              <TabsTrigger value="history" className="gap-2">
+                <ListChecks className="w-4 h-4" aria-hidden="true" />
+                History
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="inspections">
-            <VehicleInspectionsTab />
-          </TabsContent>
+            <TabsContent value="schedules">
+              <MaintenanceSchedulesTab />
+            </TabsContent>
 
-          <TabsContent value="history">
-            <MaintenanceHistoryTab />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="inspections">
+              <VehicleInspectionsTab />
+            </TabsContent>
+
+            <TabsContent value="history">
+              <MaintenanceHistoryTab />
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </Layout>
   );

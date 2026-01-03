@@ -23,6 +23,10 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import AlertDetailModal from "@/components/AlertDetailModal";
 import { TablePagination } from "@/components/reports/TablePagination";
+import AlertsQuickStats from "@/components/alerts/AlertsQuickStats";
+import AlertsQuickActions from "@/components/alerts/AlertsQuickActions";
+import AlertsInsightsCard from "@/components/alerts/AlertsInsightsCard";
+import AlertsTrendChart from "@/components/alerts/AlertsTrendChart";
 import { 
   AlertTriangle, 
   AlertCircle, 
@@ -240,7 +244,7 @@ const Alerts = () => {
 
   return (
     <Layout>
-      <div className="p-8 space-y-8 animate-fade-in">
+      <div className="p-8 space-y-6 animate-fade-in">
         {/* Header */}
         <div className="flex items-center justify-between slide-in-left">
           <div className="flex items-center gap-4">
@@ -256,94 +260,36 @@ const Alerts = () => {
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              className="gap-2 glass hover:bg-primary hover:text-primary-foreground transition-all duration-300"
-              onClick={handleExport}
-              aria-label="Export alerts to CSV"
-            >
-              <Download className="w-4 h-4" aria-hidden="true" />
-              Export
-            </Button>
-          </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <Card className="glass-strong border-2 hover:border-destructive/50 transition-all duration-300 hover:shadow-2xl card-premium">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-destructive/10 rounded-lg">
-                  <AlertTriangle className="w-6 h-6 text-destructive" aria-hidden="true" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold">{stats.critical}</div>
-                  <div className="text-sm text-muted-foreground">Critical</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Quick Stats Bar */}
+        <AlertsQuickStats
+          total={stats.total}
+          critical={stats.critical}
+          warning={stats.warning}
+          info={stats.info}
+          unacknowledged={stats.unacknowledged}
+          resolved={stats.resolved}
+        />
 
-          <Card className="glass-strong border-2 hover:border-warning/50 transition-all duration-300 hover:shadow-2xl card-premium">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-warning/10 rounded-lg">
-                  <AlertCircle className="w-6 h-6 text-warning" aria-hidden="true" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold">{stats.warning}</div>
-                  <div className="text-sm text-muted-foreground">Warning</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Quick Actions */}
+        <AlertsQuickActions
+          onAcknowledgeAll={handleBulkAcknowledge}
+          onExport={handleExport}
+          onConfigureRules={() => navigate('/speed-governor')}
+          selectedCount={selectedAlerts.length}
+          onBulkAcknowledge={selectedAlerts.length > 0 ? handleBulkAcknowledge : undefined}
+        />
 
-          <Card className="glass-strong border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-2xl card-premium">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-primary/10 rounded-lg">
-                  <Info className="w-6 h-6 text-primary" aria-hidden="true" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold">{stats.info}</div>
-                  <div className="text-sm text-muted-foreground">Info</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="glass-strong border-2 hover:border-yellow-500/50 transition-all duration-300 hover:shadow-2xl card-premium">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-yellow-500/10 rounded-lg">
-                  <Clock className="w-6 h-6 text-yellow-500" aria-hidden="true" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold">{stats.unacknowledged}</div>
-                  <div className="text-sm text-muted-foreground">Pending</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="glass-strong border-2 hover:border-success/50 transition-all duration-300 hover:shadow-2xl card-premium">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-success/10 rounded-lg">
-                  <CheckCircle className="w-6 h-6 text-success" aria-hidden="true" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold">{stats.resolved}</div>
-                  <div className="text-sm text-muted-foreground">Resolved</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Insights & Trend Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <AlertsTrendChart />
+          <AlertsInsightsCard stats={stats} alertTypes={alertTypes} />
         </div>
 
         {/* SOS Alert Panel */}
         <SOSAlertPanel />
+
 
         {/* Filters */}
         <Card className="glass-strong border">
