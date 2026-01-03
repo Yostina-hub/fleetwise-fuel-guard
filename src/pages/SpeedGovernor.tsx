@@ -24,6 +24,7 @@ import {
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { useSpeedGovernor } from "@/hooks/useSpeedGovernor";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useVehicles } from "@/hooks/useVehicles";
 import { LiveTelemetryCard } from "@/components/speedgovernor/LiveTelemetryCard";
 import { GovernorMapView } from "@/components/speedgovernor/GovernorMapView";
 import { RoutePlaybackMap } from "@/components/speedgovernor/RoutePlaybackMap";
@@ -44,6 +45,7 @@ const SpeedGovernor = () => {
   const { organizationId } = useOrganization();
   const { telemetry, isVehicleOnline } = useVehicleTelemetry();
   const { kpis, kpisLoading, updateConfig, governorConfigs } = useSpeedGovernor();
+  const { vehicles: allVehicles } = useVehicles();
   
   // Separate state for different tabs to avoid confusion
   const [controlVehicle, setControlVehicle] = useState<string>("");
@@ -51,7 +53,7 @@ const SpeedGovernor = () => {
   const [speedLimit, setSpeedLimit] = useState<number>(80);
   const [isGovernorActive, setIsGovernorActive] = useState(true);
 
-  // Transform governorConfigs from hook into vehicle list
+  // Transform governorConfigs from hook into vehicle list for display
   const vehicles = governorConfigs?.map((config: any) => ({
     id: config.vehicle_id,
     plate: config.vehicles?.plate_number || "Unknown",
@@ -62,6 +64,18 @@ const SpeedGovernor = () => {
     lastUpdate: "Live",
     configId: config.id
   })) || [];
+
+  // All vehicles with their config status (for dropdown - includes unconfigured vehicles)
+  const vehiclesWithConfig = allVehicles.map(v => {
+    const config = governorConfigs?.find((c: any) => c.vehicle_id === v.id);
+    return {
+      id: v.id,
+      plate: v.plate_number,
+      maxSpeed: config?.max_speed_limit || 80,
+      governorActive: config?.governor_active || false,
+      hasConfig: !!config
+    };
+  });
 
   const handleSendCommand = () => {
     if (!controlVehicle) return;
@@ -138,14 +152,18 @@ const SpeedGovernor = () => {
                     <Label htmlFor="vehicle-select">Select Vehicle</Label>
                     <Select value={controlVehicle} onValueChange={setControlVehicle}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Choose vehicle" />
+                        <SelectValue placeholder="Choose vehicle to configure" />
                       </SelectTrigger>
                       <SelectContent>
-                        {vehicles?.filter((v) => v.id).map((v) => (
-                          <SelectItem key={v.id} value={v.id}>
-                            {v.plate} - Current: {v.maxSpeed} km/h
-                          </SelectItem>
-                        ))}
+                        {vehiclesWithConfig.length === 0 ? (
+                          <SelectItem value="none" disabled>No vehicles found</SelectItem>
+                        ) : (
+                          vehiclesWithConfig.map((v) => (
+                            <SelectItem key={v.id} value={v.id}>
+                              {v.plate} {v.hasConfig ? `(${v.maxSpeed} km/h)` : "(Not configured)"}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
