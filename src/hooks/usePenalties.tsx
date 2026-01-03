@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useOrganization } from "./useOrganization";
+import { useEffect, useRef } from "react";
 
 export interface PenaltyConfig {
   id: string;
@@ -85,6 +86,7 @@ export const usePenaltyConfigs = () => {
   const { organizationId } = useOrganization();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const { data: configs, isLoading } = useQuery({
     queryKey: ["penalty-configs", organizationId],
@@ -102,6 +104,31 @@ export const usePenaltyConfigs = () => {
     },
     enabled: !!organizationId,
   });
+
+  // Real-time subscription
+  useEffect(() => {
+    if (!organizationId) return;
+    
+    const channel = supabase
+      .channel(`penalty-configs-${organizationId.slice(0, 8)}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'penalty_configurations',
+        filter: `organization_id=eq.${organizationId}`
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ["penalty-configs"] });
+      })
+      .subscribe();
+    
+    channelRef.current = channel;
+    
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+      }
+    };
+  }, [organizationId, queryClient]);
 
   const updateConfig = useMutation({
     mutationFn: async (config: Partial<PenaltyConfig> & { id: string }) => {

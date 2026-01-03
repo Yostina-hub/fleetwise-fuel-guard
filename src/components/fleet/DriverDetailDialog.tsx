@@ -28,7 +28,9 @@ import {
   Zap,
   Route,
   Heart,
-  UserCircle
+  UserCircle,
+  DollarSign,
+  Award
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import type { Driver } from "@/hooks/useDrivers";
@@ -120,6 +122,30 @@ export default function DriverDetailDialog({ open, onOpenChange, driver }: Drive
         .maybeSingle();
       if (error) throw error;
       return data;
+    },
+    enabled: !!driver,
+  });
+
+  // Fetch penalty summary
+  const { data: penaltySummary } = useQuery({
+    queryKey: ["driver-penalty-summary", driver?.id],
+    queryFn: async () => {
+      if (!driver) return null;
+      const { data, error } = await supabase
+        .from("driver_penalty_summary" as any)
+        .select("*")
+        .eq("driver_id", driver.id)
+        .maybeSingle();
+      if (error && error.code !== "PGRST116") throw error;
+      return data as unknown as {
+        total_penalty_points: number;
+        total_fines: number;
+        total_violations: number;
+        overspeed_count: number;
+        geofence_count: number;
+        is_suspended: boolean;
+        last_violation_at: string | null;
+      } | null;
     },
     enabled: !!driver,
   });
@@ -291,7 +317,59 @@ export default function DriverDetailDialog({ open, onOpenChange, driver }: Drive
               </Card>
             </div>
 
-            {/* Info Grid */}
+            {/* Penalty Summary Card */}
+            {penaltySummary && (
+              <Card className={penaltySummary.is_suspended ? "border-destructive/50 bg-destructive/5" : ""}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <AlertTriangle className="w-5 h-5 text-orange-500" />
+                      Penalty Summary
+                    </CardTitle>
+                    {penaltySummary.is_suspended && (
+                      <Badge variant="destructive">SUSPENDED</Badge>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="text-center p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <Award className="w-4 h-4 text-orange-500" />
+                      </div>
+                      <p className="text-2xl font-bold">{penaltySummary.total_penalty_points}</p>
+                      <p className="text-xs text-muted-foreground">Penalty Points</p>
+                    </div>
+                    <div className="text-center p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <DollarSign className="w-4 h-4 text-green-500" />
+                      </div>
+                      <p className="text-2xl font-bold">${penaltySummary.total_fines}</p>
+                      <p className="text-xs text-muted-foreground">Total Fines</p>
+                    </div>
+                    <div className="text-center p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <Zap className="w-4 h-4 text-yellow-500" />
+                      </div>
+                      <p className="text-2xl font-bold">{penaltySummary.overspeed_count}</p>
+                      <p className="text-xs text-muted-foreground">Overspeed</p>
+                    </div>
+                    <div className="text-center p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <MapPin className="w-4 h-4 text-blue-500" />
+                      </div>
+                      <p className="text-2xl font-bold">{penaltySummary.geofence_count}</p>
+                      <p className="text-xs text-muted-foreground">Geofence</p>
+                    </div>
+                  </div>
+                  {penaltySummary.last_violation_at && (
+                    <p className="text-xs text-muted-foreground mt-3 text-center">
+                      Last violation: {formatDistanceToNow(new Date(penaltySummary.last_violation_at), { addSuffix: true })}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* License Information */}
               <Card>

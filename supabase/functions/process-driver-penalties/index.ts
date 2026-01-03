@@ -308,7 +308,10 @@ async function updatePenaltySummary(supabase: any, organizationId: string, drive
     overspeed_count: 0,
     geofence_count: 0,
     warning_count: 0,
-    last_violation_at: null as string | null
+    last_violation_at: null as string | null,
+    is_suspended: false,
+    suspension_start_date: null as string | null,
+    suspension_end_date: null as string | null,
   };
 
   for (const penalty of penalties || []) {
@@ -324,6 +327,17 @@ async function updatePenaltySummary(supabase: any, organizationId: string, drive
     if (!summary.last_violation_at || penalty.violation_time > summary.last_violation_at) {
       summary.last_violation_at = penalty.violation_time;
     }
+  }
+
+  // Check if driver should be suspended (e.g., 100+ penalty points)
+  const SUSPENSION_THRESHOLD = 100;
+  const SUSPENSION_DAYS = 7;
+  
+  if (summary.total_penalty_points >= SUSPENSION_THRESHOLD) {
+    summary.is_suspended = true;
+    summary.suspension_start_date = new Date().toISOString();
+    summary.suspension_end_date = new Date(Date.now() + SUSPENSION_DAYS * 24 * 60 * 60 * 1000).toISOString();
+    console.log(`Driver ${driverId} suspended due to ${summary.total_penalty_points} penalty points`);
   }
 
   // Upsert summary
