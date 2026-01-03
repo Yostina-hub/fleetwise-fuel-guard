@@ -83,13 +83,15 @@ serve(async (req) => {
 
     // Insert telemetry data if vehicle is linked
     if (device.vehicle_id) {
+      const speedValue = speed ? parseFloat(speed) : 0;
+      
       // Map to correct column names matching vehicle_telemetry table schema
       const telemetryData = {
         vehicle_id: device.vehicle_id,
         organization_id: device.organization_id,
         latitude: parseFloat(lat),
         longitude: parseFloat(lng),
-        speed_kmh: speed ? parseFloat(speed) : 0,
+        speed_kmh: speedValue,
         fuel_level_percent: fuel ? parseFloat(fuel) : null,
         engine_on: ignition === '1' || ignition === 'true',
         heading: heading ? parseFloat(heading) : null,
@@ -111,6 +113,64 @@ serve(async (req) => {
           JSON.stringify({ error: 'Failed to store telemetry data', details: telemetryError.message }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
+      }
+
+      // Get speed limit from speed governor config
+      const { data: governorConfig } = await supabase
+        .from('speed_governor_config')
+        .select('max_speed_kmh')
+        .eq('organization_id', device.organization_id)
+        .eq('is_active', true)
+        .single();
+
+      const speedLimit = governorConfig?.max_speed_kmh || 80;
+
+      // Check for overspeed and trigger penalty
+      if (speedValue > speedLimit) {
+        // Get driver_id for the vehicle
+        const { data: vehicleData } = await supabase
+          .from('vehicles')
+          .select('assigned_driver_id')
+          .eq('id', device.vehicle_id)
+          .single();
+
+        if (vehicleData?.assigned_driver_id) {
+          try {
+            await supabase.functions.invoke('process-driver-penalties', {
+              body: {
+                action: 'process_overspeed',
+                data: {
+                  organization_id: device.organization_id,
+                  driver_id: vehicleData.assigned_driver_id,
+                  vehicle_id: device.vehicle_id,
+                  speed_kmh: speedValue,
+                  speed_limit_kmh: speedLimit,
+                  lat: parseFloat(lat),
+                  lng: parseFloat(lng),
+                  violation_time: new Date().toISOString(),
+                },
+              },
+            });
+            console.log('Overspeed penalty triggered for driver:', vehicleData.assigned_driver_id);
+          } catch (penaltyError) {
+            console.error('Error triggering overspeed penalty:', penaltyError);
+          }
+        }
+      }
+
+      // Trigger geofence processing
+      try {
+        await supabase.functions.invoke('process-geofence-events', {
+          body: {
+            vehicle_id: device.vehicle_id,
+            lat: parseFloat(lat),
+            lng: parseFloat(lng),
+            speed_kmh: speedValue,
+            organization_id: device.organization_id,
+          },
+        });
+      } catch (geofenceError) {
+        console.error('Error processing geofence events:', geofenceError);
       }
     }
 

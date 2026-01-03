@@ -179,7 +179,7 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Exit event
+      // Exit event - trigger penalty
       if (!isInside && wasInside) {
         if (geofence.enable_exit_alarm) {
           const enteredAt = currentStateMap.get(geofence.id)?.entered_at;
@@ -198,6 +198,37 @@ Deno.serve(async (req) => {
             speed_kmh: telemetry.speed_kmh,
             dwell_time_minutes: dwellMinutes,
           });
+
+          // Get driver_id for the vehicle
+          const { data: vehicleData } = await supabase
+            .from("vehicles")
+            .select("assigned_driver_id")
+            .eq("id", vehicle_id)
+            .single();
+
+          // Trigger penalty for geofence exit if driver is assigned
+          if (vehicleData?.assigned_driver_id) {
+            try {
+              await supabase.functions.invoke("process-driver-penalties", {
+                body: {
+                  action: "process_geofence",
+                  data: {
+                    organization_id,
+                    driver_id: vehicleData.assigned_driver_id,
+                    vehicle_id,
+                    violation_type: "geofence_exit",
+                    geofence_id: geofence.id,
+                    geofence_name: geofence.name,
+                    lat,
+                    lng,
+                    violation_time: new Date().toISOString(),
+                  },
+                },
+              });
+            } catch (penaltyError) {
+              console.error("Error triggering geofence exit penalty:", penaltyError);
+            }
+          }
         }
         statesToDelete.push(geofence.id);
       }
