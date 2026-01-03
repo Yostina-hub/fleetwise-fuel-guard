@@ -93,10 +93,12 @@ export const CommandHistoryCard = () => {
 
   const formatCommandData = (data: Record<string, unknown>) => {
     const parts: string[] = [];
+    if (data.speed_limit) parts.push(`Speed: ${data.speed_limit} km/h`);
     if (data.max_speed_limit) parts.push(`Speed: ${data.max_speed_limit} km/h`);
     if (data.governor_active !== undefined) {
       parts.push(`Governor: ${data.governor_active ? "ON" : "OFF"}`);
     }
+    if (data.emergency_stop) parts.push("Emergency Stop");
     return parts.length > 0 ? parts.join(", ") : JSON.stringify(data);
   };
 
