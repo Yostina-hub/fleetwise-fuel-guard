@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
 
@@ -13,14 +13,19 @@ export interface GovernorCommandLog {
   sent_at: string | null;
   acknowledged_at: string | null;
   created_at: string;
-  sent_by: string | null;
+  created_by: string | null;
   vehicles?: {
     plate_number: string;
+  };
+  profiles?: {
+    first_name: string | null;
+    last_name: string | null;
   };
 }
 
 export function useGovernorCommands(limit = 20) {
   const { organizationId } = useOrganization();
+  const queryClient = useQueryClient();
 
   const { data: commandLogs, isLoading, refetch } = useQuery({
     queryKey: ["governor-command-logs", organizationId, limit],
@@ -40,8 +45,9 @@ export function useGovernorCommands(limit = 20) {
           sent_at,
           acknowledged_at,
           created_at,
-          sent_by,
-          vehicles:vehicle_id(plate_number)
+          created_by,
+          vehicles:vehicle_id(plate_number),
+          profiles:created_by(first_name, last_name)
         `)
         .eq("organization_id", organizationId)
         .order("created_at", { ascending: false })
@@ -55,12 +61,64 @@ export function useGovernorCommands(limit = 20) {
       return data as GovernorCommandLog[];
     },
     enabled: !!organizationId,
-    refetchInterval: 10000, // Refresh every 10 seconds
+    refetchInterval: 10000,
+  });
+
+  // Acknowledge command mutation
+  const acknowledgeCommand = useMutation({
+    mutationFn: async (logId: string) => {
+      const { error } = await (supabase as any)
+        .from("governor_command_logs")
+        .update({
+          status: "acknowledged",
+          acknowledged_at: new Date().toISOString(),
+        })
+        .eq("id", logId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["governor-command-logs"] });
+    },
+  });
+
+  // Retry failed command mutation
+  const retryCommand = useMutation({
+    mutationFn: async (logId: string) => {
+      // Get the original command
+      const { data: log, error: fetchError } = await (supabase as any)
+        .from("governor_command_logs")
+        .select("*")
+        .eq("id", logId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Re-invoke the edge function
+      const { error } = await supabase.functions.invoke("send-governor-command", {
+        body: {
+          vehicleId: log.vehicle_id,
+          commandType: log.command_type,
+          speedLimit: log.command_data?.speed_limit,
+          phoneNumber: log.phone_number,
+          organizationId: log.organization_id,
+          userId: log.created_by,
+          isRetry: true,
+          originalCommandId: logId,
+        },
+      });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["governor-command-logs"] });
+    },
   });
 
   return {
     commandLogs: commandLogs || [],
     isLoading,
     refetch,
+    acknowledgeCommand,
+    retryCommand,
   };
 }
