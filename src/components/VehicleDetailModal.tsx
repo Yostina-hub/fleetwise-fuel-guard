@@ -57,14 +57,9 @@ const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalP
   const [driverDialogOpen, setDriverDialogOpen] = useState(false);
   const { drivers } = useDrivers();
   
-  // Early return if vehicle is null
-  if (!vehicle) {
-    return null;
-  }
-
-  const actualVehicleId = vehicle.vehicleId || vehicle.id;
+  const actualVehicleId = vehicle?.vehicleId || vehicle?.id || '';
   
-  // Fetch real vehicle data
+  // Fetch real vehicle data - hooks must be called unconditionally
   const { 
     recentTrips, 
     maintenanceRecords, 
@@ -73,6 +68,11 @@ const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalP
     performanceMetrics,
     isLoading 
   } = useVehicleData(actualVehicleId);
+
+  // Early return if vehicle is null - AFTER all hooks
+  if (!vehicle) {
+    return null;
+  }
 
   // Find driver info
   const assignedDriver = vehicle.driverId 
