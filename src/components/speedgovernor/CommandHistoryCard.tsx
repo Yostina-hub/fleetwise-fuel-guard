@@ -12,6 +12,8 @@ interface CommandLog {
   vehicle_id: string;
   command_type: string;
   command_data: Record<string, unknown>;
+  phone_number: string | null;
+  sms_content: string | null;
   status: string;
   sent_at: string | null;
   acknowledged_at: string | null;
@@ -19,19 +21,29 @@ interface CommandLog {
   vehicles: { plate_number: string } | null;
 }
 
+const commandTypeLabels: Record<string, string> = {
+  set_speed_limit: "Set Speed Limit",
+  enable_governor: "Enable Governor",
+  disable_governor: "Disable Governor",
+  emergency_stop: "Emergency Stop",
+  speed_limit_change: "Speed Limit Change",
+};
+
 export const CommandHistoryCard = () => {
   const { organizationId } = useOrganization();
 
   const { data: commandLogs, isLoading } = useQuery({
     queryKey: ["governor-command-logs", organizationId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("governor_command_logs")
         .select(`
           id,
           vehicle_id,
           command_type,
           command_data,
+          phone_number,
+          sms_content,
           status,
           sent_at,
           acknowledged_at,
@@ -43,7 +55,7 @@ export const CommandHistoryCard = () => {
         .limit(20);
 
       if (error) throw error;
-      return data as CommandLog[];
+      return (data || []) as CommandLog[];
     },
     enabled: !!organizationId,
     refetchInterval: 10000, // Refresh every 10 seconds
@@ -127,13 +139,21 @@ export const CommandHistoryCard = () => {
                         {getStatusBadge(log.status)}
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {log.command_type === "speed_limit_change"
-                          ? "Speed Limit Change"
-                          : log.command_type}
+                        {commandTypeLabels[log.command_type] || log.command_type}
                       </p>
                       <p className="text-xs font-mono mt-1 text-primary">
                         {formatCommandData(log.command_data as Record<string, unknown>)}
                       </p>
+                      {log.sms_content && (
+                        <p className="text-xs font-mono mt-1 text-muted-foreground">
+                          SMS: <code className="bg-muted px-1 rounded">{log.sms_content}</code>
+                        </p>
+                      )}
+                      {log.phone_number && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          To: {log.phone_number}
+                        </p>
+                      )}
                     </div>
                     <div className="text-xs text-muted-foreground text-right flex items-center gap-1">
                       <Clock className="h-3 w-3" />

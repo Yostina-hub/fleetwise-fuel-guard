@@ -19,7 +19,8 @@ import {
   Shield,
   Clock,
   MapPin,
-  Loader2
+  Loader2,
+  Radio
 } from "lucide-react";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { useSpeedGovernor } from "@/hooks/useSpeedGovernor";
@@ -40,6 +41,7 @@ import { SpeedQuickActions } from "@/components/speedgovernor/SpeedQuickActions"
 import { SpeedInsightsCard } from "@/components/speedgovernor/SpeedInsightsCard";
 import { DriverSpeedLeaderboard } from "@/components/speedgovernor/DriverSpeedLeaderboard";
 import { BulkSpeedConfigCard } from "@/components/speedgovernor/BulkSpeedConfigCard";
+import { SendGovernorCommandDialog } from "@/components/speedgovernor/SendGovernorCommandDialog";
 
 const SpeedGovernor = () => {
   const { organizationId } = useOrganization();
@@ -52,6 +54,7 @@ const SpeedGovernor = () => {
   const [playbackVehicle, setPlaybackVehicle] = useState<string>("");
   const [speedLimit, setSpeedLimit] = useState<number>(80);
   const [isGovernorActive, setIsGovernorActive] = useState(true);
+  const [showCommandDialog, setShowCommandDialog] = useState(false);
 
   // Transform governorConfigs from hook into vehicle list for display
   const vehicles = governorConfigs?.map((config: any) => ({
@@ -102,11 +105,25 @@ const SpeedGovernor = () => {
               Ethiopian Compliance • Remote Speed Management • Real-time Monitoring
             </p>
           </div>
-          <Badge variant="outline" className="gap-2 px-3 py-1.5">
-            <Gauge className="h-4 w-4" />
-            Ethiopian Transport Authority Compliant
-          </Badge>
+          <div className="flex items-center gap-3">
+            <Button onClick={() => setShowCommandDialog(true)} className="gap-2">
+              <Radio className="h-4 w-4" />
+              Send Command
+            </Button>
+            <Badge variant="outline" className="gap-2 px-3 py-1.5">
+              <Gauge className="h-4 w-4" />
+              Ethiopian Transport Authority Compliant
+            </Badge>
+          </div>
         </div>
+
+        {/* Send Command Dialog */}
+        <SendGovernorCommandDialog
+          open={showCommandDialog}
+          onOpenChange={setShowCommandDialog}
+          vehicles={vehiclesWithConfig}
+          selectedVehicleId={controlVehicle}
+        />
 
         {/* Quick Stats Bar */}
         <SpeedQuickStats />
