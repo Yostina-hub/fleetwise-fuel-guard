@@ -20,12 +20,17 @@ import { UtilizationAnalytics } from "@/components/scheduling/UtilizationAnalyti
 import { ActivityFeed } from "@/components/scheduling/ActivityFeed";
 import { NotificationPreferences } from "@/components/scheduling/NotificationPreferences";
 import { TripTemplatesTab } from "@/components/scheduling/TripTemplatesTab";
+import SchedulingQuickActions from "@/components/scheduling/SchedulingQuickActions";
+import SchedulingInsightsCard from "@/components/scheduling/SchedulingInsightsCard";
+import SchedulingTrendChart from "@/components/scheduling/SchedulingTrendChart";
 import { useTripRequests } from "@/hooks/useTripRequests";
 import { usePermissions } from "@/hooks/usePermissions";
+import { toast } from "sonner";
 
 const FleetScheduling = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("requests");
   const { requests, loading } = useTripRequests();
   const { isSuperAdmin, hasRole } = usePermissions();
   const canApprove = isSuperAdmin || hasRole('operations_manager') || hasRole('fleet_owner');
@@ -57,6 +62,26 @@ const FleetScheduling = () => {
     }
   ];
 
+  // Scheduling insights - in production, these would come from hooks
+  const schedulingInsights = {
+    utilizationRate: 78,
+    avgApprovalTime: 4,
+    peakDay: "Wednesday",
+    completionRate: 94
+  };
+
+  const handleApproveAll = () => {
+    if (canApprove) {
+      setActiveTab("approvals");
+    } else {
+      toast.error("You don't have permission to approve requests");
+    }
+  };
+
+  const handleViewCalendar = () => {
+    setActiveTab("calendar");
+  };
+
   return (
     <Layout>
       <div className="p-6 space-y-6">
@@ -84,7 +109,7 @@ const FleetScheduling = () => {
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map((stat) => (
-            <Card key={stat.title}>
+            <Card key={stat.title} className="glass-strong hover:shadow-lg transition-all duration-300">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
                 <stat.icon className={`w-4 h-4 ${stat.color}`} aria-hidden="true" />
@@ -96,11 +121,25 @@ const FleetScheduling = () => {
           ))}
         </div>
 
+        {/* Quick Actions */}
+        <SchedulingQuickActions
+          onCreateRequest={() => setCreateDialogOpen(true)}
+          onApproveAll={handleApproveAll}
+          onViewCalendar={handleViewCalendar}
+          onExportSchedule={() => setExportDialogOpen(true)}
+        />
+
+        {/* Insights and Trend */}
+        <div className="grid lg:grid-cols-2 gap-6">
+          <SchedulingInsightsCard {...schedulingInsights} />
+          <SchedulingTrendChart />
+        </div>
+
         {/* Scheduling Assistant */}
         {canApprove && <SchedulingAssistant />}
 
         {/* Main Content */}
-        <Tabs defaultValue="requests" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="flex-wrap h-auto">
             <TabsTrigger value="requests">Requests</TabsTrigger>
             <TabsTrigger value="assignments">Active</TabsTrigger>

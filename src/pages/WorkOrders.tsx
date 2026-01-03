@@ -1,11 +1,53 @@
+import { useState } from "react";
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { ClipboardList, Package } from "lucide-react";
 import WorkOrdersTab from "@/components/workorders/WorkOrdersTab";
 import InventoryTab from "@/components/workorders/InventoryTab";
+import WorkOrdersQuickStats from "@/components/workorders/WorkOrdersQuickStats";
+import WorkOrdersQuickActions from "@/components/workorders/WorkOrdersQuickActions";
+import WorkOrdersInsightsCard from "@/components/workorders/WorkOrdersInsightsCard";
+import WorkOrdersTrendChart from "@/components/workorders/WorkOrdersTrendChart";
+import { toast } from "sonner";
 
 const WorkOrders = () => {
+  const [activeTab, setActiveTab] = useState("orders");
+
+  // Mock stats - in production, these would come from hooks
+  const stats = {
+    openOrders: 12,
+    completedThisMonth: 28,
+    partsOnOrder: 5,
+    costThisMonth: 8450
+  };
+
+  const insights = {
+    avgCompletionTime: 3.5,
+    overdueCount: 2,
+    topVehicle: "KBZ 123A",
+    costTrend: 12
+  };
+
+  const handleCreateOrder = () => {
+    setActiveTab("orders");
+    toast.info("Use the 'New Work Order' button in the Work Orders tab");
+  };
+
+  const handleOrderParts = () => {
+    setActiveTab("inventory");
+    toast.info("Navigate to Inventory to order parts");
+  };
+
+  const handleViewOverdue = () => {
+    setActiveTab("orders");
+    toast.info("Filtering to show overdue work orders");
+  };
+
+  const handleExportReport = () => {
+    toast.success("Exporting work orders report...");
+  };
+
   return (
     <Layout>
       <div className="p-8 space-y-6 animate-fade-in">
@@ -21,7 +63,24 @@ const WorkOrders = () => {
           </div>
         </div>
 
-        <Tabs defaultValue="orders" className="space-y-4">
+        {/* Quick Stats */}
+        <WorkOrdersQuickStats {...stats} />
+
+        {/* Quick Actions */}
+        <WorkOrdersQuickActions
+          onCreateOrder={handleCreateOrder}
+          onOrderParts={handleOrderParts}
+          onViewOverdue={handleViewOverdue}
+          onExportReport={handleExportReport}
+        />
+
+        {/* Insights and Trend */}
+        <div className="grid lg:grid-cols-2 gap-6">
+          <WorkOrdersInsightsCard {...insights} />
+          <WorkOrdersTrendChart />
+        </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="grid w-full grid-cols-2 glass p-1 h-14">
             <TabsTrigger value="orders" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg">
               <ClipboardList className="h-5 w-5" aria-hidden="true" />
