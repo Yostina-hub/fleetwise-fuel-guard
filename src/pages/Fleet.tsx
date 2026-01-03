@@ -83,7 +83,7 @@ const DRIVER_FILTER = [
 const Fleet = () => {
   const navigate = useNavigate();
   const { drivers } = useDrivers();
-  const { handleExport } = useFleetExport();
+  const { handleExport, handleExportAll, exporting } = useFleetExport();
   
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -159,19 +159,26 @@ const Fleet = () => {
     searchQuery: debouncedSearch,
   });
 
-  // Fetch driver assignments for vehicles (limited to current page)
+  // Driver assignments - now uses assigned_driver from vehicle join
+  // This effect is kept for fallback via trip history when assigned_driver_id is not set
   useEffect(() => {
     const fetchDriverAssignments = async () => {
       if (dbVehicles.length === 0) return;
+      
+      // Only fetch for vehicles without assigned_driver from the join
+      const vehiclesNeedingDrivers = dbVehicles.filter(v => !v.assigned_driver);
+      if (vehiclesNeedingDrivers.length === 0) return;
+      
+      const idsNeeding = vehiclesNeedingDrivers.map(v => v.id);
       
       // Get latest trip assignments with drivers - limit to most recent per vehicle
       const { data } = await supabase
         .from("trips")
         .select("vehicle_id, driver_id")
-        .in("vehicle_id", vehicleIds)
+        .in("vehicle_id", idsNeeding)
         .not("driver_id", "is", null)
         .order("start_time", { ascending: false })
-        .limit(vehicleIds.length * 3); // Reasonable limit
+        .limit(idsNeeding.length * 3); // Reasonable limit
 
       if (data) {
         const assignments: Record<string, string> = {};
@@ -188,7 +195,7 @@ const Fleet = () => {
     };
 
     fetchDriverAssignments();
-  }, [dbVehicles, drivers, vehicleIds]);
+  }, [dbVehicles, drivers]);
 
   // Transform DB vehicles to display format with real telemetry
   const vehicles = useMemo(() => {
@@ -205,6 +212,13 @@ const Fleet = () => {
       } else if (v.status === "maintenance") {
         status = "idle";
       }
+
+      // Get driver name from join or fallback to trip-based assignment
+      const driverFromJoin = v.assigned_driver 
+        ? `${v.assigned_driver.first_name} ${v.assigned_driver.last_name}`
+        : null;
+      const driverName = driverFromJoin || driverAssignments[v.id] || "";
+      const driverId = v.assigned_driver?.id || null;
       
       return {
         id: v.plate_number,
@@ -220,7 +234,8 @@ const Fleet = () => {
         vehicleType: v.vehicle_type || "",
         fuelType: v.fuel_type || "",
         ownershipType: v.ownership_type || "",
-        assignedDriver: driverAssignments[v.id] || "",
+        assignedDriver: driverName,
+        driverId,
         vin: v.vin || "",
         // Additional telemetry data
         speed: telemetry?.speed_kmh || 0,
@@ -301,10 +316,6 @@ const Fleet = () => {
     driverFilter !== "all",
   ].filter(Boolean).length;
 
-  const handleExportAll = () => {
-    handleExport(vehicles, false);
-  };
-
   const handleExportSelected = () => {
     const selectedVehicles = vehicles.filter(v => selectedIds.includes(v.vehicleId));
     handleExport(selectedVehicles, true);
@@ -333,9 +344,9 @@ const Fleet = () => {
               <Upload className="w-4 h-4" aria-hidden="true" />
               <span className="hidden sm:inline">Import</span>
             </Button>
-            <Button variant="outline" size="sm" className="gap-2" onClick={handleExportAll}>
+            <Button variant="outline" size="sm" className="gap-2" onClick={handleExportAll} disabled={exporting}>
               <Download className="w-4 h-4" aria-hidden="true" />
-              <span className="hidden sm:inline">Export</span>
+              <span className="hidden sm:inline">{exporting ? 'Exporting...' : 'Export All'}</span>
             </Button>
             <Button
               size="sm"
