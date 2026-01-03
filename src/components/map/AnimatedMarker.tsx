@@ -56,7 +56,8 @@ export function createAnimatedMarkerElement(
   status: 'moving' | 'idle' | 'stopped' | 'offline',
   isSelected: boolean = false,
   engineOn: boolean = false,
-  heading: number = 0
+  heading: number = 0,
+  isOverspeeding: boolean = false
 ): HTMLDivElement {
   const statusColors = {
     moving: '#22c55e', // success green
@@ -65,7 +66,8 @@ export function createAnimatedMarkerElement(
     offline: '#ef4444', // red
   };
 
-  const color = statusColors[status];
+  // Overspeeding uses a distinct red color
+  const color = isOverspeeding ? '#dc2626' : statusColors[status];
   const size = isSelected ? 32 : 28;
   const el = document.createElement('div');
   el.className = 'animated-vehicle-marker';
@@ -94,18 +96,20 @@ export function createAnimatedMarkerElement(
     el.innerHTML = `<div style="width: 6px; height: 6px; background: white; border-radius: 50%;"></div>`;
   }
 
-  // Subtle pulse for moving vehicles
-  if (status === 'moving') {
+  // Pulse for moving or overspeeding vehicles
+  if (status === 'moving' || isOverspeeding) {
     const pulseRing = document.createElement('div');
+    const pulseColor = isOverspeeding ? '#dc2626' : color;
+    const animationName = isOverspeeding ? 'markerPulseFast' : 'markerPulse';
     pulseRing.style.cssText = `
       position: absolute;
       width: 100%;
       height: 100%;
       border-radius: 50%;
-      border: 1px solid ${color};
-      animation: markerPulse 2s ease-out infinite;
+      border: ${isOverspeeding ? '2px' : '1px'} solid ${pulseColor};
+      animation: ${animationName} ${isOverspeeding ? '1s' : '2s'} ease-out infinite;
       pointer-events: none;
-      opacity: 0.6;
+      opacity: ${isOverspeeding ? '0.8' : '0.6'};
     `;
     el.appendChild(pulseRing);
   }
@@ -181,6 +185,11 @@ export function injectMarkerAnimations() {
     @keyframes markerPulse {
       0% { transform: scale(1); opacity: 0.6; }
       100% { transform: scale(2); opacity: 0; }
+    }
+
+    @keyframes markerPulseFast {
+      0% { transform: scale(1); opacity: 0.8; }
+      100% { transform: scale(2.5); opacity: 0; }
     }
 
     @keyframes clusterBounceIn {
@@ -271,6 +280,16 @@ export function injectMarkerAnimations() {
       padding-top: 8px;
       border-top: 1px solid #f0f0f0;
       line-height: 1.3;
+    }
+
+    .popup-overspeeding {
+      background: #fee2e2;
+      color: #991b1b;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 4px 8px;
+      border-radius: 4px;
+      margin: 8px 0;
     }
   `;
   document.head.appendChild(style);
