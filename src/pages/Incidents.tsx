@@ -2,6 +2,8 @@ import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertTriangle, FileText, Receipt } from "lucide-react";
 import IncidentsListTab from "@/components/incidents/IncidentsListTab";
+import InsuranceClaimsTab from "@/components/incidents/InsuranceClaimsTab";
+import TrafficViolationsTab from "@/components/incidents/TrafficViolationsTab";
 import { IncidentQuickStats } from "@/components/incidents/IncidentQuickStats";
 import { IncidentQuickActions } from "@/components/incidents/IncidentQuickActions";
 import { IncidentInsightsCard } from "@/components/incidents/IncidentInsightsCard";
@@ -58,19 +60,11 @@ const Incidents = () => {
           </TabsContent>
 
           <TabsContent value="claims">
-            <div className="text-center py-12 text-muted-foreground" role="status" aria-label="Insurance claims section">
-              <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" aria-hidden="true" />
-              <h3 className="text-lg font-medium mb-2">Insurance Claims</h3>
-              <p>Track and manage insurance claims linked to incidents.</p>
-            </div>
+            <InsuranceClaimsTab />
           </TabsContent>
 
           <TabsContent value="violations">
-            <div className="text-center py-12 text-muted-foreground" role="status" aria-label="Traffic violations section">
-              <Receipt className="w-12 h-12 mx-auto mb-4 opacity-50" aria-hidden="true" />
-              <h3 className="text-lg font-medium mb-2">Traffic Violations</h3>
-              <p>Manage traffic tickets, fines, and payment tracking.</p>
-            </div>
+            <TrafficViolationsTab />
           </TabsContent>
         </Tabs>
       </div>

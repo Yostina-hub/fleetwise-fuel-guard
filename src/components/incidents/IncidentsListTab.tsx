@@ -186,39 +186,7 @@ const IncidentsListTab = () => {
         </Button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-destructive/5 border-destructive/20">
-          <CardContent className="pt-4">
-            <div className="text-2xl font-bold text-destructive">
-              {incidents.filter(i => i.severity === 'critical' || i.severity === 'high').length}
-            </div>
-            <div className="text-sm text-muted-foreground">High Severity</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="text-2xl font-bold">
-              {incidents.filter(i => i.status === 'reported' || i.status === 'investigating').length}
-            </div>
-            <div className="text-sm text-muted-foreground">Open Cases</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="text-2xl font-bold">
-              {incidents.filter(i => i.status === 'resolved').length}
-            </div>
-            <div className="text-sm text-muted-foreground">Resolved</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="text-2xl font-bold">{incidents.length}</div>
-            <div className="text-sm text-muted-foreground">Total Incidents</div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Stats removed - now handled by IncidentQuickStats in parent page */}
 
       {/* Incidents List */}
       {filteredIncidents.length === 0 ? (
@@ -280,7 +248,7 @@ const IncidentsListTab = () => {
                   </div>
 
                   <div className="flex flex-col gap-2 min-w-[140px]">
-                    <Button size="sm" variant="outline" className="gap-1" aria-label="View incident details">
+                    <Button size="sm" variant="outline" className="gap-1" aria-label={`View details for incident ${incident.incident_number}`}>
                       <FileText className="w-4 h-4" aria-hidden="true" />
                       View Details
                     </Button>
@@ -288,6 +256,7 @@ const IncidentsListTab = () => {
                       <Button 
                         size="sm"
                         onClick={() => updateIncidentStatus(incident.id, 'investigating')}
+                        aria-label={`Start investigation for incident ${incident.incident_number}`}
                       >
                         Investigate
                       </Button>
@@ -297,6 +266,7 @@ const IncidentsListTab = () => {
                         size="sm" 
                         className="bg-success hover:bg-success/90"
                         onClick={() => updateIncidentStatus(incident.id, 'resolved')}
+                        aria-label={`Mark incident ${incident.incident_number} as resolved`}
                       >
                         Mark Resolved
                       </Button>
