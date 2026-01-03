@@ -15,6 +15,20 @@ interface GovernorCommand {
   userId: string;
 }
 
+interface SmtpConfig {
+  smtp_host: string;
+  smtp_port: number;
+  smtp_user: string;
+  smtp_password: string;
+  smtp_from_email: string;
+  smtp_from_name: string | null;
+  use_tls: boolean;
+}
+
+// Speed limit validation constants
+const MIN_SPEED_LIMIT = 20;
+const MAX_SPEED_LIMIT = 180;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -32,6 +46,13 @@ serve(async (req) => {
     // Validate required fields
     if (!command.vehicleId || !command.commandType || !command.organizationId) {
       throw new Error("Missing required fields: vehicleId, commandType, organizationId");
+    }
+
+    // Validate speed limit if setting it
+    if (command.commandType === "set_speed_limit") {
+      if (!command.speedLimit || command.speedLimit < MIN_SPEED_LIMIT || command.speedLimit > MAX_SPEED_LIMIT) {
+        throw new Error(`Speed limit must be between ${MIN_SPEED_LIMIT} and ${MAX_SPEED_LIMIT} km/h`);
+      }
     }
 
     // Get vehicle details
@@ -55,26 +76,36 @@ serve(async (req) => {
 
     const phoneNumber = command.phoneNumber || device?.sim_msisdn;
 
+    // Get user info for audit trail
+    const { data: userProfile } = await supabase
+      .from("profiles")
+      .select("full_name, email")
+      .eq("id", command.userId)
+      .single();
+
     // Build command message based on type
     let smsMessage = "";
-    let commandData: Record<string, any> = {};
+    let commandData: Record<string, unknown> = {
+      sent_by_name: userProfile?.full_name || "Unknown",
+      sent_by_email: userProfile?.email || null,
+    };
 
     switch (command.commandType) {
       case "set_speed_limit":
-        smsMessage = `SETSPEED,${command.speedLimit || 80}#`;
-        commandData = { speed_limit: command.speedLimit };
+        smsMessage = `SETSPEED,${command.speedLimit}#`;
+        commandData.speed_limit = command.speedLimit;
         break;
       case "enable_governor":
         smsMessage = "GOVERNOR,ON#";
-        commandData = { governor_active: true };
+        commandData.governor_active = true;
         break;
       case "disable_governor":
         smsMessage = "GOVERNOR,OFF#";
-        commandData = { governor_active: false };
+        commandData.governor_active = false;
         break;
       case "emergency_stop":
         smsMessage = "STOP,1#";
-        commandData = { emergency_stop: true };
+        commandData.emergency_stop = true;
         break;
       default:
         throw new Error("Invalid command type");
@@ -103,19 +134,35 @@ serve(async (req) => {
 
     console.log("Command logged:", commandLog.id);
 
+    // Fetch SMTP configuration from database
+    const { data: smtpConfig } = await supabase
+      .from("smtp_configurations")
+      .select("*")
+      .eq("organization_id", command.organizationId)
+      .eq("is_active", true)
+      .order("is_default", { ascending: false })
+      .limit(1)
+      .single();
+
     // Send notification email about the command
-    try {
-      await sendCommandNotification({
-        vehicle,
-        command,
-        smsMessage,
-        phoneNumber,
-        commandLogId: commandLog.id,
-      });
-      console.log("Notification email sent");
-    } catch (emailError) {
-      console.warn("Email notification failed:", emailError);
-      // Don't fail the command if email fails
+    if (smtpConfig) {
+      try {
+        await sendCommandNotification({
+          vehicle,
+          command,
+          smsMessage,
+          phoneNumber,
+          commandLogId: commandLog.id,
+          smtpConfig,
+          userProfile,
+        });
+        console.log("Notification email sent");
+      } catch (emailError) {
+        console.warn("Email notification failed:", emailError);
+        // Don't fail the command if email fails
+      }
+    } else {
+      console.log("No SMTP configuration found, skipping email notification");
     }
 
     // Update command status to sent
@@ -132,7 +179,7 @@ serve(async (req) => {
         command.commandType === "enable_governor" || 
         command.commandType === "disable_governor") {
       
-      const updateData: Record<string, any> = {};
+      const updateData: Record<string, unknown> = {};
       
       if (command.commandType === "set_speed_limit") {
         updateData.max_speed_limit = command.speedLimit;
@@ -177,25 +224,39 @@ serve(async (req) => {
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("Error sending governor command:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
 
-async function sendCommandNotification({ vehicle, command, smsMessage, phoneNumber, commandLogId }: any) {
-  const smtpHost = Deno.env.get("SMTP_HOST");
-  const smtpPort = parseInt(Deno.env.get("SMTP_PORT") || "587");
-  const smtpUser = Deno.env.get("SMTP_USER");
-  const smtpPassword = Deno.env.get("SMTP_PASSWORD");
-  const smtpFrom = Deno.env.get("SMTP_FROM_EMAIL");
-  const notificationEmail = Deno.env.get("ADMIN_NOTIFICATION_EMAIL") || smtpFrom;
+interface NotificationParams {
+  vehicle: { plate_number: string; make: string; model: string };
+  command: GovernorCommand;
+  smsMessage: string;
+  phoneNumber: string | null;
+  commandLogId: string;
+  smtpConfig: SmtpConfig;
+  userProfile: { full_name: string | null; email: string | null } | null;
+}
 
-  if (!smtpHost || !smtpUser || !smtpPassword || !smtpFrom) {
-    console.log("SMTP not configured, skipping email notification");
+async function sendCommandNotification({ 
+  vehicle, 
+  command, 
+  smsMessage, 
+  phoneNumber, 
+  commandLogId,
+  smtpConfig,
+  userProfile,
+}: NotificationParams) {
+  const { smtp_host, smtp_port, smtp_user, smtp_password, smtp_from_email, smtp_from_name } = smtpConfig;
+
+  if (!smtp_host || !smtp_user || !smtp_password || !smtp_from_email) {
+    console.log("SMTP configuration incomplete, skipping email notification");
     return;
   }
 
@@ -205,6 +266,10 @@ async function sendCommandNotification({ vehicle, command, smsMessage, phoneNumb
     disable_governor: "Disable Governor",
     emergency_stop: "Emergency Stop",
   };
+
+  const senderName = userProfile?.full_name || "System";
+  const senderEmail = userProfile?.email || "Unknown";
+  const fromHeader = smtp_from_name ? `${smtp_from_name} <${smtp_from_email}>` : smtp_from_email;
 
   const html = `
     <!DOCTYPE html>
@@ -226,6 +291,12 @@ async function sendCommandNotification({ vehicle, command, smsMessage, phoneNumb
           <p><strong>SMS Content:</strong> <code style="background: #e5e7eb; padding: 2px 6px; border-radius: 3px;">${smsMessage}</code></p>
         </div>
         
+        <div style="background: #fef3c7; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <h3 style="margin-top: 0; color: #92400e;">Sent By</h3>
+          <p><strong>User:</strong> ${senderName}</p>
+          <p><strong>Email:</strong> ${senderEmail}</p>
+        </div>
+        
         <p style="color: #666; font-size: 14px;">
           Command ID: ${commandLogId}<br>
           Sent at: ${new Date().toLocaleString()}
@@ -240,10 +311,10 @@ async function sendCommandNotification({ vehicle, command, smsMessage, phoneNumb
     </html>
   `;
 
-  // Simple SMTP send (reusing pattern from speed violation report)
+  // Simple SMTP send
   const conn = await Deno.connect({
-    hostname: smtpHost,
-    port: smtpPort,
+    hostname: smtp_host,
+    port: smtp_port,
   });
 
   const encoder = new TextEncoder();
@@ -257,17 +328,17 @@ async function sendCommandNotification({ vehicle, command, smsMessage, phoneNumb
   }
 
   try {
-    await sendCommand(`EHLO ${smtpHost}`);
+    await sendCommand(`EHLO ${smtp_host}`);
     await sendCommand("STARTTLS");
     await sendCommand("AUTH LOGIN");
-    await sendCommand(btoa(smtpUser));
-    await sendCommand(btoa(smtpPassword));
-    await sendCommand(`MAIL FROM:<${smtpFrom}>`);
-    await sendCommand(`RCPT TO:<${notificationEmail}>`);
+    await sendCommand(btoa(smtp_user));
+    await sendCommand(btoa(smtp_password));
+    await sendCommand(`MAIL FROM:<${smtp_from_email}>`);
+    await sendCommand(`RCPT TO:<${smtp_from_email}>`); // Send to self for now (admin notification)
     await sendCommand("DATA");
 
-    let message = `From: ${smtpFrom}\r\n`;
-    message += `To: ${notificationEmail}\r\n`;
+    let message = `From: ${fromHeader}\r\n`;
+    message += `To: ${smtp_from_email}\r\n`;
     message += `Subject: Governor Command: ${commandTypeLabels[command.commandType]} - ${vehicle.plate_number}\r\n`;
     message += `MIME-Version: 1.0\r\n`;
     message += `Content-Type: text/html; charset=UTF-8\r\n\r\n`;
