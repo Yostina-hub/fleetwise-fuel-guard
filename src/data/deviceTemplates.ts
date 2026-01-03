@@ -50,7 +50,7 @@ export const deviceTemplates: DeviceTemplate[] = [
     features: ["GPS", "CAN Bus", "Fuel", "4x Digital In", "4x Analog In", "Driver Behavior", "RFID", "Temperature"],
     parameters: ["Latitude", "Longitude", "Speed", "Heading", "Altitude", "Fuel Level %", "Fuel Liters", "Fuel Rate", "Temp 1-2", "Driver RFID", "Harsh Acceleration", "Harsh Braking", "Harsh Cornering", "Ignition On/Off", "Main Power V", "Backup Battery V", "GSM/GPS Signal", "Odometer", "Engine RPM", "Throttle Position"],
     protocol: "queclink",
-    defaultPort: 5028,
+    defaultPort: 5030,
     popular: true,
   },
   {
@@ -63,7 +63,7 @@ export const deviceTemplates: DeviceTemplate[] = [
     features: ["GPS", "OBD-II", "CAN", "J1939", "Fuel", "Driver ID", "6x Digital I/O", "3x Analog In"],
     parameters: ["GPS Data", "Speed", "Odometer", "Engine Hours", "Fuel Level", "Fuel Consumption", "Coolant Temp", "Engine Load", "RPM", "VIN", "Driver ID", "Door Status", "AC Status", "Seatbelt", "Airbag", "MIL Status", "Battery Voltage", "Panic Button", "Cargo Temp"],
     protocol: "queclink",
-    defaultPort: 5028,
+    defaultPort: 5030,
     popular: true,
   },
   {
@@ -76,7 +76,7 @@ export const deviceTemplates: DeviceTemplate[] = [
     features: ["GPS", "Fuel Sensors (Up to 5)", "Temperature (Up to 8)", "8x Digital In", "4x Analog In", "CAN/J1939", "Tachograph", "Eco Driving"],
     parameters: ["Position", "Speed", "Course", "Altitude", "Fuel Tank 1-5", "Total Fuel", "Fuel Consumption", "Temp Probe 1-8", "Refrigeration Temp", "Driver 1 & 2 ID", "Tachograph Data", "Digital Inputs", "Analog Inputs", "Ignition", "Power Supply", "Battery", "GSM Strength", "Trip Odometer", "Total Odometer", "Engine Hours", "Eco Score"],
     protocol: "ruptela",
-    defaultPort: 5029,
+    defaultPort: 5031,
     popular: true,
   },
   {
@@ -115,7 +115,7 @@ export const deviceTemplates: DeviceTemplate[] = [
     features: ["GPS", "Driver Behavior", "Maintenance", "Messaging", "4x Digital I/O", "CAN/J1939", "PTO Detection"],
     parameters: ["GPS Quality", "Speed", "Heading", "Odometer", "Driver Behavior Score", "Harsh Events", "Idling Time", "Fuel Economy", "Engine Diagnostics", "Maintenance Alerts", "Digital Inputs", "Ignition", "Power", "Messages"],
     protocol: "calamp",
-    defaultPort: 5030,
+    defaultPort: 5033,
     popular: false,
   },
   {
@@ -128,7 +128,7 @@ export const deviceTemplates: DeviceTemplate[] = [
     features: ["Fuel Level (±1mm accuracy)", "Temperature Compensation", "Theft Detection", "Refueling Detection", "Calibration Table"],
     parameters: ["Fuel Level (mm)", "Fuel Volume (L)", "Fuel Temperature (°C)", "Sensor Status", "Calibration Status", "Fuel Change Rate", "Theft Alert", "Refuel Alert"],
     protocol: "omnicomm",
-    defaultPort: 5031,
+    defaultPort: 5034,
     popular: true,
   },
   {
@@ -141,7 +141,7 @@ export const deviceTemplates: DeviceTemplate[] = [
     features: ["GPS", "SMS Control", "SOS", "Geo-fence", "Movement Alert", "Overspeed Alert"],
     parameters: ["GPS Location", "Speed (km/h)", "Battery Status", "GSM Signal", "ACC Status", "Door Alarm", "SOS Status"],
     protocol: "tk103",
-    defaultPort: 5002,
+    defaultPort: 5013,
     popular: true,
   },
   {
@@ -154,7 +154,7 @@ export const deviceTemplates: DeviceTemplate[] = [
     features: ["GPS", "BLE 5.0", "Temperature (4x)", "Humidity", "Door Sensor", "Fuel", "Driver ID", "Camera Support"],
     parameters: ["Location", "Speed", "Heading", "Temperature 1-4", "Humidity %", "BLE Temp Sensors", "Fuel Level", "Driver Card", "Door Open/Close", "Refrigeration Status", "Ignition", "Battery", "Camera Trigger"],
     protocol: "topflytech",
-    defaultPort: 5032,
+    defaultPort: 5035,
     popular: true,
   },
   {
@@ -167,7 +167,7 @@ export const deviceTemplates: DeviceTemplate[] = [
     features: ["GPS", "CAN Bus", "J1708", "Fuel from ECU", "DTC Codes", "Driver Behavior", "4x I/O"],
     parameters: ["GPS Data", "VIN Number", "Fuel Level (ECU)", "Fuel Used", "Engine RPM", "Coolant Temp", "Engine Load %", "Throttle %", "DTC Codes", "MIL Status", "Harsh Driving", "Idling", "PTO", "Odometer (ECU)", "Engine Hours"],
     protocol: "jt701",
-    defaultPort: 5033,
+    defaultPort: 5036,
     popular: false,
   },
   {
@@ -180,7 +180,7 @@ export const deviceTemplates: DeviceTemplate[] = [
     features: ["4G", "GPS", "OBD-II", "Fuel", "Driver Behavior", "BLE", "RFID", "Accident Detection"],
     parameters: ["GPS Position", "Speed", "Odometer", "Fuel %", "Engine RPM", "Coolant Temp", "Battery V", "Throttle Position", "Engine Load", "Acceleration Events", "Braking Events", "Cornering Events", "Collision Detection", "Driver RFID", "BLE Devices"],
     protocol: "meitrack",
-    defaultPort: 5034,
+    defaultPort: 5037,
     popular: true,
   },
   {
@@ -193,7 +193,20 @@ export const deviceTemplates: DeviceTemplate[] = [
     features: ["GPS Tracking", "Speed Limiting", "Remote Speed Control", "Over-speed Prevention", "Compliance Reports", "Driver Alerts", "Digital I/O", "Voice Warnings"],
     parameters: ["GPS Position", "Current Speed", "Max Speed Setting", "Speed Limit Status", "Over-speed Events", "Speed Violations Count", "Governor Active/Inactive", "Ignition Status", "Digital Inputs", "Relay Output", "Odometer", "Trip Distance", "Engine Hours", "Battery Voltage", "GSM Signal", "GPS Satellites", "Driver Warnings Triggered", "Compliance Score", "Tamper Alerts"],
     protocol: "ytwl",
-    defaultPort: 5035,
+    defaultPort: 5032,
+    popular: true,
+  },
+  {
+    id: "sinotrack_st901",
+    name: "Sinotrack ST-901",
+    type: "gps",
+    vendor: "Sinotrack",
+    description: "Compact waterproof tracker - Popular in Ethiopian motorcycles",
+    icon: "🏍️",
+    features: ["GPS", "Waterproof IP65", "Built-in Battery", "Geo-fence", "Movement Alert", "Low Battery Alert"],
+    parameters: ["GPS Location", "Speed", "Direction", "Battery Level", "GSM Signal", "Movement Status", "Geo-fence Status"],
+    protocol: "h02",
+    defaultPort: 5023,
     popular: true,
   },
 ];

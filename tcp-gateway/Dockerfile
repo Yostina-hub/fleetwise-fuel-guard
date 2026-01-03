@@ -23,16 +23,18 @@ RUN addgroup -g 1001 -S gateway && \
 USER gateway
 
 # Expose ports
-# TCP ports
+# TCP ports for each protocol
 EXPOSE 5001
 EXPOSE 5013
 EXPOSE 5023
 EXPOSE 5027
-# UDP ports (TCP + 1000)
-EXPOSE 6001/udp
-EXPOSE 6013/udp
-EXPOSE 6023/udp
-EXPOSE 6027/udp
+EXPOSE 5030
+EXPOSE 5031
+EXPOSE 5032
+# UDP ports (same as TCP)
+EXPOSE 5001/udp
+EXPOSE 5013/udp
+EXPOSE 5023/udp
 # Health check port
 EXPOSE 8080
 
@@ -43,10 +45,13 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # Set default environment variables
 ENV NODE_ENV=production
 ENV LOG_LEVEL=info
-ENV GT06_PORT=5023
-ENV TK103_PORT=5001
-ENV H02_PORT=5013
-ENV CONCOX_PORT=5027
+ENV GT06_PORT=5001
+ENV TK103_PORT=5013
+ENV H02_PORT=5023
+ENV TELTONIKA_PORT=5027
+ENV QUECLINK_PORT=5030
+ENV RUPTELA_PORT=5031
+ENV YTWL_PORT=5032
 
 # Run the gateway
 CMD ["node", "gateway.js"]

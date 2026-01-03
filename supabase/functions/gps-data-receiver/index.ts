@@ -12,7 +12,11 @@ const PROTOCOL_PATTERNS = {
   TK103: /^imei:/i,         // TK103 IMEI prefix
   H02: /^\*HQ/,             // H02/Sinotrack protocol
   OSMAND: /^id=/i,          // OsmAnd/Traccar format
-  TELTONIKA: /^00000000/,   // Teltonika header
+  TELTONIKA: /^00000000/,   // Teltonika header (preamble)
+  QUECLINK: /^\+(?:RESP|BUFF|ACK):/i, // Queclink AT-style response
+  RUPTELA: /^[0-9a-fA-F]{4}00/,  // Ruptela binary (length + 0x00)
+  MEITRACK: /^\$\$/,        // Meitrack $$ prefix
+  YTWL: /^\*[0-9]+,/,       // YTWL format *IMEI,CMD,...#
 };
 
 // ==================== CRC/Checksum Validation Functions ====================
@@ -179,8 +183,10 @@ function getDefaultCRCType(protocol: string): string {
     H02: 'xor',
     TELTONIKA: 'crc16',
     QUECLINK: 'crc16_ccitt',
-    CALAMP: 'crc32',
+    RUPTELA: 'crc16',
     MEITRACK: 'checksum',
+    YTWL: 'xor',
+    CALAMP: 'crc32',
     JSON: 'none',
     URL_ENCODED: 'none',
     OSMAND: 'none',
@@ -245,9 +251,140 @@ function parseProtocolData(rawData: string, protocol: string): Record<string, an
         ignition: osmandParams.get('ignition'),
       };
     
+    case 'TELTONIKA':
+      // Teltonika Codec 8/8E - binary format forwarded from TCP gateway as JSON
+      // When forwarded, it comes as JSON with parsed fields
+      return null; // Binary parsing done by TCP gateway
+    
+    case 'QUECLINK':
+      // Format: +RESP:GTFRI,350503,864606040XXXXXX,,0,0,1,1,4.3,92,70.0,9.123456,38.654321,20250103120000,0234,0001,ABCD,1234,,100.0,10000,
+      return parseQueclinkData(rawData);
+    
+    case 'RUPTELA':
+      // Binary protocol - parsed by TCP gateway, comes as JSON
+      return null; // Binary parsing done by TCP gateway
+    
+    case 'MEITRACK':
+      // Format: $$A138,864606040XXXXXX,AAA,35,9.123456,38.654321,250103120000,A,12,24,45.2,90,1234.5,100,0.0,00000000
+      return parseMeitrackData(rawData);
+    
+    case 'YTWL':
+      // Format: *355442200988256,V1,120000,A,0912.1234,N,03845.6789,E,045.2,090,010125,80,70,1#
+      return parseYTWLData(rawData);
+    
     default:
       return null;
   }
+}
+
+// Parse Queclink AT-style format
+function parseQueclinkData(rawData: string): Record<string, any> | null {
+  // +RESP:GTFRI - Fixed Report Information
+  const friMatch = rawData.match(/\+RESP:GTFRI,([^,]*),(\d{15}),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([0-9.-]+),([0-9.-]+),(\d{14})/);
+  if (friMatch) {
+    return {
+      imei: friMatch[2],
+      lat: friMatch[11],
+      lng: friMatch[12],
+      speed: friMatch[9],
+      heading: friMatch[10],
+      altitude: friMatch[8],
+      battery_voltage: friMatch[7],
+      satellites: friMatch[6],
+      ignition: friMatch[5] === '1',
+    };
+  }
+  
+  // +RESP:GTHBD - Heartbeat
+  const hbdMatch = rawData.match(/\+RESP:GTHBD,([^,]*),(\d{15})/);
+  if (hbdMatch) {
+    return {
+      imei: hbdMatch[2],
+      heartbeat: true,
+    };
+  }
+  
+  // +RESP:GTSOS - SOS Alert
+  const sosMatch = rawData.match(/\+RESP:GTSOS,([^,]*),(\d{15}),[^,]*,[^,]*,[^,]*,[^,]*,[^,]*,([0-9.-]+),([0-9.-]+)/);
+  if (sosMatch) {
+    return {
+      imei: sosMatch[2],
+      lat: sosMatch[3],
+      lng: sosMatch[4],
+      alert_type: 'SOS',
+    };
+  }
+  
+  return null;
+}
+
+// Parse Meitrack format
+function parseMeitrackData(rawData: string): Record<string, any> | null {
+  // $$A - Standard position report
+  const match = rawData.match(/\$\$[A-Z](\d+),(\d{15}),AAA,(\d+),([0-9.-]+),([0-9.-]+),(\d{12}),([AV]),(\d+),(\d+),([0-9.]+),(\d+),([0-9.]+),(\d+),([0-9.]+)/);
+  if (match) {
+    return {
+      imei: match[2],
+      event_code: match[3],
+      lat: match[4],
+      lng: match[5],
+      gps_valid: match[7] === 'A',
+      satellites: match[8],
+      gsm_signal: match[9],
+      speed: match[10],
+      heading: match[11],
+      altitude: match[12],
+      odometer: match[13],
+      fuel: match[14],
+    };
+  }
+  
+  // $$B - Heartbeat/status
+  const hbMatch = rawData.match(/\$\$[B](\d+),(\d{15}),BBB/);
+  if (hbMatch) {
+    return {
+      imei: hbMatch[2],
+      heartbeat: true,
+    };
+  }
+  
+  return null;
+}
+
+// Parse YTWL Speed Governor format
+function parseYTWLData(rawData: string): Record<string, any> | null {
+  // Format: *IMEI,CMD,TIME,STATUS,LAT,NS,LNG,EW,SPEED,HEADING,DATE,LIMIT,CURRENT,FLAGS#
+  const match = rawData.match(/\*(\d+),([A-Z0-9]+),(\d{6}),([AV]),([0-9.]+),([NS]),([0-9.]+),([EW]),([0-9.]+),(\d+),(\d{6}),(\d+),(\d+),([^#]*)/);
+  if (match) {
+    let lat = parseFloat(match[5].slice(0, 2)) + parseFloat(match[5].slice(2)) / 60;
+    let lng = parseFloat(match[7].slice(0, 3)) + parseFloat(match[7].slice(3)) / 60;
+    if (match[6] === 'S') lat = -lat;
+    if (match[8] === 'W') lng = -lng;
+    
+    return {
+      imei: match[1],
+      command: match[2],
+      lat: lat.toString(),
+      lng: lng.toString(),
+      speed: match[9],
+      heading: match[10],
+      gps_valid: match[4] === 'A',
+      speed_limit: match[12],
+      current_speed: match[13],
+      governor_flags: match[14],
+    };
+  }
+  
+  // JSON format from TCP gateway
+  try {
+    if (rawData.includes('{')) {
+      return JSON.parse(rawData);
+    }
+  } catch (e) {
+    // Not JSON
+  }
+  
+  return null;
 }
 
 // Check if this telemetry indicates trip start/end
