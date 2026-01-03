@@ -83,20 +83,23 @@ serve(async (req) => {
 
     // Insert telemetry data if vehicle is linked
     if (device.vehicle_id) {
+      // Map to correct column names matching vehicle_telemetry table schema
       const telemetryData = {
         vehicle_id: device.vehicle_id,
         organization_id: device.organization_id,
-        lat: parseFloat(lat),
-        lng: parseFloat(lng),
+        latitude: parseFloat(lat),
+        longitude: parseFloat(lng),
         speed_kmh: speed ? parseFloat(speed) : 0,
         fuel_level_percent: fuel ? parseFloat(fuel) : null,
-        engine_status: ignition === '1' || ignition === 'true' ? 'running' : 'stopped',
-        altitude_m: altitude ? parseFloat(altitude) : null,
-        heading_degrees: heading ? parseFloat(heading) : null,
-        gps_signal_quality: satellites ? parseInt(satellites) : signal_strength ? parseInt(signal_strength) : null,
+        engine_on: ignition === '1' || ignition === 'true',
+        heading: heading ? parseFloat(heading) : null,
+        gps_satellites_count: satellites ? parseInt(satellites) : null,
+        gps_signal_strength: signal_strength ? parseInt(signal_strength) : null,
         device_connected: true,
         last_communication_at: new Date().toISOString(),
       };
+
+      console.log('Inserting telemetry data:', telemetryData);
 
       const { error: telemetryError } = await supabase
         .from('vehicle_telemetry')
@@ -105,7 +108,7 @@ serve(async (req) => {
       if (telemetryError) {
         console.error('Error inserting telemetry:', telemetryError);
         return new Response(
-          JSON.stringify({ error: 'Failed to store telemetry data' }),
+          JSON.stringify({ error: 'Failed to store telemetry data', details: telemetryError.message }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }

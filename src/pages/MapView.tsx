@@ -20,8 +20,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Satellite,
-  Map
+  Map,
+  Filter
 } from "lucide-react";
+import { GpsJammingIndicator } from "@/components/map/GpsJammingIndicator";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -40,6 +42,7 @@ const MapView = () => {
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [searchQuery, setSearchQuery] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'moving' | 'idle' | 'stopped' | 'offline'>('all');
   
   const [mapStyle, setMapStyle] = useState<'streets' | 'satellite'>('satellite');
   const [mapToken] = useState<string>(() => localStorage.getItem('mapbox_token') || '');
@@ -52,32 +55,50 @@ const MapView = () => {
       const vehicleTelemetry = telemetry[v.id];
       const online = isVehicleOnline(v.id);
       
+      // For offline vehicles, preserve last known position if available
       if (!online || !vehicleTelemetry) {
+        const lastKnownTelemetry = telemetry[v.id]; // May still have stale data
         return {
           id: v.id,
           plate: v.plate_number || 'Unknown',
           status: 'offline' as const,
-          fuel: 0,
+          fuel: lastKnownTelemetry?.fuel_level_percent || 0,
           speed: 0,
-          lat: 9.03,
-          lng: 38.74,
+          lat: lastKnownTelemetry?.latitude || 9.03,
+          lng: lastKnownTelemetry?.longitude || 38.74,
           engine_on: false,
-          heading: 0,
+          heading: lastKnownTelemetry?.heading || 0,
           isOffline: true,
           gps_signal_strength: 0,
           gps_satellites_count: 0,
+          lastSeen: lastKnownTelemetry?.last_communication_at,
+          gps_jamming_detected: false,
+          gps_spoofing_detected: false,
         };
+      }
+      
+      // Determine status based on speed AND engine state
+      const speed = vehicleTelemetry.speed_kmh || 0;
+      const engineOn = vehicleTelemetry.engine_on;
+      let status: 'moving' | 'idle' | 'stopped' | 'offline';
+      
+      if (speed > 3 && engineOn) {
+        status = 'moving';
+      } else if (engineOn && speed <= 3) {
+        status = 'idle';
+      } else {
+        status = 'stopped';
       }
       
       return {
         id: v.id,
         plate: v.plate_number || 'Unknown',
-        status: (vehicleTelemetry.engine_on ? 'moving' : 'idle') as 'moving' | 'idle' | 'stopped' | 'offline',
+        status,
         fuel: vehicleTelemetry.fuel_level_percent || 0,
-        speed: vehicleTelemetry.speed_kmh || 0,
+        speed,
         lat: vehicleTelemetry.latitude || 9.03,
         lng: vehicleTelemetry.longitude || 38.74,
-        engine_on: vehicleTelemetry.engine_on,
+        engine_on: engineOn,
         heading: vehicleTelemetry.heading || 0,
         isOffline: false,
         lastSeen: vehicleTelemetry.last_communication_at,
@@ -85,16 +106,29 @@ const MapView = () => {
         gps_satellites_count: vehicleTelemetry.gps_satellites_count,
         gps_hdop: vehicleTelemetry.gps_hdop,
         gps_fix_type: vehicleTelemetry.gps_fix_type,
+        gps_jamming_detected: vehicleTelemetry.gps_jamming_detected,
+        gps_spoofing_detected: vehicleTelemetry.gps_spoofing_detected,
       };
     });
   }, [dbVehicles, telemetry, isVehicleOnline]);
 
-  // Filter vehicles by search
+  // Filter vehicles by search and status
   const filteredVehicles = useMemo(() => {
-    if (!searchQuery.trim()) return vehicles;
-    const query = searchQuery.toLowerCase();
-    return vehicles.filter(v => v.plate.toLowerCase().includes(query));
-  }, [vehicles, searchQuery]);
+    let filtered = vehicles;
+    
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(v => v.status === statusFilter);
+    }
+    
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(v => v.plate.toLowerCase().includes(query));
+    }
+    
+    return filtered;
+  }, [vehicles, searchQuery, statusFilter]);
 
   // Auto-refresh
   useEffect(() => {
@@ -137,6 +171,9 @@ const MapView = () => {
   // Stats
   const onlineCount = vehicles.filter(v => !v.isOffline).length;
   const movingCount = vehicles.filter(v => v.status === 'moving').length;
+  const idleCount = vehicles.filter(v => v.status === 'idle').length;
+  const stoppedCount = vehicles.filter(v => v.status === 'stopped').length;
+  const offlineCount = vehicles.filter(v => v.isOffline).length;
 
   return (
     <Layout>
@@ -286,6 +323,23 @@ const MapView = () => {
               )}
             </div>
 
+            {/* Status Filter */}
+            <div className="flex items-center gap-2">
+              <Filter className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
+              <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+                <SelectTrigger className="h-8 flex-1 text-xs" aria-label="Filter by vehicle status">
+                  <SelectValue placeholder="All statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All ({vehicles.length})</SelectItem>
+                  <SelectItem value="moving">Moving ({movingCount})</SelectItem>
+                  <SelectItem value="idle">Idle ({idleCount})</SelectItem>
+                  <SelectItem value="stopped">Stopped ({stoppedCount})</SelectItem>
+                  <SelectItem value="offline">Offline ({offlineCount})</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Refresh Control */}
             <div className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
@@ -376,15 +430,23 @@ const MapView = () => {
                         </div>
 
                         {!vehicle.isOffline && (
-                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <Navigation className="w-3 h-3" aria-hidden="true" />
-                              <span>{vehicle.speed} km/h</span>
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Navigation className="w-3 h-3" aria-hidden="true" />
+                                <span>{vehicle.speed} km/h</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Fuel className="w-3 h-3" aria-hidden="true" />
+                                <span>{vehicle.fuel}%</span>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <Fuel className="w-3 h-3" aria-hidden="true" />
-                              <span>{vehicle.fuel}%</span>
-                            </div>
+                            {/* GPS Jamming/Spoofing Indicator */}
+                            <GpsJammingIndicator 
+                              jammingDetected={vehicle.gps_jamming_detected}
+                              spoofingDetected={vehicle.gps_spoofing_detected}
+                              showLabel={true}
+                            />
                           </div>
                         )}
                       </div>
