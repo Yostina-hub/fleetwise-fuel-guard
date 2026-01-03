@@ -29,6 +29,17 @@ interface SmtpConfig {
   use_tls: boolean;
 }
 
+interface SmsGatewayConfig {
+  id: string;
+  provider: 'africastalking' | 'twilio' | 'nexmo';
+  api_key: string;
+  api_secret: string | null;
+  sender_id: string | null;
+  username: string | null;
+  environment: string;
+  is_active: boolean;
+}
+
 // Speed limit validation constants
 const MIN_SPEED_LIMIT = 20;
 const MAX_SPEED_LIMIT = 180;
@@ -234,7 +245,36 @@ async function processSingleCommand(supabase: any, command: GovernorCommand) {
 
     console.log("Command logged:", commandLog.id);
 
-    // Fetch SMTP configuration from database
+    // Fetch SMS gateway configuration from database
+    const { data: smsConfig } = await supabase
+      .from("sms_gateway_config")
+      .select("*")
+      .eq("organization_id", command.organizationId)
+      .eq("is_active", true)
+      .order("is_default", { ascending: false })
+      .limit(1)
+      .single();
+
+    let smsResult = { success: false, messageId: null as string | null, error: null as string | null };
+
+    // Send actual SMS if config exists and phone number is available
+    if (smsConfig && phoneNumber) {
+      try {
+        smsResult = await sendSmsMessage(smsConfig, phoneNumber, smsMessage);
+        console.log("SMS sent:", smsResult);
+      } catch (smsError) {
+        console.error("SMS sending failed:", smsError);
+        smsResult.error = smsError instanceof Error ? smsError.message : "Unknown SMS error";
+      }
+    } else if (!smsConfig) {
+      console.log("No SMS gateway configured, skipping SMS");
+      smsResult.error = "No SMS gateway configured";
+    } else if (!phoneNumber) {
+      console.log("No phone number available, skipping SMS");
+      smsResult.error = "No phone number configured for device";
+    }
+
+    // Fetch SMTP configuration for email notification
     const { data: smtpConfig } = await supabase
       .from("smtp_configurations")
       .select("*")
@@ -255,22 +295,26 @@ async function processSingleCommand(supabase: any, command: GovernorCommand) {
           commandLogId: commandLog.id,
           smtpConfig,
           userProfile,
+          smsResult,
         });
         console.log("Notification email sent");
       } catch (emailError) {
         console.warn("Email notification failed:", emailError);
-        // Don't fail the command if email fails
       }
-    } else {
-      console.log("No SMTP configuration found, skipping email notification");
     }
 
-    // Update command status to sent
+    // Update command status based on SMS result
+    const newStatus = smsResult.success ? "sent" : (smsConfig ? "failed" : "pending");
     await supabase
       .from("governor_command_logs")
       .update({ 
-        status: "sent", 
-        sent_at: new Date().toISOString() 
+        status: newStatus, 
+        sent_at: smsResult.success ? new Date().toISOString() : null,
+        response_data: {
+          sms_result: smsResult,
+          message_id: smsResult.messageId,
+          error: smsResult.error,
+        }
       })
       .eq("id", commandLog.id);
 
@@ -318,9 +362,125 @@ async function processSingleCommand(supabase: any, command: GovernorCommand) {
     success: true, 
     commandId: commandLog.id,
     plate: vehicle.plate_number,
-    message: `Command ${command.commandType} sent successfully`,
+    message: smsResult.success 
+      ? `Command ${command.commandType} sent successfully via SMS` 
+      : `Command ${command.commandType} logged (SMS: ${smsResult.error || 'not configured'})`,
     smsContent: smsMessage,
-    targetPhone: phoneNumber || "Not configured"
+    targetPhone: phoneNumber || "Not configured",
+    smsSent: smsResult.success,
+    smsMessageId: smsResult.messageId,
+  };
+}
+
+// SMS sending function supporting multiple providers
+async function sendSmsMessage(
+  config: SmsGatewayConfig, 
+  phoneNumber: string, 
+  message: string
+): Promise<{ success: boolean; messageId: string | null; error: string | null }> {
+  
+  switch (config.provider) {
+    case 'africastalking':
+      return sendAfricasTalkingSms(config, phoneNumber, message);
+    case 'twilio':
+      return sendTwilioSms(config, phoneNumber, message);
+    default:
+      throw new Error(`Unsupported SMS provider: ${config.provider}`);
+  }
+}
+
+// Africa's Talking SMS API
+async function sendAfricasTalkingSms(
+  config: SmsGatewayConfig,
+  phoneNumber: string,
+  message: string
+): Promise<{ success: boolean; messageId: string | null; error: string | null }> {
+  const baseUrl = config.environment === 'sandbox' 
+    ? 'https://api.sandbox.africastalking.com/version1/messaging'
+    : 'https://api.africastalking.com/version1/messaging';
+
+  const formData = new URLSearchParams();
+  formData.append('username', config.username || '');
+  formData.append('to', phoneNumber);
+  formData.append('message', message);
+  if (config.sender_id) {
+    formData.append('from', config.sender_id);
+  }
+
+  const response = await fetch(baseUrl, {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'apiKey': config.api_key,
+    },
+    body: formData.toString(),
+  });
+
+  const data = await response.json();
+  console.log("Africa's Talking response:", data);
+
+  if (data.SMSMessageData?.Recipients?.[0]?.status === 'Success') {
+    return {
+      success: true,
+      messageId: data.SMSMessageData.Recipients[0].messageId,
+      error: null,
+    };
+  }
+
+  return {
+    success: false,
+    messageId: null,
+    error: data.SMSMessageData?.Recipients?.[0]?.status || data.message || 'SMS sending failed',
+  };
+}
+
+// Twilio SMS API
+async function sendTwilioSms(
+  config: SmsGatewayConfig,
+  phoneNumber: string,
+  message: string
+): Promise<{ success: boolean; messageId: string | null; error: string | null }> {
+  const accountSid = config.username; // Twilio uses account SID
+  const authToken = config.api_secret;
+
+  if (!accountSid || !authToken) {
+    throw new Error('Twilio requires account SID and auth token');
+  }
+
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+
+  const formData = new URLSearchParams();
+  formData.append('To', phoneNumber);
+  formData.append('Body', message);
+  if (config.sender_id) {
+    formData.append('From', config.sender_id);
+  }
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
+    },
+    body: formData.toString(),
+  });
+
+  const data = await response.json();
+  console.log("Twilio response:", data);
+
+  if (data.sid) {
+    return {
+      success: true,
+      messageId: data.sid,
+      error: null,
+    };
+  }
+
+  return {
+    success: false,
+    messageId: null,
+    error: data.message || 'Twilio SMS sending failed',
   };
 }
 
@@ -332,6 +492,7 @@ interface NotificationParams {
   commandLogId: string;
   smtpConfig: SmtpConfig;
   userProfile: { full_name: string | null; email: string | null } | null;
+  smsResult: { success: boolean; messageId: string | null; error: string | null };
 }
 
 async function sendCommandNotification({ 
@@ -342,6 +503,7 @@ async function sendCommandNotification({
   commandLogId,
   smtpConfig,
   userProfile,
+  smsResult,
 }: NotificationParams) {
   const { smtp_host, smtp_port, smtp_user, smtp_password, smtp_from_email, smtp_from_name } = smtpConfig;
 
@@ -361,6 +523,10 @@ async function sendCommandNotification({
   const senderEmail = userProfile?.email || "Unknown";
   const fromHeader = smtp_from_name ? `${smtp_from_name} <${smtp_from_email}>` : smtp_from_email;
 
+  const smsStatusColor = smsResult.success ? '#dcfce7' : '#fee2e2';
+  const smsStatusTextColor = smsResult.success ? '#166534' : '#991b1b';
+  const smsStatusIcon = smsResult.success ? '✅' : '❌';
+
   const html = `
     <!DOCTYPE html>
     <html>
@@ -379,6 +545,13 @@ async function sendCommandNotification({
           ${command.speedLimit ? `<p><strong>Speed Limit:</strong> ${command.speedLimit} km/h</p>` : ''}
           <p><strong>Target Phone:</strong> ${phoneNumber || 'Not configured'}</p>
           <p><strong>SMS Content:</strong> <code style="background: #e5e7eb; padding: 2px 6px; border-radius: 3px;">${smsMessage}</code></p>
+        </div>
+
+        <div style="background: ${smsStatusColor}; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <h3 style="margin-top: 0; color: ${smsStatusTextColor};">${smsStatusIcon} SMS Delivery Status</h3>
+          <p><strong>Status:</strong> ${smsResult.success ? 'Sent Successfully' : 'Failed'}</p>
+          ${smsResult.messageId ? `<p><strong>Message ID:</strong> ${smsResult.messageId}</p>` : ''}
+          ${smsResult.error ? `<p><strong>Error:</strong> ${smsResult.error}</p>` : ''}
         </div>
         
         <div style="background: #fef3c7; padding: 15px; border-radius: 5px; margin: 20px 0;">

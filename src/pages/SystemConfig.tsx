@@ -2,11 +2,12 @@ import { useState } from "react";
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { Settings2, Radio, Droplet, Mail } from "lucide-react";
+import { Settings2, Radio, Droplet, Mail, MessageSquare } from "lucide-react";
 import DeviceProtocolsTab from "@/components/config/DeviceProtocolsTab";
 import FuelDetectionTab from "@/components/config/FuelDetectionTab";
 import EnrichmentTab from "@/components/config/EnrichmentTab";
 import SmtpConfigTab from "@/components/config/SmtpConfigTab";
+import SmsGatewayTab from "@/components/config/SmsGatewayTab";
 import ConfigQuickStats from "@/components/config/ConfigQuickStats";
 import ConfigQuickActions from "@/components/config/ConfigQuickActions";
 import { toast } from "sonner";
@@ -66,7 +67,7 @@ const SystemConfig = () => {
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4 glass p-1 h-14">
+          <TabsList className="grid w-full grid-cols-5 glass p-1 h-14">
             <TabsTrigger value="protocols" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg">
               <Radio className="h-4 w-4" aria-hidden="true" />
               Device Protocols
@@ -82,6 +83,10 @@ const SystemConfig = () => {
             <TabsTrigger value="smtp" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg">
               <Mail className="h-4 w-4" aria-hidden="true" />
               SMTP / Email
+            </TabsTrigger>
+            <TabsTrigger value="sms" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg">
+              <MessageSquare className="h-4 w-4" aria-hidden="true" />
+              SMS Gateway
             </TabsTrigger>
           </TabsList>
 
@@ -106,6 +111,12 @@ const SystemConfig = () => {
           <TabsContent value="smtp" className="animate-scale-in">
             <Card className="p-6 glass-strong border-2 hover:border-primary/50 transition-all duration-300">
               <SmtpConfigTab />
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="sms" className="animate-scale-in">
+            <Card className="p-6 glass-strong border-2 hover:border-primary/50 transition-all duration-300">
+              <SmsGatewayTab />
             </Card>
           </TabsContent>
         </Tabs>
