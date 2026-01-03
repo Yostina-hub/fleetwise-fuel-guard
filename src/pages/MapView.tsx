@@ -10,6 +10,7 @@ import { MapSidebarSkeleton } from "@/components/ui/skeletons";
 import StatusBadge from "@/components/StatusBadge";
 import LiveTrackingMap from "@/components/map/LiveTrackingMap";
 import ClusteredMap from "@/components/map/ClusteredMap";
+import { NearbyVehiclesSearch } from "@/components/map/NearbyVehiclesSearch";
 import { 
   Navigation, 
   Fuel, 
@@ -21,13 +22,16 @@ import {
   ChevronRight,
   Satellite,
   Map,
-  Filter
+  Filter,
+  Radar,
+  Clock
 } from "lucide-react";
 import { GpsJammingIndicator } from "@/components/map/GpsJammingIndicator";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { cn } from "@/lib/utils";
+import { formatDistanceToNow } from "date-fns";
 
 const CLUSTER_THRESHOLD = 100;
 
@@ -43,11 +47,19 @@ const MapView = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'moving' | 'idle' | 'stopped' | 'offline'>('all');
+  const [showNearbySearch, setShowNearbySearch] = useState(false);
   
   const [mapStyle, setMapStyle] = useState<'streets' | 'satellite'>('satellite');
   const [mapToken] = useState<string>(() => localStorage.getItem('mapbox_token') || '');
   const envToken = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
   const [mapInstance, setMapInstance] = useState<any>(null);
+  
+  // Helper to check if data is stale (>5 mins old)
+  const isStaleData = (lastSeen?: string): boolean => {
+    if (!lastSeen) return true;
+    const minutesSince = (Date.now() - new Date(lastSeen).getTime()) / 1000 / 60;
+    return minutesSince > 5;
+  };
   
   // Transform vehicles for map display with telemetry data
   const vehicles = useMemo(() => {
@@ -258,7 +270,39 @@ const MapView = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Nearby Vehicles Search Button */}
+              <Button
+                variant={showNearbySearch ? "default" : "secondary"}
+                size="sm"
+                className="h-9 gap-2 bg-background/90 backdrop-blur-sm border shadow-lg"
+                onClick={() => setShowNearbySearch(!showNearbySearch)}
+                aria-label="Search for nearby vehicles"
+                aria-pressed={showNearbySearch}
+              >
+                <Radar className="w-4 h-4" aria-hidden="true" />
+                <span className="hidden sm:inline">Nearby</span>
+              </Button>
             </div>
+
+            {/* Nearby Vehicles Search Panel */}
+            {showNearbySearch && (
+              <div className="absolute top-36 left-4 z-10">
+                <NearbyVehiclesSearch
+                  vehicles={vehicles}
+                  onVehicleSelect={(v) => {
+                    setSelectedVehicleId(v.id);
+                    setShowNearbySearch(false);
+                    mapInstance?.flyTo({
+                      center: [v.lng, v.lat],
+                      zoom: 16,
+                      duration: 1200,
+                    });
+                  }}
+                  onClose={() => setShowNearbySearch(false)}
+                />
+              </div>
+            )}
           </div>
 
           {/* Sidebar Toggle Button */}
@@ -401,7 +445,8 @@ const MapView = () => {
                           "p-3 rounded-lg cursor-pointer transition-all",
                           "hover:bg-muted/80",
                           isSelected && "bg-primary/10 ring-1 ring-primary/30",
-                          vehicle.isOffline && "opacity-50"
+                          vehicle.isOffline && "opacity-50",
+                          !vehicle.isOffline && isStaleData(vehicle.lastSeen) && "opacity-70 border-l-2 border-warning"
                         )}
                         onClick={() => handleVehicleClick(vehicle)}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleVehicleClick(vehicle); } }}
@@ -447,6 +492,13 @@ const MapView = () => {
                               spoofingDetected={vehicle.gps_spoofing_detected}
                               showLabel={true}
                             />
+                            {/* Stale data indicator */}
+                            {isStaleData(vehicle.lastSeen) && vehicle.lastSeen && (
+                              <div className="flex items-center gap-1 text-xs text-warning">
+                                <Clock className="w-3 h-3" aria-hidden="true" />
+                                <span>Updated {formatDistanceToNow(new Date(vehicle.lastSeen), { addSuffix: true })}</span>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
