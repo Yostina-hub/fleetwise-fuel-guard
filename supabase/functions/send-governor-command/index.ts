@@ -91,7 +91,7 @@ serve(async (req) => {
         phone_number: phoneNumber,
         sms_content: smsMessage,
         status: "pending",
-        sent_by: command.userId,
+        created_by: command.userId,
       })
       .select()
       .single();
