@@ -6299,6 +6299,10 @@ export type Database = {
         }
         Returns: string
       }
+      recalculate_driver_stats: {
+        Args: { p_organization_id?: string }
+        Returns: undefined
+      }
       send_notification: {
         Args: {
           _link?: string
