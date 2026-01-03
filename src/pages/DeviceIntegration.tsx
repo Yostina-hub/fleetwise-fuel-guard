@@ -17,6 +17,8 @@ import { DeviceHealthSummary } from "@/components/devices/DeviceHealthSummary";
 import { AddDeviceDialog } from "@/components/devices/AddDeviceDialog";
 import DeviceQuickStats from "@/components/devices/DeviceQuickStats";
 import DeviceQuickActions from "@/components/devices/DeviceQuickActions";
+import { DeviceCommandsTab } from "@/components/devices/DeviceCommandsTab";
+import { RawTelemetryTab } from "@/components/devices/RawTelemetryTab";
 import { deviceTemplates, DeviceTemplate } from "@/data/deviceTemplates";
 
 const DeviceIntegration = () => {
@@ -227,6 +229,8 @@ const DeviceIntegration = () => {
           <div className="overflow-x-auto">
             <TabsList className="w-max">
               <TabsTrigger value="devices">Device Management</TabsTrigger>
+              <TabsTrigger value="commands">Commands</TabsTrigger>
+              <TabsTrigger value="telemetry">Raw Telemetry</TabsTrigger>
               <TabsTrigger value="heartbeat">Heartbeat Monitor</TabsTrigger>
               <TabsTrigger value="realtime">Live Status</TabsTrigger>
               <TabsTrigger value="alerts">Offline Alerts</TabsTrigger>
@@ -237,6 +241,14 @@ const DeviceIntegration = () => {
 
           <TabsContent value="devices" className="space-y-4">
             <DeviceManagementTab />
+          </TabsContent>
+
+          <TabsContent value="commands" className="space-y-4">
+            <DeviceCommandsTab />
+          </TabsContent>
+
+          <TabsContent value="telemetry" className="space-y-4">
+            <RawTelemetryTab />
           </TabsContent>
 
           <TabsContent value="heartbeat" className="space-y-4">

@@ -489,6 +489,56 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
   return Math.round(R * c * 100) / 100; // Round to 2 decimal places
 }
 
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
+const RATE_LIMIT_MAX_REQUESTS = 120; // Max 120 requests per minute per device
+
+// Check and update rate limit for a device
+async function checkRateLimit(supabase: any, deviceId: string): Promise<{ allowed: boolean; remaining: number }> {
+  const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
+  
+  // Get current request count for this device in the window
+  const { data: rateLimit, error: fetchError } = await supabase
+    .from('device_rate_limits')
+    .select('id, request_count, window_start')
+    .eq('device_id', deviceId)
+    .gte('window_start', windowStart)
+    .order('window_start', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (fetchError) {
+    console.warn('Error checking rate limit:', fetchError);
+    return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS }; // Allow on error
+  }
+
+  if (rateLimit) {
+    // Check if within limit
+    if (rateLimit.request_count >= RATE_LIMIT_MAX_REQUESTS) {
+      return { allowed: false, remaining: 0 };
+    }
+    
+    // Increment count
+    await supabase
+      .from('device_rate_limits')
+      .update({ request_count: rateLimit.request_count + 1 })
+      .eq('id', rateLimit.id);
+    
+    return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - rateLimit.request_count - 1 };
+  } else {
+    // Create new rate limit record
+    await supabase
+      .from('device_rate_limits')
+      .insert({
+        device_id: deviceId,
+        window_start: new Date().toISOString(),
+        request_count: 1,
+      });
+    
+    return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1 };
+  }
+}
+
 // Process a single GPS data point
 async function processGPSData(
   supabase: any,
@@ -534,6 +584,17 @@ async function processGPSData(
   if (device.auth_token && deviceToken && device.auth_token !== deviceToken) {
     console.error('Invalid device token for IMEI:', imei);
     return { error: 'Invalid device authentication token', status: 401 };
+  }
+
+  // Check rate limit
+  const rateCheck = await checkRateLimit(supabase, device.id);
+  if (!rateCheck.allowed) {
+    console.warn('Rate limit exceeded for device:', imei);
+    return { 
+      error: 'Rate limit exceeded. Max 120 requests per minute.', 
+      status: 429,
+      retry_after: 60,
+    };
   }
 
   // Update device last_heartbeat
