@@ -34,9 +34,14 @@ import { format, subDays, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { exportToCSV, exportToPDF } from "@/lib/exportUtils";
 import { cn } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Report components
 import { ReportKPICards } from "@/components/reports/ReportKPICards";
+import { ReportsQuickStats } from "@/components/reports/ReportsQuickStats";
+import { ReportsQuickActions } from "@/components/reports/ReportsQuickActions";
+import { ReportsInsightsCard } from "@/components/reports/ReportsInsightsCard";
+import { ReportsTrendChart } from "@/components/reports/ReportsTrendChart";
 import { SpeedingEventsTable } from "@/components/reports/SpeedingEventsTable";
 import { DriverEventsTable } from "@/components/reports/DriverEventsTable";
 import { GeofenceEventsTable } from "@/components/reports/GeofenceEventsTable";
@@ -66,6 +71,7 @@ const Reports = () => {
 
   const { vehicles } = useVehicles();
   const { drivers } = useDrivers();
+  const queryClient = useQueryClient();
   
   // Convert string dates to Date objects for the hook
   const dateRange = useMemo(() => ({
@@ -349,6 +355,14 @@ const Reports = () => {
     toast.success("Report exported to PDF");
   };
 
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['trips'] });
+    queryClient.invalidateQueries({ queryKey: ['driver-events'] });
+    queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+    queryClient.invalidateQueries({ queryKey: ['drivers'] });
+    toast.success("Refreshing report data...");
+  };
+
   // Render content based on active tabs
   const renderContent = () => {
     if (loading) {
@@ -454,6 +468,13 @@ const Reports = () => {
           </div>
         </div>
 
+        {/* Quick Stats */}
+        <ReportsQuickStats 
+          metrics={metrics} 
+          vehicleCount={vehicles.length} 
+          driverCount={drivers.length} 
+        />
+
         {/* Main Report Tabs */}
         <div className="border-b border-border overflow-x-auto">
           <nav className="flex gap-1 min-w-max">
@@ -549,6 +570,22 @@ const Reports = () => {
 
         {/* KPI Cards */}
         <ReportKPICards metrics={metrics} activeTab={activeReportTab} />
+
+        {/* Quick Actions, Insights & Trend Chart Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <ReportsQuickActions
+            onExportCSV={handleExportCSV}
+            onExportPDF={handleExportPDF}
+            onRefresh={handleRefresh}
+            isLoading={loading}
+          />
+          <ReportsInsightsCard metrics={metrics} />
+          <ReportsTrendChart 
+            trips={trips} 
+            driverEvents={driverEvents} 
+            activeTab={activeReportTab} 
+          />
+        </div>
 
         {/* Search */}
         <div className="flex items-center gap-4">
