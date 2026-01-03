@@ -49,7 +49,9 @@ import GeofenceEventsTab from "@/components/geofencing/GeofenceEventsTab";
 import ScheduleConfigSection from "@/components/geofencing/ScheduleConfigSection";
 import ColorPicker from "@/components/geofencing/ColorPicker";
 import GeofenceQuickStats from "@/components/geofencing/GeofenceQuickStats";
+import GeofenceQuickActions from "@/components/geofencing/GeofenceQuickActions";
 import GeofenceInsightsCard from "@/components/geofencing/GeofenceInsightsCard";
+import GeofenceTrendChart from "@/components/geofencing/GeofenceTrendChart";
 import { startOfDay, subDays } from "date-fns";
 
 const Geofencing = () => {
@@ -584,27 +586,29 @@ const Geofencing = () => {
               </div>
             </div>
 
-            {/* Quick Stats - Compact for side panel */}
-            <div className="grid grid-cols-3 gap-2">
-              <Card className="glass-strong">
-                <CardContent className="p-3 text-center">
-                  <p className="text-xl font-bold">{geofenceStats.totalGeofences}</p>
-                  <p className="text-xs text-muted-foreground">Total</p>
-                </CardContent>
-              </Card>
-              <Card className="glass-strong">
-                <CardContent className="p-3 text-center">
-                  <p className="text-xl font-bold text-success">{geofenceStats.activeGeofences}</p>
-                  <p className="text-xs text-muted-foreground">Active</p>
-                </CardContent>
-              </Card>
-              <Card className="glass-strong">
-                <CardContent className="p-3 text-center">
-                  <p className="text-xl font-bold text-warning">{geofenceStats.eventsToday}</p>
-                  <p className="text-xs text-muted-foreground">Events Today</p>
-                </CardContent>
-              </Card>
-            </div>
+            {/* Quick Stats */}
+            <GeofenceQuickStats
+              totalGeofences={geofenceStats.totalGeofences}
+              activeGeofences={geofenceStats.activeGeofences}
+              eventsToday={geofenceStats.eventsToday}
+              entryEvents={geofenceStats.entryEvents}
+              exitEvents={geofenceStats.exitEvents}
+              dwellAlerts={geofenceStats.dwellAlerts}
+            />
+
+            {/* Quick Actions */}
+            <GeofenceQuickActions
+              onNewGeofence={() => setIsCreateDialogOpen(true)}
+              onViewEvents={() => setActiveTab("events")}
+              onConfigureAlerts={() => setIsCreateDialogOpen(true)}
+              onViewMap={() => setActiveTab("map")}
+            />
+
+            {/* Trend Chart */}
+            <GeofenceTrendChart />
+
+            {/* Insights */}
+            <GeofenceInsightsCard />
 
             {/* Create Button & Dialog */}
               <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
