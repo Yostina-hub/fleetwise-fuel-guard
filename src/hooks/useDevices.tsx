@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useOrganization } from "./useOrganization";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export interface Device {
   id: string;
@@ -24,6 +24,21 @@ export interface Device {
   notes?: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface TestEndpointResult {
+  success: boolean;
+  status: number;
+  responseTime: number;
+  response: any;
+  request: {
+    imei: string;
+    lat: number;
+    lng: number;
+    speed: number;
+    fuel: number;
+    ignition: string;
+  };
 }
 
 export const useDevices = () => {
@@ -281,6 +296,86 @@ export const useDevices = () => {
     },
   });
 
+  // Test the actual GPS data receiver endpoint
+  const testEndpoint = useMutation({
+    mutationFn: async (device: { id: string; imei: string; vehicle_id?: string }): Promise<TestEndpointResult> => {
+      const startTime = Date.now();
+      
+      // Generate test GPS data
+      const testData = {
+        imei: device.imei,
+        lat: 9.0214 + (Math.random() - 0.5) * 0.01,
+        lng: 38.7624 + (Math.random() - 0.5) * 0.01,
+        speed: Math.floor(Math.random() * 80),
+        fuel: Math.floor(50 + Math.random() * 50),
+        ignition: '1',
+        heading: Math.floor(Math.random() * 360),
+        satellites: 8 + Math.floor(Math.random() * 4),
+        signal_strength: 70 + Math.floor(Math.random() * 30),
+      };
+
+      try {
+        const response = await supabase.functions.invoke('gps-data-receiver', {
+          body: testData,
+        });
+
+        const endTime = Date.now();
+        const responseTime = endTime - startTime;
+
+        if (response.error) {
+          return {
+            success: false,
+            status: 500,
+            responseTime,
+            response: response.error,
+            request: testData,
+          };
+        }
+
+        return {
+          success: true,
+          status: 200,
+          responseTime,
+          response: response.data,
+          request: testData,
+        };
+      } catch (error: any) {
+        const endTime = Date.now();
+        return {
+          success: false,
+          status: error.status || 500,
+          responseTime: endTime - startTime,
+          response: { error: error.message },
+          request: testData,
+        };
+      }
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["devices"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicle-telemetry"] });
+      
+      if (result.success) {
+        toast({
+          title: "Endpoint Test Successful",
+          description: `Response received in ${result.responseTime}ms`,
+        });
+      } else {
+        toast({
+          title: "Endpoint Test Failed",
+          description: result.response?.error || "Unknown error",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   return {
     devices,
     isLoading,
@@ -288,6 +383,7 @@ export const useDevices = () => {
     updateDevice,
     deleteDevice,
     testHeartbeat,
+    testEndpoint,
     refetch,
   };
 };
