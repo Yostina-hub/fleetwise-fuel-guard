@@ -2,6 +2,14 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
 
+export interface AssignedDriver {
+  id: string;
+  first_name: string;
+  last_name: string;
+  phone?: string;
+  avatar_url?: string;
+}
+
 export interface Vehicle {
   id: string;
   organization_id: string;
@@ -24,6 +32,8 @@ export interface Vehicle {
   notes?: string;
   created_at: string;
   updated_at: string;
+  assigned_driver_id?: string;
+  assigned_driver?: AssignedDriver;
   // Computed fields
   current_fuel?: number;
   current_speed?: number;
@@ -56,9 +66,10 @@ export const useVehicles = (skip = false) => {
           setLoading(true);
         }
         // Use explicit limit to handle large fleets (up to 5000 vehicles)
+        // Include assigned driver info via join
         const { data, error } = await supabase
           .from("vehicles")
-          .select("*")
+          .select("*, assigned_driver:drivers!vehicles_assigned_driver_id_fkey(id, first_name, last_name, phone, avatar_url)")
           .eq("organization_id", organizationId)
           .order("created_at", { ascending: false })
           .limit(5000);
@@ -121,7 +132,7 @@ export const useVehicles = (skip = false) => {
         setLoading(true);
         supabase
           .from("vehicles")
-          .select("*")
+          .select("*, assigned_driver:drivers!vehicles_assigned_driver_id_fkey(id, first_name, last_name, phone, avatar_url)")
           .eq("organization_id", organizationId)
           .then(({ data }) => {
             setVehicles((data as any) || []);

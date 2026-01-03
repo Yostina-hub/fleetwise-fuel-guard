@@ -26,6 +26,8 @@ interface Vehicle {
   gps_hdop?: number;
   gps_fix_type?: string;
   speed_limit?: number;
+  driverName?: string;
+  driverPhone?: string;
 }
 
 interface LiveTrackingMapProps {
@@ -275,6 +277,7 @@ return () => {
                   <span class="popup-plate">${vehicle.plate}</span>
                   <span class="popup-status popup-status-${vehicle.status}">${vehicle.status}</span>
                 </div>
+                ${vehicle.driverName ? `<div class="popup-driver"><span class="popup-driver-icon">👤</span> ${vehicle.driverName}${vehicle.driverPhone ? ` <span class="popup-driver-phone">(${vehicle.driverPhone})</span>` : ''}</div>` : '<div class="popup-driver popup-no-driver">No driver assigned</div>'}
                 ${isOverspeeding ? `<div class="popup-overspeeding">⚠️ Overspeeding: ${vehicle.speed} km/h (limit: ${speedLimit})</div>` : ''}
                 <div class="popup-stats">
                   <div class="popup-stat">
