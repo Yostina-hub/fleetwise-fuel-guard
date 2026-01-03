@@ -1257,41 +1257,62 @@ export const DeviceManagementTab = () => {
                   <Radio className="h-4 w-4" aria-hidden="true" />
                   Test Data Sent
                 </h4>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Smartphone className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                    <span className="text-muted-foreground">IMEI:</span>
-                    <span className="font-mono">{testResult.request.imei}</span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Smartphone className="h-3 w-3" aria-hidden="true" />
+                      IMEI
+                    </span>
+                    <span className="font-mono text-xs">{testResult.request.imei}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Gauge className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                    <span className="text-muted-foreground">Speed:</span>
-                    <span className="font-semibold">{testResult.request.speed} km/h</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                    <span className="text-muted-foreground">Lat:</span>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <MapPin className="h-3 w-3" aria-hidden="true" />
+                      Latitude
+                    </span>
                     <span className="font-mono">{testResult.request.lat.toFixed(6)}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Fuel className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                    <span className="text-muted-foreground">Fuel:</span>
-                    <span className="font-semibold">{testResult.request.fuel}%</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                    <span className="text-muted-foreground">Lng:</span>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <MapPin className="h-3 w-3" aria-hidden="true" />
+                      Longitude
+                    </span>
                     <span className="font-mono">{testResult.request.lng.toFixed(6)}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Mountain className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                    <span className="text-muted-foreground">Alt:</span>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Mountain className="h-3 w-3" aria-hidden="true" />
+                      Altitude
+                    </span>
                     <span className="font-semibold">{testResult.request.altitude || 0}m</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                    <span className="text-muted-foreground">Ignition:</span>
-                    <Badge variant="outline" className="h-5">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Gauge className="h-3 w-3" aria-hidden="true" />
+                      Speed
+                    </span>
+                    <span className="font-semibold">{testResult.request.speed} km/h</span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Fuel className="h-3 w-3" aria-hidden="true" />
+                      Fuel Level
+                    </span>
+                    <span className="font-semibold">{testResult.request.fuel}%</span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Signal className="h-3 w-3" aria-hidden="true" />
+                      GPS Signal
+                    </span>
+                    <span className="font-semibold">{testResult.request.gps_signal || 85}%</span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Zap className="h-3 w-3" aria-hidden="true" />
+                      Ignition
+                    </span>
+                    <Badge variant="outline" className="h-5 w-fit">
                       {testResult.request.ignition === '1' ? 'ON' : 'OFF'}
                     </Badge>
                   </div>
