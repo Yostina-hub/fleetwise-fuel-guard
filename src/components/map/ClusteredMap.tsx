@@ -21,6 +21,8 @@ interface VehiclePoint {
   heading?: number;
   engine_on?: boolean;
   speedLimit?: number;
+  driverName?: string;
+  driverPhone?: string;
 }
 
 interface ClusteredMapProps {
@@ -221,6 +223,7 @@ const ClusteredMap = ({
                   <span class="popup-plate">${vehicle.plate}</span>
                   <span class="popup-status popup-status-${vehicle.status}">${vehicle.status}</span>
                 </div>
+                ${vehicle.driverName ? `<div class="popup-driver"><span class="popup-driver-icon">👤</span> ${vehicle.driverName}${vehicle.driverPhone ? ` <span class="popup-driver-phone">(${vehicle.driverPhone})</span>` : ''}</div>` : '<div class="popup-driver popup-no-driver">No driver assigned</div>'}
                 ${isOverspeeding ? `<div class="popup-overspeeding">⚠️ Overspeeding (limit: ${vehicle.speedLimit} km/h)</div>` : ''}
                 <div class="popup-stats">
                   <div class="popup-stat">

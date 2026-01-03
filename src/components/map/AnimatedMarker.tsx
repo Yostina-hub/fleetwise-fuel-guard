@@ -291,6 +291,30 @@ export function injectMarkerAnimations() {
       border-radius: 4px;
       margin: 8px 0;
     }
+
+    .popup-driver {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: #374151;
+      padding: 6px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .popup-driver-icon {
+      font-size: 11px;
+    }
+
+    .popup-driver-phone {
+      font-size: 10px;
+      color: #6b7280;
+    }
+
+    .popup-no-driver {
+      color: #9ca3af;
+      font-style: italic;
+    }
   `;
   document.head.appendChild(style);
 }

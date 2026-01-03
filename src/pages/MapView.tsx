@@ -81,6 +81,7 @@ const MapView = () => {
       // For offline vehicles, preserve last known position if available
       if (!online || !vehicleTelemetry) {
         const lastKnownTelemetry = telemetry[v.id]; // May still have stale data
+        const driver = v.assigned_driver;
         return {
           id: v.id,
           plate: v.plate_number || 'Unknown',
@@ -98,6 +99,8 @@ const MapView = () => {
           gps_jamming_detected: false,
           gps_spoofing_detected: false,
           speedLimit,
+          driverName: driver ? `${driver.first_name} ${driver.last_name}` : undefined,
+          driverPhone: driver?.phone,
         };
       }
       
@@ -114,6 +117,7 @@ const MapView = () => {
         status = 'stopped';
       }
       
+      const driver = v.assigned_driver;
       return {
         id: v.id,
         plate: v.plate_number || 'Unknown',
@@ -133,6 +137,8 @@ const MapView = () => {
         gps_jamming_detected: vehicleTelemetry.gps_jamming_detected,
         gps_spoofing_detected: vehicleTelemetry.gps_spoofing_detected,
         speedLimit,
+        driverName: driver ? `${driver.first_name} ${driver.last_name}` : undefined,
+        driverPhone: driver?.phone,
       };
     });
   }, [dbVehicles, telemetry, isVehicleOnline, governorConfigs]);
