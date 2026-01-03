@@ -35,8 +35,8 @@ const OrganizationSettingsTab = () => {
     primary_color: "#0066cc",
     secondary_color: "#333333",
     default_language: "en",
-    default_timezone: "UTC",
-    currency: "USD",
+    default_timezone: "Africa/Addis_Ababa",
+    currency: "ETB",
     distance_unit: "km",
     enable_2fa: false,
     enforce_2fa: false,
@@ -50,8 +50,8 @@ const OrganizationSettingsTab = () => {
         primary_color: settings.primary_color || "#0066cc",
         secondary_color: settings.secondary_color || "#333333",
         default_language: settings.default_language || "en",
-        default_timezone: settings.default_timezone || "UTC",
-        currency: settings.currency || "USD",
+        default_timezone: settings.default_timezone || "Africa/Addis_Ababa",
+        currency: settings.currency || "ETB",
         distance_unit: settings.distance_unit || "km",
         enable_2fa: settings.enable_2fa || false,
         enforce_2fa: settings.enforce_2fa || false,
@@ -172,8 +172,8 @@ const OrganizationSettingsTab = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="USD">USD ($)</SelectItem>
                 <SelectItem value="ETB">Ethiopian Birr (Br)</SelectItem>
+                <SelectItem value="USD">USD ($)</SelectItem>
                 <SelectItem value="EUR">Euro (€)</SelectItem>
                 <SelectItem value="GBP">British Pound (£)</SelectItem>
                 <SelectItem value="AED">UAE Dirham (د.إ)</SelectItem>
