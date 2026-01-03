@@ -147,7 +147,7 @@ const Dashboard = () => {
         location: locationName
       };
     });
-  }, [dbVehicles]);
+  }, [dbVehicles, telemetryMap]);
 
   // Transform alerts for display
   const recentAlerts = useMemo(() => {
@@ -298,37 +298,45 @@ const Dashboard = () => {
               <VehicleUtilizationCard vehicles={dbVehicles} telemetryMap={telemetryMap} />
             </div>
 
-            {/* Analytics Widgets Row */}
+            {/* Quick Analytics Preview */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <UtilizationGauge
-                utilizationRate={analytics.utilization.utilizationRate}
-                activeVehicles={analytics.utilization.activeVehicles}
-                totalVehicles={dbVehicles.length}
+              <MetricCard
+                title="Utilization"
+                value={`${analytics.utilization.utilizationRate.toFixed(0)}%`}
+                subtitle={`${analytics.utilization.activeVehicles} of ${dbVehicles.length} vehicles`}
+                icon={<Activity className="w-5 h-5" />}
                 trend={analytics.utilization.trend}
-                trendPercentage={analytics.utilization.trendPercentage}
+                trendValue={`${analytics.utilization.trendPercentage.toFixed(1)}%`}
+                variant="primary"
               />
-              <TCOBreakdownCard
-                totalCost={analytics.tco.totalCost}
-                costPerVehicle={analytics.tco.costPerVehicle}
-                costPerKm={analytics.tco.costPerKm}
-                breakdown={analytics.tco.breakdown}
+              <MetricCard
+                title="Monthly TCO"
+                value={formatCurrency(analytics.tco.totalCost)}
+                subtitle={`${formatCurrency(analytics.tco.costPerKm)}/${settings.distance_unit}`}
+                icon={<DollarSign className="w-5 h-5" />}
                 trend={analytics.tco.trend}
-                trendPercentage={analytics.tco.trendPercentage}
-                formatCurrency={formatCurrency}
-                distanceUnit={settings.distance_unit}
+                trendValue={`${analytics.tco.trendPercentage.toFixed(1)}%`}
+                trendPositive={analytics.tco.trend === 'down'}
+                variant="default"
               />
-              <CarbonEmissionsCard
-                totalCO2Kg={analytics.carbon.totalCO2Kg}
-                averagePerVehicle={analytics.carbon.averagePerVehicle}
+              <MetricCard
+                title="Carbon Emissions"
+                value={`${(analytics.carbon.totalCO2Kg / 1000).toFixed(1)}t`}
+                subtitle={`${analytics.carbon.averagePerVehicle.toFixed(0)} kg/vehicle`}
+                icon={<TrendingUp className="w-5 h-5" />}
                 trend={analytics.carbon.trend}
-                trendPercentage={analytics.carbon.trendPercentage}
-                byFuelType={analytics.carbon.byFuelType}
+                trendValue={`${analytics.carbon.trendPercentage.toFixed(1)}%`}
+                trendPositive={analytics.carbon.trend === 'down'}
+                variant="success"
               />
-              <SafetyScoreCard
-                averageScore={analytics.safety.averageScore}
-                incidentsThisMonth={analytics.safety.incidentsThisMonth}
+              <MetricCard
+                title="Safety Score"
+                value={analytics.safety.averageScore.toFixed(0)}
+                subtitle={`${analytics.safety.incidentsThisMonth} incidents`}
+                icon={<AlertTriangle className="w-5 h-5" />}
                 trend={analytics.safety.trend}
-                trendPercentage={analytics.safety.trendPercentage}
+                trendValue={`${analytics.safety.trendPercentage.toFixed(1)}%`}
+                variant={analytics.safety.averageScore >= 80 ? "success" : "warning"}
               />
             </div>
 
