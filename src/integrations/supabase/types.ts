@@ -4462,6 +4462,59 @@ export type Database = {
           },
         ]
       }
+      sms_gateway_config: {
+        Row: {
+          api_key: string
+          api_secret: string | null
+          created_at: string
+          environment: string | null
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          organization_id: string
+          provider: string
+          sender_id: string | null
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          api_key: string
+          api_secret?: string | null
+          created_at?: string
+          environment?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          organization_id: string
+          provider?: string
+          sender_id?: string | null
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          api_key?: string
+          api_secret?: string | null
+          created_at?: string
+          environment?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          organization_id?: string
+          provider?: string
+          sender_id?: string | null
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_gateway_config_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       smtp_configurations: {
         Row: {
           created_at: string
