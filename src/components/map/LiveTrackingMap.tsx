@@ -25,6 +25,7 @@ interface Vehicle {
   gps_satellites_count?: number;
   gps_hdop?: number;
   gps_fix_type?: string;
+  speed_limit?: number;
 }
 
 interface LiveTrackingMapProps {
@@ -42,6 +43,8 @@ const map = useRef<mapboxgl.Map | null>(null);
 const markers = useRef<Map<string, mapboxgl.Marker>>(new Map());
 const previousPositions = useRef<Map<string, { lng: number; lat: number }>>(new Map());
 const resizeObserver = useRef<ResizeObserver | null>(null);
+const addressFetchTimeouts = useRef<Map<string, NodeJS.Timeout>>(new Map());
+const initialBoundsFitted = useRef(false);
 const [mapLoaded, setMapLoaded] = useState(false);
 const [tokenError, setTokenError] = useState<string | null>(null);
 const [tempToken, setTempToken] = useState('');
@@ -155,25 +158,37 @@ return () => {
     map.current.setStyle(targetStyle);
   }, [mapStyle]);
 
-  // Fetch address for a location
-  const fetchAddress = async (lng: number, lat: number, vehicleId: string) => {
-    try {
-      const mapboxToken = token || localStorage.getItem('mapbox_token') || import.meta.env.VITE_MAPBOX_TOKEN;
-      if (!mapboxToken) return;
-      
-      const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxToken}&types=poi,address,place`
-      );
-      const data = await response.json();
-      
-      if (data.features && data.features.length > 0) {
-        const place = data.features[0];
-        const address = place.place_name || place.text || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-        setVehicleAddresses(prev => new Map(prev).set(vehicleId, address));
-      }
-    } catch (error) {
-      console.error('Error fetching address:', error);
+  // Debounced address fetching to avoid API spam
+  const fetchAddressDebounced = (lng: number, lat: number, vehicleId: string) => {
+    // Clear existing timeout for this vehicle
+    const existingTimeout = addressFetchTimeouts.current.get(vehicleId);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
     }
+
+    // Set new debounced fetch
+    const timeout = setTimeout(async () => {
+      try {
+        const mapboxToken = token || localStorage.getItem('mapbox_token') || import.meta.env.VITE_MAPBOX_TOKEN;
+        if (!mapboxToken) return;
+        
+        const response = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxToken}&types=poi,address,place`
+        );
+        const data = await response.json();
+        
+        if (data.features && data.features.length > 0) {
+          const place = data.features[0];
+          const address = place.place_name || place.text || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+          setVehicleAddresses(prev => new Map(prev).set(vehicleId, address));
+        }
+      } catch (error) {
+        console.error('Error fetching address:', error);
+      }
+      addressFetchTimeouts.current.delete(vehicleId);
+    }, 500); // 500ms debounce
+
+    addressFetchTimeouts.current.set(vehicleId, timeout);
   };
 
   // Update vehicle markers
@@ -194,12 +209,16 @@ return () => {
     vehicles.forEach(vehicle => {
       // Fetch address if not already cached
       if (!vehicleAddresses.has(vehicle.id)) {
-        fetchAddress(vehicle.lng, vehicle.lat, vehicle.id);
+        fetchAddressDebounced(vehicle.lng, vehicle.lat, vehicle.id);
       }
       
       const address = vehicleAddresses.get(vehicle.id) || 'Loading address...';
       const existingMarker = markers.current.get(vehicle.id);
       const previousPos = previousPositions.current.get(vehicle.id);
+      
+      // Check if vehicle is overspeeding (speed > limit, default 80 km/h if no limit set)
+      const speedLimit = vehicle.speed_limit || 80;
+      const isOverspeeding = vehicle.speed > speedLimit;
 
       if (existingMarker && previousPos) {
         // Animate to new position smoothly
@@ -218,19 +237,31 @@ return () => {
           );
         }
 
-        // Update marker appearance
+        // Update marker appearance - recreate if overspeeding status changed
         const el = existingMarker.getElement();
         const isSelected = vehicle.id === selectedVehicleId;
-        el.style.borderWidth = isSelected ? '4px' : '2px';
-        el.style.borderColor = isSelected ? 'white' : '';
-      } else {
-        // Create new animated marker element
+        const wasOverspeeding = el.dataset.overspeeding === 'true';
+        
+        if (wasOverspeeding !== isOverspeeding) {
+          // Recreate marker with new styling
+          existingMarker.remove();
+          markers.current.delete(vehicle.id);
+        } else {
+          el.style.borderWidth = isSelected ? '4px' : '2px';
+          el.style.borderColor = isSelected ? 'white' : '';
+        }
+      }
+      
+      // Create new marker if needed
+      if (!markers.current.has(vehicle.id)) {
         const el = createAnimatedMarkerElement(
           vehicle.status,
           vehicle.id === selectedVehicleId,
           vehicle.engine_on,
-          vehicle.heading
+          vehicle.heading,
+          isOverspeeding
         );
+        el.dataset.overspeeding = isOverspeeding.toString();
 
         const marker = new mapboxgl.Marker({
           element: el,
@@ -244,6 +275,7 @@ return () => {
                   <span class="popup-plate">${vehicle.plate}</span>
                   <span class="popup-status popup-status-${vehicle.status}">${vehicle.status}</span>
                 </div>
+                ${isOverspeeding ? `<div class="popup-overspeeding">⚠️ Overspeeding: ${vehicle.speed} km/h (limit: ${speedLimit})</div>` : ''}
                 <div class="popup-stats">
                   <div class="popup-stat">
                     <span class="popup-stat-value">${vehicle.speed}</span>
@@ -280,7 +312,7 @@ return () => {
       previousPositions.current.set(vehicle.id, { lng: vehicle.lng, lat: vehicle.lat });
     });
 
-    // Center on selected vehicle or auto-fit bounds to show all vehicles
+    // Center on selected vehicle
     if (selectedVehicleId && vehicles.length > 0) {
       const selectedVehicle = vehicles.find(v => v.id === selectedVehicleId);
       if (selectedVehicle) {
@@ -291,10 +323,12 @@ return () => {
           essential: true
         });
       }
-    } else if (vehicles.length > 0) {
+    } else if (vehicles.length > 0 && !initialBoundsFitted.current) {
+      // Auto-fit bounds only on initial load
       const bounds = new mapboxgl.LngLatBounds();
       vehicles.forEach(v => bounds.extend([v.lng, v.lat]));
       map.current!.fitBounds(bounds, { padding: 50, maxZoom: 15 });
+      initialBoundsFitted.current = true;
     }
   }, [vehicles, mapLoaded, selectedVehicleId, onVehicleClick]);
 
