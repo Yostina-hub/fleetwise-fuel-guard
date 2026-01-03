@@ -2,6 +2,14 @@ import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
 
+export interface AssignedDriver {
+  id: string;
+  first_name: string;
+  last_name: string;
+  phone?: string;
+  avatar_url?: string;
+}
+
 export interface Vehicle {
   id: string;
   organization_id: string;
@@ -25,6 +33,8 @@ export interface Vehicle {
   notes?: string;
   created_at: string;
   updated_at: string;
+  assigned_driver_id?: string;
+  assigned_driver?: AssignedDriver;
 }
 
 interface UseVehiclesPaginatedOptions {
@@ -94,10 +104,10 @@ export const useVehiclesPaginated = (
       // Calculate offset
       const offset = (page - 1) * pageSize;
 
-      // Build query with pagination - get count in same query
+      // Build query with pagination - get count in same query, include assigned driver
       let query = supabase
         .from("vehicles")
-        .select("*", { count: "exact" })
+        .select("*, assigned_driver:drivers!vehicles_assigned_driver_id_fkey(id, first_name, last_name, phone, avatar_url)", { count: "exact" })
         .eq("organization_id", organizationId)
         .order(sortField, { ascending: sortDirection === "asc" })
         .range(offset, offset + pageSize - 1);
@@ -153,7 +163,7 @@ export const useVehiclesPaginated = (
 
       let query = supabase
         .from("vehicles")
-        .select("*")
+        .select("*, assigned_driver:drivers!vehicles_assigned_driver_id_fkey(id, first_name, last_name, phone, avatar_url)")
         .eq("organization_id", organizationId)
         .order(sortField, { ascending: sortDirection === "asc" })
         .range(offset, offset + pageSize - 1);
