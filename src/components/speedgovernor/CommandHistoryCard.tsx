@@ -4,7 +4,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { History, Clock, CheckCircle, XCircle, Loader2, Send } from "lucide-react";
+import { History, Clock, CheckCircle, XCircle, Loader2, Send, User } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface CommandLog {
@@ -154,6 +154,12 @@ export const CommandHistoryCard = () => {
                       {log.phone_number && (
                         <p className="text-xs text-muted-foreground mt-1">
                           To: {log.phone_number}
+                        </p>
+                      )}
+                      {(log.command_data as Record<string, unknown>)?.sent_by_name && (
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                          <User className="h-3 w-3" />
+                          By: {(log.command_data as Record<string, unknown>).sent_by_name as string}
                         </p>
                       )}
                     </div>

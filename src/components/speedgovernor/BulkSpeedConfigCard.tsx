@@ -10,20 +10,37 @@ import {
   Gauge,
   CheckCircle,
   Loader2,
-  Settings2
+  Settings2,
+  Zap
 } from "lucide-react";
 import { useSpeedGovernor } from "@/hooks/useSpeedGovernor";
 import { toast } from "sonner";
+import { BatchSpeedCommandDialog } from "./BatchSpeedCommandDialog";
+
+interface Vehicle {
+  id: string;
+  plate: string;
+  maxSpeed: number;
+  governorActive: boolean;
+  hasConfig?: boolean;
+}
 
 interface BulkSpeedConfigCardProps {
-  vehicles: Array<{ id: string; plate: string; maxSpeed: number; governorActive: boolean }>;
+  vehicles: Vehicle[];
 }
 
 export const BulkSpeedConfigCard = ({ vehicles }: BulkSpeedConfigCardProps) => {
   const [selectedVehicles, setSelectedVehicles] = useState<string[]>([]);
   const [bulkSpeedLimit, setBulkSpeedLimit] = useState<number>(80);
   const [isApplying, setIsApplying] = useState(false);
+  const [batchDialogOpen, setBatchDialogOpen] = useState(false);
   const { updateConfig } = useSpeedGovernor();
+
+  // Prepare vehicles with hasConfig for batch dialog
+  const vehiclesWithConfig = vehicles.map(v => ({
+    ...v,
+    hasConfig: v.maxSpeed > 0,
+  }));
 
   const handleSelectAll = () => {
     if (selectedVehicles.length === vehicles.length) {
@@ -85,6 +102,19 @@ export const BulkSpeedConfigCard = ({ vehicles }: BulkSpeedConfigCardProps) => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Quick Actions */}
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setBatchDialogOpen(true)}
+            className="gap-2"
+          >
+            <Zap className="h-4 w-4" />
+            Send Batch Command
+          </Button>
+        </div>
+
         {/* Speed Limit Input */}
         <div className="space-y-2">
           <Label htmlFor="bulk-speed-limit">Speed Limit (km/h)</Label>
@@ -173,6 +203,13 @@ export const BulkSpeedConfigCard = ({ vehicles }: BulkSpeedConfigCardProps) => {
             Apply to {selectedVehicles.length || "0"} Vehicles
           </Button>
         </div>
+
+        {/* Batch Command Dialog */}
+        <BatchSpeedCommandDialog
+          open={batchDialogOpen}
+          onOpenChange={setBatchDialogOpen}
+          vehicles={vehiclesWithConfig}
+        />
       </CardContent>
     </Card>
   );
