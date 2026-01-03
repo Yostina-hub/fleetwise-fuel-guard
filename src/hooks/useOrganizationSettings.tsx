@@ -19,17 +19,17 @@ export interface OrganizationSettings {
 }
 
 const DEFAULT_SETTINGS: Omit<OrganizationSettings, 'id' | 'organization_id'> = {
-  fuel_price_per_liter: 1.45,
-  currency: 'USD',
+  fuel_price_per_liter: 65.0,
+  currency: 'ETB',
   distance_unit: 'km',
   fuel_unit: 'liters',
-  avg_insurance_per_vehicle_annual: 1200,
-  avg_maintenance_per_vehicle_annual: 800,
+  avg_insurance_per_vehicle_annual: 50000,
+  avg_maintenance_per_vehicle_annual: 35000,
   depreciation_rate_percent: 15,
-  avg_vehicle_value: 25000,
+  avg_vehicle_value: 1500000,
   co2_per_liter_diesel: 2.68,
   co2_per_liter_petrol: 2.31,
-  default_timezone: 'UTC',
+  default_timezone: 'Africa/Addis_Ababa',
 };
 
 export const useOrganizationSettings = () => {
@@ -72,6 +72,7 @@ export const useOrganizationSettings = () => {
   // Currency formatting helper
   const formatCurrency = (value: number) => {
     const currencySymbols: Record<string, string> = {
+      ETB: 'Br ',
       USD: '$',
       EUR: '€',
       GBP: '£',

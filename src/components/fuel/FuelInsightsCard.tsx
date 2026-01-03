@@ -32,7 +32,7 @@ const FuelInsightsCard = ({
   avgCostPerLiter
 }: FuelInsightsCardProps) => {
   const { settings } = useOrganizationSettings();
-  const currencySymbol = settings?.currency === 'USD' ? '$' : settings?.currency === 'EUR' ? '€' : settings?.currency === 'GBP' ? '£' : settings?.currency || '$';
+  const currencySymbol = settings?.currency === 'ETB' ? 'Br ' : settings?.currency === 'USD' ? '$' : settings?.currency === 'EUR' ? '€' : settings?.currency === 'GBP' ? '£' : settings?.currency || 'Br ';
   const [expandedInsight, setExpandedInsight] = useState<string | null>(null);
 
   // Generate real insights based on actual fleet data
