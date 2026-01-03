@@ -5,10 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, Info } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { CheckCircle2, Info, Radio } from "lucide-react";
 
 interface DeviceFormData {
   vehicle_id: string;
+  protocol_id: string;
   imei: string;
   tracker_model: string;
   serial_number: string;
@@ -28,18 +30,28 @@ interface Vehicle {
   model: string;
 }
 
+interface Protocol {
+  id: string;
+  vendor: string;
+  protocol_name: string;
+  version: string | null;
+  is_active: boolean | null;
+}
+
 interface DeviceFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editingDevice: any | null;
   devices: any[] | undefined;
   vehicles: Vehicle[] | undefined;
+  protocols?: Protocol[] | undefined;
   onSubmit: (data: DeviceFormData) => void;
   isSubmitting?: boolean;
 }
 
 const initialFormData: DeviceFormData = {
   vehicle_id: "",
+  protocol_id: "",
   imei: "",
   tracker_model: "",
   serial_number: "",
@@ -58,6 +70,7 @@ export const DeviceFormDialog = ({
   editingDevice,
   devices,
   vehicles,
+  protocols,
   onSubmit,
   isSubmitting = false,
 }: DeviceFormDialogProps) => {
@@ -69,6 +82,7 @@ export const DeviceFormDialog = ({
     if (open && editingDevice) {
       setFormData({
         vehicle_id: editingDevice.vehicle_id || "",
+        protocol_id: editingDevice.protocol_id || "",
         imei: editingDevice.imei || "",
         tracker_model: editingDevice.tracker_model || "",
         serial_number: editingDevice.serial_number || "",
@@ -124,6 +138,11 @@ export const DeviceFormDialog = ({
       .map(d => d.vehicle_id) || [];
     return vehicles?.filter(v => !assignedVehicleIds.includes(v.id)) || [];
   }, [vehicles, devices, editingDevice]);
+
+  // Get active protocols
+  const activeProtocols = useMemo(() => {
+    return protocols?.filter(p => p.is_active !== false) || [];
+  }, [protocols]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -233,6 +252,40 @@ export const DeviceFormDialog = ({
             ) : (
               <p className="text-xs text-muted-foreground">e.g., YTWL CA100F, GT06N, TK103</p>
             )}
+          </div>
+
+          <div className="space-y-2 col-span-2">
+            <Label htmlFor="protocol" className="flex items-center gap-2">
+              <Radio className="h-4 w-4" aria-hidden="true" />
+              Device Protocol
+            </Label>
+            <Select
+              value={formData.protocol_id || "none"}
+              onValueChange={(value) => setFormData({ ...formData, protocol_id: value === "none" ? "" : value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select protocol" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Auto-detect protocol</SelectItem>
+                {activeProtocols?.map((protocol) => (
+                  <SelectItem key={protocol.id} value={protocol.id}>
+                    <div className="flex items-center gap-2">
+                      <span>{protocol.vendor}</span>
+                      <Badge variant="outline" className="text-xs">
+                        {protocol.protocol_name}
+                      </Badge>
+                      {protocol.version && (
+                        <span className="text-xs text-muted-foreground">v{protocol.version}</span>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Select a configured protocol decoder or leave as auto-detect
+            </p>
           </div>
 
           <div className="space-y-2">
