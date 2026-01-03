@@ -2,27 +2,9 @@ import { useState, useMemo } from "react";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Smartphone, Fuel, MapPin, Zap, CheckCircle, Plus, Settings, Activity } from "lucide-react";
+import { Smartphone, Fuel, MapPin, Zap, CheckCircle, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,207 +13,16 @@ import { DeviceManagementTab } from "@/components/devices/DeviceManagementTab";
 import { HeartbeatMonitoringTab } from "@/components/devices/HeartbeatMonitoringTab";
 import { DeviceStatusMonitor } from "@/components/devices/DeviceStatusMonitor";
 import { OfflineAlertsConfig } from "@/components/devices/OfflineAlertsConfig";
-
-// Popular device templates - pre-configured for plug-and-play with comprehensive GPS parameters
-const deviceTemplates = [
-  {
-    id: "teltonika_fmb920",
-    name: "Teltonika FMB920",
-    type: "gps",
-    vendor: "Teltonika",
-    description: "Professional GPS tracker with fuel monitoring - Popular in Ethiopia",
-    icon: "📍",
-    features: ["GPS", "Fuel Level", "Driver ID (RFID/iButton)", "Temperature", "4x Digital In", "2x Analog In", "CAN Bus", "Harsh Driving", "Towing Detection"],
-    parameters: ["Speed", "Heading", "Altitude", "Satellites", "HDOP", "Fuel %", "Fuel Liters", "Temp Sensor 1-3", "Ignition", "Battery V", "External V", "GSM Signal", "Odometer", "Engine Hours", "RPM", "Acceleration", "Braking", "Cornering", "Idling", "Door Sensors"],
-    protocol: "teltonika",
-    defaultPort: 5027,
-    popular: true,
-  },
-  {
-    id: "teltonika_fmb640",
-    name: "Teltonika FMB640",
-    type: "gps",
-    vendor: "Teltonika",
-    description: "Advanced tracker with extended I/O - Ideal for Ethiopian trucks",
-    icon: "🚛",
-    features: ["GPS", "6x Digital In", "2x Digital Out", "2x Analog In", "1-Wire", "RFID", "BLE", "CAN", "Tachograph"],
-    parameters: ["GPS Position", "Speed", "Heading", "Altitude", "Fuel Level", "Fuel Consumption", "Temperature 1-4", "Driver ID", "Cargo Door", "Panic Button", "Trailer Status", "PTO Status", "Battery Voltage", "Ignition", "Odometer", "Trip Distance", "Engine Hours", "Coolant Temp", "RPM"],
-    protocol: "teltonika",
-    defaultPort: 5027,
-    popular: true,
-  },
-  {
-    id: "queclink_gv300",
-    name: "Queclink GV300",
-    type: "gps",
-    vendor: "Queclink",
-    description: "Advanced vehicle tracker with CAN bus - Ethiopian market leader",
-    icon: "🚗",
-    features: ["GPS", "CAN Bus", "Fuel", "4x Digital In", "4x Analog In", "Driver Behavior", "RFID", "Temperature"],
-    parameters: ["Latitude", "Longitude", "Speed", "Heading", "Altitude", "Fuel Level %", "Fuel Liters", "Fuel Rate", "Temp 1-2", "Driver RFID", "Harsh Acceleration", "Harsh Braking", "Harsh Cornering", "Ignition On/Off", "Main Power V", "Backup Battery V", "GSM/GPS Signal", "Odometer", "Engine RPM", "Throttle Position"],
-    protocol: "queclink",
-    defaultPort: 5028,
-    popular: true,
-  },
-  {
-    id: "queclink_gv500",
-    name: "Queclink GV500",
-    type: "gps",
-    vendor: "Queclink",
-    description: "Heavy-duty tracker for large Ethiopian fleets",
-    icon: "🚌",
-    features: ["GPS", "OBD-II", "CAN", "J1939", "Fuel", "Driver ID", "6x Digital I/O", "3x Analog In"],
-    parameters: ["GPS Data", "Speed", "Odometer", "Engine Hours", "Fuel Level", "Fuel Consumption", "Coolant Temp", "Engine Load", "RPM", "VIN", "Driver ID", "Door Status", "AC Status", "Seatbelt", "Airbag", "MIL Status", "Battery Voltage", "Panic Button", "Cargo Temp"],
-    protocol: "queclink",
-    defaultPort: 5028,
-    popular: true,
-  },
-  {
-    id: "ruptela_pro5",
-    name: "Ruptela Pro5",
-    type: "gps_fuel",
-    vendor: "Ruptela",
-    description: "Heavy-duty tracker for Ethiopian commercial fleets",
-    icon: "🚚",
-    features: ["GPS", "Fuel Sensors (Up to 5)", "Temperature (Up to 8)", "8x Digital In", "4x Analog In", "CAN/J1939", "Tachograph", "Eco Driving"],
-    parameters: ["Position", "Speed", "Course", "Altitude", "Fuel Tank 1-5", "Total Fuel", "Fuel Consumption", "Temp Probe 1-8", "Refrigeration Temp", "Driver 1 & 2 ID", "Tachograph Data", "Digital Inputs", "Analog Inputs", "Ignition", "Power Supply", "Battery", "GSM Strength", "Trip Odometer", "Total Odometer", "Engine Hours", "Eco Score"],
-    protocol: "ruptela",
-    defaultPort: 5029,
-    popular: true,
-  },
-  {
-    id: "concox_gt06n",
-    name: "Concox GT06N",
-    type: "gps",
-    vendor: "Concox",
-    description: "Budget-friendly GPS tracker - Popular entry-level in Ethiopia",
-    icon: "📱",
-    features: ["GPS", "Geo-fencing", "SOS", "Digital Input", "ACC Detection", "Vibration Alert"],
-    parameters: ["GPS Location", "Speed", "Direction", "Satellites", "GSM Signal", "Battery Level", "External Power", "Ignition Status", "Movement Alert", "Overspeed Alert"],
-    protocol: "gt06",
-    defaultPort: 5023,
-    popular: true,
-  },
-  {
-    id: "concox_at4",
-    name: "Concox AT4",
-    type: "gps",
-    vendor: "Concox",
-    description: "4G tracker with extended battery - Great for Ethiopian conditions",
-    icon: "📡",
-    features: ["4G LTE", "GPS", "ACC", "SOS", "Fuel Cut", "Relay Control", "Voice Monitoring"],
-    parameters: ["GPS Position", "Speed", "Heading", "LBS Location", "WiFi Positioning", "Ignition", "Battery %", "External Power V", "Movement", "Towing Alert", "Vibration", "Geo-fence Status"],
-    protocol: "gt06",
-    defaultPort: 5023,
-    popular: true,
-  },
-  {
-    id: "calamp_lmu3030",
-    name: "CalAmp LMU-3030",
-    type: "gps",
-    vendor: "CalAmp",
-    description: "Enterprise-grade tracking device - Premium Ethiopian solution",
-    icon: "⭐",
-    features: ["GPS", "Driver Behavior", "Maintenance", "Messaging", "4x Digital I/O", "CAN/J1939", "PTO Detection"],
-    parameters: ["GPS Quality", "Speed", "Heading", "Odometer", "Driver Behavior Score", "Harsh Events", "Idling Time", "Fuel Economy", "Engine Diagnostics", "Maintenance Alerts", "Digital Inputs", "Ignition", "Power", "Messages"],
-    protocol: "calamp",
-    defaultPort: 5030,
-    popular: false,
-  },
-  {
-    id: "omnicomm_lls",
-    name: "Omnicomm LLS Fuel Sensor",
-    type: "fuel",
-    vendor: "Omnicomm",
-    description: "High-precision capacitive fuel sensor - Ethiopian fuel theft solution",
-    icon: "⛽",
-    features: ["Fuel Level (±1mm accuracy)", "Temperature Compensation", "Theft Detection", "Refueling Detection", "Calibration Table"],
-    parameters: ["Fuel Level (mm)", "Fuel Volume (L)", "Fuel Temperature (°C)", "Sensor Status", "Calibration Status", "Fuel Change Rate", "Theft Alert", "Refuel Alert"],
-    protocol: "omnicomm",
-    defaultPort: 5031,
-    popular: true,
-  },
-  {
-    id: "coban_tk103",
-    name: "Coban TK103",
-    type: "gps",
-    vendor: "Coban",
-    description: "Affordable GPS tracker - Widely used in Ethiopian taxis",
-    icon: "🚕",
-    features: ["GPS", "SMS Control", "SOS", "Geo-fence", "Movement Alert", "Overspeed Alert"],
-    parameters: ["GPS Location", "Speed (km/h)", "Battery Status", "GSM Signal", "ACC Status", "Door Alarm", "SOS Status"],
-    protocol: "tk103",
-    defaultPort: 5002,
-    popular: true,
-  },
-  {
-    id: "topflytech_t8806",
-    name: "TopFlyTech T8806",
-    type: "gps",
-    vendor: "TopFlyTech",
-    description: "Multi-sensor tracker - Ethiopian cold chain specialist",
-    icon: "❄️",
-    features: ["GPS", "BLE 5.0", "Temperature (4x)", "Humidity", "Door Sensor", "Fuel", "Driver ID", "Camera Support"],
-    parameters: ["Location", "Speed", "Heading", "Temperature 1-4", "Humidity %", "BLE Temp Sensors", "Fuel Level", "Driver Card", "Door Open/Close", "Refrigeration Status", "Ignition", "Battery", "Camera Trigger"],
-    protocol: "topflytech",
-    defaultPort: 5032,
-    popular: true,
-  },
-  {
-    id: "jt701",
-    name: "JT701 CAN Bus Tracker",
-    type: "gps",
-    vendor: "JT701",
-    description: "CAN bus reader - Ethiopian OBD solution",
-    icon: "🔧",
-    features: ["GPS", "CAN Bus", "J1708", "Fuel from ECU", "DTC Codes", "Driver Behavior", "4x I/O"],
-    parameters: ["GPS Data", "VIN Number", "Fuel Level (ECU)", "Fuel Used", "Engine RPM", "Coolant Temp", "Engine Load %", "Throttle %", "DTC Codes", "MIL Status", "Harsh Driving", "Idling", "PTO", "Odometer (ECU)", "Engine Hours"],
-    protocol: "jt701",
-    defaultPort: 5033,
-    popular: false,
-  },
-  {
-    id: "meitrack_t366",
-    name: "Meitrack T366",
-    type: "gps",
-    vendor: "Meitrack",
-    description: "4G OBD tracker - Modern Ethiopian fleet solution",
-    icon: "🔌",
-    features: ["4G", "GPS", "OBD-II", "Fuel", "Driver Behavior", "BLE", "RFID", "Accident Detection"],
-    parameters: ["GPS Position", "Speed", "Odometer", "Fuel %", "Engine RPM", "Coolant Temp", "Battery V", "Throttle Position", "Engine Load", "Acceleration Events", "Braking Events", "Cornering Events", "Collision Detection", "Driver RFID", "BLE Devices"],
-    protocol: "meitrack",
-    defaultPort: 5034,
-    popular: true,
-  },
-  {
-    id: "ytwl_ca100f",
-    name: "YTWL CA100F Speed Governor",
-    type: "gps_governor",
-    vendor: "YTWL (Thingsasys)",
-    description: "GPS Speed Limiter/Governor - Ethiopian compliance solution",
-    icon: "🚦",
-    features: ["GPS Tracking", "Speed Limiting", "Remote Speed Control", "Over-speed Prevention", "Compliance Reports", "Driver Alerts", "Digital I/O", "Voice Warnings"],
-    parameters: ["GPS Position", "Current Speed", "Max Speed Setting", "Speed Limit Status", "Over-speed Events", "Speed Violations Count", "Governor Active/Inactive", "Ignition Status", "Digital Inputs", "Relay Output", "Odometer", "Trip Distance", "Engine Hours", "Battery Voltage", "GSM Signal", "GPS Satellites", "Driver Warnings Triggered", "Compliance Score", "Tamper Alerts"],
-    protocol: "ytwl",
-    defaultPort: 5035,
-    popular: true,
-  },
-];
+import { DeviceHealthSummary } from "@/components/devices/DeviceHealthSummary";
+import { AddDeviceDialog } from "@/components/devices/AddDeviceDialog";
+import { deviceTemplates, DeviceTemplate } from "@/data/deviceTemplates";
 
 const DeviceIntegration = () => {
   const { toast } = useToast();
   const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
-  const [step, setStep] = useState(1);
-  const [editingDevice, setEditingDevice] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    imei: "",
-    sim_iccid: "",
-    sim_msisdn: "",
-    vehicle_id: "",
-  });
+  const [activeTab, setActiveTab] = useState("devices");
 
   const { data: vehicles } = useQuery({
     queryKey: ["vehicles", organizationId],
@@ -261,55 +52,45 @@ const DeviceIntegration = () => {
     enabled: !!organizationId,
   });
 
-  // Categorize vehicles by assignment status
-  const vehiclesWithAssignmentStatus = useMemo(() => {
-    if (!vehicles || !devices) return { unassigned: [], assigned: [] };
-    
-    const assignedVehicleIds = new Set(
-      devices
-        .filter(d => d.vehicle_id && (!editingDevice || d.id !== editingDevice.id))
-        .map(d => d.vehicle_id)
-    );
-    
-    const unassigned = vehicles.filter(v => !assignedVehicleIds.has(v.id));
-    const assigned = vehicles
-      .filter(v => assignedVehicleIds.has(v.id))
-      .map(v => {
-        const device = devices.find(d => d.vehicle_id === v.id);
-        return {
-          ...v,
-          assignedDeviceId: device?.id,
-          assignedDeviceImei: device?.imei,
-        };
-      });
-    
-    return { unassigned, assigned };
-  }, [vehicles, devices, editingDevice]);
+  const { data: offlineAlertsConfig } = useQuery({
+    queryKey: ["offline-alerts-config", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return null;
+      const { data, error } = await supabase
+        .from("device_offline_alerts")
+        .select("id, is_active")
+        .eq("organization_id", organizationId)
+        .limit(1)
+        .maybeSingle();
+      if (error && error.code !== 'PGRST116') throw error;
+      return data as { id: string; is_active: boolean } | null;
+    },
+    enabled: !!organizationId,
+  });
+
+  const hasOfflineAlerts = !!offlineAlertsConfig?.id;
 
   const addDeviceMutation = useMutation({
-    mutationFn: async (data: any) => {
-      // Check if device with this IMEI already exists (for new devices only)
-      if (!editingDevice) {
-        const { data: existingDevice } = await supabase
-          .from("devices")
-          .select("id, imei")
-          .eq("imei", data.imei)
-          .eq("organization_id", organizationId!)
-          .maybeSingle();
+    mutationFn: async ({ formData, template }: { formData: any; template: DeviceTemplate }) => {
+      // Check if device with this IMEI already exists
+      const { data: existingDevice } = await supabase
+        .from("devices")
+        .select("id, imei")
+        .eq("imei", formData.imei)
+        .eq("organization_id", organizationId!)
+        .maybeSingle();
 
-        if (existingDevice) {
-          throw new Error(`A device with IMEI ${data.imei} already exists`);
-        }
+      if (existingDevice) {
+        throw new Error(`A device with IMEI ${formData.imei} already exists`);
       }
 
       // If vehicle is selected, unassign it from any other device first
-      if (data.vehicle_id) {
+      if (formData.vehicle_id) {
         const { data: deviceWithVehicle } = await supabase
           .from("devices")
           .select("id")
-          .eq("vehicle_id", data.vehicle_id)
+          .eq("vehicle_id", formData.vehicle_id)
           .eq("organization_id", organizationId!)
-          .neq("id", editingDevice?.id || "00000000-0000-0000-0000-000000000000")
           .maybeSingle();
 
         if (deviceWithVehicle) {
@@ -324,7 +105,7 @@ const DeviceIntegration = () => {
       const { data: protocolData } = await (supabase as any)
         .from("device_protocols")
         .select("id")
-        .eq("protocol_name", selectedTemplate.protocol)
+        .eq("protocol_name", template.protocol)
         .eq("organization_id", organizationId)
         .maybeSingle();
 
@@ -334,13 +115,13 @@ const DeviceIntegration = () => {
         const { data: newProtocol, error: newProtocolError } = await (supabase as any)
           .from("device_protocols")
           .insert({
-            protocol_name: selectedTemplate.protocol,
-            vendor: selectedTemplate.vendor,
+            protocol_name: template.protocol,
+            vendor: template.vendor,
             version: "1.0",
             organization_id: organizationId,
             decoder_config: {
-              port: selectedTemplate.defaultPort,
-              features: selectedTemplate.features,
+              port: template.defaultPort,
+              features: template.features,
             },
           })
           .select()
@@ -350,49 +131,29 @@ const DeviceIntegration = () => {
         protocolId = newProtocol.id;
       }
 
-      if (editingDevice) {
-        // Update existing device
-        const { error: updateError } = await supabase
-          .from("devices")
-          .update({
-            tracker_model: selectedTemplate.name,
-            sim_iccid: data.sim_iccid || null,
-            sim_msisdn: data.sim_msisdn || null,
-            vehicle_id: data.vehicle_id || null,
-            protocol_id: protocolId,
-            status: "active",
-          })
-          .eq("id", editingDevice.id);
+      // Create new device
+      const { error: deviceError } = await supabase
+        .from("devices")
+        .insert({
+          organization_id: organizationId,
+          imei: formData.imei,
+          tracker_model: template.name,
+          sim_iccid: formData.sim_iccid || null,
+          sim_msisdn: formData.sim_msisdn || null,
+          vehicle_id: formData.vehicle_id || null,
+          protocol_id: protocolId,
+          status: "active",
+        });
 
-        if (updateError) throw updateError;
-      } else {
-        // Create new device
-        const { error: deviceError } = await supabase
-          .from("devices")
-          .insert({
-            organization_id: organizationId,
-            imei: data.imei,
-            tracker_model: selectedTemplate.name,
-            sim_iccid: data.sim_iccid || null,
-            sim_msisdn: data.sim_msisdn || null,
-            vehicle_id: data.vehicle_id || null,
-            protocol_id: protocolId,
-            status: "active",
-          });
-
-        if (deviceError) throw deviceError;
-      }
+      if (deviceError) throw deviceError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["devices"] });
       toast({
-        title: "Device Saved Successfully!",
-        description: editingDevice 
-          ? "Your device information has been updated."
-          : "Your device has been added and is ready to receive data.",
+        title: "Device Added Successfully!",
+        description: "Your device has been added and is ready to receive data.",
       });
       setIsDialogOpen(false);
-      resetForm();
     },
     onError: (error: any) => {
       toast({
@@ -403,49 +164,16 @@ const DeviceIntegration = () => {
     },
   });
 
-  const resetForm = () => {
-    setFormData({
-      imei: "",
-      sim_iccid: "",
-      sim_msisdn: "",
-      vehicle_id: "",
-    });
-    setSelectedTemplate(null);
-    setEditingDevice(null);
-    setStep(1);
+  const handleAddDevice = (formData: any, template: DeviceTemplate) => {
+    addDeviceMutation.mutate({ formData, template });
   };
 
-  const handleSelectTemplate = (template: any) => {
-    setSelectedTemplate(template);
-    setStep(2);
+  const handleQuickAssign = (device: any) => {
+    setActiveTab("devices");
   };
 
-  const handleEditDevice = (device: any) => {
-    // Find the template for this device
-    const template = deviceTemplates.find(t => t.name === device.tracker_model);
-    
-    setEditingDevice(device);
-    setSelectedTemplate(template || deviceTemplates[0]);
-    setFormData({
-      imei: device.imei,
-      sim_iccid: device.sim_iccid || "",
-      sim_msisdn: device.sim_msisdn || "",
-      vehicle_id: device.vehicle_id || "",
-    });
-    setStep(2);
-    setIsDialogOpen(true);
-  };
-
-  const handleSubmit = () => {
-    if (!formData.imei || !selectedTemplate) {
-      toast({
-        title: "Missing Information",
-        description: "Please enter device IMEI",
-        variant: "destructive",
-      });
-      return;
-    }
-    addDeviceMutation.mutate(formData);
+  const handleConfigureAlerts = () => {
+    setActiveTab("alerts");
   };
 
   return (
@@ -461,273 +189,19 @@ const DeviceIntegration = () => {
               Add GPS trackers and fuel sensors in 3 simple steps - no coding required
             </p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button size="lg" className="gap-2" aria-label="Add new device">
-                <Plus className="h-5 w-5" aria-hidden="true" />
-                Add Device
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingDevice 
-                    ? "Edit Device" 
-                    : step === 1 
-                    ? "Step 1: Choose Your Device" 
-                    : "Step 2: Enter Device Details"}
-                </DialogTitle>
-                <DialogDescription>
-                  {editingDevice
-                    ? "Update device information"
-                    : step === 1
-                    ? "Select your device model from our pre-configured templates"
-                    : "Enter your device information - we'll handle the rest automatically"}
-                </DialogDescription>
-              </DialogHeader>
-
-              {step === 1 && !editingDevice ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {deviceTemplates.map((template) => (
-                      <Card
-                        key={template.id}
-                        className={`cursor-pointer transition-all hover:shadow-lg hover:scale-105 ${
-                          selectedTemplate?.id === template.id ? "ring-2 ring-primary" : ""
-                        }`}
-                        onClick={() => handleSelectTemplate(template)}
-                      >
-                        <CardHeader>
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="text-4xl">{template.icon}</div>
-                              <div>
-                                <CardTitle className="text-lg">{template.name}</CardTitle>
-                                <p className="text-sm text-muted-foreground">{template.vendor}</p>
-                              </div>
-                            </div>
-                            {template.popular && (
-                              <Badge variant="default" className="bg-gradient-to-r from-primary to-primary/80">
-                                Popular
-                              </Badge>
-                            )}
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-sm text-muted-foreground mb-3">{template.description}</p>
-                          <div className="space-y-3">
-                            <div>
-                              <p className="text-xs font-semibold mb-2">Features:</p>
-                              <div className="flex flex-wrap gap-2">
-                                {template.features.map((feature) => (
-                                  <Badge key={feature} variant="outline" className="text-xs">
-                                    {feature}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                            {template.parameters && (
-                              <div>
-                                <p className="text-xs font-semibold mb-2 text-primary">GPS Parameters Tracked:</p>
-                                <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
-                                  {template.parameters.map((param) => (
-                                    <Badge key={param} variant="secondary" className="text-xs">
-                                      {param}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {/* Selected Template Info */}
-                  <Card className="bg-primary/5 border-primary/20">
-                    <CardContent className="pt-6">
-                      <div className="flex items-center gap-4">
-                        <div className="text-5xl">{selectedTemplate?.icon}</div>
-                        <div>
-                          <h3 className="font-semibold text-lg">{selectedTemplate?.name}</h3>
-                          <p className="text-sm text-muted-foreground">{selectedTemplate?.description}</p>
-                          <div className="flex gap-2 mt-2">
-                            <Badge variant="outline">Auto-configured</Badge>
-                            <Badge variant="outline">Ready to use</Badge>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Device Details Form */}
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="imei">
-                        Device IMEI / Serial Number *
-                        <span className="text-xs text-muted-foreground ml-2">(15 digits)</span>
-                      </Label>
-                      <Input
-                        id="imei"
-                        placeholder="e.g., 867584032156789"
-                        value={formData.imei}
-                        onChange={(e) => setFormData({ ...formData, imei: e.target.value })}
-                        maxLength={15}
-                        disabled={!!editingDevice}
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {editingDevice ? "IMEI cannot be changed" : "Find this on your device label or box"}
-                      </p>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="vehicle">
-                        Assign to Vehicle (Optional)
-                        <span className="text-xs text-muted-foreground ml-2">
-                          ({vehiclesWithAssignmentStatus.unassigned.length} available)
-                        </span>
-                      </Label>
-                      <Select
-                        value={formData.vehicle_id}
-                        onValueChange={(value) => setFormData({ ...formData, vehicle_id: value === "none" ? "" : value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select vehicle (optional)">
-                            {formData.vehicle_id && vehicles?.find(v => v.id === formData.vehicle_id) && (
-                              <span className="flex items-center gap-2">
-                                <Badge variant="outline" className="font-mono">
-                                  {vehicles.find(v => v.id === formData.vehicle_id)?.plate_number}
-                                </Badge>
-                                <span className="text-muted-foreground">
-                                  {vehicles.find(v => v.id === formData.vehicle_id)?.make} {vehicles.find(v => v.id === formData.vehicle_id)?.model}
-                                </span>
-                              </span>
-                            )}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">
-                            <span className="text-muted-foreground">No vehicle assigned</span>
-                          </SelectItem>
-                          
-                          {vehiclesWithAssignmentStatus.unassigned.length > 0 && (
-                            <>
-                              <div className="px-2 py-1.5 text-xs font-semibold text-green-600 bg-green-50 dark:bg-green-950">
-                                ✓ Available Vehicles ({vehiclesWithAssignmentStatus.unassigned.length})
-                              </div>
-                              {vehiclesWithAssignmentStatus.unassigned.map((vehicle) => (
-                                <SelectItem key={vehicle.id} value={vehicle.id}>
-                                  <div className="flex items-center gap-2">
-                                    <Badge variant="outline" className="font-mono text-green-600 border-green-300">
-                                      {vehicle.plate_number}
-                                    </Badge>
-                                    <span>{vehicle.make} {vehicle.model}</span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </>
-                          )}
-                          
-                          {vehiclesWithAssignmentStatus.assigned.length > 0 && (
-                            <>
-                              <div className="px-2 py-1.5 text-xs font-semibold text-amber-600 bg-amber-50 dark:bg-amber-950 mt-1">
-                                ⚠ Assigned to Other Devices ({vehiclesWithAssignmentStatus.assigned.length})
-                              </div>
-                              {vehiclesWithAssignmentStatus.assigned.map((vehicle: any) => (
-                                <SelectItem key={vehicle.id} value={vehicle.id}>
-                                  <div className="flex items-center gap-2">
-                                    <Badge variant="outline" className="font-mono text-amber-600 border-amber-300">
-                                      {vehicle.plate_number}
-                                    </Badge>
-                                    <span>{vehicle.make} {vehicle.model}</span>
-                                    {vehicle.assignedDeviceImei && (
-                                      <span className="text-xs text-muted-foreground">
-                                        (IMEI: ...{vehicle.assignedDeviceImei.slice(-6)})
-                                      </span>
-                                    )}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </>
-                          )}
-                        </SelectContent>
-                      </Select>
-                      {formData.vehicle_id && vehiclesWithAssignmentStatus.assigned.find((v: any) => v.id === formData.vehicle_id) && (
-                        <p className="text-xs text-amber-600 mt-1">
-                          ⚠ This vehicle will be unassigned from its current device and reassigned to this one.
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="sim_iccid">
-                          SIM Card ICCID (Optional)
-                          <span className="text-xs text-muted-foreground ml-2">(19-20 digits)</span>
-                        </Label>
-                        <Input
-                          id="sim_iccid"
-                          placeholder="e.g., 8925101234567890123"
-                          value={formData.sim_iccid}
-                          onChange={(e) => setFormData({ ...formData, sim_iccid: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="sim_msisdn">
-                          SIM Phone Number (Optional)
-                          <span className="text-xs text-muted-foreground ml-2">(e.g., +251...)</span>
-                        </Label>
-                        <Input
-                          id="sim_msisdn"
-                          placeholder="e.g., +251911234567"
-                          value={formData.sim_msisdn}
-                          onChange={(e) => setFormData({ ...formData, sim_msisdn: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Auto-configuration Notice */}
-                  <Card className="bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800">
-                    <CardContent className="pt-6">
-                      <div className="flex items-start gap-3">
-                        <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" aria-hidden="true" />
-                        <div className="space-y-1">
-                          <p className="font-semibold text-green-900 dark:text-green-100">
-                            Automatic Configuration Enabled
-                          </p>
-                          <ul className="text-sm text-green-700 dark:text-green-200 space-y-1">
-                            <li>✓ Protocol automatically configured</li>
-                            <li>✓ Server port assigned: {selectedTemplate?.defaultPort}</li>
-                            <li>✓ Data parsing rules pre-loaded</li>
-                            <li>✓ Ready to receive data immediately</li>
-                          </ul>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
-
-              <DialogFooter className="gap-2">
-                {step === 2 && (
-                  <Button variant="outline" onClick={() => setStep(1)}>
-                    Back
-                  </Button>
-                )}
-                <Button
-                  onClick={step === 1 ? () => setStep(2) : handleSubmit}
-                  disabled={step === 1 ? !selectedTemplate : addDeviceMutation.isPending}
-                >
-                  {step === 1 ? "Continue" : addDeviceMutation.isPending ? "Adding..." : "Add Device"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button size="lg" className="gap-2" onClick={() => setIsDialogOpen(true)} aria-label="Add new device">
+            <Plus className="h-5 w-5" aria-hidden="true" />
+            Add Device
+          </Button>
         </div>
+
+        {/* Health Summary - Shows issues that need attention */}
+        <DeviceHealthSummary
+          devices={devices}
+          onAssignVehicle={handleQuickAssign}
+          onConfigureAlerts={handleConfigureAlerts}
+          hasOfflineAlerts={hasOfflineAlerts}
+        />
 
         {/* Features Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -748,8 +222,8 @@ const DeviceIntegration = () => {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-green-500/10 rounded-lg">
-                  <CheckCircle className="h-6 w-6 text-green-600" aria-hidden="true" />
+                <div className="p-3 bg-emerald-500/10 rounded-lg">
+                  <CheckCircle className="h-6 w-6 text-emerald-600" aria-hidden="true" />
                 </div>
                 <div>
                   <div className="text-2xl font-bold">Auto Config</div>
@@ -789,14 +263,13 @@ const DeviceIntegration = () => {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="devices" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <div className="overflow-x-auto">
             <TabsList className="w-max">
               <TabsTrigger value="devices">Device Management</TabsTrigger>
               <TabsTrigger value="heartbeat">Heartbeat Monitor</TabsTrigger>
               <TabsTrigger value="realtime">Live Status</TabsTrigger>
               <TabsTrigger value="alerts">Offline Alerts</TabsTrigger>
-              <TabsTrigger value="connected">Connected Devices</TabsTrigger>
               <TabsTrigger value="templates">Device Templates</TabsTrigger>
               <TabsTrigger value="guide">Setup Guide</TabsTrigger>
             </TabsList>
@@ -818,84 +291,10 @@ const DeviceIntegration = () => {
             <OfflineAlertsConfig />
           </TabsContent>
 
-          <TabsContent value="connected" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Your Connected Devices</CardTitle>
-                <CardDescription>All devices currently tracking your fleet</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {!devices || devices.length === 0 ? (
-                  <div className="text-center py-12" role="status" aria-label="No devices connected">
-                    <Smartphone className="h-16 w-16 text-muted-foreground mx-auto mb-4" aria-hidden="true" />
-                    <h3 className="text-lg font-semibold mb-2">No Devices Yet</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Click "Add Device" to connect your first GPS tracker or fuel sensor
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {devices.map((device: any) => (
-                      <Card key={device.id} className="hover:shadow-md transition-shadow">
-                        <CardContent className="pt-6">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4 min-w-0">
-                              <div className="p-3 bg-primary/10 rounded-lg">
-                                <Smartphone className="h-6 w-6 text-primary" aria-hidden="true" />
-                              </div>
-                              <div className="min-w-0">
-                                <h4 className="font-semibold truncate" title={device.tracker_model}>
-                                  {device.tracker_model}
-                                </h4>
-                                <div className="space-y-1 mt-1 min-w-0">
-                                  <p className="text-sm text-muted-foreground font-mono truncate" title={device.imei}>
-                                    IMEI: {device.imei}
-                                  </p>
-                                  {device.sim_msisdn && (
-                                    <p className="text-sm text-muted-foreground font-mono truncate" title={device.sim_msisdn}>
-                                      SIM: {device.sim_msisdn}
-                                    </p>
-                                  )}
-                                  {device.vehicles ? (
-                                    <p className="text-sm font-medium text-primary truncate" title={device.vehicles.plate_number}>
-                                      🚗 {device.vehicles.plate_number}
-                                    </p>
-                                  ) : (
-                                    <p className="text-sm text-muted-foreground italic">No vehicle assigned</p>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <Badge
-                                variant={device.status === "active" ? "default" : "secondary"}
-                                className="capitalize"
-                              >
-                                {device.status}
-                              </Badge>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleEditDevice(device)}
-                                aria-label={`Edit device ${device.tracker_model}`}
-                              >
-                                <Settings className="h-4 w-4" aria-hidden="true" />
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           <TabsContent value="templates" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {deviceTemplates.map((template) => (
-                <Card key={template.id} className="hover:shadow-lg transition-shadow">
+                <Card key={template.id} className="hover:shadow-lg transition-all">
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
@@ -997,7 +396,7 @@ const DeviceIntegration = () => {
                 </div>
 
                 <div className="flex gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center font-bold text-green-600">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center font-bold text-emerald-600">
                     3
                   </div>
                   <div>
@@ -1056,7 +455,7 @@ const DeviceIntegration = () => {
                       <div>
                         <h4 className="font-semibold mb-3 flex items-center gap-2">
                           <Fuel className="h-4 w-4 text-orange-600" aria-hidden="true" />
-                          Fuel Management (Critical for Ethiopia)
+                          Fuel Management
                         </h4>
                         <ul className="space-y-1.5 text-sm text-muted-foreground">
                           <li>• Real-time Fuel Level (%)</li>
@@ -1082,15 +481,13 @@ const DeviceIntegration = () => {
                           <li>• Engine Load (%)</li>
                           <li>• Throttle Position</li>
                           <li>• Battery Voltage</li>
-                          <li>• External Power Voltage</li>
                           <li>• MIL/Check Engine Status</li>
-                          <li>• DTC Error Codes</li>
                         </ul>
                       </div>
 
                       <div>
                         <h4 className="font-semibold mb-3 flex items-center gap-2">
-                          <Smartphone className="h-4 w-4 text-green-600" aria-hidden="true" />
+                          <Smartphone className="h-4 w-4 text-emerald-600" aria-hidden="true" />
                           Driver & Safety
                         </h4>
                         <ul className="space-y-1.5 text-sm text-muted-foreground">
@@ -1101,71 +498,16 @@ const DeviceIntegration = () => {
                           <li>• Overspeed Alerts</li>
                           <li>• Idling Time & Detection</li>
                           <li>• Collision/Accident Detection</li>
-                          <li>• Panic/SOS Button</li>
-                          <li>• Seatbelt Status</li>
-                          <li>• Driver Behavior Score</li>
-                          <li>• <strong>Speed Governor/Limiter (Compliance)</strong></li>
-                          <li>• <strong>Speed Violation Reporting</strong></li>
-                        </ul>
-                      </div>
-
-                      <div>
-                        <h4 className="font-semibold mb-3">🌡️ Temperature Monitoring</h4>
-                        <ul className="space-y-1.5 text-sm text-muted-foreground">
-                          <li>• Up to 8 Temperature Probes</li>
-                          <li>• Refrigeration Unit Monitoring</li>
-                          <li>• Cold Chain Compliance</li>
-                          <li>• Ambient Temperature</li>
-                          <li>• Fuel Tank Temperature</li>
-                          <li>• Cargo Temperature Zones</li>
-                        </ul>
-                      </div>
-
-                      <div>
-                        <h4 className="font-semibold mb-3">🚪 Digital & Analog Inputs</h4>
-                        <ul className="space-y-1.5 text-sm text-muted-foreground">
-                          <li>• Door Open/Close Sensors</li>
-                          <li>• Cargo Door Status</li>
-                          <li>• Trailer Connection Status</li>
-                          <li>• PTO (Power Take-Off) Status</li>
-                          <li>• AC Status</li>
-                          <li>• Custom Sensor Inputs</li>
-                          <li>• Towing/Movement Alerts</li>
-                          <li>• Vibration Sensors</li>
-                        </ul>
-                      </div>
-
-                      <div>
-                        <h4 className="font-semibold mb-3">📡 Communication & Connectivity</h4>
-                        <ul className="space-y-1.5 text-sm text-muted-foreground">
-                          <li>• GSM/4G Signal Strength</li>
-                          <li>• GPS Signal Quality</li>
-                          <li>• IMEI Number</li>
-                          <li>• SIM Card Status</li>
-                          <li>• Data Usage</li>
-                          <li>• Last Communication Time</li>
-                        </ul>
-                      </div>
-
-                      <div>
-                        <h4 className="font-semibold mb-3">🔧 Maintenance & Diagnostics</h4>
-                        <ul className="space-y-1.5 text-sm text-muted-foreground">
-                          <li>• Service Due Indicators</li>
-                          <li>• Maintenance Mileage Tracking</li>
-                          <li>• VIN Number</li>
-                          <li>• Firmware Version</li>
-                          <li>• Device Health Status</li>
-                          <li>• Sensor Fault Detection</li>
-                          <li>• Tachograph Data (EU-compliant)</li>
+                          <li>• Speed Governor/Limiter (Compliance)</li>
                         </ul>
                       </div>
                     </div>
 
-                    <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-950 dark:to-blue-950 rounded-lg border">
-                      <p className="text-sm font-semibold text-green-900 dark:text-green-100 mb-2">
+                    <div className="mt-6 p-4 bg-gradient-to-r from-emerald-50 to-blue-50 dark:from-emerald-950 dark:to-blue-950 rounded-lg border">
+                      <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-100 mb-2">
                         ✅ Optimized for Ethiopian Market
                       </p>
-                      <p className="text-sm text-green-700 dark:text-green-200">
+                      <p className="text-sm text-emerald-700 dark:text-emerald-200">
                         Our system is specifically configured for Ethiopian fleet operations with focus on fuel theft prevention, 
                         temperature monitoring for cold chain logistics, harsh road condition tracking, and driver safety. 
                         All parameters are automatically captured and stored - no additional configuration needed!
@@ -1177,6 +519,16 @@ const DeviceIntegration = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Add Device Dialog */}
+        <AddDeviceDialog
+          open={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
+          onSubmit={handleAddDevice}
+          isSubmitting={addDeviceMutation.isPending}
+          vehicles={vehicles}
+          devices={devices}
+        />
       </div>
     </Layout>
   );
