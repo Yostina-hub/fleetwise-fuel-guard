@@ -34,6 +34,11 @@ import { ComplianceReportGenerator } from "@/components/speedgovernor/Compliance
 import { SpeedLimitZonesTab } from "@/components/speedgovernor/SpeedLimitZonesTab";
 import { AlertRulesTab } from "@/components/speedgovernor/AlertRulesTab";
 import { CommandHistoryCard } from "@/components/speedgovernor/CommandHistoryCard";
+import { SpeedQuickStats } from "@/components/speedgovernor/SpeedQuickStats";
+import { SpeedQuickActions } from "@/components/speedgovernor/SpeedQuickActions";
+import { SpeedInsightsCard } from "@/components/speedgovernor/SpeedInsightsCard";
+import { DriverSpeedLeaderboard } from "@/components/speedgovernor/DriverSpeedLeaderboard";
+import { BulkSpeedConfigCard } from "@/components/speedgovernor/BulkSpeedConfigCard";
 
 const SpeedGovernor = () => {
   const { organizationId } = useOrganization();
@@ -89,87 +94,16 @@ const SpeedGovernor = () => {
           </Badge>
         </div>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Active Governors</p>
-                  {kpisLoading ? (
-                    <div className="h-9 w-16 bg-muted animate-pulse rounded" />
-                  ) : (
-                    <p className="text-3xl font-bold">{kpis?.activeGovernors || 0}/{kpis?.totalGovernors || 0}</p>
-                  )}
-                  <p className="text-xs text-green-600 mt-1">{kpis?.complianceRate || 0}% Compliance</p>
-                </div>
-                <div className="p-3 bg-green-500/10 rounded-lg">
-                  <CheckCircle className="h-8 w-8 text-green-600" aria-hidden="true" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Quick Stats Bar */}
+        <SpeedQuickStats />
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Today's Violations</p>
-                  {kpisLoading ? (
-                    <div className="h-9 w-12 bg-muted animate-pulse rounded" />
-                  ) : (
-                    <p className="text-3xl font-bold">{kpis?.todayViolations || 0}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {kpis && kpis.yesterdayViolations > 0 
-                      ? `${Math.round(((kpis.todayViolations - kpis.yesterdayViolations) / kpis.yesterdayViolations) * 100)}% from yesterday`
-                      : "vs yesterday"}
-                  </p>
-                </div>
-                <div className="p-3 bg-orange-500/10 rounded-lg">
-                  <AlertTriangle className="h-8 w-8 text-orange-600" aria-hidden="true" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Quick Actions */}
+        <SpeedQuickActions />
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Avg Speed Limit</p>
-                  {kpisLoading ? (
-                    <div className="h-9 w-20 bg-muted animate-pulse rounded" />
-                  ) : (
-                    <p className="text-3xl font-bold">{kpis?.avgSpeedLimit || 80} km/h</p>
-                  )}
-                  <p className="text-xs text-muted-foreground mt-1">Fleet average</p>
-                </div>
-                <div className="p-3 bg-blue-500/10 rounded-lg">
-                  <Gauge className="h-8 w-8 text-blue-600" aria-hidden="true" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Alerts Sent</p>
-                  {kpisLoading ? (
-                    <div className="h-9 w-12 bg-muted animate-pulse rounded" />
-                  ) : (
-                    <p className="text-3xl font-bold">{kpis?.alertsSent24h || 0}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground mt-1">Last 24 hours</p>
-                </div>
-                <div className="p-3 bg-purple-500/10 rounded-lg">
-                  <Bell className="h-8 w-8 text-purple-600" aria-hidden="true" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Insights Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <SpeedInsightsCard />
+          <DriverSpeedLeaderboard />
         </div>
 
         {/* Main Content Tabs */}
@@ -342,6 +276,9 @@ const SpeedGovernor = () => {
                 </CardContent>
               </Card>
             </div>
+            
+            {/* Bulk Speed Configuration */}
+            <BulkSpeedConfigCard vehicles={vehicles} />
             
             {/* Command History */}
             <CommandHistoryCard />
