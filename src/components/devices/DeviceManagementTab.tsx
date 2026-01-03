@@ -1218,24 +1218,30 @@ export const DeviceManagementTab = () => {
           {testResult && (
             <div className="space-y-4">
               {/* Status Summary */}
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-5 gap-2">
                 <div className="rounded-lg border p-3 text-center">
                   <div className={`text-2xl font-bold ${testResult.success ? 'text-emerald-500' : 'text-destructive'}`}>
                     {testResult.status}
                   </div>
-                  <div className="text-xs text-muted-foreground">Status Code</div>
+                  <div className="text-xs text-muted-foreground">Status</div>
                 </div>
                 <div className="rounded-lg border p-3 text-center">
                   <div className="text-2xl font-bold text-primary">
                     {testResult.responseTime}ms
                   </div>
-                  <div className="text-xs text-muted-foreground">Response Time</div>
+                  <div className="text-xs text-muted-foreground">Response</div>
                 </div>
                 <div className="rounded-lg border p-3 text-center">
                   <div className="text-lg font-bold text-primary">
                     {testResult.response?.protocol || 'JSON'}
                   </div>
                   <div className="text-xs text-muted-foreground">Protocol</div>
+                </div>
+                <div className="rounded-lg border p-3 text-center">
+                  <div className={`text-lg font-bold ${testResult.response?.crc_validation?.valid !== false ? 'text-emerald-500' : 'text-amber-500'}`}>
+                    {testResult.response?.crc_validation?.valid !== false ? '✓' : 'N/A'}
+                  </div>
+                  <div className="text-xs text-muted-foreground">CRC</div>
                 </div>
                 <div className="rounded-lg border p-3 text-center">
                   <div className={`text-2xl font-bold ${testResult.success ? 'text-emerald-500' : 'text-destructive'}`}>
