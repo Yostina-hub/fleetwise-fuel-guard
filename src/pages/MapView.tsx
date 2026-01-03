@@ -29,6 +29,7 @@ import {
 import { GpsJammingIndicator } from "@/components/map/GpsJammingIndicator";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
+import { useSpeedGovernor } from "@/hooks/useSpeedGovernor";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -39,6 +40,7 @@ const MapView = () => {
   const location = useLocation();
   const { vehicles: dbVehicles, loading, refetch } = useVehicles();
   const { telemetry, isVehicleOnline } = useVehicleTelemetry();
+  const { governorConfigs } = useSpeedGovernor();
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | undefined>(
     location.state?.selectedVehicleId
   );
@@ -63,9 +65,18 @@ const MapView = () => {
   
   // Transform vehicles for map display with telemetry data
   const vehicles = useMemo(() => {
+    // Build speed limit lookup from governor configs
+    const speedLimitMap: Record<string, number> = {};
+    governorConfigs?.forEach(config => {
+      if (config.governor_active && config.max_speed_limit) {
+        speedLimitMap[config.vehicle_id] = config.max_speed_limit;
+      }
+    });
+    
     return dbVehicles.map((v) => {
       const vehicleTelemetry = telemetry[v.id];
       const online = isVehicleOnline(v.id);
+      const speedLimit = speedLimitMap[v.id];
       
       // For offline vehicles, preserve last known position if available
       if (!online || !vehicleTelemetry) {
@@ -86,6 +97,7 @@ const MapView = () => {
           lastSeen: lastKnownTelemetry?.last_communication_at,
           gps_jamming_detected: false,
           gps_spoofing_detected: false,
+          speedLimit,
         };
       }
       
@@ -120,9 +132,10 @@ const MapView = () => {
         gps_fix_type: vehicleTelemetry.gps_fix_type,
         gps_jamming_detected: vehicleTelemetry.gps_jamming_detected,
         gps_spoofing_detected: vehicleTelemetry.gps_spoofing_detected,
+        speedLimit,
       };
     });
-  }, [dbVehicles, telemetry, isVehicleOnline]);
+  }, [dbVehicles, telemetry, isVehicleOnline, governorConfigs]);
 
   // Filter vehicles by search and status
   const filteredVehicles = useMemo(() => {
@@ -479,7 +492,12 @@ const MapView = () => {
                             <div className="flex items-center gap-4 text-xs text-muted-foreground">
                               <div className="flex items-center gap-1">
                                 <Navigation className="w-3 h-3" aria-hidden="true" />
-                                <span>{vehicle.speed} km/h</span>
+                                <span className={vehicle.speedLimit && vehicle.speed > vehicle.speedLimit ? "text-destructive font-medium" : ""}>
+                                  {vehicle.speed} km/h
+                                </span>
+                                {vehicle.speedLimit && vehicle.speed > vehicle.speedLimit && (
+                                  <span className="text-destructive text-[10px]">(limit: {vehicle.speedLimit})</span>
+                                )}
                               </div>
                               <div className="flex items-center gap-1">
                                 <Fuel className="w-3 h-3" aria-hidden="true" />
