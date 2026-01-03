@@ -15,6 +15,8 @@ interface GovernorCommand {
   organizationId: string;
   userId: string;
   isBatch?: boolean;
+  isRetry?: boolean;
+  originalCommandId?: string;
 }
 
 interface SmtpConfig {
@@ -184,6 +186,8 @@ async function processSingleCommand(supabase: any, command: GovernorCommand) {
     let commandData: Record<string, unknown> = {
       sent_by_name: userProfile?.full_name || "Unknown",
       sent_by_email: userProfile?.email || null,
+      is_retry: command.isRetry || false,
+      original_command_id: command.originalCommandId || null,
     };
 
     switch (command.commandType) {
