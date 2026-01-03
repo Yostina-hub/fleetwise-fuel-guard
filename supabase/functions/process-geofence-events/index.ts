@@ -179,7 +179,7 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Exit event - trigger penalty
+      // Exit event - trigger penalty and create alert
       if (!isInside && wasInside) {
         if (geofence.enable_exit_alarm) {
           const enteredAt = currentStateMap.get(geofence.id)?.entered_at;
@@ -199,12 +199,44 @@ Deno.serve(async (req) => {
             dwell_time_minutes: dwellMinutes,
           });
 
-          // Get driver_id for the vehicle
+          // Get vehicle and driver info
           const { data: vehicleData } = await supabase
             .from("vehicles")
-            .select("assigned_driver_id")
+            .select("assigned_driver_id, plate_number")
             .eq("id", vehicle_id)
             .single();
+
+          // Create an alert for geofence exit
+          const alertData = {
+            organization_id,
+            vehicle_id,
+            driver_id: vehicleData?.assigned_driver_id || null,
+            alert_type: "geofence_exit",
+            severity: "warning",
+            title: `Vehicle exited: ${geofence.name}`,
+            message: `Vehicle ${vehicleData?.plate_number || vehicle_id} has left the geofence "${geofence.name}". Duration inside: ${dwellMinutes || 0} minutes.`,
+            alert_time: new Date().toISOString(),
+            lat,
+            lng,
+            location_name: geofence.name,
+            status: "active",
+            alert_data: {
+              geofence_id: geofence.id,
+              geofence_name: geofence.name,
+              dwell_minutes: dwellMinutes,
+              exit_speed_kmh: telemetry.speed_kmh,
+            },
+          };
+
+          const { error: alertError } = await supabase
+            .from("alerts")
+            .insert(alertData);
+
+          if (alertError) {
+            console.error("Error creating geofence exit alert:", alertError);
+          } else {
+            console.log(`Alert created for vehicle ${vehicle_id} exiting geofence ${geofence.name}`);
+          }
 
           // Trigger penalty for geofence exit if driver is assigned
           if (vehicleData?.assigned_driver_id) {
