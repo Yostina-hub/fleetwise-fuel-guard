@@ -16,86 +16,38 @@ import {
   Clock,
   Building2,
   Loader2,
-  Download
+  Download,
+  Car
 } from "lucide-react";
+import { useIncidentsManagement, InsuranceClaim } from "@/hooks/useIncidentsManagement";
+import { useVehicles } from "@/hooks/useVehicles";
 import { format } from "date-fns";
 
 const ITEMS_PER_PAGE = 10;
-
-// Mock data for insurance claims
-const mockClaims = [
-  {
-    id: "1",
-    claim_number: "CLM-00001234",
-    incident_id: "inc-1",
-    incident_number: "INC-00000001",
-    insurance_company: "SafeDrive Insurance",
-    policy_number: "POL-789456",
-    claim_amount: 15000,
-    approved_amount: 12500,
-    status: "approved",
-    filed_date: "2025-12-15",
-    resolved_date: "2025-12-28",
-    notes: "Collision damage claim - front bumper replacement",
-  },
-  {
-    id: "2",
-    claim_number: "CLM-00001235",
-    incident_id: "inc-2",
-    incident_number: "INC-00000002",
-    insurance_company: "FleetGuard Co.",
-    policy_number: "POL-123789",
-    claim_amount: 8500,
-    approved_amount: null,
-    status: "pending",
-    filed_date: "2025-12-20",
-    resolved_date: null,
-    notes: "Windshield replacement after road debris damage",
-  },
-  {
-    id: "3",
-    claim_number: "CLM-00001236",
-    incident_id: "inc-3",
-    incident_number: "INC-00000003",
-    insurance_company: "SafeDrive Insurance",
-    policy_number: "POL-789456",
-    claim_amount: 25000,
-    approved_amount: null,
-    status: "under_review",
-    filed_date: "2025-12-22",
-    resolved_date: null,
-    notes: "Major body work required after parking lot incident",
-  },
-  {
-    id: "4",
-    claim_number: "CLM-00001237",
-    incident_id: "inc-4",
-    incident_number: "INC-00000004",
-    insurance_company: "TruckSafe Ltd.",
-    policy_number: "POL-456123",
-    claim_amount: 3500,
-    approved_amount: 0,
-    status: "rejected",
-    filed_date: "2025-12-10",
-    resolved_date: "2025-12-18",
-    notes: "Claim rejected - pre-existing damage not covered",
-  },
-];
 
 const InsuranceClaimsTab = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [loading] = useState(false);
+
+  const { claims, loading, createClaim } = useIncidentsManagement();
+  const { vehicles } = useVehicles();
 
   const [newClaim, setNewClaim] = useState({
-    incident_number: '',
-    insurance_company: '',
+    vehicle_id: '',
+    insurance_provider: '',
     policy_number: '',
     claim_amount: 0,
+    claim_type: 'damage',
     notes: '',
   });
+
+  const getVehiclePlate = (vehicleId?: string) => {
+    if (!vehicleId) return "N/A";
+    const vehicle = vehicles.find(v => v.id === vehicleId);
+    return vehicle?.plate_number || "Unknown";
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -114,12 +66,12 @@ const InsuranceClaimsTab = () => {
     }
   };
 
-  const filteredClaims = mockClaims.filter(claim => {
+  const filteredClaims = claims.filter(claim => {
     const matchesStatus = statusFilter === 'all' || claim.status === statusFilter;
     const matchesSearch = !searchQuery || 
       claim.claim_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.insurance_company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.incident_number.toLowerCase().includes(searchQuery.toLowerCase());
+      claim.insurance_provider?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      claim.policy_number?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesStatus && matchesSearch;
   });
 
@@ -130,6 +82,27 @@ const InsuranceClaimsTab = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [statusFilter, searchQuery]);
+
+  const handleCreateClaim = async () => {
+    if (!newClaim.vehicle_id) return;
+    await createClaim({
+      vehicle_id: newClaim.vehicle_id,
+      insurance_provider: newClaim.insurance_provider || undefined,
+      policy_number: newClaim.policy_number || undefined,
+      claim_amount: newClaim.claim_amount || undefined,
+      claim_type: newClaim.claim_type,
+      notes: newClaim.notes || undefined,
+    });
+    setShowCreateDialog(false);
+    setNewClaim({
+      vehicle_id: '',
+      insurance_provider: '',
+      policy_number: '',
+      claim_amount: 0,
+      claim_type: 'damage',
+      notes: '',
+    });
+  };
 
   if (loading) {
     return (
@@ -199,32 +172,44 @@ const InsuranceClaimsTab = () => {
                     <div className="flex items-center gap-3 flex-wrap">
                       <span className="font-mono font-semibold">{claim.claim_number}</span>
                       {getStatusBadge(claim.status)}
-                      <Badge variant="outline">Linked: {claim.incident_number}</Badge>
+                      <Badge variant="outline" className="capitalize">{claim.claim_type}</Badge>
                     </div>
 
-                    <p className="text-sm">{claim.notes}</p>
+                    {claim.notes && <p className="text-sm">{claim.notes}</p>}
 
                     <div className="flex items-center gap-6 text-sm text-muted-foreground flex-wrap">
+                      {claim.insurance_provider && (
+                        <span className="flex items-center gap-1">
+                          <Building2 className="w-4 h-4" aria-hidden="true" />
+                          {claim.insurance_provider}
+                        </span>
+                      )}
+                      {claim.policy_number && (
+                        <span className="flex items-center gap-1">
+                          <FileText className="w-4 h-4" aria-hidden="true" />
+                          Policy: {claim.policy_number}
+                        </span>
+                      )}
                       <span className="flex items-center gap-1">
-                        <Building2 className="w-4 h-4" aria-hidden="true" />
-                        {claim.insurance_company}
+                        <Car className="w-4 h-4" aria-hidden="true" />
+                        {getVehiclePlate(claim.vehicle_id)}
                       </span>
-                      <span className="flex items-center gap-1">
-                        <FileText className="w-4 h-4" aria-hidden="true" />
-                        Policy: {claim.policy_number}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" aria-hidden="true" />
-                        Filed: {format(new Date(claim.filed_date), "MMM dd, yyyy")}
-                      </span>
+                      {claim.filed_date && (
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" aria-hidden="true" />
+                          Filed: {format(new Date(claim.filed_date), "MMM dd, yyyy")}
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex gap-4 text-sm">
-                      <span className="flex items-center gap-1">
-                        <DollarSign className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-                        Claimed: <span className="font-semibold">${claim.claim_amount.toLocaleString()}</span>
-                      </span>
-                      {claim.approved_amount !== null && (
+                      {claim.claim_amount && (
+                        <span className="flex items-center gap-1">
+                          <DollarSign className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+                          Claimed: <span className="font-semibold">${claim.claim_amount.toLocaleString()}</span>
+                        </span>
+                      )}
+                      {claim.approved_amount !== null && claim.approved_amount !== undefined && (
                         <span className="flex items-center gap-1">
                           Approved: <span className="font-semibold text-success">${claim.approved_amount.toLocaleString()}</span>
                         </span>
@@ -258,19 +243,44 @@ const InsuranceClaimsTab = () => {
           <DialogHeader>
             <DialogTitle>File Insurance Claim</DialogTitle>
             <DialogDescription>
-              Submit a new insurance claim linked to an existing incident.
+              Submit a new insurance claim for a vehicle.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
             <div>
-              <Label htmlFor="claim-incident">Linked Incident</Label>
-              <Input 
-                id="claim-incident"
-                value={newClaim.incident_number}
-                onChange={e => setNewClaim({...newClaim, incident_number: e.target.value})}
-                placeholder="INC-00000001"
-                aria-label="Linked incident number"
-              />
+              <Label htmlFor="claim-vehicle">Vehicle *</Label>
+              <Select 
+                value={newClaim.vehicle_id}
+                onValueChange={v => setNewClaim({...newClaim, vehicle_id: v})}
+              >
+                <SelectTrigger id="claim-vehicle" aria-label="Select vehicle">
+                  <SelectValue placeholder="Select vehicle" />
+                </SelectTrigger>
+                <SelectContent>
+                  {vehicles.map(v => (
+                    <SelectItem key={v.id} value={v.id}>{v.plate_number}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="claim-type">Claim Type</Label>
+              <Select 
+                value={newClaim.claim_type}
+                onValueChange={v => setNewClaim({...newClaim, claim_type: v})}
+              >
+                <SelectTrigger id="claim-type" aria-label="Select claim type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="damage">Damage</SelectItem>
+                  <SelectItem value="theft">Theft</SelectItem>
+                  <SelectItem value="accident">Accident</SelectItem>
+                  <SelectItem value="liability">Liability</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -278,8 +288,8 @@ const InsuranceClaimsTab = () => {
                 <Label htmlFor="claim-company">Insurance Company</Label>
                 <Input 
                   id="claim-company"
-                  value={newClaim.insurance_company}
-                  onChange={e => setNewClaim({...newClaim, insurance_company: e.target.value})}
+                  value={newClaim.insurance_provider}
+                  onChange={e => setNewClaim({...newClaim, insurance_provider: e.target.value})}
                   placeholder="Company name"
                   aria-label="Insurance company name"
                 />
@@ -324,7 +334,7 @@ const InsuranceClaimsTab = () => {
             <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={() => setShowCreateDialog(false)} aria-label="Submit insurance claim">
+            <Button onClick={handleCreateClaim} disabled={!newClaim.vehicle_id} aria-label="Submit insurance claim">
               File Claim
             </Button>
           </DialogFooter>
