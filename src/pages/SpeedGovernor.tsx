@@ -21,8 +21,6 @@ import {
   MapPin,
   Loader2
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { useSpeedGovernor } from "@/hooks/useSpeedGovernor";
@@ -40,59 +38,30 @@ import { CommandHistoryCard } from "@/components/speedgovernor/CommandHistoryCar
 const SpeedGovernor = () => {
   const { organizationId } = useOrganization();
   const { telemetry, isVehicleOnline } = useVehicleTelemetry();
-  const { kpis, kpisLoading, updateConfig } = useSpeedGovernor();
-  const [selectedVehicle, setSelectedVehicle] = useState<string>("");
+  const { kpis, kpisLoading, updateConfig, governorConfigs } = useSpeedGovernor();
+  
+  // Separate state for different tabs to avoid confusion
+  const [controlVehicle, setControlVehicle] = useState<string>("");
+  const [playbackVehicle, setPlaybackVehicle] = useState<string>("");
   const [speedLimit, setSpeedLimit] = useState<number>(80);
   const [isGovernorActive, setIsGovernorActive] = useState(true);
 
-  const { data: vehicles } = useQuery({
-    queryKey: ["vehicles-with-governors", organizationId],
-    queryFn: async () => {
-      // Fetch vehicles that have speed governor configs
-      const { data: governorConfigs, error } = await supabase
-        .from("speed_governor_config")
-        .select(`
-          id,
-          vehicle_id,
-          max_speed_limit,
-          governor_active,
-          updated_at,
-          vehicles:vehicle_id(
-            id,
-            plate_number,
-            devices(
-              id,
-              status,
-              last_heartbeat
-            )
-          )
-        `)
-        .eq("organization_id", organizationId!);
-
-      if (error) throw error;
-
-      // Transform data to match UI format
-      return governorConfigs?.map((config: any) => ({
-        id: config.vehicle_id,
-        plate: config.vehicles?.plate_number || "Unknown",
-        governorActive: config.governor_active,
-        currentSpeed: 0, // Would come from real-time telemetry
-        maxSpeed: config.max_speed_limit,
-        violations: 0,
-        lastUpdate: config.vehicles?.devices?.[0]?.last_heartbeat 
-          ? new Date(config.vehicles.devices[0].last_heartbeat).toLocaleString()
-          : "No signal",
-        deviceId: config.vehicles?.devices?.[0]?.id,
-        configId: config.id
-      })) || [];
-    },
-    enabled: !!organizationId,
-  });
+  // Transform governorConfigs from hook into vehicle list
+  const vehicles = governorConfigs?.map((config: any) => ({
+    id: config.vehicle_id,
+    plate: config.vehicles?.plate_number || "Unknown",
+    governorActive: config.governor_active,
+    currentSpeed: 0,
+    maxSpeed: config.max_speed_limit,
+    violations: 0,
+    lastUpdate: "Live",
+    configId: config.id
+  })) || [];
 
   const handleSendCommand = () => {
-    if (!selectedVehicle) return;
+    if (!controlVehicle) return;
     updateConfig.mutate({ 
-      vehicleId: selectedVehicle, 
+      vehicleId: controlVehicle, 
       maxSpeedLimit: speedLimit,
       governorActive: isGovernorActive 
     });
@@ -233,7 +202,7 @@ const SpeedGovernor = () => {
                 <CardContent className="space-y-4">
                   <div>
                     <Label htmlFor="vehicle-select">Select Vehicle</Label>
-                    <Select value={selectedVehicle} onValueChange={setSelectedVehicle}>
+                    <Select value={controlVehicle} onValueChange={setControlVehicle}>
                       <SelectTrigger>
                         <SelectValue placeholder="Choose vehicle" />
                       </SelectTrigger>
@@ -260,7 +229,7 @@ const SpeedGovernor = () => {
                       />
                       <Button 
                         onClick={handleSendCommand} 
-                        disabled={!selectedVehicle || updateConfig.isPending}
+                        disabled={!controlVehicle || updateConfig.isPending}
                       >
                         {updateConfig.isPending ? (
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
@@ -510,7 +479,7 @@ const SpeedGovernor = () => {
                     <Card className="bg-muted/50">
                       <CardContent className="pt-6">
                         <Label htmlFor="playback-vehicle">Select Vehicle</Label>
-                        <Select value={selectedVehicle} onValueChange={setSelectedVehicle}>
+                        <Select value={playbackVehicle} onValueChange={setPlaybackVehicle}>
                           <SelectTrigger id="playback-vehicle">
                             <SelectValue placeholder="Choose a vehicle to view route history" />
                           </SelectTrigger>
@@ -526,15 +495,15 @@ const SpeedGovernor = () => {
                     </Card>
 
                     {/* Route Playback Component */}
-                    {selectedVehicle && (
+                    {playbackVehicle && (
                       <RoutePlaybackMap
-                        vehicleId={selectedVehicle}
-                        vehiclePlate={vehicles.find(v => v.id === selectedVehicle)?.plate || ""}
-                        maxSpeed={vehicles.find(v => v.id === selectedVehicle)?.maxSpeed || 80}
+                        vehicleId={playbackVehicle}
+                        vehiclePlate={vehicles.find(v => v.id === playbackVehicle)?.plate || ""}
+                        maxSpeed={vehicles.find(v => v.id === playbackVehicle)?.maxSpeed || 80}
                       />
                     )}
 
-                    {!selectedVehicle && (
+                    {!playbackVehicle && (
                       <Card className="border-dashed">
                         <CardContent className="pt-12 pb-12 text-center" role="status" aria-label="Select a vehicle">
                           <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" aria-hidden="true" />
