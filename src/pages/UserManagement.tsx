@@ -30,8 +30,10 @@ import {
 } from "@/components/ui/pagination";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { User, UserPlus, Shield, Search } from "lucide-react";
+import { User, UserPlus, Shield, Search, Users } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
+import UsersQuickStats from "@/components/users/UsersQuickStats";
+import UsersQuickActions from "@/components/users/UsersQuickActions";
 
 const roles = [
   { value: "super_admin", label: "Super Admin", color: "destructive" },
@@ -198,17 +200,51 @@ const UserManagement = () => {
     );
   }
 
+  // Calculate stats
+  const userStats = {
+    totalUsers: users.length,
+    admins: users.filter(u => u.user_roles.some(r => r.role === 'super_admin')).length,
+    activeUsers: users.filter(u => u.user_roles.length > 0).length,
+    unassignedUsers: users.filter(u => u.user_roles.length === 0).length,
+  };
+
+  const handleInviteUser = () => {
+    toast({ title: "Coming Soon", description: "User invitation feature is under development" });
+  };
+
+  const handleExportUsers = () => {
+    toast({ title: "Exporting", description: "Exporting user data..." });
+  };
+
+  const handleBulkAssign = () => {
+    toast({ title: "Coming Soon", description: "Bulk role assignment is under development" });
+  };
+
   return (
     <Layout>
-      <div className="p-8 space-y-8">
-        <div className="flex items-center justify-between">
+      <div className="p-8 space-y-6 animate-fade-in">
+        <div className="flex items-center gap-3 slide-in-left">
+          <div className="p-4 rounded-2xl glass-strong glow">
+            <Users className="h-8 w-8 text-primary animate-float" aria-hidden="true" />
+          </div>
           <div>
-            <h1 className="text-3xl font-bold">User Management</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-4xl font-bold gradient-text">User Management</h1>
+            <p className="text-muted-foreground mt-1 text-lg">
               Manage users, roles, and permissions
             </p>
           </div>
         </div>
+
+        {/* Quick Stats */}
+        <UsersQuickStats {...userStats} />
+
+        {/* Quick Actions */}
+        <UsersQuickActions
+          onInviteUser={handleInviteUser}
+          onRefreshUsers={fetchUsers}
+          onExportUsers={handleExportUsers}
+          onBulkAssignRoles={handleBulkAssign}
+        />
 
         {/* Search and Filter */}
         <Card>
