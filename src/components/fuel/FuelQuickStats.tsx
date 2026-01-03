@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Minus, Fuel, Gauge, AlertTriangle, DollarSign } from "lucide-react";
@@ -9,19 +8,21 @@ interface FuelQuickStatsProps {
   anomalyCount: number;
   avgEfficiency: string | null;
   eventsCount: number;
+  consumptionTrend: { value: number; direction: 'up' | 'down' | 'neutral' };
+  avgCostPerLiter: number;
 }
 
-const FuelQuickStats = ({ totalConsumption, anomalyCount, avgEfficiency, eventsCount }: FuelQuickStatsProps) => {
-  const { formatCurrency, settings } = useOrganizationSettings();
+const FuelQuickStats = ({ 
+  totalConsumption, 
+  anomalyCount, 
+  avgEfficiency, 
+  eventsCount,
+  consumptionTrend,
+  avgCostPerLiter
+}: FuelQuickStatsProps) => {
+  const { formatCurrency } = useOrganizationSettings();
 
-  // Mock trend data - in production this would come from comparing periods
-  const consumptionTrend = useMemo(() => {
-    const trendPercent = -3.2; // Mock: 3.2% decrease
-    return { value: trendPercent, direction: trendPercent < 0 ? 'down' : trendPercent > 0 ? 'up' : 'neutral' };
-  }, []);
-
-  const costPerLiter = 1.45; // Mock average cost
-  const estimatedMonthlyCost = totalConsumption * costPerLiter;
+  const estimatedMonthlyCost = totalConsumption * avgCostPerLiter;
   const potentialSavings = estimatedMonthlyCost * 0.12; // 12% potential savings through optimization
 
   return (

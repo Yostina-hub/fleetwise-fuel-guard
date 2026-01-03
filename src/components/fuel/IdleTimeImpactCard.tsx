@@ -1,25 +1,23 @@
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Clock, Fuel, AlertCircle, TrendingDown } from "lucide-react";
 import { useOrganizationSettings } from "@/hooks/useOrganizationSettings";
 
-const IdleTimeImpactCard = () => {
-  const { formatCurrency, formatFuel } = useOrganizationSettings();
-
-  // Mock data - in production this would come from vehicle telemetry
-  const idleStats = {
-    totalIdleHours: 45.5,
-    fuelWasted: 68.25, // liters
-    costImpact: 98.96,
-    topIdlers: [
-      { vehicle: "KAA 123X", hours: 12.3, liters: 18.45 },
-      { vehicle: "KBA 456Y", hours: 9.8, liters: 14.70 },
-      { vehicle: "KCA 789Z", hours: 8.2, liters: 12.30 }
-    ],
-    fleetTarget: 30, // target idle hours
-    compliancePercent: 66 // % of vehicles meeting target
+interface IdleTimeImpactCardProps {
+  idleStats: {
+    totalIdleHours: number;
+    fuelWasted: number;
+    costImpact: number;
+    topIdlers: { vehicle: string; hours: number; liters: number }[];
+    fleetTarget: number;
+    compliancePercent: number;
   };
+}
+
+const IdleTimeImpactCard = ({ idleStats }: IdleTimeImpactCardProps) => {
+  const { formatCurrency, formatFuel } = useOrganizationSettings();
 
   return (
     <Card className="glass-card">
