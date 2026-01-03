@@ -15,8 +15,10 @@ const PROTOCOL_PATTERNS = {
   TELTONIKA: /^00000000/,   // Teltonika header
 };
 
-// CRC16 checksum calculation for GT06 protocol
-function calculateCRC16(data: Uint8Array): number {
+// ==================== CRC/Checksum Validation Functions ====================
+
+// CRC-16 X.25 (used by GT06 protocol)
+function calculateCRC16_X25(data: Uint8Array): number {
   const polynomial = 0x8408;
   let crc = 0xFFFF;
   for (let i = 0; i < data.length; i++) {
@@ -30,6 +32,123 @@ function calculateCRC16(data: Uint8Array): number {
     }
   }
   return crc ^ 0xFFFF;
+}
+
+// Standard CRC-16
+function calculateCRC16(data: Uint8Array): number {
+  let crc = 0xFFFF;
+  const polynomial = 0xA001;
+  for (let i = 0; i < data.length; i++) {
+    crc ^= data[i];
+    for (let j = 0; j < 8; j++) {
+      if (crc & 1) {
+        crc = (crc >> 1) ^ polynomial;
+      } else {
+        crc >>= 1;
+      }
+    }
+  }
+  return crc;
+}
+
+// CRC-16 CCITT (used by Queclink)
+function calculateCRC16_CCITT(data: Uint8Array): number {
+  let crc = 0xFFFF;
+  const polynomial = 0x1021;
+  for (let i = 0; i < data.length; i++) {
+    crc ^= (data[i] << 8);
+    for (let j = 0; j < 8; j++) {
+      if (crc & 0x8000) {
+        crc = ((crc << 1) ^ polynomial) & 0xFFFF;
+      } else {
+        crc = (crc << 1) & 0xFFFF;
+      }
+    }
+  }
+  return crc;
+}
+
+// XOR Checksum (used by TK103, H02)
+function calculateXOR(data: Uint8Array): number {
+  let checksum = 0;
+  for (let i = 0; i < data.length; i++) {
+    checksum ^= data[i];
+  }
+  return checksum;
+}
+
+// Simple additive checksum
+function calculateChecksum(data: Uint8Array): number {
+  let sum = 0;
+  for (let i = 0; i < data.length; i++) {
+    sum = (sum + data[i]) & 0xFF;
+  }
+  return sum;
+}
+
+// CRC-32
+function calculateCRC32(data: Uint8Array): number {
+  let crc = 0xFFFFFFFF;
+  const table: number[] = [];
+  
+  // Build CRC table
+  for (let i = 0; i < 256; i++) {
+    let c = i;
+    for (let j = 0; j < 8; j++) {
+      c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    }
+    table[i] = c;
+  }
+  
+  for (let i = 0; i < data.length; i++) {
+    crc = table[(crc ^ data[i]) & 0xFF] ^ (crc >>> 8);
+  }
+  
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
+// Validate CRC based on type
+function validateCRC(data: string, crcType: string, providedCrc?: string): { valid: boolean; calculated?: string; provided?: string } {
+  if (crcType === 'none') {
+    return { valid: true };
+  }
+
+  const encoder = new TextEncoder();
+  const bytes = encoder.encode(data);
+  let calculated: number;
+
+  switch (crcType) {
+    case 'crc16_x25':
+      calculated = calculateCRC16_X25(bytes);
+      break;
+    case 'crc16':
+      calculated = calculateCRC16(bytes);
+      break;
+    case 'crc16_ccitt':
+      calculated = calculateCRC16_CCITT(bytes);
+      break;
+    case 'xor':
+      calculated = calculateXOR(bytes);
+      break;
+    case 'checksum':
+      calculated = calculateChecksum(bytes);
+      break;
+    case 'crc32':
+      calculated = calculateCRC32(bytes);
+      break;
+    default:
+      return { valid: true }; // Unknown CRC type, skip validation
+  }
+
+  const calculatedHex = calculated.toString(16).toUpperCase().padStart(crcType.includes('32') ? 8 : 4, '0');
+  
+  if (!providedCrc) {
+    // No CRC provided, return the calculated value for reference
+    return { valid: true, calculated: calculatedHex };
+  }
+
+  const valid = calculatedHex.toLowerCase() === providedCrc.toLowerCase();
+  return { valid, calculated: calculatedHex, provided: providedCrc };
 }
 
 // Detect protocol from raw data
@@ -50,6 +169,23 @@ function detectProtocol(data: string): string {
     }
   }
   return 'UNKNOWN';
+}
+
+// Get CRC type for known protocols
+function getDefaultCRCType(protocol: string): string {
+  const crcMap: Record<string, string> = {
+    GT06: 'crc16_x25',
+    TK103: 'xor',
+    H02: 'xor',
+    TELTONIKA: 'crc16',
+    QUECLINK: 'crc16_ccitt',
+    CALAMP: 'crc32',
+    MEITRACK: 'checksum',
+    JSON: 'none',
+    URL_ENCODED: 'none',
+    OSMAND: 'none',
+  };
+  return crcMap[protocol] || 'none';
 }
 
 // Parse different protocol formats
@@ -279,14 +415,13 @@ async function processGPSData(
     console.warn('Error logging raw telemetry:', rawLogError);
   }
 
-  // Update device heartbeat
-  const { error: heartbeatError } = await supabase
-    .from('devices')
-    .update({ last_heartbeat: new Date().toISOString() })
-    .eq('id', device.id);
-
-  if (heartbeatError) {
-    console.error('Error updating heartbeat:', heartbeatError);
+  // Validate CRC if enabled for this protocol
+  const crcType = getDefaultCRCType(protocol);
+  const crcValidation = validateCRC(rawData, crcType, data.crc || data.checksum);
+  
+  if (!crcValidation.valid) {
+    console.warn(`CRC validation failed for device ${imei}: expected ${crcValidation.calculated}, got ${crcValidation.provided}`);
+    // Log the failure but continue processing (for now, as some devices may not send CRC)
   }
 
   // Insert telemetry data if vehicle is linked
@@ -399,6 +534,7 @@ async function processGPSData(
     message: 'GPS data received successfully',
     device_id: device.id,
     protocol: protocol,
+    crc_validation: crcValidation,
   };
 }
 
