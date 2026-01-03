@@ -8,11 +8,13 @@ const corsHeaders = {
 
 interface GovernorCommand {
   vehicleId: string;
+  vehicleIds?: string[]; // For batch commands
   commandType: "set_speed_limit" | "enable_governor" | "disable_governor" | "emergency_stop";
   speedLimit?: number;
   phoneNumber?: string;
   organizationId: string;
   userId: string;
+  isBatch?: boolean;
 }
 
 interface SmtpConfig {
@@ -28,6 +30,29 @@ interface SmtpConfig {
 // Speed limit validation constants
 const MIN_SPEED_LIMIT = 20;
 const MAX_SPEED_LIMIT = 180;
+const MAX_RETRY_ATTEMPTS = 3;
+const RETRY_DELAY_MS = 2000;
+
+// Helper function for retry logic
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxAttempts: number = MAX_RETRY_ATTEMPTS,
+  delayMs: number = RETRY_DELAY_MS
+): Promise<T> {
+  let lastError: Error | null = null;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.warn(`Attempt ${attempt}/${maxAttempts} failed:`, lastError.message);
+      if (attempt < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, delayMs * attempt));
+      }
+    }
+  }
+  throw lastError;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -43,7 +68,21 @@ serve(async (req) => {
     const command: GovernorCommand = await req.json();
     console.log("Received governor command:", command);
 
-    // Validate required fields
+    // Handle batch commands
+    if (command.isBatch && command.vehicleIds && command.vehicleIds.length > 0) {
+      const results = await processBatchCommands(supabase, command);
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          batch: true,
+          results,
+          message: `Batch command sent to ${results.filter(r => r.success).length}/${results.length} vehicles`
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate required fields for single command
     if (!command.vehicleId || !command.commandType || !command.organizationId) {
       throw new Error("Missing required fields: vehicleId, commandType, organizationId");
     }
@@ -55,33 +94,90 @@ serve(async (req) => {
       }
     }
 
-    // Get vehicle details
-    const { data: vehicle, error: vehicleError } = await supabase
+    // Process single command
+    const result = await processSingleCommand(supabase, command);
+    return new Response(
+      JSON.stringify(result),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.error("Error sending governor command:", error);
+    return new Response(
+      JSON.stringify({ error: errorMessage }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});
+
+interface BatchResult {
+  vehicleId: string;
+  plate: string;
+  success: boolean;
+  commandId?: string;
+  error?: string;
+}
+
+async function processBatchCommands(supabase: any, command: GovernorCommand): Promise<BatchResult[]> {
+  const results: BatchResult[] = [];
+  
+  for (const vehicleId of command.vehicleIds || []) {
+    try {
+      const singleCommand = { ...command, vehicleId, isBatch: false };
+      const result = await processSingleCommand(supabase, singleCommand);
+      results.push({
+        vehicleId,
+        plate: result.plate || vehicleId,
+        success: true,
+        commandId: result.commandId,
+      });
+    } catch (error) {
+      const { data: vehicle } = await supabase
+        .from("vehicles")
+        .select("plate_number")
+        .eq("id", vehicleId)
+        .single();
+      
+      results.push({
+        vehicleId,
+        plate: vehicle?.plate_number || vehicleId,
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+  
+  return results;
+}
+
+async function processSingleCommand(supabase: any, command: GovernorCommand) {
+
+  // Get vehicle details with retry
+  const vehicle = await withRetry(async () => {
+    const { data, error } = await supabase
       .from("vehicles")
       .select("plate_number, make, model")
       .eq("id", command.vehicleId)
       .single();
+    if (error) throw new Error("Vehicle not found");
+    return data;
+  });
 
-    if (vehicleError) {
-      console.error("Vehicle fetch error:", vehicleError);
-      throw new Error("Vehicle not found");
-    }
+  // Get device info for the vehicle
+  const { data: device } = await supabase
+    .from("devices")
+    .select("sim_msisdn, imei")
+    .eq("vehicle_id", command.vehicleId)
+    .single();
 
-    // Get device info for the vehicle (for phone number if needed)
-    const { data: device } = await supabase
-      .from("devices")
-      .select("sim_msisdn, imei")
-      .eq("vehicle_id", command.vehicleId)
-      .single();
+  const phoneNumber = command.phoneNumber || device?.sim_msisdn;
 
-    const phoneNumber = command.phoneNumber || device?.sim_msisdn;
-
-    // Get user info for audit trail
-    const { data: userProfile } = await supabase
-      .from("profiles")
-      .select("full_name, email")
-      .eq("id", command.userId)
-      .single();
+  // Get user info for audit trail
+  const { data: userProfile } = await supabase
+    .from("profiles")
+    .select("full_name, email")
+    .eq("id", command.userId)
+    .single();
 
     // Build command message based on type
     let smsMessage = "";
@@ -214,25 +310,15 @@ serve(async (req) => {
       }
     }
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        commandId: commandLog.id,
-        message: `Command ${command.commandType} sent successfully`,
-        smsContent: smsMessage,
-        targetPhone: phoneNumber || "Not configured"
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error("Error sending governor command:", error);
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
-});
+  return { 
+    success: true, 
+    commandId: commandLog.id,
+    plate: vehicle.plate_number,
+    message: `Command ${command.commandType} sent successfully`,
+    smsContent: smsMessage,
+    targetPhone: phoneNumber || "Not configured"
+  };
+}
 
 interface NotificationParams {
   vehicle: { plate_number: string; make: string; model: string };
