@@ -20,6 +20,7 @@ interface VehiclePoint {
   fuel: number;
   heading?: number;
   engine_on?: boolean;
+  speedLimit?: number;
 }
 
 interface ClusteredMapProps {
@@ -41,6 +42,7 @@ const ClusteredMap = ({
   const map = useRef<mapboxgl.Map | null>(null);
   const clusterMarkers = useRef<Map<string, mapboxgl.Marker>>(new Map());
   const previousPositions = useRef<Map<string, { lng: number; lat: number }>>(new Map());
+  const hasFitBounds = useRef(false);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapboxToken, setMapboxToken] = useState<string>("");
 
@@ -178,12 +180,14 @@ const ClusteredMap = ({
         const vehicle = cluster.properties as VehiclePoint;
         markerId = `vehicle-${vehicle.id}`;
         const isSelected = vehicle.id === selectedVehicleId;
+        const isOverspeeding = vehicle.speedLimit && vehicle.speed > vehicle.speedLimit;
 
         markerElement = createAnimatedMarkerElement(
           vehicle.status,
           isSelected,
           vehicle.engine_on,
-          vehicle.heading
+          vehicle.heading,
+          isOverspeeding
         );
 
         markerElement.addEventListener("click", () => {
@@ -209,6 +213,7 @@ const ClusteredMap = ({
 
         if (!isCluster) {
           const vehicle = cluster.properties as VehiclePoint;
+          const isOverspeeding = vehicle.speedLimit && vehicle.speed > vehicle.speedLimit;
           marker.setPopup(
             new mapboxgl.Popup({ offset: 25, closeButton: false, closeOnClick: true, className: 'vehicle-popup' }).setHTML(`
               <div class="vehicle-popup-content">
@@ -216,9 +221,10 @@ const ClusteredMap = ({
                   <span class="popup-plate">${vehicle.plate}</span>
                   <span class="popup-status popup-status-${vehicle.status}">${vehicle.status}</span>
                 </div>
+                ${isOverspeeding ? `<div class="popup-overspeeding">⚠️ Overspeeding (limit: ${vehicle.speedLimit} km/h)</div>` : ''}
                 <div class="popup-stats">
                   <div class="popup-stat">
-                    <span class="popup-stat-value">${vehicle.speed}</span>
+                    <span class="popup-stat-value ${isOverspeeding ? 'text-destructive' : ''}">${vehicle.speed}</span>
                     <span class="popup-stat-label">km/h</span>
                   </div>
                   <div class="popup-stat">
@@ -262,9 +268,9 @@ const ClusteredMap = ({
     updateClusters();
   }, [vehicles, updateClusters]);
 
-  // Fit bounds to show all vehicles
+  // Fit bounds to show all vehicles - only on initial load
   useEffect(() => {
-    if (!map.current || !mapLoaded || vehicles.length === 0) return;
+    if (!map.current || !mapLoaded || vehicles.length === 0 || hasFitBounds.current) return;
 
     const validVehicles = vehicles.filter((v) => v.lat && v.lng);
     if (validVehicles.length === 0) return;
@@ -277,6 +283,8 @@ const ClusteredMap = ({
       maxZoom: 15,
       duration: 1000,
     });
+    
+    hasFitBounds.current = true;
   }, [vehicles, mapLoaded]);
 
   if (!mapboxToken) {
