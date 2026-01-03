@@ -20,69 +20,15 @@ import {
   Download,
   CheckCircle
 } from "lucide-react";
+import { useIncidentsManagement } from "@/hooks/useIncidentsManagement";
+import { useVehicles } from "@/hooks/useVehicles";
+import { useDrivers } from "@/hooks/useDrivers";
+import { supabase } from "@/integrations/supabase/client";
+import { useOrganization } from "@/hooks/useOrganization";
+import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
 const ITEMS_PER_PAGE = 10;
-
-// Mock data for traffic violations
-const mockViolations = [
-  {
-    id: "1",
-    violation_number: "VIO-00001234",
-    violation_type: "speeding",
-    vehicle_plate: "KAA 123A",
-    driver_name: "John Mwangi",
-    fine_amount: 5000,
-    location: "Mombasa Road, Nairobi",
-    violation_date: "2025-12-15T14:30:00",
-    due_date: "2026-01-15",
-    status: "unpaid",
-    points_deducted: 3,
-    notes: "Exceeded speed limit by 25 km/h in urban area",
-  },
-  {
-    id: "2",
-    violation_number: "VIO-00001235",
-    violation_type: "parking",
-    vehicle_plate: "KBA 456B",
-    driver_name: "Mary Wanjiku",
-    fine_amount: 2000,
-    location: "CBD, Nairobi",
-    violation_date: "2025-12-18T09:15:00",
-    due_date: "2026-01-18",
-    status: "paid",
-    points_deducted: 0,
-    notes: "Illegal parking in no-parking zone",
-  },
-  {
-    id: "3",
-    violation_number: "VIO-00001236",
-    violation_type: "red_light",
-    vehicle_plate: "KCA 789C",
-    driver_name: "Peter Ochieng",
-    fine_amount: 10000,
-    location: "Uhuru Highway Junction",
-    violation_date: "2025-12-20T17:45:00",
-    due_date: "2026-01-20",
-    status: "disputed",
-    points_deducted: 5,
-    notes: "Red light violation captured by traffic camera",
-  },
-  {
-    id: "4",
-    violation_number: "VIO-00001237",
-    violation_type: "overloading",
-    vehicle_plate: "KDA 012D",
-    driver_name: "James Kiprop",
-    fine_amount: 15000,
-    location: "Thika Road Weighbridge",
-    violation_date: "2025-12-22T11:00:00",
-    due_date: "2026-01-22",
-    status: "unpaid",
-    points_deducted: 4,
-    notes: "Vehicle exceeded weight limit by 2 tons",
-  },
-];
 
 const TrafficViolationsTab = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -90,19 +36,35 @@ const TrafficViolationsTab = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [loading] = useState(false);
+
+  const { violations, loading, recordViolationPayment, refetch } = useIncidentsManagement();
+  const { vehicles } = useVehicles();
+  const { drivers } = useDrivers();
+  const { organizationId } = useOrganization();
 
   const [newViolation, setNewViolation] = useState({
     violation_type: 'speeding',
-    vehicle_plate: '',
-    driver_name: '',
+    vehicle_id: '',
+    driver_id: '',
     fine_amount: 0,
-    location: '',
+    location_name: '',
     violation_date: new Date().toISOString().slice(0, 16),
     notes: '',
   });
 
-  const getStatusBadge = (status: string) => {
+  const getVehiclePlate = (vehicleId?: string) => {
+    if (!vehicleId) return "N/A";
+    const vehicle = vehicles.find(v => v.id === vehicleId);
+    return vehicle?.plate_number || "Unknown";
+  };
+
+  const getDriverName = (driverId?: string | null) => {
+    if (!driverId) return "N/A";
+    const driver = drivers.find(d => d.id === driverId);
+    return driver ? `${driver.first_name} ${driver.last_name}` : "Unknown";
+  };
+
+  const getStatusBadge = (status?: string | null) => {
     switch (status) {
       case 'unpaid':
         return <Badge variant="destructive">Unpaid</Badge>;
@@ -113,7 +75,7 @@ const TrafficViolationsTab = () => {
       case 'waived':
         return <Badge variant="outline">Waived</Badge>;
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge variant="outline">Pending</Badge>;
     }
   };
 
@@ -129,13 +91,13 @@ const TrafficViolationsTab = () => {
     return <Badge variant="outline" className="capitalize">{typeLabels[type] || type}</Badge>;
   };
 
-  const filteredViolations = mockViolations.filter(violation => {
-    const matchesStatus = statusFilter === 'all' || violation.status === statusFilter;
+  const filteredViolations = violations.filter(violation => {
+    const matchesStatus = statusFilter === 'all' || violation.payment_status === statusFilter;
     const matchesType = typeFilter === 'all' || violation.violation_type === typeFilter;
     const matchesSearch = !searchQuery || 
-      violation.violation_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      violation.vehicle_plate.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      violation.driver_name.toLowerCase().includes(searchQuery.toLowerCase());
+      violation.ticket_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      getVehiclePlate(violation.vehicle_id).toLowerCase().includes(searchQuery.toLowerCase()) ||
+      getDriverName(violation.driver_id).toLowerCase().includes(searchQuery.toLowerCase());
     return matchesStatus && matchesType && matchesSearch;
   });
 
@@ -146,6 +108,44 @@ const TrafficViolationsTab = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [statusFilter, typeFilter, searchQuery]);
+
+  const handleCreateViolation = async () => {
+    if (!newViolation.vehicle_id || !organizationId) return;
+
+    try {
+      const ticketNumber = `VIO-${Date.now().toString(36).toUpperCase()}`;
+      const { error } = await supabase
+        .from("traffic_violations")
+        .insert([{
+          ticket_number: ticketNumber,
+          violation_type: newViolation.violation_type,
+          vehicle_id: newViolation.vehicle_id,
+          driver_id: newViolation.driver_id || null,
+          fine_amount: newViolation.fine_amount || null,
+          location_name: newViolation.location_name || null,
+          violation_date: newViolation.violation_date,
+          notes: newViolation.notes || null,
+          payment_status: 'unpaid',
+          organization_id: organizationId,
+        }]);
+
+      if (error) throw error;
+      toast({ title: "Violation recorded", description: "Traffic violation has been logged" });
+      setShowCreateDialog(false);
+      setNewViolation({
+        violation_type: 'speeding',
+        vehicle_id: '',
+        driver_id: '',
+        fine_amount: 0,
+        location_name: '',
+        violation_date: new Date().toISOString().slice(0, 16),
+        notes: '',
+      });
+      refetch();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
 
   if (loading) {
     return (
@@ -221,63 +221,65 @@ const TrafficViolationsTab = () => {
       ) : (
         <div className="space-y-4">
           {paginatedViolations.map(violation => (
-            <Card key={violation.id} className={violation.status === 'unpaid' ? 'border-destructive/30' : ''}>
+            <Card key={violation.id} className={violation.payment_status === 'unpaid' ? 'border-destructive/30' : ''}>
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
                   <div className="space-y-3">
                     <div className="flex items-center gap-3 flex-wrap">
-                      <span className="font-mono font-semibold">{violation.violation_number}</span>
-                      {getStatusBadge(violation.status)}
+                      <span className="font-mono font-semibold">{violation.ticket_number || 'N/A'}</span>
+                      {getStatusBadge(violation.payment_status)}
                       {getTypeBadge(violation.violation_type)}
-                      {violation.points_deducted > 0 && (
+                      {violation.points_assigned && violation.points_assigned > 0 && (
                         <Badge variant="outline" className="text-destructive border-destructive/30">
-                          -{violation.points_deducted} pts
+                          -{violation.points_assigned} pts
                         </Badge>
                       )}
                     </div>
 
-                    <p className="text-sm">{violation.notes}</p>
+                    {violation.notes && <p className="text-sm">{violation.notes}</p>}
 
                     <div className="flex items-center gap-6 text-sm text-muted-foreground flex-wrap">
                       <span className="flex items-center gap-1">
                         <Clock className="w-4 h-4" aria-hidden="true" />
                         {format(new Date(violation.violation_date), "MMM dd, yyyy HH:mm")}
                       </span>
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-4 h-4" aria-hidden="true" />
-                        {violation.location}
-                      </span>
+                      {violation.location_name && (
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-4 h-4" aria-hidden="true" />
+                          {violation.location_name}
+                        </span>
+                      )}
                       <span className="flex items-center gap-1">
                         <Car className="w-4 h-4" aria-hidden="true" />
-                        {violation.vehicle_plate}
+                        {getVehiclePlate(violation.vehicle_id)}
                       </span>
                       <span className="flex items-center gap-1">
                         <User className="w-4 h-4" aria-hidden="true" />
-                        {violation.driver_name}
+                        {getDriverName(violation.driver_id)}
                       </span>
                     </div>
 
-                    <div className="flex gap-4 text-sm">
-                      <span className="flex items-center gap-1">
-                        <DollarSign className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-                        Fine: <span className="font-semibold">KES {violation.fine_amount.toLocaleString()}</span>
-                      </span>
-                      <span className="text-muted-foreground">
-                        Due: {format(new Date(violation.due_date), "MMM dd, yyyy")}
-                      </span>
-                    </div>
+                    {violation.fine_amount && (
+                      <div className="flex gap-4 text-sm">
+                        <span className="flex items-center gap-1">
+                          <DollarSign className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+                          Fine: <span className="font-semibold">${violation.fine_amount.toLocaleString()}</span>
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex flex-col gap-2 min-w-[140px]">
-                    <Button size="sm" variant="outline" className="gap-1" aria-label={`View details for violation ${violation.violation_number}`}>
+                    <Button size="sm" variant="outline" className="gap-1" aria-label={`View details for violation ${violation.ticket_number}`}>
                       <Receipt className="w-4 h-4" aria-hidden="true" />
                       View Details
                     </Button>
-                    {violation.status === 'unpaid' && (
+                    {violation.payment_status !== 'paid' && (
                       <Button 
                         size="sm" 
                         className="bg-success hover:bg-success/90 gap-1"
-                        aria-label={`Mark violation ${violation.violation_number} as paid`}
+                        onClick={() => recordViolationPayment(violation.id)}
+                        aria-label={`Mark violation ${violation.ticket_number} as paid`}
                       >
                         <CheckCircle className="w-4 h-4" aria-hidden="true" />
                         Mark Paid
@@ -330,24 +332,36 @@ const TrafficViolationsTab = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="violation-vehicle">Vehicle Plate</Label>
-                <Input 
-                  id="violation-vehicle"
-                  value={newViolation.vehicle_plate}
-                  onChange={e => setNewViolation({...newViolation, vehicle_plate: e.target.value})}
-                  placeholder="KAA 123A"
-                  aria-label="Vehicle plate number"
-                />
+                <Label htmlFor="violation-vehicle">Vehicle *</Label>
+                <Select 
+                  value={newViolation.vehicle_id}
+                  onValueChange={v => setNewViolation({...newViolation, vehicle_id: v})}
+                >
+                  <SelectTrigger id="violation-vehicle" aria-label="Select vehicle">
+                    <SelectValue placeholder="Select vehicle" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {vehicles.map(v => (
+                      <SelectItem key={v.id} value={v.id}>{v.plate_number}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
-                <Label htmlFor="violation-driver">Driver Name</Label>
-                <Input 
-                  id="violation-driver"
-                  value={newViolation.driver_name}
-                  onChange={e => setNewViolation({...newViolation, driver_name: e.target.value})}
-                  placeholder="Driver name"
-                  aria-label="Driver name"
-                />
+                <Label htmlFor="violation-driver">Driver</Label>
+                <Select 
+                  value={newViolation.driver_id}
+                  onValueChange={v => setNewViolation({...newViolation, driver_id: v})}
+                >
+                  <SelectTrigger id="violation-driver" aria-label="Select driver">
+                    <SelectValue placeholder="Select driver" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {drivers.map(d => (
+                      <SelectItem key={d.id} value={d.id}>{d.first_name} {d.last_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -355,8 +369,8 @@ const TrafficViolationsTab = () => {
               <Label htmlFor="violation-location">Location</Label>
               <Input 
                 id="violation-location"
-                value={newViolation.location}
-                onChange={e => setNewViolation({...newViolation, location: e.target.value})}
+                value={newViolation.location_name}
+                onChange={e => setNewViolation({...newViolation, location_name: e.target.value})}
                 placeholder="Enter violation location"
                 aria-label="Violation location"
               />
@@ -374,14 +388,14 @@ const TrafficViolationsTab = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="violation-fine">Fine Amount (KES)</Label>
+                <Label htmlFor="violation-fine">Fine Amount ($)</Label>
                 <Input 
                   id="violation-fine"
                   type="number"
                   value={newViolation.fine_amount}
                   onChange={e => setNewViolation({...newViolation, fine_amount: parseFloat(e.target.value) || 0})}
                   placeholder="0"
-                  aria-label="Fine amount in KES"
+                  aria-label="Fine amount"
                 />
               </div>
             </div>
@@ -401,7 +415,7 @@ const TrafficViolationsTab = () => {
             <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={() => setShowCreateDialog(false)} aria-label="Save traffic violation">
+            <Button onClick={handleCreateViolation} disabled={!newViolation.vehicle_id} aria-label="Save traffic violation">
               Save Violation
             </Button>
           </DialogFooter>
