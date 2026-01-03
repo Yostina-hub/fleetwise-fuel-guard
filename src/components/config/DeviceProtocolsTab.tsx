@@ -12,6 +12,9 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
+
+const ITEMS_PER_PAGE = 10;
 
 const DeviceProtocolsTab = () => {
   const { organizationId } = useOrganization();
@@ -48,6 +51,26 @@ const DeviceProtocolsTab = () => {
         </Button>
       </div>
 
+      <ProtocolsTable protocols={protocols || []} />
+    </div>
+  );
+};
+
+const ProtocolsTable = ({ protocols }: { protocols: any[] }) => {
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(protocols.length, ITEMS_PER_PAGE);
+  const paginatedProtocols = protocols.slice(startIndex, endIndex);
+
+  if (protocols.length === 0) {
+    return (
+      <div className="text-center py-12 text-muted-foreground" role="status" aria-label="No device protocols configured">
+        <p>No device protocols configured</p>
+        <p className="text-sm mt-2">Add protocols to decode tracker data</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-0">
       <Table>
         <TableHeader>
           <TableRow>
@@ -59,7 +82,7 @@ const DeviceProtocolsTab = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {protocols?.map((protocol: any) => (
+          {paginatedProtocols.map((protocol: any) => (
             <TableRow key={protocol.id}>
               <TableCell className="font-medium">{protocol.vendor}</TableCell>
               <TableCell>{protocol.protocol_name}</TableCell>
@@ -78,13 +101,12 @@ const DeviceProtocolsTab = () => {
           ))}
         </TableBody>
       </Table>
-
-      {protocols?.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground" role="status" aria-label="No device protocols configured">
-          <p>No device protocols configured</p>
-          <p className="text-sm mt-2">Add protocols to decode tracker data</p>
-        </div>
-      )}
+      <TablePagination
+        currentPage={currentPage}
+        totalItems={protocols.length}
+        itemsPerPage={ITEMS_PER_PAGE}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 };
