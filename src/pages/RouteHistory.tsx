@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import RouteHistoryQuickStats from "@/components/routehistory/RouteHistoryQuickStats";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -394,8 +395,20 @@ const RouteHistory = () => {
 
           {/* Stats Panel */}
           <div className="w-80 border-l border-border bg-card overflow-auto">
-            <div className="p-6">
-              <h3 className="font-semibold mb-4">Current Position Data</h3>
+            <div className="p-6 space-y-6">
+              {/* Trip Summary Quick Stats */}
+              {tripSummary && (
+                <RouteHistoryQuickStats
+                  totalDistance={tripSummary.totalDistanceKm}
+                  duration={tripSummary.durationMinutes}
+                  avgSpeed={tripSummary.avgSpeed}
+                  maxSpeed={tripSummary.maxSpeed}
+                  fuelConsumed={tripSummary.fuelConsumed}
+                  totalPoints={tripSummary.totalPoints}
+                />
+              )}
+              
+              <h3 className="font-semibold">Current Position Data</h3>
               
               {telemetryLoading && selectedVehicle ? (
                 <div className="space-y-4" role="status" aria-live="polite">

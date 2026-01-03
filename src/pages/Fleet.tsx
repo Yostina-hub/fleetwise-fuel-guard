@@ -25,6 +25,8 @@ import { GPSDeviceDialog } from "@/components/fleet/GPSDeviceDialog";
 import { VehicleVirtualGrid } from "@/components/fleet/VehicleVirtualGrid";
 import { VehicleTableView } from "@/components/fleet/VehicleTableView";
 import { useFleetExport } from "@/components/fleet/FleetExportUtils";
+import FleetQuickStats from "@/components/fleet/FleetQuickStats";
+import FleetQuickActions from "@/components/fleet/FleetQuickActions";
 import { VehicleGridSkeleton, StatsRowSkeleton } from "@/components/ui/skeletons";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -359,58 +361,24 @@ const Fleet = () => {
           </div>
         </div>
 
-        {/* Fleet Overview Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-          {statsLoading ? (
-            <>
-              {[1, 2, 3, 4].map((i) => (
-                <Card key={i} className="border-l-4 border-l-muted">
-                  <CardContent className="pt-4 pb-3">
-                    <Skeleton className="h-3 w-20 mb-2" />
-                    <Skeleton className="h-7 w-12" />
-                  </CardContent>
-                </Card>
-              ))}
-            </>
-          ) : statsError ? (
-            <Card className="col-span-full border-destructive/50">
-              <CardContent className="pt-4 pb-3">
-                <p className="text-sm text-destructive">Failed to load fleet stats. Please try again.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <>
-              {[
-                { label: "Total", value: fleetStats.total, color: "primary", icon: "📊" },
-                { label: "Moving", value: fleetStats.moving, color: "emerald-500", icon: "🚗" },
-                { label: "Idle", value: fleetStats.idle, color: "amber-500", icon: "⏸️" },
-                { label: "Offline", value: fleetStats.offline, color: "rose-500", icon: "📴" },
-              ].map((stat, i) => (
-                <Card
-                  key={i}
-                  className="hover:shadow-md transition-shadow border-l-4 group"
-                  style={{ borderLeftColor: stat.color === 'primary' ? 'hsl(var(--primary))' : undefined }}
-                >
-                  <CardContent className="pt-4 pb-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                          {stat.label}
-                        </p>
-                        <p className="text-2xl font-bold mt-1">
-                          {stat.value.toLocaleString()}
-                        </p>
-                      </div>
-                      <span className="text-2xl opacity-60 group-hover:opacity-100 transition-opacity">
-                        {stat.icon}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </>
-          )}
-        </div>
+        {/* Fleet Quick Stats */}
+        <FleetQuickStats
+          totalVehicles={fleetStats.total}
+          movingVehicles={fleetStats.moving}
+          idleVehicles={fleetStats.idle}
+          offlineVehicles={fleetStats.offline}
+          inMaintenance={0}
+          avgFuelLevel={0}
+        />
+
+        {/* Fleet Quick Actions */}
+        <FleetQuickActions
+          onAddVehicle={() => setCreateDialogOpen(true)}
+          onImport={() => setImportDialogOpen(true)}
+          onExport={handleExportAll}
+          onViewMap={() => navigate("/map")}
+          onScheduleMaintenance={() => navigate("/maintenance")}
+        />
 
         {/* Bulk Actions Toolbar */}
         {selectedIds.length > 0 && (

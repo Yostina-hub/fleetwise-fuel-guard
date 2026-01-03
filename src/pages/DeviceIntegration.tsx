@@ -15,6 +15,8 @@ import { DeviceStatusMonitor } from "@/components/devices/DeviceStatusMonitor";
 import { OfflineAlertsConfig } from "@/components/devices/OfflineAlertsConfig";
 import { DeviceHealthSummary } from "@/components/devices/DeviceHealthSummary";
 import { AddDeviceDialog } from "@/components/devices/AddDeviceDialog";
+import DeviceQuickStats from "@/components/devices/DeviceQuickStats";
+import DeviceQuickActions from "@/components/devices/DeviceQuickActions";
 import { deviceTemplates, DeviceTemplate } from "@/data/deviceTemplates";
 
 const DeviceIntegration = () => {
@@ -195,6 +197,23 @@ const DeviceIntegration = () => {
           </Button>
         </div>
 
+        {/* Quick Stats */}
+        <DeviceQuickStats
+          totalDevices={devices?.length || 0}
+          onlineDevices={devices?.filter(d => d.status === 'active')?.length || 0}
+          offlineDevices={devices?.filter(d => d.status !== 'active')?.length || 0}
+          unassignedDevices={devices?.filter(d => !d.vehicle_id)?.length || 0}
+          healthyDevices={devices?.filter(d => d.status === 'active' && d.vehicle_id)?.length || 0}
+        />
+
+        {/* Quick Actions */}
+        <DeviceQuickActions
+          onAddDevice={() => setIsDialogOpen(true)}
+          onConfigureAlerts={handleConfigureAlerts}
+          onRefreshStatus={() => queryClient.invalidateQueries({ queryKey: ["devices"] })}
+          onViewTemplates={() => setActiveTab("templates")}
+        />
+
         {/* Health Summary - Shows issues that need attention */}
         <DeviceHealthSummary
           devices={devices}
@@ -202,65 +221,6 @@ const DeviceIntegration = () => {
           onConfigureAlerts={handleConfigureAlerts}
           hasOfflineAlerts={hasOfflineAlerts}
         />
-
-        {/* Features Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-primary/10 rounded-lg">
-                  <Zap className="h-6 w-6 text-primary" aria-hidden="true" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold">3 Steps</div>
-                  <div className="text-sm text-muted-foreground">Quick Setup</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-emerald-500/10 rounded-lg">
-                  <CheckCircle className="h-6 w-6 text-emerald-600" aria-hidden="true" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold">Auto Config</div>
-                  <div className="text-sm text-muted-foreground">No Coding</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-blue-500/10 rounded-lg">
-                  <Smartphone className="h-6 w-6 text-blue-600" aria-hidden="true" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold">{deviceTemplates.length}+</div>
-                  <div className="text-sm text-muted-foreground">Device Models</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-orange-500/10 rounded-lg">
-                  <Fuel className="h-6 w-6 text-orange-600" aria-hidden="true" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold">{devices?.length || 0}</div>
-                  <div className="text-sm text-muted-foreground">Active Devices</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">

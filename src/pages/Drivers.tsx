@@ -39,6 +39,8 @@ import AssignVehicleToDriverDialog from "@/components/fleet/AssignVehicleToDrive
 import DriverBulkActionsToolbar from "@/components/fleet/DriverBulkActionsToolbar";
 import DriverQuickStatusChange from "@/components/fleet/DriverQuickStatusChange";
 import LicenseExpiryBadge from "@/components/fleet/LicenseExpiryBadge";
+import DriversQuickStats from "@/components/fleet/DriversQuickStats";
+import DriversQuickActions from "@/components/fleet/DriversQuickActions";
 import { exportDriversToCSV, exportAllDriversToCSV } from "@/components/fleet/DriverExportUtils";
 import { 
   Users, 
@@ -260,64 +262,22 @@ const Drivers = () => {
           />
         )}
 
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="hover:shadow-lg transition-shadow border-l-4 border-l-primary">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-lg bg-primary/10">
-                  <Users className="w-6 h-6 text-primary" aria-hidden="true" />
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Total Drivers</div>
-                  <div className="text-3xl font-bold">{totalCount}</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Quick Stats */}
+        <DriversQuickStats
+          totalDrivers={totalCount}
+          activeDrivers={activeDrivers}
+          inactiveDrivers={inactiveDrivers}
+          suspendedDrivers={suspendedDrivers}
+        />
 
-          <Card className="hover:shadow-lg transition-shadow border-l-4 border-l-success">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-lg bg-success/10">
-                  <UserCheck className="w-6 h-6 text-success" aria-hidden="true" />
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Active</div>
-                  <div className="text-3xl font-bold text-success">{activeDrivers}</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow border-l-4 border-l-muted-foreground">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-lg bg-muted">
-                  <UserX className="w-6 h-6 text-muted-foreground" aria-hidden="true" />
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Inactive</div>
-                  <div className="text-3xl font-bold">{inactiveDrivers}</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow border-l-4 border-l-destructive">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-lg bg-destructive/10">
-                  <AlertTriangle className="w-6 h-6 text-destructive" aria-hidden="true" />
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Suspended</div>
-                  <div className="text-3xl font-bold text-destructive">{suspendedDrivers}</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Quick Actions */}
+        <DriversQuickActions
+          onAddDriver={() => setCreateDialogOpen(true)}
+          onImport={() => setImportDialogOpen(true)}
+          onExport={handleExportAll}
+          onViewScoring={() => navigate("/driver-scoring")}
+          onViewCoaching={() => navigate("/driver-scoring")}
+        />
 
         {/* Search and Filters */}
         <Card className="border-primary/20">
