@@ -1,7 +1,12 @@
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, FileText, Car, Receipt } from "lucide-react";
+import { AlertTriangle, FileText, Receipt } from "lucide-react";
 import IncidentsListTab from "@/components/incidents/IncidentsListTab";
+import { IncidentQuickStats } from "@/components/incidents/IncidentQuickStats";
+import { IncidentQuickActions } from "@/components/incidents/IncidentQuickActions";
+import { IncidentInsightsCard } from "@/components/incidents/IncidentInsightsCard";
+import { IncidentTrendChart } from "@/components/incidents/IncidentTrendChart";
+import { RecentIncidentsCard } from "@/components/incidents/RecentIncidentsCard";
 
 const Incidents = () => {
   return (
@@ -17,6 +22,19 @@ const Incidents = () => {
               Track and manage accidents, breakdowns, insurance claims, and traffic violations
             </p>
           </div>
+        </div>
+
+        {/* Quick Stats */}
+        <IncidentQuickStats />
+
+        {/* Quick Actions */}
+        <IncidentQuickActions />
+
+        {/* Insights Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <IncidentInsightsCard />
+          <IncidentTrendChart />
+          <RecentIncidentsCard />
         </div>
 
         <Tabs defaultValue="incidents" className="space-y-6">
