@@ -12,6 +12,9 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Settings } from "lucide-react";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
+
+const ITEMS_PER_PAGE = 10;
 
 const FuelDetectionTab = () => {
   const { organizationId } = useOrganization();
@@ -48,6 +51,28 @@ const FuelDetectionTab = () => {
         </Button>
       </div>
 
+      <FuelConfigsTable configs={configs || []} />
+    </div>
+  );
+};
+
+const FuelConfigsTable = ({ configs }: { configs: any[] }) => {
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(configs.length, ITEMS_PER_PAGE);
+  const paginatedConfigs = configs.slice(startIndex, endIndex);
+
+  if (configs.length === 0) {
+    return (
+      <div className="text-center py-12 text-muted-foreground" role="status" aria-label="No fuel detection configurations found">
+        <p>No fuel detection configs found</p>
+        <p className="text-sm mt-2">
+          Configure algorithms to detect refuel/theft events
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-0">
       <Table>
         <TableHeader>
           <TableRow>
@@ -60,7 +85,7 @@ const FuelDetectionTab = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {configs?.map((config: any) => (
+          {paginatedConfigs.map((config: any) => (
             <TableRow key={config.id}>
               <TableCell className="font-medium">
                 {config.vehicles
@@ -99,15 +124,12 @@ const FuelDetectionTab = () => {
           ))}
         </TableBody>
       </Table>
-
-      {configs?.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground" role="status" aria-label="No fuel detection configurations found">
-          <p>No fuel detection configs found</p>
-          <p className="text-sm mt-2">
-            Configure algorithms to detect refuel/theft events
-          </p>
-        </div>
-      )}
+      <TablePagination
+        currentPage={currentPage}
+        totalItems={configs.length}
+        itemsPerPage={ITEMS_PER_PAGE}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 };
