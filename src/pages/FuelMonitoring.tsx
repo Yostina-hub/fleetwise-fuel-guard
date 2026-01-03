@@ -3,8 +3,12 @@ import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Fuel, AlertTriangle, Loader2, Warehouse, FileText, Droplet, MapPin } from "lucide-react";
 import { useFuelEvents } from "@/hooks/useFuelEvents";
+import { useFuelTransactions } from "@/hooks/useFuelTransactions";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useOrganization } from "@/hooks/useOrganization";
 import FuelTransactionsTab from "@/components/fuel/FuelTransactionsTab";
 import FuelEventsTab from "@/components/fuel/FuelEventsTab";
 import FuelTheftCasesTab from "@/components/fuel/FuelTheftCasesTab";
@@ -17,12 +21,35 @@ import FuelQuickActions from "@/components/fuel/FuelQuickActions";
 import FuelTrendChart from "@/components/fuel/FuelTrendChart";
 import IdleTimeImpactCard from "@/components/fuel/IdleTimeImpactCard";
 import { FuelPageContext } from "@/contexts/FuelPageContext";
+
 const FuelMonitoring = () => {
   const { fuelEvents: dbFuelEvents, loading } = useFuelEvents();
+  const { transactions } = useFuelTransactions();
   const { vehicles } = useVehicles();
   const { drivers } = useDrivers();
+  const { organizationId } = useOrganization();
   const [activeTab, setActiveTab] = useState("events");
   const tabsRef = useRef<HTMLDivElement>(null);
+
+  // Fetch trips for idle time data
+  const { data: tripsData = [] } = useQuery({
+    queryKey: ["trips-idle-data", organizationId],
+    queryFn: async () => {
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      
+      const { data, error } = await supabase
+        .from("trips")
+        .select("vehicle_id, idle_time_minutes")
+        .eq("organization_id", organizationId)
+        .gte("start_time", oneWeekAgo.toISOString())
+        .not("idle_time_minutes", "is", null);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId,
+  });
 
   const getVehiclePlate = (vehicleId: string) => {
     const vehicle = vehicles.find(v => v.id === vehicleId);
@@ -34,6 +61,87 @@ const FuelMonitoring = () => {
     const driver = drivers.find(d => d.id === driverId);
     return driver ? `${driver.first_name} ${driver.last_name}` : "Unknown";
   };
+
+  // Calculate average cost per liter from transactions
+  const avgCostPerLiter = useMemo(() => {
+    const transactionsWithCost = transactions.filter(t => t.fuel_price_per_liter && t.fuel_price_per_liter > 0);
+    if (transactionsWithCost.length === 0) return 1.50; // Fallback default
+    const total = transactionsWithCost.reduce((sum, t) => sum + (t.fuel_price_per_liter || 0), 0);
+    return total / transactionsWithCost.length;
+  }, [transactions]);
+
+  // Calculate consumption trend by comparing current period with previous
+  const consumptionTrend = useMemo(() => {
+    const now = new Date();
+    const midPoint = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000); // 15 days ago
+    const startPoint = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
+
+    const recentEvents = dbFuelEvents.filter(e => new Date(e.event_time) >= midPoint && e.event_type === 'refuel');
+    const previousEvents = dbFuelEvents.filter(e => new Date(e.event_time) >= startPoint && new Date(e.event_time) < midPoint && e.event_type === 'refuel');
+
+    const recentConsumption = recentEvents.reduce((sum, e) => sum + Math.abs(e.fuel_change_liters), 0);
+    const previousConsumption = previousEvents.reduce((sum, e) => sum + Math.abs(e.fuel_change_liters), 0);
+
+    if (previousConsumption === 0) {
+      return { value: 0, direction: 'neutral' as const };
+    }
+
+    const changePercent = ((recentConsumption - previousConsumption) / previousConsumption) * 100;
+    return { 
+      value: parseFloat(changePercent.toFixed(1)), 
+      direction: changePercent < -1 ? 'down' as const : changePercent > 1 ? 'up' as const : 'neutral' as const 
+    };
+  }, [dbFuelEvents]);
+
+  // Calculate idle time stats from trips
+  const idleStats = useMemo(() => {
+    const IDLE_THRESHOLD_HOURS = 5; // Weekly threshold per vehicle
+    const FUEL_PER_IDLE_HOUR = 1.5; // Liters of fuel wasted per hour of idle
+
+    // Group by vehicle
+    const vehicleIdleMap: Record<string, { totalMinutes: number; plate: string }> = {};
+    tripsData.forEach((trip: any) => {
+      if (!vehicleIdleMap[trip.vehicle_id]) {
+        vehicleIdleMap[trip.vehicle_id] = { totalMinutes: 0, plate: getVehiclePlate(trip.vehicle_id) };
+      }
+      vehicleIdleMap[trip.vehicle_id].totalMinutes += trip.idle_time_minutes || 0;
+    });
+
+    const entries = Object.entries(vehicleIdleMap);
+    const totalIdleHours = entries.reduce((sum, [_, v]) => sum + v.totalMinutes / 60, 0);
+    const fuelWasted = totalIdleHours * FUEL_PER_IDLE_HOUR;
+    const costImpact = fuelWasted * avgCostPerLiter;
+
+    // Find top idlers
+    const topIdlers = entries
+      .map(([id, v]) => ({
+        vehicle: v.plate,
+        hours: parseFloat((v.totalMinutes / 60).toFixed(1)),
+        liters: parseFloat(((v.totalMinutes / 60) * FUEL_PER_IDLE_HOUR).toFixed(2)),
+      }))
+      .sort((a, b) => b.hours - a.hours)
+      .slice(0, 3);
+
+    // Calculate compliance (vehicles under threshold)
+    const vehiclesOverThreshold = entries.filter(([_, v]) => (v.totalMinutes / 60) > IDLE_THRESHOLD_HOURS).length;
+    const compliancePercent = entries.length > 0 
+      ? Math.round(((entries.length - vehiclesOverThreshold) / entries.length) * 100)
+      : 100;
+
+    return {
+      totalIdleHours: parseFloat(totalIdleHours.toFixed(1)),
+      fuelWasted: parseFloat(fuelWasted.toFixed(2)),
+      costImpact: parseFloat(costImpact.toFixed(2)),
+      topIdlers,
+      fleetTarget: IDLE_THRESHOLD_HOURS,
+      compliancePercent,
+    };
+  }, [tripsData, avgCostPerLiter, vehicles]);
+
+  // Count vehicles with high idle (used for insights)
+  const highIdleVehicleCount = useMemo(() => {
+    return idleStats.topIdlers.filter(v => v.hours > idleStats.fleetTarget).length;
+  }, [idleStats]);
 
   const stats = useMemo(() => {
     const totalConsumption = dbFuelEvents
@@ -110,6 +218,8 @@ const FuelMonitoring = () => {
             anomalyCount={stats.anomalyCount}
             avgEfficiency={stats.avgEfficiency}
             eventsCount={dbFuelEvents.length}
+            consumptionTrend={consumptionTrend}
+            avgCostPerLiter={avgCostPerLiter}
           />
 
           {/* Quick Actions */}
@@ -122,12 +232,19 @@ const FuelMonitoring = () => {
           {/* Insights & Trend Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <FuelTrendChart fuelEvents={dbFuelEvents} />
-            <FuelInsightsCard />
+            <FuelInsightsCard 
+              anomalyCount={stats.anomalyCount}
+              totalConsumption={stats.totalConsumption}
+              avgEfficiency={stats.avgEfficiency}
+              consumptionTrend={consumptionTrend}
+              highIdleVehicleCount={highIdleVehicleCount}
+              avgCostPerLiter={avgCostPerLiter}
+            />
           </div>
 
           {/* Idle Impact & Alerts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <IdleTimeImpactCard />
+            <IdleTimeImpactCard idleStats={idleStats} />
             <FuelConsumptionAlertsCard getVehiclePlateFromContext={getVehiclePlate} />
           </div>
 

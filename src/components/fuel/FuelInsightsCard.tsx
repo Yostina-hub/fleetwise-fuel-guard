@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,44 +14,101 @@ interface Insight {
   action?: string;
 }
 
-const FuelInsightsCard = () => {
-  const { formatCurrency, settings } = useOrganizationSettings();
+interface FuelInsightsCardProps {
+  anomalyCount: number;
+  totalConsumption: number;
+  avgEfficiency: string | null;
+  consumptionTrend: { value: number; direction: 'up' | 'down' | 'neutral' };
+  highIdleVehicleCount: number;
+  avgCostPerLiter: number;
+}
+
+const FuelInsightsCard = ({
+  anomalyCount,
+  totalConsumption,
+  avgEfficiency,
+  consumptionTrend,
+  highIdleVehicleCount,
+  avgCostPerLiter
+}: FuelInsightsCardProps) => {
+  const { formatCurrency } = useOrganizationSettings();
   const [expandedInsight, setExpandedInsight] = useState<string | null>(null);
 
-  // AI-generated insights based on fleet data patterns
-  const insights: Insight[] = [
-    {
-      id: '1',
-      type: 'tip',
-      title: 'Optimize Route Planning',
-      description: 'Analysis shows 15% of fuel is used during non-optimized routes. Consider implementing real-time traffic-based routing.',
-      impact: `Save up to ${formatCurrency(450)}/month`,
-      action: 'View Route Analytics'
-    },
-    {
-      id: '2',
-      type: 'warning',
-      title: 'High Idle Time Detected',
-      description: '3 vehicles exceed the 30-minute daily idle threshold. This wastes approximately 2.5L of fuel per vehicle daily.',
-      impact: `${formatCurrency(225)}/week potential loss`,
-      action: 'View Idle Report'
-    },
-    {
-      id: '3',
-      type: 'success',
-      title: 'Fuel Efficiency Improved',
-      description: 'Fleet average fuel efficiency improved by 8% compared to last month. Driver coaching program showing results.',
-      impact: '8% improvement'
-    },
-    {
-      id: '4',
-      type: 'tip',
-      title: 'Bulk Fuel Purchase Opportunity',
-      description: 'Current diesel prices are 5% below monthly average. Consider topping up depot reserves.',
-      impact: 'Save on bulk purchase',
-      action: 'Check Depot Stock'
+  // Generate real insights based on actual fleet data
+  const insights: Insight[] = useMemo(() => {
+    const generatedInsights: Insight[] = [];
+
+    // Insight 1: Based on anomaly count (theft/leak detection)
+    if (anomalyCount > 0) {
+      generatedInsights.push({
+        id: '1',
+        type: 'warning',
+        title: `${anomalyCount} Fuel Anomal${anomalyCount === 1 ? 'y' : 'ies'} Detected`,
+        description: `${anomalyCount} potential fuel theft or leak event${anomalyCount === 1 ? '' : 's'} require${anomalyCount === 1 ? 's' : ''} investigation. Review suspicious events and take action.`,
+        impact: `Est. ${formatCurrency(anomalyCount * 50)} at risk`,
+        action: 'View Anomalies'
+      });
     }
-  ];
+
+    // Insight 2: Based on idle time
+    if (highIdleVehicleCount > 0) {
+      const idleFuelWaste = highIdleVehicleCount * 2.5; // ~2.5L per vehicle daily
+      generatedInsights.push({
+        id: '2',
+        type: 'warning',
+        title: 'High Idle Time Detected',
+        description: `${highIdleVehicleCount} vehicle${highIdleVehicleCount === 1 ? '' : 's'} exceed${highIdleVehicleCount === 1 ? 's' : ''} the recommended daily idle threshold. This wastes approximately ${idleFuelWaste.toFixed(1)}L of fuel daily.`,
+        impact: `${formatCurrency(idleFuelWaste * avgCostPerLiter * 7)}/week potential loss`,
+        action: 'View Idle Report'
+      });
+    }
+
+    // Insight 3: Based on consumption trend
+    if (consumptionTrend.direction === 'down' && Math.abs(consumptionTrend.value) >= 3) {
+      generatedInsights.push({
+        id: '3',
+        type: 'success',
+        title: 'Fuel Efficiency Improved',
+        description: `Fleet average fuel consumption decreased by ${Math.abs(consumptionTrend.value).toFixed(1)}% compared to the previous period. Driver coaching and route optimization are showing results.`,
+        impact: `${Math.abs(consumptionTrend.value).toFixed(1)}% improvement`
+      });
+    } else if (consumptionTrend.direction === 'up' && consumptionTrend.value >= 5) {
+      generatedInsights.push({
+        id: '3',
+        type: 'warning',
+        title: 'Fuel Consumption Increased',
+        description: `Fleet fuel consumption increased by ${consumptionTrend.value.toFixed(1)}% compared to the previous period. Consider reviewing driver behavior and vehicle maintenance.`,
+        impact: `${consumptionTrend.value.toFixed(1)}% increase`,
+        action: 'View Analysis'
+      });
+    }
+
+    // Insight 4: Route optimization tip (show if consumption is significant)
+    if (totalConsumption > 100) {
+      const potentialSavings = totalConsumption * avgCostPerLiter * 0.12;
+      generatedInsights.push({
+        id: '4',
+        type: 'tip',
+        title: 'Optimize Route Planning',
+        description: 'Analysis suggests up to 12% of fuel could be saved through optimized routing. Consider implementing real-time traffic-based route adjustments.',
+        impact: `Save up to ${formatCurrency(potentialSavings)}/period`,
+        action: 'View Route Analytics'
+      });
+    }
+
+    // Add a default success insight if no issues
+    if (generatedInsights.length === 0) {
+      generatedInsights.push({
+        id: '0',
+        type: 'success',
+        title: 'Fleet Running Efficiently',
+        description: 'No significant fuel anomalies or inefficiencies detected. Continue monitoring for optimal performance.',
+        impact: 'All systems normal'
+      });
+    }
+
+    return generatedInsights;
+  }, [anomalyCount, totalConsumption, consumptionTrend, highIdleVehicleCount, avgCostPerLiter, formatCurrency]);
 
   const getInsightStyles = (type: Insight['type']) => {
     switch (type) {
