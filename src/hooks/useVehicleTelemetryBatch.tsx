@@ -9,11 +9,14 @@ export interface VehicleTelemetryData {
   speed_kmh: number | null;
   fuel_level_percent: number | null;
   engine_on: boolean;
+  ignition_on?: boolean;
   device_connected: boolean;
   last_communication_at: string | null;
   gps_signal_strength: number | null;
   gps_jamming_detected?: boolean;
   gps_spoofing_detected?: boolean;
+  altitude_meters?: number | null;
+  odometer_km?: number | null;
 }
 
 export function useVehicleTelemetryBatch(vehicleIds: string[]) {

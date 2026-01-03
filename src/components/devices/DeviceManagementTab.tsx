@@ -37,7 +37,12 @@ import {
   MapPin,
   Gauge,
   Fuel,
-  Radio
+  Radio,
+  Key,
+  Copy,
+  Shield,
+  ShieldOff,
+  Mountain
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { TestEndpointResult } from "@/hooks/useDevices";
@@ -55,7 +60,7 @@ const escapeCSV = (value: string | null | undefined): string => {
 };
 
 export const DeviceManagementTab = () => {
-  const { devices, isLoading, createDevice, updateDevice, deleteDevice, testHeartbeat, testEndpoint } = useDevices();
+  const { devices, isLoading, createDevice, updateDevice, deleteDevice, testHeartbeat, testEndpoint, generateAuthToken, revokeAuthToken } = useDevices();
   const { vehicles } = useVehicles();
   const { organizationId } = useOrganization();
   const { toast } = useToast();
@@ -75,6 +80,10 @@ export const DeviceManagementTab = () => {
   const [testResultDialogOpen, setTestResultDialogOpen] = useState(false);
   const [testResult, setTestResult] = useState<TestEndpointResult | null>(null);
   const [testingDeviceId, setTestingDeviceId] = useState<string | null>(null);
+  const [tokenDialogOpen, setTokenDialogOpen] = useState(false);
+  const [generatedToken, setGeneratedToken] = useState<string | null>(null);
+  const [tokenDeviceId, setTokenDeviceId] = useState<string | null>(null);
+  const [generatingToken, setGeneratingToken] = useState(false);
 
   const [formData, setFormData] = useState({
     vehicle_id: "",
@@ -321,6 +330,38 @@ export const DeviceManagementTab = () => {
       title: "Export Complete",
       description: `Exported ${filteredDevices.length} devices to CSV`,
     });
+  };
+
+  const handleGenerateToken = async (device: any) => {
+    setTokenDeviceId(device.id);
+    setGeneratingToken(true);
+    try {
+      const result = await generateAuthToken.mutateAsync(device.id);
+      setGeneratedToken(result.auth_token);
+      setTokenDialogOpen(true);
+    } catch (error) {
+      console.error('Failed to generate token:', error);
+    } finally {
+      setGeneratingToken(false);
+    }
+  };
+
+  const handleRevokeToken = async (device: any) => {
+    try {
+      await revokeAuthToken.mutateAsync(device.id);
+    } catch (error) {
+      console.error('Failed to revoke token:', error);
+    }
+  };
+
+  const copyTokenToClipboard = () => {
+    if (generatedToken) {
+      navigator.clipboard.writeText(generatedToken);
+      toast({
+        title: "Copied",
+        description: "Token copied to clipboard",
+      });
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -866,6 +907,28 @@ export const DeviceManagementTab = () => {
                         )}
                         Test
                       </Button>
+                      {device.auth_token ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => handleRevokeToken(device)}
+                          disabled={revokeAuthToken.isPending}
+                          aria-label={`Revoke authentication token for device ${device.imei}`}
+                        >
+                          <ShieldOff className="h-4 w-4" aria-hidden="true" />
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleGenerateToken(device)}
+                          disabled={generatingToken && tokenDeviceId === device.id}
+                          aria-label={`Generate authentication token for device ${device.imei}`}
+                        >
+                          <Shield className="h-4 w-4" aria-hidden="true" />
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="outline"
@@ -1112,7 +1175,7 @@ export const DeviceManagementTab = () => {
           {testResult && (
             <div className="space-y-4">
               {/* Status Summary */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-4 gap-2">
                 <div className="rounded-lg border p-3 text-center">
                   <div className={`text-2xl font-bold ${testResult.success ? 'text-emerald-500' : 'text-destructive'}`}>
                     {testResult.status}
@@ -1124,6 +1187,12 @@ export const DeviceManagementTab = () => {
                     {testResult.responseTime}ms
                   </div>
                   <div className="text-xs text-muted-foreground">Response Time</div>
+                </div>
+                <div className="rounded-lg border p-3 text-center">
+                  <div className="text-lg font-bold text-primary">
+                    {testResult.response?.protocol || 'JSON'}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Protocol</div>
                 </div>
                 <div className="rounded-lg border p-3 text-center">
                   <div className={`text-2xl font-bold ${testResult.success ? 'text-emerald-500' : 'text-destructive'}`}>
@@ -1219,6 +1288,64 @@ export const DeviceManagementTab = () => {
           <DialogFooter>
             <Button onClick={() => setTestResultDialogOpen(false)}>
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Token Generation Dialog */}
+      <Dialog open={tokenDialogOpen} onOpenChange={(open) => {
+        setTokenDialogOpen(open);
+        if (!open) setGeneratedToken(null);
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Key className="h-5 w-5 text-primary" aria-hidden="true" />
+              Device Authentication Token
+            </DialogTitle>
+            <DialogDescription>
+              This token provides secure device authentication. Copy it now - it won't be shown again.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {generatedToken && (
+            <div className="space-y-4">
+              <div className="rounded-lg border p-4 bg-muted/30">
+                <div className="flex items-center justify-between gap-2">
+                  <code className="text-xs font-mono break-all flex-1">
+                    {generatedToken}
+                  </code>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={copyTokenToClipboard}
+                    aria-label="Copy token to clipboard"
+                  >
+                    <Copy className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-amber-500/30 p-4 bg-amber-500/5">
+                <h4 className="font-semibold text-sm text-amber-600 dark:text-amber-400 mb-2">
+                  ⚠️ Important
+                </h4>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• Store this token securely</li>
+                  <li>• Add as HTTP header: <code className="text-xs">X-Device-Token: {'{token}'}</code></li>
+                  <li>• Token enables secure device identification</li>
+                </ul>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button onClick={() => {
+              setTokenDialogOpen(false);
+              setGeneratedToken(null);
+            }}>
+              Done
             </Button>
           </DialogFooter>
         </DialogContent>

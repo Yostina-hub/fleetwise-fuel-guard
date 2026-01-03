@@ -22,6 +22,8 @@ export interface Device {
   installed_by?: string;
   last_heartbeat?: string;
   notes?: string;
+  auth_token?: string;
+  auth_token_created_at?: string;
   created_at: string;
   updated_at: string;
 }
@@ -30,7 +32,14 @@ export interface TestEndpointResult {
   success: boolean;
   status: number;
   responseTime: number;
-  response: any;
+  response: {
+    success?: boolean;
+    message?: string;
+    device_id?: string;
+    protocol?: string;
+    error?: string;
+    [key: string]: any;
+  };
   request: {
     imei: string;
     lat: number;
@@ -38,6 +47,7 @@ export interface TestEndpointResult {
     speed: number;
     fuel: number;
     ignition: string;
+    altitude?: number;
   };
 }
 
@@ -312,6 +322,8 @@ export const useDevices = () => {
         heading: Math.floor(Math.random() * 360),
         satellites: 8 + Math.floor(Math.random() * 4),
         signal_strength: 70 + Math.floor(Math.random() * 30),
+        altitude: 2200 + Math.floor(Math.random() * 300),
+        odometer: 50000 + Math.floor(Math.random() * 10000),
       };
 
       try {
@@ -376,6 +388,75 @@ export const useDevices = () => {
     },
   });
 
+  // Generate authentication token for a device
+  const generateAuthToken = useMutation({
+    mutationFn: async (deviceId: string) => {
+      // Generate a secure random token
+      const array = new Uint8Array(32);
+      crypto.getRandomValues(array);
+      const token = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+
+      const { data, error } = await supabase
+        .from("devices")
+        .update({
+          auth_token: token,
+          auth_token_created_at: new Date().toISOString(),
+        })
+        .eq("id", deviceId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { ...data, auth_token: token }; // Return the plain token for display
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["devices"] });
+      toast({
+        title: "Token Generated",
+        description: "Device authentication token has been created. Copy it now - it won't be shown again.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Revoke authentication token for a device
+  const revokeAuthToken = useMutation({
+    mutationFn: async (deviceId: string) => {
+      const { data, error } = await supabase
+        .from("devices")
+        .update({
+          auth_token: null,
+          auth_token_created_at: null,
+        })
+        .eq("id", deviceId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["devices"] });
+      toast({
+        title: "Token Revoked",
+        description: "Device authentication token has been revoked.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   return {
     devices,
     isLoading,
@@ -384,6 +465,8 @@ export const useDevices = () => {
     deleteDevice,
     testHeartbeat,
     testEndpoint,
+    generateAuthToken,
+    revokeAuthToken,
     refetch,
   };
 };
