@@ -197,9 +197,14 @@ const Geofencing = () => {
     const map = mapRef.current;
 
     const renderGeofences = () => {
+      // Clean up existing layers first
       geofenceLayersRef.current.forEach(layerId => {
-        if (map.getLayer(layerId)) map.removeLayer(layerId);
-        if (map.getSource(layerId)) map.removeSource(layerId);
+        try {
+          if (map.getLayer(layerId)) map.removeLayer(layerId);
+        } catch (e) { /* ignore */ }
+        try {
+          if (map.getSource(layerId)) map.removeSource(layerId);
+        } catch (e) { /* ignore */ }
       });
       geofenceLayersRef.current = [];
 
@@ -208,6 +213,9 @@ const Geofencing = () => {
         const fillLayerId = `geofence-fill-${fence.id}`;
         const outlineLayerId = `geofence-outline-${fence.id}`;
         const color = fence.color || '#3B82F6';
+
+        // Skip if source already exists
+        if (map.getSource(sourceId)) return;
 
         let geojsonData: GeoJSON.Feature;
 
@@ -241,29 +249,33 @@ const Geofencing = () => {
           return;
         }
 
-        map.addSource(sourceId, { type: 'geojson', data: geojsonData });
+        try {
+          map.addSource(sourceId, { type: 'geojson', data: geojsonData });
 
-        map.addLayer({
-          id: fillLayerId,
-          type: 'fill',
-          source: sourceId,
-          paint: {
-            'fill-color': color,
-            'fill-opacity': 0.2
-          }
-        });
+          map.addLayer({
+            id: fillLayerId,
+            type: 'fill',
+            source: sourceId,
+            paint: {
+              'fill-color': color,
+              'fill-opacity': 0.2
+            }
+          });
 
-        map.addLayer({
-          id: outlineLayerId,
-          type: 'line',
-          source: sourceId,
-          paint: {
-            'line-color': color,
-            'line-width': 2
-          }
-        });
+          map.addLayer({
+            id: outlineLayerId,
+            type: 'line',
+            source: sourceId,
+            paint: {
+              'line-color': color,
+              'line-width': 2
+            }
+          });
 
-        geofenceLayersRef.current.push(sourceId, fillLayerId, outlineLayerId);
+          geofenceLayersRef.current.push(sourceId, fillLayerId, outlineLayerId);
+        } catch (e) {
+          console.warn('Failed to add geofence layer:', sourceId, e);
+        }
       });
     };
 
