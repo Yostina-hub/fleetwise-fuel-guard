@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Lightbulb, TrendingUp, TrendingDown, ExternalLink, Sparkles, ChevronRight, Clock } from "lucide-react";
+import { useOrganizationSettings } from "@/hooks/useOrganizationSettings";
 
 interface Insight {
   id: string;
@@ -30,6 +31,8 @@ const FuelInsightsCard = ({
   highIdleVehicleCount,
   avgCostPerLiter
 }: FuelInsightsCardProps) => {
+  const { settings } = useOrganizationSettings();
+  const currencySymbol = settings?.currency === 'USD' ? '$' : settings?.currency === 'EUR' ? '€' : settings?.currency === 'GBP' ? '£' : settings?.currency || '$';
   const [expandedInsight, setExpandedInsight] = useState<string | null>(null);
 
   // Generate real insights based on actual fleet data
@@ -43,7 +46,7 @@ const FuelInsightsCard = ({
         type: 'warning',
         title: `${anomalyCount} Fuel Anomal${anomalyCount === 1 ? 'y' : 'ies'} Detected`,
         description: `${anomalyCount} potential fuel theft or leak event${anomalyCount === 1 ? '' : 's'} require${anomalyCount === 1 ? 's' : ''} investigation. Review suspicious events and take action.`,
-        impact: `Est. ${anomalyCount * 50} at risk`,
+        impact: `Est. ${currencySymbol}${(anomalyCount * 50).toLocaleString()} at risk`,
         action: 'View Anomalies'
       });
     }
@@ -57,7 +60,7 @@ const FuelInsightsCard = ({
         type: 'warning',
         title: 'High Idle Time Detected',
         description: `${highIdleVehicleCount} vehicle${highIdleVehicleCount === 1 ? '' : 's'} exceed${highIdleVehicleCount === 1 ? 's' : ''} the recommended daily idle threshold. This wastes approximately ${idleFuelWaste.toFixed(1)}L of fuel daily.`,
-        impact: `${weeklyLoss.toFixed(0)}/week potential loss`,
+        impact: `${currencySymbol}${weeklyLoss.toFixed(0)}/week potential loss`,
         action: 'View Idle Report'
       });
     }
@@ -90,7 +93,7 @@ const FuelInsightsCard = ({
         type: 'tip',
         title: 'Optimize Route Planning',
         description: 'Analysis suggests up to 12% of fuel could be saved through optimized routing. Consider implementing real-time traffic-based route adjustments.',
-        impact: `Save up to ${potentialSavings.toFixed(0)}/period`,
+        impact: `Save up to ${currencySymbol}${potentialSavings.toFixed(0)}/period`,
         action: 'View Route Analytics'
       });
     }
