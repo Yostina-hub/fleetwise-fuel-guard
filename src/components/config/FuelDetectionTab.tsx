@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { Button } from "@/components/ui/button";
@@ -11,13 +12,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Settings } from "lucide-react";
+import { Plus, Settings, Info, Loader2 } from "lucide-react";
 import { TablePagination, usePagination } from "@/components/reports/TablePagination";
+import FuelDetectionConfigDialog from "@/components/fuel/FuelDetectionConfigDialog";
 
 const ITEMS_PER_PAGE = 10;
 
 const FuelDetectionTab = () => {
   const { organizationId } = useOrganization();
+  const queryClient = useQueryClient();
+  const [showConfigDialog, setShowConfigDialog] = useState(false);
+  const [editingConfig, setEditingConfig] = useState<any>(null);
 
   const { data: configs, isLoading } = useQuery({
     queryKey: ["fuel_detection_configs", organizationId],
@@ -34,7 +39,28 @@ const FuelDetectionTab = () => {
     enabled: !!organizationId,
   });
 
-  if (isLoading) return <div role="status" aria-live="polite" aria-label="Loading fuel detection configurations">Loading...</div>;
+  const handleAddClick = () => {
+    setEditingConfig(null);
+    setShowConfigDialog(true);
+  };
+
+  const handleEditClick = (config: any) => {
+    setEditingConfig(config);
+    setShowConfigDialog(true);
+  };
+
+  const handleSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ["fuel_detection_configs"] });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[300px]" role="status" aria-live="polite">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden="true" />
+        <span className="sr-only">Loading fuel detection configurations...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -45,28 +71,60 @@ const FuelDetectionTab = () => {
             Configure refuel/theft detection thresholds and filters per vehicle
           </p>
         </div>
-        <Button aria-label="Configure fuel detection for vehicle">
+        <Button aria-label="Configure fuel detection for vehicle" onClick={handleAddClick}>
           <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
           Configure Vehicle
         </Button>
       </div>
 
-      <FuelConfigsTable configs={configs || []} />
+      <FuelConfigsTable 
+        configs={configs || []} 
+        onEditClick={handleEditClick}
+      />
+
+      <FuelDetectionConfigDialog
+        open={showConfigDialog}
+        onOpenChange={setShowConfigDialog}
+        onSuccess={handleSuccess}
+        existingConfig={editingConfig}
+      />
     </div>
   );
 };
 
-const FuelConfigsTable = ({ configs }: { configs: any[] }) => {
+interface FuelConfigsTableProps {
+  configs: any[];
+  onEditClick: (config: any) => void;
+}
+
+const FuelConfigsTable = ({ configs, onEditClick }: FuelConfigsTableProps) => {
   const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(configs.length, ITEMS_PER_PAGE);
   const paginatedConfigs = configs.slice(startIndex, endIndex);
 
   if (configs.length === 0) {
     return (
-      <div className="text-center py-12 text-muted-foreground" role="status" aria-label="No fuel detection configurations found">
-        <p>No fuel detection configs found</p>
-        <p className="text-sm mt-2">
-          Configure algorithms to detect refuel/theft events
+      <div className="text-center py-12">
+        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+          <Settings className="w-8 h-8 text-muted-foreground" />
+        </div>
+        <p className="font-medium mb-2">No Fuel Detection Configs</p>
+        <p className="text-sm text-muted-foreground mb-4 max-w-sm mx-auto">
+          Configure algorithms to automatically detect refuel and theft events for your vehicles.
         </p>
+        <div className="bg-muted/50 rounded-lg p-4 mb-4 text-left max-w-md mx-auto">
+          <div className="flex items-start gap-2 text-sm">
+            <Info className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+            <div className="text-xs text-muted-foreground">
+              <p className="font-medium text-foreground mb-1">Detection features:</p>
+              <ul className="space-y-1">
+                <li>• Automatic refuel event detection</li>
+                <li>• Fuel theft/leak detection with configurable thresholds</li>
+                <li>• Kalman filter for sensor noise reduction</li>
+                <li>• Temperature compensation for accurate readings</li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -116,7 +174,12 @@ const FuelConfigsTable = ({ configs }: { configs: any[] }) => {
                 )}
               </TableCell>
               <TableCell>
-                <Button variant="ghost" size="sm" aria-label={`Configure fuel detection settings for ${config.vehicles?.plate_number || 'vehicle'}`}>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => onEditClick(config)}
+                  aria-label={`Configure fuel detection settings for ${config.vehicles?.plate_number || 'vehicle'}`}
+                >
                   <Settings className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </TableCell>

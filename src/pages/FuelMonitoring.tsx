@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import Layout from "@/components/Layout";
 import KPICard from "@/components/KPICard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Fuel, AlertTriangle, BarChart3, Loader2, Warehouse, FileText, Droplet } from "lucide-react";
+import { Fuel, AlertTriangle, BarChart3, Loader2, Warehouse, FileText, Droplet, MapPin } from "lucide-react";
 import { useFuelEvents } from "@/hooks/useFuelEvents";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
@@ -11,6 +11,7 @@ import FuelEventsTab from "@/components/fuel/FuelEventsTab";
 import FuelTheftCasesTab from "@/components/fuel/FuelTheftCasesTab";
 import FuelDepotsTab from "@/components/fuel/FuelDepotsTab";
 import FuelConsumptionAlertsCard from "@/components/fuel/FuelConsumptionAlertsCard";
+import ApprovedFuelStationsTab from "@/components/fuel/ApprovedFuelStationsTab";
 import { FuelPageContext } from "@/contexts/FuelPageContext";
 
 const FuelMonitoring = () => {
@@ -123,10 +124,10 @@ const FuelMonitoring = () => {
 
           {/* Tabbed Content */}
           <Tabs defaultValue="events" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
+            <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
               <TabsTrigger value="events" className="gap-2">
                 <Droplet className="w-4 h-4" aria-hidden="true" />
-                Fuel Events
+                <span className="hidden sm:inline">Fuel</span> Events
               </TabsTrigger>
               <TabsTrigger value="transactions" className="gap-2">
                 <FileText className="w-4 h-4" aria-hidden="true" />
@@ -134,11 +135,15 @@ const FuelMonitoring = () => {
               </TabsTrigger>
               <TabsTrigger value="theft" className="gap-2">
                 <AlertTriangle className="w-4 h-4" aria-hidden="true" />
-                Theft Cases
+                <span className="hidden sm:inline">Theft</span> Cases
               </TabsTrigger>
               <TabsTrigger value="depots" className="gap-2">
                 <Warehouse className="w-4 h-4" aria-hidden="true" />
                 Depots
+              </TabsTrigger>
+              <TabsTrigger value="stations" className="gap-2">
+                <MapPin className="w-4 h-4" aria-hidden="true" />
+                Stations
               </TabsTrigger>
             </TabsList>
 
@@ -153,6 +158,9 @@ const FuelMonitoring = () => {
             </TabsContent>
             <TabsContent value="depots">
               <FuelDepotsTab />
+            </TabsContent>
+            <TabsContent value="stations">
+              <ApprovedFuelStationsTab />
             </TabsContent>
           </Tabs>
         </div>
