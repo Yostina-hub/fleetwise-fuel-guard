@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { TablePagination } from "@/components/reports/TablePagination";
+import IncidentDetailModal from "./IncidentDetailModal";
 import { 
   Plus, 
   Search, 
@@ -32,6 +33,8 @@ const IncidentsListTab = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedIncident, setSelectedIncident] = useState<any>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   const { incidents, loading, createIncident, updateIncidentStatus } = useIncidentsManagement({
     status: statusFilter !== 'all' ? statusFilter : undefined,
@@ -48,7 +51,7 @@ const IncidentsListTab = () => {
     location: '',
     description: '',
     severity: 'medium',
-    status: 'reported',
+    status: 'open',
   });
 
   const getVehiclePlate = (vehicleId?: string) => {
@@ -80,8 +83,8 @@ const IncidentsListTab = () => {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'reported':
-        return <Badge variant="outline">Reported</Badge>;
+      case 'open':
+        return <Badge variant="outline">Open</Badge>;
       case 'investigating':
         return <Badge className="bg-warning/10 text-warning border-warning/20">Investigating</Badge>;
       case 'resolved':
@@ -128,7 +131,7 @@ const IncidentsListTab = () => {
       location: '',
       description: '',
       severity: 'medium',
-      status: 'reported',
+      status: 'open',
     });
   };
 
@@ -161,7 +164,7 @@ const IncidentsListTab = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="reported">Reported</SelectItem>
+              <SelectItem value="open">Open</SelectItem>
               <SelectItem value="investigating">Investigating</SelectItem>
               <SelectItem value="resolved">Resolved</SelectItem>
               <SelectItem value="closed">Closed</SelectItem>
@@ -248,11 +251,20 @@ const IncidentsListTab = () => {
                   </div>
 
                   <div className="flex flex-col gap-2 min-w-[140px]">
-                    <Button size="sm" variant="outline" className="gap-1" aria-label={`View details for incident ${incident.incident_number}`}>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="gap-1" 
+                      aria-label={`View details for incident ${incident.incident_number}`}
+                      onClick={() => {
+                        setSelectedIncident(incident);
+                        setShowDetailModal(true);
+                      }}
+                    >
                       <FileText className="w-4 h-4" aria-hidden="true" />
                       View Details
                     </Button>
-                    {incident.status === 'reported' && (
+                    {incident.status === 'open' && (
                       <Button 
                         size="sm"
                         onClick={() => updateIncidentStatus(incident.id, 'investigating')}
@@ -410,6 +422,27 @@ const IncidentsListTab = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Incident Detail Modal */}
+      <IncidentDetailModal
+        incident={selectedIncident}
+        open={showDetailModal}
+        onOpenChange={setShowDetailModal}
+        vehiclePlate={getVehiclePlate(selectedIncident?.vehicle_id)}
+        driverName={getDriverName(selectedIncident?.driver_id)}
+        onInvestigate={() => {
+          if (selectedIncident) {
+            updateIncidentStatus(selectedIncident.id, 'investigating');
+            setShowDetailModal(false);
+          }
+        }}
+        onResolve={() => {
+          if (selectedIncident) {
+            updateIncidentStatus(selectedIncident.id, 'resolved');
+            setShowDetailModal(false);
+          }
+        }}
+      />
     </div>
   );
 };
