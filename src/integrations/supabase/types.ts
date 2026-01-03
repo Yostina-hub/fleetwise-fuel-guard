@@ -606,6 +606,94 @@ export type Database = {
           },
         ]
       }
+      device_commands: {
+        Row: {
+          acknowledged_at: string | null
+          command_payload: Json
+          command_type: string
+          created_at: string
+          created_by: string | null
+          device_id: string
+          error_message: string | null
+          executed_at: string | null
+          expires_at: string | null
+          id: string
+          max_retries: number | null
+          organization_id: string
+          priority: string
+          response_data: Json | null
+          retry_count: number | null
+          sent_at: string | null
+          status: string
+          updated_at: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          command_payload?: Json
+          command_type: string
+          created_at?: string
+          created_by?: string | null
+          device_id: string
+          error_message?: string | null
+          executed_at?: string | null
+          expires_at?: string | null
+          id?: string
+          max_retries?: number | null
+          organization_id: string
+          priority?: string
+          response_data?: Json | null
+          retry_count?: number | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          command_payload?: Json
+          command_type?: string
+          created_at?: string
+          created_by?: string | null
+          device_id?: string
+          error_message?: string | null
+          executed_at?: string | null
+          expires_at?: string | null
+          id?: string
+          max_retries?: number | null
+          organization_id?: string
+          priority?: string
+          response_data?: Json | null
+          retry_count?: number | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_commands_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "device_commands_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "device_commands_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       device_offline_alerts: {
         Row: {
           created_at: string | null
@@ -736,6 +824,38 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      device_rate_limits: {
+        Row: {
+          created_at: string
+          device_id: string
+          id: string
+          request_count: number | null
+          window_start: string
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          id?: string
+          request_count?: number | null
+          window_start: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          id?: string
+          request_count?: number | null
+          window_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_rate_limits_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
             referencedColumns: ["id"]
           },
         ]
