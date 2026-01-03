@@ -2,6 +2,9 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import RouteHistoryQuickStats from "@/components/routehistory/RouteHistoryQuickStats";
+import RouteHistoryQuickActions from "@/components/routehistory/RouteHistoryQuickActions";
+import RouteHistoryInsightsCard from "@/components/routehistory/RouteHistoryInsightsCard";
+import RouteHistoryTrendChart from "@/components/routehistory/RouteHistoryTrendChart";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,8 +24,6 @@ import {
   Navigation,
   Fuel,
   Gauge,
-  Route,
-  Timer,
   AlertCircle,
   Loader2
 } from "lucide-react";
@@ -223,8 +224,17 @@ const RouteHistory = () => {
             </div>
           </div>
 
+          {/* Quick Actions */}
+          <div className="mt-4">
+            <RouteHistoryQuickActions
+              hasData={hasData}
+              vehiclePlate={selectedVehicleData?.plate_number}
+              selectedDate={selectedDate}
+            />
+          </div>
+
           {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
             <div>
               <Label htmlFor="vehicle-select" className="text-sm font-medium mb-2 block">
                 Select Vehicle
@@ -491,42 +501,19 @@ const RouteHistory = () => {
                     </CardContent>
                   </Card>
 
-                  {/* Trip Summary */}
+                  {/* Insights Card */}
                   {tripSummary && (
-                    <>
-                      <div className="border-t border-border my-4" />
-                      <h4 className="font-semibold mb-3 flex items-center gap-2">
-                        <Route className="w-4 h-4" aria-hidden="true" />
-                        Trip Summary
-                      </h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Duration</span>
-                          <span className="font-medium">{tripSummary.durationMinutes} min</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Distance</span>
-                          <span className="font-medium">{tripSummary.totalDistanceKm} km</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Avg Speed</span>
-                          <span className="font-medium">{tripSummary.avgSpeed} km/h</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Max Speed</span>
-                          <span className="font-medium">{tripSummary.maxSpeed} km/h</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Fuel Used</span>
-                          <span className="font-medium">{tripSummary.fuelConsumed}%</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Data Points</span>
-                          <span className="font-medium">{tripSummary.totalPoints}</span>
-                        </div>
-                      </div>
-                    </>
+                    <RouteHistoryInsightsCard
+                      routeData={routeHistory}
+                      avgSpeed={parseFloat(tripSummary.avgSpeed)}
+                      maxSpeed={tripSummary.maxSpeed}
+                      fuelConsumed={parseFloat(tripSummary.fuelConsumed)}
+                      durationMinutes={tripSummary.durationMinutes}
+                    />
                   )}
+
+                  {/* Trend Chart */}
+                  {hasData && <RouteHistoryTrendChart routeData={routeHistory} />}
                 </div>
               ) : (
                 <div className="text-center py-12 text-muted-foreground" role="status">
