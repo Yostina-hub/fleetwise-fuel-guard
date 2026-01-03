@@ -13,23 +13,29 @@ services:
       - SUPABASE_URL=${SUPABASE_URL:-https://kkmjwmyqakprqdhrlsoz.supabase.co}
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtrbWp3bXlxYWtwcnFkaHJsc296Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTc5NDIsImV4cCI6MjA3NjczMzk0Mn0.hcyw7MEssoLz3e09IrJ-aZyepzMsDY98KLnXfjzvuF4}
       - LOG_LEVEL=${LOG_LEVEL:-info}
-      - GT06_PORT=5023
-      - TK103_PORT=5001
-      - H02_PORT=5013
-      - CONCOX_PORT=5027
+      - GT06_PORT=5001
+      - TK103_PORT=5013
+      - H02_PORT=5023
+      - TELTONIKA_PORT=5027
+      - QUECLINK_PORT=5030
+      - RUPTELA_PORT=5031
+      - YTWL_PORT=5032
+      - HEALTH_PORT=8080
     
     # Port mappings
     ports:
       # TCP Ports
-      - "5001:5001"   # TK103
-      - "5013:5013"   # H02
-      - "5023:5023"   # GT06
-      - "5027:5027"   # Concox
-      # UDP Ports
-      - "6001:6001/udp"   # TK103 UDP
-      - "6013:6013/udp"   # H02 UDP
-      - "6023:6023/udp"   # GT06 UDP
-      - "6027:6027/udp"   # Concox UDP
+      - "5001:5001"   # GT06/Concox
+      - "5013:5013"   # TK103
+      - "5023:5023"   # H02/Sinotrack
+      - "5027:5027"   # Teltonika
+      - "5030:5030"   # Queclink
+      - "5031:5031"   # Ruptela
+      - "5032:5032"   # YTWL Speed Governor
+      # UDP Ports (same as TCP for supported protocols)
+      - "5001:5001/udp"   # GT06 UDP
+      - "5013:5013/udp"   # TK103 UDP
+      - "5023:5023/udp"   # H02 UDP
       # Health check
       - "8080:8080"
     
@@ -37,18 +43,18 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
-          memory: 256M
+          cpus: '1.0'
+          memory: 512M
         reservations:
-          cpus: '0.1'
-          memory: 64M
+          cpus: '0.25'
+          memory: 128M
     
     # Logging configuration
     logging:
       driver: "json-file"
       options:
-        max-size: "10m"
-        max-file: "3"
+        max-size: "50m"
+        max-file: "5"
     
     # Health check
     healthcheck:
@@ -57,16 +63,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-
-  # Optional: Prometheus metrics exporter
-  # Uncomment if you want monitoring
-  # metrics-exporter:
-  #   image: prom/node-exporter:latest
-  #   container_name: gps-gateway-metrics
-  #   ports:
-  #     - "9100:9100"
-  #   depends_on:
-  #     - gps-gateway
 
 networks:
   default:

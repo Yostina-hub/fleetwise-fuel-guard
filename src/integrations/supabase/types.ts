@@ -5934,9 +5934,15 @@ export type Database = {
       vehicle_telemetry: {
         Row: {
           altitude_meters: number | null
+          battery_voltage: number | null
+          can_data: Json | null
           created_at: string
           device_connected: boolean | null
+          driver_rfid: string | null
+          dtc_codes: Json | null
+          engine_hours: number | null
           engine_on: boolean | null
+          external_voltage: number | null
           fuel_level_percent: number | null
           gps_fix_type: string | null
           gps_hdop: number | null
@@ -5944,23 +5950,36 @@ export type Database = {
           gps_satellites_count: number | null
           gps_signal_strength: number | null
           gps_spoofing_detected: boolean | null
+          gsm_signal_strength: number | null
+          harsh_acceleration: boolean | null
+          harsh_braking: boolean | null
+          harsh_cornering: boolean | null
           heading: number | null
           id: string
           ignition_on: boolean | null
+          io_elements: Json | null
           last_communication_at: string | null
           latitude: number | null
           longitude: number | null
           odometer_km: number | null
           organization_id: string
           speed_kmh: number | null
+          temperature_1: number | null
+          temperature_2: number | null
           updated_at: string
           vehicle_id: string
         }
         Insert: {
           altitude_meters?: number | null
+          battery_voltage?: number | null
+          can_data?: Json | null
           created_at?: string
           device_connected?: boolean | null
+          driver_rfid?: string | null
+          dtc_codes?: Json | null
+          engine_hours?: number | null
           engine_on?: boolean | null
+          external_voltage?: number | null
           fuel_level_percent?: number | null
           gps_fix_type?: string | null
           gps_hdop?: number | null
@@ -5968,23 +5987,36 @@ export type Database = {
           gps_satellites_count?: number | null
           gps_signal_strength?: number | null
           gps_spoofing_detected?: boolean | null
+          gsm_signal_strength?: number | null
+          harsh_acceleration?: boolean | null
+          harsh_braking?: boolean | null
+          harsh_cornering?: boolean | null
           heading?: number | null
           id?: string
           ignition_on?: boolean | null
+          io_elements?: Json | null
           last_communication_at?: string | null
           latitude?: number | null
           longitude?: number | null
           odometer_km?: number | null
           organization_id: string
           speed_kmh?: number | null
+          temperature_1?: number | null
+          temperature_2?: number | null
           updated_at?: string
           vehicle_id: string
         }
         Update: {
           altitude_meters?: number | null
+          battery_voltage?: number | null
+          can_data?: Json | null
           created_at?: string
           device_connected?: boolean | null
+          driver_rfid?: string | null
+          dtc_codes?: Json | null
+          engine_hours?: number | null
           engine_on?: boolean | null
+          external_voltage?: number | null
           fuel_level_percent?: number | null
           gps_fix_type?: string | null
           gps_hdop?: number | null
@@ -5992,15 +6024,22 @@ export type Database = {
           gps_satellites_count?: number | null
           gps_signal_strength?: number | null
           gps_spoofing_detected?: boolean | null
+          gsm_signal_strength?: number | null
+          harsh_acceleration?: boolean | null
+          harsh_braking?: boolean | null
+          harsh_cornering?: boolean | null
           heading?: number | null
           id?: string
           ignition_on?: boolean | null
+          io_elements?: Json | null
           last_communication_at?: string | null
           latitude?: number | null
           longitude?: number | null
           odometer_km?: number | null
           organization_id?: string
           speed_kmh?: number | null
+          temperature_1?: number | null
+          temperature_2?: number | null
           updated_at?: string
           vehicle_id?: string
         }
