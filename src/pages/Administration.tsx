@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
@@ -11,22 +12,43 @@ import LoginHistoryTab from "@/components/admin/LoginHistoryTab";
 import { EmailReportsTab } from "@/components/admin/EmailReportsTab";
 import { PenaltyConfigTab } from "@/components/admin/PenaltyConfigTab";
 import { DriverPenaltiesTab } from "@/components/admin/DriverPenaltiesTab";
+import AdminQuickStats from "@/components/admin/AdminQuickStats";
+import AdminQuickActions from "@/components/admin/AdminQuickActions";
 
 const Administration = () => {
+  const [activeTab, setActiveTab] = useState("org-settings");
+
   return (
     <Layout>
       <div className="p-8 space-y-6 animate-fade-in">
-      <div className="flex items-center gap-3">
-        <Settings className="h-8 w-8 text-primary" aria-hidden="true" />
-        <div>
-          <h1 className="text-3xl font-bold">Administration</h1>
-          <p className="text-muted-foreground">
-            Manage organization settings, security, and compliance
-          </p>
+        <div className="flex items-center gap-3">
+          <Settings className="h-8 w-8 text-primary" aria-hidden="true" />
+          <div>
+            <h1 className="text-3xl font-bold">Administration</h1>
+            <p className="text-muted-foreground">
+              Manage organization settings, security, and compliance
+            </p>
+          </div>
         </div>
-      </div>
 
-      <Tabs defaultValue="org-settings" className="space-y-4">
+        {/* Quick Stats */}
+        <AdminQuickStats
+          totalUsers={12}
+          activeSSO={false}
+          passwordPolicyEnabled={true}
+          pendingPenalties={3}
+          loginAttemptsToday={28}
+        />
+
+        {/* Quick Actions */}
+        <AdminQuickActions
+          onConfigureSSO={() => setActiveTab("sso")}
+          onCreateEmailReport={() => setActiveTab("email-reports")}
+          onViewPenalties={() => setActiveTab("penalties")}
+          onManageSettings={() => setActiveTab("org-settings")}
+        />
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="flex flex-wrap w-full gap-1">
           <TabsTrigger value="org-settings" className="gap-2">
             <Globe className="h-4 w-4" aria-hidden="true" />
