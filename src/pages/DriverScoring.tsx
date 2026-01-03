@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Layout from "@/components/Layout";
 import { DriverScoringTab } from "@/components/fleet/DriverScoringTab";
 import { AllDriversCoachingTab } from "@/components/fleet/AllDriversCoachingTab";
@@ -5,9 +6,47 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Users, TrendingUp, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import DriverScoringQuickStats from "@/components/driverscoring/DriverScoringQuickStats";
+import DriverScoringQuickActions from "@/components/driverscoring/DriverScoringQuickActions";
+import DriverScoringInsightsCard from "@/components/driverscoring/DriverScoringInsightsCard";
+import DriverScoringTrendChart from "@/components/driverscoring/DriverScoringTrendChart";
+import { toast } from "sonner";
 
 const DriverScoring = () => {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("scoring");
+  
+  // Mock stats - in production, these would come from hooks
+  const stats = {
+    fleetAvgScore: 78,
+    highRiskDrivers: 3,
+    improvedThisMonth: 12,
+    coachingPending: 5
+  };
+
+  const insights = {
+    topImprover: "John Kamau",
+    riskPattern: "Harsh Braking",
+    avgImprovement: 8,
+    coachingEffectiveness: 85
+  };
+
+  const handleStartCoaching = () => {
+    setActiveTab("coaching");
+  };
+
+  const handleExportReport = () => {
+    toast.success("Exporting driver scores report...");
+  };
+
+  const handleViewTrends = () => {
+    toast.info("Scroll down to view fleet score trends");
+  };
+
+  const handleViewHighRisk = () => {
+    setActiveTab("scoring");
+    toast.info("Filtering to show high-risk drivers");
+  };
   
   return (
     <Layout>
@@ -32,8 +71,25 @@ const DriverScoring = () => {
             Back to Drivers
           </Button>
         </div>
+
+        {/* Quick Stats */}
+        <DriverScoringQuickStats {...stats} />
+
+        {/* Quick Actions */}
+        <DriverScoringQuickActions
+          onStartCoaching={handleStartCoaching}
+          onExportReport={handleExportReport}
+          onViewTrends={handleViewTrends}
+          onViewHighRisk={handleViewHighRisk}
+        />
+
+        {/* Insights and Trend */}
+        <div className="grid lg:grid-cols-2 gap-6">
+          <DriverScoringInsightsCard {...insights} />
+          <DriverScoringTrendChart />
+        </div>
         
-        <Tabs defaultValue="scoring" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList>
             <TabsTrigger value="scoring" className="gap-2">
               <TrendingUp className="w-4 h-4" aria-hidden="true" />
