@@ -302,31 +302,43 @@ const MapView = () => {
                 </div>
               </div>
 
-              {/* Trail Toggle Button */}
-              <Button
-                variant={showTrails ? "default" : "secondary"}
-                size="sm"
-                className="h-9 gap-2 bg-background/90 backdrop-blur-sm border shadow-lg"
+              {/* Trails Toggle */}
+              <div 
+                className="bg-background/95 backdrop-blur-md rounded-lg border border-border/50 shadow-lg overflow-hidden cursor-pointer hover:bg-muted/50 transition-colors"
                 onClick={() => setShowTrails(!showTrails)}
+                role="button"
+                tabIndex={0}
                 aria-label="Toggle vehicle trails"
                 aria-pressed={showTrails}
+                onKeyDown={(e) => e.key === 'Enter' && setShowTrails(!showTrails)}
               >
-                <Route className="w-4 h-4" aria-hidden="true" />
-                <span className="hidden sm:inline">Trails</span>
-              </Button>
+                <div className="flex items-center gap-2 px-4 py-2.5">
+                  <Route className={cn("w-4 h-4", showTrails ? "text-primary" : "text-muted-foreground")} aria-hidden="true" />
+                  <span className={cn("text-xs font-medium", showTrails ? "text-foreground" : "text-foreground/80")}>Trails</span>
+                  {showTrails && (
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary ml-auto" aria-hidden="true" />
+                  )}
+                </div>
+              </div>
 
-              {/* Nearby Vehicles Search Button */}
-              <Button
-                variant={showNearbySearch ? "default" : "secondary"}
-                size="sm"
-                className="h-9 gap-2 bg-background/90 backdrop-blur-sm border shadow-lg"
+              {/* Nearby Search Toggle */}
+              <div 
+                className="bg-background/95 backdrop-blur-md rounded-lg border border-border/50 shadow-lg overflow-hidden cursor-pointer hover:bg-muted/50 transition-colors"
                 onClick={() => setShowNearbySearch(!showNearbySearch)}
+                role="button"
+                tabIndex={0}
                 aria-label="Search for nearby vehicles"
                 aria-pressed={showNearbySearch}
+                onKeyDown={(e) => e.key === 'Enter' && setShowNearbySearch(!showNearbySearch)}
               >
-                <Radar className="w-4 h-4" aria-hidden="true" />
-                <span className="hidden sm:inline">Nearby</span>
-              </Button>
+                <div className="flex items-center gap-2 px-4 py-2.5">
+                  <Radar className={cn("w-4 h-4", showNearbySearch ? "text-primary" : "text-muted-foreground")} aria-hidden="true" />
+                  <span className={cn("text-xs font-medium", showNearbySearch ? "text-foreground" : "text-foreground/80")}>Nearby</span>
+                  {showNearbySearch && (
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary ml-auto" aria-hidden="true" />
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Nearby Vehicles Search Panel */}
