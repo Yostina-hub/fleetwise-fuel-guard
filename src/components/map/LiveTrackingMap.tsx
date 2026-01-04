@@ -185,7 +185,7 @@ return () => {
     map.current.setStyle(targetStyle);
   }, [mapStyle]);
 
-  // Debounced address fetching to avoid API spam
+  // Debounced address fetching to avoid API spam - gets detailed street-level address
   const fetchAddressDebounced = (lng: number, lat: number, vehicleId: string) => {
     // Clear existing timeout for this vehicle
     const existingTimeout = addressFetchTimeouts.current.get(vehicleId);
@@ -199,14 +199,43 @@ return () => {
         const mapboxToken = token || localStorage.getItem('mapbox_token') || import.meta.env.VITE_MAPBOX_TOKEN;
         if (!mapboxToken) return;
         
+        // Use limit=5 to get multiple results and pick the most specific one
+        // Priority: poi > address > neighborhood > locality > place
         const response = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxToken}&types=poi,address,place`
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxToken}&types=poi,address,neighborhood,locality,place&limit=5`
         );
         const data = await response.json();
         
         if (data.features && data.features.length > 0) {
-          const place = data.features[0];
-          const address = place.place_name || place.text || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+          // Find the most specific address (prefer POI > address > neighborhood)
+          const typePriority = ['poi', 'address', 'neighborhood', 'locality', 'place'];
+          let bestFeature = data.features[0];
+          
+          for (const preferredType of typePriority) {
+            const match = data.features.find((f: any) => 
+              f.place_type && f.place_type.includes(preferredType)
+            );
+            if (match) {
+              bestFeature = match;
+              break;
+            }
+          }
+          
+          // Build detailed address from context
+          const placeName = bestFeature.text || '';
+          const context = bestFeature.context || [];
+          
+          // Extract neighborhood, locality, place from context
+          const neighborhood = context.find((c: any) => c.id?.startsWith('neighborhood'))?.text || '';
+          const locality = context.find((c: any) => c.id?.startsWith('locality'))?.text || '';
+          const place = context.find((c: any) => c.id?.startsWith('place'))?.text || '';
+          
+          // Build readable address: "POI/Street, Neighborhood, Locality" 
+          const parts = [placeName, neighborhood, locality].filter(p => p && p.trim());
+          const address = parts.length > 0 
+            ? parts.join(', ') 
+            : place || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+          
           setVehicleAddresses(prev => new Map(prev).set(vehicleId, address));
         }
       } catch (error) {
