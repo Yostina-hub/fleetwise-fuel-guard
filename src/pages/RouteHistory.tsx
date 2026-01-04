@@ -335,6 +335,18 @@ const RouteHistory = () => {
                 engine_on: currentPosition.engine_on || false,
                 heading: currentPosition.heading || 0
               }] : []}
+              showTrails={true}
+              trails={useMemo(() => {
+                if (!hasData) return new Map();
+                // Create trail from start up to current playback position
+                const trailPoints = routeHistory.slice(0, currentIndex + 1).map(p => ({
+                  lat: p.latitude || 0,
+                  lng: p.longitude || 0,
+                  timestamp: p.last_communication_at,
+                  speed: p.speed_kmh || 0
+                }));
+                return new Map([["playback", trailPoints]]);
+              }, [hasData, routeHistory, currentIndex])}
             />
 
             {/* Playback Controls */}
