@@ -881,6 +881,66 @@ async function forwardToEdgeFunction(protocol, parsed, rawData) {
   });
 }
 
+// Forward status updates (login, heartbeat, alarm) - no lat/lng required
+async function forwardStatusUpdate(protocol, parsed, rawData) {
+  return new Promise((resolve, reject) => {
+    const payload = JSON.stringify({
+      protocol,
+      imei: parsed.imei,
+      type: parsed.type,  // 'login', 'heartbeat', or 'alarm'
+      alarmType: parsed.alarmType,
+      acc: parsed.acc,
+      ignition: parsed.ignition,
+      relay: parsed.relay,
+      fuelLevel: parsed.fuelLevel,
+      batteryVoltage: parsed.batteryVoltage,
+      raw: typeof rawData === 'string' ? rawData : rawData.toString('hex'),
+      gateway: 'tcp-gateway',
+      receivedAt: new Date().toISOString()
+    });
+    
+    const url = new URL(config.supabaseUrl + config.edgeFunctionPath);
+    const client = url.protocol === 'https:' ? https : http;
+    
+    const req = client.request({
+      hostname: url.hostname,
+      port: url.port || (url.protocol === 'https:' ? 443 : 80),
+      path: url.pathname,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload),
+        'Authorization': `Bearer ${config.supabaseAnonKey}`,
+        'apikey': config.supabaseAnonKey,
+        'X-Gateway-Protocol': protocol,
+        'X-Packet-Type': parsed.type  // Indicate this is a status packet
+      }
+    }, (res) => {
+      let body = '';
+      res.on('data', chunk => body += chunk);
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          stats[protocol].forwarded++;
+          log('info', protocol, 'Status forwarded', { type: parsed.type, imei: parsed.imei });
+          resolve({ success: true });
+        } else {
+          // Don't count as error for status packets - edge function may reject without lat/lng
+          log('debug', protocol, 'Status forward response', { status: res.statusCode, type: parsed.type });
+          resolve({ success: false, status: res.statusCode });
+        }
+      });
+    });
+    
+    req.on('error', (e) => {
+      log('warn', protocol, 'Status forward error', { error: e.message, type: parsed.type });
+      resolve({ success: false, error: e.message });
+    });
+    
+    req.write(payload);
+    req.end();
+  });
+}
+
 // ==================== TCP SERVER FACTORY ====================
 
 const deviceSessions = new Map();
@@ -915,9 +975,16 @@ function createTCPServer(protocol, port, parser, responseGen) {
             if (resp) socket.write(resp);
           }
           
-          // Forward location/login data
-          if ((parsed.type === 'location' || parsed.type === 'login') && parsed.imei) {
-            await forwardToEdgeFunction(protocol, parsed, data);
+          // Forward data to edge function
+          if (parsed.imei) {
+            // Only forward location packets with valid coordinates
+            if (parsed.type === 'location' && parsed.latitude && parsed.longitude) {
+              await forwardToEdgeFunction(protocol, parsed, data);
+            }
+            // For login/heartbeat, forward as status update (no lat/lng required)
+            else if (parsed.type === 'login' || parsed.type === 'heartbeat' || parsed.type === 'alarm') {
+              await forwardStatusUpdate(protocol, parsed, data);
+            }
           }
           
           buffer = Buffer.alloc(0);
@@ -976,8 +1043,13 @@ function createUDPServer(protocol, port, parser) {
       if (parsed && parsed.imei) {
         stats[protocol].parsed++;
         
-        if (parsed.type === 'location' || parsed.type === 'login') {
+        // Only forward location packets with valid coordinates
+        if (parsed.type === 'location' && parsed.latitude && parsed.longitude) {
           await forwardToEdgeFunction(protocol, parsed, msg);
+        }
+        // For login/heartbeat/alarm, forward as status update
+        else if (parsed.type === 'login' || parsed.type === 'heartbeat' || parsed.type === 'alarm') {
+          await forwardStatusUpdate(protocol, parsed, msg);
         }
       }
     } catch (e) {
