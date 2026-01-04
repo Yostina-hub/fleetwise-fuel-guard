@@ -360,22 +360,27 @@ function parseTK103(data) {
 }
 
 function generateTK103Response(type, imei) {
-  // GPS103 protocol spec: https://www.traccar.org/protocol/5001-gps103/
-  // Server must reply LOAD on login, ON for heartbeats
-  // To enable auto-reporting: **,imei:XXXXX,C,10s (every 10 seconds)
+  // GPS103 protocol - matches Traccar's proven implementation:
+  // - Login: reply "LOAD" only (auto-upload interval must be set via SMS, not TCP)
+  // - Heartbeat: reply "ON"
+  // - Location data: no response needed
+  // Reference: https://github.com/traccar/traccar/blob/master/src/main/java/org/traccar/protocol/Gps103ProtocolDecoder.java
+  
   if (type === 'login') {
-    // Reply LOAD first, then send auto-upload command
-    // Format: **,imei:XXXXXXXXXXXXXXX,C,10s (request position every 10 seconds)
-    if (imei) {
-      log('info', 'tk103', 'Sending auto-upload command', { imei, interval: '10s' });
-      return Buffer.from(`LOAD\r\n**,imei:${imei},C,10s\r\n`);
-    }
-    return Buffer.from('LOAD\r\n');
+    log('info', 'tk103', 'Sending LOAD response', { imei });
+    return Buffer.from('LOAD');
   }
-  if (type === 'heartbeat') return Buffer.from('ON\r\n');
-  if (type === 'relay_on') return Buffer.from('**,imei:000000000000000,C;\r\n');
-  if (type === 'relay_off') return Buffer.from('**,imei:000000000000000,D;\r\n');
-  return Buffer.from('ON\r\n');
+  if (type === 'heartbeat') {
+    return Buffer.from('ON');
+  }
+  // For location data (tracker), no response is needed
+  if (type === 'location') {
+    return null;
+  }
+  // Relay commands (for controlling outputs)
+  if (type === 'relay_on' && imei) return Buffer.from(`**,imei:${imei},C;`);
+  if (type === 'relay_off' && imei) return Buffer.from(`**,imei:${imei},D;`);
+  return null;
 }
 
 // ==================== H02/SINOTRACK PROTOCOL PARSER ====================
