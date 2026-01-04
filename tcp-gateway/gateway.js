@@ -957,6 +957,14 @@ function createTCPServer(protocol, port, parser, responseGen) {
       stats[protocol].received++;
       buffer = Buffer.concat([buffer, data]);
       
+      // Enhanced debug logging - log ALL raw data received
+      log('debug', protocol, 'Raw data received', { 
+        hex: data.toString('hex'),
+        ascii: data.toString().replace(/[\x00-\x1F\x7F-\xFF]/g, '.'),
+        length: data.length,
+        remote: addr
+      });
+      
       try {
         const parsed = parser(buffer);
         if (parsed) {
