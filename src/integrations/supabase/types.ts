@@ -6193,7 +6193,7 @@ export type Database = {
           ownership_type: string | null
           plate_number: string
           status: string
-          tank_capacity_liters: number
+          tank_capacity_liters: number | null
           updated_at: string
           vehicle_type: string | null
           vin: string | null
@@ -6218,7 +6218,7 @@ export type Database = {
           ownership_type?: string | null
           plate_number: string
           status?: string
-          tank_capacity_liters: number
+          tank_capacity_liters?: number | null
           updated_at?: string
           vehicle_type?: string | null
           vin?: string | null
@@ -6243,7 +6243,7 @@ export type Database = {
           ownership_type?: string | null
           plate_number?: string
           status?: string
-          tank_capacity_liters?: number
+          tank_capacity_liters?: number | null
           updated_at?: string
           vehicle_type?: string | null
           vin?: string | null
