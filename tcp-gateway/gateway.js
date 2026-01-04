@@ -359,9 +359,20 @@ function parseTK103(data) {
   }
 }
 
-function generateTK103Response(type, command) {
-  // Many TK103/303FG units expect CRLF-terminated responses.
-  if (type === 'login') return Buffer.from('LOAD\r\n');
+function generateTK103Response(type, imei) {
+  // GPS103 protocol spec: https://www.traccar.org/protocol/5001-gps103/
+  // Server must reply LOAD on login, ON for heartbeats
+  // To enable auto-reporting: **,imei:XXXXX,C,10s (every 10 seconds)
+  if (type === 'login') {
+    // Reply LOAD first, then send auto-upload command
+    // Format: **,imei:XXXXXXXXXXXXXXX,C,10s (request position every 10 seconds)
+    if (imei) {
+      log('info', 'tk103', 'Sending auto-upload command', { imei, interval: '10s' });
+      return Buffer.from(`LOAD\r\n**,imei:${imei},C,10s\r\n`);
+    }
+    return Buffer.from('LOAD\r\n');
+  }
+  if (type === 'heartbeat') return Buffer.from('ON\r\n');
   if (type === 'relay_on') return Buffer.from('**,imei:000000000000000,C;\r\n');
   if (type === 'relay_off') return Buffer.from('**,imei:000000000000000,D;\r\n');
   return Buffer.from('ON\r\n');
@@ -978,15 +989,16 @@ function createTCPServer(protocol, port, parser, responseGen) {
             parsed.imei = sessionImei;
           }
           
-          // Send response
+          // Send response - pass imei for protocols that need it (like TK103 auto-upload command)
           if (responseGen) {
-            const resp = responseGen(parsed.type || parsed.protocolNumber, parsed.recordCount);
+            const resp = responseGen(parsed.type || parsed.protocolNumber, parsed.imei || parsed.recordCount);
             if (resp) {
               socket.write(resp);
               log('debug', protocol, 'Response sent', {
                 type: parsed.type || parsed.protocolNumber,
+                imei: parsed.imei,
                 hex: Buffer.isBuffer(resp) ? resp.toString('hex') : Buffer.from(String(resp)).toString('hex'),
-                ascii: Buffer.isBuffer(resp) ? resp.toString() : String(resp),
+                ascii: Buffer.isBuffer(resp) ? resp.toString().replace(/[\r\n]/g, '\\n') : String(resp),
                 remote: addr,
               });
             }
