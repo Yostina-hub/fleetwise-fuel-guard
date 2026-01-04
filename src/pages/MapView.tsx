@@ -24,12 +24,14 @@ import {
   Map,
   Filter,
   Radar,
-  Clock
+  Clock,
+  Route
 } from "lucide-react";
 import { GpsJammingIndicator } from "@/components/map/GpsJammingIndicator";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { useSpeedGovernor } from "@/hooks/useSpeedGovernor";
+import { useVehicleTrail } from "@/hooks/useVehicleTrail";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -50,6 +52,7 @@ const MapView = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'moving' | 'idle' | 'stopped' | 'offline'>('all');
   const [showNearbySearch, setShowNearbySearch] = useState(false);
+  const [showTrails, setShowTrails] = useState(true);
   
   const [mapStyle, setMapStyle] = useState<'streets' | 'satellite'>('satellite');
   const [mapToken] = useState<string>(() => localStorage.getItem('mapbox_token') || '');
@@ -142,6 +145,12 @@ const MapView = () => {
       };
     });
   }, [dbVehicles, telemetry, isVehicleOnline, governorConfigs]);
+
+  // Get vehicle IDs for trail tracking
+  const vehicleIds = useMemo(() => vehicles.map(v => v.id), [vehicles]);
+  
+  // Use vehicle trail hook for live path drawing
+  const { trails, clearAllTrails } = useVehicleTrail(vehicleIds);
 
   // Filter vehicles by search and status
   const filteredVehicles = useMemo(() => {
@@ -236,6 +245,8 @@ const MapView = () => {
               token={mapToken || envToken}
               mapStyle={mapStyle}
               onMapReady={setMapInstance}
+              showTrails={showTrails}
+              trails={trails}
             />
           )}
 
@@ -289,6 +300,19 @@ const MapView = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Trail Toggle Button */}
+              <Button
+                variant={showTrails ? "default" : "secondary"}
+                size="sm"
+                className="h-9 gap-2 bg-background/90 backdrop-blur-sm border shadow-lg"
+                onClick={() => setShowTrails(!showTrails)}
+                aria-label="Toggle vehicle trails"
+                aria-pressed={showTrails}
+              >
+                <Route className="w-4 h-4" aria-hidden="true" />
+                <span className="hidden sm:inline">Trails</span>
+              </Button>
 
               {/* Nearby Vehicles Search Button */}
               <Button

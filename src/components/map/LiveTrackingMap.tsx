@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,13 @@ import {
   animatePosition, 
   injectMarkerAnimations 
 } from './AnimatedMarker';
+
+interface TrailPoint {
+  lat: number;
+  lng: number;
+  timestamp: string;
+  speed: number;
+}
 
 interface Vehicle {
   id: string;
@@ -37,9 +44,20 @@ interface LiveTrackingMapProps {
   token?: string;
   mapStyle?: 'streets' | 'satellite';
   onMapReady?: (map: mapboxgl.Map) => void;
+  showTrails?: boolean;
+  trails?: Map<string, TrailPoint[]>;
 }
 
-const LiveTrackingMap = ({ vehicles, onVehicleClick, selectedVehicleId, token, mapStyle = 'satellite', onMapReady }: LiveTrackingMapProps) => {
+const LiveTrackingMap = ({ 
+  vehicles, 
+  onVehicleClick, 
+  selectedVehicleId, 
+  token, 
+  mapStyle = 'satellite', 
+  onMapReady,
+  showTrails = true,
+  trails = new Map()
+}: LiveTrackingMapProps) => {
 const mapContainer = useRef<HTMLDivElement>(null);
 const map = useRef<mapboxgl.Map | null>(null);
 const markers = useRef<Map<string, mapboxgl.Marker>>(new Map());
@@ -47,6 +65,7 @@ const previousPositions = useRef<Map<string, { lng: number; lat: number }>>(new 
 const resizeObserver = useRef<ResizeObserver | null>(null);
 const addressFetchTimeouts = useRef<Map<string, NodeJS.Timeout>>(new Map());
 const initialBoundsFitted = useRef(false);
+const trailSourcesAdded = useRef<Set<string>>(new Set());
 const [mapLoaded, setMapLoaded] = useState(false);
 const [tokenError, setTokenError] = useState<string | null>(null);
 const [tempToken, setTempToken] = useState('');
@@ -333,7 +352,101 @@ return () => {
       map.current!.fitBounds(bounds, { padding: 50, maxZoom: 15 });
       initialBoundsFitted.current = true;
     }
-  }, [vehicles, mapLoaded, selectedVehicleId, onVehicleClick]);
+  }, [vehicles, mapLoaded, selectedVehicleId, onVehicleClick, vehicleAddresses]);
+
+  // Draw vehicle trails on the map
+  useEffect(() => {
+    if (!map.current || !mapLoaded || !showTrails) return;
+
+    trails.forEach((points, vehicleId) => {
+      if (points.length < 2) return;
+
+      const sourceId = `trail-${vehicleId}`;
+      const layerId = `trail-line-${vehicleId}`;
+      const coordinates = points.map(p => [p.lng, p.lat] as [number, number]);
+
+      const geojsonData: GeoJSON.Feature<GeoJSON.LineString> = {
+        type: 'Feature',
+        properties: { vehicleId },
+        geometry: {
+          type: 'LineString',
+          coordinates,
+        },
+      };
+
+      // Update or create source
+      const source = map.current!.getSource(sourceId) as mapboxgl.GeoJSONSource;
+      if (source) {
+        source.setData(geojsonData);
+      } else {
+        map.current!.addSource(sourceId, {
+          type: 'geojson',
+          data: geojsonData,
+        });
+
+        // Add glow effect layer (wider, semi-transparent)
+        map.current!.addLayer({
+          id: `${layerId}-glow`,
+          type: 'line',
+          source: sourceId,
+          layout: {
+            'line-join': 'round',
+            'line-cap': 'round',
+          },
+          paint: {
+            'line-color': vehicleId === selectedVehicleId ? '#22c55e' : '#3b82f6',
+            'line-width': 8,
+            'line-opacity': 0.3,
+            'line-blur': 3,
+          },
+        });
+
+        // Add main trail line
+        map.current!.addLayer({
+          id: layerId,
+          type: 'line',
+          source: sourceId,
+          layout: {
+            'line-join': 'round',
+            'line-cap': 'round',
+          },
+          paint: {
+            'line-color': vehicleId === selectedVehicleId ? '#22c55e' : '#3b82f6',
+            'line-width': 3,
+            'line-opacity': 0.9,
+          },
+        });
+
+        trailSourcesAdded.current.add(vehicleId);
+      }
+
+      // Update colors based on selection
+      if (map.current!.getLayer(layerId)) {
+        const color = vehicleId === selectedVehicleId ? '#22c55e' : '#3b82f6';
+        map.current!.setPaintProperty(layerId, 'line-color', color);
+        map.current!.setPaintProperty(`${layerId}-glow`, 'line-color', color);
+      }
+    });
+
+    // Remove trails for vehicles no longer tracked
+    trailSourcesAdded.current.forEach(vehicleId => {
+      if (!trails.has(vehicleId)) {
+        const sourceId = `trail-${vehicleId}`;
+        const layerId = `trail-line-${vehicleId}`;
+        
+        if (map.current!.getLayer(layerId)) {
+          map.current!.removeLayer(layerId);
+        }
+        if (map.current!.getLayer(`${layerId}-glow`)) {
+          map.current!.removeLayer(`${layerId}-glow`);
+        }
+        if (map.current!.getSource(sourceId)) {
+          map.current!.removeSource(sourceId);
+        }
+        trailSourcesAdded.current.delete(vehicleId);
+      }
+    });
+  }, [trails, mapLoaded, showTrails, selectedVehicleId]);
 
   if (tokenError) {
     return (
