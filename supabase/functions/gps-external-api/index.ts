@@ -359,12 +359,49 @@ async function processRecord(supabase: any, record: TelemetryRecord): Promise<Pr
 
   // If status-only update, we're done
   if (isStatusUpdate && !hasLocation) {
+    // If the external system provides ignition/engine state during heartbeat/login,
+    // update the latest telemetry row so the UI doesn't show stale engine status.
+    const hasEngineState = record.ignition !== undefined || record.engine_on !== undefined;
+
+    if (hasEngineState && device.vehicle_id) {
+      const ignitionState = record.ignition ?? record.engine_on ?? false;
+
+      const { data: latestTelemetry, error: latestTelemetryError } = await supabase
+        .from('vehicle_telemetry')
+        .select('id')
+        .eq('vehicle_id', device.vehicle_id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (latestTelemetryError) {
+        console.warn('Failed to load latest telemetry for status update:', latestTelemetryError);
+      } else if (latestTelemetry?.id) {
+        const { error: updateError } = await supabase
+          .from('vehicle_telemetry')
+          .update({
+            engine_on: ignitionState,
+            ignition_on: ignitionState,
+            device_connected: true,
+          })
+          .eq('id', latestTelemetry.id);
+
+        if (updateError) {
+          console.warn('Failed to update telemetry engine state from status update:', updateError);
+        } else {
+          console.log(
+            `Telemetry engine state updated for ${record.imei}: engine_on=${ignitionState} (status=${record.event_type})`
+          );
+        }
+      }
+    }
+
     console.log(`Status update processed for ${record.imei}: ${record.event_type}`);
-    return { 
-      success: true, 
-      device_id: device.id, 
+    return {
+      success: true,
+      device_id: device.id,
       vehicle_id: device.vehicle_id,
-      processed_at: processedAt 
+      processed_at: processedAt,
     };
   }
 
