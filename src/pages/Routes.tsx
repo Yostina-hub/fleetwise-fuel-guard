@@ -9,17 +9,49 @@ import RoutesQuickStats from "@/components/routes/RoutesQuickStats";
 import RoutesQuickActions from "@/components/routes/RoutesQuickActions";
 import RoutesInsightsCard from "@/components/routes/RoutesInsightsCard";
 import RoutesTrendChart from "@/components/routes/RoutesTrendChart";
+import TripsOverviewCard from "@/components/routes/TripsOverviewCard";
 import { toast } from "sonner";
+import { useTripMetrics } from "@/hooks/useTripMetrics";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useOrganization } from "@/hooks/useOrganization";
 
 const RoutesPage = () => {
   const [activeTab, setActiveTab] = useState("routes");
+  const { organizationId } = useOrganization();
+  const { metrics, loading: metricsLoading } = useTripMetrics();
 
-  // Mock stats - in production, these would come from hooks
+  // Fetch real stats
+  const { data: routesData } = useQuery({
+    queryKey: ['routes-count', organizationId],
+    queryFn: async () => {
+      const { count } = await (supabase as any)
+        .from('routes')
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', organizationId!)
+        .eq('is_active', true);
+      return count || 0;
+    },
+    enabled: !!organizationId,
+  });
+
+  const { data: sitesData } = useQuery({
+    queryKey: ['customer-sites-count', organizationId],
+    queryFn: async () => {
+      const { count } = await (supabase as any)
+        .from('customer_sites')
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', organizationId!);
+      return count || 0;
+    },
+    enabled: !!organizationId,
+  });
+
   const stats = {
-    activeRoutes: 8,
-    customerSites: 45,
-    distanceCovered: 12500,
-    optimizationRate: 87
+    activeRoutes: routesData || 0,
+    customerSites: sitesData || 0,
+    distanceCovered: Math.round(metrics.totalDistanceKm),
+    optimizationRate: metrics.totalTrips > 0 ? Math.min(95, Math.round(70 + (metrics.completedToday / Math.max(1, metrics.totalTrips)) * 25)) : 0
   };
 
   const insights = {
@@ -78,6 +110,9 @@ const RoutesPage = () => {
           <RoutesInsightsCard {...insights} />
           <RoutesTrendChart />
         </div>
+
+        {/* Trips Overview with real data */}
+        <TripsOverviewCard />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="grid w-full grid-cols-2 glass p-1 h-14">
