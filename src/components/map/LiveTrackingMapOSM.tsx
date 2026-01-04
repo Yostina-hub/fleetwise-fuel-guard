@@ -6,7 +6,6 @@ import {
   animateLeafletPosition,
   injectLeafletMarkerAnimations,
 } from './LeafletAnimatedMarker';
-
 interface TrailPoint {
   lat: number;
   lng: number;
@@ -128,7 +127,7 @@ const LiveTrackingMapOSM = ({
     tileLayer.current.setUrl(layer.url);
   }, [mapStyle]);
 
-  // Debounced address fetching using Nominatim (free OSM geocoding)
+  // Debounced address fetching using edge function proxy
   const fetchAddressDebounced = useCallback((lng: number, lat: number, vehicleId: string) => {
     const existingTimeout = addressFetchTimeouts.current.get(vehicleId);
     if (existingTimeout) {
@@ -138,33 +137,23 @@ const LiveTrackingMapOSM = ({
     const timeout = setTimeout(async () => {
       try {
         const response = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reverse-geocode?lat=${lat}&lng=${lng}`,
           {
             headers: {
-              'Accept-Language': 'en',
-              'User-Agent': 'FleetTracker/1.0',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             },
           }
         );
-        
+
         if (!response.ok) {
           setVehicleAddresses((prev) => new Map(prev).set(vehicleId, `${lat.toFixed(6)}, ${lng.toFixed(6)}`));
           return;
         }
 
         const data = await response.json();
-        
-        if (data.display_name) {
-          // Create a shorter, cleaner address
-          const addr = data.address || {};
-          const parts = [
-            addr.road || addr.pedestrian || addr.footway,
-            addr.neighbourhood || addr.suburb || addr.quarter,
-            addr.city || addr.town || addr.village || addr.municipality,
-          ].filter(Boolean);
-          
-          const address = parts.length > 0 ? parts.join(', ') : data.display_name.split(',').slice(0, 3).join(',');
-          setVehicleAddresses((prev) => new Map(prev).set(vehicleId, address));
+
+        if (data?.address) {
+          setVehicleAddresses((prev) => new Map(prev).set(vehicleId, data.address));
         } else {
           setVehicleAddresses((prev) => new Map(prev).set(vehicleId, `${lat.toFixed(6)}, ${lng.toFixed(6)}`));
         }
@@ -173,7 +162,7 @@ const LiveTrackingMapOSM = ({
         setVehicleAddresses((prev) => new Map(prev).set(vehicleId, `${lat.toFixed(6)}, ${lng.toFixed(6)}`));
       }
       addressFetchTimeouts.current.delete(vehicleId);
-    }, 600); // Slightly longer debounce for Nominatim rate limits
+    }, 600);
 
     addressFetchTimeouts.current.set(vehicleId, timeout);
   }, []);
