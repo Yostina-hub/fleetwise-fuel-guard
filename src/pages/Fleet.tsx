@@ -205,14 +205,23 @@ const Fleet = () => {
       const telemetry = telemetryMap[v.id];
       const nextService = nextServiceMap[v.id];
       
-      // Determine status from telemetry if available
+      // Check if telemetry is stale (older than 15 minutes)
+      const isDataFresh = telemetry?.last_communication_at 
+        ? (Date.now() - new Date(telemetry.last_communication_at).getTime()) < 15 * 60 * 1000
+        : false;
+      
+      // Determine status from telemetry - must have fresh data
       let status: "moving" | "idle" | "offline" = "offline";
-      if (telemetry?.device_connected) {
-        status = telemetry.engine_on && (telemetry.speed_kmh || 0) > 0 ? "moving" : "idle";
-      } else if (v.status === "active") {
-        status = "idle";
-      } else if (v.status === "maintenance") {
-        status = "idle";
+      if (telemetry && isDataFresh && telemetry.device_connected) {
+        // Use speed-based logic: speed > 3 km/h = moving
+        const speed = telemetry.speed_kmh || 0;
+        if (speed > 3) {
+          status = "moving";
+        } else if (telemetry.engine_on || telemetry.ignition_on) {
+          status = "idle";
+        } else {
+          status = "offline"; // Engine off, not moving = stopped/offline
+        }
       }
 
       // Get driver name from join or fallback to trip-based assignment
