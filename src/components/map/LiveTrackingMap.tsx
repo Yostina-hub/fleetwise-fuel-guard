@@ -286,35 +286,45 @@ return () => {
         el.dataset.overspeeding = isOverspeeding.toString();
         el.dataset.status = vehicle.status;
 
+        const createPopupHTML = (addr: string) => `
+          <div class="vehicle-popup-content">
+            <div class="popup-header">
+              <span class="popup-plate">${vehicle.plate}</span>
+              <span class="popup-status popup-status-${vehicle.status}">${vehicle.status}</span>
+            </div>
+            ${vehicle.driverName ? `<div class="popup-driver"><span class="popup-driver-icon">👤</span> ${vehicle.driverName}${vehicle.driverPhone ? ` <span class="popup-driver-phone">(${vehicle.driverPhone})</span>` : ''}</div>` : '<div class="popup-driver popup-no-driver">No driver assigned</div>'}
+            ${isOverspeeding ? `<div class="popup-overspeeding">⚠️ Overspeeding: ${vehicle.speed} km/h (limit: ${speedLimit})</div>` : ''}
+            <div class="popup-stats">
+              <div class="popup-stat">
+                <span class="popup-stat-value">${vehicle.speed}</span>
+                <span class="popup-stat-label">km/h</span>
+              </div>
+              <div class="popup-stat">
+                <span class="popup-stat-value">${vehicle.fuel}</span>
+                <span class="popup-stat-label">% fuel</span>
+              </div>
+            </div>
+            <div class="popup-coords" style="font-size:11px;color:#666;margin-top:6px;">
+              📍 ${vehicle.lat.toFixed(6)}, ${vehicle.lng.toFixed(6)}
+            </div>
+            <div class="popup-address" style="margin-top:4px;">${addr}</div>
+          </div>
+        `;
+
+        const popup = new mapboxgl.Popup({ offset: 25, closeButton: true, closeOnClick: false, className: 'vehicle-popup' })
+          .setHTML(createPopupHTML(address));
+
         const marker = new mapboxgl.Marker({
           element: el,
           anchor: 'center',
         })
           .setLngLat([vehicle.lng, vehicle.lat])
-          .setPopup(
-            new mapboxgl.Popup({ offset: 25, closeButton: false, closeOnClick: true, className: 'vehicle-popup' }).setHTML(`
-              <div class="vehicle-popup-content">
-                <div class="popup-header">
-                  <span class="popup-plate">${vehicle.plate}</span>
-                  <span class="popup-status popup-status-${vehicle.status}">${vehicle.status}</span>
-                </div>
-                ${vehicle.driverName ? `<div class="popup-driver"><span class="popup-driver-icon">👤</span> ${vehicle.driverName}${vehicle.driverPhone ? ` <span class="popup-driver-phone">(${vehicle.driverPhone})</span>` : ''}</div>` : '<div class="popup-driver popup-no-driver">No driver assigned</div>'}
-                ${isOverspeeding ? `<div class="popup-overspeeding">⚠️ Overspeeding: ${vehicle.speed} km/h (limit: ${speedLimit})</div>` : ''}
-                <div class="popup-stats">
-                  <div class="popup-stat">
-                    <span class="popup-stat-value">${vehicle.speed}</span>
-                    <span class="popup-stat-label">km/h</span>
-                  </div>
-                  <div class="popup-stat">
-                    <span class="popup-stat-value">${vehicle.fuel}</span>
-                    <span class="popup-stat-label">% fuel</span>
-                  </div>
-                </div>
-                <div class="popup-address">${address}</div>
-              </div>
-            `)
-          )
+          .setPopup(popup)
           .addTo(map.current!);
+
+        // Store popup reference for updates
+        (marker as any)._customPopup = popup;
+        (marker as any)._vehicleId = vehicle.id;
 
         el.addEventListener('click', () => {
           onVehicleClick?.(vehicle);
@@ -326,10 +336,45 @@ return () => {
               essential: true
             });
           }
+          // Refresh popup content with latest address
+          const latestAddr = vehicleAddresses.get(vehicle.id) || 'Loading address...';
+          popup.setHTML(createPopupHTML(latestAddr));
           marker.togglePopup();
         });
 
         markers.current.set(vehicle.id, marker);
+      } else {
+        // Update existing marker's popup content with latest address
+        const existingMarker = markers.current.get(vehicle.id);
+        if (existingMarker) {
+          const popup = existingMarker.getPopup();
+          if (popup && popup.isOpen()) {
+            const latestAddr = vehicleAddresses.get(vehicle.id) || 'Loading address...';
+            popup.setHTML(`
+              <div class="vehicle-popup-content">
+                <div class="popup-header">
+                  <span class="popup-plate">${vehicle.plate}</span>
+                  <span class="popup-status popup-status-${vehicle.status}">${vehicle.status}</span>
+                </div>
+                ${vehicle.driverName ? `<div class="popup-driver"><span class="popup-driver-icon">👤</span> ${vehicle.driverName}${vehicle.driverPhone ? ` <span class="popup-driver-phone">(${vehicle.driverPhone})</span>` : ''}</div>` : '<div class="popup-driver popup-no-driver">No driver assigned</div>'}
+                <div class="popup-stats">
+                  <div class="popup-stat">
+                    <span class="popup-stat-value">${vehicle.speed}</span>
+                    <span class="popup-stat-label">km/h</span>
+                  </div>
+                  <div class="popup-stat">
+                    <span class="popup-stat-value">${vehicle.fuel}</span>
+                    <span class="popup-stat-label">% fuel</span>
+                  </div>
+                </div>
+                <div class="popup-coords" style="font-size:11px;color:#666;margin-top:6px;">
+                  📍 ${vehicle.lat.toFixed(6)}, ${vehicle.lng.toFixed(6)}
+                </div>
+                <div class="popup-address" style="margin-top:4px;">${latestAddr}</div>
+              </div>
+            `);
+          }
+        }
       }
 
       // Store current position for next animation
