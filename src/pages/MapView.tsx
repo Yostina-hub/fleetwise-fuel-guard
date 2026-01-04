@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { MapSidebarSkeleton } from "@/components/ui/skeletons";
 import StatusBadge from "@/components/StatusBadge";
-import LiveTrackingMapOSM from "@/components/map/LiveTrackingMapOSM";
-import ClusteredMapOSM from "@/components/map/ClusteredMapOSM";
+import LiveTrackingMap from "@/components/map/LiveTrackingMap";
+import ClusteredMap from "@/components/map/ClusteredMap";
 import { NearbyVehiclesSearch } from "@/components/map/NearbyVehiclesSearch";
 import { 
   Navigation, 
@@ -35,7 +35,6 @@ import { useVehicleTrail } from "@/hooks/useVehicleTrail";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
-import L from "leaflet";
 
 const CLUSTER_THRESHOLD = 100;
 
@@ -57,7 +56,9 @@ const MapView = () => {
   const [popupVehicleId, setPopupVehicleId] = useState<string | null>(null);
   
   const [mapStyle, setMapStyle] = useState<'streets' | 'satellite'>('satellite');
-  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
+  const [mapToken] = useState<string>(() => localStorage.getItem('mapbox_token') || '');
+  const envToken = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
+  const [mapInstance, setMapInstance] = useState<any>(null);
   
   // Helper to check if data is stale (>5 mins old)
   const isStaleData = (lastSeen?: string): boolean => {
@@ -221,7 +222,7 @@ const MapView = () => {
         {/* Map Area */}
         <div className="flex-1 relative">
           {useClusteredMap ? (
-            <ClusteredMapOSM
+            <ClusteredMap
               vehicles={vehicles.map(v => ({
                 id: v.id,
                 plate: v.plate,
@@ -238,10 +239,11 @@ const MapView = () => {
               mapStyle={mapStyle}
             />
           ) : (
-            <LiveTrackingMapOSM
+            <LiveTrackingMap
               vehicles={vehicles}
               selectedVehicleId={selectedVehicleId}
               onVehicleClick={(vehicle) => setSelectedVehicleId(vehicle.id)}
+              token={mapToken || envToken}
               mapStyle={mapStyle}
               onMapReady={setMapInstance}
               showTrails={showTrails}
@@ -302,43 +304,31 @@ const MapView = () => {
                 </div>
               </div>
 
-              {/* Trails Toggle */}
-              <div 
-                className="bg-background/95 backdrop-blur-md rounded-lg border border-border/50 shadow-lg overflow-hidden cursor-pointer hover:bg-muted/50 transition-colors"
+              {/* Trail Toggle Button */}
+              <Button
+                variant={showTrails ? "default" : "secondary"}
+                size="sm"
+                className="h-9 gap-2 bg-background/90 backdrop-blur-sm border shadow-lg"
                 onClick={() => setShowTrails(!showTrails)}
-                role="button"
-                tabIndex={0}
                 aria-label="Toggle vehicle trails"
                 aria-pressed={showTrails}
-                onKeyDown={(e) => e.key === 'Enter' && setShowTrails(!showTrails)}
               >
-                <div className="flex items-center gap-2 px-4 py-2.5">
-                  <Route className={cn("w-4 h-4", showTrails ? "text-primary" : "text-muted-foreground")} aria-hidden="true" />
-                  <span className={cn("text-xs font-medium", showTrails ? "text-foreground" : "text-foreground/80")}>Trails</span>
-                  {showTrails && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary ml-auto" aria-hidden="true" />
-                  )}
-                </div>
-              </div>
+                <Route className="w-4 h-4" aria-hidden="true" />
+                <span className="hidden sm:inline">Trails</span>
+              </Button>
 
-              {/* Nearby Search Toggle */}
-              <div 
-                className="bg-background/95 backdrop-blur-md rounded-lg border border-border/50 shadow-lg overflow-hidden cursor-pointer hover:bg-muted/50 transition-colors"
+              {/* Nearby Vehicles Search Button */}
+              <Button
+                variant={showNearbySearch ? "default" : "secondary"}
+                size="sm"
+                className="h-9 gap-2 bg-background/90 backdrop-blur-sm border shadow-lg"
                 onClick={() => setShowNearbySearch(!showNearbySearch)}
-                role="button"
-                tabIndex={0}
                 aria-label="Search for nearby vehicles"
                 aria-pressed={showNearbySearch}
-                onKeyDown={(e) => e.key === 'Enter' && setShowNearbySearch(!showNearbySearch)}
               >
-                <div className="flex items-center gap-2 px-4 py-2.5">
-                  <Radar className={cn("w-4 h-4", showNearbySearch ? "text-primary" : "text-muted-foreground")} aria-hidden="true" />
-                  <span className={cn("text-xs font-medium", showNearbySearch ? "text-foreground" : "text-foreground/80")}>Nearby</span>
-                  {showNearbySearch && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary ml-auto" aria-hidden="true" />
-                  )}
-                </div>
-              </div>
+                <Radar className="w-4 h-4" aria-hidden="true" />
+                <span className="hidden sm:inline">Nearby</span>
+              </Button>
             </div>
 
             {/* Nearby Vehicles Search Panel */}
@@ -349,7 +339,11 @@ const MapView = () => {
                   onVehicleSelect={(v) => {
                     setSelectedVehicleId(v.id);
                     setShowNearbySearch(false);
-                    mapInstance?.flyTo([v.lat, v.lng], 16, { duration: 1.2 });
+                    mapInstance?.flyTo({
+                      center: [v.lng, v.lat],
+                      zoom: 16,
+                      duration: 1200,
+                    });
                   }}
                   onClose={() => setShowNearbySearch(false)}
                 />
@@ -526,25 +520,8 @@ const MapView = () => {
                           )}
                         </div>
 
-                        {/* Last seen indicator - always show for all vehicles */}
-                        {vehicle.lastSeen && (
-                          <div className={cn(
-                            "flex items-center gap-1 text-xs mt-1.5",
-                            vehicle.isOffline ? "text-muted-foreground" : 
-                            isStaleData(vehicle.lastSeen) ? "text-warning" : "text-muted-foreground/70"
-                          )}>
-                            <Clock className="w-3 h-3" aria-hidden="true" />
-                            <span>
-                              {vehicle.isOffline || isStaleData(vehicle.lastSeen) 
-                                ? `Last seen ${formatDistanceToNow(new Date(vehicle.lastSeen), { addSuffix: true })}`
-                                : `Updated ${formatDistanceToNow(new Date(vehicle.lastSeen), { addSuffix: true })}`
-                              }
-                            </span>
-                          </div>
-                        )}
-
                         {!vehicle.isOffline && (
-                          <div className="space-y-1.5 mt-1.5">
+                          <div className="space-y-1.5">
                             <div className="flex items-center gap-4 text-xs text-muted-foreground">
                               <div className="flex items-center gap-1">
                                 <Navigation className="w-3 h-3" aria-hidden="true" />
@@ -566,6 +543,13 @@ const MapView = () => {
                               spoofingDetected={vehicle.gps_spoofing_detected}
                               showLabel={true}
                             />
+                            {/* Stale data indicator */}
+                            {isStaleData(vehicle.lastSeen) && vehicle.lastSeen && (
+                              <div className="flex items-center gap-1 text-xs text-warning">
+                                <Clock className="w-3 h-3" aria-hidden="true" />
+                                <span>Updated {formatDistanceToNow(new Date(vehicle.lastSeen), { addSuffix: true })}</span>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>

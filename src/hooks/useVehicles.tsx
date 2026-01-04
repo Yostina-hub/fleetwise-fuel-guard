@@ -44,27 +44,27 @@ export interface Vehicle {
 export const useVehicles = (skip = false) => {
   const { organizationId } = useOrganization();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [loading, setLoading] = useState(true); // Start true - we're loading
+  const [loading, setLoading] = useState(false); // Start false for instant feel
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (skip) {
+    if (skip || !organizationId) {
       setVehicles([]);
       setLoading(false);
-      return;
-    }
-
-    if (!organizationId) {
-      // Still waiting for organization - keep loading state
+      setIsFirstLoad(false);
       return;
     }
 
     let isMounted = true;
     let debounceTimer: NodeJS.Timeout;
 
-    const fetchVehicles = async () => {
+    const fetchVehicles = async (showLoading = true) => {
       try {
-        setLoading(true);
+        // Only show loading on first load
+        if (showLoading && isFirstLoad) {
+          setLoading(true);
+        }
         // Use explicit limit to handle large fleets (up to 5000 vehicles)
         // Include assigned driver info via join
         const { data, error } = await supabase
@@ -77,6 +77,7 @@ export const useVehicles = (skip = false) => {
         if (error) throw error;
         if (isMounted) {
           setVehicles((data as any) || []);
+          setIsFirstLoad(false);
         }
       } catch (err: any) {
         console.error("Error fetching vehicles:", err);
@@ -104,11 +105,11 @@ export const useVehicles = (skip = false) => {
           filter: `organization_id=eq.${organizationId}`
         },
         () => {
-          // Debounce to prevent rapid refetches
+          // Debounce to prevent rapid refetches, update in background
           clearTimeout(debounceTimer);
           debounceTimer = setTimeout(() => {
             if (isMounted) {
-              fetchVehicles();
+              fetchVehicles(false); // Don't show loading for background updates
             }
           }, 500);
         }
@@ -120,7 +121,7 @@ export const useVehicles = (skip = false) => {
       clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
-  }, [organizationId, skip]);
+  }, [organizationId, isFirstLoad, skip]);
 
   return {
     vehicles,
