@@ -253,24 +253,38 @@ export const useDevices = () => {
       // Update heartbeat regardless of vehicle assignment
       const { error: heartbeatError } = await supabase
         .from("devices")
-        .update({ last_heartbeat: new Date().toISOString() })
+        .update({ last_heartbeat: new Date().toISOString(), status: 'active' })
         .eq("id", deviceId);
 
       if (heartbeatError) throw heartbeatError;
 
       // Only insert telemetry if assigned to a vehicle
       if (device?.vehicle_id) {
+        // Try to get the last known location for this vehicle
+        const { data: lastTelemetry } = await supabase
+          .from("vehicle_telemetry")
+          .select("latitude, longitude")
+          .eq("vehicle_id", device.vehicle_id)
+          .not("latitude", "is", null)
+          .order("last_communication_at", { ascending: false })
+          .limit(1)
+          .single();
+
+        // Use last known location if available, otherwise use default (Addis Ababa)
+        const baseLat = lastTelemetry?.latitude ?? 9.0214;
+        const baseLng = lastTelemetry?.longitude ?? 38.7624;
+
         const { error: telemetryError } = await supabase
           .from("vehicle_telemetry")
           .insert({
             vehicle_id: device.vehicle_id,
             organization_id: device.organization_id,
-            latitude: 9.0214 + (Math.random() - 0.5) * 0.01,
-            longitude: 38.7624 + (Math.random() - 0.5) * 0.01,
-            speed_kmh: Math.random() * 80,
+            latitude: baseLat + (Math.random() - 0.5) * 0.001, // Smaller offset (~50m)
+            longitude: baseLng + (Math.random() - 0.5) * 0.001,
+            speed_kmh: 0, // Test heartbeat = stationary
             heading: Math.random() * 360,
             fuel_level_percent: 50 + Math.random() * 50,
-            engine_on: true,
+            engine_on: false, // Simulates parked/idle
             device_connected: true,
             last_communication_at: new Date().toISOString(),
             gps_satellites_count: 8 + Math.floor(Math.random() * 4),
