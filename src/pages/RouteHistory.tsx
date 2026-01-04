@@ -28,7 +28,7 @@ import {
   Loader2
 } from "lucide-react";
 import LiveTrackingMap from "@/components/map/LiveTrackingMap";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format, parseISO, differenceInMinutes } from "date-fns";
@@ -46,12 +46,24 @@ interface TelemetryPoint {
 
 const RouteHistory = () => {
   const { organizationId } = useOrganization();
+  const queryClient = useQueryClient();
+
+  const today = new Date().toISOString().split("T")[0];
+
   const [selectedVehicle, setSelectedVehicle] = useState<string>("");
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState<string>(today);
+  const isToday = selectedDate === today;
+
+  const [followLive, setFollowLive] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackProgress, setPlaybackProgress] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Live mode is only supported for today's date
+  useEffect(() => {
+    if (!isToday) setFollowLive(false);
+  }, [isToday]);
 
   // Fetch vehicles
   const { data: vehicles, isLoading: vehiclesLoading, isError: vehiclesError } = useQuery({
@@ -92,9 +104,74 @@ const RouteHistory = () => {
   const routeHistory = telemetryData || [];
   const hasData = routeHistory.length > 0;
 
-  // Calculate current position based on playback progress
-  const currentIndex = Math.floor((playbackProgress / 100) * Math.max(0, routeHistory.length - 1));
-  const currentPosition = hasData ? routeHistory[currentIndex] : null;
+  // Realtime: append new telemetry points for the selected vehicle/date
+  useEffect(() => {
+    if (!organizationId || !selectedVehicle || !selectedDate) return;
+
+    const startOfDay = `${selectedDate}T00:00:00.000Z`;
+    const endOfDay = `${selectedDate}T23:59:59.999Z`;
+
+    const channel = supabase
+      .channel(`route-history-live-${selectedVehicle.slice(0, 8)}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "vehicle_telemetry",
+          filter: `organization_id=eq.${organizationId}`,
+        },
+        (payload) => {
+          const row = payload.new as any;
+          if (!row || row.vehicle_id !== selectedVehicle) return;
+
+          const ts = (row.last_communication_at || row.created_at) as string | undefined;
+          if (!ts || ts < startOfDay || ts > endOfDay) return;
+          if (row.latitude == null || row.longitude == null) return;
+
+          queryClient.setQueryData(
+            ["route-history-telemetry", selectedVehicle, selectedDate],
+            (old: unknown) => {
+              const prev = (old as TelemetryPoint[] | undefined) || [];
+              if (prev.some((p) => p.id === row.id)) return prev;
+
+              return [
+                ...prev,
+                {
+                  id: row.id,
+                  latitude: row.latitude,
+                  longitude: row.longitude,
+                  speed_kmh: row.speed_kmh ?? null,
+                  fuel_level_percent: row.fuel_level_percent ?? null,
+                  heading: row.heading ?? null,
+                  last_communication_at: ts,
+                  engine_on: row.engine_on ?? null,
+                } as TelemetryPoint,
+              ];
+            }
+          );
+
+          if (followLive) {
+            setIsPlaying(false);
+            setPlaybackProgress(100);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [organizationId, selectedVehicle, selectedDate, queryClient, followLive]);
+
+  // Calculate current position (playback or live-follow)
+  const effectiveIndex = hasData
+    ? followLive
+      ? routeHistory.length - 1
+      : Math.floor((playbackProgress / 100) * Math.max(0, routeHistory.length - 1))
+    : 0;
+
+  const currentPosition = hasData ? routeHistory[effectiveIndex] : null;
 
   // Calculate trip summary statistics
   const tripSummary = useMemo(() => {
@@ -161,6 +238,16 @@ const RouteHistory = () => {
 
   // Handle playback
   useEffect(() => {
+    if (followLive) {
+      // Live mode: always stay on the latest point
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      if (isPlaying) setIsPlaying(false);
+      return;
+    }
+
     if (isPlaying && hasData) {
       intervalRef.current = setInterval(() => {
         setPlaybackProgress((prev) => {
@@ -172,14 +259,12 @@ const RouteHistory = () => {
             }
             return 100;
           }
-          return prev + (playbackSpeed * 0.5);
+          return prev + playbackSpeed * 0.5;
         });
       }, 100);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+    } else if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
 
     return () => {
@@ -188,23 +273,26 @@ const RouteHistory = () => {
         intervalRef.current = null;
       }
     };
-  }, [isPlaying, playbackSpeed, hasData]);
+  }, [isPlaying, playbackSpeed, hasData, followLive]);
 
   const handlePlayPause = () => {
-    if (!hasData) return;
+    if (!hasData || followLive) return;
     setIsPlaying(!isPlaying);
   };
 
   const handleReset = () => {
+    if (followLive) return;
     setPlaybackProgress(0);
     setIsPlaying(false);
   };
 
   const handleSkipForward = () => {
+    if (followLive) return;
     setPlaybackProgress(Math.min(100, playbackProgress + 10));
   };
 
   const handleSkipBack = () => {
+    if (followLive) return;
     setPlaybackProgress(Math.max(0, playbackProgress - 10));
   };
 
@@ -324,29 +412,40 @@ const RouteHistory = () => {
             )}
 
             <LiveTrackingMap
-              vehicles={currentPosition ? [{
-                id: "playback",
-                plate: selectedVehicleData?.plate_number || "Vehicle",
-                status: (currentPosition.speed_kmh || 0) > 2 ? "moving" : "stopped",
-                fuel: currentPosition.fuel_level_percent || 0,
-                speed: currentPosition.speed_kmh || 0,
-                lat: currentPosition.latitude || 0,
-                lng: currentPosition.longitude || 0,
-                engine_on: currentPosition.engine_on || false,
-                heading: currentPosition.heading || 0
-              }] : []}
+              vehicles={
+                currentPosition
+                  ? [
+                      {
+                        id: "playback",
+                        plate: selectedVehicleData?.plate_number || "Vehicle",
+                        status:
+                          (currentPosition.speed_kmh || 0) > 3
+                            ? "moving"
+                            : currentPosition.engine_on
+                              ? "idle"
+                              : "stopped",
+                        fuel: currentPosition.fuel_level_percent || 0,
+                        speed: currentPosition.speed_kmh || 0,
+                        lat: currentPosition.latitude || 0,
+                        lng: currentPosition.longitude || 0,
+                        engine_on: Boolean(currentPosition.engine_on),
+                        heading: currentPosition.heading || 0,
+                      },
+                    ]
+                  : []
+              }
               showTrails={true}
               trails={useMemo(() => {
                 if (!hasData) return new Map();
-                // Create trail from start up to current playback position
-                const trailPoints = routeHistory.slice(0, currentIndex + 1).map(p => ({
+                // Create trail from start up to current position (playback or live)
+                const trailPoints = routeHistory.slice(0, effectiveIndex + 1).map((p) => ({
                   lat: p.latitude || 0,
                   lng: p.longitude || 0,
                   timestamp: p.last_communication_at,
-                  speed: p.speed_kmh || 0
+                  speed: p.speed_kmh || 0,
                 }));
                 return new Map([["playback", trailPoints]]);
-              }, [hasData, routeHistory, currentIndex])}
+              }, [hasData, routeHistory, effectiveIndex])}
             />
 
             {/* Playback Controls */}
@@ -361,7 +460,7 @@ const RouteHistory = () => {
                     step={0.1}
                     className="w-full"
                     aria-label="Playback progress"
-                    disabled={!hasData}
+                    disabled={!hasData || followLive}
                   />
                   <div className="flex justify-between text-xs text-muted-foreground mt-2">
                     <span>{currentPosition ? format(parseISO(currentPosition.last_communication_at), "HH:mm:ss") : "00:00:00"}</span>
@@ -370,47 +469,59 @@ const RouteHistory = () => {
                   </div>
                 </div>
 
-                {/* Control Buttons */}
-                <div className="flex items-center justify-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    onClick={handleReset}
-                    aria-label="Reset playback"
-                    disabled={!hasData}
-                  >
-                    <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    onClick={handleSkipBack}
-                    aria-label="Skip back 10%"
-                    disabled={!hasData}
-                  >
-                    <SkipBack className="h-4 w-4" aria-hidden="true" />
-                  </Button>
-                  <Button 
-                    size="icon" 
-                    onClick={handlePlayPause}
-                    aria-label={isPlaying ? "Pause playback" : "Play playback"}
-                    disabled={!hasData}
-                  >
-                    {isPlaying ? <Pause className="h-5 w-5" aria-hidden="true" /> : <Play className="h-5 w-5" aria-hidden="true" />}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    onClick={handleSkipForward}
-                    aria-label="Skip forward 10%"
-                    disabled={!hasData}
-                  >
-                    <SkipForward className="h-4 w-4" aria-hidden="true" />
-                  </Button>
-                  <Button variant="outline" size="sm" className="ml-4" disabled aria-label={`Current playback speed: ${playbackSpeed}x`}>
-                    {playbackSpeed}x Speed
-                  </Button>
-                </div>
+                 {/* Control Buttons */}
+                 <div className="flex items-center justify-center gap-2">
+                   <Button 
+                     variant="outline" 
+                     size="icon" 
+                     onClick={handleReset}
+                     aria-label="Reset playback"
+                     disabled={!hasData || followLive}
+                   >
+                     <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                   </Button>
+                   <Button 
+                     variant="outline" 
+                     size="icon" 
+                     onClick={handleSkipBack}
+                     aria-label="Skip back 10%"
+                     disabled={!hasData || followLive}
+                   >
+                     <SkipBack className="h-4 w-4" aria-hidden="true" />
+                   </Button>
+                   <Button 
+                     size="icon" 
+                     onClick={handlePlayPause}
+                     aria-label={isPlaying ? "Pause playback" : "Play playback"}
+                     disabled={!hasData || followLive}
+                   >
+                     {isPlaying ? <Pause className="h-5 w-5" aria-hidden="true" /> : <Play className="h-5 w-5" aria-hidden="true" />}
+                   </Button>
+                   <Button 
+                     variant="outline" 
+                     size="icon" 
+                     onClick={handleSkipForward}
+                     aria-label="Skip forward 10%"
+                     disabled={!hasData || followLive}
+                   >
+                     <SkipForward className="h-4 w-4" aria-hidden="true" />
+                   </Button>
+
+                   <Button
+                     variant={followLive ? "default" : "outline"}
+                     size="sm"
+                     className="ml-4"
+                     onClick={() => setFollowLive((v) => !v)}
+                     disabled={!selectedVehicle || !isToday}
+                     aria-label={followLive ? "Live mode enabled" : "Enable live mode"}
+                   >
+                     Live
+                   </Button>
+
+                   <Button variant="outline" size="sm" className="ml-2" disabled aria-label={`Current playback speed: ${playbackSpeed}x`}>
+                     {playbackSpeed}x Speed
+                   </Button>
+                 </div>
               </CardContent>
             </Card>
           </div>
