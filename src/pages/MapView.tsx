@@ -107,14 +107,17 @@ const MapView = () => {
         };
       }
       
-      // Determine status based on speed AND engine state
+      // Determine status based on speed (primary) and engine state (secondary)
+      // Speed takes priority - if moving, it's moving regardless of engine flag
       const speed = vehicleTelemetry.speed_kmh || 0;
-      const engineOn = vehicleTelemetry.engine_on;
+      const engineOn = vehicleTelemetry.engine_on || vehicleTelemetry.ignition_on;
       let status: 'moving' | 'idle' | 'stopped' | 'offline';
       
-      if (speed > 3 && engineOn) {
+      if (speed > 3) {
+        // Speed > 3 km/h means vehicle is moving, regardless of engine flag
         status = 'moving';
-      } else if (engineOn && speed <= 3) {
+      } else if (engineOn) {
+        // Engine/ignition on but not moving = idle
         status = 'idle';
       } else {
         status = 'stopped';
