@@ -258,13 +258,14 @@ return () => {
           );
         }
 
-        // Update marker appearance - recreate if overspeeding status changed
+        // Update marker appearance - recreate if status or overspeeding changed
         const el = existingMarker.getElement();
         const isSelected = vehicle.id === selectedVehicleId;
         const wasOverspeeding = el.dataset.overspeeding === 'true';
+        const previousStatus = el.dataset.status;
         
-        if (wasOverspeeding !== isOverspeeding) {
-          // Recreate marker with new styling
+        // Recreate marker if status or overspeeding state changed
+        if (wasOverspeeding !== isOverspeeding || previousStatus !== vehicle.status) {
           existingMarker.remove();
           markers.current.delete(vehicle.id);
         } else {
@@ -283,6 +284,7 @@ return () => {
           isOverspeeding
         );
         el.dataset.overspeeding = isOverspeeding.toString();
+        el.dataset.status = vehicle.status;
 
         const marker = new mapboxgl.Marker({
           element: el,
