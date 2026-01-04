@@ -154,7 +154,7 @@ function generateGT06Response(protocolNumber, serialNumber) {
   return resp;
 }
 
-// ==================== TK103 PROTOCOL PARSER ====================
+// ==================== TK103 PROTOCOL PARSER (303FG Enhanced) ====================
 
 function parseTK103(data) {
   try {
@@ -166,6 +166,7 @@ function parseTK103(data) {
     if (match) {
       result.type = 'login';
       result.imei = match[1];
+      log('info', 'tk103', '303FG Login', { imei: result.imei });
       return result;
     }
     
@@ -177,13 +178,66 @@ function parseTK103(data) {
       return result;
     }
     
-    // Location: imei:IMEI,tracker,DATE TIME,,F,TIME,A,LAT,N,LNG,E,SPEED,COURSE,,STATE;
-    match = text.match(/imei:(\d+),\w+,(\d+)\s+(\d+),,\w,(\d+),([AV]),([\d.]+),([NS]),([\d.]+),([EW]),([\d.]+),([\d.]+)/);
+    // 303FG SOS/Alarm: imei:IMEI,help me,...
+    match = text.match(/imei:(\d+),help me[,!]?/i);
+    if (match) {
+      result.type = 'alarm';
+      result.alarmType = 'sos';
+      result.imei = match[1];
+      log('warn', 'tk103', '303FG SOS Alert!', { imei: result.imei });
+      return result;
+    }
+    
+    // 303FG Low Battery: imei:IMEI,low battery,...
+    match = text.match(/imei:(\d+),low battery/i);
+    if (match) {
+      result.type = 'alarm';
+      result.alarmType = 'low_battery';
+      result.imei = match[1];
+      log('warn', 'tk103', '303FG Low Battery', { imei: result.imei });
+      return result;
+    }
+    
+    // 303FG Power Cut: imei:IMEI,ac alarm,...
+    match = text.match(/imei:(\d+),ac alarm/i);
+    if (match) {
+      result.type = 'alarm';
+      result.alarmType = 'power_cut';
+      result.imei = match[1];
+      log('warn', 'tk103', '303FG Power Cut', { imei: result.imei });
+      return result;
+    }
+    
+    // 303FG Overspeed: imei:IMEI,speed,...
+    match = text.match(/imei:(\d+),speed[,:]?\s*([\d.]+)?/i);
+    if (match && text.toLowerCase().includes('speed')) {
+      result.type = 'alarm';
+      result.alarmType = 'overspeed';
+      result.imei = match[1];
+      if (match[2]) result.speed = parseFloat(match[2]);
+      log('warn', 'tk103', '303FG Overspeed', { imei: result.imei, speed: result.speed });
+      return result;
+    }
+    
+    // 303FG Fuel Alarm (theft/drain detection)
+    match = text.match(/imei:(\d+),[^,]*fuel[^,]*/i);
+    if (match) {
+      result.type = 'alarm';
+      result.alarmType = 'fuel_alert';
+      result.imei = match[1];
+      log('warn', 'tk103', '303FG Fuel Alert', { imei: result.imei });
+      return result;
+    }
+    
+    // 303FG Extended Location: imei:IMEI,tracker,DATE TIME,,F,TIME,A,LAT,N,LNG,E,SPEED,COURSE,ALT,STATE;
+    // Enhanced regex to capture optional fuel, ACC, battery, and relay status
+    match = text.match(/imei:(\d+),(\w+),(\d+)\s+(\d+),,\w,(\d+),([AV]),([\d.]+),([NS]),([\d.]+),([EW]),([\d.]+),([\d.]+),?([\d.]*),?([^;]*);?/);
     if (match) {
       result.type = 'location';
       result.imei = match[1];
+      result.messageType = match[2]; // tracker, sensor, etc.
       
-      const [, , dateStr, timeStr, , valid, lat, latDir, lng, lngDir, speed, course] = match;
+      const [, , msgType, dateStr, timeStr, , valid, lat, latDir, lng, lngDir, speed, course, alt, stateStr] = match;
       result.timestamp = new Date(
         2000 + parseInt(dateStr.substring(0, 2)), parseInt(dateStr.substring(2, 4)) - 1,
         parseInt(dateStr.substring(4, 6)), parseInt(timeStr.substring(0, 2)),
@@ -203,15 +257,97 @@ function parseTK103(data) {
       result.speed = parseFloat(speed) * 1.852; // knots to km/h
       result.course = parseFloat(course);
       
-      log('info', 'tk103', 'Location', { lat: result.latitude, lng: result.longitude });
+      // Altitude if present
+      if (alt && alt.length > 0) {
+        result.altitude = parseFloat(alt);
+      }
+      
+      // Parse 303FG IO state string (format varies: ACC:1,RELAY:0,FUEL:75,etc)
+      if (stateStr && stateStr.length > 0) {
+        result.ioState = stateStr;
+        
+        // ACC/Ignition status
+        const accMatch = stateStr.match(/ACC[:\s]?([01])/i);
+        if (accMatch) result.acc = accMatch[1] === '1';
+        
+        // Relay/Cut-off status (engine immobilizer)
+        const relayMatch = stateStr.match(/RELAY[:\s]?([01])/i);
+        if (relayMatch) result.relay = relayMatch[1] === '1';
+        
+        // Fuel level (percentage or raw ADC value)
+        const fuelMatch = stateStr.match(/FUEL[:\s]?([\d.]+)/i);
+        if (fuelMatch) result.fuelLevel = parseFloat(fuelMatch[1]);
+        
+        // Battery voltage
+        const battMatch = stateStr.match(/BATT?(?:ERY)?[:\s]?([\d.]+)/i);
+        if (battMatch) result.batteryVoltage = parseFloat(battMatch[1]);
+        
+        // Door status
+        const doorMatch = stateStr.match(/DOOR[:\s]?([01])/i);
+        if (doorMatch) result.door = doorMatch[1] === '1';
+        
+        // Parse hex status byte if present (e.g., "imsi:xxx,...,FF" where FF is status)
+        const hexState = stateStr.match(/^([0-9A-Fa-f]{2,8})$/);
+        if (hexState) {
+          const stateVal = parseInt(hexState[1], 16);
+          result.acc = !!(stateVal & 0x01);
+          result.relay = !!(stateVal & 0x02);
+          result.door = !!(stateVal & 0x04);
+          result.charging = !!(stateVal & 0x08);
+        }
+      }
+      
+      log('info', 'tk103', '303FG Location', { 
+        lat: result.latitude, lng: result.longitude, speed: result.speed,
+        acc: result.acc, fuel: result.fuelLevel, relay: result.relay
+      });
       return result;
     }
     
-    // Alternative: (IMEI BP05...) or (IMEI BR00...)
+    // Alternative: (IMEI BP05...) or (IMEI BR00...) format
     match = text.match(/\((\d{15})([A-Z]+\d+)(.*)\)/);
     if (match) {
       result.imei = match[1];
-      result.type = match[2] === 'BP05' ? 'login' : match[2].startsWith('BR') ? 'location' : 'unknown';
+      const cmd = match[2];
+      result.commandCode = cmd;
+      
+      if (cmd === 'BP05') {
+        result.type = 'login';
+      } else if (cmd.startsWith('BR')) {
+        result.type = 'location';
+        // Parse BR00 location data
+        const brData = match[3];
+        const brMatch = brData.match(/(\d{6})([AV])([\d.]+)([NS])([\d.]+)([EW])([\d.]+)([\d.]+)(\d{6})/);
+        if (brMatch) {
+          const [, time, valid, lat, latDir, lng, lngDir, speed, course, date] = brMatch;
+          result.gpsValid = valid === 'A';
+          let latVal = parseFloat(lat);
+          result.latitude = Math.floor(latVal / 100) + (latVal % 100) / 60;
+          if (latDir === 'S') result.latitude = -result.latitude;
+          let lngVal = parseFloat(lng);
+          result.longitude = Math.floor(lngVal / 100) + (lngVal % 100) / 60;
+          if (lngDir === 'W') result.longitude = -result.longitude;
+          result.speed = parseFloat(speed) * 1.852;
+          result.course = parseFloat(course);
+        }
+      } else if (cmd === 'BO01') {
+        result.type = 'alarm';
+        result.alarmType = 'sos';
+      } else if (cmd === 'BP00') {
+        result.type = 'heartbeat';
+      } else {
+        result.type = 'unknown';
+      }
+      return result;
+    }
+    
+    // 303FG Command Response (relay on/off confirmation)
+    match = text.match(/imei:(\d+),[^,]*(relay|stop|resume)[^;]*;?/i);
+    if (match) {
+      result.type = 'command_response';
+      result.imei = match[1];
+      result.command = match[2].toLowerCase();
+      log('info', 'tk103', '303FG Command Response', { imei: result.imei, command: result.command });
       return result;
     }
     
@@ -223,8 +359,11 @@ function parseTK103(data) {
   }
 }
 
-function generateTK103Response(type) {
-  return Buffer.from(type === 'login' ? 'LOAD' : 'ON');
+function generateTK103Response(type, command) {
+  if (type === 'login') return Buffer.from('LOAD');
+  if (type === 'relay_on') return Buffer.from('**,imei:000000000000000,C;');
+  if (type === 'relay_off') return Buffer.from('**,imei:000000000000000,D;');
+  return Buffer.from('ON');
 }
 
 // ==================== H02/SINOTRACK PROTOCOL PARSER ====================
