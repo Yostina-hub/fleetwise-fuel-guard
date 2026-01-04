@@ -198,46 +198,47 @@ return () => {
       try {
         const mapboxToken = token || localStorage.getItem('mapbox_token') || import.meta.env.VITE_MAPBOX_TOKEN;
         if (!mapboxToken) return;
-        
-        // Use limit=5 to get multiple results and pick the most specific one
-        // Priority: poi > address > neighborhood > locality > place
-        const response = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxToken}&types=poi,address,neighborhood,locality,place&limit=5`
-        );
-        const data = await response.json();
-        
-        if (data.features && data.features.length > 0) {
-          // Find the most specific address (prefer POI > address > neighborhood)
-          const typePriority = ['poi', 'address', 'neighborhood', 'locality', 'place'];
-          let bestFeature = data.features[0];
-          
-          for (const preferredType of typePriority) {
-            const match = data.features.find((f: any) => 
-              f.place_type && f.place_type.includes(preferredType)
-            );
-            if (match) {
-              bestFeature = match;
-              break;
-            }
+
+        // Mapbox reverse geocoding limitation: `limit` can only be used with a SINGLE type.
+        // So we try types in order until we get a hit.
+        const typePriority = ['address', 'poi', 'neighborhood', 'locality', 'place'];
+
+        let bestFeature: any | null = null;
+
+        for (const t of typePriority) {
+          const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxToken}&types=${t}&limit=1`;
+          const res = await fetch(url);
+          if (!res.ok) {
+            // Don’t spam logs; just skip bad responses
+            continue;
           }
-          
-          // Build detailed address from context
-          const placeName = bestFeature.text || '';
-          const context = bestFeature.context || [];
-          
-          // Extract neighborhood, locality, place from context
-          const neighborhood = context.find((c: any) => c.id?.startsWith('neighborhood'))?.text || '';
-          const locality = context.find((c: any) => c.id?.startsWith('locality'))?.text || '';
-          const place = context.find((c: any) => c.id?.startsWith('place'))?.text || '';
-          
-          // Build readable address: "POI/Street, Neighborhood, Locality" 
-          const parts = [placeName, neighborhood, locality].filter(p => p && p.trim());
-          const address = parts.length > 0 
-            ? parts.join(', ') 
-            : place || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-          
-          setVehicleAddresses(prev => new Map(prev).set(vehicleId, address));
+          const json = await res.json();
+          const f = json?.features?.[0];
+          if (f) {
+            bestFeature = f;
+            break;
+          }
         }
+
+        if (!bestFeature) {
+          setVehicleAddresses(prev => new Map(prev).set(vehicleId, `${lat.toFixed(6)}, ${lng.toFixed(6)}`));
+          return;
+        }
+
+        const context = bestFeature.context || [];
+        const neighborhood = context.find((c: any) => c.id?.startsWith('neighborhood'))?.text || '';
+        const locality = context.find((c: any) => c.id?.startsWith('locality'))?.text || '';
+        const place = context.find((c: any) => c.id?.startsWith('place'))?.text || '';
+
+        const main = bestFeature.address
+          ? `${bestFeature.address} ${bestFeature.text || ''}`.trim()
+          : (bestFeature.text || bestFeature.place_name || '').trim();
+
+        // Prefer a compact, precise label: "Street/POI, Neighborhood, Locality"
+        const parts = [main, neighborhood, locality].filter((p: string) => p && p.trim());
+        const address = parts.length > 0 ? parts.join(', ') : (place || bestFeature.place_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+
+        setVehicleAddresses(prev => new Map(prev).set(vehicleId, address));
       } catch (error) {
         console.error('Error fetching address:', error);
       }
