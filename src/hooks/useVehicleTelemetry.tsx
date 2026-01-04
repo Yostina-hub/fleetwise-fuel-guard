@@ -30,35 +30,28 @@ export interface VehicleTelemetry {
 export const useVehicleTelemetry = () => {
   const { organizationId } = useOrganization();
   const [telemetry, setTelemetry] = useState<Record<string, VehicleTelemetry>>({});
-  const [loading, setLoading] = useState(false); // Start false for instant feel
-  const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const [loading, setLoading] = useState(true); // Start true - we're loading
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!organizationId) {
-      setTelemetry({});
-      setLoading(false);
-      setIsFirstLoad(false);
+      // Still waiting for organization - keep loading state
       return;
     }
 
     let isMounted = true;
     let throttleTimer: NodeJS.Timeout;
 
-    const fetchTelemetry = async (showLoading = true) => {
+    const fetchTelemetry = async () => {
       try {
-        // Only show loading on first load
-        if (showLoading && isFirstLoad) {
-          setLoading(true);
-        }
-        // Use RPC or optimized query for large fleets
-        // Get latest telemetry per vehicle using distinct on vehicle_id
+        setLoading(true);
+        // Get latest telemetry per vehicle
         const { data, error } = await supabase
           .from("vehicle_telemetry")
           .select("*")
           .eq("organization_id", organizationId)
           .order("last_communication_at", { ascending: false })
-          .limit(5000); // Handle up to 5000 vehicles
+          .limit(5000);
 
         if (error) throw error;
 
@@ -72,7 +65,6 @@ export const useVehicleTelemetry = () => {
 
         if (isMounted) {
           setTelemetry(telemetryMap);
-          setIsFirstLoad(false);
         }
       } catch (err: any) {
         console.error("Error fetching vehicle telemetry:", err);
@@ -114,7 +106,7 @@ export const useVehicleTelemetry = () => {
             clearTimeout(throttleTimer);
             throttleTimer = setTimeout(() => {
               if (isMounted) {
-                fetchTelemetry(false); // Don't show loading for background updates
+                fetchTelemetry();
               }
             }, 1000);
           }
@@ -127,7 +119,7 @@ export const useVehicleTelemetry = () => {
       clearTimeout(throttleTimer);
       supabase.removeChannel(channel);
     };
-  }, [organizationId, isFirstLoad]);
+  }, [organizationId]);
 
   // Helper function to check if a vehicle is online (last communication within 15 minutes)
   const isVehicleOnline = (vehicleId: string): boolean => {
