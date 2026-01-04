@@ -53,6 +53,7 @@ const MapView = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'moving' | 'idle' | 'stopped' | 'offline'>('all');
   const [showNearbySearch, setShowNearbySearch] = useState(false);
   const [showTrails, setShowTrails] = useState(true);
+  const [popupVehicleId, setPopupVehicleId] = useState<string | null>(null);
   
   const [mapStyle, setMapStyle] = useState<'streets' | 'satellite'>('satellite');
   const [mapToken] = useState<string>(() => localStorage.getItem('mapbox_token') || '');
@@ -198,18 +199,15 @@ const MapView = () => {
   });
 
   const handleVehicleClick = useCallback((vehicle: any) => {
-    if (!vehicle.isOffline) {
-      setSelectedVehicleId(vehicle.id);
-      try {
-        mapInstance?.flyTo({
-          center: [vehicle.lng, vehicle.lat],
-          zoom: 15,
-          duration: 1200,
-          essential: true,
-        });
-      } catch {}
-    }
-  }, [mapInstance]);
+    setSelectedVehicleId(vehicle.id);
+    // Trigger popup open on the map
+    setPopupVehicleId(vehicle.id);
+  }, []);
+  
+  const handlePopupOpened = useCallback(() => {
+    // Reset popup trigger after it's opened
+    setPopupVehicleId(null);
+  }, []);
 
   // Stats
   const onlineCount = vehicles.filter(v => !v.isOffline).length;
@@ -250,6 +248,8 @@ const MapView = () => {
               onMapReady={setMapInstance}
               showTrails={showTrails}
               trails={trails}
+              openPopupVehicleId={popupVehicleId}
+              onPopupOpened={handlePopupOpened}
             />
           )}
 
