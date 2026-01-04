@@ -539,6 +539,82 @@ async function checkRateLimit(supabase: any, deviceId: string): Promise<{ allowe
   }
 }
 
+// Process status updates (login, heartbeat, alarm) - no lat/lng required
+async function processStatusUpdate(
+  supabase: any,
+  data: Record<string, any>,
+  rawData: string,
+  protocol: string
+) {
+  const { imei, type, alarmType, acc, ignition, relay, fuelLevel, batteryVoltage } = data;
+  
+  if (!imei) {
+    return { error: 'Missing required field: imei', status: 400 };
+  }
+
+  // Find device by IMEI
+  const { data: device, error: deviceError } = await supabase
+    .from('devices')
+    .select('id, vehicle_id, organization_id')
+    .eq('imei', imei)
+    .maybeSingle();
+
+  if (deviceError || !device) {
+    console.log('Device not found for status update:', imei);
+    return { error: 'Device not found with IMEI: ' + imei, status: 404 };
+  }
+
+  // Update device last_heartbeat and status
+  const { error: heartbeatError } = await supabase
+    .from('devices')
+    .update({ 
+      last_heartbeat: new Date().toISOString(),
+      status: 'active'
+    })
+    .eq('id', device.id);
+
+  if (heartbeatError) {
+    console.warn('Error updating device heartbeat:', heartbeatError);
+  }
+
+  // Log raw telemetry for debugging
+  await supabase
+    .from('telemetry_raw')
+    .insert({
+      organization_id: device.organization_id,
+      device_id: device.id,
+      protocol: protocol,
+      raw_hex: rawData.substring(0, 1000),
+      parsed_data: { type, alarmType, acc, ignition, relay, fuelLevel, batteryVoltage },
+      is_valid: true
+    });
+
+  // Handle alarm types
+  if (type === 'alarm' && alarmType && device.vehicle_id) {
+    await supabase
+      .from('alerts')
+      .insert({
+        organization_id: device.organization_id,
+        vehicle_id: device.vehicle_id,
+        alert_type: alarmType,
+        title: `Device Alarm: ${alarmType.replace(/_/g, ' ').toUpperCase()}`,
+        message: `GPS device triggered ${alarmType} alarm`,
+        severity: alarmType === 'sos' ? 'critical' : 'medium',
+        alert_time: new Date().toISOString()
+      });
+  }
+
+  console.log(`Status update processed for device ${imei}: ${type}${alarmType ? ' (' + alarmType + ')' : ''}`);
+  
+  return { 
+    success: true, 
+    type: 'status_update',
+    packetType: type,
+    device_id: device.id,
+    message: `${type} received, device heartbeat updated`
+  };
+}
+
 // Process a single GPS data point
 async function processGPSData(
   supabase: any,
@@ -561,7 +637,13 @@ async function processGPSData(
     odometer,
     hdop,
     battery,
+    type,  // Check if this is a status packet
   } = data;
+
+  // Handle status packets (login, heartbeat, alarm) without lat/lng
+  if (type && ['login', 'heartbeat', 'alarm'].includes(type)) {
+    return processStatusUpdate(supabase, data, rawData, protocol);
+  }
 
   if (!imei || !lat || !lng) {
     return { error: 'Missing required fields: imei, lat, lng', status: 400 };
