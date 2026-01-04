@@ -526,8 +526,25 @@ const MapView = () => {
                           )}
                         </div>
 
+                        {/* Last seen indicator - always show for all vehicles */}
+                        {vehicle.lastSeen && (
+                          <div className={cn(
+                            "flex items-center gap-1 text-xs mt-1.5",
+                            vehicle.isOffline ? "text-muted-foreground" : 
+                            isStaleData(vehicle.lastSeen) ? "text-warning" : "text-muted-foreground/70"
+                          )}>
+                            <Clock className="w-3 h-3" aria-hidden="true" />
+                            <span>
+                              {vehicle.isOffline || isStaleData(vehicle.lastSeen) 
+                                ? `Last seen ${formatDistanceToNow(new Date(vehicle.lastSeen), { addSuffix: true })}`
+                                : `Updated ${formatDistanceToNow(new Date(vehicle.lastSeen), { addSuffix: true })}`
+                              }
+                            </span>
+                          </div>
+                        )}
+
                         {!vehicle.isOffline && (
-                          <div className="space-y-1.5">
+                          <div className="space-y-1.5 mt-1.5">
                             <div className="flex items-center gap-4 text-xs text-muted-foreground">
                               <div className="flex items-center gap-1">
                                 <Navigation className="w-3 h-3" aria-hidden="true" />
@@ -549,13 +566,6 @@ const MapView = () => {
                               spoofingDetected={vehicle.gps_spoofing_detected}
                               showLabel={true}
                             />
-                            {/* Stale data indicator */}
-                            {isStaleData(vehicle.lastSeen) && vehicle.lastSeen && (
-                              <div className="flex items-center gap-1 text-xs text-warning">
-                                <Clock className="w-3 h-3" aria-hidden="true" />
-                                <span>Updated {formatDistanceToNow(new Date(vehicle.lastSeen), { addSuffix: true })}</span>
-                              </div>
-                            )}
                           </div>
                         )}
                       </div>
