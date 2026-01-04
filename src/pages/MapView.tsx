@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { MapSidebarSkeleton } from "@/components/ui/skeletons";
 import StatusBadge from "@/components/StatusBadge";
-import LiveTrackingMap from "@/components/map/LiveTrackingMap";
-import ClusteredMap from "@/components/map/ClusteredMap";
+import LiveTrackingMapOSM from "@/components/map/LiveTrackingMapOSM";
+import ClusteredMapOSM from "@/components/map/ClusteredMapOSM";
 import { NearbyVehiclesSearch } from "@/components/map/NearbyVehiclesSearch";
 import { 
   Navigation, 
@@ -35,6 +35,7 @@ import { useVehicleTrail } from "@/hooks/useVehicleTrail";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import L from "leaflet";
 
 const CLUSTER_THRESHOLD = 100;
 
@@ -56,9 +57,7 @@ const MapView = () => {
   const [popupVehicleId, setPopupVehicleId] = useState<string | null>(null);
   
   const [mapStyle, setMapStyle] = useState<'streets' | 'satellite'>('satellite');
-  const [mapToken] = useState<string>(() => localStorage.getItem('mapbox_token') || '');
-  const envToken = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
-  const [mapInstance, setMapInstance] = useState<any>(null);
+  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
   
   // Helper to check if data is stale (>5 mins old)
   const isStaleData = (lastSeen?: string): boolean => {
@@ -222,7 +221,7 @@ const MapView = () => {
         {/* Map Area */}
         <div className="flex-1 relative">
           {useClusteredMap ? (
-            <ClusteredMap
+            <ClusteredMapOSM
               vehicles={vehicles.map(v => ({
                 id: v.id,
                 plate: v.plate,
@@ -239,11 +238,10 @@ const MapView = () => {
               mapStyle={mapStyle}
             />
           ) : (
-            <LiveTrackingMap
+            <LiveTrackingMapOSM
               vehicles={vehicles}
               selectedVehicleId={selectedVehicleId}
               onVehicleClick={(vehicle) => setSelectedVehicleId(vehicle.id)}
-              token={mapToken || envToken}
               mapStyle={mapStyle}
               onMapReady={setMapInstance}
               showTrails={showTrails}
@@ -339,11 +337,7 @@ const MapView = () => {
                   onVehicleSelect={(v) => {
                     setSelectedVehicleId(v.id);
                     setShowNearbySearch(false);
-                    mapInstance?.flyTo({
-                      center: [v.lng, v.lat],
-                      zoom: 16,
-                      duration: 1200,
-                    });
+                    mapInstance?.flyTo([v.lat, v.lng], 16, { duration: 1.2 });
                   }}
                   onClose={() => setShowNearbySearch(false)}
                 />
