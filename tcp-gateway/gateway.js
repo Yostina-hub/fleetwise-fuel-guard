@@ -360,10 +360,11 @@ function parseTK103(data) {
 }
 
 function generateTK103Response(type, command) {
-  if (type === 'login') return Buffer.from('LOAD');
-  if (type === 'relay_on') return Buffer.from('**,imei:000000000000000,C;');
-  if (type === 'relay_off') return Buffer.from('**,imei:000000000000000,D;');
-  return Buffer.from('ON');
+  // Many TK103/303FG units expect CRLF-terminated responses.
+  if (type === 'login') return Buffer.from('LOAD\r\n');
+  if (type === 'relay_on') return Buffer.from('**,imei:000000000000000,C;\r\n');
+  if (type === 'relay_off') return Buffer.from('**,imei:000000000000000,D;\r\n');
+  return Buffer.from('ON\r\n');
 }
 
 // ==================== H02/SINOTRACK PROTOCOL PARSER ====================
@@ -980,7 +981,15 @@ function createTCPServer(protocol, port, parser, responseGen) {
           // Send response
           if (responseGen) {
             const resp = responseGen(parsed.type || parsed.protocolNumber, parsed.recordCount);
-            if (resp) socket.write(resp);
+            if (resp) {
+              socket.write(resp);
+              log('debug', protocol, 'Response sent', {
+                type: parsed.type || parsed.protocolNumber,
+                hex: Buffer.isBuffer(resp) ? resp.toString('hex') : Buffer.from(String(resp)).toString('hex'),
+                ascii: Buffer.isBuffer(resp) ? resp.toString() : String(resp),
+                remote: addr,
+              });
+            }
           }
           
           // Forward data to edge function
