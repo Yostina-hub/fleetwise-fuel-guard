@@ -303,13 +303,13 @@ export const useDevices = () => {
       const device = devices?.find(d => d.id === deviceId);
       if (device?.vehicle_id) {
         toast({
-          title: "Test successful",
-          description: "Device heartbeat and telemetry data sent",
+          title: "⚠️ Simulated Data Sent",
+          description: "This is TEST data only - not real GPS. Wait for actual device connection for real location.",
         });
       } else {
         toast({
-          title: "Heartbeat updated",
-          description: "Device heartbeat sent. Assign to a vehicle to send telemetry data.",
+          title: "⚠️ Simulated Heartbeat",
+          description: "TEST heartbeat sent. Assign to a vehicle and connect real GPS for actual data.",
         });
       }
     },
