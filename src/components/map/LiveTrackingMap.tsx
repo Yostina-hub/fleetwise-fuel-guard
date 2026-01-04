@@ -451,6 +451,42 @@ return () => {
     }
   }, [vehicles, mapLoaded, selectedVehicleId, onVehicleClick, vehicleAddresses]);
 
+  // Helper to generate popup HTML - moved outside useEffect for reuse
+  const generatePopupHTML = useCallback((addr: string, v: Vehicle) => {
+    const gpsStrength = v.gps_signal_strength ?? 0;
+    const gpsSignalLabel = gpsStrength >= 80 ? 'Strong' : gpsStrength >= 50 ? 'Moderate' : gpsStrength > 0 ? 'Weak' : 'No signal';
+    const reportTime = v.lastSeen ? new Date(v.lastSeen).toLocaleString() : 'N/A';
+    const speedLimit = v.speed_limit || 80;
+    const isOverspeeding = v.speed > speedLimit;
+    
+    return `
+      <div class="vehicle-popup-content" style="min-width:280px;font-family:system-ui,-apple-system,sans-serif;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #e5e7eb;">
+          <span style="font-weight:600;font-size:14px;">${v.plate}</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:9999px;background:${v.status === 'moving' ? '#10b981' : v.status === 'idle' ? '#f59e0b' : v.status === 'stopped' ? '#6b7280' : '#ef4444'};color:white;">${v.status}</span>
+        </div>
+        <div style="font-size:12px;color:#374151;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <span style="color:#6b7280;">Latitude & Longitude:</span>
+          </div>
+          <div style="font-weight:500;margin-bottom:8px;">${v.lat.toFixed(6)}, ${v.lng.toFixed(6)}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;">
+            <div><span style="color:#6b7280;">ACC:</span> <span style="font-weight:500;">${v.engine_on ? 'On' : 'Off'}</span></div>
+            <div><span style="color:#6b7280;">Speed:</span> <span style="font-weight:500;">${v.speed} km/h</span></div>
+            <div><span style="color:#6b7280;">Fuel:</span> <span style="font-weight:500;">${v.fuel}%</span></div>
+            <div><span style="color:#6b7280;">GPS:</span> <span style="font-weight:500;">${gpsSignalLabel}</span></div>
+          </div>
+        </div>
+        ${v.driverName ? `<div style="font-size:12px;margin-bottom:6px;"><span style="color:#6b7280;">👤 Driver:</span> <span style="font-weight:500;">${v.driverName}</span>${v.driverPhone ? ` <span style="color:#6b7280;">(${v.driverPhone})</span>` : ''}</div>` : '<div style="font-size:12px;color:#9ca3af;margin-bottom:6px;">No driver assigned</div>'}
+        ${isOverspeeding ? `<div style="font-size:12px;color:#ef4444;font-weight:500;margin-bottom:6px;">⚠️ Overspeeding: ${v.speed} km/h (limit: ${speedLimit})</div>` : ''}
+        <div style="font-size:11px;color:#6b7280;margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb;">
+          <div style="margin-bottom:4px;"><span>🕐 Report Time:</span> <span style="color:#374151;">${reportTime}</span></div>
+          <div><span>📍 Address:</span> <span style="color:#374151;">${addr}</span></div>
+        </div>
+      </div>
+    `;
+  }, []);
+
   // Open popup for a specific vehicle when requested from sidebar
   useEffect(() => {
     if (!openPopupVehicleId || !mapLoaded || !map.current) return;
@@ -479,42 +515,6 @@ return () => {
         fetchAddressDebounced(vehicle.lng, vehicle.lat, vehicle.id);
       }
       
-      // Helper to generate popup HTML
-      const generatePopupHTML = (addr: string, v: typeof vehicle) => {
-        const gpsStrength = v.gps_signal_strength ?? 0;
-        const gpsSignalLabel = gpsStrength >= 80 ? 'Strong' : gpsStrength >= 50 ? 'Moderate' : gpsStrength > 0 ? 'Weak' : 'No signal';
-        const reportTime = v.lastSeen ? new Date(v.lastSeen).toLocaleString() : 'N/A';
-        const speedLimit = v.speed_limit || 80;
-        const isOverspeeding = v.speed > speedLimit;
-        
-        return `
-          <div class="vehicle-popup-content" style="min-width:280px;font-family:system-ui,-apple-system,sans-serif;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #e5e7eb;">
-              <span style="font-weight:600;font-size:14px;">${v.plate}</span>
-              <span style="font-size:11px;padding:2px 8px;border-radius:9999px;background:${v.status === 'moving' ? '#10b981' : v.status === 'idle' ? '#f59e0b' : v.status === 'stopped' ? '#6b7280' : '#ef4444'};color:white;">${v.status}</span>
-            </div>
-            <div style="font-size:12px;color:#374151;margin-bottom:10px;">
-              <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-                <span style="color:#6b7280;">Latitude & Longitude:</span>
-              </div>
-              <div style="font-weight:500;margin-bottom:8px;">${v.lat.toFixed(6)}, ${v.lng.toFixed(6)}</div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;">
-                <div><span style="color:#6b7280;">ACC:</span> <span style="font-weight:500;">${v.engine_on ? 'On' : 'Off'}</span></div>
-                <div><span style="color:#6b7280;">Speed:</span> <span style="font-weight:500;">${v.speed} km/h</span></div>
-                <div><span style="color:#6b7280;">Fuel:</span> <span style="font-weight:500;">${v.fuel}%</span></div>
-                <div><span style="color:#6b7280;">GPS:</span> <span style="font-weight:500;">${gpsSignalLabel}</span></div>
-              </div>
-            </div>
-            ${v.driverName ? `<div style="font-size:12px;margin-bottom:6px;"><span style="color:#6b7280;">👤 Driver:</span> <span style="font-weight:500;">${v.driverName}</span>${v.driverPhone ? ` <span style="color:#6b7280;">(${v.driverPhone})</span>` : ''}</div>` : '<div style="font-size:12px;color:#9ca3af;margin-bottom:6px;">No driver assigned</div>'}
-            ${isOverspeeding ? `<div style="font-size:12px;color:#ef4444;font-weight:500;margin-bottom:6px;">⚠️ Overspeeding: ${v.speed} km/h (limit: ${speedLimit})</div>` : ''}
-            <div style="font-size:11px;color:#6b7280;margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb;">
-              <div style="margin-bottom:4px;"><span>🕐 Report Time:</span> <span style="color:#374151;">${reportTime}</span></div>
-              <div><span>📍 Address:</span> <span style="color:#374151;">${addr}</span></div>
-            </div>
-          </div>
-        `;
-      };
-      
       // Update popup content with latest address and open it
       const popup = marker.getPopup();
       if (popup) {
@@ -529,7 +529,23 @@ return () => {
       // Notify parent that popup was opened
       onPopupOpened?.();
     }
-  }, [openPopupVehicleId, mapLoaded, vehicles, vehicleAddresses, onPopupOpened]);
+  }, [openPopupVehicleId, mapLoaded, vehicles, onPopupOpened, generatePopupHTML]);
+
+  // Update any open popup when vehicleAddresses changes (to show fetched address)
+  useEffect(() => {
+    if (!mapLoaded) return;
+    
+    markers.current.forEach((marker, vehicleId) => {
+      const popup = marker.getPopup();
+      if (popup && popup.isOpen()) {
+        const vehicle = vehicles.find(v => v.id === vehicleId);
+        const address = vehicleAddresses.get(vehicleId);
+        if (vehicle && address) {
+          popup.setHTML(generatePopupHTML(address, vehicle));
+        }
+      }
+    });
+  }, [vehicleAddresses, mapLoaded, vehicles, generatePopupHTML]);
 
   // Draw vehicle trails on the map
   useEffect(() => {
