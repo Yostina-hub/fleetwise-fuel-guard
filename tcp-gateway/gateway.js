@@ -359,21 +359,40 @@ function parseTK103(data) {
   }
 }
 
-function generateTK103Response(type, imei) {
-  // GPS103 protocol - matches Traccar's proven implementation:
-  // - Login: reply "LOAD" only (auto-upload interval must be set via SMS, not TCP)
-  // - Heartbeat: reply "ON"
-  // - Location data: no response needed
-  // Reference: https://github.com/traccar/traccar/blob/master/src/main/java/org/traccar/protocol/Gps103ProtocolDecoder.java
+function generateTK103Response(type, imei, socket) {
+  // GPS103 protocol per official documentation:
+  // - Login (##,imei:XXX,A;): Reply "LOAD", then send auto-upload command
+  // - Heartbeat: Reply "ON"
+  // - Location data (tracker): No reply needed
+  // - Auto-upload command: **,imei:XXX,C,10s (enables position every 10 seconds)
   
   if (type === 'login') {
     log('info', 'tk103', 'Sending LOAD response', { imei });
+    
+    // Per GPS103 spec: After LOAD, send auto-upload command to enable position reporting
+    // Format: **,imei:XXXXXXXXXXXXXXX,C,10s
+    if (imei && socket) {
+      // Send LOAD first
+      socket.write(Buffer.from('LOAD'));
+      
+      // Then send auto-upload command after small delay (per protocol spec)
+      setTimeout(() => {
+        if (!socket.destroyed) {
+          const uploadCmd = `**,imei:${imei},C,10s`;
+          socket.write(Buffer.from(uploadCmd));
+          log('info', 'tk103', 'Sent auto-upload command', { imei, command: uploadCmd });
+        }
+      }, 100);
+      
+      return null; // Already sent via socket
+    }
+    
     return Buffer.from('LOAD');
   }
   if (type === 'heartbeat') {
     return Buffer.from('ON');
   }
-  // For location data (tracker), no response is needed
+  // For location data (tracker), no response needed
   if (type === 'location') {
     return null;
   }
@@ -994,9 +1013,9 @@ function createTCPServer(protocol, port, parser, responseGen) {
             parsed.imei = sessionImei;
           }
           
-          // Send response - pass imei for protocols that need it (like TK103 auto-upload command)
+          // Send response - pass socket for protocols that need delayed commands (like TK103 auto-upload)
           if (responseGen) {
-            const resp = responseGen(parsed.type || parsed.protocolNumber, parsed.imei || parsed.recordCount);
+            const resp = responseGen(parsed.type || parsed.protocolNumber, parsed.imei || parsed.recordCount, socket);
             if (resp) {
               socket.write(resp);
               log('debug', protocol, 'Response sent', {
