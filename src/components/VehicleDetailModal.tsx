@@ -189,7 +189,7 @@ const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalP
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden p-0">
+        <DialogContent className="max-w-5xl h-[90vh] overflow-hidden p-0 flex flex-col">
           <DialogHeader className="sr-only">
             <DialogTitle>Manage {vehicle.plate}</DialogTitle>
             <DialogDescription>
@@ -233,34 +233,38 @@ const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalP
               </ScrollArea>
             </div>
 
-            {/* Tab Content */}
-            <div className="flex-1 overflow-hidden">
+            {/* Tab Content - Calculate height based on header (~60px) + tabs (~48px) */}
+            <div className="flex-1 min-h-0">
               {/* Trips Tab - Teltonika Style Timeline */}
-              <TabsContent value="trips" className="mt-0 h-full data-[state=active]:flex data-[state=active]:flex-col">
-                <ScrollArea className="flex-1 p-4">
-                  <TripTimeline 
-                    trips={recentTrips} 
-                    isLoading={isLoading} 
-                    vehicleId={actualVehicleId}
-                  />
+              <TabsContent value="trips" className="mt-0 h-full">
+                <ScrollArea className="h-full">
+                  <div className="p-4">
+                    <TripTimeline 
+                      trips={recentTrips} 
+                      isLoading={isLoading} 
+                      vehicleId={actualVehicleId}
+                    />
+                  </div>
                 </ScrollArea>
               </TabsContent>
 
               {/* Fuel Tab - Teltonika Style */}
-              <TabsContent value="fuel" className="mt-0 h-full data-[state=active]:flex data-[state=active]:flex-col">
-                <ScrollArea className="flex-1 p-4">
-                  <FuelMetricsPanel
-                    fuelTransactions={fuelTransactions}
-                    isLoading={isLoading}
-                    vehicleId={actualVehicleId}
-                  />
+              <TabsContent value="fuel" className="mt-0 h-full">
+                <ScrollArea className="h-full">
+                  <div className="p-4">
+                    <FuelMetricsPanel
+                      fuelTransactions={fuelTransactions}
+                      isLoading={isLoading}
+                      vehicleId={actualVehicleId}
+                    />
+                  </div>
                 </ScrollArea>
               </TabsContent>
 
               {/* Alerts Tab */}
-              <TabsContent value="alerts" className="mt-0 h-full data-[state=active]:flex data-[state=active]:flex-col">
-                <ScrollArea className="flex-1 p-4">
-                  <div className="space-y-4">
+              <TabsContent value="alerts" className="mt-0 h-full">
+                <ScrollArea className="h-full">
+                  <div className="p-4 space-y-4">
                     {isLoading ? (
                       <div className="space-y-3">
                         {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full" />)}
@@ -313,9 +317,9 @@ const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalP
               </TabsContent>
 
               {/* Zones Tab */}
-              <TabsContent value="zones" className="mt-0 h-full data-[state=active]:flex data-[state=active]:flex-col">
-                <ScrollArea className="flex-1 p-4">
-                  <div className="text-center py-12">
+              <TabsContent value="zones" className="mt-0 h-full">
+                <ScrollArea className="h-full">
+                  <div className="p-4 text-center py-12">
                     <MapPin className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
                     <p className="text-muted-foreground">Geofence zones coming soon</p>
                     <Button variant="outline" className="mt-4" onClick={handleTrackOnMap}>
@@ -326,9 +330,9 @@ const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalP
               </TabsContent>
 
               {/* Commands Tab */}
-              <TabsContent value="commands" className="mt-0 h-full data-[state=active]:flex data-[state=active]:flex-col">
-                <ScrollArea className="flex-1 p-4">
-                  <div className="text-center py-12">
+              <TabsContent value="commands" className="mt-0 h-full">
+                <ScrollArea className="h-full">
+                  <div className="p-4 text-center py-12">
                     <Terminal className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
                     <p className="text-muted-foreground">Device commands coming soon</p>
                     <p className="text-xs text-muted-foreground mt-2">
@@ -339,9 +343,9 @@ const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalP
               </TabsContent>
 
               {/* Info Tab */}
-              <TabsContent value="info" className="mt-0 h-full data-[state=active]:flex data-[state=active]:flex-col">
-                <ScrollArea className="flex-1 p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <TabsContent value="info" className="mt-0 h-full">
+                <ScrollArea className="h-full">
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Vehicle Details Card */}
                     <Card>
                       <CardHeader>
@@ -453,9 +457,9 @@ const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalP
               </TabsContent>
 
               {/* Settings Tab - Teltonika Style */}
-              <TabsContent value="settings" className="mt-0 h-full data-[state=active]:flex data-[state=active]:flex-col">
-                <ScrollArea className="flex-1 p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <TabsContent value="settings" className="mt-0 h-full">
+                <ScrollArea className="h-full">
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Change Device Name */}
                     <Card>
                       <CardHeader>
