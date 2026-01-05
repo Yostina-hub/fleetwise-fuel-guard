@@ -85,6 +85,23 @@ const [tempToken, setTempToken] = useState('');
 const [vehicleAddresses, setVehicleAddresses] = useState<Map<string, string>>(new Map());
 const [vehicleRoadInfo, setVehicleRoadInfo] = useState<Map<string, { road: string; distance: number; direction: string }>>(new Map());
 
+// Refs to avoid stale closures in marker click handlers
+const vehiclesByIdRef = useRef<Map<string, Vehicle>>(new Map());
+const vehicleAddressesRef = useRef<Map<string, string>>(new Map());
+const vehicleRoadInfoRef = useRef<Map<string, { road: string; distance: number; direction: string }>>(new Map());
+
+useEffect(() => {
+  vehiclesByIdRef.current = new Map(vehicles.map(v => [v.id, v]));
+}, [vehicles]);
+
+useEffect(() => {
+  vehicleAddressesRef.current = vehicleAddresses;
+}, [vehicleAddresses]);
+
+useEffect(() => {
+  vehicleRoadInfoRef.current = vehicleRoadInfo;
+}, [vehicleRoadInfo]);
+
 // Inject marker animations on mount
 useEffect(() => {
   injectMarkerAnimations();
@@ -310,10 +327,10 @@ return () => {
           return;
         }
 
-        // Fetch with all types to get the most detailed result
-        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng.toFixed(6)},${lat.toFixed(6)}.json?access_token=${mapboxToken}&types=poi,address,neighborhood,locality,place&limit=5&language=en`;
+        // Reverse geocoding: Mapbox requires `limit` to be used with a single `type`
+        // Use address for the most stable/consistent results.
+        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng.toFixed(6)},${lat.toFixed(6)}.json?access_token=${mapboxToken}&types=address&limit=1&language=en`;
         const res = await fetch(url);
-        
         if (!res.ok) {
           console.warn('Geocoding API error:', res.status);
           setVehicleAddresses(prev => new Map(prev).set(vehicleId, `${lat.toFixed(6)}, ${lng.toFixed(6)}`));
@@ -676,89 +693,20 @@ return () => {
     `;
   }, []);
 
-  // Dynamically choose popup anchor based on vehicle position in viewport
-  const getPopupAnchor = useCallback((vehicleLngLat: [number, number]): mapboxgl.Anchor => {
-    if (!map.current) return 'bottom';
-    const point = map.current.project(vehicleLngLat);
-    const container = map.current.getContainer();
-    const height = container.clientHeight;
-    const width = container.clientWidth;
-
-    // If marker is in top third, anchor popup to top (popup appears below)
-    // If marker is in bottom third, anchor popup to bottom (popup appears above)
-    const verticalThird = height / 3;
-    const horizontalThird = width / 3;
-
-    let anchor: mapboxgl.Anchor = 'bottom';
-    if (point.y < verticalThird) {
-      anchor = point.x < horizontalThird ? 'top-left' : point.x > width - horizontalThird ? 'top-right' : 'top';
-    } else if (point.y > height - verticalThird) {
-      anchor = point.x < horizontalThird ? 'bottom-left' : point.x > width - horizontalThird ? 'bottom-right' : 'bottom';
-    } else {
-      anchor = point.x < width / 2 ? 'left' : 'right';
-    }
-    return anchor;
-  }, []);
-
-  // Pan map to ensure popup will be visible BEFORE opening
-  const panToFitPopup = useCallback((vehicleLngLat: [number, number], anchor: mapboxgl.Anchor) => {
+  // Keep popup "up / centered" by moving the marker slightly below center before opening.
+  const focusMapForPopup = useCallback((vehicleLngLat: [number, number]) => {
     if (!map.current) return;
     const container = map.current.getContainer();
-    const height = container.clientHeight;
-    const width = container.clientWidth;
+    const height = container.clientHeight || 0;
 
-    // Estimate popup dimensions
-    const popupHeight = 500; // Approximate max popup height
-    const popupWidth = 420;  // Approximate popup width
-    const padding = 20;
-
-    const point = map.current.project(vehicleLngLat);
-    let offsetX = 0;
-    let offsetY = 0;
-
-    // Calculate required offset based on anchor
-    if (anchor.includes('top')) {
-      // Popup appears below marker - need space at bottom
-      const spaceNeeded = popupHeight + padding;
-      const spaceAvailable = height - point.y;
-      if (spaceAvailable < spaceNeeded) {
-        offsetY = spaceNeeded - spaceAvailable;
-      }
-    } else if (anchor.includes('bottom')) {
-      // Popup appears above marker - need space at top
-      const spaceNeeded = popupHeight + padding;
-      if (point.y < spaceNeeded) {
-        offsetY = -(spaceNeeded - point.y);
-      }
-    }
-
-    // Horizontal adjustments
-    if (anchor.includes('left') || anchor === 'left') {
-      const spaceNeeded = popupWidth + padding;
-      const spaceAvailable = width - point.x;
-      if (spaceAvailable < spaceNeeded) {
-        offsetX = spaceNeeded - spaceAvailable;
-      }
-    } else if (anchor.includes('right') || anchor === 'right') {
-      const spaceNeeded = popupWidth + padding;
-      if (point.x < spaceNeeded) {
-        offsetX = -(spaceNeeded - point.x);
-      }
-    }
-
-    // Center popup horizontally for top/bottom anchors
-    if (anchor === 'top' || anchor === 'bottom') {
-      const halfPopup = popupWidth / 2;
-      if (point.x < halfPopup + padding) {
-        offsetX = halfPopup + padding - point.x;
-      } else if (point.x > width - halfPopup - padding) {
-        offsetX = -(point.x - (width - halfPopup - padding));
-      }
-    }
-
-    if (offsetX !== 0 || offsetY !== 0) {
-      map.current.panBy([-offsetX, -offsetY], { duration: 300 });
-    }
+    // Push the marker down a bit so the popup (anchored above) sits closer to center.
+    const offsetY = Math.round(Math.min(height * 0.22, 180));
+    map.current.easeTo({
+      center: vehicleLngLat,
+      offset: [0, offsetY],
+      duration: 350,
+      essential: true,
+    });
   }, []);
 
   const ensurePopupInView = useCallback((popup: mapboxgl.Popup) => {
@@ -768,7 +716,6 @@ return () => {
     const mapEl = map.current.getContainer();
     if (!popupEl || !mapEl) return;
 
-    // Wait for popup to render
     requestAnimationFrame(() => {
       const popupRect = popupEl.getBoundingClientRect();
       const mapRect = mapEl.getBoundingClientRect();
@@ -783,7 +730,7 @@ return () => {
       const dy = topOverflow > 0 ? topOverflow : bottomOverflow > 0 ? -bottomOverflow : 0;
 
       if (dx !== 0 || dy !== 0) {
-        map.current?.panBy([dx, dy], { duration: 300 });
+        map.current?.panBy([dx, dy], { duration: 250 });
       }
     });
   }, []);
@@ -799,9 +746,9 @@ return () => {
       if (content && content.dataset.scrollBound !== '1') {
         content.dataset.scrollBound = '1';
 
-        // Prevent map zoom/scroll from hijacking popup scroll
-        content.addEventListener('wheel', (e) => e.stopPropagation(), { passive: true });
-        content.addEventListener('touchmove', (e) => e.stopPropagation(), { passive: true });
+        // Ensure wheel/touch scroll stays inside popup (doesn't zoom/pan map).
+        content.addEventListener('wheel', (e) => e.stopPropagation(), { capture: true });
+        content.addEventListener('touchmove', (e) => e.stopPropagation(), { capture: true, passive: true });
 
         content.addEventListener('mouseenter', () => map.current?.scrollZoom.disable());
         content.addEventListener('mouseleave', () => map.current?.scrollZoom.enable());
@@ -818,17 +765,19 @@ return () => {
           e.preventDefault();
           e.stopPropagation();
 
-          const mapEl = map.current.getContainer();
-          const mapRect = mapEl.getBoundingClientRect();
+          const startClientX = e.clientX;
+          const startClientY = e.clientY;
+          const startLngLat = popup.getLngLat();
+          const startPoint = map.current.project(startLngLat);
 
           map.current.dragPan.disable();
           map.current.scrollZoom.disable();
 
           const move = (ev: PointerEvent) => {
             if (!map.current) return;
-            const x = ev.clientX - mapRect.left;
-            const y = ev.clientY - mapRect.top;
-            popup.setLngLat(map.current.unproject([x, y]));
+            const dx = ev.clientX - startClientX;
+            const dy = ev.clientY - startClientY;
+            popup.setLngLat(map.current.unproject([startPoint.x + dx, startPoint.y + dy]));
           };
 
           const up = () => {
@@ -947,22 +896,16 @@ return () => {
         el.dataset.speed = vehicle.speed.toString();
 
         const roadInfo = vehicleRoadInfo.get(vehicle.id);
-        
-        // Create popup with dynamic anchor based on position
-        const createPopupWithAnchor = () => {
-          const anchor = getPopupAnchor([vehicle.lng, vehicle.lat]);
-          return new mapboxgl.Popup({ 
-            offset: 25,
-            closeButton: true, 
-            closeOnClick: false, 
-            className: 'vehicle-popup',
-            maxWidth: '450px',
-            anchor: anchor
-          })
-            .setHTML(generatePopupHTML(address, vehicle, roadInfo));
-        };
 
-        let popup = createPopupWithAnchor();
+        // Always anchor above the marker ("up") and we will move the marker slightly below center.
+        const popup = new mapboxgl.Popup({
+          offset: 25,
+          closeButton: true,
+          closeOnClick: false,
+          className: 'vehicle-popup',
+          maxWidth: '450px',
+          anchor: 'bottom',
+        }).setHTML(generatePopupHTML(address, vehicle, roadInfo));
 
         const marker = new mapboxgl.Marker({
           element: el,
@@ -979,49 +922,38 @@ return () => {
         el.addEventListener('click', (e) => {
           e.stopPropagation();
 
-          // Determine optimal anchor based on current viewport position
-          const anchor = getPopupAnchor([vehicle.lng, vehicle.lat]);
-          
-          // Pan map to make room for popup BEFORE opening
-          panToFitPopup([vehicle.lng, vehicle.lat], anchor);
+          const popup = marker.getPopup();
+          if (!popup) return;
 
-          // Update popup content and re-create with correct anchor
-          const latestAddr = vehicleAddresses.get(vehicle.id) || 'Loading address...';
-          const latestRoadInfo = vehicleRoadInfo.get(vehicle.id);
-          
-          // Remove old popup and create new one with correct anchor
-          const wasOpen = popup.isOpen();
-          if (wasOpen) popup.remove();
-          
-          popup = new mapboxgl.Popup({ 
-            offset: 25,
-            closeButton: true, 
-            closeOnClick: false, 
-            className: 'vehicle-popup',
-            maxWidth: '450px',
-            anchor: anchor
-          })
-            .setHTML(generatePopupHTML(latestAddr, vehicle, latestRoadInfo));
-          
-          marker.setPopup(popup);
-          (marker as any)._customPopup = popup;
+          // Clicking an open popup closes it
+          if (popup.isOpen()) {
+            marker.togglePopup();
+            return;
+          }
 
-          // Open popup after a short delay to let pan complete
+          const currentLngLat = marker.getLngLat();
+          const vNow = vehiclesByIdRef.current.get(vehicle.id) ?? vehicle;
+          const latestAddr =
+            vehicleAddressesRef.current.get(vehicle.id) ??
+            `Locating... (${vNow.lat.toFixed(4)}, ${vNow.lng.toFixed(4)})`;
+          const latestRoadInfo = vehicleRoadInfoRef.current.get(vehicle.id);
+
+          popup.setLngLat(currentLngLat);
+          popup.setHTML(generatePopupHTML(latestAddr, vNow, latestRoadInfo));
+
+          focusMapForPopup([currentLngLat.lng, currentLngLat.lat]);
+
           setTimeout(() => {
-            if (!popup.isOpen()) {
-              marker.togglePopup();
-            }
+            if (!popup.isOpen()) marker.togglePopup();
             requestAnimationFrame(() => {
               enhancePopup(popup);
-              // Final check to ensure fully in view
-              setTimeout(() => ensurePopupInView(popup), 100);
+              setTimeout(() => ensurePopupInView(popup), 80);
             });
-          }, 350);
+          }, 360);
 
-          // Notify parent last to avoid re-render closing popup
           setTimeout(() => {
-            onVehicleClick?.(vehicle);
-          }, 400);
+            onVehicleClick?.(vNow);
+          }, 420);
         });
 
         markers.current.set(vehicle.id, marker);
@@ -1078,50 +1010,39 @@ return () => {
         }
       });
       
-      // Determine optimal anchor based on current viewport position
-      const anchor = getPopupAnchor([vehicle.lng, vehicle.lat]);
-      
-      // Pan map to make room for popup
-      panToFitPopup([vehicle.lng, vehicle.lat], anchor);
-      
+      // Focus map so popup stays up/center-ish
+      const lngLat = marker.getLngLat();
+      focusMapForPopup([lngLat.lng, lngLat.lat]);
+
       // Trigger address fetch if not already cached
-      if (!vehicleAddresses.has(vehicle.id)) {
+      if (!vehicleAddressesRef.current.has(vehicle.id)) {
         fetchAddressDebounced(vehicle.lng, vehicle.lat, vehicle.id);
       }
-      
-      // Update popup with correct anchor after pan completes
+
+      // Update popup content after pan completes, then open
       setTimeout(() => {
-        const oldPopup = marker.getPopup();
-        if (oldPopup?.isOpen()) oldPopup.remove();
-        
-        const latestAddr = vehicleAddresses.get(vehicle.id) || 'Fetching address...';
-        const latestRoadInfo = vehicleRoadInfo.get(vehicle.id);
-        
-        const newPopup = new mapboxgl.Popup({ 
-          offset: 25,
-          closeButton: true, 
-          closeOnClick: false, 
-          className: 'vehicle-popup',
-          maxWidth: '450px',
-          anchor: anchor
-        })
-          .setHTML(generatePopupHTML(latestAddr, vehicle, latestRoadInfo));
-        
-        marker.setPopup(newPopup);
-        (marker as any)._customPopup = newPopup;
-        
-        marker.togglePopup();
-        
+        const popup = marker.getPopup();
+        if (!popup) return;
+
+        const latestAddr =
+          vehicleAddressesRef.current.get(vehicle.id) ?? 'Fetching address...';
+        const latestRoadInfo = vehicleRoadInfoRef.current.get(vehicle.id);
+
+        popup.setLngLat(marker.getLngLat());
+        popup.setHTML(generatePopupHTML(latestAddr, vehicle, latestRoadInfo));
+
+        if (!popup.isOpen()) marker.togglePopup();
+
         requestAnimationFrame(() => {
-          enhancePopup(newPopup);
-          setTimeout(() => ensurePopupInView(newPopup), 100);
+          enhancePopup(popup);
+          setTimeout(() => ensurePopupInView(popup), 80);
         });
-      }, 350);
-      
+      }, 360);
+
       // Notify parent that popup was opened
       onPopupOpened?.();
     }
-  }, [openPopupVehicleId, mapLoaded, vehicles, onPopupOpened, vehicleAddresses, vehicleRoadInfo, generatePopupHTML, getPopupAnchor, panToFitPopup, enhancePopup, ensurePopupInView]);
+  }, [openPopupVehicleId, mapLoaded, vehicles, onPopupOpened, generatePopupHTML, focusMapForPopup, enhancePopup, ensurePopupInView]);
 
   // Update any open popup when vehicleAddresses changes (to show fetched address)
   useEffect(() => {
