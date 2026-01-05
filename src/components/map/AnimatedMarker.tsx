@@ -46,6 +46,13 @@ export function animatePosition(
   duration: number = 1000,
   onComplete?: () => void
 ) {
+  // Validate all coordinates before animating
+  if (!isFinite(fromLng) || !isFinite(fromLat) || !isFinite(toLng) || !isFinite(toLat)) {
+    console.warn('Invalid coordinates for animation, skipping', { fromLng, fromLat, toLng, toLat });
+    onComplete?.();
+    return () => {};
+  }
+
   const startTime = performance.now();
   let animationFrame: number;
 
@@ -58,7 +65,10 @@ export function animatePosition(
     const currentLng = lerp(fromLng, toLng, easedProgress);
     const currentLat = lerp(fromLat, toLat, easedProgress);
 
-    marker.setLngLat([currentLng, currentLat]);
+    // Only set position if values are valid
+    if (isFinite(currentLng) && isFinite(currentLat)) {
+      marker.setLngLat([currentLng, currentLat]);
+    }
 
     if (progress < 1) {
       animationFrame = requestAnimationFrame(animate);

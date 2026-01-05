@@ -295,6 +295,13 @@ return () => {
     // Set new debounced fetch
     const timeout = setTimeout(async () => {
       try {
+        // Validate coordinates before making API call
+        if (!isFinite(lat) || !isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+          console.warn('Invalid coordinates for geocoding:', { lat, lng });
+          setVehicleAddresses(prev => new Map(prev).set(vehicleId, 'Location unavailable'));
+          return;
+        }
+
         // Get token from multiple sources
         const mapboxToken = token || localStorage.getItem('mapbox_token') || import.meta.env.VITE_MAPBOX_TOKEN || mapboxgl.accessToken;
         if (!mapboxToken) {
@@ -304,7 +311,7 @@ return () => {
         }
 
         // Fetch with all types to get the most detailed result
-        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxToken}&types=poi,address,neighborhood,locality,place&limit=5&language=en`;
+        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng.toFixed(6)},${lat.toFixed(6)}.json?access_token=${mapboxToken}&types=poi,address,neighborhood,locality,place&limit=5&language=en`;
         const res = await fetch(url);
         
         if (!res.ok) {
