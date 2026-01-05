@@ -46,6 +46,7 @@ interface UseVehiclesPaginatedOptions {
   ownershipFilter?: string;
   sortField?: string;
   sortDirection?: 'asc' | 'desc';
+  vehicleIdFilter?: string | null; // Filter to a specific vehicle ID
 }
 
 interface UseVehiclesPaginatedReturn {
@@ -72,7 +73,8 @@ export const useVehiclesPaginated = (
     fuelTypeFilter = "all",
     ownershipFilter = "all",
     sortField = "created_at",
-    sortDirection = "desc"
+    sortDirection = "desc",
+    vehicleIdFilter = null
   } = options;
   const { organizationId } = useOrganization();
   
@@ -112,26 +114,31 @@ export const useVehiclesPaginated = (
         .order(sortField, { ascending: sortDirection === "asc" })
         .range(offset, offset + pageSize - 1);
 
-      if (statusFilter !== "all") {
-        query = query.eq("status", statusFilter);
-      }
+      // If filtering to specific vehicle, bypass other filters
+      if (vehicleIdFilter) {
+        query = query.eq("id", vehicleIdFilter);
+      } else {
+        if (statusFilter !== "all") {
+          query = query.eq("status", statusFilter);
+        }
 
-      if (vehicleTypeFilter !== "all") {
-        query = query.eq("vehicle_type", vehicleTypeFilter);
-      }
+        if (vehicleTypeFilter !== "all") {
+          query = query.eq("vehicle_type", vehicleTypeFilter);
+        }
 
-      if (fuelTypeFilter !== "all") {
-        query = query.eq("fuel_type", fuelTypeFilter);
-      }
+        if (fuelTypeFilter !== "all") {
+          query = query.eq("fuel_type", fuelTypeFilter);
+        }
 
-      if (ownershipFilter !== "all") {
-        query = query.eq("ownership_type", ownershipFilter);
-      }
+        if (ownershipFilter !== "all") {
+          query = query.eq("ownership_type", ownershipFilter);
+        }
 
-      if (searchQuery) {
-        query = query.or(
-          `plate_number.ilike.%${searchQuery}%,make.ilike.%${searchQuery}%,model.ilike.%${searchQuery}%,vin.ilike.%${searchQuery}%`
-        );
+        if (searchQuery) {
+          query = query.or(
+            `plate_number.ilike.%${searchQuery}%,make.ilike.%${searchQuery}%,model.ilike.%${searchQuery}%,vin.ilike.%${searchQuery}%`
+          );
+        }
       }
 
       const { data, count, error: queryError } = await query;
@@ -150,10 +157,10 @@ export const useVehiclesPaginated = (
       setLoading(false);
       setIsFirstLoad(false);
     }
-  }, [organizationId, pageSize, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, searchQuery, sortField, sortDirection, isFirstLoad]);
+  }, [organizationId, pageSize, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, searchQuery, sortField, sortDirection, isFirstLoad, vehicleIdFilter]);
 
   const loadMore = useCallback(async () => {
-    if (!hasMore || loading) return;
+    if (!hasMore || loading || vehicleIdFilter) return; // Skip loadMore if filtering to single vehicle
     
     const nextPage = currentPage + 1;
     const offset = (nextPage - 1) * pageSize;
@@ -203,7 +210,7 @@ export const useVehiclesPaginated = (
     } finally {
       setLoading(false);
     }
-  }, [organizationId, hasMore, loading, currentPage, pageSize, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, searchQuery, sortField, sortDirection, totalCount]);
+  }, [organizationId, hasMore, loading, currentPage, pageSize, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, searchQuery, sortField, sortDirection, totalCount, vehicleIdFilter]);
 
   const refetch = useCallback(async () => {
     await loadPage(1);
@@ -213,7 +220,7 @@ export const useVehiclesPaginated = (
   useEffect(() => {
     loadPage(1);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organizationId, searchQuery, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, sortField, sortDirection]);
+  }, [organizationId, searchQuery, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, sortField, sortDirection, vehicleIdFilter]);
 
   // Subscribe to realtime changes with throttling
   useEffect(() => {
