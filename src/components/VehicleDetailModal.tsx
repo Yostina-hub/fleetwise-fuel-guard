@@ -234,387 +234,403 @@ const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalP
             </div>
 
             {/* Tab Content */}
-            <ScrollArea className="flex-1 p-4">
+            <div className="flex-1 overflow-hidden">
               {/* Trips Tab - Teltonika Style Timeline */}
-              <TabsContent value="trips" className="mt-0 h-[500px]">
-                <TripTimeline 
-                  trips={recentTrips} 
-                  isLoading={isLoading} 
-                  vehicleId={actualVehicleId}
-                />
+              <TabsContent value="trips" className="mt-0 h-full data-[state=active]:flex data-[state=active]:flex-col">
+                <ScrollArea className="flex-1 p-4">
+                  <TripTimeline 
+                    trips={recentTrips} 
+                    isLoading={isLoading} 
+                    vehicleId={actualVehicleId}
+                  />
+                </ScrollArea>
               </TabsContent>
 
               {/* Fuel Tab - Teltonika Style */}
-              <TabsContent value="fuel" className="mt-0">
-                <FuelMetricsPanel
-                  fuelTransactions={fuelTransactions}
-                  isLoading={isLoading}
-                  vehicleId={actualVehicleId}
-                />
+              <TabsContent value="fuel" className="mt-0 h-full data-[state=active]:flex data-[state=active]:flex-col">
+                <ScrollArea className="flex-1 p-4">
+                  <FuelMetricsPanel
+                    fuelTransactions={fuelTransactions}
+                    isLoading={isLoading}
+                    vehicleId={actualVehicleId}
+                  />
+                </ScrollArea>
               </TabsContent>
 
               {/* Alerts Tab */}
-              <TabsContent value="alerts" className="mt-0 space-y-4">
-                {isLoading ? (
-                  <div className="space-y-3">
-                    {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full" />)}
+              <TabsContent value="alerts" className="mt-0 h-full data-[state=active]:flex data-[state=active]:flex-col">
+                <ScrollArea className="flex-1 p-4">
+                  <div className="space-y-4">
+                    {isLoading ? (
+                      <div className="space-y-3">
+                        {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full" />)}
+                      </div>
+                    ) : driverEvents.length > 0 ? (
+                      <div className="space-y-3">
+                        {driverEvents.map((event, i) => (
+                          <Card key={i} className="hover:bg-muted/50 transition-colors">
+                            <CardContent className="p-4">
+                              <div className="flex items-start gap-3">
+                                <div className={`p-2 rounded-full ${
+                                  event.severity === 'high' ? 'bg-destructive/10' :
+                                  event.severity === 'medium' ? 'bg-warning/10' : 'bg-muted'
+                                }`}>
+                                  <AlertTriangle className={`h-4 w-4 ${
+                                    event.severity === 'high' ? 'text-destructive' :
+                                    event.severity === 'medium' ? 'text-warning' : 'text-muted-foreground'
+                                  }`} />
+                                </div>
+                                <div className="flex-1">
+                                  <p className="font-medium capitalize">
+                                    {event.event_type.replace('_', ' ')}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    {event.address || 'Unknown location'}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground mt-2">
+                                    {formatDistanceToNow(new Date(event.event_time), { addSuffix: true })}
+                                  </p>
+                                </div>
+                                <Badge variant={
+                                  event.severity === 'high' ? 'destructive' :
+                                  event.severity === 'medium' ? 'secondary' : 'outline'
+                                }>
+                                  {event.severity}
+                                </Badge>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12">
+                        <Bell className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                        <p className="text-muted-foreground">No alerts for this vehicle</p>
+                      </div>
+                    )}
                   </div>
-                ) : driverEvents.length > 0 ? (
-                  <div className="space-y-3">
-                    {driverEvents.map((event, i) => (
-                      <Card key={i} className="hover:bg-muted/50 transition-colors">
-                        <CardContent className="p-4">
-                          <div className="flex items-start gap-3">
-                            <div className={`p-2 rounded-full ${
-                              event.severity === 'high' ? 'bg-destructive/10' :
-                              event.severity === 'medium' ? 'bg-warning/10' : 'bg-muted'
-                            }`}>
-                              <AlertTriangle className={`h-4 w-4 ${
-                                event.severity === 'high' ? 'text-destructive' :
-                                event.severity === 'medium' ? 'text-warning' : 'text-muted-foreground'
-                              }`} />
-                            </div>
-                            <div className="flex-1">
-                              <p className="font-medium capitalize">
-                                {event.event_type.replace('_', ' ')}
-                              </p>
-                              <p className="text-sm text-muted-foreground mt-1">
-                                {event.address || 'Unknown location'}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-2">
-                                {formatDistanceToNow(new Date(event.event_time), { addSuffix: true })}
-                              </p>
-                            </div>
-                            <Badge variant={
-                              event.severity === 'high' ? 'destructive' :
-                              event.severity === 'medium' ? 'secondary' : 'outline'
-                            }>
-                              {event.severity}
-                            </Badge>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <Bell className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                    <p className="text-muted-foreground">No alerts for this vehicle</p>
-                  </div>
-                )}
+                </ScrollArea>
               </TabsContent>
 
               {/* Zones Tab */}
-              <TabsContent value="zones" className="mt-0 space-y-4">
-                <div className="text-center py-12">
-                  <MapPin className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                  <p className="text-muted-foreground">Geofence zones coming soon</p>
-                  <Button variant="outline" className="mt-4" onClick={handleTrackOnMap}>
-                    View on Map
-                  </Button>
-                </div>
+              <TabsContent value="zones" className="mt-0 h-full data-[state=active]:flex data-[state=active]:flex-col">
+                <ScrollArea className="flex-1 p-4">
+                  <div className="text-center py-12">
+                    <MapPin className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                    <p className="text-muted-foreground">Geofence zones coming soon</p>
+                    <Button variant="outline" className="mt-4" onClick={handleTrackOnMap}>
+                      View on Map
+                    </Button>
+                  </div>
+                </ScrollArea>
               </TabsContent>
 
               {/* Commands Tab */}
-              <TabsContent value="commands" className="mt-0 space-y-4">
-                <div className="text-center py-12">
-                  <Terminal className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                  <p className="text-muted-foreground">Device commands coming soon</p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Send commands to the GPS device remotely
-                  </p>
-                </div>
+              <TabsContent value="commands" className="mt-0 h-full data-[state=active]:flex data-[state=active]:flex-col">
+                <ScrollArea className="flex-1 p-4">
+                  <div className="text-center py-12">
+                    <Terminal className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                    <p className="text-muted-foreground">Device commands coming soon</p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Send commands to the GPS device remotely
+                    </p>
+                  </div>
+                </ScrollArea>
               </TabsContent>
 
               {/* Info Tab */}
-              <TabsContent value="info" className="mt-0 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Vehicle Details Card */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <Truck className="h-4 w-4" />
-                        Vehicle Details
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Plate</span>
-                        <span className="font-medium">{vehicle.plate}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Make</span>
-                        <span className="font-medium">{vehicle.make || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Model</span>
-                        <span className="font-medium">{vehicle.model || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Year</span>
-                        <span className="font-medium">{vehicle.year || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Odometer</span>
-                        <span className="font-medium">{vehicle.odometer?.toLocaleString() || 0} km</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Fuel Level</span>
-                        <span className="font-medium">{vehicle.fuel}%</span>
-                      </div>
-                    </CardContent>
-                  </Card>
+              <TabsContent value="info" className="mt-0 h-full data-[state=active]:flex data-[state=active]:flex-col">
+                <ScrollArea className="flex-1 p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Vehicle Details Card */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-base">
+                          <Truck className="h-4 w-4" />
+                          Vehicle Details
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Plate</span>
+                          <span className="font-medium">{vehicle.plate}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Make</span>
+                          <span className="font-medium">{vehicle.make || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Model</span>
+                          <span className="font-medium">{vehicle.model || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Year</span>
+                          <span className="font-medium">{vehicle.year || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Odometer</span>
+                          <span className="font-medium">{vehicle.odometer?.toLocaleString() || 0} km</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Fuel Level</span>
+                          <span className="font-medium">{vehicle.fuel}%</span>
+                        </div>
+                      </CardContent>
+                    </Card>
 
-                  {/* Driver Card */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <User className="h-4 w-4" />
-                        Assigned Driver
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {assignedDriver ? (
-                        <div className="flex items-center gap-4">
-                          <Avatar className="h-12 w-12">
-                            <AvatarImage src={assignedDriver.avatar_url || undefined} />
-                            <AvatarFallback>
-                              {assignedDriver.first_name?.[0]}{assignedDriver.last_name?.[0]}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <p className="font-medium">
-                              {assignedDriver.first_name} {assignedDriver.last_name}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {assignedDriver.phone || 'No phone'}
-                            </p>
+                    {/* Driver Card */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-base">
+                          <User className="h-4 w-4" />
+                          Assigned Driver
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {assignedDriver ? (
+                          <div className="flex items-center gap-4">
+                            <Avatar className="h-12 w-12">
+                              <AvatarImage src={assignedDriver.avatar_url || undefined} />
+                              <AvatarFallback>
+                                {assignedDriver.first_name?.[0]}{assignedDriver.last_name?.[0]}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                              <p className="font-medium">
+                                {assignedDriver.first_name} {assignedDriver.last_name}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {assignedDriver.phone || 'No phone'}
+                              </p>
+                            </div>
+                            <Button variant="outline" size="sm" onClick={handleViewDriverProfile}>
+                              View
+                            </Button>
                           </div>
-                          <Button variant="outline" size="sm" onClick={handleViewDriverProfile}>
-                            View
-                          </Button>
-                        </div>
-                      ) : (
-                        <p className="text-muted-foreground">No driver assigned</p>
-                      )}
-                    </CardContent>
-                  </Card>
+                        ) : (
+                          <p className="text-muted-foreground">No driver assigned</p>
+                        )}
+                      </CardContent>
+                    </Card>
 
-                  {/* Performance Card */}
-                  <Card className="md:col-span-2">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <Gauge className="h-4 w-4" />
-                        Performance (Last 30 Days)
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {isLoading ? (
-                        <div className="grid grid-cols-3 gap-6">
-                          {[1, 2, 3].map(i => <Skeleton key={i} className="h-12" />)}
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-3 gap-6">
-                          <div>
-                            <p className="text-2xl font-bold">{performanceMetrics.totalTrips}</p>
-                            <p className="text-sm text-muted-foreground">Total Trips</p>
+                    {/* Performance Card */}
+                    <Card className="md:col-span-2">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-base">
+                          <Gauge className="h-4 w-4" />
+                          Performance (Last 30 Days)
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {isLoading ? (
+                          <div className="grid grid-cols-3 gap-6">
+                            {[1, 2, 3].map(i => <Skeleton key={i} className="h-12" />)}
                           </div>
-                          <div>
-                            <p className="text-2xl font-bold">{performanceMetrics.totalDistance.toLocaleString()} km</p>
-                            <p className="text-sm text-muted-foreground">Distance</p>
+                        ) : (
+                          <div className="grid grid-cols-3 gap-6">
+                            <div>
+                              <p className="text-2xl font-bold">{performanceMetrics.totalTrips}</p>
+                              <p className="text-sm text-muted-foreground">Total Trips</p>
+                            </div>
+                            <div>
+                              <p className="text-2xl font-bold">{performanceMetrics.totalDistance.toLocaleString()} km</p>
+                              <p className="text-sm text-muted-foreground">Distance</p>
+                            </div>
+                            <div>
+                              <p className="text-2xl font-bold">
+                                {performanceMetrics.avgFuelEfficiency 
+                                  ? `${performanceMetrics.avgFuelEfficiency.toFixed(1)} L/100km`
+                                  : 'N/A'}
+                              </p>
+                              <p className="text-sm text-muted-foreground">Fuel Efficiency</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-2xl font-bold">
-                              {performanceMetrics.avgFuelEfficiency 
-                                ? `${performanceMetrics.avgFuelEfficiency.toFixed(1)} L/100km`
-                                : 'N/A'}
-                            </p>
-                            <p className="text-sm text-muted-foreground">Fuel Efficiency</p>
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                </ScrollArea>
               </TabsContent>
 
               {/* Settings Tab - Teltonika Style */}
-              <TabsContent value="settings" className="mt-0">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Change Device Name */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base font-medium">Change Device Name</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="vehicleName" className="text-sm text-muted-foreground">
-                          New Device Name
-                        </Label>
-                        <Input
-                          id="vehicleName"
-                          value={vehicleName}
-                          onChange={(e) => setVehicleName(e.target.value)}
-                          placeholder="Enter device name"
-                          className="bg-muted/50"
-                        />
-                      </div>
-                      <div className="flex justify-end">
-                        <Button 
-                          onClick={handleUpdateName}
-                          disabled={isUpdating === "name" || !vehicleName.trim()}
-                        >
-                          {isUpdating === "name" ? "Updating..." : "Update"}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Update Odometer Reading */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base font-medium">Update Odometer Reading</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="odometer" className="text-sm text-muted-foreground">
-                          Odometer Reading
-                        </Label>
-                        <div className="relative">
+              <TabsContent value="settings" className="mt-0 h-full data-[state=active]:flex data-[state=active]:flex-col">
+                <ScrollArea className="flex-1 p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Change Device Name */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base font-medium">Change Device Name</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="vehicleName" className="text-sm text-muted-foreground">
+                            New Device Name
+                          </Label>
                           <Input
-                            id="odometer"
+                            id="vehicleName"
+                            value={vehicleName}
+                            onChange={(e) => setVehicleName(e.target.value)}
+                            placeholder="Enter device name"
+                            className="bg-muted/50"
+                          />
+                        </div>
+                        <div className="flex justify-end">
+                          <Button 
+                            onClick={handleUpdateName}
+                            disabled={isUpdating === "name" || !vehicleName.trim()}
+                          >
+                            {isUpdating === "name" ? "Updating..." : "Update"}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Update Odometer Reading */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base font-medium">Update Odometer Reading</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="odometer" className="text-sm text-muted-foreground">
+                            Odometer Reading
+                          </Label>
+                          <div className="relative">
+                            <Input
+                              id="odometer"
+                              type="number"
+                              value={odometer}
+                              onChange={(e) => setOdometer(e.target.value)}
+                              placeholder="0.00"
+                              className="bg-muted/50 pr-12"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                              km
+                            </span>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm text-muted-foreground">Date</Label>
+                          <div className="relative">
+                            <Input
+                              value={odometerDate}
+                              readOnly
+                              className="bg-muted/50"
+                            />
+                            <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          </div>
+                        </div>
+                        <div className="flex justify-end">
+                          <Button 
+                            onClick={handleUpdateOdometer}
+                            disabled={isUpdating === "odometer" || !odometer}
+                          >
+                            {isUpdating === "odometer" ? "Updating..." : "Update"}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Update Working Hours Reading */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base font-medium">Update Working Hours Reading</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="engineHours" className="text-sm text-muted-foreground">
+                            Hours Reading
+                          </Label>
+                          <Input
+                            id="engineHours"
                             type="number"
-                            value={odometer}
-                            onChange={(e) => setOdometer(e.target.value)}
+                            value={engineHours}
+                            onChange={(e) => setEngineHours(e.target.value)}
                             placeholder="0.00"
-                            className="bg-muted/50 pr-12"
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                            km
-                          </span>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">Date</Label>
-                        <div className="relative">
-                          <Input
-                            value={odometerDate}
-                            readOnly
                             className="bg-muted/50"
                           />
-                          <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         </div>
-                      </div>
-                      <div className="flex justify-end">
-                        <Button 
-                          onClick={handleUpdateOdometer}
-                          disabled={isUpdating === "odometer" || !odometer}
-                        >
-                          {isUpdating === "odometer" ? "Updating..." : "Update"}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                        <div className="space-y-2">
+                          <Label className="text-sm text-muted-foreground">Date</Label>
+                          <div className="relative">
+                            <Input
+                              value={engineHoursDate}
+                              readOnly
+                              className="bg-muted/50"
+                            />
+                            <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          </div>
+                        </div>
+                        <div className="flex justify-end">
+                          <Button 
+                            onClick={handleUpdateEngineHours}
+                            disabled={isUpdating === "hours" || !engineHours}
+                          >
+                            {isUpdating === "hours" ? "Updating..." : "Update"}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
 
-                  {/* Update Working Hours Reading */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base font-medium">Update Working Hours Reading</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="engineHours" className="text-sm text-muted-foreground">
-                          Hours Reading
-                        </Label>
-                        <Input
-                          id="engineHours"
-                          type="number"
-                          value={engineHours}
-                          onChange={(e) => setEngineHours(e.target.value)}
-                          placeholder="0.00"
-                          className="bg-muted/50"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">Date</Label>
-                        <div className="relative">
-                          <Input
-                            value={engineHoursDate}
-                            readOnly
-                            className="bg-muted/50"
+                    {/* Change Asset Photo */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base font-medium">Change Asset Photo</CardTitle>
+                      </CardHeader>
+                      <CardContent className="flex flex-col items-center justify-center py-6">
+                        <Avatar className="h-24 w-24 mb-4">
+                          {vehicle.imageUrl ? (
+                            <AvatarImage src={vehicle.imageUrl} alt={vehicle.plate} />
+                          ) : (
+                            <AvatarFallback className="bg-primary/10">
+                              <Truck className="h-10 w-10 text-primary" />
+                            </AvatarFallback>
+                          )}
+                        </Avatar>
+                        <Button variant="outline" className="gap-2">
+                          <Camera className="h-4 w-4" />
+                          Upload Photo
+                        </Button>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          JPG, PNG up to 5MB
+                        </p>
+                      </CardContent>
+                    </Card>
+
+                    {/* Quick Actions Card */}
+                    <Card className="md:col-span-2">
+                      <CardHeader>
+                        <CardTitle className="text-base font-medium">Quick Actions</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex flex-wrap gap-3">
+                          <Button variant="outline" className="gap-2" onClick={handleTrackOnMap}>
+                            <MapPin className="h-4 w-4" />
+                            Track on Map
+                          </Button>
+                          <Button variant="outline" className="gap-2">
+                            <Route className="h-4 w-4" />
+                            Assign Route
+                          </Button>
+                          <Button variant="outline" className="gap-2">
+                            <Calendar className="h-4 w-4" />
+                            Schedule Maintenance
+                          </Button>
+                          <CreateIncidentDialog
+                            trigger={
+                              <Button variant="outline" className="gap-2">
+                                <AlertTriangle className="h-4 w-4" />
+                                Report Issue
+                              </Button>
+                            }
                           />
-                          <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         </div>
-                      </div>
-                      <div className="flex justify-end">
-                        <Button 
-                          onClick={handleUpdateEngineHours}
-                          disabled={isUpdating === "hours" || !engineHours}
-                        >
-                          {isUpdating === "hours" ? "Updating..." : "Update"}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Change Asset Photo */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base font-medium">Change Asset Photo</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex flex-col items-center justify-center py-6">
-                      <Avatar className="h-24 w-24 mb-4">
-                        {vehicle.imageUrl ? (
-                          <AvatarImage src={vehicle.imageUrl} alt={vehicle.plate} />
-                        ) : (
-                          <AvatarFallback className="bg-primary/10">
-                            <Truck className="h-10 w-10 text-primary" />
-                          </AvatarFallback>
-                        )}
-                      </Avatar>
-                      <Button variant="outline" className="gap-2">
-                        <Camera className="h-4 w-4" />
-                        Upload Photo
-                      </Button>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        JPG, PNG up to 5MB
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  {/* Quick Actions Card */}
-                  <Card className="md:col-span-2">
-                    <CardHeader>
-                      <CardTitle className="text-base font-medium">Quick Actions</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex flex-wrap gap-3">
-                        <Button variant="outline" className="gap-2" onClick={handleTrackOnMap}>
-                          <MapPin className="h-4 w-4" />
-                          Track on Map
-                        </Button>
-                        <Button variant="outline" className="gap-2">
-                          <Route className="h-4 w-4" />
-                          Assign Route
-                        </Button>
-                        <Button variant="outline" className="gap-2">
-                          <Calendar className="h-4 w-4" />
-                          Schedule Maintenance
-                        </Button>
-                        <CreateIncidentDialog
-                          trigger={
-                            <Button variant="outline" className="gap-2">
-                              <AlertTriangle className="h-4 w-4" />
-                              Report Issue
-                            </Button>
-                          }
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </ScrollArea>
               </TabsContent>
-            </ScrollArea>
+            </div>
           </Tabs>
         </DialogContent>
       </Dialog>
