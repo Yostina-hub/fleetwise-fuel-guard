@@ -394,10 +394,22 @@ export const DeviceManagementTab = () => {
         command_payload: payload,
         priority: 'high',
       });
+
+      // Trigger SMS processing if device has SIM configured
+      if (device.sim_msisdn) {
+        const { error } = await supabase.functions.invoke('process-device-commands', {
+          body: { organization_id: organizationId }
+        });
+        if (error) {
+          console.warn('SMS processing skipped:', error.message);
+        }
+      }
       
       toast({
         title: "Location Request Sent",
-        description: `Command queued for ${device.imei}. Check Device Commands tab for status.`,
+        description: device.sim_msisdn 
+          ? `SMS command sent to ${device.sim_msisdn}` 
+          : `Command queued for ${device.imei}. Configure SIM MSISDN to send via SMS.`,
       });
     } catch (error) {
       console.error('Failed to send get_location command:', error);
