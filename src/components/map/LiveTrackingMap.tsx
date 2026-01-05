@@ -770,13 +770,14 @@ return () => {
         el.dataset.speed = vehicle.speed.toString();
 
         const roadInfo = vehicleRoadInfo.get(vehicle.id);
-        // Auto-anchor popup (Mapbox will choose best position based on map edge proximity)
+        // Use anchor: 'top' so popup opens below marker, preventing top cut-off
         const popup = new mapboxgl.Popup({ 
-          offset: 30, 
+          offset: [0, 10], 
           closeButton: true, 
           closeOnClick: false, 
           className: 'vehicle-popup',
-          maxWidth: '450px'
+          maxWidth: '450px',
+          anchor: 'top'
         })
           .setHTML(generatePopupHTML(address, vehicle, roadInfo));
 
@@ -804,14 +805,17 @@ return () => {
             marker.togglePopup();
           }
           
-          // Then fly to vehicle with slight delay to prevent popup from closing
+          // Pan map so vehicle is in upper third, leaving room for popup below
           if (map.current) {
             setTimeout(() => {
+              const container = map.current?.getContainer();
+              const offsetY = container ? -container.clientHeight * 0.25 : -150;
               map.current?.easeTo({
                 center: [vehicle.lng, vehicle.lat],
                 zoom: Math.max(map.current?.getZoom() || 14, 14),
                 duration: 800,
-                essential: true
+                essential: true,
+                offset: [0, offsetY]
               });
             }, 100);
           }
