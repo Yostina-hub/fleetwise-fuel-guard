@@ -664,3 +664,33 @@ All colors MUST be HSL.
 .vehicle-popup .mapboxgl-popup-content {
   min-width: 400px;
 }
+
+/* Animated car marker for trails */
+.trail-car-marker {
+  width: 40px;
+  height: 40px;
+  pointer-events: none;
+}
+
+.trail-car-marker .trail-car {
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gradient-primary);
+  border: 3px solid hsl(var(--background));
+  box-shadow: var(--shadow-glow-strong);
+  transform-origin: center;
+  transition: transform 80ms ease-out;
+}
+
+.trail-car-marker .trail-car svg {
+  display: block;
+}
+
+.trail-car-marker .trail-car path {
+  fill: hsl(var(--primary-foreground));
+}
+
