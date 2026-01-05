@@ -40,6 +40,7 @@ import { toast } from "sonner";
 import CreateIncidentDialog from "@/components/incidents/CreateIncidentDialog";
 import DriverDetailDialog from "@/components/fleet/DriverDetailDialog";
 import TripTimeline from "@/components/vehicle/TripTimeline";
+import FuelMetricsPanel from "@/components/vehicle/FuelMetricsPanel";
 import { useVehicleData } from "@/hooks/useVehicleData";
 import { useDrivers } from "@/hooks/useDrivers";
 import { format, formatDistanceToNow } from "date-fns";
@@ -243,44 +244,13 @@ const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalP
                 />
               </TabsContent>
 
-              {/* Fuel Tab */}
-              <TabsContent value="fuel" className="mt-0 space-y-4">
-                {isLoading ? (
-                  <div className="space-y-3">
-                    {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full" />)}
-                  </div>
-                ) : fuelTransactions.length > 0 ? (
-                  <div className="space-y-3">
-                    {fuelTransactions.map((transaction, i) => (
-                      <Card key={i} className="hover:bg-muted/50 transition-colors">
-                        <CardContent className="p-4">
-                          <div className="flex items-start gap-3">
-                            <div className="p-2 rounded-full bg-emerald-500/10">
-                              <Fuel className="h-4 w-4 text-emerald-500" />
-                            </div>
-                            <div className="flex-1">
-                              <p className="font-medium">
-                                Refueled {transaction.fuel_amount_liters}L
-                              </p>
-                              <p className="text-sm text-muted-foreground mt-1">
-                                {transaction.location_name || 'Unknown station'}
-                                {transaction.fuel_cost && ` • ETB ${transaction.fuel_cost.toLocaleString()}`}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-2">
-                                {formatDistanceToNow(new Date(transaction.transaction_date), { addSuffix: true })}
-                              </p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <Fuel className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                    <p className="text-muted-foreground">No fuel transactions recorded</p>
-                  </div>
-                )}
+              {/* Fuel Tab - Teltonika Style */}
+              <TabsContent value="fuel" className="mt-0">
+                <FuelMetricsPanel
+                  fuelTransactions={fuelTransactions}
+                  isLoading={isLoading}
+                  vehicleId={actualVehicleId}
+                />
               </TabsContent>
 
               {/* Alerts Tab */}
