@@ -85,6 +85,18 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
+      // Server-side duplicate plate number check
+      const { data: existingPlate } = await supabase
+        .from("vehicles")
+        .select("id, plate_number")
+        .eq("organization_id", organizationId!)
+        .eq("plate_number", data.plate_number)
+        .maybeSingle();
+
+      if (existingPlate) {
+        throw new Error(`A vehicle with plate number ${data.plate_number} already exists`);
+      }
+
       const { error } = await supabase.from("vehicles").insert({
         ...data,
         organization_id: organizationId,

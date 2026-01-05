@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useOrganization } from "@/hooks/useOrganization";
 import { useDrivers } from "@/hooks/useDrivers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,6 +70,7 @@ const VEHICLE_TYPES = [
 ];
 
 export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditVehicleDialogProps) {
+  const { organizationId } = useOrganization();
   const { drivers } = useDrivers();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -131,6 +133,19 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
 
   const updateMutation = useMutation({
     mutationFn: async (data: any) => {
+      // Server-side duplicate plate number check (if plate is being changed)
+      const { data: existingPlate } = await supabase
+        .from("vehicles")
+        .select("id, plate_number")
+        .eq("organization_id", organizationId!)
+        .eq("plate_number", data.plate_number)
+        .neq("id", vehicle?.vehicleId)
+        .maybeSingle();
+
+      if (existingPlate) {
+        throw new Error(`A vehicle with plate number ${data.plate_number} already exists`);
+      }
+
       const { error } = await supabase
         .from("vehicles")
         .update(data)

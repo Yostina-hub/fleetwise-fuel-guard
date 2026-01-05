@@ -120,10 +120,20 @@ export const DeviceFormDialog = ({
     if (!formData.tracker_model.trim()) {
       errors.tracker_model = "Tracker model is required";
     }
+
+    // Check for duplicate SIM phone number
+    if (formData.sim_msisdn.trim()) {
+      const existingPhone = devices?.find(d => 
+        d.sim_msisdn === formData.sim_msisdn.trim() && d.id !== editingDevice?.id
+      );
+      if (existingPhone) {
+        errors.sim_msisdn = "A device with this phone number already exists";
+      }
+    }
     
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
-  }, [formData.imei, formData.tracker_model, devices, editingDevice]);
+  }, [formData.imei, formData.tracker_model, formData.sim_msisdn, devices, editingDevice]);
 
   const handleSubmit = () => {
     if (validateForm()) {
@@ -324,8 +334,13 @@ export const DeviceFormDialog = ({
               value={formData.sim_msisdn}
               onChange={(e) => setFormData({ ...formData, sim_msisdn: e.target.value })}
               placeholder="+251980888379"
+              className={formErrors.sim_msisdn ? "border-destructive" : ""}
             />
-            <p className="text-xs text-muted-foreground">Phone number of the SIM card</p>
+            {formErrors.sim_msisdn ? (
+              <p className="text-xs text-destructive">{formErrors.sim_msisdn}</p>
+            ) : (
+              <p className="text-xs text-muted-foreground">Phone number of the SIM card</p>
+            )}
           </div>
 
           <div className="space-y-2">
