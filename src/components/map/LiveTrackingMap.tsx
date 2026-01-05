@@ -53,6 +53,7 @@ interface LiveTrackingMapProps {
   onPopupOpened?: () => void;
   onTripReplay?: (vehicleId: string, plate: string) => void;
   onManageAsset?: (vehicleId: string, plate: string) => void;
+  disablePopups?: boolean;
 }
 
 const LiveTrackingMap = ({ 
@@ -67,7 +68,8 @@ const LiveTrackingMap = ({
   openPopupVehicleId,
   onPopupOpened,
   onTripReplay,
-  onManageAsset
+  onManageAsset,
+  disablePopups = false
 }: LiveTrackingMapProps) => {
 const mapContainer = useRef<HTMLDivElement>(null);
 const map = useRef<mapboxgl.Map | null>(null);
@@ -895,80 +897,33 @@ return () => {
         el.dataset.status = vehicle.status;
         el.dataset.speed = vehicle.speed.toString();
 
-        const roadInfo = vehicleRoadInfo.get(vehicle.id);
-
-        // Always anchor above the marker ("up") and we will move the marker slightly below center.
-        const popup = new mapboxgl.Popup({
-          offset: 25,
-          closeButton: true,
-          closeOnClick: false,
-          className: 'vehicle-popup',
-          maxWidth: '450px',
-          anchor: 'bottom',
-        }).setHTML(generatePopupHTML(address, vehicle, roadInfo));
-
         const marker = new mapboxgl.Marker({
           element: el,
           anchor: 'center',
         })
           .setLngLat([vehicle.lng, vehicle.lat])
-          .setPopup(popup)
           .addTo(map.current!);
 
-        // Store popup reference for updates
-        (marker as any)._customPopup = popup;
+        // Store vehicle ID for reference
         (marker as any)._vehicleId = vehicle.id;
 
+        // When popups are disabled, just handle click for selection
         el.addEventListener('click', (e) => {
           e.stopPropagation();
 
-          const popup = marker.getPopup();
-          if (!popup) return;
-
-          // Clicking an open popup closes it
-          if (popup.isOpen()) {
-            marker.togglePopup();
-            return;
-          }
-
-          const currentLngLat = marker.getLngLat();
           const vNow = vehiclesByIdRef.current.get(vehicle.id) ?? vehicle;
-          const latestAddr =
-            vehicleAddressesRef.current.get(vehicle.id) ??
-            `Locating... (${vNow.lat.toFixed(4)}, ${vNow.lng.toFixed(4)})`;
-          const latestRoadInfo = vehicleRoadInfoRef.current.get(vehicle.id);
 
-          popup.setLngLat(currentLngLat);
-          popup.setHTML(generatePopupHTML(latestAddr, vNow, latestRoadInfo));
+          // Fly to vehicle position
+          map.current?.flyTo({
+            center: [vNow.lng, vNow.lat],
+            zoom: 15,
+            duration: 800,
+          });
 
-          focusMapForPopup([currentLngLat.lng, currentLngLat.lat]);
-
-          setTimeout(() => {
-            if (!popup.isOpen()) marker.togglePopup();
-            requestAnimationFrame(() => {
-              enhancePopup(popup);
-              setTimeout(() => ensurePopupInView(popup), 80);
-            });
-          }, 360);
-
-          setTimeout(() => {
-            onVehicleClick?.(vNow);
-          }, 420);
+          onVehicleClick?.(vNow);
         });
 
         markers.current.set(vehicle.id, marker);
-      } else {
-        // Update existing marker's popup content with latest address
-        const existingMarker = markers.current.get(vehicle.id);
-        if (existingMarker) {
-          const popup = existingMarker.getPopup();
-          if (popup && popup.isOpen()) {
-            const latestAddr = vehicleAddresses.get(vehicle.id) || 'Loading address...';
-            const latestRoadInfo = vehicleRoadInfo.get(vehicle.id);
-            popup.setHTML(generatePopupHTML(latestAddr, vehicle, latestRoadInfo));
-            requestAnimationFrame(() => enhancePopup(popup));
-          }
-        }
       }
 
       // Store current position for next animation
@@ -994,73 +949,6 @@ return () => {
       initialBoundsFitted.current = true;
     }
   }, [vehicles, mapLoaded, selectedVehicleId, onVehicleClick, vehicleAddresses, vehicleRoadInfo, generatePopupHTML]);
-
-  // Open popup for a specific vehicle when requested from sidebar
-  useEffect(() => {
-    if (!openPopupVehicleId || !mapLoaded || !map.current) return;
-    
-    const marker = markers.current.get(openPopupVehicleId);
-    const vehicle = vehicles.find(v => v.id === openPopupVehicleId);
-    
-    if (marker && vehicle) {
-      // Close all other popups first
-      markers.current.forEach((m, id) => {
-        if (id !== openPopupVehicleId && m.getPopup()?.isOpen()) {
-          m.getPopup()?.remove();
-        }
-      });
-      
-      // Focus map so popup stays up/center-ish
-      const lngLat = marker.getLngLat();
-      focusMapForPopup([lngLat.lng, lngLat.lat]);
-
-      // Trigger address fetch if not already cached
-      if (!vehicleAddressesRef.current.has(vehicle.id)) {
-        fetchAddressDebounced(vehicle.lng, vehicle.lat, vehicle.id);
-      }
-
-      // Update popup content after pan completes, then open
-      setTimeout(() => {
-        const popup = marker.getPopup();
-        if (!popup) return;
-
-        const latestAddr =
-          vehicleAddressesRef.current.get(vehicle.id) ?? 'Fetching address...';
-        const latestRoadInfo = vehicleRoadInfoRef.current.get(vehicle.id);
-
-        popup.setLngLat(marker.getLngLat());
-        popup.setHTML(generatePopupHTML(latestAddr, vehicle, latestRoadInfo));
-
-        if (!popup.isOpen()) marker.togglePopup();
-
-        requestAnimationFrame(() => {
-          enhancePopup(popup);
-          setTimeout(() => ensurePopupInView(popup), 80);
-        });
-      }, 360);
-
-      // Notify parent that popup was opened
-      onPopupOpened?.();
-    }
-  }, [openPopupVehicleId, mapLoaded, vehicles, onPopupOpened, generatePopupHTML, focusMapForPopup, enhancePopup, ensurePopupInView]);
-
-  // Update any open popup when vehicleAddresses changes (to show fetched address)
-  useEffect(() => {
-    if (!mapLoaded) return;
-    
-    markers.current.forEach((marker, vehicleId) => {
-      const popup = marker.getPopup();
-      if (popup && popup.isOpen()) {
-        const vehicle = vehicles.find(v => v.id === vehicleId);
-        const address = vehicleAddresses.get(vehicleId);
-        const roadInfo = vehicleRoadInfo.get(vehicleId);
-        if (vehicle && address) {
-          popup.setHTML(generatePopupHTML(address, vehicle, roadInfo));
-          requestAnimationFrame(() => enhancePopup(popup));
-        }
-      }
-    });
-  }, [vehicleAddresses, vehicleRoadInfo, mapLoaded, vehicles, generatePopupHTML]);
 
   // Draw vehicle trails on the map with speed-based coloring
   useEffect(() => {

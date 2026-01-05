@@ -12,6 +12,7 @@ import LiveTrackingMap from "@/components/map/LiveTrackingMap";
 import ClusteredMap from "@/components/map/ClusteredMap";
 import { NearbyVehiclesSearch } from "@/components/map/NearbyVehiclesSearch";
 import { StreetViewModal } from "@/components/map/StreetViewModal";
+import { VehicleInfoPanel } from "@/components/map/VehicleInfoPanel";
 import { 
   Navigation, 
   Fuel, 
@@ -55,7 +56,6 @@ const MapView = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'online' | 'moving' | 'idle' | 'stopped' | 'offline'>('all');
   const [showNearbySearch, setShowNearbySearch] = useState(false);
   const [showTrails, setShowTrails] = useState(true);
-  const [popupVehicleId, setPopupVehicleId] = useState<string | null>(null);
   
   // Street View / Directions Modal state
   const [streetViewModal, setStreetViewModal] = useState<{
@@ -224,52 +224,57 @@ const MapView = () => {
 
   const handleVehicleClick = useCallback((vehicle: any) => {
     setSelectedVehicleId(vehicle.id);
-    // Trigger popup open on the map
-    setPopupVehicleId(vehicle.id);
-  }, []);
-  
-  const handlePopupOpened = useCallback(() => {
-    // Reset popup trigger after it's opened
-    setPopupVehicleId(null);
-  }, []);
+    // Pan map to vehicle
+    if (mapInstance) {
+      mapInstance.flyTo({
+        center: [vehicle.lng, vehicle.lat],
+        zoom: 15,
+        duration: 800,
+      });
+    }
+  }, [mapInstance]);
 
-  // Handle Trip Replay from popup
+  // Handle Trip Replay from info panel
   const handleTripReplay = useCallback((vehicleId: string, plate: string) => {
     navigate('/route-history', { state: { selectedVehicleId: vehicleId, plate } });
   }, [navigate]);
 
-  // Handle Manage Asset from popup
+  // Handle Manage Asset from info panel
   const handleManageAsset = useCallback((vehicleId: string, plate: string) => {
     navigate('/fleet', { state: { selectedVehicleId: vehicleId, openModal: true } });
   }, [navigate]);
 
-  // Listen for Street View and Directions events from popup
-  useEffect(() => {
-    const handleStreetView = (e: CustomEvent<{ lat: number; lng: number; plate: string }>) => {
-      setStreetViewModal({
-        open: true,
-        lat: e.detail.lat,
-        lng: e.detail.lng,
-        plate: e.detail.plate,
-        type: 'streetview'
-      });
-    };
+  // Get selected vehicle for info panel
+  const selectedVehicle = useMemo(() => {
+    if (!selectedVehicleId) return null;
+    return filteredVehicles.find(v => v.id === selectedVehicleId) || null;
+  }, [selectedVehicleId, filteredVehicles]);
 
-    const handleDirections = (e: CustomEvent<{ lat: number; lng: number; plate: string }>) => {
-      const { lat, lng, plate } = e.detail;
+  // Handle Street View from info panel
+  const handleStreetView = useCallback((lat: number, lng: number, plate: string) => {
+    setStreetViewModal({
+      open: true,
+      lat,
+      lng,
+      plate,
+      type: 'streetview'
+    });
+  }, []);
 
-      setStreetViewModal({
-        open: true,
-        lat,
-        lng,
-        plate,
-        type: 'directions',
-        originLat: undefined,
-        originLng: undefined,
-      });
+  // Handle Directions from info panel
+  const handleDirections = useCallback((lat: number, lng: number, plate: string) => {
+    setStreetViewModal({
+      open: true,
+      lat,
+      lng,
+      plate,
+      type: 'directions',
+      originLat: undefined,
+      originLng: undefined,
+    });
 
-      // Try to use the user's current location as origin (best effort)
-      if (!navigator.geolocation) return;
+    // Try to use the user's current location as origin (best effort)
+    if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           setStreetViewModal((prev) => {
@@ -285,15 +290,7 @@ const MapView = () => {
         () => {},
         { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 },
       );
-    };
-
-    window.addEventListener('openStreetView', handleStreetView as EventListener);
-    window.addEventListener('openDirections', handleDirections as EventListener);
-
-    return () => {
-      window.removeEventListener('openStreetView', handleStreetView as EventListener);
-      window.removeEventListener('openDirections', handleDirections as EventListener);
-    };
+    }
   }, []);
 
   // Stats
@@ -322,28 +319,24 @@ const MapView = () => {
                 engine_on: v.engine_on,
               }))}
               selectedVehicleId={selectedVehicleId}
-              onVehicleClick={(v) => setSelectedVehicleId(v.id)}
+              onVehicleClick={handleVehicleClick}
               mapStyle={mapStyle}
               onMapReady={setMapInstance}
               showTrails={showTrails}
               trails={trails}
-              onTripReplay={handleTripReplay}
-              onManageAsset={handleManageAsset}
+              disablePopups
             />
           ) : (
             <LiveTrackingMap
               vehicles={filteredVehicles}
               selectedVehicleId={selectedVehicleId}
-              onVehicleClick={(vehicle) => setSelectedVehicleId(vehicle.id)}
+              onVehicleClick={handleVehicleClick}
               token={mapToken || envToken}
               mapStyle={mapStyle}
               onMapReady={setMapInstance}
               showTrails={showTrails}
               trails={trails}
-              openPopupVehicleId={popupVehicleId}
-              onPopupOpened={handlePopupOpened}
-              onTripReplay={handleTripReplay}
-              onManageAsset={handleManageAsset}
+              disablePopups
             />
           )}
 
@@ -713,6 +706,16 @@ const MapView = () => {
           </div>
         </div>
       </div>
+
+      {/* Detached Vehicle Info Panel */}
+      <VehicleInfoPanel
+        vehicle={selectedVehicle}
+        onClose={() => setSelectedVehicleId(undefined)}
+        onStreetView={handleStreetView}
+        onDirections={handleDirections}
+        onTripReplay={handleTripReplay}
+        onManageAsset={handleManageAsset}
+      />
 
       {/* Street View / Directions Modal */}
       <StreetViewModal
