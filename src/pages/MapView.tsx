@@ -52,7 +52,7 @@ const MapView = () => {
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [searchQuery, setSearchQuery] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'moving' | 'idle' | 'stopped' | 'offline'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'online' | 'moving' | 'idle' | 'stopped' | 'offline'>('all');
   const [showNearbySearch, setShowNearbySearch] = useState(false);
   const [showTrails, setShowTrails] = useState(true);
   const [popupVehicleId, setPopupVehicleId] = useState<string | null>(null);
@@ -174,7 +174,12 @@ const MapView = () => {
     let filtered = vehicles;
     
     // Apply status filter
-    if (statusFilter !== 'all') {
+    if (statusFilter === 'online') {
+      // Live = all non-offline vehicles
+      filtered = filtered.filter(v => !v.isOffline);
+    } else if (statusFilter === 'offline') {
+      filtered = filtered.filter(v => v.isOffline);
+    } else if (statusFilter !== 'all') {
       filtered = filtered.filter(v => v.status === statusFilter);
     }
     
@@ -299,7 +304,7 @@ const MapView = () => {
         <div className="flex-1 relative">
           {useClusteredMap ? (
             <ClusteredMap
-              vehicles={vehicles.map(v => ({
+              vehicles={filteredVehicles.map(v => ({
                 id: v.id,
                 plate: v.plate,
                 status: v.status,
@@ -321,7 +326,7 @@ const MapView = () => {
             />
           ) : (
             <LiveTrackingMap
-              vehicles={vehicles}
+              vehicles={filteredVehicles}
               selectedVehicleId={selectedVehicleId}
               onVehicleClick={(vehicle) => setSelectedVehicleId(vehicle.id)}
               token={mapToken || envToken}
@@ -506,7 +511,7 @@ const MapView = () => {
               )}
             </div>
 
-            {/* Status Filter */}
+            {/* Status Filter - affects both sidebar and map */}
             <div className="flex items-center gap-2">
               <Filter className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
               <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
@@ -515,10 +520,36 @@ const MapView = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All ({vehicles.length})</SelectItem>
-                  <SelectItem value="moving">Moving ({movingCount})</SelectItem>
-                  <SelectItem value="idle">Idle ({idleCount})</SelectItem>
-                  <SelectItem value="stopped">Stopped ({stoppedCount})</SelectItem>
-                  <SelectItem value="offline">Offline ({offlineCount})</SelectItem>
+                  <SelectItem value="online">
+                    <span className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-success" />
+                      Live ({onlineCount})
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="moving">
+                    <span className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                      Moving ({movingCount})
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="idle">
+                    <span className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-amber-500" />
+                      Idle ({idleCount})
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="stopped">
+                    <span className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-slate-400" />
+                      Stopped ({stoppedCount})
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="offline">
+                    <span className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-rose-500" />
+                      Offline ({offlineCount})
+                    </span>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
