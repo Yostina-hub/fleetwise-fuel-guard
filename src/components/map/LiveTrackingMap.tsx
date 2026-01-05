@@ -227,14 +227,20 @@ return () => {
     // Set new debounced fetch
     const timeout = setTimeout(async () => {
       try {
-        const mapboxToken = token || localStorage.getItem('mapbox_token') || import.meta.env.VITE_MAPBOX_TOKEN;
-        if (!mapboxToken) return;
+        // Get token from multiple sources
+        const mapboxToken = token || localStorage.getItem('mapbox_token') || import.meta.env.VITE_MAPBOX_TOKEN || mapboxgl.accessToken;
+        if (!mapboxToken) {
+          console.warn('No Mapbox token available for geocoding');
+          setVehicleAddresses(prev => new Map(prev).set(vehicleId, `${lat.toFixed(6)}, ${lng.toFixed(6)}`));
+          return;
+        }
 
         // Fetch with all types to get the most detailed result
         const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxToken}&types=poi,address,neighborhood,locality,place&limit=5&language=en`;
         const res = await fetch(url);
         
         if (!res.ok) {
+          console.warn('Geocoding API error:', res.status);
           setVehicleAddresses(prev => new Map(prev).set(vehicleId, `${lat.toFixed(6)}, ${lng.toFixed(6)}`));
           return;
         }
@@ -243,7 +249,8 @@ return () => {
         const features = json?.features || [];
 
         if (features.length === 0) {
-          setVehicleAddresses(prev => new Map(prev).set(vehicleId, `${lat.toFixed(6)}, ${lng.toFixed(6)}`));
+          // No features found - use place_name from first result if available
+          setVehicleAddresses(prev => new Map(prev).set(vehicleId, `Near ${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E`));
           return;
         }
 
