@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useDevices } from "@/hooks/useDevices";
+import { useDeviceCommands } from "@/hooks/useDeviceCommands";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useDeviceProtocols } from "@/hooks/useDeviceProtocols";
 import { useToast } from "@/hooks/use-toast";
@@ -63,6 +64,7 @@ const escapeCSV = (value: string | null | undefined): string => {
 export const DeviceManagementTab = () => {
   const { devices, isLoading, createDevice, updateDevice, deleteDevice, testHeartbeat, testEndpoint, generateAuthToken, revokeAuthToken } = useDevices();
   const { vehicles } = useVehicles();
+  const { sendCommand } = useDeviceCommands();
   const { protocols } = useDeviceProtocols();
   const { organizationId } = useOrganization();
   const { toast } = useToast();
@@ -87,6 +89,7 @@ export const DeviceManagementTab = () => {
   const [generatedToken, setGeneratedToken] = useState<string | null>(null);
   const [tokenDeviceId, setTokenDeviceId] = useState<string | null>(null);
   const [generatingToken, setGeneratingToken] = useState(false);
+  const [sendingLocationCommand, setSendingLocationCommand] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     vehicle_id: "",
@@ -357,6 +360,49 @@ export const DeviceManagementTab = () => {
       await revokeAuthToken.mutateAsync(device.id);
     } catch (error) {
       console.error('Failed to revoke token:', error);
+    }
+  };
+
+  const handleGetLocation = async (device: any) => {
+    setSendingLocationCommand(device.id);
+    try {
+      // Determine the correct command based on tracker model
+      let payload: Record<string, any> = {};
+      const model = device.tracker_model?.toLowerCase() || '';
+      
+      if (model.includes('coban') || model.includes('303') || model.includes('tk103')) {
+        // Coban 303FG / TK103 protocol - SMS command format
+        payload = { 
+          sms_command: 'fix001s***n123456',
+          description: 'Request single location fix'
+        };
+      } else if (model.includes('teltonika') || model.includes('fmb')) {
+        // Teltonika devices - use getinfo command
+        payload = { 
+          command: 'getinfo',
+          description: 'Request device info and location'
+        };
+      } else {
+        // Generic get location
+        payload = { description: 'Request current location' };
+      }
+
+      await sendCommand.mutateAsync({
+        device_id: device.id,
+        vehicle_id: device.vehicle_id,
+        command_type: 'get_location',
+        command_payload: payload,
+        priority: 'high',
+      });
+      
+      toast({
+        title: "Location Request Sent",
+        description: `Command queued for ${device.imei}. Check Device Commands tab for status.`,
+      });
+    } catch (error) {
+      console.error('Failed to send get_location command:', error);
+    } finally {
+      setSendingLocationCommand(null);
     }
   };
 
@@ -966,17 +1012,32 @@ export const DeviceManagementTab = () => {
                       <Button
                         size="sm"
                         variant="default"
-                        className="bg-primary hover:bg-primary/90 gap-1"
+                        className="bg-blue-600 hover:bg-blue-700 gap-1"
+                        onClick={() => handleGetLocation(device)}
+                        disabled={sendingLocationCommand === device.id || sendCommand.isPending}
+                        aria-label={`Request location from device ${device.imei}`}
+                        title="Send command to get current location"
+                      >
+                        {sendingLocationCommand === device.id ? (
+                          <Activity className="h-4 w-4 animate-pulse" aria-hidden="true" />
+                        ) : (
+                          <MapPin className="h-4 w-4" aria-hidden="true" />
+                        )}
+                        Location
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
                         onClick={() => handleTestEndpoint(device)}
                         disabled={testingDeviceId === device.id || testEndpoint.isPending}
                         aria-label={`Test GPS endpoint for device ${device.imei}`}
+                        title="Test connectivity (dry run)"
                       >
                         {testingDeviceId === device.id ? (
                           <Activity className="h-4 w-4 animate-pulse" aria-hidden="true" />
                         ) : (
                           <Zap className="h-4 w-4" aria-hidden="true" />
                         )}
-                        Test
                       </Button>
                       {device.auth_token ? (
                         <Button
