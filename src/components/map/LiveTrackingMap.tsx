@@ -7,7 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { 
   createAnimatedMarkerElement, 
   animatePosition, 
-  injectMarkerAnimations 
+  injectMarkerAnimations,
+  getSpeedColor 
 } from './AnimatedMarker';
 
 interface TrailPoint {
@@ -248,6 +249,91 @@ return () => {
     addressFetchTimeouts.current.set(vehicleId, timeout);
   };
 
+  // Helper to get relative time string
+  const getRelativeTime = (dateStr: string): string => {
+    const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+    if (seconds < 10) return 'Just now';
+    if (seconds < 60) return `${seconds}s ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return new Date(dateStr).toLocaleDateString();
+  };
+
+  // Get heading direction label
+  const getHeadingLabel = (heading: number): string => {
+    const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    const index = Math.round(heading / 45) % 8;
+    return directions[index];
+  };
+
+  // Helper to generate popup HTML
+  const generatePopupHTML = useCallback((addr: string, v: Vehicle) => {
+    const gpsStrength = v.gps_signal_strength ?? 0;
+    const gpsSignalLabel = gpsStrength >= 80 ? 'Strong' : gpsStrength >= 50 ? 'Moderate' : gpsStrength > 0 ? 'Weak' : 'No signal';
+    const gpsColor = gpsStrength >= 80 ? '#22c55e' : gpsStrength >= 50 ? '#f59e0b' : gpsStrength > 0 ? '#ef4444' : '#6b7280';
+    const relativeTime = v.lastSeen ? getRelativeTime(v.lastSeen) : 'N/A';
+    const speedLimit = v.speed_limit || 80;
+    const isOverspeeding = v.speed > speedLimit;
+    const headingLabel = v.heading !== undefined ? getHeadingLabel(v.heading) : '';
+    const headingDeg = v.heading !== undefined ? Math.round(v.heading) : 0;
+    
+    return `
+      <div class="vehicle-popup-content" style="min-width:300px;font-family:system-ui,-apple-system,sans-serif;padding:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #e5e7eb;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-weight:700;font-size:15px;">${v.plate}</span>
+            ${v.status === 'moving' ? `<span style="color:#6b7280;font-size:11px;display:flex;align-items:center;gap:2px;">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="#22c55e" style="transform:rotate(${headingDeg}deg)"><path d="M5 0L10 10H0L5 0Z"/></svg>
+              ${headingLabel} ${headingDeg}°
+            </span>` : ''}
+          </div>
+          <span style="font-size:11px;padding:3px 10px;border-radius:9999px;font-weight:500;background:${v.status === 'moving' ? '#dcfce7' : v.status === 'idle' ? '#fef3c7' : v.status === 'stopped' ? '#f3f4f6' : '#fee2e2'};color:${v.status === 'moving' ? '#166534' : v.status === 'idle' ? '#92400e' : v.status === 'stopped' ? '#4b5563' : '#991b1b'};">${v.status}</span>
+        </div>
+        
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
+          <div style="text-align:center;padding:8px 4px;background:#f9fafb;border-radius:8px;">
+            <div style="font-size:16px;font-weight:600;color:${isOverspeeding ? '#dc2626' : '#1f2937'};">${v.speed}</div>
+            <div style="font-size:10px;color:#6b7280;">km/h</div>
+          </div>
+          <div style="text-align:center;padding:8px 4px;background:#f9fafb;border-radius:8px;">
+            <div style="font-size:16px;font-weight:600;color:${v.fuel < 20 ? '#f59e0b' : '#1f2937'};">${v.fuel}%</div>
+            <div style="font-size:10px;color:#6b7280;">Fuel</div>
+          </div>
+          <div style="text-align:center;padding:8px 4px;background:#f9fafb;border-radius:8px;">
+            <div style="font-size:16px;font-weight:600;color:${v.engine_on ? '#22c55e' : '#6b7280'};">${v.engine_on ? 'ON' : 'OFF'}</div>
+            <div style="font-size:10px;color:#6b7280;">ACC</div>
+          </div>
+          <div style="text-align:center;padding:8px 4px;background:#f9fafb;border-radius:8px;">
+            <div style="font-size:16px;font-weight:600;color:${gpsColor};">●</div>
+            <div style="font-size:10px;color:#6b7280;">${gpsSignalLabel}</div>
+          </div>
+        </div>
+
+        ${isOverspeeding ? `<div style="background:#fee2e2;color:#991b1b;font-size:11px;font-weight:500;padding:6px 10px;border-radius:6px;margin-bottom:10px;display:flex;align-items:center;gap:4px;">
+          <span>⚠️</span> Overspeeding: ${v.speed} km/h (limit: ${speedLimit})
+        </div>` : ''}
+
+        <div style="font-size:12px;color:#374151;margin-bottom:10px;">
+          ${v.driverName ? `<div style="display:flex;align-items:center;gap:4px;margin-bottom:6px;">
+            <span>👤</span> 
+            <span style="font-weight:500;">${v.driverName}</span>
+            ${v.driverPhone ? `<span style="color:#6b7280;font-size:11px;">(${v.driverPhone})</span>` : ''}
+          </div>` : '<div style="color:#9ca3af;font-size:11px;margin-bottom:6px;">No driver assigned</div>'}
+        </div>
+        
+        <div style="font-size:11px;color:#6b7280;padding-top:10px;border-top:1px solid #e5e7eb;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span>📍 ${v.lat.toFixed(5)}, ${v.lng.toFixed(5)}</span>
+            <span style="color:${relativeTime === 'Just now' ? '#22c55e' : relativeTime.includes('m') && parseInt(relativeTime) < 5 ? '#22c55e' : '#6b7280'};font-weight:500;">${relativeTime}</span>
+          </div>
+          <div style="color:#374151;line-height:1.4;">${addr}</div>
+        </div>
+      </div>
+    `;
+  }, []);
+
   // Update vehicle markers
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
@@ -294,18 +380,20 @@ return () => {
           );
         }
 
-        // Update marker appearance - recreate if status or overspeeding changed
+        // Update marker appearance - recreate if status, overspeeding, or speed changed significantly
         const el = existingMarker.getElement();
         const isSelected = vehicle.id === selectedVehicleId;
         const wasOverspeeding = el.dataset.overspeeding === 'true';
         const previousStatus = el.dataset.status;
+        const previousSpeed = parseFloat(el.dataset.speed || '0');
+        const speedChanged = Math.abs(previousSpeed - vehicle.speed) >= 5; // Recreate if speed changed by 5+ km/h
         
-        // Recreate marker if status or overspeeding state changed
-        if (wasOverspeeding !== isOverspeeding || previousStatus !== vehicle.status) {
+        // Recreate marker if status, overspeeding state, or speed changed
+        if (wasOverspeeding !== isOverspeeding || previousStatus !== vehicle.status || speedChanged) {
           existingMarker.remove();
           markers.current.delete(vehicle.id);
         } else {
-          el.style.borderWidth = isSelected ? '4px' : '2px';
+          el.style.borderWidth = isSelected ? '3px' : '2.5px';
           el.style.borderColor = isSelected ? 'white' : '';
         }
       }
@@ -317,44 +405,15 @@ return () => {
           vehicle.id === selectedVehicleId,
           vehicle.engine_on,
           vehicle.heading,
-          isOverspeeding
+          isOverspeeding,
+          vehicle.speed
         );
         el.dataset.overspeeding = isOverspeeding.toString();
         el.dataset.status = vehicle.status;
-
-        const gpsStrength = vehicle.gps_signal_strength ?? 0;
-        const gpsSignalLabel = gpsStrength >= 80 ? 'Strong' : gpsStrength >= 50 ? 'Moderate' : gpsStrength > 0 ? 'Weak' : 'No signal';
-        const reportTime = vehicle.lastSeen ? new Date(vehicle.lastSeen).toLocaleString() : 'N/A';
-
-        const createPopupHTML = (addr: string) => `
-          <div class="vehicle-popup-content" style="min-width:280px;font-family:system-ui,-apple-system,sans-serif;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #e5e7eb;">
-              <span style="font-weight:600;font-size:14px;">${vehicle.plate}</span>
-              <span style="font-size:11px;padding:2px 8px;border-radius:9999px;background:${vehicle.status === 'moving' ? '#10b981' : vehicle.status === 'idle' ? '#f59e0b' : vehicle.status === 'stopped' ? '#6b7280' : '#ef4444'};color:white;">${vehicle.status}</span>
-            </div>
-            <div style="font-size:12px;color:#374151;margin-bottom:10px;">
-              <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-                <span style="color:#6b7280;">Latitude & Longitude:</span>
-              </div>
-              <div style="font-weight:500;margin-bottom:8px;">${vehicle.lat.toFixed(6)}, ${vehicle.lng.toFixed(6)}</div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;">
-                <div><span style="color:#6b7280;">ACC:</span> <span style="font-weight:500;">${vehicle.engine_on ? 'On' : 'Off'}</span></div>
-                <div><span style="color:#6b7280;">Speed:</span> <span style="font-weight:500;">${vehicle.speed} km/h</span></div>
-                <div><span style="color:#6b7280;">Fuel:</span> <span style="font-weight:500;">${vehicle.fuel}%</span></div>
-                <div><span style="color:#6b7280;">GPS:</span> <span style="font-weight:500;">${gpsSignalLabel}</span></div>
-              </div>
-            </div>
-            ${vehicle.driverName ? `<div style="font-size:12px;margin-bottom:6px;"><span style="color:#6b7280;">👤 Driver:</span> <span style="font-weight:500;">${vehicle.driverName}</span>${vehicle.driverPhone ? ` <span style="color:#6b7280;">(${vehicle.driverPhone})</span>` : ''}</div>` : '<div style="font-size:12px;color:#9ca3af;margin-bottom:6px;">No driver assigned</div>'}
-            ${isOverspeeding ? `<div style="font-size:12px;color:#ef4444;font-weight:500;margin-bottom:6px;">⚠️ Overspeeding: ${vehicle.speed} km/h (limit: ${speedLimit})</div>` : ''}
-            <div style="font-size:11px;color:#6b7280;margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb;">
-              <div style="margin-bottom:4px;"><span>🕐 Report Time:</span> <span style="color:#374151;">${reportTime}</span></div>
-              <div><span>📍 Address:</span> <span style="color:#374151;">${addr}</span></div>
-            </div>
-          </div>
-        `;
+        el.dataset.speed = vehicle.speed.toString();
 
         const popup = new mapboxgl.Popup({ offset: 25, closeButton: true, closeOnClick: false, className: 'vehicle-popup' })
-          .setHTML(createPopupHTML(address));
+          .setHTML(generatePopupHTML(address, vehicle));
 
         const marker = new mapboxgl.Marker({
           element: el,
@@ -380,7 +439,7 @@ return () => {
           }
           // Refresh popup content with latest address
           const latestAddr = vehicleAddresses.get(vehicle.id) || 'Loading address...';
-          popup.setHTML(createPopupHTML(latestAddr));
+          popup.setHTML(generatePopupHTML(latestAddr, vehicle));
           marker.togglePopup();
         });
 
@@ -392,38 +451,7 @@ return () => {
           const popup = existingMarker.getPopup();
           if (popup && popup.isOpen()) {
             const latestAddr = vehicleAddresses.get(vehicle.id) || 'Loading address...';
-            const gpsStrength = vehicle.gps_signal_strength ?? 0;
-            const gpsSignalLabel = gpsStrength >= 80 ? 'Strong' : gpsStrength >= 50 ? 'Moderate' : gpsStrength > 0 ? 'Weak' : 'No signal';
-            const reportTime = vehicle.lastSeen ? new Date(vehicle.lastSeen).toLocaleString() : 'N/A';
-            const speedLimit = vehicle.speed_limit || 80;
-            const isOverspeeding = vehicle.speed > speedLimit;
-            
-            popup.setHTML(`
-              <div class="vehicle-popup-content" style="min-width:280px;font-family:system-ui,-apple-system,sans-serif;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #e5e7eb;">
-                  <span style="font-weight:600;font-size:14px;">${vehicle.plate}</span>
-                  <span style="font-size:11px;padding:2px 8px;border-radius:9999px;background:${vehicle.status === 'moving' ? '#10b981' : vehicle.status === 'idle' ? '#f59e0b' : vehicle.status === 'stopped' ? '#6b7280' : '#ef4444'};color:white;">${vehicle.status}</span>
-                </div>
-                <div style="font-size:12px;color:#374151;margin-bottom:10px;">
-                  <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-                    <span style="color:#6b7280;">Latitude & Longitude:</span>
-                  </div>
-                  <div style="font-weight:500;margin-bottom:8px;">${vehicle.lat.toFixed(6)}, ${vehicle.lng.toFixed(6)}</div>
-                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;">
-                    <div><span style="color:#6b7280;">ACC:</span> <span style="font-weight:500;">${vehicle.engine_on ? 'On' : 'Off'}</span></div>
-                    <div><span style="color:#6b7280;">Speed:</span> <span style="font-weight:500;">${vehicle.speed} km/h</span></div>
-                    <div><span style="color:#6b7280;">Fuel:</span> <span style="font-weight:500;">${vehicle.fuel}%</span></div>
-                    <div><span style="color:#6b7280;">GPS:</span> <span style="font-weight:500;">${gpsSignalLabel}</span></div>
-                  </div>
-                </div>
-                ${vehicle.driverName ? `<div style="font-size:12px;margin-bottom:6px;"><span style="color:#6b7280;">👤 Driver:</span> <span style="font-weight:500;">${vehicle.driverName}</span>${vehicle.driverPhone ? ` <span style="color:#6b7280;">(${vehicle.driverPhone})</span>` : ''}</div>` : '<div style="font-size:12px;color:#9ca3af;margin-bottom:6px;">No driver assigned</div>'}
-                ${isOverspeeding ? `<div style="font-size:12px;color:#ef4444;font-weight:500;margin-bottom:6px;">⚠️ Overspeeding: ${vehicle.speed} km/h (limit: ${speedLimit})</div>` : ''}
-                <div style="font-size:11px;color:#6b7280;margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb;">
-                  <div style="margin-bottom:4px;"><span>🕐 Report Time:</span> <span style="color:#374151;">${reportTime}</span></div>
-                  <div><span>📍 Address:</span> <span style="color:#374151;">${latestAddr}</span></div>
-                </div>
-              </div>
-            `);
+            popup.setHTML(generatePopupHTML(latestAddr, vehicle));
           }
         }
       }
@@ -450,43 +478,7 @@ return () => {
       map.current!.fitBounds(bounds, { padding: 50, maxZoom: 15 });
       initialBoundsFitted.current = true;
     }
-  }, [vehicles, mapLoaded, selectedVehicleId, onVehicleClick, vehicleAddresses]);
-
-  // Helper to generate popup HTML - moved outside useEffect for reuse
-  const generatePopupHTML = useCallback((addr: string, v: Vehicle) => {
-    const gpsStrength = v.gps_signal_strength ?? 0;
-    const gpsSignalLabel = gpsStrength >= 80 ? 'Strong' : gpsStrength >= 50 ? 'Moderate' : gpsStrength > 0 ? 'Weak' : 'No signal';
-    const reportTime = v.lastSeen ? new Date(v.lastSeen).toLocaleString() : 'N/A';
-    const speedLimit = v.speed_limit || 80;
-    const isOverspeeding = v.speed > speedLimit;
-    
-    return `
-      <div class="vehicle-popup-content" style="min-width:280px;font-family:system-ui,-apple-system,sans-serif;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #e5e7eb;">
-          <span style="font-weight:600;font-size:14px;">${v.plate}</span>
-          <span style="font-size:11px;padding:2px 8px;border-radius:9999px;background:${v.status === 'moving' ? '#10b981' : v.status === 'idle' ? '#f59e0b' : v.status === 'stopped' ? '#6b7280' : '#ef4444'};color:white;">${v.status}</span>
-        </div>
-        <div style="font-size:12px;color:#374151;margin-bottom:10px;">
-          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-            <span style="color:#6b7280;">Latitude & Longitude:</span>
-          </div>
-          <div style="font-weight:500;margin-bottom:8px;">${v.lat.toFixed(6)}, ${v.lng.toFixed(6)}</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;">
-            <div><span style="color:#6b7280;">ACC:</span> <span style="font-weight:500;">${v.engine_on ? 'On' : 'Off'}</span></div>
-            <div><span style="color:#6b7280;">Speed:</span> <span style="font-weight:500;">${v.speed} km/h</span></div>
-            <div><span style="color:#6b7280;">Fuel:</span> <span style="font-weight:500;">${v.fuel}%</span></div>
-            <div><span style="color:#6b7280;">GPS:</span> <span style="font-weight:500;">${gpsSignalLabel}</span></div>
-          </div>
-        </div>
-        ${v.driverName ? `<div style="font-size:12px;margin-bottom:6px;"><span style="color:#6b7280;">👤 Driver:</span> <span style="font-weight:500;">${v.driverName}</span>${v.driverPhone ? ` <span style="color:#6b7280;">(${v.driverPhone})</span>` : ''}</div>` : '<div style="font-size:12px;color:#9ca3af;margin-bottom:6px;">No driver assigned</div>'}
-        ${isOverspeeding ? `<div style="font-size:12px;color:#ef4444;font-weight:500;margin-bottom:6px;">⚠️ Overspeeding: ${v.speed} km/h (limit: ${speedLimit})</div>` : ''}
-        <div style="font-size:11px;color:#6b7280;margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb;">
-          <div style="margin-bottom:4px;"><span>🕐 Report Time:</span> <span style="color:#374151;">${reportTime}</span></div>
-          <div><span>📍 Address:</span> <span style="color:#374151;">${addr}</span></div>
-        </div>
-      </div>
-    `;
-  }, []);
+  }, [vehicles, mapLoaded, selectedVehicleId, onVehicleClick, vehicleAddresses, generatePopupHTML]);
 
   // Open popup for a specific vehicle when requested from sidebar
   useEffect(() => {
@@ -548,7 +540,7 @@ return () => {
     });
   }, [vehicleAddresses, mapLoaded, vehicles, generatePopupHTML]);
 
-  // Draw vehicle trails on the map
+  // Draw vehicle trails on the map with speed-based coloring
   useEffect(() => {
     if (!map.current || !mapLoaded || !showTrails) return;
 
@@ -557,15 +549,32 @@ return () => {
 
       const sourceId = `trail-${vehicleId}`;
       const layerId = `trail-line-${vehicleId}`;
-      const coordinates = points.map(p => [p.lng, p.lat] as [number, number]);
+      const isSelected = vehicleId === selectedVehicleId;
 
-      const geojsonData: GeoJSON.Feature<GeoJSON.LineString> = {
-        type: 'Feature',
-        properties: { vehicleId },
-        geometry: {
-          type: 'LineString',
-          coordinates,
-        },
+      // Create line segments with speed data for gradient coloring
+      const features: GeoJSON.Feature<GeoJSON.LineString>[] = [];
+      
+      for (let i = 0; i < points.length - 1; i++) {
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        const avgSpeed = (p1.speed + p2.speed) / 2;
+        
+        features.push({
+          type: 'Feature',
+          properties: { 
+            speed: avgSpeed,
+            color: getSpeedColor(avgSpeed, 120)
+          },
+          geometry: {
+            type: 'LineString',
+            coordinates: [[p1.lng, p1.lat], [p2.lng, p2.lat]],
+          },
+        });
+      }
+
+      const geojsonData: GeoJSON.FeatureCollection = {
+        type: 'FeatureCollection',
+        features,
       };
 
       // Update or create source
@@ -588,14 +597,14 @@ return () => {
             'line-cap': 'round',
           },
           paint: {
-            'line-color': vehicleId === selectedVehicleId ? '#22c55e' : '#3b82f6',
-            'line-width': 8,
-            'line-opacity': 0.3,
-            'line-blur': 3,
+            'line-color': isSelected ? ['get', 'color'] : '#3b82f6',
+            'line-width': 10,
+            'line-opacity': 0.25,
+            'line-blur': 4,
           },
         });
 
-        // Add main trail line
+        // Add main trail line with speed-based colors for selected vehicle
         map.current!.addLayer({
           id: layerId,
           type: 'line',
@@ -605,20 +614,26 @@ return () => {
             'line-cap': 'round',
           },
           paint: {
-            'line-color': vehicleId === selectedVehicleId ? '#22c55e' : '#3b82f6',
-            'line-width': 3,
-            'line-opacity': 0.9,
+            'line-color': isSelected ? ['get', 'color'] : '#3b82f6',
+            'line-width': isSelected ? 4 : 3,
+            'line-opacity': 0.95,
           },
         });
 
         trailSourcesAdded.current.add(vehicleId);
       }
 
-      // Update colors based on selection
+      // Update colors based on selection - show speed gradient only for selected
       if (map.current!.getLayer(layerId)) {
-        const color = vehicleId === selectedVehicleId ? '#22c55e' : '#3b82f6';
-        map.current!.setPaintProperty(layerId, 'line-color', color);
-        map.current!.setPaintProperty(`${layerId}-glow`, 'line-color', color);
+        if (isSelected) {
+          map.current!.setPaintProperty(layerId, 'line-color', ['get', 'color']);
+          map.current!.setPaintProperty(`${layerId}-glow`, 'line-color', ['get', 'color']);
+          map.current!.setPaintProperty(layerId, 'line-width', 4);
+        } else {
+          map.current!.setPaintProperty(layerId, 'line-color', '#3b82f6');
+          map.current!.setPaintProperty(`${layerId}-glow`, 'line-color', '#3b82f6');
+          map.current!.setPaintProperty(layerId, 'line-width', 3);
+        }
       }
     });
 

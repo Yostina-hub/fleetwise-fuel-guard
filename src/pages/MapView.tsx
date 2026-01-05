@@ -506,7 +506,8 @@ const MapView = () => {
                             <div className={cn(
                               "w-2 h-2 rounded-full",
                               vehicle.isOffline ? "bg-muted-foreground" :
-                              vehicle.status === 'moving' ? "bg-success" : "bg-warning"
+                              vehicle.status === 'moving' ? "bg-success animate-pulse" : 
+                              vehicle.status === 'idle' ? "bg-warning" : "bg-muted-foreground"
                             )} />
                             <span className="font-medium text-sm">{vehicle.plate}</span>
                           </div>
@@ -523,18 +524,36 @@ const MapView = () => {
                         {!vehicle.isOffline && (
                           <div className="space-y-1.5">
                             <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <Navigation className="w-3 h-3" aria-hidden="true" />
-                                <span className={vehicle.speedLimit && vehicle.speed > vehicle.speedLimit ? "text-destructive font-medium" : ""}>
+                              <div className="flex items-center gap-1.5">
+                                {/* Heading compass for moving vehicles */}
+                                {vehicle.status === 'moving' && vehicle.heading !== undefined ? (
+                                  <div 
+                                    className="w-4 h-4 flex items-center justify-center"
+                                    title={`Heading: ${Math.round(vehicle.heading)}°`}
+                                  >
+                                    <Navigation 
+                                      className="w-3.5 h-3.5 text-success" 
+                                      style={{ transform: `rotate(${vehicle.heading}deg)` }}
+                                      aria-hidden="true" 
+                                    />
+                                  </div>
+                                ) : (
+                                  <Navigation className="w-3 h-3" aria-hidden="true" />
+                                )}
+                                <span className={cn(
+                                  "font-medium",
+                                  vehicle.speedLimit && vehicle.speed > vehicle.speedLimit ? "text-destructive" : 
+                                  vehicle.speed > 0 ? "text-foreground" : ""
+                                )}>
                                   {vehicle.speed} km/h
                                 </span>
                                 {vehicle.speedLimit && vehicle.speed > vehicle.speedLimit && (
-                                  <span className="text-destructive text-[10px]">(limit: {vehicle.speedLimit})</span>
+                                  <span className="text-destructive text-[10px]">⚠</span>
                                 )}
                               </div>
                               <div className="flex items-center gap-1">
                                 <Fuel className="w-3 h-3" aria-hidden="true" />
-                                <span>{vehicle.fuel}%</span>
+                                <span className={vehicle.fuel < 20 ? "text-warning font-medium" : ""}>{vehicle.fuel}%</span>
                               </div>
                             </div>
                             {/* GPS Jamming/Spoofing Indicator */}
@@ -543,11 +562,14 @@ const MapView = () => {
                               spoofingDetected={vehicle.gps_spoofing_detected}
                               showLabel={true}
                             />
-                            {/* Stale data indicator */}
-                            {isStaleData(vehicle.lastSeen) && vehicle.lastSeen && (
-                              <div className="flex items-center gap-1 text-xs text-warning">
+                            {/* Last seen time - always show for context */}
+                            {vehicle.lastSeen && (
+                              <div className={cn(
+                                "flex items-center gap-1 text-xs",
+                                isStaleData(vehicle.lastSeen) ? "text-warning" : "text-muted-foreground"
+                              )}>
                                 <Clock className="w-3 h-3" aria-hidden="true" />
-                                <span>Updated {formatDistanceToNow(new Date(vehicle.lastSeen), { addSuffix: true })}</span>
+                                <span>{formatDistanceToNow(new Date(vehicle.lastSeen), { addSuffix: true })}</span>
                               </div>
                             )}
                           </div>

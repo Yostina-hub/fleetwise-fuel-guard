@@ -19,7 +19,24 @@ export const lerp = (start: number, end: number, t: number) => start + (end - st
 // Easing function for smooth deceleration
 export const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 
-// Animate position smoothly
+// Smoother easing for GPS updates (handles network jitter)
+export const easeInOutQuad = (t: number) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+// Get speed-based color (green → yellow → red)
+export function getSpeedColor(speed: number, maxSpeed: number = 120): string {
+  const ratio = Math.min(speed / maxSpeed, 1);
+  if (ratio < 0.5) {
+    // Green to Yellow
+    const g = Math.round(255 * (1 - ratio * 0.5));
+    return `rgb(${Math.round(ratio * 2 * 255)}, ${g}, 50)`;
+  } else {
+    // Yellow to Red
+    const g = Math.round(255 * (1 - (ratio - 0.5) * 2));
+    return `rgb(255, ${g}, 50)`;
+  }
+}
+
+// Animate position smoothly with improved easing for GPS updates
 export function animatePosition(
   marker: mapboxgl.Marker,
   fromLng: number,
@@ -30,11 +47,13 @@ export function animatePosition(
   onComplete?: () => void
 ) {
   const startTime = performance.now();
+  let animationFrame: number;
 
   const animate = (currentTime: number) => {
     const elapsed = currentTime - startTime;
     const progress = Math.min(elapsed / duration, 1);
-    const easedProgress = easeOutCubic(progress);
+    // Use smoother easing for GPS updates
+    const easedProgress = easeInOutQuad(progress);
 
     const currentLng = lerp(fromLng, toLng, easedProgress);
     const currentLat = lerp(fromLat, toLat, easedProgress);
@@ -42,22 +61,28 @@ export function animatePosition(
     marker.setLngLat([currentLng, currentLat]);
 
     if (progress < 1) {
-      requestAnimationFrame(animate);
+      animationFrame = requestAnimationFrame(animate);
     } else {
       onComplete?.();
     }
   };
 
-  requestAnimationFrame(animate);
+  animationFrame = requestAnimationFrame(animate);
+  
+  // Return cancel function
+  return () => {
+    if (animationFrame) cancelAnimationFrame(animationFrame);
+  };
 }
 
-// Create animated marker element - Modern, minimal design
+// Create animated marker element - Modern, minimal design with live speed indicator
 export function createAnimatedMarkerElement(
   status: 'moving' | 'idle' | 'stopped' | 'offline',
   isSelected: boolean = false,
   engineOn: boolean = false,
   heading: number = 0,
-  isOverspeeding: boolean = false
+  isOverspeeding: boolean = false,
+  speed?: number
 ): HTMLDivElement {
   const statusColors = {
     moving: '#22c55e', // success green
@@ -68,35 +93,64 @@ export function createAnimatedMarkerElement(
 
   // Overspeeding uses a distinct red color
   const color = isOverspeeding ? '#dc2626' : statusColors[status];
-  const size = isSelected ? 32 : 28;
+  const size = isSelected ? 36 : 30;
   const el = document.createElement('div');
   el.className = 'animated-vehicle-marker';
   
-  // Clean, modern marker style
+  // Clean, modern marker style with improved shadow
   el.style.cssText = `
     width: ${size}px;
     height: ${size}px;
     border-radius: 50%;
     background: ${color};
-    border: 2px solid white;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    border: 2.5px solid white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.35), inset 0 1px 2px rgba(255,255,255,0.3);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
-    transform: rotate(${heading}deg)${isSelected ? ' scale(1.1)' : ''};
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transform: rotate(${heading}deg)${isSelected ? ' scale(1.15)' : ''};
     position: relative;
   `;
 
-  // Simple direction arrow for moving vehicles
-  if (engineOn && status === 'moving') {
-    el.innerHTML = `<svg width="12" height="12" viewBox="0 0 12 12" fill="white"><path d="M6 0L12 12H0L6 0Z"/></svg>`;
+  // Direction arrow for moving vehicles, center dot for others
+  if (status === 'moving' && engineOn) {
+    el.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="white" style="filter: drop-shadow(0 1px 1px rgba(0,0,0,0.2));">
+        <path d="M7 0L13 13H1L7 0Z"/>
+      </svg>
+    `;
   } else {
-    el.innerHTML = `<div style="width: 6px; height: 6px; background: white; border-radius: 50%;"></div>`;
+    el.innerHTML = `<div style="width: 8px; height: 8px; background: white; border-radius: 50%; box-shadow: 0 1px 2px rgba(0,0,0,0.2);"></div>`;
   }
 
-  // Pulse for moving or overspeeding vehicles
+  // Speed badge for moving vehicles
+  if (status === 'moving' && speed !== undefined && speed > 0) {
+    const speedBadge = document.createElement('div');
+    const badgeColor = isOverspeeding ? '#dc2626' : '#1f2937';
+    speedBadge.className = 'speed-badge';
+    speedBadge.style.cssText = `
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%) rotate(-${heading}deg);
+      background: ${badgeColor};
+      color: white;
+      font-size: 9px;
+      font-weight: 600;
+      padding: 1px 4px;
+      border-radius: 6px;
+      white-space: nowrap;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      pointer-events: none;
+      z-index: 1;
+    `;
+    speedBadge.textContent = `${Math.round(speed)}`;
+    el.appendChild(speedBadge);
+  }
+
+  // Pulse animation for moving or overspeeding vehicles
   if (status === 'moving' || isOverspeeding) {
     const pulseRing = document.createElement('div');
     const pulseColor = isOverspeeding ? '#dc2626' : color;
@@ -106,23 +160,23 @@ export function createAnimatedMarkerElement(
       width: 100%;
       height: 100%;
       border-radius: 50%;
-      border: ${isOverspeeding ? '2px' : '1px'} solid ${pulseColor};
-      animation: ${animationName} ${isOverspeeding ? '1s' : '2s'} ease-out infinite;
+      border: ${isOverspeeding ? '2.5px' : '1.5px'} solid ${pulseColor};
+      animation: ${animationName} ${isOverspeeding ? '0.8s' : '1.8s'} ease-out infinite;
       pointer-events: none;
-      opacity: ${isOverspeeding ? '0.8' : '0.6'};
+      opacity: ${isOverspeeding ? '0.9' : '0.7'};
     `;
     el.appendChild(pulseRing);
   }
 
   // Hover effects
   el.addEventListener('mouseenter', () => {
-    el.style.transform = `rotate(${heading}deg) scale(1.15)`;
-    el.style.boxShadow = '0 4px 16px rgba(0,0,0,0.4)';
+    el.style.transform = `rotate(${heading}deg) scale(1.2)`;
+    el.style.boxShadow = '0 6px 20px rgba(0,0,0,0.45)';
   });
 
   el.addEventListener('mouseleave', () => {
-    el.style.transform = `rotate(${heading}deg)${isSelected ? ' scale(1.1)' : ''}`;
-    el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+    el.style.transform = `rotate(${heading}deg)${isSelected ? ' scale(1.15)' : ''}`;
+    el.style.boxShadow = '0 2px 10px rgba(0,0,0,0.35), inset 0 1px 2px rgba(255,255,255,0.3)';
   });
 
   return el;
@@ -322,6 +376,8 @@ export function injectMarkerAnimations() {
 export default {
   lerp,
   easeOutCubic,
+  easeInOutQuad,
+  getSpeedColor,
   animatePosition,
   createAnimatedMarkerElement,
   createAnimatedClusterElement,
