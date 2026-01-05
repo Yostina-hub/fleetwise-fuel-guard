@@ -103,6 +103,21 @@ export const GPSDeviceDialog = ({
 
     setSaving(true);
 
+    // Check if the selected device is already assigned to another vehicle
+    const { data: selectedDevice } = await supabase
+      .from("devices")
+      .select("id, imei, vehicle_id")
+      .eq("id", selectedDeviceId)
+      .single();
+
+    if (selectedDevice?.vehicle_id && selectedDevice.vehicle_id !== vehicle.vehicleId) {
+      toast.error("Device already assigned", {
+        description: `This device is already assigned to another vehicle. Unassign it first.`,
+      });
+      setSaving(false);
+      return;
+    }
+
     // If there's a current device, unassign it first
     if (currentDevice) {
       await supabase
