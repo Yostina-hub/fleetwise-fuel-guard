@@ -217,6 +217,19 @@ function validateCoordinates(lat?: number, lng?: number): boolean {
   return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
 }
 
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+function shouldAssumeSpeedIsKnots(trackerModel?: string | null): boolean {
+  const model = (trackerModel ?? '').toLowerCase();
+  // Common GPS-103/TK103 family devices report speed in knots
+  return (
+    model.includes('tk103') ||
+    model.includes('gps103') ||
+    model.includes('coban') ||
+    model.includes('303')
+  );
+}
+
 // Haversine distance calculation
 function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371;
@@ -318,7 +331,7 @@ async function processRecord(supabase: any, record: TelemetryRecord): Promise<Pr
   // Find device by IMEI
   const { data: device, error: deviceError } = await supabase
     .from('devices')
-    .select('id, vehicle_id, organization_id')
+    .select('id, vehicle_id, organization_id, tracker_model')
     .eq('imei', record.imei)
     .single();
 
@@ -425,11 +438,20 @@ async function processRecord(supabase: any, record: TelemetryRecord): Promise<Pr
       record.longitude!
     );
 
-    // Convert speed from knots to km/h if provided, otherwise use speed_kmh
-    // 1 knot = 1.852 km/h
-    const speedKmh = record.speed_knots !== undefined 
-      ? Math.round(record.speed_knots * 1.852 * 100) / 100 
-      : (record.speed_kmh ?? 0);
+    // Convert speed to km/h
+    // - Prefer explicit speed_knots when provided
+    // - If only speed_kmh is provided, some device families (e.g. TK103/GPS103) still send knots
+    //   → we infer from tracker_model (or raw_data.speed_unit if present)
+    const rawSpeedKmhField = record.speed_kmh;
+    const rawSpeedUnit = typeof record.raw_data?.speed_unit === 'string'
+      ? record.raw_data.speed_unit.toLowerCase()
+      : undefined;
+
+    const speedKmh = record.speed_knots !== undefined
+      ? round2(record.speed_knots * 1.852)
+      : (rawSpeedKmhField !== undefined && (rawSpeedUnit === 'knots' || rawSpeedUnit === 'kt' || (rawSpeedUnit === undefined && shouldAssumeSpeedIsKnots(device.tracker_model))))
+        ? round2(rawSpeedKmhField * 1.852)
+        : (rawSpeedKmhField ?? 0);
 
     // Build telemetry record
     const telemetryData = {
@@ -467,7 +489,7 @@ async function processRecord(supabase: any, record: TelemetryRecord): Promise<Pr
     }
 
     // Check for overspeeding
-    if (record.speed_kmh && record.speed_kmh > 0) {
+    if (speedKmh > 0) {
       const { data: governorConfig } = await supabase
         .from('speed_governor_config')
         .select('max_speed_limit, governor_active')
@@ -477,7 +499,7 @@ async function processRecord(supabase: any, record: TelemetryRecord): Promise<Pr
 
       const speedLimit = governorConfig?.max_speed_limit || 80;
 
-      if (record.speed_kmh > speedLimit) {
+      if (speedKmh > speedLimit) {
         const { data: vehicleData } = await supabase
           .from('vehicles')
           .select('assigned_driver_id')
@@ -493,7 +515,7 @@ async function processRecord(supabase: any, record: TelemetryRecord): Promise<Pr
                   organization_id: device.organization_id,
                   driver_id: vehicleData.assigned_driver_id,
                   vehicle_id: device.vehicle_id,
-                  speed_kmh: record.speed_kmh,
+                  speed_kmh: speedKmh,
                   speed_limit_kmh: speedLimit,
                   lat: record.latitude,
                   lng: record.longitude,
@@ -515,7 +537,7 @@ async function processRecord(supabase: any, record: TelemetryRecord): Promise<Pr
           vehicle_id: device.vehicle_id,
           lat: record.latitude,
           lng: record.longitude,
-          speed_kmh: record.speed_kmh || 0,
+          speed_kmh: speedKmh,
           organization_id: device.organization_id,
         },
       });
