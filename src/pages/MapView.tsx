@@ -11,6 +11,7 @@ import StatusBadge from "@/components/StatusBadge";
 import LiveTrackingMap from "@/components/map/LiveTrackingMap";
 import ClusteredMap from "@/components/map/ClusteredMap";
 import { NearbyVehiclesSearch } from "@/components/map/NearbyVehiclesSearch";
+import { StreetViewModal } from "@/components/map/StreetViewModal";
 import { 
   Navigation, 
   Fuel, 
@@ -55,6 +56,15 @@ const MapView = () => {
   const [showNearbySearch, setShowNearbySearch] = useState(false);
   const [showTrails, setShowTrails] = useState(true);
   const [popupVehicleId, setPopupVehicleId] = useState<string | null>(null);
+  
+  // Street View / Directions Modal state
+  const [streetViewModal, setStreetViewModal] = useState<{
+    open: boolean;
+    lat: number;
+    lng: number;
+    plate: string;
+    type: 'streetview' | 'directions';
+  }>({ open: false, lat: 0, lng: 0, plate: '', type: 'streetview' });
   
   const [mapStyle, setMapStyle] = useState<'streets' | 'satellite'>('satellite');
   const [mapToken] = useState<string>(() => localStorage.getItem('mapbox_token') || '');
@@ -219,6 +229,37 @@ const MapView = () => {
   const handleManageAsset = useCallback((vehicleId: string, plate: string) => {
     navigate('/fleet', { state: { selectedVehicleId: vehicleId, openModal: true } });
   }, [navigate]);
+
+  // Listen for Street View and Directions events from popup
+  useEffect(() => {
+    const handleStreetView = (e: CustomEvent<{ lat: number; lng: number; plate: string }>) => {
+      setStreetViewModal({
+        open: true,
+        lat: e.detail.lat,
+        lng: e.detail.lng,
+        plate: e.detail.plate,
+        type: 'streetview'
+      });
+    };
+
+    const handleDirections = (e: CustomEvent<{ lat: number; lng: number; plate: string }>) => {
+      setStreetViewModal({
+        open: true,
+        lat: e.detail.lat,
+        lng: e.detail.lng,
+        plate: e.detail.plate,
+        type: 'directions'
+      });
+    };
+
+    window.addEventListener('openStreetView', handleStreetView as EventListener);
+    window.addEventListener('openDirections', handleDirections as EventListener);
+
+    return () => {
+      window.removeEventListener('openStreetView', handleStreetView as EventListener);
+      window.removeEventListener('openDirections', handleDirections as EventListener);
+    };
+  }, []);
 
   // Stats
   const onlineCount = vehicles.filter(v => !v.isOffline).length;
@@ -611,6 +652,16 @@ const MapView = () => {
           </div>
         </div>
       </div>
+
+      {/* Street View / Directions Modal */}
+      <StreetViewModal
+        open={streetViewModal.open}
+        onOpenChange={(open) => setStreetViewModal(prev => ({ ...prev, open }))}
+        lat={streetViewModal.lat}
+        lng={streetViewModal.lng}
+        plate={streetViewModal.plate}
+        type={streetViewModal.type}
+      />
     </Layout>
   );
 };

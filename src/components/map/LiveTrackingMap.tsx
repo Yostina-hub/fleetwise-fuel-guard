@@ -610,7 +610,7 @@ return () => {
         <!-- Quick Actions Toolbar -->
         <div style="display:flex;justify-content:center;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid #e5e7eb;">
           <button 
-            onclick="window.open('https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${v.lat},${v.lng}', '_blank')"
+            onclick="window.dispatchEvent(new CustomEvent('openStreetView', { detail: { lat: ${v.lat}, lng: ${v.lng}, plate: '${v.plate}' } }))"
             style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 14px;background:linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);border:1px solid #e5e7eb;border-radius:10px;cursor:pointer;transition:all 0.2s;"
             onmouseover="this.style.background='linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)';this.style.borderColor='#93c5fd'"
             onmouseout="this.style.background='linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)';this.style.borderColor='#e5e7eb'"
@@ -623,7 +623,7 @@ return () => {
             <span style="font-size:10px;color:#374151;font-weight:500;">Street View</span>
           </button>
           <button 
-            onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${v.lat},${v.lng}', '_blank')"
+            onclick="window.dispatchEvent(new CustomEvent('openDirections', { detail: { lat: ${v.lat}, lng: ${v.lng}, plate: '${v.plate}' } }))"
             style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 14px;background:linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);border:1px solid #e5e7eb;border-radius:10px;cursor:pointer;transition:all 0.2s;"
             onmouseover="this.style.background='linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)';this.style.borderColor='#86efac'"
             onmouseout="this.style.background='linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)';this.style.borderColor='#e5e7eb'"
