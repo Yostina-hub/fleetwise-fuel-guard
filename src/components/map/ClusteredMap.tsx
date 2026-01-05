@@ -438,25 +438,35 @@ const ClusteredMap = ({
 
       // Use matched road coordinates if available, otherwise fall back to raw GPS
       const cachedCoords = matchedTrailsCache.current.get(vehicleId);
-      const animationCoords: [number, number][] = (cachedCoords && Array.isArray(cachedCoords) && cachedCoords.length > 0 && typeof cachedCoords[0] !== 'string')
-        ? cachedCoords as [number, number][]
-        : points.map(p => [p.lng, p.lat] as [number, number]);
+      const animationCoords: [number, number][] =
+        cachedCoords &&
+        Array.isArray(cachedCoords) &&
+        cachedCoords.length > 0 &&
+        typeof cachedCoords[0] !== "string"
+          ? (cachedCoords as [number, number][]) 
+          : points.map((p) => [p.lng, p.lat] as [number, number]);
+
+      const cleanCoords = animationCoords.filter(
+        (c) => Number.isFinite(c[0]) && Number.isFinite(c[1]),
+      );
+      if (cleanCoords.length < 2) return;
 
       // Calculate total distance and segment info using animation coordinates
       const segments: { start: [number, number]; end: [number, number]; distance: number }[] = [];
       let totalDistance = 0;
 
-      for (let i = 0; i < animationCoords.length - 1; i++) {
-        const start = animationCoords[i];
-        const end = animationCoords[i + 1];
+      for (let i = 0; i < cleanCoords.length - 1; i++) {
+        const start = cleanCoords[i];
+        const end = cleanCoords[i + 1];
         const dx = end[0] - start[0];
         const dy = end[1] - start[1];
         const distance = Math.sqrt(dx * dx + dy * dy);
+        if (!Number.isFinite(distance) || distance <= 0) continue;
         segments.push({ start, end, distance });
         totalDistance += distance;
       }
 
-      if (totalDistance === 0) return;
+      if (segments.length === 0 || totalDistance === 0) return;
 
       // Get or create marker
       let marker = trailAnimationMarkers.current.get(vehicleId);
@@ -465,13 +475,13 @@ const ClusteredMap = ({
           element: createCarElement(),
           anchor: "center",
         })
-          .setLngLat(animationCoords[0])
+          .setLngLat(cleanCoords[0])
           .addTo(map.current!);
         trailAnimationMarkers.current.set(vehicleId, marker);
       }
 
       // Animation loop
-      const animationDuration = Math.min(15000, Math.max(8000, animationCoords.length * 50)); // 8-15 seconds for smoother animation
+      const animationDuration = Math.min(15000, Math.max(8000, cleanCoords.length * 50)); // 8-15 seconds for smoother animation
       let startTime: number | null = null;
 
       const animate = (currentTime: number) => {
@@ -482,8 +492,8 @@ const ClusteredMap = ({
         // Find current position along trail
         const targetDistance = progress * totalDistance;
         let accumulatedDistance = 0;
-        let currentLng = animationCoords[0][0];
-        let currentLat = animationCoords[0][1];
+        let currentLng = cleanCoords[0][0];
+        let currentLat = cleanCoords[0][1];
         let heading = 0;
 
         for (const segment of segments) {

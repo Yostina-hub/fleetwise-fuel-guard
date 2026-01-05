@@ -1039,7 +1039,10 @@ return () => {
       return;
     }
 
-    const points = trails.get(activeVehicleId) || [];
+    const rawPoints = trails.get(activeVehicleId) || [];
+    const points = rawPoints.filter(
+      (p) => Number.isFinite(p.lat) && Number.isFinite(p.lng),
+    );
     if (points.length < 2) return;
 
     const createCarElement = (): HTMLDivElement => {
@@ -1064,10 +1067,11 @@ return () => {
       const dx = end.lng - start.lng;
       const dy = end.lat - start.lat;
       const distance = Math.sqrt(dx * dx + dy * dy);
+      if (!Number.isFinite(distance) || distance <= 0) continue;
       segments.push({ start, end, distance });
       totalDistance += distance;
     }
-    if (totalDistance === 0) return;
+    if (segments.length === 0 || totalDistance === 0) return;
 
     let marker = trailAnimationMarkers.current.get(activeVehicleId);
     if (!marker) {
