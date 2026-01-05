@@ -4,7 +4,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Navigation, Route } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Navigation } from "lucide-react";
 import { format, addDays, subDays, isSameDay } from "date-fns";
 import { useNavigate } from "react-router-dom";
 
@@ -29,11 +29,13 @@ const TripTimeline = ({ trips, isLoading, vehicleId }: TripTimelineProps) => {
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
-  // Filter trips for selected date
-  const filteredTrips = trips.filter(trip => {
-    const tripDate = new Date(trip.start_time);
-    return isSameDay(tripDate, selectedDate);
-  });
+  // Filter trips for selected date and sort by time descending (newest first)
+  const filteredTrips = trips
+    .filter(trip => {
+      const tripDate = new Date(trip.start_time);
+      return isSameDay(tripDate, selectedDate);
+    })
+    .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
 
   const handlePreviousDay = () => {
     setSelectedDate(prev => subDays(prev, 1));
@@ -48,13 +50,14 @@ const TripTimeline = ({ trips, isLoading, vehicleId }: TripTimelineProps) => {
   };
 
   const formatDuration = (minutes: number | null | undefined) => {
-    if (!minutes) return "0 min";
+    if (!minutes) return "0 min 0 sec";
     const hrs = Math.floor(minutes / 60);
-    const mins = minutes % 60;
+    const mins = Math.floor(minutes % 60);
+    const secs = Math.floor((minutes % 1) * 60);
     if (hrs > 0) {
       return `${hrs} hr ${mins} min`;
     }
-    return `${mins} min ${Math.floor((minutes % 1) * 60)} sec`;
+    return `${mins} min ${secs} sec`;
   };
 
   const formatTime = (dateString: string) => {
@@ -124,71 +127,107 @@ const TripTimeline = ({ trips, isLoading, vehicleId }: TripTimelineProps) => {
       {/* Timeline */}
       {filteredTrips.length > 0 ? (
         <ScrollArea className="flex-1 pr-4">
-          <div className="relative">
-            {/* Central timeline line */}
-            <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-muted-foreground/30 -translate-x-1/2" />
-
+          <div className="relative pb-8">
             {filteredTrips.map((trip, index) => {
-              const isLeft = index % 2 === 1;
+              const isLeft = index % 2 === 0;
               const distance = trip.distance_km?.toFixed(1) || "0";
+              const nextTrip = filteredTrips[index + 1];
 
               return (
-                <div key={trip.id || index} className="relative mb-8">
-                  {/* Distance marker */}
-                  <div className={`absolute left-1/2 -translate-x-1/2 ${isLeft ? 'top-1/2' : 'top-1/2'} -translate-y-1/2 z-10`}>
-                    <span className="text-sm text-muted-foreground bg-background px-2 py-1">
-                      {distance} km
-                    </span>
-                  </div>
-
-                  {/* Dot on timeline */}
-                  <div className={`absolute left-1/2 -translate-x-1/2 top-4 z-20`}>
-                    <div className={`w-3 h-3 rounded-full ${getDotColor(index)}`} />
-                  </div>
-
-                  {/* Trip Card */}
-                  <div className={`flex ${isLeft ? 'justify-start pr-[52%]' : 'justify-end pl-[52%]'}`}>
-                    <div className="bg-muted/50 rounded-lg p-4 max-w-full hover:bg-muted transition-colors">
-                      {/* End Location & Time */}
-                      <div className="text-center mb-2">
-                        <p className="font-medium text-foreground">
-                          {trip.end_location || "Unknown destination"}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Ended {trip.end_time ? formatTime(trip.end_time) : "In progress"}
-                        </p>
+                <div key={trip.id || index} className="relative">
+                  {/* Trip Row */}
+                  <div className="flex items-start">
+                    {/* Left Card */}
+                    {isLeft ? (
+                      <div className="flex-1 pr-8">
+                        <div className="bg-muted/60 rounded-lg p-4 ml-auto max-w-[280px]">
+                          <p className="font-medium text-foreground text-center">
+                            {trip.end_location || "Unknown destination"}
+                          </p>
+                          <p className="text-sm text-muted-foreground text-center">
+                            Ended {trip.end_time ? formatTime(trip.end_time) : "In progress"}
+                          </p>
+                          <p className="text-center text-primary font-medium my-3">
+                            {formatDuration(trip.duration_minutes)}
+                          </p>
+                          <p className="font-medium text-foreground text-center">
+                            {trip.start_location || "Unknown origin"}
+                          </p>
+                          <p className="text-sm text-muted-foreground text-center">
+                            Started {formatTime(trip.start_time)}
+                          </p>
+                          <div className="text-center mt-3">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => navigate('/route-history', { 
+                                state: { tripId: trip.id, vehicleId } 
+                              })}
+                              className="text-foreground hover:text-primary"
+                            >
+                              View Trip
+                            </Button>
+                          </div>
+                        </div>
                       </div>
+                    ) : (
+                      <div className="flex-1" />
+                    )}
 
-                      {/* Duration */}
-                      <p className="text-center text-primary font-medium my-2">
-                        {formatDuration(trip.duration_minutes)}
-                      </p>
-
-                      {/* Start Location & Time */}
-                      <div className="text-center mb-3">
-                        <p className="font-medium text-foreground">
-                          {trip.start_location || "Unknown origin"}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Started {formatTime(trip.start_time)}
-                        </p>
-                      </div>
-
-                      {/* View Trip Button */}
-                      <div className="text-right">
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => navigate('/route-history', { 
-                            state: { tripId: trip.id, vehicleId } 
-                          })}
-                          className="text-foreground hover:text-primary"
-                        >
-                          View Trip
-                        </Button>
-                      </div>
+                    {/* Center Timeline with Dot */}
+                    <div className="flex flex-col items-center w-8">
+                      <div className={`w-3 h-3 rounded-full ${getDotColor(index)} z-10`} />
+                      {nextTrip && (
+                        <div className="w-0.5 bg-muted-foreground/30 flex-1 min-h-[120px]" />
+                      )}
                     </div>
+
+                    {/* Right Card */}
+                    {!isLeft ? (
+                      <div className="flex-1 pl-8">
+                        <div className="bg-muted/60 rounded-lg p-4 mr-auto max-w-[280px]">
+                          <p className="font-medium text-foreground text-center">
+                            {trip.end_location || "Unknown destination"}
+                          </p>
+                          <p className="text-sm text-muted-foreground text-center">
+                            Ended {trip.end_time ? formatTime(trip.end_time) : "In progress"}
+                          </p>
+                          <p className="text-center text-primary font-medium my-3">
+                            {formatDuration(trip.duration_minutes)}
+                          </p>
+                          <p className="font-medium text-foreground text-center">
+                            {trip.start_location || "Unknown origin"}
+                          </p>
+                          <p className="text-sm text-muted-foreground text-center">
+                            Started {formatTime(trip.start_time)}
+                          </p>
+                          <div className="text-right mt-3">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => navigate('/route-history', { 
+                                state: { tripId: trip.id, vehicleId } 
+                              })}
+                              className="text-foreground hover:text-primary"
+                            >
+                              View Trip
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex-1" />
+                    )}
                   </div>
+
+                  {/* Distance between trips */}
+                  {nextTrip && (
+                    <div className="flex items-center justify-center my-4">
+                      <span className="text-sm text-muted-foreground">
+                        {distance} km
+                      </span>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -210,17 +249,17 @@ const TripTimeline = ({ trips, isLoading, vehicleId }: TripTimelineProps) => {
           Go to trips
         </Button>
         <Button 
-          variant="outline" 
+          variant="default" 
           onClick={handlePreviousDay}
-          className="gap-2 border-primary text-primary hover:bg-primary/10"
+          className="gap-2 bg-primary hover:bg-primary/90"
         >
           <ChevronLeft className="h-4 w-4" />
           Previous Day
         </Button>
         <Button 
-          variant="outline"
+          variant="default"
           onClick={handleNextDay}
-          className="gap-2 border-primary text-primary hover:bg-primary/10"
+          className="gap-2 bg-primary hover:bg-primary/90"
         >
           Next Day
           <ChevronRight className="h-4 w-4" />
