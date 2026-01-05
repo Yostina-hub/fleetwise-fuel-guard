@@ -237,6 +237,9 @@ const MapView = () => {
               selectedVehicleId={selectedVehicleId}
               onVehicleClick={(v) => setSelectedVehicleId(v.id)}
               mapStyle={mapStyle}
+              onMapReady={setMapInstance}
+              showTrails={showTrails}
+              trails={trails}
             />
           ) : (
             <LiveTrackingMap
