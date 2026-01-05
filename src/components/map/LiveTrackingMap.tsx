@@ -86,25 +86,41 @@ useEffect(() => {
 
   // Fetch token from backend
   useEffect(() => {
+    const isValidPublicToken = (value: unknown): value is string => {
+      return typeof value === 'string' && value.trim().startsWith('pk.');
+    };
+
     const fetchToken = async () => {
       try {
         const localToken = token || localStorage.getItem('mapbox_token') || import.meta.env.VITE_MAPBOX_TOKEN;
+
         if (localToken) {
+          if (!isValidPublicToken(localToken)) {
+            setTokenError('invalid');
+            return null;
+          }
           return localToken;
         }
-        
-        // Fetch from edge function via Supabase client (handles CORS/auth)
+
+        // Fetch from backend function (handles CORS/auth)
         const { data, error } = await supabase.functions.invoke('get-mapbox-token');
         if (error) {
           console.error('get-mapbox-token error:', error);
           setTokenError('missing');
           return null;
         }
+
         const fetched = (data as any)?.token as string | undefined;
-        if (fetched) {
-          try { localStorage.setItem('mapbox_token', fetched); } catch {}
+        if (!isValidPublicToken(fetched)) {
+          setTokenError('missing');
+          return null;
         }
-        return fetched || null;
+
+        try {
+          localStorage.setItem('mapbox_token', fetched);
+        } catch {}
+
+        return fetched;
       } catch (err) {
         console.error('Failed to fetch Mapbox token:', err);
         setTokenError('missing');
@@ -123,39 +139,56 @@ useEffect(() => {
         return;
       }
 
-      mapboxgl.accessToken = mapboxToken;
+      try {
+        mapboxgl.accessToken = mapboxToken;
 
-      map.current = new mapboxgl.Map({
-        container: mapContainer.current,
-        style: mapStyle === 'satellite' ? 'mapbox://styles/mapbox/satellite-streets-v12' : 'mapbox://styles/mapbox/streets-v12',
-        center: [38.75, 9.02], // Addis Ababa
-        zoom: 12,
-      });
+        map.current = new mapboxgl.Map({
+          container: mapContainer.current,
+          style:
+            mapStyle === 'satellite'
+              ? 'mapbox://styles/mapbox/satellite-streets-v12'
+              : 'mapbox://styles/mapbox/streets-v12',
+          center: [38.75, 9.02], // Addis Ababa
+          zoom: 12,
+        });
 
-      map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-      map.current.addControl(new mapboxgl.FullscreenControl(), 'top-right');
+        map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+        map.current.addControl(new mapboxgl.FullscreenControl(), 'top-right');
 
-const setLoaded = () => setMapLoaded(true);
-map.current.on('load', () => {
-  setLoaded();
-  try { onMapReady?.(map.current!); } catch {}
-  try {
-    if (mapContainer.current) {
-      resizeObserver.current = new ResizeObserver(() => {
-        try { map.current?.resize(); } catch {}
-      });
-      resizeObserver.current.observe(mapContainer.current);
-    }
-  } catch {}
-});
-map.current.on('style.load', setLoaded);
-      map.current.on('error', (e: any) => {
-        const msg = e?.error?.message || '';
-        const status = e?.error?.status || e?.error?.statusCode;
-        if (status === 401 || status === 403 || /unauthorized|forbidden|access token|token/i.test(String(msg))) {
-          setTokenError('invalid');
-        }
-      });
+        const setLoaded = () => setMapLoaded(true);
+        map.current.on('load', () => {
+          setLoaded();
+          try {
+            onMapReady?.(map.current!);
+          } catch {}
+          try {
+            if (mapContainer.current) {
+              resizeObserver.current = new ResizeObserver(() => {
+                try {
+                  map.current?.resize();
+                } catch {}
+              });
+              resizeObserver.current.observe(mapContainer.current);
+            }
+          } catch {}
+        });
+
+        map.current.on('style.load', setLoaded);
+        map.current.on('error', (e: any) => {
+          const msg = e?.error?.message || '';
+          const status = e?.error?.status || e?.error?.statusCode;
+          if (status === 401 || status === 403 || /unauthorized|forbidden|access token|token/i.test(String(msg))) {
+            setTokenError('invalid');
+          }
+        });
+      } catch (e) {
+        console.error('Mapbox map initialization failed:', e);
+        setTokenError('invalid');
+        try {
+          map.current?.remove();
+        } catch {}
+        map.current = null;
+      }
     };
 
     initMap();
