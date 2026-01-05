@@ -45,10 +45,7 @@ export interface TestEndpointResult {
     lat: number;
     lng: number;
     speed: number;
-    fuel: number;
-    ignition: string;
-    altitude?: number;
-    gps_signal?: number;
+    dry_run?: boolean;
   };
 }
 
@@ -268,79 +265,34 @@ export const useDevices = () => {
     },
   });
 
+  // Test connectivity only - does NOT update device status or create fake data
   const testHeartbeat = useMutation({
     mutationFn: async (deviceId: string) => {
-      // Get device info
+      // Get device info to verify it exists
       const { data: device, error: deviceError } = await supabase
         .from("devices")
-        .select("vehicle_id, organization_id")
+        .select("imei, vehicle_id, last_heartbeat")
         .eq("id", deviceId)
         .single();
 
       if (deviceError) throw deviceError;
       
-      // Update heartbeat regardless of vehicle assignment
-      const { error: heartbeatError } = await supabase
-        .from("devices")
-        .update({ last_heartbeat: new Date().toISOString(), status: 'active' })
-        .eq("id", deviceId);
-
-      if (heartbeatError) throw heartbeatError;
-
-      // Only insert telemetry if assigned to a vehicle
-      if (device?.vehicle_id) {
-        // Try to get the last known location for this vehicle
-        const { data: lastTelemetry } = await supabase
-          .from("vehicle_telemetry")
-          .select("latitude, longitude")
-          .eq("vehicle_id", device.vehicle_id)
-          .not("latitude", "is", null)
-          .order("last_communication_at", { ascending: false })
-          .limit(1)
-          .single();
-
-        // Use last known location if available, otherwise use default (Addis Ababa)
-        const baseLat = lastTelemetry?.latitude ?? 9.0214;
-        const baseLng = lastTelemetry?.longitude ?? 38.7624;
-
-        const { error: telemetryError } = await supabase
-          .from("vehicle_telemetry")
-          .insert({
-            vehicle_id: device.vehicle_id,
-            organization_id: device.organization_id,
-            latitude: baseLat + (Math.random() - 0.5) * 0.001, // Smaller offset (~50m)
-            longitude: baseLng + (Math.random() - 0.5) * 0.001,
-            speed_kmh: 0, // Test heartbeat = stationary
-            heading: Math.random() * 360,
-            fuel_level_percent: 50 + Math.random() * 50,
-            engine_on: false, // Simulates parked/idle
-            device_connected: true,
-            last_communication_at: new Date().toISOString(),
-            gps_satellites_count: 8 + Math.floor(Math.random() * 4),
-            gps_signal_strength: 70 + Math.floor(Math.random() * 30),
-            gps_fix_type: '3d_fix'
-          });
-
-        if (telemetryError) throw telemetryError;
-      }
+      // Return device info for display - NO database updates
+      return {
+        imei: device.imei,
+        hasVehicle: !!device.vehicle_id,
+        lastRealHeartbeat: device.last_heartbeat,
+      };
     },
-    onSuccess: (_, deviceId) => {
-      queryClient.invalidateQueries({ queryKey: ["devices"] });
-      queryClient.invalidateQueries({ queryKey: ["vehicle-telemetry"] });
+    onSuccess: (result) => {
+      const lastSeen = result.lastRealHeartbeat 
+        ? new Date(result.lastRealHeartbeat).toLocaleString()
+        : 'Never';
       
-      // Check if device was assigned to a vehicle
-      const device = devices?.find(d => d.id === deviceId);
-      if (device?.vehicle_id) {
-        toast({
-          title: "⚠️ Simulated Data Sent",
-          description: "This is TEST data only - not real GPS. Wait for actual device connection for real location.",
-        });
-      } else {
-        toast({
-          title: "⚠️ Simulated Heartbeat",
-          description: "TEST heartbeat sent. Assign to a vehicle and connect real GPS for actual data.",
-        });
-      }
+      toast({
+        title: "Device Status Check",
+        description: `IMEI: ${result.imei} | Last real heartbeat: ${lastSeen} | ${result.hasVehicle ? 'Assigned to vehicle' : 'No vehicle assigned'}`,
+      });
     },
     onError: (error: Error) => {
       toast({
@@ -351,24 +303,18 @@ export const useDevices = () => {
     },
   });
 
-  // Test the actual GPS data receiver endpoint
+  // Test endpoint connectivity only - uses dry_run flag to prevent database writes
   const testEndpoint = useMutation({
     mutationFn: async (device: { id: string; imei: string; vehicle_id?: string }): Promise<TestEndpointResult> => {
       const startTime = Date.now();
       
-      // Generate test GPS data
+      // Test data with dry_run flag - NO database writes
       const testData = {
         imei: device.imei,
-        lat: 9.0214 + (Math.random() - 0.5) * 0.01,
-        lng: 38.7624 + (Math.random() - 0.5) * 0.01,
-        speed: Math.floor(Math.random() * 80),
-        fuel: Math.floor(50 + Math.random() * 50),
-        ignition: '1',
-        heading: Math.floor(Math.random() * 360),
-        satellites: 8 + Math.floor(Math.random() * 4),
-        gps_signal: 70 + Math.floor(Math.random() * 30),
-        altitude: 2200 + Math.floor(Math.random() * 300),
-        odometer: 50000 + Math.floor(Math.random() * 10000),
+        lat: 9.0214,
+        lng: 38.7624,
+        speed: 0,
+        dry_run: true, // Prevents any database writes
       };
 
       try {
@@ -408,13 +354,10 @@ export const useDevices = () => {
       }
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ["devices"] });
-      queryClient.invalidateQueries({ queryKey: ["vehicle-telemetry"] });
-      
       if (result.success) {
         toast({
-          title: "Endpoint Test Successful",
-          description: `Response received in ${result.responseTime}ms`,
+          title: "Endpoint Reachable",
+          description: `Connection test passed (${result.responseTime}ms). No data was written.`,
         });
       } else {
         toast({

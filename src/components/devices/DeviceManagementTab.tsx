@@ -1281,39 +1281,11 @@ export const DeviceManagementTab = () => {
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Mountain className="h-3 w-3" aria-hidden="true" />
-                      Altitude
-                    </span>
-                    <span className="font-semibold">{testResult.request.altitude || 0}m</span>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
                       <Gauge className="h-3 w-3" aria-hidden="true" />
-                      Speed
-                    </span>
-                    <span className="font-semibold">{testResult.request.speed} km/h</span>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Fuel className="h-3 w-3" aria-hidden="true" />
-                      Fuel Level
-                    </span>
-                    <span className="font-semibold">{testResult.request.fuel}%</span>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Signal className="h-3 w-3" aria-hidden="true" />
-                      GPS Signal
-                    </span>
-                    <span className="font-semibold">{testResult.request.gps_signal || 85}%</span>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Zap className="h-3 w-3" aria-hidden="true" />
-                      Ignition
+                      Dry Run
                     </span>
                     <Badge variant="outline" className="h-5 w-fit">
-                      {testResult.request.ignition === '1' ? 'ON' : 'OFF'}
+                      {testResult.request.dry_run ? 'YES' : 'NO'}
                     </Badge>
                   </div>
                 </div>
@@ -1332,15 +1304,15 @@ export const DeviceManagementTab = () => {
 
               {/* What happened */}
               {testResult.success && (
-                <div className="rounded-lg border border-emerald-500/30 p-4 bg-emerald-500/5">
-                  <h4 className="font-semibold text-sm text-emerald-600 dark:text-emerald-400 mb-2">
-                    ✓ What was processed:
+                <div className="rounded-lg border border-blue-500/30 p-4 bg-blue-500/5">
+                  <h4 className="font-semibold text-sm text-blue-600 dark:text-blue-400 mb-2">
+                    ℹ️ Connectivity Test Only
                   </h4>
                   <ul className="text-sm text-muted-foreground space-y-1">
-                    <li>• Device heartbeat updated</li>
-                    <li>• GPS telemetry data stored in database</li>
-                    <li>• Speed limits checked against governor config</li>
-                    <li>• Geofence events processed</li>
+                    <li>• Endpoint is reachable and responding</li>
+                    <li>• Device IMEI was validated</li>
+                    <li>• <strong>No database writes occurred</strong> (dry run)</li>
+                    <li>• Real GPS data will come from physical device connection</li>
                   </ul>
                 </div>
               )}

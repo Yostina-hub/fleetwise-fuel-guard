@@ -638,6 +638,7 @@ async function processGPSData(
     hdop,
     battery,
     type,  // Check if this is a status packet
+    dry_run, // Connectivity test only - no database writes
   } = data;
 
   // Handle status packets (login, heartbeat, alarm) without lat/lng
@@ -660,6 +661,19 @@ async function processGPSData(
   if (deviceError || !device) {
     console.error('Device not found:', imei, deviceError);
     return { error: 'Device not found with IMEI: ' + imei, status: 404 };
+  }
+
+  // DRY RUN MODE - just validate and return without database writes
+  if (dry_run) {
+    console.log('Dry run test for device:', imei);
+    return {
+      success: true,
+      dry_run: true,
+      message: 'Connectivity test passed. No data was written to database.',
+      device_id: device.id,
+      vehicle_id: device.vehicle_id,
+      protocol: protocol,
+    };
   }
 
   // Verify auth token if provided and device has one configured
