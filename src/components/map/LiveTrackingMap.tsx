@@ -733,14 +733,26 @@ return () => {
         const previousSpeed = parseFloat(el.dataset.speed || '0');
         const speedChanged = Math.abs(previousSpeed - vehicle.speed) >= 5; // Recreate if speed changed by 5+ km/h
         
-        // Recreate marker if status, overspeeding state, or speed changed
+        // Only recreate marker if critical visual state changed (not selection)
+        // Preserve popup open state by not recreating unnecessarily
+        const popupOpen = existingMarker.getPopup()?.isOpen();
+        
         if (wasOverspeeding !== isOverspeeding || previousStatus !== vehicle.status || speedChanged) {
-          existingMarker.remove();
-          markers.current.delete(vehicle.id);
-        } else {
-          el.style.borderWidth = isSelected ? '3px' : '2.5px';
-          el.style.borderColor = isSelected ? 'white' : '';
+          // Only delete if popup is closed to avoid jarring UX
+          if (!popupOpen) {
+            existingMarker.remove();
+            markers.current.delete(vehicle.id);
+          } else {
+            // Just update the data attributes for next check
+            el.dataset.overspeeding = isOverspeeding.toString();
+            el.dataset.status = vehicle.status;
+            el.dataset.speed = vehicle.speed.toString();
+          }
         }
+        
+        // Update selection border without recreating
+        el.style.borderWidth = isSelected ? '3px' : '2.5px';
+        el.style.borderColor = isSelected ? 'white' : '';
       }
       
       // Create new marker if needed
@@ -758,12 +770,12 @@ return () => {
         el.dataset.speed = vehicle.speed.toString();
 
         const roadInfo = vehicleRoadInfo.get(vehicle.id);
+        // Auto-anchor popup (Mapbox will choose best position based on map edge proximity)
         const popup = new mapboxgl.Popup({ 
-          offset: 25, 
+          offset: 30, 
           closeButton: true, 
           closeOnClick: false, 
           className: 'vehicle-popup',
-          anchor: 'bottom',
           maxWidth: '450px'
         })
           .setHTML(generatePopupHTML(address, vehicle, roadInfo));
@@ -780,26 +792,34 @@ return () => {
         (marker as any)._customPopup = popup;
         (marker as any)._vehicleId = vehicle.id;
 
-        el.addEventListener('click', () => {
-          onVehicleClick?.(vehicle);
-          if (map.current) {
-            // Calculate offset to center popup in view (popup opens above marker)
-            const mapHeight = map.current.getContainer().clientHeight;
-            const offsetY = mapHeight * 0.15; // Offset 15% up to center the popup
-            
-            map.current.flyTo({
-              center: [vehicle.lng, vehicle.lat],
-              zoom: 16,
-              duration: 1200,
-              essential: true,
-              offset: [0, offsetY] // Pan down so popup appears centered
-            });
-          }
-          // Refresh popup content with latest address and road info
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          
+          // First open the popup before any state changes
           const latestAddr = vehicleAddresses.get(vehicle.id) || 'Loading address...';
           const latestRoadInfo = vehicleRoadInfo.get(vehicle.id);
           popup.setHTML(generatePopupHTML(latestAddr, vehicle, latestRoadInfo));
-          marker.togglePopup();
+          
+          if (!popup.isOpen()) {
+            marker.togglePopup();
+          }
+          
+          // Then fly to vehicle with slight delay to prevent popup from closing
+          if (map.current) {
+            setTimeout(() => {
+              map.current?.easeTo({
+                center: [vehicle.lng, vehicle.lat],
+                zoom: Math.max(map.current?.getZoom() || 14, 14),
+                duration: 800,
+                essential: true
+              });
+            }, 100);
+          }
+          
+          // Notify parent last to avoid re-render closing popup
+          setTimeout(() => {
+            onVehicleClick?.(vehicle);
+          }, 150);
         });
 
         markers.current.set(vehicle.id, marker);
@@ -855,17 +875,12 @@ return () => {
         }
       });
       
-      // Calculate offset to center popup in view (popup opens above marker)
-      const mapHeight = map.current.getContainer().clientHeight;
-      const offsetY = mapHeight * 0.15; // Offset 15% up to center the popup
-      
-      // Fly to the vehicle with offset so popup is centered
-      map.current.flyTo({
+      // Ease to the vehicle position
+      map.current.easeTo({
         center: [vehicle.lng, vehicle.lat],
-        zoom: 16,
-        duration: 1200,
-        essential: true,
-        offset: [0, offsetY]
+        zoom: Math.max(map.current.getZoom(), 14),
+        duration: 800,
+        essential: true
       });
       
       // Trigger address fetch if not already cached

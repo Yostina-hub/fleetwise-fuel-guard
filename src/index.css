@@ -668,18 +668,23 @@ All colors MUST be HSL.
 }
 
 .vehicle-popup .mapboxgl-popup-content {
-  min-width: 400px;
-  max-height: 70vh;
+  min-width: 380px;
+  max-width: 450px;
+  max-height: 75vh;
   overflow-y: auto;
 }
 
-/* Smart popup positioning - prevent cutoff */
+/* Ensure popup stays within map bounds */
 .vehicle-popup {
   z-index: 100;
 }
 
+.mapboxgl-popup {
+  max-width: none !important;
+}
+
 .vehicle-popup .mapboxgl-popup-tip {
-  border-width: 12px;
+  border-width: 10px;
 }
 
 /* Animated car marker for trails */
