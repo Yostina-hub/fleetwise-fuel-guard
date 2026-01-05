@@ -479,6 +479,9 @@ return () => {
     
     return `
       <div class="vehicle-popup-content" style="min-width:380px;max-width:420px;font-family:system-ui,-apple-system,sans-serif;padding:16px;">
+        <div class="vehicle-popup-drag-handle" title="Drag to move">
+          <div class="vehicle-popup-drag-grip"></div>
+        </div>
         <!-- Header with plate, status, and timestamp -->
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #e5e7eb;">
           <div>
@@ -672,6 +675,91 @@ return () => {
     `;
   }, []);
 
+  const ensurePopupInView = useCallback((popup: mapboxgl.Popup) => {
+    if (!map.current) return;
+
+    const popupEl = popup.getElement();
+    const mapEl = map.current.getContainer();
+    if (!popupEl || !mapEl) return;
+
+    const popupRect = popupEl.getBoundingClientRect();
+    const mapRect = mapEl.getBoundingClientRect();
+    const padding = 12;
+
+    const leftOverflow = mapRect.left + padding - popupRect.left;
+    const rightOverflow = popupRect.right - (mapRect.right - padding);
+    const topOverflow = mapRect.top + padding - popupRect.top;
+    const bottomOverflow = popupRect.bottom - (mapRect.bottom - padding);
+
+    const dx = leftOverflow > 0 ? leftOverflow : rightOverflow > 0 ? -rightOverflow : 0;
+    const dy = topOverflow > 0 ? topOverflow : bottomOverflow > 0 ? -bottomOverflow : 0;
+
+    if (dx !== 0 || dy !== 0) {
+      map.current.panBy([dx, dy], { duration: 250 });
+    }
+  }, []);
+
+  const enhancePopup = useCallback(
+    (popup: mapboxgl.Popup) => {
+      if (!map.current) return;
+
+      const popupEl = popup.getElement();
+      if (!popupEl) return;
+
+      const content = popupEl.querySelector('.mapboxgl-popup-content') as HTMLElement | null;
+      if (content && content.dataset.scrollBound !== '1') {
+        content.dataset.scrollBound = '1';
+
+        // Prevent map zoom/scroll from hijacking popup scroll
+        content.addEventListener('wheel', (e) => e.stopPropagation(), { passive: true });
+        content.addEventListener('touchmove', (e) => e.stopPropagation(), { passive: true });
+
+        content.addEventListener('mouseenter', () => map.current?.scrollZoom.disable());
+        content.addEventListener('mouseleave', () => map.current?.scrollZoom.enable());
+        content.addEventListener('touchstart', () => map.current?.scrollZoom.disable(), { passive: true });
+        content.addEventListener('touchend', () => map.current?.scrollZoom.enable(), { passive: true });
+      }
+
+      const handle = popupEl.querySelector('.vehicle-popup-drag-handle') as HTMLElement | null;
+      if (handle && handle.dataset.dragBound !== '1') {
+        handle.dataset.dragBound = '1';
+
+        handle.addEventListener('pointerdown', (e) => {
+          if (!map.current) return;
+          e.preventDefault();
+          e.stopPropagation();
+
+          const mapEl = map.current.getContainer();
+          const mapRect = mapEl.getBoundingClientRect();
+
+          map.current.dragPan.disable();
+          map.current.scrollZoom.disable();
+
+          const move = (ev: PointerEvent) => {
+            if (!map.current) return;
+            const x = ev.clientX - mapRect.left;
+            const y = ev.clientY - mapRect.top;
+            popup.setLngLat(map.current.unproject([x, y]));
+          };
+
+          const up = () => {
+            document.removeEventListener('pointermove', move);
+            document.removeEventListener('pointerup', up);
+            document.removeEventListener('pointercancel', up);
+            map.current?.dragPan.enable();
+            map.current?.scrollZoom.enable();
+            requestAnimationFrame(() => ensurePopupInView(popup));
+          };
+
+          document.addEventListener('pointermove', move);
+          document.addEventListener('pointerup', up);
+          document.addEventListener('pointercancel', up);
+        });
+      }
+    },
+    [ensurePopupInView]
+  );
+
   // Update vehicle markers
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
@@ -770,14 +858,12 @@ return () => {
         el.dataset.speed = vehicle.speed.toString();
 
         const roadInfo = vehicleRoadInfo.get(vehicle.id);
-        // Use anchor: 'top' so popup opens below marker, preventing top cut-off
         const popup = new mapboxgl.Popup({ 
-          offset: [0, 10], 
+          offset: 25,
           closeButton: true, 
           closeOnClick: false, 
           className: 'vehicle-popup',
-          maxWidth: '450px',
-          anchor: 'top'
+          maxWidth: '450px'
         })
           .setHTML(generatePopupHTML(address, vehicle, roadInfo));
 
@@ -795,31 +881,32 @@ return () => {
 
         el.addEventListener('click', (e) => {
           e.stopPropagation();
-          
-          // First open the popup before any state changes
+
+          // Open the popup first (and wire up interactions)
           const latestAddr = vehicleAddresses.get(vehicle.id) || 'Loading address...';
           const latestRoadInfo = vehicleRoadInfo.get(vehicle.id);
           popup.setHTML(generatePopupHTML(latestAddr, vehicle, latestRoadInfo));
-          
+          requestAnimationFrame(() => enhancePopup(popup));
+
           if (!popup.isOpen()) {
             marker.togglePopup();
           }
-          
-          // Pan map so vehicle is in upper third, leaving room for popup below
+
+          // Bring the vehicle into view; then ensure popup isn't clipped
           if (map.current) {
-            setTimeout(() => {
-              const container = map.current?.getContainer();
-              const offsetY = container ? -container.clientHeight * 0.25 : -150;
-              map.current?.easeTo({
-                center: [vehicle.lng, vehicle.lat],
-                zoom: Math.max(map.current?.getZoom() || 14, 14),
-                duration: 800,
-                essential: true,
-                offset: [0, offsetY]
-              });
-            }, 100);
+            map.current.easeTo({
+              center: [vehicle.lng, vehicle.lat],
+              zoom: Math.max(map.current.getZoom(), 14),
+              duration: 600,
+              essential: true,
+            });
           }
-          
+
+          setTimeout(() => {
+            enhancePopup(popup);
+            ensurePopupInView(popup);
+          }, 650);
+
           // Notify parent last to avoid re-render closing popup
           setTimeout(() => {
             onVehicleClick?.(vehicle);
@@ -836,6 +923,7 @@ return () => {
             const latestAddr = vehicleAddresses.get(vehicle.id) || 'Loading address...';
             const latestRoadInfo = vehicleRoadInfo.get(vehicle.id);
             popup.setHTML(generatePopupHTML(latestAddr, vehicle, latestRoadInfo));
+            requestAnimationFrame(() => enhancePopup(popup));
           }
         }
       }
@@ -879,12 +967,12 @@ return () => {
         }
       });
       
-      // Ease to the vehicle position
+      // Bring the vehicle into view; we'll pan further after measuring the popup
       map.current.easeTo({
         center: [vehicle.lng, vehicle.lat],
         zoom: Math.max(map.current.getZoom(), 14),
-        duration: 800,
-        essential: true
+        duration: 600,
+        essential: true,
       });
       
       // Trigger address fetch if not already cached
@@ -898,10 +986,16 @@ return () => {
         const latestAddr = vehicleAddresses.get(vehicle.id) || 'Fetching address...';
         const latestRoadInfo = vehicleRoadInfo.get(vehicle.id);
         popup.setHTML(generatePopupHTML(latestAddr, vehicle, latestRoadInfo));
-        
+        requestAnimationFrame(() => enhancePopup(popup));
+
         if (!popup.isOpen()) {
           marker.togglePopup();
         }
+
+        setTimeout(() => {
+          enhancePopup(popup);
+          ensurePopupInView(popup);
+        }, 650);
       }
       
       // Notify parent that popup was opened
@@ -921,6 +1015,7 @@ return () => {
         const roadInfo = vehicleRoadInfo.get(vehicleId);
         if (vehicle && address) {
           popup.setHTML(generatePopupHTML(address, vehicle, roadInfo));
+          requestAnimationFrame(() => enhancePopup(popup));
         }
       }
     });
