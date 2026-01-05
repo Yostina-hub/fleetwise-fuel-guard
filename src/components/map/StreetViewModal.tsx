@@ -1,4 +1,10 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, MapPin, Navigation } from "lucide-react";
 
@@ -45,11 +51,17 @@ export function StreetViewModal({
               {isStreetView ? "Street View" : "Directions"} - {plate}
             </DialogTitle>
           </div>
+          <DialogDescription className="sr-only">
+            {isStreetView
+              ? "Open Google Maps Street View for the selected vehicle location."
+              : "Open Google Maps Directions to the selected vehicle location."}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <p className="text-sm text-muted-foreground">
-            Google blocks being opened inside the in-app preview frame; use the link below.
+            The in-app preview is sandboxed and may block opening external maps. Use
+            “Open here” or copy the link below.
           </p>
 
           <div className="text-xs text-muted-foreground bg-muted p-3 rounded-md space-y-2">
@@ -59,17 +71,24 @@ export function StreetViewModal({
             <div className="break-all font-mono">{url}</div>
           </div>
 
-          <div className="flex gap-2">
-            <Button asChild className="flex-1 gap-2">
-              <a href={url} target="_blank" rel="noopener noreferrer">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <Button asChild className="gap-2">
+              <a href={url} target="_top" rel="noopener noreferrer">
                 <ExternalLink className="h-4 w-4" />
-                Open
+                Open here
               </a>
             </Button>
+
+            <Button asChild variant="outline" className="gap-2">
+              <a href={url} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-4 w-4" />
+                New tab
+              </a>
+            </Button>
+
             <Button
               type="button"
               variant="outline"
-              className="flex-1"
               onClick={async () => {
                 try {
                   await navigator.clipboard.writeText(url);
@@ -83,7 +102,7 @@ export function StreetViewModal({
           </div>
 
           <p className="text-xs text-muted-foreground">
-            If “Open” is blocked in the preview, paste the copied link into a new tab.
+            If preview still blocks it, the published app will open normally.
           </p>
         </div>
       </DialogContent>
