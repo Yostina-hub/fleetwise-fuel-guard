@@ -71,6 +71,7 @@ export const DeviceManagementTab = () => {
   const [editingDevice, setEditingDevice] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [connectionFilter, setConnectionFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -110,7 +111,7 @@ export const DeviceManagementTab = () => {
   useEffect(() => {
     setCurrentPage(1);
     setSelectedDevices([]); // Clear selection when filters change
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery, statusFilter, connectionFilter]);
 
   const validateForm = useCallback(() => {
     const errors: Record<string, string> = {};
@@ -396,9 +397,15 @@ export const DeviceManagementTab = () => {
       
       const matchesStatus = statusFilter === "all" || device.status === statusFilter;
       
-      return matchesSearch && matchesStatus;
+      // Filter by online/offline connection status
+      const isOnline = isDeviceOnline(device.last_heartbeat);
+      const matchesConnection = connectionFilter === "all" || 
+        (connectionFilter === "online" && isOnline) ||
+        (connectionFilter === "offline" && !isOnline);
+      
+      return matchesSearch && matchesStatus && matchesConnection;
     }) || [];
-  }, [devices, searchQuery, statusFilter]);
+  }, [devices, searchQuery, statusFilter, connectionFilter]);
 
   const totalPages = Math.ceil(filteredDevices.length / ITEMS_PER_PAGE);
   const paginatedDevices = filteredDevices.slice(
@@ -791,7 +798,7 @@ export const DeviceManagementTab = () => {
       )}
 
       {/* Search and Filter */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-wrap">
         <Input
           placeholder="Search by IMEI, SIM, model, or vehicle..."
           value={searchQuery}
@@ -808,6 +815,27 @@ export const DeviceManagementTab = () => {
             <SelectItem value="active">Active</SelectItem>
             <SelectItem value="inactive">Inactive</SelectItem>
             <SelectItem value="maintenance">Maintenance</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={connectionFilter} onValueChange={setConnectionFilter}>
+          <SelectTrigger className="w-[180px]" aria-label="Filter devices by connection">
+            <Signal className="h-4 w-4 mr-2" aria-hidden="true" />
+            <SelectValue placeholder="Filter by connection" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Connections</SelectItem>
+            <SelectItem value="online">
+              <div className="flex items-center gap-2">
+                <Wifi className="h-4 w-4 text-emerald-500" />
+                Online
+              </div>
+            </SelectItem>
+            <SelectItem value="offline">
+              <div className="flex items-center gap-2">
+                <WifiOff className="h-4 w-4 text-destructive" />
+                Offline
+              </div>
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>
