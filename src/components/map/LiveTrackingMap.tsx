@@ -371,7 +371,13 @@ return () => {
       'South': 180, 'Southwest': 225, 'West': 270, 'Northwest': 315
     };
     const rotation = rotations[direction] || 0;
-    return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0072BC" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(${rotation}deg);flex-shrink:0;"><path d="M12 19V5M5 12l7-7 7 7"/></svg>`;
+    return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(${rotation}deg);flex-shrink:0;"><path d="M12 19V5M5 12l7-7 7 7"/></svg>`;
+  };
+
+  // Helper to format distance
+  const formatDistance = (meters: number): string => {
+    if (meters < 1000) return `${meters}m`;
+    return `${(meters / 1000).toFixed(1)}km`;
   };
 
   // Helper to generate popup HTML
@@ -388,12 +394,6 @@ return () => {
     const hdop = v.gps_hdop ?? 0;
     const fuelStatus = v.fuel < 15 ? 'critical' : v.fuel < 25 ? 'low' : 'normal';
     const fuelColor = fuelStatus === 'critical' ? '#dc2626' : fuelStatus === 'low' ? '#f59e0b' : '#22c55e';
-    
-    // Format distance for display
-    const formatDistance = (meters: number): string => {
-      if (meters < 1000) return `${meters}m`;
-      return `${(meters / 1000).toFixed(1)}km`;
-    };
     
     return `
       <div class="vehicle-popup-content" style="min-width:380px;max-width:420px;font-family:system-ui,-apple-system,sans-serif;padding:16px;">
@@ -500,7 +500,7 @@ return () => {
         </div>
         
         <!-- Location address -->
-        <div style="background:linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);border-radius:10px;padding:12px;margin-bottom:${roadInfo ? '12px' : '0'};border:1px solid #bbf7d0;">
+        <div style="background:linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);border-radius:10px;padding:12px;margin-bottom:12px;border:1px solid #bbf7d0;">
           <div style="display:flex;align-items:flex-start;gap:8px;">
             <span style="font-size:16px;">📍</span>
             <div style="flex:1;">
@@ -510,22 +510,22 @@ return () => {
           </div>
         </div>
 
-        <!-- Road proximity info with direction arrow -->
-        ${roadInfo && roadInfo.distance > 0 ? `
+        <!-- Road proximity info with direction arrow - Always show when roadInfo exists -->
+        ${roadInfo ? `
           <div style="background:linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);border-radius:10px;padding:12px;border:1px solid #93c5fd;">
-            <div style="display:flex;align-items:center;gap:10px;">
-              ${getDirectionArrow(roadInfo.direction)}
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;background:white;border-radius:8px;border:1px solid #bfdbfe;">
+                ${getDirectionArrow(roadInfo.direction)}
+              </div>
               <div style="flex:1;">
-                <div style="font-size:10px;color:#1d4ed8;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Distance from Reference Point</div>
-                <div style="font-size:13px;color:#1e40af;font-weight:600;">
-                  <span style="font-weight:700;">${formatDistance(roadInfo.distance)}</span> 
-                  <span style="font-weight:500;color:#3b82f6;">${roadInfo.direction}</span> 
-                  <span style="font-weight:400;color:#6b7280;">of</span> 
-                  <span style="font-weight:500;">${roadInfo.road}</span>
+                <div style="font-size:10px;color:#1d4ed8;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Distance from Reference</div>
+                <div style="font-size:14px;color:#1e40af;font-weight:600;line-height:1.4;">
+                  ${roadInfo.distance < 10 ? 'At' : formatDistance(roadInfo.distance) + ' ' + roadInfo.direction + ' of'} 
+                  <span style="color:#3b82f6;">${roadInfo.road}</span>
                 </div>
               </div>
-              <div style="display:flex;flex-direction:column;align-items:center;padding:6px 10px;background:white;border-radius:8px;border:1px solid #bfdbfe;">
-                <div style="font-size:14px;font-weight:700;color:#1d4ed8;">${formatDistance(roadInfo.distance)}</div>
+              <div style="display:flex;flex-direction:column;align-items:center;padding:8px 12px;background:white;border-radius:8px;border:1px solid #bfdbfe;min-width:60px;">
+                <div style="font-size:16px;font-weight:700;color:#1d4ed8;">${roadInfo.distance < 10 ? '0' : formatDistance(roadInfo.distance)}</div>
                 <div style="font-size:9px;color:#6b7280;font-weight:500;">away</div>
               </div>
             </div>
@@ -533,7 +533,7 @@ return () => {
         ` : ''}
       </div>
     `;
-  }, [getDirectionArrow]);
+  }, []);
 
   // Update vehicle markers
   useEffect(() => {
