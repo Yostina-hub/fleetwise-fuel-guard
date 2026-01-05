@@ -278,57 +278,124 @@ return () => {
     const isOverspeeding = v.speed > speedLimit;
     const headingLabel = v.heading !== undefined ? getHeadingLabel(v.heading) : '';
     const headingDeg = v.heading !== undefined ? Math.round(v.heading) : 0;
+    const satellites = v.gps_satellites_count ?? 0;
+    const hdop = v.gps_hdop ?? 0;
+    const fuelStatus = v.fuel < 15 ? 'critical' : v.fuel < 25 ? 'low' : 'normal';
+    const fuelColor = fuelStatus === 'critical' ? '#dc2626' : fuelStatus === 'low' ? '#f59e0b' : '#22c55e';
     
     return `
-      <div class="vehicle-popup-content" style="min-width:300px;font-family:system-ui,-apple-system,sans-serif;padding:14px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #e5e7eb;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-weight:700;font-size:15px;">${v.plate}</span>
-            ${v.status === 'moving' ? `<span style="color:#6b7280;font-size:11px;display:flex;align-items:center;gap:2px;">
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="#22c55e" style="transform:rotate(${headingDeg}deg)"><path d="M5 0L10 10H0L5 0Z"/></svg>
-              ${headingLabel} ${headingDeg}°
-            </span>` : ''}
+      <div class="vehicle-popup-content" style="min-width:380px;max-width:420px;font-family:system-ui,-apple-system,sans-serif;padding:16px;">
+        <!-- Header with plate, status, and timestamp -->
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #e5e7eb;">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+              <span style="font-weight:700;font-size:18px;color:#111827;">${v.plate}</span>
+              <span style="font-size:11px;padding:4px 12px;border-radius:9999px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;background:${v.status === 'moving' ? '#dcfce7' : v.status === 'idle' ? '#fef3c7' : v.status === 'stopped' ? '#f3f4f6' : '#fee2e2'};color:${v.status === 'moving' ? '#166534' : v.status === 'idle' ? '#92400e' : v.status === 'stopped' ? '#4b5563' : '#991b1b'};">${v.status}</span>
+            </div>
+            ${v.status === 'moving' && v.heading !== undefined ? `
+              <div style="display:flex;align-items:center;gap:6px;color:#6b7280;font-size:12px;">
+                <svg width="12" height="12" viewBox="0 0 10 10" fill="#22c55e" style="transform:rotate(${headingDeg}deg)"><path d="M5 0L10 10H0L5 0Z"/></svg>
+                Heading ${headingLabel} (${headingDeg}°)
+              </div>
+            ` : ''}
           </div>
-          <span style="font-size:11px;padding:3px 10px;border-radius:9999px;font-weight:500;background:${v.status === 'moving' ? '#dcfce7' : v.status === 'idle' ? '#fef3c7' : v.status === 'stopped' ? '#f3f4f6' : '#fee2e2'};color:${v.status === 'moving' ? '#166534' : v.status === 'idle' ? '#92400e' : v.status === 'stopped' ? '#4b5563' : '#991b1b'};">${v.status}</span>
+          <div style="text-align:right;">
+            <div style="font-size:11px;color:#9ca3af;">Last Update</div>
+            <div style="font-size:13px;font-weight:600;color:${relativeTime === 'Just now' ? '#22c55e' : relativeTime.includes('m') && parseInt(relativeTime) < 5 ? '#22c55e' : relativeTime.includes('h') ? '#f59e0b' : '#6b7280'};">${relativeTime}</div>
+          </div>
         </div>
         
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
-          <div style="text-align:center;padding:8px 4px;background:#f9fafb;border-radius:8px;">
-            <div style="font-size:16px;font-weight:600;color:${isOverspeeding ? '#dc2626' : '#1f2937'};">${v.speed}</div>
-            <div style="font-size:10px;color:#6b7280;">km/h</div>
+        <!-- Primary metrics grid -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">
+          <div style="text-align:center;padding:10px 6px;background:linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);border-radius:10px;border:1px solid #e5e7eb;">
+            <div style="font-size:20px;font-weight:700;color:${isOverspeeding ? '#dc2626' : '#111827'};">${v.speed}</div>
+            <div style="font-size:10px;color:#6b7280;font-weight:500;">km/h</div>
           </div>
-          <div style="text-align:center;padding:8px 4px;background:#f9fafb;border-radius:8px;">
-            <div style="font-size:16px;font-weight:600;color:${v.fuel < 20 ? '#f59e0b' : '#1f2937'};">${v.fuel}%</div>
-            <div style="font-size:10px;color:#6b7280;">Fuel</div>
+          <div style="text-align:center;padding:10px 6px;background:linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);border-radius:10px;border:1px solid #e5e7eb;">
+            <div style="font-size:20px;font-weight:700;color:${fuelColor};">${v.fuel}%</div>
+            <div style="font-size:10px;color:#6b7280;font-weight:500;">Fuel</div>
           </div>
-          <div style="text-align:center;padding:8px 4px;background:#f9fafb;border-radius:8px;">
-            <div style="font-size:16px;font-weight:600;color:${v.engine_on ? '#22c55e' : '#6b7280'};">${v.engine_on ? 'ON' : 'OFF'}</div>
-            <div style="font-size:10px;color:#6b7280;">ACC</div>
+          <div style="text-align:center;padding:10px 6px;background:linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);border-radius:10px;border:1px solid #e5e7eb;">
+            <div style="font-size:16px;font-weight:700;color:${v.engine_on ? '#22c55e' : '#6b7280'};">
+              ${v.engine_on ? '🟢' : '⚫'} ${v.engine_on ? 'ON' : 'OFF'}
+            </div>
+            <div style="font-size:10px;color:#6b7280;font-weight:500;">Ignition</div>
           </div>
-          <div style="text-align:center;padding:8px 4px;background:#f9fafb;border-radius:8px;">
-            <div style="font-size:16px;font-weight:600;color:${gpsColor};">●</div>
-            <div style="font-size:10px;color:#6b7280;">${gpsSignalLabel}</div>
+          <div style="text-align:center;padding:10px 6px;background:linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);border-radius:10px;border:1px solid #e5e7eb;">
+            <div style="font-size:16px;font-weight:700;color:${gpsColor};">●</div>
+            <div style="font-size:10px;color:#6b7280;font-weight:500;">${gpsSignalLabel}</div>
           </div>
         </div>
 
-        ${isOverspeeding ? `<div style="background:#fee2e2;color:#991b1b;font-size:11px;font-weight:500;padding:6px 10px;border-radius:6px;margin-bottom:10px;display:flex;align-items:center;gap:4px;">
-          <span>⚠️</span> Overspeeding: ${v.speed} km/h (limit: ${speedLimit})
-        </div>` : ''}
+        <!-- Alerts section -->
+        ${isOverspeeding ? `
+          <div style="background:linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);color:#991b1b;font-size:12px;font-weight:600;padding:10px 14px;border-radius:8px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;border:1px solid #fca5a5;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:16px;">⚠️</span> 
+              <span>OVERSPEEDING</span>
+            </div>
+            <div>${v.speed} km/h <span style="color:#7f1d1d;font-weight:400;">(limit: ${speedLimit})</span></div>
+          </div>
+        ` : ''}
+        
+        ${fuelStatus === 'critical' ? `
+          <div style="background:linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);color:#92400e;font-size:12px;font-weight:600;padding:10px 14px;border-radius:8px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;border:1px solid #fcd34d;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:16px;">⛽</span> 
+              <span>LOW FUEL WARNING</span>
+            </div>
+            <div>${v.fuel}% remaining</div>
+          </div>
+        ` : ''}
 
-        <div style="font-size:12px;color:#374151;margin-bottom:10px;">
-          ${v.driverName ? `<div style="display:flex;align-items:center;gap:4px;margin-bottom:6px;">
-            <span>👤</span> 
-            <span style="font-weight:500;">${v.driverName}</span>
-            ${v.driverPhone ? `<span style="color:#6b7280;font-size:11px;">(${v.driverPhone})</span>` : ''}
-          </div>` : '<div style="color:#9ca3af;font-size:11px;margin-bottom:6px;">No driver assigned</div>'}
+        <!-- Driver info -->
+        <div style="background:#f9fafb;border-radius:10px;padding:12px;margin-bottom:12px;border:1px solid #e5e7eb;">
+          <div style="font-size:10px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Driver</div>
+          ${v.driverName ? `
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:32px;height:32px;background:linear-gradient(135deg, #8DC63F 0%, #6ba02f 100%);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:600;font-size:13px;">
+                  ${v.driverName.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
+                </div>
+                <div>
+                  <div style="font-weight:600;font-size:14px;color:#111827;">${v.driverName}</div>
+                  ${v.driverPhone ? `<div style="color:#6b7280;font-size:12px;">📞 ${v.driverPhone}</div>` : ''}
+                </div>
+              </div>
+            </div>
+          ` : `
+            <div style="color:#9ca3af;font-size:13px;font-style:italic;">No driver assigned</div>
+          `}
+        </div>
+
+        <!-- GPS & Technical details -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+          <div style="background:#f9fafb;border-radius:10px;padding:12px;border:1px solid #e5e7eb;">
+            <div style="font-size:10px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">GPS Info</div>
+            <div style="display:flex;flex-direction:column;gap:4px;font-size:12px;">
+              <div style="display:flex;justify-content:space-between;"><span style="color:#6b7280;">Satellites:</span><span style="font-weight:600;color:#111827;">${satellites > 0 ? satellites : 'N/A'}</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:#6b7280;">Signal:</span><span style="font-weight:600;color:${gpsColor};">${gpsStrength}%</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:#6b7280;">HDOP:</span><span style="font-weight:600;color:#111827;">${hdop > 0 ? hdop.toFixed(1) : 'N/A'}</span></div>
+            </div>
+          </div>
+          <div style="background:#f9fafb;border-radius:10px;padding:12px;border:1px solid #e5e7eb;">
+            <div style="font-size:10px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Coordinates</div>
+            <div style="display:flex;flex-direction:column;gap:4px;font-size:12px;">
+              <div style="display:flex;justify-content:space-between;"><span style="color:#6b7280;">Lat:</span><span style="font-weight:600;color:#111827;font-family:monospace;">${v.lat.toFixed(6)}</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:#6b7280;">Lng:</span><span style="font-weight:600;color:#111827;font-family:monospace;">${v.lng.toFixed(6)}</span></div>
+            </div>
+          </div>
         </div>
         
-        <div style="font-size:11px;color:#6b7280;padding-top:10px;border-top:1px solid #e5e7eb;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-            <span>📍 ${v.lat.toFixed(5)}, ${v.lng.toFixed(5)}</span>
-            <span style="color:${relativeTime === 'Just now' ? '#22c55e' : relativeTime.includes('m') && parseInt(relativeTime) < 5 ? '#22c55e' : '#6b7280'};font-weight:500;">${relativeTime}</span>
+        <!-- Location address -->
+        <div style="background:linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);border-radius:10px;padding:12px;border:1px solid #bbf7d0;">
+          <div style="display:flex;align-items:flex-start;gap:8px;">
+            <span style="font-size:16px;">📍</span>
+            <div style="flex:1;">
+              <div style="font-size:10px;color:#166534;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Current Location</div>
+              <div style="font-size:13px;color:#166534;line-height:1.5;font-weight:500;">${addr}</div>
+            </div>
           </div>
-          <div style="color:#374151;line-height:1.4;">${addr}</div>
         </div>
       </div>
     `;
