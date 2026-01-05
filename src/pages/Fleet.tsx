@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -84,8 +84,15 @@ const DRIVER_FILTER = [
 
 const Fleet = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { drivers } = useDrivers();
   const { handleExport, handleExportAll, exporting } = useFleetExport();
+  
+  // Check if we're coming from "Manage" action with a specific vehicle
+  const locationState = location.state as { selectedVehicleId?: string; openModal?: boolean } | null;
+  const [focusedVehicleId, setFocusedVehicleId] = useState<string | null>(
+    locationState?.selectedVehicleId || null
+  );
   
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -141,6 +148,7 @@ const Fleet = () => {
     ownershipFilter,
     sortField,
     sortDirection,
+    vehicleIdFilter: focusedVehicleId, // Filter to specific vehicle when coming from "Manage"
   });
 
   // Get vehicle IDs for telemetry and service date queries
@@ -337,9 +345,45 @@ const Fleet = () => {
     setSelectedIds([]);
   }, [statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, driverFilter, debouncedSearch]);
 
+  // Auto-open modal when coming from "Manage" action and vehicle is loaded
+  useEffect(() => {
+    if (locationState?.openModal && focusedVehicleId && vehicles.length > 0 && !selectedVehicle) {
+      const targetVehicle = vehicles.find(v => v.vehicleId === focusedVehicleId);
+      if (targetVehicle) {
+        setSelectedVehicle(targetVehicle);
+        // Clear the location state to prevent re-opening on navigation
+        navigate(location.pathname, { replace: true, state: null });
+      }
+    }
+  }, [locationState?.openModal, focusedVehicleId, vehicles, selectedVehicle, navigate, location.pathname]);
+
+  // Handler to clear focused vehicle and show all
+  const handleShowAllVehicles = useCallback(() => {
+    setFocusedVehicleId(null);
+    navigate(location.pathname, { replace: true, state: null });
+  }, [navigate, location.pathname]);
+
   return (
     <Layout>
       <div className="p-6 lg:p-8 space-y-6 animate-fade-in">
+        {/* Focused Vehicle Banner */}
+        {focusedVehicleId && (
+          <div className="bg-primary/10 border border-primary/20 rounded-lg px-4 py-3 flex items-center justify-between">
+            <p className="text-sm text-primary font-medium">
+              Viewing selected vehicle. Click on it to see details.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleShowAllVehicles}
+              className="gap-2"
+            >
+              <List className="w-4 h-4" />
+              Show All Vehicles
+            </Button>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -347,7 +391,9 @@ const Fleet = () => {
               Fleet Management
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
-              {totalCount.toLocaleString()} vehicles in your fleet
+              {focusedVehicleId 
+                ? "1 vehicle selected" 
+                : `${totalCount.toLocaleString()} vehicles in your fleet`}
             </p>
           </div>
           <div className="flex items-center gap-2">
