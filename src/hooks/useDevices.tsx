@@ -113,15 +113,29 @@ export const useDevices = () => {
   const createDevice = useMutation({
     mutationFn: async (device: Partial<Device>) => {
       // Server-side duplicate IMEI check
-      const { data: existing } = await supabase
+      const { data: existingImei } = await supabase
         .from("devices")
         .select("id, imei")
         .eq("organization_id", organizationId!)
         .eq("imei", device.imei!)
         .maybeSingle();
 
-      if (existing) {
+      if (existingImei) {
         throw new Error(`A device with IMEI ${device.imei} already exists`);
+      }
+
+      // Server-side duplicate SIM phone number check
+      if (device.sim_msisdn) {
+        const { data: existingPhone } = await supabase
+          .from("devices")
+          .select("id, sim_msisdn")
+          .eq("organization_id", organizationId!)
+          .eq("sim_msisdn", device.sim_msisdn)
+          .maybeSingle();
+
+        if (existingPhone) {
+          throw new Error(`A device with phone number ${device.sim_msisdn} already exists`);
+        }
       }
 
       // If assigning a vehicle, unassign it from any other device first
@@ -165,7 +179,7 @@ export const useDevices = () => {
     mutationFn: async ({ id, ...device }: Partial<Device> & { id: string }) => {
       // Server-side duplicate IMEI check (if IMEI is being changed)
       if (device.imei) {
-        const { data: existing } = await supabase
+        const { data: existingImei } = await supabase
           .from("devices")
           .select("id, imei")
           .eq("organization_id", organizationId!)
@@ -173,8 +187,23 @@ export const useDevices = () => {
           .neq("id", id)
           .maybeSingle();
 
-        if (existing) {
+        if (existingImei) {
           throw new Error(`A device with IMEI ${device.imei} already exists`);
+        }
+      }
+
+      // Server-side duplicate SIM phone number check
+      if (device.sim_msisdn) {
+        const { data: existingPhone } = await supabase
+          .from("devices")
+          .select("id, sim_msisdn")
+          .eq("organization_id", organizationId!)
+          .eq("sim_msisdn", device.sim_msisdn)
+          .neq("id", id)
+          .maybeSingle();
+
+        if (existingPhone) {
+          throw new Error(`A device with phone number ${device.sim_msisdn} already exists`);
         }
       }
 
