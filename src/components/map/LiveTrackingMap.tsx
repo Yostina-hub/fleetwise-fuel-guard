@@ -77,6 +77,7 @@ const [mapLoaded, setMapLoaded] = useState(false);
 const [tokenError, setTokenError] = useState<string | null>(null);
 const [tempToken, setTempToken] = useState('');
 const [vehicleAddresses, setVehicleAddresses] = useState<Map<string, string>>(new Map());
+const [vehicleRoadInfo, setVehicleRoadInfo] = useState<Map<string, { road: string; distance: number; direction: string }>>(new Map());
 
 // Inject marker animations on mount
 useEffect(() => {
@@ -194,6 +195,35 @@ return () => {
       clearTimeout(existingTimeout);
     }
 
+    // Helper to calculate distance between two points in meters
+    const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+      const R = 6371000; // Earth's radius in meters
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLng = (lng2 - lng1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLng/2) * Math.sin(dLng/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    };
+
+    // Helper to get direction from vehicle to road
+    const getDirectionFromBearing = (bearing: number): string => {
+      const directions = ['North', 'Northeast', 'East', 'Southeast', 'South', 'Southwest', 'West', 'Northwest'];
+      const index = Math.round(((bearing + 360) % 360) / 45) % 8;
+      return directions[index];
+    };
+
+    // Calculate bearing between two points
+    const calculateBearing = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+      const dLng = (lng2 - lng1) * Math.PI / 180;
+      const lat1Rad = lat1 * Math.PI / 180;
+      const lat2Rad = lat2 * Math.PI / 180;
+      const y = Math.sin(dLng) * Math.cos(lat2Rad);
+      const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) - Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLng);
+      return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+    };
+
     // Set new debounced fetch
     const timeout = setTimeout(async () => {
       try {
@@ -242,7 +272,6 @@ return () => {
         const locality = context.find((c: any) => c.id?.startsWith('locality'))?.text || '';
         const place = context.find((c: any) => c.id?.startsWith('place'))?.text || '';
         const district = context.find((c: any) => c.id?.startsWith('district'))?.text || '';
-        const region = context.find((c: any) => c.id?.startsWith('region'))?.text || '';
 
         // Build a detailed, human-readable address
         let addressParts: string[] = [];
@@ -291,6 +320,21 @@ return () => {
           : bestFeature.place_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
 
         setVehicleAddresses(prev => new Map(prev).set(vehicleId, finalAddress));
+
+        // Calculate distance and direction from nearest road/POI
+        if (bestFeature.center && bestFeature.center.length === 2) {
+          const [featureLng, featureLat] = bestFeature.center;
+          const distance = calculateDistance(lat, lng, featureLat, featureLng);
+          const bearing = calculateBearing(lat, lng, featureLat, featureLng);
+          const direction = getDirectionFromBearing(bearing);
+          const roadName = bestFeature.text || (featureType === 'address' ? street : '') || 'Main Road';
+          
+          setVehicleRoadInfo(prev => new Map(prev).set(vehicleId, {
+            road: roadName,
+            distance: Math.round(distance),
+            direction: direction
+          }));
+        }
       } catch (error) {
         console.error('Error fetching address:', error);
         setVehicleAddresses(prev => new Map(prev).set(vehicleId, `${lat.toFixed(6)}, ${lng.toFixed(6)}`));
@@ -320,8 +364,18 @@ return () => {
     return directions[index];
   };
 
+  // Helper to get direction arrow SVG
+  const getDirectionArrow = (direction: string): string => {
+    const rotations: Record<string, number> = {
+      'North': 0, 'Northeast': 45, 'East': 90, 'Southeast': 135,
+      'South': 180, 'Southwest': 225, 'West': 270, 'Northwest': 315
+    };
+    const rotation = rotations[direction] || 0;
+    return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0072BC" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(${rotation}deg);flex-shrink:0;"><path d="M12 19V5M5 12l7-7 7 7"/></svg>`;
+  };
+
   // Helper to generate popup HTML
-  const generatePopupHTML = useCallback((addr: string, v: Vehicle) => {
+  const generatePopupHTML = useCallback((addr: string, v: Vehicle, roadInfo?: { road: string; distance: number; direction: string }) => {
     const gpsStrength = v.gps_signal_strength ?? 0;
     const gpsSignalLabel = gpsStrength >= 80 ? 'Strong' : gpsStrength >= 50 ? 'Moderate' : gpsStrength > 0 ? 'Weak' : 'No signal';
     const gpsColor = gpsStrength >= 80 ? '#22c55e' : gpsStrength >= 50 ? '#f59e0b' : gpsStrength > 0 ? '#ef4444' : '#6b7280';
@@ -334,6 +388,12 @@ return () => {
     const hdop = v.gps_hdop ?? 0;
     const fuelStatus = v.fuel < 15 ? 'critical' : v.fuel < 25 ? 'low' : 'normal';
     const fuelColor = fuelStatus === 'critical' ? '#dc2626' : fuelStatus === 'low' ? '#f59e0b' : '#22c55e';
+    
+    // Format distance for display
+    const formatDistance = (meters: number): string => {
+      if (meters < 1000) return `${meters}m`;
+      return `${(meters / 1000).toFixed(1)}km`;
+    };
     
     return `
       <div class="vehicle-popup-content" style="min-width:380px;max-width:420px;font-family:system-ui,-apple-system,sans-serif;padding:16px;">
@@ -440,7 +500,7 @@ return () => {
         </div>
         
         <!-- Location address -->
-        <div style="background:linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);border-radius:10px;padding:12px;border:1px solid #bbf7d0;">
+        <div style="background:linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);border-radius:10px;padding:12px;margin-bottom:${roadInfo ? '12px' : '0'};border:1px solid #bbf7d0;">
           <div style="display:flex;align-items:flex-start;gap:8px;">
             <span style="font-size:16px;">📍</span>
             <div style="flex:1;">
@@ -449,9 +509,31 @@ return () => {
             </div>
           </div>
         </div>
+
+        <!-- Road proximity info with direction arrow -->
+        ${roadInfo && roadInfo.distance > 0 ? `
+          <div style="background:linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);border-radius:10px;padding:12px;border:1px solid #93c5fd;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              ${getDirectionArrow(roadInfo.direction)}
+              <div style="flex:1;">
+                <div style="font-size:10px;color:#1d4ed8;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Distance from Reference Point</div>
+                <div style="font-size:13px;color:#1e40af;font-weight:600;">
+                  <span style="font-weight:700;">${formatDistance(roadInfo.distance)}</span> 
+                  <span style="font-weight:500;color:#3b82f6;">${roadInfo.direction}</span> 
+                  <span style="font-weight:400;color:#6b7280;">of</span> 
+                  <span style="font-weight:500;">${roadInfo.road}</span>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:center;padding:6px 10px;background:white;border-radius:8px;border:1px solid #bfdbfe;">
+                <div style="font-size:14px;font-weight:700;color:#1d4ed8;">${formatDistance(roadInfo.distance)}</div>
+                <div style="font-size:9px;color:#6b7280;font-weight:500;">away</div>
+              </div>
+            </div>
+          </div>
+        ` : ''}
       </div>
     `;
-  }, []);
+  }, [getDirectionArrow]);
 
   // Update vehicle markers
   useEffect(() => {
@@ -531,8 +613,9 @@ return () => {
         el.dataset.status = vehicle.status;
         el.dataset.speed = vehicle.speed.toString();
 
+        const roadInfo = vehicleRoadInfo.get(vehicle.id);
         const popup = new mapboxgl.Popup({ offset: 25, closeButton: true, closeOnClick: false, className: 'vehicle-popup' })
-          .setHTML(generatePopupHTML(address, vehicle));
+          .setHTML(generatePopupHTML(address, vehicle, roadInfo));
 
         const marker = new mapboxgl.Marker({
           element: el,
@@ -556,9 +639,10 @@ return () => {
               essential: true
             });
           }
-          // Refresh popup content with latest address
+          // Refresh popup content with latest address and road info
           const latestAddr = vehicleAddresses.get(vehicle.id) || 'Loading address...';
-          popup.setHTML(generatePopupHTML(latestAddr, vehicle));
+          const latestRoadInfo = vehicleRoadInfo.get(vehicle.id);
+          popup.setHTML(generatePopupHTML(latestAddr, vehicle, latestRoadInfo));
           marker.togglePopup();
         });
 
@@ -570,7 +654,8 @@ return () => {
           const popup = existingMarker.getPopup();
           if (popup && popup.isOpen()) {
             const latestAddr = vehicleAddresses.get(vehicle.id) || 'Loading address...';
-            popup.setHTML(generatePopupHTML(latestAddr, vehicle));
+            const latestRoadInfo = vehicleRoadInfo.get(vehicle.id);
+            popup.setHTML(generatePopupHTML(latestAddr, vehicle, latestRoadInfo));
           }
         }
       }
@@ -597,7 +682,7 @@ return () => {
       map.current!.fitBounds(bounds, { padding: 50, maxZoom: 15 });
       initialBoundsFitted.current = true;
     }
-  }, [vehicles, mapLoaded, selectedVehicleId, onVehicleClick, vehicleAddresses, generatePopupHTML]);
+  }, [vehicles, mapLoaded, selectedVehicleId, onVehicleClick, vehicleAddresses, vehicleRoadInfo, generatePopupHTML]);
 
   // Open popup for a specific vehicle when requested from sidebar
   useEffect(() => {
@@ -631,7 +716,8 @@ return () => {
       const popup = marker.getPopup();
       if (popup) {
         const latestAddr = vehicleAddresses.get(vehicle.id) || 'Fetching address...';
-        popup.setHTML(generatePopupHTML(latestAddr, vehicle));
+        const latestRoadInfo = vehicleRoadInfo.get(vehicle.id);
+        popup.setHTML(generatePopupHTML(latestAddr, vehicle, latestRoadInfo));
         
         if (!popup.isOpen()) {
           marker.togglePopup();
@@ -641,7 +727,7 @@ return () => {
       // Notify parent that popup was opened
       onPopupOpened?.();
     }
-  }, [openPopupVehicleId, mapLoaded, vehicles, onPopupOpened, generatePopupHTML]);
+  }, [openPopupVehicleId, mapLoaded, vehicles, onPopupOpened, vehicleAddresses, vehicleRoadInfo, generatePopupHTML]);
 
   // Update any open popup when vehicleAddresses changes (to show fetched address)
   useEffect(() => {
@@ -652,12 +738,13 @@ return () => {
       if (popup && popup.isOpen()) {
         const vehicle = vehicles.find(v => v.id === vehicleId);
         const address = vehicleAddresses.get(vehicleId);
+        const roadInfo = vehicleRoadInfo.get(vehicleId);
         if (vehicle && address) {
-          popup.setHTML(generatePopupHTML(address, vehicle));
+          popup.setHTML(generatePopupHTML(address, vehicle, roadInfo));
         }
       }
     });
-  }, [vehicleAddresses, mapLoaded, vehicles, generatePopupHTML]);
+  }, [vehicleAddresses, vehicleRoadInfo, mapLoaded, vehicles, generatePopupHTML]);
 
   // Draw vehicle trails on the map with speed-based coloring
   useEffect(() => {
