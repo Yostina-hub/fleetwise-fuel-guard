@@ -81,7 +81,9 @@ const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalP
   
   const { drivers } = useDrivers();
   
-  const actualVehicleId = vehicle?.vehicleId || vehicle?.id || '';
+  // IMPORTANT: vehicleId is the actual UUID from the database
+  // vehicle.id might be plate_number (display ID), so always prefer vehicleId
+  const actualVehicleId = vehicle?.vehicleId || '';
   
   // Fetch real vehicle data - hooks must be called unconditionally
   const { 
