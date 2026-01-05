@@ -39,6 +39,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import CreateIncidentDialog from "@/components/incidents/CreateIncidentDialog";
 import DriverDetailDialog from "@/components/fleet/DriverDetailDialog";
+import TripTimeline from "@/components/vehicle/TripTimeline";
 import { useVehicleData } from "@/hooks/useVehicleData";
 import { useDrivers } from "@/hooks/useDrivers";
 import { format, formatDistanceToNow } from "date-fns";
@@ -233,43 +234,13 @@ const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalP
 
             {/* Tab Content */}
             <ScrollArea className="flex-1 p-4">
-              {/* Trips Tab */}
-              <TabsContent value="trips" className="mt-0 space-y-4">
-                {isLoading ? (
-                  <div className="space-y-3">
-                    {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full" />)}
-                  </div>
-                ) : recentTrips.length > 0 ? (
-                  <div className="space-y-3">
-                    {recentTrips.map((trip, i) => (
-                      <Card key={i} className="hover:bg-muted/50 transition-colors">
-                        <CardContent className="p-4">
-                          <div className="flex items-start gap-3">
-                            <div className="p-2 rounded-full bg-primary/10">
-                              <Route className="h-4 w-4 text-primary" />
-                            </div>
-                            <div className="flex-1">
-                              <p className="font-medium">
-                                {trip.status === 'completed' ? 'Completed trip' : 'Trip in progress'}
-                              </p>
-                              <p className="text-sm text-muted-foreground mt-1">
-                                {trip.distance_km?.toFixed(1) || 0} km • {trip.duration_minutes || 0} min
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-2">
-                                {formatDistanceToNow(new Date(trip.start_time), { addSuffix: true })}
-                              </p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <Navigation className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                    <p className="text-muted-foreground">No trips recorded yet</p>
-                  </div>
-                )}
+              {/* Trips Tab - Teltonika Style Timeline */}
+              <TabsContent value="trips" className="mt-0 h-[500px]">
+                <TripTimeline 
+                  trips={recentTrips} 
+                  isLoading={isLoading} 
+                  vehicleId={actualVehicleId}
+                />
               </TabsContent>
 
               {/* Fuel Tab */}
