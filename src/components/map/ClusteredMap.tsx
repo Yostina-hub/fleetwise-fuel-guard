@@ -63,6 +63,8 @@ const ClusteredMap = ({
   const previousPositions = useRef<Map<string, { lng: number; lat: number }>>(new Map());
   const hasFitBounds = useRef(false);
   const trailSourcesAdded = useRef<Set<string>>(new Set());
+  const trailAnimationMarkers = useRef<Map<string, mapboxgl.Marker>>(new Map());
+  const trailAnimationFrames = useRef<Map<string, number>>(new Map());
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapboxToken, setMapboxToken] = useState<string>("");
 
@@ -290,6 +292,161 @@ const ClusteredMap = ({
         trailSourcesAdded.current.delete(vehicleId);
       }
     });
+  }, [trails, mapLoaded, showTrails, selectedVehicleId]);
+
+  // Animate car icon along the trail
+  useEffect(() => {
+    if (!map.current || !mapLoaded || !showTrails) {
+      // Cleanup animation markers when trails are disabled
+      trailAnimationMarkers.current.forEach((marker) => marker.remove());
+      trailAnimationMarkers.current.clear();
+      trailAnimationFrames.current.forEach((frameId) => cancelAnimationFrame(frameId));
+      trailAnimationFrames.current.clear();
+      return;
+    }
+
+    trails.forEach((points, vehicleId) => {
+      if (points.length < 2) return;
+
+      const isSelected = vehicleId === selectedVehicleId;
+      if (!isSelected) {
+        // Remove animation marker for non-selected vehicles
+        const existingMarker = trailAnimationMarkers.current.get(vehicleId);
+        if (existingMarker) {
+          existingMarker.remove();
+          trailAnimationMarkers.current.delete(vehicleId);
+        }
+        const existingFrame = trailAnimationFrames.current.get(vehicleId);
+        if (existingFrame) {
+          cancelAnimationFrame(existingFrame);
+          trailAnimationFrames.current.delete(vehicleId);
+        }
+        return;
+      }
+
+      // Create car marker element
+      const createCarElement = (heading: number = 0): HTMLDivElement => {
+        const el = document.createElement("div");
+        el.className = "trail-car-marker";
+        el.innerHTML = `
+          <div style="
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.5), 0 0 20px rgba(34, 197, 94, 0.3);
+            border: 3px solid white;
+            transform: rotate(${heading}deg);
+            transition: transform 0.1s ease-out;
+          ">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+            </svg>
+          </div>
+        `;
+        return el;
+      };
+
+      // Calculate total distance and segment info
+      const segments: { start: TrailPoint; end: TrailPoint; distance: number }[] = [];
+      let totalDistance = 0;
+
+      for (let i = 0; i < points.length - 1; i++) {
+        const start = points[i];
+        const end = points[i + 1];
+        const dx = end.lng - start.lng;
+        const dy = end.lat - start.lat;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        segments.push({ start, end, distance });
+        totalDistance += distance;
+      }
+
+      if (totalDistance === 0) return;
+
+      // Get or create marker
+      let marker = trailAnimationMarkers.current.get(vehicleId);
+      if (!marker) {
+        marker = new mapboxgl.Marker({
+          element: createCarElement(),
+          anchor: "center",
+        })
+          .setLngLat([points[0].lng, points[0].lat])
+          .addTo(map.current!);
+        trailAnimationMarkers.current.set(vehicleId, marker);
+      }
+
+      // Animation loop
+      const animationDuration = Math.min(10000, Math.max(5000, points.length * 100)); // 5-10 seconds
+      let startTime: number | null = null;
+
+      const animate = (currentTime: number) => {
+        if (!startTime) startTime = currentTime;
+        const elapsed = currentTime - startTime;
+        const progress = (elapsed % animationDuration) / animationDuration;
+
+        // Find current position along trail
+        const targetDistance = progress * totalDistance;
+        let accumulatedDistance = 0;
+        let currentLng = points[0].lng;
+        let currentLat = points[0].lat;
+        let heading = 0;
+
+        for (const segment of segments) {
+          if (accumulatedDistance + segment.distance >= targetDistance) {
+            const segmentProgress = (targetDistance - accumulatedDistance) / segment.distance;
+            currentLng = segment.start.lng + (segment.end.lng - segment.start.lng) * segmentProgress;
+            currentLat = segment.start.lat + (segment.end.lat - segment.start.lat) * segmentProgress;
+            
+            // Calculate heading
+            const dx = segment.end.lng - segment.start.lng;
+            const dy = segment.end.lat - segment.start.lat;
+            heading = (Math.atan2(dx, dy) * 180) / Math.PI;
+            break;
+          }
+          accumulatedDistance += segment.distance;
+        }
+
+        // Update marker position and rotation
+        marker!.setLngLat([currentLng, currentLat]);
+        const markerEl = marker!.getElement();
+        const innerDiv = markerEl.querySelector("div") as HTMLElement;
+        if (innerDiv) {
+          innerDiv.style.transform = `rotate(${heading}deg)`;
+        }
+
+        // Continue animation
+        const frameId = requestAnimationFrame(animate);
+        trailAnimationFrames.current.set(vehicleId, frameId);
+      };
+
+      // Cancel existing animation and start new one
+      const existingFrame = trailAnimationFrames.current.get(vehicleId);
+      if (existingFrame) {
+        cancelAnimationFrame(existingFrame);
+      }
+      const frameId = requestAnimationFrame(animate);
+      trailAnimationFrames.current.set(vehicleId, frameId);
+    });
+
+    // Cleanup markers for vehicles no longer in trails
+    trailAnimationMarkers.current.forEach((marker, vehicleId) => {
+      if (!trails.has(vehicleId) || vehicleId !== selectedVehicleId) {
+        marker.remove();
+        trailAnimationMarkers.current.delete(vehicleId);
+        const frameId = trailAnimationFrames.current.get(vehicleId);
+        if (frameId) {
+          cancelAnimationFrame(frameId);
+          trailAnimationFrames.current.delete(vehicleId);
+        }
+      }
+    });
+
+    return () => {
+      trailAnimationFrames.current.forEach((frameId) => cancelAnimationFrame(frameId));
+    };
   }, [trails, mapLoaded, showTrails, selectedVehicleId]);
 
   // Update clusters on map interaction
