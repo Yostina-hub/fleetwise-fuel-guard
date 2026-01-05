@@ -64,8 +64,13 @@ const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableE
     return (
       <div
         ref={containerRef}
-        className="relative w-full overflow-x-auto overflow-y-visible overscroll-x-contain"
-        style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x" }}
+        className="relative w-full overflow-x-auto overflow-y-visible"
+        style={{
+          WebkitOverflowScrolling: "touch",
+          touchAction: "pan-x pan-y",
+          overscrollBehaviorX: "contain",
+          overscrollBehavior: "contain",
+        }}
       >
         <table ref={ref} className={cn("w-full caption-bottom text-sm min-w-max", className)} {...props} />
       </div>
