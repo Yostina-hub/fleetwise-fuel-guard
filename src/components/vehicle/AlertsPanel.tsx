@@ -158,51 +158,96 @@ const AlertsPanel = ({ alerts, isLoading, vehicleId }: AlertsPanelProps) => {
         </div>
       </div>
 
-      {/* Alerts List */}
+      {/* Alerts Timeline */}
       {filteredAlerts.length > 0 ? (
         <ScrollArea className="flex-1">
-          <div className="space-y-3 pr-4">
-            {filteredAlerts.map((alert, index) => (
-              <Card key={alert.id || index} className="hover:bg-muted/50 transition-colors">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-full ${
-                      alert.severity === 'high' || alert.severity === 'critical' 
-                        ? 'bg-destructive/10' 
-                        : alert.severity === 'medium' 
-                          ? 'bg-warning/10' 
-                          : 'bg-muted'
-                    }`}>
-                      {getSeverityIcon(alert.severity)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium capitalize">
-                        {alert.event_type.replace(/_/g, ' ')}
-                      </p>
-                      <p className="text-sm text-muted-foreground mt-1 truncate">
-                        {alert.address || 'Unknown location'}
-                      </p>
-                      {alert.speed_kmh && alert.speed_limit_kmh && (
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Speed: {alert.speed_kmh} km/h (limit: {alert.speed_limit_kmh} km/h)
-                        </p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {format(new Date(alert.event_time), "HH:mm:ss")} • {formatDistanceToNow(new Date(alert.event_time), { addSuffix: true })}
-                      </p>
-                    </div>
-                    {getSeverityBadge(alert.severity)}
+          <div className="relative pr-4">
+            {/* Timeline center line */}
+            <div className="absolute left-1/2 transform -translate-x-1/2 top-0 bottom-0 w-0.5 bg-border" />
+            
+            {filteredAlerts.map((alert, index) => {
+              const isLeft = index % 2 === 1;
+              const getDotColor = () => {
+                switch (alert.severity) {
+                  case 'high':
+                  case 'critical':
+                    return 'bg-pink-500';
+                  case 'medium':
+                    return 'bg-blue-500';
+                  default:
+                    return 'bg-green-500';
+                }
+              };
+              
+              return (
+                <div key={alert.id || index} className="relative flex items-center mb-8">
+                  {/* Timeline dot */}
+                  <div className="absolute left-1/2 transform -translate-x-1/2 z-10">
+                    <div className={`w-3 h-3 rounded-full ${getDotColor()}`} />
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+                  
+                  {/* Card - alternates left/right */}
+                  {isLeft ? (
+                    <>
+                      <Card className="w-[45%] bg-muted/50">
+                        <CardContent className="p-4">
+                          <p className="text-sm font-medium text-foreground">
+                            {format(new Date(alert.event_time), "HH:mm")}
+                            <span className="text-xs text-muted-foreground">:{format(new Date(alert.event_time), "ss")}</span>
+                          </p>
+                          <div className="mt-2 border-t border-dashed border-muted-foreground/30 pt-2">
+                            <p className="text-sm text-foreground">
+                              EVENT : <span className="font-semibold capitalize">{alert.event_type.replace(/_/g, ' ')}</span>
+                              {alert.speed_kmh && alert.speed_limit_kmh && (
+                                <span className="text-muted-foreground">
+                                  {' '}at {alert.speed_kmh} km/h (limit: {alert.speed_limit_kmh})
+                                </span>
+                              )}
+                            </p>
+                            {alert.address && (
+                              <p className="text-sm text-primary mt-1">{alert.address}</p>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                      <div className="w-[55%]" />
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-[55%]" />
+                      <Card className="w-[45%] bg-muted/50">
+                        <CardContent className="p-4">
+                          <p className="text-sm font-medium text-foreground">
+                            {format(new Date(alert.event_time), "HH:mm")}
+                            <span className="text-xs text-muted-foreground">:{format(new Date(alert.event_time), "ss")}</span>
+                          </p>
+                          <div className="mt-2 border-t border-dashed border-muted-foreground/30 pt-2">
+                            <p className="text-sm text-foreground">
+                              EVENT : <span className="font-semibold capitalize">{alert.event_type.replace(/_/g, ' ')}</span>
+                              {alert.speed_kmh && alert.speed_limit_kmh && (
+                                <span className="text-muted-foreground">
+                                  {' '}at {alert.speed_kmh} km/h (limit: {alert.speed_limit_kmh})
+                                </span>
+                              )}
+                            </p>
+                            {alert.address && (
+                              <p className="text-sm text-primary mt-1">{alert.address}</p>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </ScrollArea>
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center py-12" role="status" aria-live="polite">
           <Bell className="h-12 w-12 text-muted-foreground/50 mb-4" aria-hidden="true" />
           <p className="text-muted-foreground mb-2">
-            There are no alerts for {format(selectedDate, "EEEE - dd MMM yyyy")}
+            There are no events for {format(selectedDate, "EEEE - dd MMM yyyy")}
           </p>
         </div>
       )}
