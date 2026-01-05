@@ -762,7 +762,27 @@ return () => {
 
   // Draw vehicle trails on the map with speed-based coloring
   useEffect(() => {
-    if (!map.current || !mapLoaded || !showTrails) return;
+    if (!map.current || !mapLoaded) return;
+
+    // If trails are disabled, remove all existing trail layers
+    if (!showTrails) {
+      trailSourcesAdded.current.forEach(vehicleId => {
+        const sourceId = `trail-${vehicleId}`;
+        const layerId = `trail-line-${vehicleId}`;
+        
+        if (map.current!.getLayer(layerId)) {
+          map.current!.removeLayer(layerId);
+        }
+        if (map.current!.getLayer(`${layerId}-glow`)) {
+          map.current!.removeLayer(`${layerId}-glow`);
+        }
+        if (map.current!.getSource(sourceId)) {
+          map.current!.removeSource(sourceId);
+        }
+      });
+      trailSourcesAdded.current.clear();
+      return;
+    }
 
     trails.forEach((points, vehicleId) => {
       if (points.length < 2) return;
