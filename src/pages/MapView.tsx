@@ -89,6 +89,12 @@ const MapView = () => {
         speedLimitMap[config.vehicle_id] = config.max_speed_limit;
       }
     });
+
+    // Helper to ensure valid coordinates
+    const safeCoord = (val: number | null | undefined, defaultVal: number): number => {
+      if (val === null || val === undefined || !isFinite(val)) return defaultVal;
+      return val;
+    };
     
     return dbVehicles.map((v) => {
       const vehicleTelemetry = telemetry[v.id];
@@ -105,10 +111,10 @@ const MapView = () => {
           status: 'offline' as const,
           fuel: lastKnownTelemetry?.fuel_level_percent || 0,
           speed: 0,
-          lat: lastKnownTelemetry?.latitude || 9.03,
-          lng: lastKnownTelemetry?.longitude || 38.74,
+          lat: safeCoord(lastKnownTelemetry?.latitude, 9.03),
+          lng: safeCoord(lastKnownTelemetry?.longitude, 38.74),
           engine_on: false,
-          heading: lastKnownTelemetry?.heading || 0,
+          heading: safeCoord(lastKnownTelemetry?.heading, 0),
           isOffline: true,
           gps_signal_strength: 0,
           gps_satellites_count: 0,
@@ -144,10 +150,10 @@ const MapView = () => {
         status,
         fuel: vehicleTelemetry.fuel_level_percent || 0,
         speed,
-        lat: vehicleTelemetry.latitude || 9.03,
-        lng: vehicleTelemetry.longitude || 38.74,
+        lat: safeCoord(vehicleTelemetry.latitude, 9.03),
+        lng: safeCoord(vehicleTelemetry.longitude, 38.74),
         engine_on: engineOn,
-        heading: vehicleTelemetry.heading || 0,
+        heading: safeCoord(vehicleTelemetry.heading, 0),
         isOffline: false,
         lastSeen: vehicleTelemetry.last_communication_at,
         gps_signal_strength: vehicleTelemetry.gps_signal_strength,
