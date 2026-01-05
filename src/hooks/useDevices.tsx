@@ -135,13 +135,18 @@ export const useDevices = () => {
         }
       }
 
-      // If assigning a vehicle, unassign it from any other device first
+      // Check if vehicle is already assigned to another device
       if (device.vehicle_id) {
-        await supabase
+        const { data: existingAssignment } = await supabase
           .from("devices")
-          .update({ vehicle_id: null })
+          .select("id, imei")
           .eq("organization_id", organizationId!)
-          .eq("vehicle_id", device.vehicle_id);
+          .eq("vehicle_id", device.vehicle_id)
+          .maybeSingle();
+
+        if (existingAssignment) {
+          throw new Error(`This vehicle is already assigned to device ${existingAssignment.imei}. Unassign it first.`);
+        }
       }
 
       const { data, error } = await supabase
@@ -204,14 +209,19 @@ export const useDevices = () => {
         }
       }
 
-      // If assigning a vehicle, unassign it from any other device first
+      // Check if vehicle is already assigned to another device
       if (device.vehicle_id) {
-        await supabase
+        const { data: existingAssignment } = await supabase
           .from("devices")
-          .update({ vehicle_id: null })
+          .select("id, imei")
           .eq("organization_id", organizationId!)
           .eq("vehicle_id", device.vehicle_id)
-          .neq("id", id);
+          .neq("id", id)
+          .maybeSingle();
+
+        if (existingAssignment) {
+          throw new Error(`This vehicle is already assigned to device ${existingAssignment.imei}. Unassign it first.`);
+        }
       }
 
       const { data, error } = await supabase
