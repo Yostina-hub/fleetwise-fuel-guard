@@ -2,26 +2,37 @@ import { useState } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
-  Truck,
-  MapPin,
+  ChevronLeft,
+  ChevronRight,
+  Navigation,
   Fuel,
-  Gauge,
-  Calendar,
-  User,
-  Clock,
+  Bell,
+  MapPin,
+  Terminal,
+  Info,
+  Settings,
   Route,
   AlertTriangle,
-  TrendingUp,
-  Activity,
+  Calendar,
+  User,
+  Camera,
+  Gauge,
+  Clock,
+  Truck,
 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import { useNavigate } from "react-router-dom";
@@ -31,6 +42,7 @@ import DriverDetailDialog from "@/components/fleet/DriverDetailDialog";
 import { useVehicleData } from "@/hooks/useVehicleData";
 import { useDrivers } from "@/hooks/useDrivers";
 import { format, formatDistanceToNow } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 interface VehicleDetailModalProps {
   open: boolean;
@@ -49,12 +61,24 @@ interface VehicleDetailModalProps {
     driver?: string;
     driverId?: string;
     vehicleId?: string;
+    engineHours?: number;
+    imageUrl?: string;
   };
 }
 
 const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalProps) => {
   const navigate = useNavigate();
   const [driverDialogOpen, setDriverDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("trips");
+  
+  // Settings state
+  const [vehicleName, setVehicleName] = useState(vehicle?.plate || "");
+  const [odometer, setOdometer] = useState(vehicle?.odometer?.toString() || "");
+  const [engineHours, setEngineHours] = useState(vehicle?.engineHours?.toString() || "");
+  const [odometerDate, setOdometerDate] = useState(format(new Date(), "dd MMM yyyy HH:mm"));
+  const [engineHoursDate, setEngineHoursDate] = useState(format(new Date(), "dd MMM yyyy HH:mm"));
+  const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  
   const { drivers } = useDrivers();
   
   const actualVehicleId = vehicle?.vehicleId || vehicle?.id || '';
@@ -92,362 +116,562 @@ const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalP
     }
   };
 
-  // Combine recent activity from trips, fuel transactions, and events
-  const recentActivity = [
-    ...recentTrips.slice(0, 3).map(t => ({
-      time: t.start_time,
-      event: t.status === 'completed' ? 'Completed trip' : 'Started trip',
-      location: `${t.distance_km?.toFixed(1) || 0} km`,
-      type: 'trip'
-    })),
-    ...fuelTransactions.slice(0, 2).map(f => ({
-      time: f.transaction_date,
-      event: `Refueled ${f.fuel_amount_liters}L`,
-      location: f.location_name || 'Unknown station',
-      type: 'fuel'
-    })),
-    ...driverEvents.slice(0, 2).map(e => ({
-      time: e.event_time,
-      event: e.event_type.replace('_', ' '),
-      location: e.address || 'Unknown location',
-      type: 'event'
-    }))
-  ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 5);
+  const handleUpdateName = async () => {
+    if (!vehicleName.trim()) return;
+    setIsUpdating("name");
+    try {
+      const { error } = await supabase
+        .from("vehicles")
+        .update({ plate_number: vehicleName.trim() })
+        .eq("id", actualVehicleId);
+      
+      if (error) throw error;
+      toast.success("Vehicle name updated successfully");
+    } catch (error) {
+      toast.error("Failed to update vehicle name");
+    } finally {
+      setIsUpdating(null);
+    }
+  };
+
+  const handleUpdateOdometer = async () => {
+    const odometerValue = parseFloat(odometer);
+    if (isNaN(odometerValue)) return;
+    setIsUpdating("odometer");
+    try {
+      const { error } = await supabase
+        .from("vehicles")
+        .update({ odometer_km: odometerValue })
+        .eq("id", actualVehicleId);
+      
+      if (error) throw error;
+      toast.success("Odometer reading updated successfully");
+    } catch (error) {
+      toast.error("Failed to update odometer reading");
+    } finally {
+      setIsUpdating(null);
+    }
+  };
+
+  const handleUpdateEngineHours = async () => {
+    const hoursValue = parseFloat(engineHours);
+    if (isNaN(hoursValue)) return;
+    setIsUpdating("hours");
+    try {
+      const { error } = await supabase
+        .from("vehicles")
+        .update({ engine_hours: hoursValue })
+        .eq("id", actualVehicleId);
+      
+      if (error) throw error;
+      toast.success("Working hours updated successfully");
+    } catch (error) {
+      toast.error("Failed to update working hours");
+    } finally {
+      setIsUpdating(null);
+    }
+  };
+
+  const tabs = [
+    { id: "trips", label: "Trips", icon: Navigation },
+    { id: "fuel", label: "Fuel", icon: Fuel },
+    { id: "alerts", label: "Alerts", icon: Bell },
+    { id: "zones", label: "Zones", icon: MapPin },
+    { id: "commands", label: "Commands", icon: Terminal },
+    { id: "info", label: "Info", icon: Info },
+    { id: "settings", label: "Settings", icon: Settings },
+  ];
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden p-0">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Manage {vehicle.plate}</DialogTitle>
+            <DialogDescription>
+              View and manage vehicle details, trips, fuel, alerts, and settings.
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Header with back button and vehicle info */}
+          <div className="flex items-center justify-between border-b px-4 py-3">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}>
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
               <div>
-                <DialogTitle className="text-2xl">{vehicle.plate}</DialogTitle>
-                <p className="text-sm text-muted-foreground mt-1">
+                <h2 className="font-semibold text-lg">{vehicle.plate}</h2>
+                <p className="text-xs text-muted-foreground">
                   {vehicle.make} {vehicle.model} {vehicle.year && `• ${vehicle.year}`}
                 </p>
               </div>
-              <StatusBadge status={vehicle.status} />
             </div>
-          </DialogHeader>
+            <StatusBadge status={vehicle.status} />
+          </div>
 
-          <Tabs defaultValue="overview" className="mt-4">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="performance">Performance</TabsTrigger>
-              <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
-              <TabsTrigger value="history">History</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="overview" className="space-y-6 mt-6">
-              {/* Quick Stats Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 rounded-lg border bg-card hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-md bg-primary/10">
-                      <Fuel className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <div className="text-2xl font-bold">
-                        {vehicle.fuel !== null ? `${vehicle.fuel}%` : 'N/A'}
-                      </div>
-                      <div className="text-xs text-muted-foreground">Fuel Level</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-lg border bg-card hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-md bg-success/10">
-                      <Gauge className="w-5 h-5 text-success" />
-                    </div>
-                    <div>
-                      <div className="text-2xl font-bold">{vehicle.speed || 0}</div>
-                      <div className="text-xs text-muted-foreground">km/h</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-lg border bg-card hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-md bg-accent/10">
-                      <Route className="w-5 h-5 text-accent-foreground" />
-                    </div>
-                    <div>
-                      <div className="text-2xl font-bold">{vehicle.odometer?.toLocaleString() || "N/A"}</div>
-                      <div className="text-xs text-muted-foreground">Total KM</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-lg border bg-card hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-md bg-warning/10">
-                      <Clock className="w-5 h-5 text-warning" />
-                    </div>
-                    <div>
-                      {isLoading ? (
-                        <Skeleton className="h-7 w-12" />
-                      ) : (
-                        <div className="text-2xl font-bold">
-                          {(performanceMetrics.totalIdleMinutes / 60).toFixed(1)}h
-                        </div>
-                      )}
-                      <div className="text-xs text-muted-foreground">Idle (30d)</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Location & Driver Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h3 className="font-semibold flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-primary" />
-                    Current Location
-                  </h3>
-                  <div className="p-4 rounded-lg bg-muted/50 border">
-                    <p className="font-medium">{vehicle.location || "Unknown"}</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Live tracking available
-                    </p>
-                  </div>
-                  <Button variant="outline" className="w-full gap-2" onClick={handleTrackOnMap}>
-                    <MapPin className="w-4 h-4" />
-                    Track on Map
-                  </Button>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="font-semibold flex items-center gap-2">
-                    <User className="w-4 h-4 text-primary" />
-                    Driver Information
-                  </h3>
-                  <div className="p-4 rounded-lg bg-muted/50 border">
-                    <p className="font-medium">{vehicle.driver || "Not assigned"}</p>
-                    {assignedDriver && (
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge variant="outline" className="text-xs">
-                          {assignedDriver.license_class ? `Class ${assignedDriver.license_class}` : 'Licensed'}
-                        </Badge>
-                        {assignedDriver.safety_score && (
-                          <Badge variant="outline" className="text-xs">
-                            {assignedDriver.safety_score}★ Score
-                          </Badge>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <Button variant="outline" className="w-full gap-2" onClick={handleViewDriverProfile}>
-                    <User className="w-4 h-4" />
-                    View Driver Profile
-                  </Button>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Recent Activity */}
-              <div>
-                <h3 className="font-semibold mb-4 flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-primary" />
-                  Recent Activity
-                </h3>
-                {isLoading ? (
-                  <div className="space-y-3">
-                    {[1, 2, 3].map(i => (
-                      <Skeleton key={i} className="h-16 w-full" />
-                    ))}
-                  </div>
-                ) : recentActivity.length > 0 ? (
-                  <div className="space-y-3">
-                    {recentActivity.map((activity, i) => (
-                      <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
-                        <div className="w-2 h-2 rounded-full bg-primary mt-2"></div>
-                        <div className="flex-1">
-                          <p className="font-medium text-sm capitalize">{activity.event}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {formatDistanceToNow(new Date(activity.time), { addSuffix: true })} • {activity.location}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No recent activity</p>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-4">
-                <Button className="flex-1 gap-2">
-                  <Route className="w-4 h-4" />
-                  Assign Route
-                </Button>
-                <Button variant="outline" className="flex-1 gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Schedule Maintenance
-                </Button>
-                <CreateIncidentDialog
-                  trigger={
-                    <Button variant="outline" className="flex-1 gap-2">
-                      <AlertTriangle className="w-4 h-4" />
-                      Report Issue
-                    </Button>
-                  }
-                />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="performance" className="space-y-4 mt-6">
-              <div className="p-6 rounded-lg border bg-gradient-to-br from-primary/5 to-primary/10">
-                <h3 className="font-semibold mb-4 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-primary" />
-                  Performance Metrics (Last 30 Days)
-                </h3>
-                {isLoading ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                    {[1, 2, 3].map(i => (
-                      <div key={i}>
-                        <Skeleton className="h-4 w-24 mb-2" />
-                        <Skeleton className="h-8 w-20" />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                    <div>
-                      <div className="text-sm text-muted-foreground">Avg. Fuel Efficiency</div>
-                      <div className="text-2xl font-bold mt-1">
-                        {performanceMetrics.avgFuelEfficiency 
-                          ? `${performanceMetrics.avgFuelEfficiency.toFixed(1)} L/100km`
-                          : 'N/A'}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-muted-foreground">Total Distance</div>
-                      <div className="text-2xl font-bold mt-1">
-                        {performanceMetrics.totalDistance.toLocaleString()} km
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {performanceMetrics.totalTrips} trips
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-muted-foreground">Idle Time</div>
-                      <div className="text-2xl font-bold mt-1">
-                        {(performanceMetrics.totalIdleMinutes / 60).toFixed(1)} hrs
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="h-64 rounded-lg border bg-muted/20 flex items-center justify-center">
-                <div className="text-center text-muted-foreground">
-                  <TrendingUp className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>Performance charts visualization</p>
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="maintenance" className="space-y-4 mt-6">
-              {isLoading ? (
-                <div className="space-y-4">
-                  {[1, 2, 3].map(i => (
-                    <Skeleton key={i} className="h-20 w-full" />
+          {/* Horizontal Tab Navigation */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+            <div className="border-b px-2">
+              <ScrollArea className="w-full">
+                <TabsList className="bg-transparent h-12 p-0 gap-0 w-max">
+                  {tabs.map((tab) => (
+                    <TabsTrigger
+                      key={tab.id}
+                      value={tab.id}
+                      className="h-12 px-4 gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                    >
+                      <tab.icon className="h-4 w-4" />
+                      {tab.label}
+                    </TabsTrigger>
                   ))}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {/* Upcoming maintenance */}
-                  {maintenanceRecords.filter(m => m.next_due_date && new Date(m.next_due_date) > new Date()).length > 0 ? (
-                    maintenanceRecords
-                      .filter(m => m.next_due_date && new Date(m.next_due_date) > new Date())
-                      .slice(0, 1)
-                      .map((record, i) => (
-                        <div key={i} className="p-4 rounded-lg border border-warning/50 bg-warning/5">
-                          <div className="flex items-center gap-3 mb-2">
-                            <AlertTriangle className="w-5 h-5 text-warning" />
-                            <h4 className="font-semibold">Due Soon</h4>
-                          </div>
-                          <p className="text-sm">
-                            {record.service_type} due on {format(new Date(record.next_due_date!), 'MMM d, yyyy')}
-                          </p>
-                        </div>
-                      ))
-                  ) : (
-                    <div className="p-4 rounded-lg border border-success/50 bg-success/5">
-                      <div className="flex items-center gap-3">
-                        <Calendar className="w-5 h-5 text-success" />
-                        <p className="text-sm">No upcoming maintenance scheduled</p>
-                      </div>
-                    </div>
-                  )}
+                </TabsList>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+            </div>
 
-                  {/* Past maintenance */}
-                  {maintenanceRecords.filter(m => m.last_service_date).length > 0 ? (
-                    maintenanceRecords
-                      .filter(m => m.last_service_date)
-                      .map((record, i) => (
-                        <div key={i} className="p-4 rounded-lg border">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium">{record.service_type}</p>
+            {/* Tab Content */}
+            <ScrollArea className="flex-1 p-4">
+              {/* Trips Tab */}
+              <TabsContent value="trips" className="mt-0 space-y-4">
+                {isLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full" />)}
+                  </div>
+                ) : recentTrips.length > 0 ? (
+                  <div className="space-y-3">
+                    {recentTrips.map((trip, i) => (
+                      <Card key={i} className="hover:bg-muted/50 transition-colors">
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="p-2 rounded-full bg-primary/10">
+                              <Route className="h-4 w-4 text-primary" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-medium">
+                                {trip.status === 'completed' ? 'Completed trip' : 'Trip in progress'}
+                              </p>
                               <p className="text-sm text-muted-foreground mt-1">
-                                {format(new Date(record.last_service_date!), 'MMM d, yyyy')}
+                                {trip.distance_km?.toFixed(1) || 0} km • {trip.duration_minutes || 0} min
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-2">
+                                {formatDistanceToNow(new Date(trip.start_time), { addSuffix: true })}
                               </p>
                             </div>
-                            <div className="text-right">
-                              <Badge variant="outline">{record.priority || 'Normal'}</Badge>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Navigation className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                    <p className="text-muted-foreground">No trips recorded yet</p>
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* Fuel Tab */}
+              <TabsContent value="fuel" className="mt-0 space-y-4">
+                {isLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full" />)}
+                  </div>
+                ) : fuelTransactions.length > 0 ? (
+                  <div className="space-y-3">
+                    {fuelTransactions.map((transaction, i) => (
+                      <Card key={i} className="hover:bg-muted/50 transition-colors">
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="p-2 rounded-full bg-emerald-500/10">
+                              <Fuel className="h-4 w-4 text-emerald-500" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-medium">
+                                Refueled {transaction.fuel_amount_liters}L
+                              </p>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {transaction.location_name || 'Unknown station'}
+                                {transaction.fuel_cost && ` • ETB ${transaction.fuel_cost.toLocaleString()}`}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-2">
+                                {formatDistanceToNow(new Date(transaction.transaction_date), { addSuffix: true })}
+                              </p>
                             </div>
                           </div>
-                        </div>
-                      ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No maintenance history found</p>
-                  )}
-                </div>
-              )}
-            </TabsContent>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Fuel className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                    <p className="text-muted-foreground">No fuel transactions recorded</p>
+                  </div>
+                )}
+              </TabsContent>
 
-            <TabsContent value="history" className="space-y-4 mt-6">
-              {isLoading ? (
-                <div className="space-y-3">
-                  {[1, 2, 3, 4].map(i => (
-                    <Skeleton key={i} className="h-20 w-full" />
-                  ))}
+              {/* Alerts Tab */}
+              <TabsContent value="alerts" className="mt-0 space-y-4">
+                {isLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full" />)}
+                  </div>
+                ) : driverEvents.length > 0 ? (
+                  <div className="space-y-3">
+                    {driverEvents.map((event, i) => (
+                      <Card key={i} className="hover:bg-muted/50 transition-colors">
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <div className={`p-2 rounded-full ${
+                              event.severity === 'high' ? 'bg-destructive/10' :
+                              event.severity === 'medium' ? 'bg-warning/10' : 'bg-muted'
+                            }`}>
+                              <AlertTriangle className={`h-4 w-4 ${
+                                event.severity === 'high' ? 'text-destructive' :
+                                event.severity === 'medium' ? 'text-warning' : 'text-muted-foreground'
+                              }`} />
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-medium capitalize">
+                                {event.event_type.replace('_', ' ')}
+                              </p>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {event.address || 'Unknown location'}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-2">
+                                {formatDistanceToNow(new Date(event.event_time), { addSuffix: true })}
+                              </p>
+                            </div>
+                            <Badge variant={
+                              event.severity === 'high' ? 'destructive' :
+                              event.severity === 'medium' ? 'secondary' : 'outline'
+                            }>
+                              {event.severity}
+                            </Badge>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Bell className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                    <p className="text-muted-foreground">No alerts for this vehicle</p>
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* Zones Tab */}
+              <TabsContent value="zones" className="mt-0 space-y-4">
+                <div className="text-center py-12">
+                  <MapPin className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                  <p className="text-muted-foreground">Geofence zones coming soon</p>
+                  <Button variant="outline" className="mt-4" onClick={handleTrackOnMap}>
+                    View on Map
+                  </Button>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  {recentTrips.length > 0 ? (
-                    recentTrips.map((trip, i) => (
-                      <div key={i} className="p-4 rounded-lg border hover:bg-muted/50 transition-colors">
-                        <div className="flex items-start gap-3">
-                          <div className="w-2 h-2 rounded-full bg-primary mt-2"></div>
+              </TabsContent>
+
+              {/* Commands Tab */}
+              <TabsContent value="commands" className="mt-0 space-y-4">
+                <div className="text-center py-12">
+                  <Terminal className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                  <p className="text-muted-foreground">Device commands coming soon</p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Send commands to the GPS device remotely
+                  </p>
+                </div>
+              </TabsContent>
+
+              {/* Info Tab */}
+              <TabsContent value="info" className="mt-0 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Vehicle Details Card */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <Truck className="h-4 w-4" />
+                        Vehicle Details
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Plate</span>
+                        <span className="font-medium">{vehicle.plate}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Make</span>
+                        <span className="font-medium">{vehicle.make || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Model</span>
+                        <span className="font-medium">{vehicle.model || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Year</span>
+                        <span className="font-medium">{vehicle.year || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Odometer</span>
+                        <span className="font-medium">{vehicle.odometer?.toLocaleString() || 0} km</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Fuel Level</span>
+                        <span className="font-medium">{vehicle.fuel}%</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Driver Card */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <User className="h-4 w-4" />
+                        Assigned Driver
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {assignedDriver ? (
+                        <div className="flex items-center gap-4">
+                          <Avatar className="h-12 w-12">
+                            <AvatarImage src={assignedDriver.avatar_url || undefined} />
+                            <AvatarFallback>
+                              {assignedDriver.first_name?.[0]}{assignedDriver.last_name?.[0]}
+                            </AvatarFallback>
+                          </Avatar>
                           <div className="flex-1">
                             <p className="font-medium">
-                              {trip.status === 'completed' ? 'Completed trip' : 'Trip in progress'}
+                              {assignedDriver.first_name} {assignedDriver.last_name}
                             </p>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {trip.distance_km?.toFixed(1) || 0} km • {trip.duration_minutes || 0} min
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-2">
-                              {formatDistanceToNow(new Date(trip.start_time), { addSuffix: true })}
+                            <p className="text-sm text-muted-foreground">
+                              {assignedDriver.phone || 'No phone'}
                             </p>
                           </div>
+                          <Button variant="outline" size="sm" onClick={handleViewDriverProfile}>
+                            View
+                          </Button>
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground">No driver assigned</p>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Performance Card */}
+                  <Card className="md:col-span-2">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <Gauge className="h-4 w-4" />
+                        Performance (Last 30 Days)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {isLoading ? (
+                        <div className="grid grid-cols-3 gap-6">
+                          {[1, 2, 3].map(i => <Skeleton key={i} className="h-12" />)}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-6">
+                          <div>
+                            <p className="text-2xl font-bold">{performanceMetrics.totalTrips}</p>
+                            <p className="text-sm text-muted-foreground">Total Trips</p>
+                          </div>
+                          <div>
+                            <p className="text-2xl font-bold">{performanceMetrics.totalDistance.toLocaleString()} km</p>
+                            <p className="text-sm text-muted-foreground">Distance</p>
+                          </div>
+                          <div>
+                            <p className="text-2xl font-bold">
+                              {performanceMetrics.avgFuelEfficiency 
+                                ? `${performanceMetrics.avgFuelEfficiency.toFixed(1)} L/100km`
+                                : 'N/A'}
+                            </p>
+                            <p className="text-sm text-muted-foreground">Fuel Efficiency</p>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              {/* Settings Tab - Teltonika Style */}
+              <TabsContent value="settings" className="mt-0">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Change Device Name */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base font-medium">Change Device Name</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="vehicleName" className="text-sm text-muted-foreground">
+                          New Device Name
+                        </Label>
+                        <Input
+                          id="vehicleName"
+                          value={vehicleName}
+                          onChange={(e) => setVehicleName(e.target.value)}
+                          placeholder="Enter device name"
+                          className="bg-muted/50"
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <Button 
+                          onClick={handleUpdateName}
+                          disabled={isUpdating === "name" || !vehicleName.trim()}
+                        >
+                          {isUpdating === "name" ? "Updating..." : "Update"}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Update Odometer Reading */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base font-medium">Update Odometer Reading</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="odometer" className="text-sm text-muted-foreground">
+                          Odometer Reading
+                        </Label>
+                        <div className="relative">
+                          <Input
+                            id="odometer"
+                            type="number"
+                            value={odometer}
+                            onChange={(e) => setOdometer(e.target.value)}
+                            placeholder="0.00"
+                            className="bg-muted/50 pr-12"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                            km
+                          </span>
                         </div>
                       </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center py-8">
-                      No trip history found for this vehicle
-                    </p>
-                  )}
+                      <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground">Date</Label>
+                        <div className="relative">
+                          <Input
+                            value={odometerDate}
+                            readOnly
+                            className="bg-muted/50"
+                          />
+                          <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        </div>
+                      </div>
+                      <div className="flex justify-end">
+                        <Button 
+                          onClick={handleUpdateOdometer}
+                          disabled={isUpdating === "odometer" || !odometer}
+                        >
+                          {isUpdating === "odometer" ? "Updating..." : "Update"}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Update Working Hours Reading */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base font-medium">Update Working Hours Reading</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="engineHours" className="text-sm text-muted-foreground">
+                          Hours Reading
+                        </Label>
+                        <Input
+                          id="engineHours"
+                          type="number"
+                          value={engineHours}
+                          onChange={(e) => setEngineHours(e.target.value)}
+                          placeholder="0.00"
+                          className="bg-muted/50"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground">Date</Label>
+                        <div className="relative">
+                          <Input
+                            value={engineHoursDate}
+                            readOnly
+                            className="bg-muted/50"
+                          />
+                          <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        </div>
+                      </div>
+                      <div className="flex justify-end">
+                        <Button 
+                          onClick={handleUpdateEngineHours}
+                          disabled={isUpdating === "hours" || !engineHours}
+                        >
+                          {isUpdating === "hours" ? "Updating..." : "Update"}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Change Asset Photo */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base font-medium">Change Asset Photo</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex flex-col items-center justify-center py-6">
+                      <Avatar className="h-24 w-24 mb-4">
+                        {vehicle.imageUrl ? (
+                          <AvatarImage src={vehicle.imageUrl} alt={vehicle.plate} />
+                        ) : (
+                          <AvatarFallback className="bg-primary/10">
+                            <Truck className="h-10 w-10 text-primary" />
+                          </AvatarFallback>
+                        )}
+                      </Avatar>
+                      <Button variant="outline" className="gap-2">
+                        <Camera className="h-4 w-4" />
+                        Upload Photo
+                      </Button>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        JPG, PNG up to 5MB
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  {/* Quick Actions Card */}
+                  <Card className="md:col-span-2">
+                    <CardHeader>
+                      <CardTitle className="text-base font-medium">Quick Actions</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-3">
+                        <Button variant="outline" className="gap-2" onClick={handleTrackOnMap}>
+                          <MapPin className="h-4 w-4" />
+                          Track on Map
+                        </Button>
+                        <Button variant="outline" className="gap-2">
+                          <Route className="h-4 w-4" />
+                          Assign Route
+                        </Button>
+                        <Button variant="outline" className="gap-2">
+                          <Calendar className="h-4 w-4" />
+                          Schedule Maintenance
+                        </Button>
+                        <CreateIncidentDialog
+                          trigger={
+                            <Button variant="outline" className="gap-2">
+                              <AlertTriangle className="h-4 w-4" />
+                              Report Issue
+                            </Button>
+                          }
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
-              )}
-            </TabsContent>
+              </TabsContent>
+            </ScrollArea>
           </Tabs>
         </DialogContent>
       </Dialog>
