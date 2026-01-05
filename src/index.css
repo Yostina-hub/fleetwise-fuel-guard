@@ -635,3 +635,32 @@ All colors MUST be HSL.
     transition: transform 0s, opacity 0s;
   }
 }
+
+/* Mapbox Popup Overrides */
+.mapboxgl-popup {
+  max-width: 450px !important;
+}
+
+.mapboxgl-popup-content {
+  padding: 0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2) !important;
+  overflow: hidden;
+}
+
+.mapboxgl-popup-close-button {
+  font-size: 20px;
+  padding: 8px 12px;
+  color: #6b7280;
+  right: 4px;
+  top: 4px;
+}
+
+.mapboxgl-popup-close-button:hover {
+  color: #111827;
+  background: transparent;
+}
+
+.vehicle-popup .mapboxgl-popup-content {
+  min-width: 400px;
+}
