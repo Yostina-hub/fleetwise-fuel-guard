@@ -8,7 +8,9 @@ import {
   createAnimatedClusterElement,
   animatePosition,
   injectMarkerAnimations,
+  getSpeedColor,
 } from "./AnimatedMarker";
+
 
 interface VehiclePoint {
   id: string;
@@ -25,12 +27,23 @@ interface VehiclePoint {
   driverPhone?: string;
 }
 
+interface TrailPoint {
+  lat: number;
+  lng: number;
+  timestamp: string;
+  speed: number;
+}
+
 interface ClusteredMapProps {
   vehicles: VehiclePoint[];
   onVehicleClick?: (vehicle: VehiclePoint) => void;
   selectedVehicleId?: string;
   mapStyle?: "streets" | "satellite";
+  onMapReady?: (map: mapboxgl.Map) => void;
+  showTrails?: boolean;
+  trails?: Map<string, TrailPoint[]>;
 }
+
 
 type VehicleFeature = GeoJSON.Feature<GeoJSON.Point, VehiclePoint>;
 
@@ -39,14 +52,20 @@ const ClusteredMap = ({
   onVehicleClick,
   selectedVehicleId,
   mapStyle = "satellite",
+  onMapReady,
+  showTrails = true,
+  trails = new Map(),
 }: ClusteredMapProps) => {
+
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const clusterMarkers = useRef<Map<string, mapboxgl.Marker>>(new Map());
   const previousPositions = useRef<Map<string, { lng: number; lat: number }>>(new Map());
   const hasFitBounds = useRef(false);
+  const trailSourcesAdded = useRef<Set<string>>(new Set());
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapboxToken, setMapboxToken] = useState<string>("");
+
 
   // Inject marker animations on mount
   useEffect(() => {
@@ -106,6 +125,9 @@ const ClusteredMap = ({
   useEffect(() => {
     if (!mapContainer.current || !mapboxToken || map.current) return;
 
+    // Ensure dependent effects (like trails) wait for the new style to load
+    setMapLoaded(false);
+
     mapboxgl.accessToken = mapboxToken;
 
     map.current = new mapboxgl.Map({
@@ -121,19 +143,157 @@ const ClusteredMap = ({
     map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
     map.current.addControl(new mapboxgl.FullscreenControl(), "top-right");
 
-    map.current.on("load", () => setMapLoaded(true));
+    map.current.on("load", () => {
+      setMapLoaded(true);
+      try {
+        onMapReady?.(map.current!);
+      } catch {}
+    });
     map.current.on("zoom", () => updateClusters());
     map.current.on("move", () => updateClusters());
 
     return () => {
+      setMapLoaded(false);
+
+      // Cleanup clusters
       clusterMarkers.current.forEach((m) => m.remove());
       clusterMarkers.current.clear();
+
+      // Cleanup trails (optional; map.remove() will also clear)
+      trailSourcesAdded.current.clear();
+
       map.current?.remove();
       map.current = null;
     };
   }, [mapboxToken, mapStyle]);
+  // Draw vehicle trails (works in clustered mode too)
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+
+    // If trails are disabled, remove all existing trail layers
+    if (!showTrails) {
+      trailSourcesAdded.current.forEach((vehicleId) => {
+        const sourceId = `trail-${vehicleId}`;
+        const layerId = `trail-line-${vehicleId}`;
+
+        if (map.current!.getLayer(layerId)) map.current!.removeLayer(layerId);
+        if (map.current!.getLayer(`${layerId}-glow`)) map.current!.removeLayer(`${layerId}-glow`);
+        if (map.current!.getSource(sourceId)) map.current!.removeSource(sourceId);
+      });
+      trailSourcesAdded.current.clear();
+      return;
+    }
+
+    trails.forEach((points, vehicleId) => {
+      if (points.length < 2) return;
+
+      const sourceId = `trail-${vehicleId}`;
+      const layerId = `trail-line-${vehicleId}`;
+      const isSelected = vehicleId === selectedVehicleId;
+
+      // Create line segments with speed data for gradient coloring
+      const features: GeoJSON.Feature<GeoJSON.LineString>[] = [];
+      for (let i = 0; i < points.length - 1; i++) {
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        const avgSpeed = (p1.speed + p2.speed) / 2;
+
+        features.push({
+          type: "Feature",
+          properties: {
+            speed: avgSpeed,
+            color: getSpeedColor(avgSpeed, 120),
+          },
+          geometry: {
+            type: "LineString",
+            coordinates: [
+              [p1.lng, p1.lat],
+              [p2.lng, p2.lat],
+            ],
+          },
+        });
+      }
+
+      const geojsonData: GeoJSON.FeatureCollection = {
+        type: "FeatureCollection",
+        features,
+      };
+
+      const existingSource = map.current!.getSource(sourceId) as mapboxgl.GeoJSONSource;
+      if (existingSource) {
+        existingSource.setData(geojsonData);
+      } else {
+        map.current!.addSource(sourceId, {
+          type: "geojson",
+          data: geojsonData,
+        });
+
+        // Glow
+        map.current!.addLayer({
+          id: `${layerId}-glow`,
+          type: "line",
+          source: sourceId,
+          layout: {
+            "line-join": "round",
+            "line-cap": "round",
+          },
+          paint: {
+            "line-color": isSelected ? ["get", "color"] : "#3b82f6",
+            "line-width": 10,
+            "line-opacity": 0.25,
+            "line-blur": 4,
+          },
+        });
+
+        // Main line
+        map.current!.addLayer({
+          id: layerId,
+          type: "line",
+          source: sourceId,
+          layout: {
+            "line-join": "round",
+            "line-cap": "round",
+          },
+          paint: {
+            "line-color": isSelected ? ["get", "color"] : "#3b82f6",
+            "line-width": isSelected ? 4 : 3,
+            "line-opacity": 0.95,
+          },
+        });
+
+        trailSourcesAdded.current.add(vehicleId);
+      }
+
+      // Update selection styling
+      if (map.current!.getLayer(layerId)) {
+        if (isSelected) {
+          map.current!.setPaintProperty(layerId, "line-color", ["get", "color"]);
+          map.current!.setPaintProperty(`${layerId}-glow`, "line-color", ["get", "color"]);
+          map.current!.setPaintProperty(layerId, "line-width", 4);
+        } else {
+          map.current!.setPaintProperty(layerId, "line-color", "#3b82f6");
+          map.current!.setPaintProperty(`${layerId}-glow`, "line-color", "#3b82f6");
+          map.current!.setPaintProperty(layerId, "line-width", 3);
+        }
+      }
+    });
+
+    // Remove trails for vehicles no longer tracked
+    trailSourcesAdded.current.forEach((vehicleId) => {
+      if (!trails.has(vehicleId)) {
+        const sourceId = `trail-${vehicleId}`;
+        const layerId = `trail-line-${vehicleId}`;
+
+        if (map.current!.getLayer(layerId)) map.current!.removeLayer(layerId);
+        if (map.current!.getLayer(`${layerId}-glow`)) map.current!.removeLayer(`${layerId}-glow`);
+        if (map.current!.getSource(sourceId)) map.current!.removeSource(sourceId);
+        trailSourcesAdded.current.delete(vehicleId);
+      }
+    });
+  }, [trails, mapLoaded, showTrails, selectedVehicleId]);
 
   // Update clusters on map interaction
+
   const updateClusters = useCallback(() => {
     if (!map.current || !mapLoaded) return;
 
