@@ -10,6 +10,7 @@ import {
   injectMarkerAnimations,
   getSpeedColor,
 } from "./AnimatedMarker";
+import { useMapMatching } from "@/hooks/useMapMatching";
 
 
 interface VehiclePoint {
@@ -65,8 +66,11 @@ const ClusteredMap = ({
   const trailSourcesAdded = useRef<Set<string>>(new Set());
   const trailAnimationMarkers = useRef<Map<string, mapboxgl.Marker>>(new Map());
   const trailAnimationFrames = useRef<Map<string, number>>(new Map());
+  const matchedTrailsCache = useRef<Map<string, [number, number][] | string>>(new Map());
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapboxToken, setMapboxToken] = useState<string>("");
+  
+  const { matchTrailToRoads } = useMapMatching(mapboxToken);
 
 
   // Inject marker animations on mount
@@ -168,7 +172,7 @@ const ClusteredMap = ({
       map.current = null;
     };
   }, [mapboxToken, mapStyle]);
-  // Draw vehicle trails (works in clustered mode too)
+  // Draw vehicle trails with map matching (snap to roads)
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
 
@@ -183,37 +187,84 @@ const ClusteredMap = ({
         if (map.current!.getSource(sourceId)) map.current!.removeSource(sourceId);
       });
       trailSourcesAdded.current.clear();
+      matchedTrailsCache.current.clear();
       return;
     }
 
-    trails.forEach((points, vehicleId) => {
+    const processTrail = async (vehicleId: string, points: TrailPoint[]) => {
       if (points.length < 2) return;
 
       const sourceId = `trail-${vehicleId}`;
       const layerId = `trail-line-${vehicleId}`;
       const isSelected = vehicleId === selectedVehicleId;
 
+      // Try to get map-matched coordinates
+      let matchedCoordinates: [number, number][] | null = null;
+      
+      // Create cache key to detect if we need to re-match
+      const cacheKey = `${points.length}-${points[0]?.lat.toFixed(4)}-${points[points.length - 1]?.lat.toFixed(4)}`;
+      const cachedCoords = matchedTrailsCache.current.get(vehicleId);
+      const existingCacheKey = matchedTrailsCache.current.get(`${vehicleId}-key`);
+      
+      if (cachedCoords && Array.isArray(cachedCoords) && existingCacheKey === cacheKey) {
+        matchedCoordinates = cachedCoords as [number, number][];
+      } else {
+        matchedCoordinates = await matchTrailToRoads(vehicleId, points);
+        if (matchedCoordinates) {
+          matchedTrailsCache.current.set(vehicleId, matchedCoordinates);
+          matchedTrailsCache.current.set(`${vehicleId}-key`, cacheKey as any);
+        }
+      }
+
+      // Use matched coordinates if available, otherwise fall back to raw GPS
+      const useCoordinates = matchedCoordinates || points.map(p => [p.lng, p.lat] as [number, number]);
+
       // Create line segments with speed data for gradient coloring
       const features: GeoJSON.Feature<GeoJSON.LineString>[] = [];
-      for (let i = 0; i < points.length - 1; i++) {
-        const p1 = points[i];
-        const p2 = points[i + 1];
-        const avgSpeed = (p1.speed + p2.speed) / 2;
+      
+      if (matchedCoordinates && matchedCoordinates.length > 1) {
+        // For matched routes, distribute speed data along the matched path
+        const speedStep = points.length / matchedCoordinates.length;
+        
+        for (let i = 0; i < matchedCoordinates.length - 1; i++) {
+          const speedIndex = Math.min(Math.floor(i * speedStep), points.length - 1);
+          const nextSpeedIndex = Math.min(Math.floor((i + 1) * speedStep), points.length - 1);
+          const avgSpeed = (points[speedIndex].speed + points[nextSpeedIndex].speed) / 2;
 
-        features.push({
-          type: "Feature",
-          properties: {
-            speed: avgSpeed,
-            color: getSpeedColor(avgSpeed, 120),
-          },
-          geometry: {
-            type: "LineString",
-            coordinates: [
-              [p1.lng, p1.lat],
-              [p2.lng, p2.lat],
-            ],
-          },
-        });
+          features.push({
+            type: "Feature",
+            properties: {
+              speed: avgSpeed,
+              color: getSpeedColor(avgSpeed, 120),
+            },
+            geometry: {
+              type: "LineString",
+              coordinates: [matchedCoordinates[i], matchedCoordinates[i + 1]],
+            },
+          });
+        }
+      } else {
+        // Fallback to raw GPS points
+        for (let i = 0; i < points.length - 1; i++) {
+          const p1 = points[i];
+          const p2 = points[i + 1];
+          const avgSpeed = (p1.speed + p2.speed) / 2;
+
+          features.push({
+            type: "Feature",
+            properties: {
+              speed: avgSpeed,
+              color: getSpeedColor(avgSpeed, 120),
+            },
+            geometry: {
+              type: "LineString",
+              coordinates: [
+                [p1.lng, p1.lat],
+                [p2.lng, p2.lat],
+              ],
+            },
+          });
+        }
       }
 
       const geojsonData: GeoJSON.FeatureCollection = {
@@ -221,17 +272,19 @@ const ClusteredMap = ({
         features,
       };
 
-      const existingSource = map.current!.getSource(sourceId) as mapboxgl.GeoJSONSource;
+      if (!map.current) return;
+
+      const existingSource = map.current.getSource(sourceId) as mapboxgl.GeoJSONSource;
       if (existingSource) {
         existingSource.setData(geojsonData);
       } else {
-        map.current!.addSource(sourceId, {
+        map.current.addSource(sourceId, {
           type: "geojson",
           data: geojsonData,
         });
 
         // Glow
-        map.current!.addLayer({
+        map.current.addLayer({
           id: `${layerId}-glow`,
           type: "line",
           source: sourceId,
@@ -248,7 +301,7 @@ const ClusteredMap = ({
         });
 
         // Main line
-        map.current!.addLayer({
+        map.current.addLayer({
           id: layerId,
           type: "line",
           source: sourceId,
@@ -267,17 +320,22 @@ const ClusteredMap = ({
       }
 
       // Update selection styling
-      if (map.current!.getLayer(layerId)) {
+      if (map.current.getLayer(layerId)) {
         if (isSelected) {
-          map.current!.setPaintProperty(layerId, "line-color", ["get", "color"]);
-          map.current!.setPaintProperty(`${layerId}-glow`, "line-color", ["get", "color"]);
-          map.current!.setPaintProperty(layerId, "line-width", 4);
+          map.current.setPaintProperty(layerId, "line-color", ["get", "color"]);
+          map.current.setPaintProperty(`${layerId}-glow`, "line-color", ["get", "color"]);
+          map.current.setPaintProperty(layerId, "line-width", 4);
         } else {
-          map.current!.setPaintProperty(layerId, "line-color", "#3b82f6");
-          map.current!.setPaintProperty(`${layerId}-glow`, "line-color", "#3b82f6");
-          map.current!.setPaintProperty(layerId, "line-width", 3);
+          map.current.setPaintProperty(layerId, "line-color", "#3b82f6");
+          map.current.setPaintProperty(`${layerId}-glow`, "line-color", "#3b82f6");
+          map.current.setPaintProperty(layerId, "line-width", 3);
         }
       }
+    };
+
+    // Process all trails
+    trails.forEach((points, vehicleId) => {
+      processTrail(vehicleId, points);
     });
 
     // Remove trails for vehicles no longer tracked
@@ -290,11 +348,12 @@ const ClusteredMap = ({
         if (map.current!.getLayer(`${layerId}-glow`)) map.current!.removeLayer(`${layerId}-glow`);
         if (map.current!.getSource(sourceId)) map.current!.removeSource(sourceId);
         trailSourcesAdded.current.delete(vehicleId);
+        matchedTrailsCache.current.delete(vehicleId);
       }
     });
-  }, [trails, mapLoaded, showTrails, selectedVehicleId]);
+  }, [trails, mapLoaded, showTrails, selectedVehicleId, matchTrailToRoads]);
 
-  // Animate car icon along the trail
+  // Animate car icon along the trail (follows road-matched path)
   useEffect(() => {
     if (!map.current || !mapLoaded || !showTrails) {
       // Cleanup animation markers when trails are disabled
@@ -350,15 +409,21 @@ const ClusteredMap = ({
         return el;
       };
 
-      // Calculate total distance and segment info
-      const segments: { start: TrailPoint; end: TrailPoint; distance: number }[] = [];
+      // Use matched road coordinates if available, otherwise fall back to raw GPS
+      const cachedCoords = matchedTrailsCache.current.get(vehicleId);
+      const animationCoords: [number, number][] = (cachedCoords && Array.isArray(cachedCoords) && cachedCoords.length > 0 && typeof cachedCoords[0] !== 'string')
+        ? cachedCoords as [number, number][]
+        : points.map(p => [p.lng, p.lat] as [number, number]);
+
+      // Calculate total distance and segment info using animation coordinates
+      const segments: { start: [number, number]; end: [number, number]; distance: number }[] = [];
       let totalDistance = 0;
 
-      for (let i = 0; i < points.length - 1; i++) {
-        const start = points[i];
-        const end = points[i + 1];
-        const dx = end.lng - start.lng;
-        const dy = end.lat - start.lat;
+      for (let i = 0; i < animationCoords.length - 1; i++) {
+        const start = animationCoords[i];
+        const end = animationCoords[i + 1];
+        const dx = end[0] - start[0];
+        const dy = end[1] - start[1];
         const distance = Math.sqrt(dx * dx + dy * dy);
         segments.push({ start, end, distance });
         totalDistance += distance;
@@ -373,13 +438,13 @@ const ClusteredMap = ({
           element: createCarElement(),
           anchor: "center",
         })
-          .setLngLat([points[0].lng, points[0].lat])
+          .setLngLat(animationCoords[0])
           .addTo(map.current!);
         trailAnimationMarkers.current.set(vehicleId, marker);
       }
 
       // Animation loop
-      const animationDuration = Math.min(10000, Math.max(5000, points.length * 100)); // 5-10 seconds
+      const animationDuration = Math.min(15000, Math.max(8000, animationCoords.length * 50)); // 8-15 seconds for smoother animation
       let startTime: number | null = null;
 
       const animate = (currentTime: number) => {
@@ -390,19 +455,19 @@ const ClusteredMap = ({
         // Find current position along trail
         const targetDistance = progress * totalDistance;
         let accumulatedDistance = 0;
-        let currentLng = points[0].lng;
-        let currentLat = points[0].lat;
+        let currentLng = animationCoords[0][0];
+        let currentLat = animationCoords[0][1];
         let heading = 0;
 
         for (const segment of segments) {
           if (accumulatedDistance + segment.distance >= targetDistance) {
             const segmentProgress = (targetDistance - accumulatedDistance) / segment.distance;
-            currentLng = segment.start.lng + (segment.end.lng - segment.start.lng) * segmentProgress;
-            currentLat = segment.start.lat + (segment.end.lat - segment.start.lat) * segmentProgress;
+            currentLng = segment.start[0] + (segment.end[0] - segment.start[0]) * segmentProgress;
+            currentLat = segment.start[1] + (segment.end[1] - segment.start[1]) * segmentProgress;
             
             // Calculate heading
-            const dx = segment.end.lng - segment.start.lng;
-            const dy = segment.end.lat - segment.start.lat;
+            const dx = segment.end[0] - segment.start[0];
+            const dy = segment.end[1] - segment.start[1];
             heading = (Math.atan2(dx, dy) * 180) / Math.PI;
             break;
           }
