@@ -43,6 +43,8 @@ interface ClusteredMapProps {
   onMapReady?: (map: mapboxgl.Map) => void;
   showTrails?: boolean;
   trails?: Map<string, TrailPoint[]>;
+  onTripReplay?: (vehicleId: string, plate: string) => void;
+  onManageAsset?: (vehicleId: string, plate: string) => void;
 }
 
 
@@ -56,6 +58,8 @@ const ClusteredMap = ({
   onMapReady,
   showTrails = true,
   trails = new Map(),
+  onTripReplay,
+  onManageAsset,
 }: ClusteredMapProps) => {
 
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -77,6 +81,29 @@ const ClusteredMap = ({
   useEffect(() => {
     injectMarkerAnimations();
   }, []);
+
+  // Listen for popup action events (Trip Replay, Manage Asset)
+  useEffect(() => {
+    const handleTripReplay = (e: CustomEvent<{ vehicleId: string; plate: string }>) => {
+      if (onTripReplay) {
+        onTripReplay(e.detail.vehicleId, e.detail.plate);
+      }
+    };
+
+    const handleManageAsset = (e: CustomEvent<{ vehicleId: string; plate: string }>) => {
+      if (onManageAsset) {
+        onManageAsset(e.detail.vehicleId, e.detail.plate);
+      }
+    };
+
+    window.addEventListener('openTripReplay', handleTripReplay as EventListener);
+    window.addEventListener('manageAsset', handleManageAsset as EventListener);
+
+    return () => {
+      window.removeEventListener('openTripReplay', handleTripReplay as EventListener);
+      window.removeEventListener('manageAsset', handleManageAsset as EventListener);
+    };
+  }, [onTripReplay, onManageAsset]);
 
   // Create supercluster index
   const supercluster = useMemo(() => {
@@ -599,23 +626,72 @@ const ClusteredMap = ({
           const vehicle = cluster.properties as VehiclePoint;
           const isOverspeeding = vehicle.speedLimit && vehicle.speed > vehicle.speedLimit;
           marker.setPopup(
-            new mapboxgl.Popup({ offset: 25, closeButton: false, closeOnClick: true, className: 'vehicle-popup' }).setHTML(`
-              <div class="vehicle-popup-content">
-                <div class="popup-header">
-                  <span class="popup-plate">${vehicle.plate}</span>
-                  <span class="popup-status popup-status-${vehicle.status}">${vehicle.status}</span>
+            new mapboxgl.Popup({ offset: 25, closeButton: true, closeOnClick: false, className: 'vehicle-popup' }).setHTML(`
+              <div class="vehicle-popup-content" style="min-width:320px;max-width:380px;font-family:system-ui,-apple-system,sans-serif;padding:14px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #e5e7eb;">
+                  <span style="font-weight:700;font-size:16px;color:#111827;">${vehicle.plate}</span>
+                  <span style="font-size:10px;padding:4px 10px;border-radius:9999px;font-weight:600;text-transform:uppercase;background:${vehicle.status === 'moving' ? '#dcfce7' : vehicle.status === 'idle' ? '#fef3c7' : vehicle.status === 'stopped' ? '#f3f4f6' : '#fee2e2'};color:${vehicle.status === 'moving' ? '#166534' : vehicle.status === 'idle' ? '#92400e' : vehicle.status === 'stopped' ? '#4b5563' : '#991b1b'};">${vehicle.status}</span>
                 </div>
-                ${vehicle.driverName ? `<div class="popup-driver"><span class="popup-driver-icon">👤</span> ${vehicle.driverName}${vehicle.driverPhone ? ` <span class="popup-driver-phone">(${vehicle.driverPhone})</span>` : ''}</div>` : '<div class="popup-driver popup-no-driver">No driver assigned</div>'}
-                ${isOverspeeding ? `<div class="popup-overspeeding">⚠️ Overspeeding (limit: ${vehicle.speedLimit} km/h)</div>` : ''}
-                <div class="popup-stats">
-                  <div class="popup-stat">
-                    <span class="popup-stat-value ${isOverspeeding ? 'text-destructive' : ''}">${vehicle.speed}</span>
-                    <span class="popup-stat-label">km/h</span>
+                ${vehicle.driverName ? `
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px;background:#f9fafb;border-radius:8px;">
+                    <div style="width:28px;height:28px;background:linear-gradient(135deg, #8DC63F 0%, #6ba02f 100%);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:600;font-size:11px;">
+                      ${vehicle.driverName.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
+                    </div>
+                    <div>
+                      <div style="font-weight:600;font-size:13px;color:#111827;">${vehicle.driverName}</div>
+                      ${vehicle.driverPhone ? `<div style="color:#6b7280;font-size:11px;">📞 ${vehicle.driverPhone}</div>` : ''}
+                    </div>
                   </div>
-                  <div class="popup-stat">
-                    <span class="popup-stat-value">${vehicle.fuel}</span>
-                    <span class="popup-stat-label">% fuel</span>
+                ` : '<div style="color:#9ca3af;font-size:12px;font-style:italic;margin-bottom:10px;">No driver assigned</div>'}
+                ${isOverspeeding ? `
+                  <div style="background:#fee2e2;color:#991b1b;font-size:11px;font-weight:600;padding:8px 12px;border-radius:6px;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+                    <span>⚠️</span> OVERSPEEDING (limit: ${vehicle.speedLimit} km/h)
                   </div>
+                ` : ''}
+                <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;">
+                  <div style="text-align:center;padding:10px;background:#f9fafb;border-radius:8px;">
+                    <div style="font-size:18px;font-weight:700;color:${isOverspeeding ? '#dc2626' : '#111827'};">${vehicle.speed}</div>
+                    <div style="font-size:10px;color:#6b7280;">km/h</div>
+                  </div>
+                  <div style="text-align:center;padding:10px;background:#f9fafb;border-radius:8px;">
+                    <div style="font-size:18px;font-weight:700;color:${vehicle.fuel < 15 ? '#dc2626' : vehicle.fuel < 25 ? '#f59e0b' : '#22c55e'};">${vehicle.fuel}%</div>
+                    <div style="font-size:10px;color:#6b7280;">Fuel</div>
+                  </div>
+                </div>
+                <!-- Quick Actions Toolbar -->
+                <div style="display:flex;justify-content:center;gap:6px;padding-top:10px;border-top:1px solid #e5e7eb;">
+                  <button 
+                    onclick="window.open('https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${vehicle.lat},${vehicle.lng}', '_blank')"
+                    style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;cursor:pointer;"
+                    title="Street View"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 1.892.402 3.13 1.5 4.5L12 22l6.5-7.5c1.098-1.37 1.5-2.608 1.5-4.5a8 8 0 0 0-8-8z"/></svg>
+                    <span style="font-size:9px;color:#374151;">Street</span>
+                  </button>
+                  <button 
+                    onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${vehicle.lat},${vehicle.lng}', '_blank')"
+                    style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;cursor:pointer;"
+                    title="Get Directions"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+                    <span style="font-size:9px;color:#374151;">Directions</span>
+                  </button>
+                  <button 
+                    onclick="window.dispatchEvent(new CustomEvent('openTripReplay', { detail: { vehicleId: '${vehicle.id}', plate: '${vehicle.plate}' } }))"
+                    style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;cursor:pointer;"
+                    title="Trip Replay"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    <span style="font-size:9px;color:#374151;">Replay</span>
+                  </button>
+                  <button 
+                    onclick="window.dispatchEvent(new CustomEvent('manageAsset', { detail: { vehicleId: '${vehicle.id}', plate: '${vehicle.plate}' } }))"
+                    style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;cursor:pointer;"
+                    title="Manage Asset"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <span style="font-size:9px;color:#374151;">Manage</span>
+                  </button>
                 </div>
               </div>
             `)

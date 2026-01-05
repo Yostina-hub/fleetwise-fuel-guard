@@ -51,6 +51,8 @@ interface LiveTrackingMapProps {
   trails?: Map<string, TrailPoint[]>;
   openPopupVehicleId?: string | null;
   onPopupOpened?: () => void;
+  onTripReplay?: (vehicleId: string, plate: string) => void;
+  onManageAsset?: (vehicleId: string, plate: string) => void;
 }
 
 const LiveTrackingMap = ({ 
@@ -63,7 +65,9 @@ const LiveTrackingMap = ({
   showTrails = true,
   trails = new Map(),
   openPopupVehicleId,
-  onPopupOpened
+  onPopupOpened,
+  onTripReplay,
+  onManageAsset
 }: LiveTrackingMapProps) => {
 const mapContainer = useRef<HTMLDivElement>(null);
 const map = useRef<mapboxgl.Map | null>(null);
@@ -85,6 +89,29 @@ const [vehicleRoadInfo, setVehicleRoadInfo] = useState<Map<string, { road: strin
 useEffect(() => {
   injectMarkerAnimations();
 }, []);
+
+// Listen for popup action events (Trip Replay, Manage Asset)
+useEffect(() => {
+  const handleTripReplay = (e: CustomEvent<{ vehicleId: string; plate: string }>) => {
+    if (onTripReplay) {
+      onTripReplay(e.detail.vehicleId, e.detail.plate);
+    }
+  };
+
+  const handleManageAsset = (e: CustomEvent<{ vehicleId: string; plate: string }>) => {
+    if (onManageAsset) {
+      onManageAsset(e.detail.vehicleId, e.detail.plate);
+    }
+  };
+
+  window.addEventListener('openTripReplay', handleTripReplay as EventListener);
+  window.addEventListener('manageAsset', handleManageAsset as EventListener);
+
+  return () => {
+    window.removeEventListener('openTripReplay', handleTripReplay as EventListener);
+    window.removeEventListener('manageAsset', handleManageAsset as EventListener);
+  };
+}, [onTripReplay, onManageAsset]);
 
   // Fetch token from backend
   useEffect(() => {
@@ -579,6 +606,61 @@ return () => {
             </div>
           </div>
         ` : ''}
+
+        <!-- Quick Actions Toolbar -->
+        <div style="display:flex;justify-content:center;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid #e5e7eb;">
+          <button 
+            onclick="window.open('https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${v.lat},${v.lng}', '_blank')"
+            style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 14px;background:linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);border:1px solid #e5e7eb;border-radius:10px;cursor:pointer;transition:all 0.2s;"
+            onmouseover="this.style.background='linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)';this.style.borderColor='#93c5fd'"
+            onmouseout="this.style.background='linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)';this.style.borderColor='#e5e7eb'"
+            title="Street View"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="10" r="3"/>
+              <path d="M12 2a8 8 0 0 0-8 8c0 1.892.402 3.13 1.5 4.5L12 22l6.5-7.5c1.098-1.37 1.5-2.608 1.5-4.5a8 8 0 0 0-8-8z"/>
+            </svg>
+            <span style="font-size:10px;color:#374151;font-weight:500;">Street View</span>
+          </button>
+          <button 
+            onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${v.lat},${v.lng}', '_blank')"
+            style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 14px;background:linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);border:1px solid #e5e7eb;border-radius:10px;cursor:pointer;transition:all 0.2s;"
+            onmouseover="this.style.background='linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)';this.style.borderColor='#86efac'"
+            onmouseout="this.style.background='linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)';this.style.borderColor='#e5e7eb'"
+            title="Get Directions"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m3 11 18-5v12L3 14v-3z"/>
+              <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>
+            </svg>
+            <span style="font-size:10px;color:#374151;font-weight:500;">Directions</span>
+          </button>
+          <button 
+            onclick="window.dispatchEvent(new CustomEvent('openTripReplay', { detail: { vehicleId: '${v.id}', plate: '${v.plate}' } }))"
+            style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 14px;background:linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);border:1px solid #e5e7eb;border-radius:10px;cursor:pointer;transition:all 0.2s;"
+            onmouseover="this.style.background='linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%)';this.style.borderColor='#d8b4fe'"
+            onmouseout="this.style.background='linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)';this.style.borderColor='#e5e7eb'"
+            title="Trip Replay"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            <span style="font-size:10px;color:#374151;font-weight:500;">Trip Replay</span>
+          </button>
+          <button 
+            onclick="window.dispatchEvent(new CustomEvent('manageAsset', { detail: { vehicleId: '${v.id}', plate: '${v.plate}' } }))"
+            style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 14px;background:linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);border:1px solid #e5e7eb;border-radius:10px;cursor:pointer;transition:all 0.2s;"
+            onmouseover="this.style.background='linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)';this.style.borderColor='#fdba74'"
+            onmouseout="this.style.background='linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)';this.style.borderColor='#e5e7eb'"
+            title="Manage Asset"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <span style="font-size:10px;color:#374151;font-weight:500;">Manage</span>
+          </button>
+        </div>
       </div>
     `;
   }, []);
