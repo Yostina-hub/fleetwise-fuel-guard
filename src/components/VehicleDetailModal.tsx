@@ -41,6 +41,7 @@ import CreateIncidentDialog from "@/components/incidents/CreateIncidentDialog";
 import DriverDetailDialog from "@/components/fleet/DriverDetailDialog";
 import TripTimeline from "@/components/vehicle/TripTimeline";
 import FuelMetricsPanel from "@/components/vehicle/FuelMetricsPanel";
+import AlertsPanel from "@/components/vehicle/AlertsPanel";
 import { useVehicleData } from "@/hooks/useVehicleData";
 import { useDrivers } from "@/hooks/useDrivers";
 import { format, formatDistanceToNow } from "date-fns";
@@ -264,54 +265,12 @@ const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalP
               {/* Alerts Tab */}
               <TabsContent value="alerts" className="mt-0 h-full">
                 <ScrollArea className="h-full">
-                  <div className="p-4 space-y-4">
-                    {isLoading ? (
-                      <div className="space-y-3">
-                        {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full" />)}
-                      </div>
-                    ) : driverEvents.length > 0 ? (
-                      <div className="space-y-3">
-                        {driverEvents.map((event, i) => (
-                          <Card key={i} className="hover:bg-muted/50 transition-colors">
-                            <CardContent className="p-4">
-                              <div className="flex items-start gap-3">
-                                <div className={`p-2 rounded-full ${
-                                  event.severity === 'high' ? 'bg-destructive/10' :
-                                  event.severity === 'medium' ? 'bg-warning/10' : 'bg-muted'
-                                }`}>
-                                  <AlertTriangle className={`h-4 w-4 ${
-                                    event.severity === 'high' ? 'text-destructive' :
-                                    event.severity === 'medium' ? 'text-warning' : 'text-muted-foreground'
-                                  }`} />
-                                </div>
-                                <div className="flex-1">
-                                  <p className="font-medium capitalize">
-                                    {event.event_type.replace('_', ' ')}
-                                  </p>
-                                  <p className="text-sm text-muted-foreground mt-1">
-                                    {event.address || 'Unknown location'}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground mt-2">
-                                    {formatDistanceToNow(new Date(event.event_time), { addSuffix: true })}
-                                  </p>
-                                </div>
-                                <Badge variant={
-                                  event.severity === 'high' ? 'destructive' :
-                                  event.severity === 'medium' ? 'secondary' : 'outline'
-                                }>
-                                  {event.severity}
-                                </Badge>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12">
-                        <Bell className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                        <p className="text-muted-foreground">No alerts for this vehicle</p>
-                      </div>
-                    )}
+                  <div className="p-4">
+                    <AlertsPanel
+                      alerts={driverEvents}
+                      isLoading={isLoading}
+                      vehicleId={actualVehicleId}
+                    />
                   </div>
                 </ScrollArea>
               </TabsContent>
