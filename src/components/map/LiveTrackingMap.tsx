@@ -551,12 +551,19 @@ return () => {
 
     // Add or update markers with smooth animations
     vehicles.forEach(vehicle => {
-      // Fetch address if not already cached
-      if (!vehicleAddresses.has(vehicle.id)) {
+      // Get previous position to check if it changed significantly
+      const prevPos = previousPositions.current.get(vehicle.id);
+      const positionChanged = prevPos && (
+        Math.abs(prevPos.lng - vehicle.lng) > 0.0001 || 
+        Math.abs(prevPos.lat - vehicle.lat) > 0.0001
+      );
+      
+      // Fetch address if not already cached OR if position changed significantly
+      if (!vehicleAddresses.has(vehicle.id) || positionChanged) {
         fetchAddressDebounced(vehicle.lng, vehicle.lat, vehicle.id);
       }
       
-      const address = vehicleAddresses.get(vehicle.id) || 'Loading address...';
+      const address = vehicleAddresses.get(vehicle.id) || `Locating... (${vehicle.lat.toFixed(4)}, ${vehicle.lng.toFixed(4)})`;
       const existingMarker = markers.current.get(vehicle.id);
       const previousPos = previousPositions.current.get(vehicle.id);
       
