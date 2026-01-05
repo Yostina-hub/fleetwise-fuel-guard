@@ -165,11 +165,28 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
     font-family: 'Gotham', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
     overscroll-behavior-x: none;
+    overscroll-behavior: none;
+  }
+
+  /* Prevent horizontal swipe navigation globally */
+  html {
+    overscroll-behavior-x: none;
+    overscroll-behavior: none;
   }
 
   /* Keep horizontal scrolling contained (prevents back/forward swipe navigation) */
-  .overflow-x-auto {
+  .overflow-x-auto,
+  [class*="overflow-x-"] {
     overscroll-behavior-x: contain;
+    overscroll-behavior: contain;
+    touch-action: pan-y pinch-zoom;
+  }
+
+  /* Extra table containment */
+  table,
+  .table-container,
+  [role="table"] {
+    touch-action: pan-x pan-y;
   }
   
   /* Typography - ethio telecom Brand Guidelines */
