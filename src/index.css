@@ -670,27 +670,59 @@ All colors MUST be HSL.
 .vehicle-popup .mapboxgl-popup-content {
   min-width: 380px;
   max-width: 450px;
-  max-height: 75vh;
-  overflow: auto;
+  max-height: 70vh;
+  overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+}
+
+.vehicle-popup .mapboxgl-popup-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.vehicle-popup .mapboxgl-popup-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.vehicle-popup .mapboxgl-popup-content::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 3px;
+}
+
+.vehicle-popup .mapboxgl-popup-content::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
 }
 
 .vehicle-popup .vehicle-popup-drag-handle {
   display: flex;
+  align-items: center;
   justify-content: center;
-  padding: 6px 0 10px;
-  margin: -6px 0 10px;
+  padding: 10px 0 12px;
+  margin: -8px -8px 10px -8px;
   cursor: grab;
   user-select: none;
   touch-action: none;
+  background: linear-gradient(to bottom, hsl(var(--muted) / 0.8), transparent);
+  border-radius: 12px 12px 0 0;
+}
+
+.vehicle-popup .vehicle-popup-drag-handle:active {
+  cursor: grabbing;
 }
 
 .vehicle-popup .vehicle-popup-drag-grip {
-  width: 52px;
+  width: 60px;
   height: 6px;
   border-radius: 9999px;
-  background: hsl(var(--muted-foreground) / 0.25);
+  background: hsl(var(--muted-foreground) / 0.35);
+  transition: background 0.15s;
+}
+
+.vehicle-popup .vehicle-popup-drag-handle:hover .vehicle-popup-drag-grip {
+  background: hsl(var(--muted-foreground) / 0.5);
 }
 
 /* Ensure popup stays within map bounds */
