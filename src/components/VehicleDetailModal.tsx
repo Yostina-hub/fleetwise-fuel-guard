@@ -42,6 +42,7 @@ import DriverDetailDialog from "@/components/fleet/DriverDetailDialog";
 import TripTimeline from "@/components/vehicle/TripTimeline";
 import FuelMetricsPanel from "@/components/vehicle/FuelMetricsPanel";
 import AlertsPanel from "@/components/vehicle/AlertsPanel";
+import ZonesPanel from "@/components/vehicle/ZonesPanel";
 import { useVehicleData } from "@/hooks/useVehicleData";
 import { useDrivers } from "@/hooks/useDrivers";
 import { format, formatDistanceToNow } from "date-fns";
@@ -278,12 +279,8 @@ const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalP
               {/* Zones Tab */}
               <TabsContent value="zones" className="mt-0 h-full">
                 <ScrollArea className="h-full">
-                  <div className="p-4 text-center py-12">
-                    <MapPin className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                    <p className="text-muted-foreground">Geofence zones coming soon</p>
-                    <Button variant="outline" className="mt-4" onClick={handleTrackOnMap}>
-                      View on Map
-                    </Button>
+                  <div className="p-4">
+                    <ZonesPanel vehicleId={actualVehicleId} />
                   </div>
                 </ScrollArea>
               </TabsContent>
