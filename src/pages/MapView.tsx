@@ -306,9 +306,14 @@ const MapView = () => {
 
               {/* Trail Toggle Button */}
               <Button
-                variant={showTrails ? "default" : "secondary"}
+                variant={showTrails ? "default" : "outline"}
                 size="sm"
-                className="h-9 gap-2 bg-background/90 backdrop-blur-sm border shadow-lg"
+                className={cn(
+                  "h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium",
+                  showTrails 
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90" 
+                    : "bg-white/95 text-foreground hover:bg-white border-border"
+                )}
                 onClick={() => setShowTrails(!showTrails)}
                 aria-label="Toggle vehicle trails"
                 aria-pressed={showTrails}
@@ -319,9 +324,14 @@ const MapView = () => {
 
               {/* Nearby Vehicles Search Button */}
               <Button
-                variant={showNearbySearch ? "default" : "secondary"}
+                variant={showNearbySearch ? "default" : "outline"}
                 size="sm"
-                className="h-9 gap-2 bg-background/90 backdrop-blur-sm border shadow-lg"
+                className={cn(
+                  "h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium",
+                  showNearbySearch 
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90" 
+                    : "bg-white/95 text-foreground hover:bg-white border-border"
+                )}
                 onClick={() => setShowNearbySearch(!showNearbySearch)}
                 aria-label="Search for nearby vehicles"
                 aria-pressed={showNearbySearch}
