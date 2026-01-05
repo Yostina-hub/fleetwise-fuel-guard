@@ -758,7 +758,14 @@ return () => {
         el.dataset.speed = vehicle.speed.toString();
 
         const roadInfo = vehicleRoadInfo.get(vehicle.id);
-        const popup = new mapboxgl.Popup({ offset: 25, closeButton: true, closeOnClick: false, className: 'vehicle-popup' })
+        const popup = new mapboxgl.Popup({ 
+          offset: 25, 
+          closeButton: true, 
+          closeOnClick: false, 
+          className: 'vehicle-popup',
+          anchor: 'bottom',
+          maxWidth: '450px'
+        })
           .setHTML(generatePopupHTML(address, vehicle, roadInfo));
 
         const marker = new mapboxgl.Marker({
@@ -776,11 +783,16 @@ return () => {
         el.addEventListener('click', () => {
           onVehicleClick?.(vehicle);
           if (map.current) {
+            // Calculate offset to center popup in view (popup opens above marker)
+            const mapHeight = map.current.getContainer().clientHeight;
+            const offsetY = mapHeight * 0.15; // Offset 15% up to center the popup
+            
             map.current.flyTo({
               center: [vehicle.lng, vehicle.lat],
               zoom: 16,
               duration: 1200,
-              essential: true
+              essential: true,
+              offset: [0, offsetY] // Pan down so popup appears centered
             });
           }
           // Refresh popup content with latest address and road info
@@ -843,12 +855,17 @@ return () => {
         }
       });
       
-      // Fly to the vehicle
+      // Calculate offset to center popup in view (popup opens above marker)
+      const mapHeight = map.current.getContainer().clientHeight;
+      const offsetY = mapHeight * 0.15; // Offset 15% up to center the popup
+      
+      // Fly to the vehicle with offset so popup is centered
       map.current.flyTo({
         center: [vehicle.lng, vehicle.lat],
         zoom: 16,
         duration: 1200,
-        essential: true
+        essential: true,
+        offset: [0, offsetY]
       });
       
       // Trigger address fetch if not already cached
