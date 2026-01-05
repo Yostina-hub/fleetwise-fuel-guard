@@ -671,7 +671,26 @@ All colors MUST be HSL.
   min-width: 380px;
   max-width: 450px;
   max-height: 75vh;
-  overflow-y: auto;
+  overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.vehicle-popup .vehicle-popup-drag-handle {
+  display: flex;
+  justify-content: center;
+  padding: 6px 0 10px;
+  margin: -6px 0 10px;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.vehicle-popup .vehicle-popup-drag-grip {
+  width: 52px;
+  height: 6px;
+  border-radius: 9999px;
+  background: hsl(var(--muted-foreground) / 0.25);
 }
 
 /* Ensure popup stays within map bounds */
