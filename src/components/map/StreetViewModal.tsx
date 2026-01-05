@@ -49,19 +49,42 @@ export function StreetViewModal({
 
         <div className="space-y-4 py-4">
           <p className="text-sm text-muted-foreground">
-            Click the button below to open {isStreetView ? "Street View" : "Google Maps Directions"} in a new tab.
+            Google blocks being opened inside the in-app preview frame; use the link below.
           </p>
-          
-          <div className="text-xs text-muted-foreground bg-muted p-3 rounded-md">
-            <strong>Location:</strong> {lat.toFixed(6)}, {lng.toFixed(6)}
+
+          <div className="text-xs text-muted-foreground bg-muted p-3 rounded-md space-y-2">
+            <div>
+              <strong>Location:</strong> {lat.toFixed(6)}, {lng.toFixed(6)}
+            </div>
+            <div className="break-all font-mono">{url}</div>
           </div>
 
-          <Button asChild className="w-full gap-2">
-            <a href={url} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="h-4 w-4" />
-              Open in Google Maps
-            </a>
-          </Button>
+          <div className="flex gap-2">
+            <Button asChild className="flex-1 gap-2">
+              <a href={url} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-4 w-4" />
+                Open
+              </a>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(url);
+                } catch {
+                  // ignore (some browsers block clipboard in iframes)
+                }
+              }}
+            >
+              Copy link
+            </Button>
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            If “Open” is blocked in the preview, paste the copied link into a new tab.
+          </p>
         </div>
       </DialogContent>
     </Dialog>
