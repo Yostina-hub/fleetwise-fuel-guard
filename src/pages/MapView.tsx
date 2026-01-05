@@ -329,8 +329,8 @@ const MapView = () => {
                 className={cn(
                   "h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium",
                   showNearbySearch 
-                    ? "bg-primary text-primary-foreground hover:bg-primary/90" 
-                    : "bg-white/95 text-foreground hover:bg-white border-border"
+                    ? "bg-primary text-primary-foreground" 
+                    : "bg-white/95 text-foreground border-border"
                 )}
                 onClick={() => setShowNearbySearch(!showNearbySearch)}
                 aria-label="Search for nearby vehicles"
