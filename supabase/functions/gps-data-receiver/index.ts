@@ -719,7 +719,13 @@ async function processGPSData(
 
   // Insert telemetry data if vehicle is linked
   if (device.vehicle_id) {
-    const speedValue = speed ? parseFloat(speed) : 0;
+    const rawSpeed = speed ? parseFloat(speed) : 0;
+    // TK103/H02 commonly report speed in knots; convert to km/h for storage & UI
+    // 1 knot = 1.852 km/h
+    const speedValue = (protocol === 'TK103' || protocol === 'H02')
+      ? Math.round(rawSpeed * 1.852 * 100) / 100
+      : rawSpeed;
+
     const ignitionState = ignition === '1' || ignition === 'true' || ignition === true;
     const latValue = parseFloat(lat);
     const lngValue = parseFloat(lng);
