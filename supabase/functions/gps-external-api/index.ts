@@ -143,6 +143,7 @@ interface TelemetryRecord {
   latitude?: number;
   longitude?: number;
   speed_kmh?: number;
+  speed_knots?: number;  // Speed in knots - will be auto-converted to km/h
   heading?: number;
   altitude_m?: number;
   ignition?: boolean;
@@ -424,13 +425,19 @@ async function processRecord(supabase: any, record: TelemetryRecord): Promise<Pr
       record.longitude!
     );
 
+    // Convert speed from knots to km/h if provided, otherwise use speed_kmh
+    // 1 knot = 1.852 km/h
+    const speedKmh = record.speed_knots !== undefined 
+      ? Math.round(record.speed_knots * 1.852 * 100) / 100 
+      : (record.speed_kmh ?? 0);
+
     // Build telemetry record
     const telemetryData = {
       vehicle_id: device.vehicle_id,
       organization_id: device.organization_id,
       latitude: record.latitude,
       longitude: record.longitude,
-      speed_kmh: record.speed_kmh ?? 0,
+      speed_kmh: speedKmh,
       heading: record.heading ?? null,
       altitude_meters: record.altitude_m ?? null,
       engine_on: ignitionState,
