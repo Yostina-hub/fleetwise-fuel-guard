@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,7 @@ const CLUSTER_THRESHOLD = 100;
 
 const MapView = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { vehicles: dbVehicles, loading, refetch } = useVehicles();
   const { telemetry, isVehicleOnline } = useVehicleTelemetry();
   const { governorConfigs } = useSpeedGovernor();
@@ -209,6 +210,16 @@ const MapView = () => {
     setPopupVehicleId(null);
   }, []);
 
+  // Handle Trip Replay from popup
+  const handleTripReplay = useCallback((vehicleId: string, plate: string) => {
+    navigate('/route-history', { state: { selectedVehicleId: vehicleId, plate } });
+  }, [navigate]);
+
+  // Handle Manage Asset from popup
+  const handleManageAsset = useCallback((vehicleId: string, plate: string) => {
+    navigate('/fleet', { state: { selectedVehicleId: vehicleId, openModal: true } });
+  }, [navigate]);
+
   // Stats
   const onlineCount = vehicles.filter(v => !v.isOffline).length;
   const movingCount = vehicles.filter(v => v.status === 'moving').length;
@@ -240,6 +251,8 @@ const MapView = () => {
               onMapReady={setMapInstance}
               showTrails={showTrails}
               trails={trails}
+              onTripReplay={handleTripReplay}
+              onManageAsset={handleManageAsset}
             />
           ) : (
             <LiveTrackingMap
@@ -253,6 +266,8 @@ const MapView = () => {
               trails={trails}
               openPopupVehicleId={popupVehicleId}
               onPopupOpened={handlePopupOpened}
+              onTripReplay={handleTripReplay}
+              onManageAsset={handleManageAsset}
             />
           )}
 
