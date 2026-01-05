@@ -305,7 +305,7 @@ const MapView = () => {
 
   return (
     <Layout>
-      <div className="flex h-full overflow-hidden">
+      <div className="flex h-[calc(100vh-1px)] overflow-hidden">
         {/* Map Area */}
         <div className="flex-1 relative">
           {useClusteredMap ? (
