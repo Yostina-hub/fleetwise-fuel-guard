@@ -64,6 +64,8 @@ const MapView = () => {
     lng: number;
     plate: string;
     type: 'streetview' | 'directions';
+    originLat?: number;
+    originLng?: number;
   }>({ open: false, lat: 0, lng: 0, plate: '', type: 'streetview' });
   
   const [mapStyle, setMapStyle] = useState<'streets' | 'satellite'>('satellite');
@@ -243,13 +245,35 @@ const MapView = () => {
     };
 
     const handleDirections = (e: CustomEvent<{ lat: number; lng: number; plate: string }>) => {
+      const { lat, lng, plate } = e.detail;
+
       setStreetViewModal({
         open: true,
-        lat: e.detail.lat,
-        lng: e.detail.lng,
-        plate: e.detail.plate,
-        type: 'directions'
+        lat,
+        lng,
+        plate,
+        type: 'directions',
+        originLat: undefined,
+        originLng: undefined,
       });
+
+      // Try to use the user's current location as origin (best effort)
+      if (!navigator.geolocation) return;
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setStreetViewModal((prev) => {
+            if (!prev.open || prev.type !== 'directions') return prev;
+            if (prev.lat !== lat || prev.lng !== lng) return prev;
+            return {
+              ...prev,
+              originLat: pos.coords.latitude,
+              originLng: pos.coords.longitude,
+            };
+          });
+        },
+        () => {},
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 },
+      );
     };
 
     window.addEventListener('openStreetView', handleStreetView as EventListener);
@@ -661,6 +685,8 @@ const MapView = () => {
         lng={streetViewModal.lng}
         plate={streetViewModal.plate}
         type={streetViewModal.type}
+        originLat={streetViewModal.originLat}
+        originLng={streetViewModal.originLng}
       />
     </Layout>
   );
