@@ -73,8 +73,110 @@ const ClusteredMap = ({
   const matchedTrailsCache = useRef<Map<string, [number, number][] | string>>(new Map());
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapboxToken, setMapboxToken] = useState<string>("");
-  
+
   const { matchTrailToRoads } = useMapMatching(mapboxToken);
+
+  // Keep popup "up / centered" by moving the marker slightly below center before opening.
+  const focusMapForPopup = useCallback((vehicleLngLat: [number, number], zoom?: number) => {
+    if (!map.current) return;
+    const container = map.current.getContainer();
+    const height = container.clientHeight || 0;
+    const offsetY = Math.round(Math.min(height * 0.22, 180));
+    map.current.easeTo({
+      center: vehicleLngLat,
+      zoom: zoom ?? map.current.getZoom(),
+      offset: [0, offsetY],
+      duration: 450,
+      essential: true,
+    });
+  }, []);
+
+  const ensurePopupInView = useCallback((popup: mapboxgl.Popup) => {
+    if (!map.current) return;
+
+    const popupEl = popup.getElement();
+    const mapEl = map.current.getContainer();
+    if (!popupEl || !mapEl) return;
+
+    requestAnimationFrame(() => {
+      const popupRect = popupEl.getBoundingClientRect();
+      const mapRect = mapEl.getBoundingClientRect();
+      const padding = 16;
+
+      const leftOverflow = mapRect.left + padding - popupRect.left;
+      const rightOverflow = popupRect.right - (mapRect.right - padding);
+      const topOverflow = mapRect.top + padding - popupRect.top;
+      const bottomOverflow = popupRect.bottom - (mapRect.bottom - padding);
+
+      const dx = leftOverflow > 0 ? leftOverflow : rightOverflow > 0 ? -rightOverflow : 0;
+      const dy = topOverflow > 0 ? topOverflow : bottomOverflow > 0 ? -bottomOverflow : 0;
+
+      if (dx !== 0 || dy !== 0) {
+        map.current?.panBy([dx, dy], { duration: 250 });
+      }
+    });
+  }, []);
+
+  const enhancePopup = useCallback(
+    (popup: mapboxgl.Popup) => {
+      if (!map.current) return;
+
+      const popupEl = popup.getElement();
+      if (!popupEl) return;
+
+      const content = popupEl.querySelector('.mapboxgl-popup-content') as HTMLElement | null;
+      if (content && content.dataset.scrollBound !== '1') {
+        content.dataset.scrollBound = '1';
+        content.addEventListener('wheel', (e) => e.stopPropagation(), { capture: true });
+        content.addEventListener('touchmove', (e) => e.stopPropagation(), { capture: true, passive: true });
+
+        content.addEventListener('mouseenter', () => map.current?.scrollZoom.disable());
+        content.addEventListener('mouseleave', () => map.current?.scrollZoom.enable());
+        content.addEventListener('touchstart', () => map.current?.scrollZoom.disable(), { passive: true });
+        content.addEventListener('touchend', () => map.current?.scrollZoom.enable(), { passive: true });
+      }
+
+      const handle = popupEl.querySelector('.vehicle-popup-drag-handle') as HTMLElement | null;
+      if (handle && handle.dataset.dragBound !== '1') {
+        handle.dataset.dragBound = '1';
+
+        handle.addEventListener('pointerdown', (e) => {
+          if (!map.current) return;
+          e.preventDefault();
+          e.stopPropagation();
+
+          const startClientX = e.clientX;
+          const startClientY = e.clientY;
+          const startLngLat = popup.getLngLat();
+          const startPoint = map.current.project(startLngLat);
+
+          map.current.dragPan.disable();
+          map.current.scrollZoom.disable();
+
+          const move = (ev: PointerEvent) => {
+            if (!map.current) return;
+            const dx = ev.clientX - startClientX;
+            const dy = ev.clientY - startClientY;
+            popup.setLngLat(map.current.unproject([startPoint.x + dx, startPoint.y + dy]));
+          };
+
+          const up = () => {
+            document.removeEventListener('pointermove', move);
+            document.removeEventListener('pointerup', up);
+            document.removeEventListener('pointercancel', up);
+            map.current?.dragPan.enable();
+            map.current?.scrollZoom.enable();
+            requestAnimationFrame(() => ensurePopupInView(popup));
+          };
+
+          document.addEventListener('pointermove', move);
+          document.addEventListener('pointerup', up);
+          document.addEventListener('pointercancel', up);
+        });
+      }
+    },
+    [ensurePopupInView]
+  );
 
 
   // Inject marker animations on mount
@@ -610,15 +712,6 @@ const ClusteredMap = ({
           vehicle.heading,
           isOverspeeding
         );
-
-        markerElement.addEventListener("click", () => {
-          onVehicleClick?.(vehicle);
-          map.current?.flyTo({
-            center: [lng, lat],
-            zoom: 16,
-            duration: 1000,
-          });
-        });
       }
 
       activeIds.add(markerId);
@@ -635,9 +728,20 @@ const ClusteredMap = ({
         if (!isCluster) {
           const vehicle = cluster.properties as VehiclePoint;
           const isOverspeeding = vehicle.speedLimit && vehicle.speed > vehicle.speedLimit;
-          marker.setPopup(
-            new mapboxgl.Popup({ offset: 25, closeButton: true, closeOnClick: false, className: 'vehicle-popup' }).setHTML(`
+
+          const popup = new mapboxgl.Popup({
+            offset: 25,
+            closeButton: true,
+            closeOnClick: false,
+            className: 'vehicle-popup',
+            maxWidth: '450px',
+            anchor: 'bottom',
+          }).setHTML(`
               <div class="vehicle-popup-content" style="min-width:320px;max-width:380px;font-family:system-ui,-apple-system,sans-serif;padding:14px;">
+                <div class="vehicle-popup-drag-handle" title="Drag to move popup">
+                  <div class="vehicle-popup-drag-grip"></div>
+                  <span style="font-size:9px;color:#9ca3af;margin-left:8px;pointer-events:none;">Drag to move</span>
+                </div>
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #e5e7eb;">
                   <span style="font-weight:700;font-size:16px;color:#111827;">${vehicle.plate}</span>
                   <span style="font-size:10px;padding:4px 10px;border-radius:9999px;font-weight:600;text-transform:uppercase;background:${vehicle.status === 'moving' ? '#dcfce7' : vehicle.status === 'idle' ? '#fef3c7' : vehicle.status === 'stopped' ? '#f3f4f6' : '#fee2e2'};color:${vehicle.status === 'moving' ? '#166534' : vehicle.status === 'idle' ? '#92400e' : vehicle.status === 'stopped' ? '#4b5563' : '#991b1b'};">${vehicle.status}</span>
@@ -704,8 +808,34 @@ const ClusteredMap = ({
                   </button>
                 </div>
               </div>
-            `)
-          );
+            `);
+
+          marker.setPopup(popup);
+
+          // Click opens popup after centering the map; popup itself supports drag + scroll.
+          markerElement.addEventListener('click', (e) => {
+            e.stopPropagation();
+
+            if (popup.isOpen()) {
+              marker.togglePopup();
+              return;
+            }
+
+            const currentLngLat = marker.getLngLat();
+            focusMapForPopup([currentLngLat.lng, currentLngLat.lat], 16);
+
+            setTimeout(() => {
+              if (!popup.isOpen()) marker.togglePopup();
+              requestAnimationFrame(() => {
+                enhancePopup(popup);
+                setTimeout(() => ensurePopupInView(popup), 80);
+              });
+            }, 360);
+
+            setTimeout(() => {
+              onVehicleClick?.(vehicle);
+            }, 420);
+          });
         }
 
         clusterMarkers.current.set(markerId, marker);
