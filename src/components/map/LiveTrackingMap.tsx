@@ -200,48 +200,100 @@ return () => {
         const mapboxToken = token || localStorage.getItem('mapbox_token') || import.meta.env.VITE_MAPBOX_TOKEN;
         if (!mapboxToken) return;
 
-        // Mapbox reverse geocoding limitation: `limit` can only be used with a SINGLE type.
-        // So we try types in order until we get a hit.
-        const typePriority = ['address', 'poi', 'neighborhood', 'locality', 'place'];
-
-        let bestFeature: any | null = null;
-
-        for (const t of typePriority) {
-          const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxToken}&types=${t}&limit=1`;
-          const res = await fetch(url);
-          if (!res.ok) {
-            // Don’t spam logs; just skip bad responses
-            continue;
-          }
-          const json = await res.json();
-          const f = json?.features?.[0];
-          if (f) {
-            bestFeature = f;
-            break;
-          }
+        // Fetch with all types to get the most detailed result
+        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxToken}&types=poi,address,neighborhood,locality,place&limit=5&language=en`;
+        const res = await fetch(url);
+        
+        if (!res.ok) {
+          setVehicleAddresses(prev => new Map(prev).set(vehicleId, `${lat.toFixed(6)}, ${lng.toFixed(6)}`));
+          return;
         }
+        
+        const json = await res.json();
+        const features = json?.features || [];
 
-        if (!bestFeature) {
+        if (features.length === 0) {
           setVehicleAddresses(prev => new Map(prev).set(vehicleId, `${lat.toFixed(6)}, ${lng.toFixed(6)}`));
           return;
         }
 
+        // Find the most specific feature (prefer address/poi over neighborhood/place)
+        const typePriority: Record<string, number> = { 
+          'address': 1, 
+          'poi': 2, 
+          'neighborhood': 3, 
+          'locality': 4, 
+          'place': 5 
+        };
+        
+        const sortedFeatures = features.sort((a: any, b: any) => {
+          const aType = a.place_type?.[0] || 'place';
+          const bType = b.place_type?.[0] || 'place';
+          return (typePriority[aType] || 99) - (typePriority[bType] || 99);
+        });
+
+        const bestFeature = sortedFeatures[0];
+        const featureType = bestFeature.place_type?.[0] || '';
         const context = bestFeature.context || [];
+        
+        // Extract context parts
+        const street = context.find((c: any) => c.id?.startsWith('address'))?.text || '';
         const neighborhood = context.find((c: any) => c.id?.startsWith('neighborhood'))?.text || '';
         const locality = context.find((c: any) => c.id?.startsWith('locality'))?.text || '';
         const place = context.find((c: any) => c.id?.startsWith('place'))?.text || '';
+        const district = context.find((c: any) => c.id?.startsWith('district'))?.text || '';
+        const region = context.find((c: any) => c.id?.startsWith('region'))?.text || '';
 
-        const main = bestFeature.address
-          ? `${bestFeature.address} ${bestFeature.text || ''}`.trim()
-          : (bestFeature.text || bestFeature.place_name || '').trim();
+        // Build a detailed, human-readable address
+        let addressParts: string[] = [];
+        
+        // Main feature name (POI name, street address, etc.)
+        if (featureType === 'address') {
+          const houseNumber = bestFeature.address || '';
+          const streetName = bestFeature.text || '';
+          if (houseNumber && streetName) {
+            addressParts.push(`${houseNumber} ${streetName}`);
+          } else if (streetName) {
+            addressParts.push(streetName);
+          }
+        } else if (featureType === 'poi') {
+          // POI: show the POI name prominently
+          addressParts.push(bestFeature.text || '');
+          if (street) {
+            addressParts.push(street);
+          }
+        } else {
+          addressParts.push(bestFeature.text || '');
+        }
 
-        // Prefer a compact, precise label: "Street/POI, Neighborhood, Locality"
-        const parts = [main, neighborhood, locality].filter((p: string) => p && p.trim());
-        const address = parts.length > 0 ? parts.join(', ') : (place || bestFeature.place_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+        // Add neighborhood/sub-locality for more precision
+        if (neighborhood && !addressParts.includes(neighborhood)) {
+          addressParts.push(neighborhood);
+        }
+        
+        // Add locality or district
+        if (locality && !addressParts.includes(locality)) {
+          addressParts.push(locality);
+        } else if (district && !addressParts.includes(district)) {
+          addressParts.push(district);
+        }
+        
+        // Add city/place
+        if (place && !addressParts.includes(place)) {
+          addressParts.push(place);
+        }
 
-        setVehicleAddresses(prev => new Map(prev).set(vehicleId, address));
+        // Filter empty and dedupe
+        addressParts = addressParts.filter((p, i, arr) => p && p.trim() && arr.indexOf(p) === i);
+        
+        const finalAddress = addressParts.length > 0 
+          ? addressParts.join(', ') 
+          : bestFeature.place_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+        setVehicleAddresses(prev => new Map(prev).set(vehicleId, finalAddress));
       } catch (error) {
         console.error('Error fetching address:', error);
+        setVehicleAddresses(prev => new Map(prev).set(vehicleId, `${lat.toFixed(6)}, ${lng.toFixed(6)}`));
       }
       addressFetchTimeouts.current.delete(vehicleId);
     }, 500); // 500ms debounce
