@@ -661,7 +661,7 @@ const ClusteredMap = ({
                 <!-- Quick Actions Toolbar -->
                 <div style="display:flex;justify-content:center;gap:6px;padding-top:10px;border-top:1px solid #e5e7eb;">
                   <button 
-                    onclick="window.open('https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${vehicle.lat},${vehicle.lng}', '_blank')"
+                    onclick="window.dispatchEvent(new CustomEvent('openStreetView', { detail: { lat: ${vehicle.lat}, lng: ${vehicle.lng}, plate: '${vehicle.plate}' } }))"
                     style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;cursor:pointer;"
                     title="Street View"
                   >
@@ -669,7 +669,7 @@ const ClusteredMap = ({
                     <span style="font-size:9px;color:#374151;">Street</span>
                   </button>
                   <button 
-                    onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${vehicle.lat},${vehicle.lng}', '_blank')"
+                    onclick="window.dispatchEvent(new CustomEvent('openDirections', { detail: { lat: ${vehicle.lat}, lng: ${vehicle.lng}, plate: '${vehicle.plate}' } }))"
                     style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;cursor:pointer;"
                     title="Get Directions"
                   >
