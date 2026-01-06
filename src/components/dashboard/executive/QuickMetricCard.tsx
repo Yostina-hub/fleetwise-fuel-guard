@@ -24,22 +24,25 @@ const QuickMetricCard = ({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className={`
-        bg-card/60 backdrop-blur-sm border rounded-lg p-4
-        hover:shadow-lg hover:border-primary/30 transition-all duration-300
+        bg-[#1a2332] border border-[#2a3a4d] rounded-lg p-4
+        hover:border-primary/40 transition-all duration-300
         ${className}
       `}
     >
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm text-muted-foreground">{title}</span>
         {badge && (
-          <Badge variant={badgeVariant} className="text-xs">
+          <Badge 
+            variant="outline" 
+            className="text-xs bg-blue-500/20 text-blue-400 border-blue-500/50"
+          >
             {badge}
           </Badge>
         )}
       </div>
       <div className="flex items-center gap-2">
         {icon && <div className="text-primary">{icon}</div>}
-        <span className="text-2xl font-bold">{value}</span>
+        <span className="text-2xl font-bold text-foreground">{value}</span>
       </div>
     </motion.div>
   );

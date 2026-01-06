@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
 import { MapPin, Plus, Minus } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 interface Alert {
@@ -18,21 +17,13 @@ interface AlertsMapCardProps {
 
 const AlertsMapCard = ({ alerts, loading }: AlertsMapCardProps) => {
   const alertsWithLocation = alerts.filter(a => a.lat && a.lng);
-  
-  // Calculate center based on alerts or default
-  const centerLat = alertsWithLocation.length > 0 
-    ? alertsWithLocation.reduce((sum, a) => sum + (a.lat || 0), 0) / alertsWithLocation.length 
-    : -1.2921;
-  const centerLng = alertsWithLocation.length > 0 
-    ? alertsWithLocation.reduce((sum, a) => sum + (a.lng || 0), 0) / alertsWithLocation.length 
-    : 36.8219;
 
   const getSeverityColor = (severity: string) => {
     switch (severity.toLowerCase()) {
-      case 'critical': return 'bg-red-500';
-      case 'high': return 'bg-orange-500';
-      case 'medium': return 'bg-yellow-500';
-      default: return 'bg-blue-500';
+      case 'critical': return '#ef4444';
+      case 'high': return '#f97316';
+      case 'medium': return '#eab308';
+      default: return '#3b82f6';
     }
   };
 
@@ -41,97 +32,121 @@ const AlertsMapCard = ({ alerts, loading }: AlertsMapCardProps) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
+      className="bg-[#1a2332] border border-[#2a3a4d] rounded-lg p-4 h-full"
     >
-      <Card className="bg-card/80 backdrop-blur-sm border-border/50 h-full">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <MapPin className="h-5 w-5 text-primary" />
-            Alerts Map
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="relative h-[300px] rounded-lg overflow-hidden bg-muted/30 border border-border/30">
-            {/* Map placeholder with styling similar to the reference */}
-            <div 
-              className="absolute inset-0"
-              style={{
-                background: `
-                  linear-gradient(135deg, 
-                    hsl(var(--muted)/0.3) 0%, 
-                    hsl(var(--muted)/0.5) 50%,
-                    hsl(var(--muted)/0.3) 100%
-                  )
-                `,
-              }}
-            >
-              {/* Grid overlay to simulate map */}
-              <div 
-                className="absolute inset-0 opacity-20"
-                style={{
-                  backgroundImage: `
-                    linear-gradient(hsl(var(--border)) 1px, transparent 1px),
-                    linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px)
-                  `,
-                  backgroundSize: '40px 40px',
-                }}
-              />
+      {/* Header */}
+      <h3 className="font-semibold text-base text-foreground flex items-center gap-2 mb-4">
+        <MapPin className="h-4 w-4 text-primary" />
+        Alerts Map
+      </h3>
+
+      {/* Map Container */}
+      <div className="relative h-[250px] rounded-lg overflow-hidden border border-[#2a3a4d]">
+        {/* Map Background - styled to look like a real map */}
+        <div 
+          className="absolute inset-0"
+          style={{
+            background: `linear-gradient(135deg, #1e293b 0%, #334155 50%, #1e293b 100%)`,
+          }}
+        >
+          {/* Road-like grid pattern */}
+          <svg className="absolute inset-0 w-full h-full opacity-30">
+            <defs>
+              <pattern id="roads" width="60" height="60" patternUnits="userSpaceOnUse">
+                <path d="M0 30 H60 M30 0 V60" stroke="#475569" strokeWidth="1" fill="none" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#roads)" />
+          </svg>
+
+          {/* Simulated map features */}
+          <div className="absolute top-[20%] left-[15%] w-16 h-12 bg-green-900/30 rounded" />
+          <div className="absolute top-[50%] right-[20%] w-20 h-8 bg-blue-900/30 rounded" />
+          <div className="absolute bottom-[25%] left-[40%] w-12 h-16 bg-green-900/30 rounded" />
+
+          {/* Alert Markers */}
+          {alertsWithLocation.length > 0 ? (
+            alertsWithLocation.slice(0, 5).map((alert, index) => {
+              // Distribute markers across the map
+              const positions = [
+                { left: '70%', top: '55%' },
+                { left: '30%', top: '35%' },
+                { left: '50%', top: '70%' },
+                { left: '20%', top: '60%' },
+                { left: '80%', top: '30%' },
+              ];
+              const pos = positions[index % positions.length];
               
-              {/* Alert markers */}
-              {alertsWithLocation.length > 0 ? (
-                alertsWithLocation.slice(0, 5).map((alert, index) => (
-                  <motion.div
-                    key={alert.id}
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="absolute"
-                    style={{
-                      left: `${20 + (index * 15)}%`,
-                      top: `${30 + (index * 10)}%`,
-                    }}
-                  >
-                    <div className="relative">
-                      <div className={`w-6 h-6 rounded-full ${getSeverityColor(alert.severity)} flex items-center justify-center shadow-lg animate-pulse`}>
-                        <MapPin className="h-4 w-4 text-white" />
-                      </div>
-                      <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent ${getSeverityColor(alert.severity).replace('bg-', 'border-t-')}`} />
+              return (
+                <motion.div
+                  key={alert.id}
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: index * 0.15 }}
+                  className="absolute cursor-pointer"
+                  style={{ left: pos.left, top: pos.top, transform: 'translate(-50%, -100%)' }}
+                >
+                  <div className="relative">
+                    {/* Pulse effect */}
+                    <motion.div
+                      animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+                      transition={{ repeat: Infinity, duration: 2, delay: index * 0.3 }}
+                      className="absolute inset-0 rounded-full"
+                      style={{ backgroundColor: getSeverityColor(alert.severity) }}
+                    />
+                    {/* Marker pin */}
+                    <div 
+                      className="relative w-6 h-6 rounded-full flex items-center justify-center shadow-lg"
+                      style={{ backgroundColor: getSeverityColor(alert.severity) }}
+                    >
+                      <MapPin className="h-3.5 w-3.5 text-white" />
                     </div>
-                  </motion.div>
-                ))
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center text-muted-foreground">
-                    <MapPin className="h-12 w-12 mx-auto mb-2 opacity-30" />
-                    <p className="text-sm">No alerts with location data</p>
+                    {/* Pin tail */}
+                    <div 
+                      className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-0 h-0"
+                      style={{
+                        borderLeft: '5px solid transparent',
+                        borderRight: '5px solid transparent',
+                        borderTop: `6px solid ${getSeverityColor(alert.severity)}`,
+                      }}
+                    />
                   </div>
-                </div>
-              )}
-
-              {/* Map controls */}
-              <div className="absolute top-3 right-3 flex flex-col gap-1">
-                <Button variant="secondary" size="icon" className="h-8 w-8 bg-background/80 backdrop-blur-sm">
-                  <Plus className="h-4 w-4" />
-                </Button>
-                <Button variant="secondary" size="icon" className="h-8 w-8 bg-background/80 backdrop-blur-sm">
-                  <Minus className="h-4 w-4" />
-                </Button>
-              </div>
-
-              {/* Attribution */}
-              <div className="absolute bottom-2 right-2 text-[10px] text-muted-foreground/50">
-                © Fleet Map
+                </motion.div>
+              );
+            })
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center text-muted-foreground">
+                <MapPin className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                <p className="text-xs">No alerts with location</p>
               </div>
             </div>
+          )}
 
-            {/* Alert count badge */}
-            <div className="absolute bottom-3 left-3 bg-background/90 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-border/50">
-              <span className="text-xs font-medium text-foreground">
-                {alertsWithLocation.length} alerts with location
-              </span>
-            </div>
+          {/* Map Controls */}
+          <div className="absolute top-2 right-2 flex flex-col gap-1">
+            <Button 
+              variant="secondary" 
+              size="icon" 
+              className="h-7 w-7 bg-[#1a2332]/90 hover:bg-[#2a3a4d] border border-[#2a3a4d]"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+            <Button 
+              variant="secondary" 
+              size="icon" 
+              className="h-7 w-7 bg-[#1a2332]/90 hover:bg-[#2a3a4d] border border-[#2a3a4d]"
+            >
+              <Minus className="h-3.5 w-3.5" />
+            </Button>
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Map Attribution */}
+          <div className="absolute bottom-1 right-2 text-[8px] text-muted-foreground/50">
+            © Fleet Map
+          </div>
+        </div>
+      </div>
     </motion.div>
   );
 };

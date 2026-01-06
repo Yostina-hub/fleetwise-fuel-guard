@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-import GlowingCard from "./GlowingCard";
+import { Badge } from "@/components/ui/badge";
 
 interface IdleGroup {
   name: string;
@@ -18,86 +18,111 @@ interface IdleTimeDonutProps {
 const IdleTimeDonut = ({ totalIdleTime, groups, loading }: IdleTimeDonutProps) => {
   if (loading) {
     return (
-      <GlowingCard className="h-72" glowColor="warning">
+      <div className="bg-[#1a2332] border border-[#2a3a4d] rounded-lg p-4 h-72">
         <div className="animate-pulse space-y-4">
-          <div className="h-4 bg-muted rounded w-1/3" />
-          <div className="h-48 bg-muted rounded" />
+          <div className="h-4 bg-muted/20 rounded w-1/3" />
+          <div className="h-48 bg-muted/20 rounded" />
         </div>
-      </GlowingCard>
+      </div>
     );
   }
 
+  // Donut data showing idle vs active
+  const idleValue = 25; // percentage idle
   const donutData = [
-    { name: "Idle", value: 25, color: "hsl(var(--warning))" },
-    { name: "Active", value: 75, color: "hsl(var(--success))" },
+    { name: "Idle", value: idleValue, color: "#f97316" }, // orange
+    { name: "Active", value: 100 - idleValue, color: "#22c55e" }, // green
   ];
 
+  // Group colors matching reference
+  const groupColors = ['#f97316', '#22c55e', '#3b82f6', '#8b5cf6'];
+
   return (
-    <GlowingCard glowColor="warning">
-      <h3 className="font-semibold text-lg mb-4">Idle Time</h3>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-[#1a2332] border border-[#2a3a4d] rounded-lg p-4"
+    >
+      <h3 className="font-semibold text-base mb-4 text-foreground">Idle Time</h3>
       
       <div className="flex items-start gap-4">
-        <div className="relative w-32 h-32">
+        {/* Donut Chart */}
+        <div className="relative w-28 h-28 flex-shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={donutData}
                 cx="50%"
                 cy="50%"
-                innerRadius={35}
-                outerRadius={50}
+                innerRadius={32}
+                outerRadius={45}
                 paddingAngle={2}
                 dataKey="value"
+                startAngle={90}
+                endAngle={-270}
               >
                 {donutData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
+                  <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
                 ))}
               </Pie>
             </PieChart>
           </ResponsiveContainer>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <motion.span
-              className="text-xl font-bold"
+              className="text-xl font-bold text-foreground"
               initial={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3 }}
             >
               {totalIdleTime}
             </motion.span>
-            <span className="text-xs text-muted-foreground">Hours</span>
+            <span className="text-[10px] text-muted-foreground">Hours</span>
           </div>
         </div>
 
-        <div className="flex-1 space-y-2">
-          <div className="text-xs text-muted-foreground mb-2 grid grid-cols-3 gap-2 font-medium">
-            <span>Group</span>
-            <span className="text-right">Total</span>
-            <span className="text-right">Idle %</span>
-          </div>
-          {groups.map((group, i) => (
-            <motion.div
-              key={group.name}
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="grid grid-cols-3 gap-2 text-sm items-center"
-            >
-              <div className="flex items-center gap-1.5">
-                <span 
-                  className="w-2 h-2 rounded-sm flex-shrink-0" 
-                  style={{ backgroundColor: group.color }} 
-                />
-                <span className="truncate">{group.name}</span>
-              </div>
-              <span className="text-right text-muted-foreground">{group.total}</span>
-              <span className={`text-right font-medium ${group.idlePercent > 30 ? 'text-destructive' : 'text-success'}`}>
-                {group.idlePercent.toFixed(1)}%
-              </span>
-            </motion.div>
-          ))}
+        {/* Groups Table */}
+        <div className="flex-1 min-w-0">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-muted-foreground">
+                <th className="text-left py-1 font-medium">Group</th>
+                <th className="text-center py-1 font-medium">Total</th>
+                <th className="text-right py-1 font-medium">Idle %</th>
+              </tr>
+            </thead>
+            <tbody>
+              {groups.map((group, i) => (
+                <motion.tr
+                  key={group.name}
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  className="border-t border-[#2a3a4d]"
+                >
+                  <td className="py-2">
+                    <Badge 
+                      variant="outline" 
+                      className="text-[10px] px-2 py-0.5 font-normal"
+                      style={{ 
+                        borderColor: groupColors[i % groupColors.length],
+                        color: groupColors[i % groupColors.length],
+                        backgroundColor: `${groupColors[i % groupColors.length]}15`
+                      }}
+                    >
+                      {group.name}
+                    </Badge>
+                  </td>
+                  <td className="text-center py-2 text-muted-foreground">{group.total}</td>
+                  <td className={`text-right py-2 font-medium ${group.idlePercent > 30 ? 'text-orange-400' : 'text-green-400'}`}>
+                    {group.idlePercent.toFixed(1)}%
+                  </td>
+                </motion.tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
-    </GlowingCard>
+    </motion.div>
   );
 };
 
