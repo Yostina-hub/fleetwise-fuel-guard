@@ -303,13 +303,20 @@ const RouteHistory = () => {
       return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     };
 
-    // Calculate distance with GPS jump filtering (ignore unrealistic jumps > 200 km/h)
+    // Calculate distance only when vehicle is moving (speed > 2 km/h)
+    // This filters out GPS drift while stationary
     let totalDistanceKm = 0;
-    const MAX_SPEED_KMH = 200; // Max realistic speed for filtering bad GPS data
+    const MIN_MOVING_SPEED = 2; // km/h threshold for "moving"
+    const MAX_SEGMENT_KM = 5; // Max 5km per segment (10-60 sec intervals) to filter GPS jumps
 
     for (let i = 1; i < routeHistory.length; i++) {
       const prev = routeHistory[i - 1];
       const curr = routeHistory[i];
+
+      // Only count distance when vehicle is moving
+      const currSpeed = curr.speed_kmh || 0;
+      const prevSpeed = prev.speed_kmh || 0;
+      if (currSpeed < MIN_MOVING_SPEED && prevSpeed < MIN_MOVING_SPEED) continue;
 
       const prevLat = prev.latitude || 0;
       const prevLng = prev.longitude || 0;
@@ -321,20 +328,10 @@ const RouteHistory = () => {
 
       const segmentKm = haversine(prevLat, prevLng, currLat, currLng);
 
-      // Calculate time difference in hours
-      const prevTime = new Date(prev.last_communication_at).getTime();
-      const currTime = new Date(curr.last_communication_at).getTime();
-      const timeDiffHours = (currTime - prevTime) / (1000 * 60 * 60);
-
-      // Skip if time difference is zero or negative (bad data)
-      if (timeDiffHours <= 0) continue;
-
-      // Calculate implied speed and filter out GPS jumps
-      const impliedSpeedKmh = segmentKm / timeDiffHours;
-      if (impliedSpeedKmh <= MAX_SPEED_KMH) {
+      // Filter out GPS jumps (unrealistic single-segment distance)
+      if (segmentKm <= MAX_SEGMENT_KM) {
         totalDistanceKm += segmentKm;
       }
-      // else: GPS jump detected, skip this segment
     }
 
     return {
