@@ -217,8 +217,8 @@ export const VehicleInfoPanel = ({
             </div>
           </div>
 
-          <ScrollArea className="max-h-[40vh]">
-            <div className="px-4 pb-3 space-y-3">
+          <ScrollArea className="max-h-[45vh] overflow-auto">
+            <div className="px-4 pb-3 space-y-3 pr-3">
               {/* Metrics Grid - Modern Cards */}
               <div className="grid grid-cols-4 gap-2">
                 <Tooltip>
