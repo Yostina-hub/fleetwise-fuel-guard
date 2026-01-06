@@ -1,10 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, CheckCircle2, MapPin, User, Package } from 'lucide-react';
+import { Zap, CheckCircle2, MapPin, User, Package, Truck, Navigation } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useVehicles } from '@/hooks/useVehicles';
+import { useVehicleTelemetry } from '@/hooks/useVehicleTelemetry';
+import { useDispatchJobs } from '@/hooks/useDispatchJobs';
+import { useDrivers } from '@/hooks/useDrivers';
 
-// Ethiopian cities with coordinates
+// Ethiopian cities with coordinates for mapping
 const ethiopianCities: { [key: string]: { lat: number; lng: number } } = {
   'Addis Ababa': { lat: 9.03, lng: 38.74 },
   'Mekelle': { lat: 13.49, lng: 39.47 },
@@ -34,108 +38,143 @@ const ethiopianCities: { [key: string]: { lat: number; lng: number } } = {
   'Mizan Teferi': { lat: 6.99, lng: 35.58 },
 };
 
-const cityNames = Object.keys(ethiopianCities);
+// Find nearest city to a coordinate
+const findNearestCity = (lat: number, lng: number): string => {
+  let nearestCity = 'Unknown';
+  let minDistance = Infinity;
+  
+  Object.entries(ethiopianCities).forEach(([city, coords]) => {
+    const distance = Math.sqrt(
+      Math.pow(lat - coords.lat, 2) + Math.pow(lng - coords.lng, 2)
+    );
+    if (distance < minDistance) {
+      minDistance = distance;
+      nearestCity = city;
+    }
+  });
+  
+  return nearestCity;
+};
 
-// Generate random Ethiopian names
-const ethiopianNames = [
-  'Tsehay Wondwosen', 'Eyerusalem Berhane', 'Daniel Bekele', 'Kidus Mekonnen',
-  'Temesgen Negash', 'Ermias Getachew', 'Yonas Kebede', 'Hiwot Tadesse',
-  'Solomon Abebe', 'Meron Hailu', 'Dawit Tesfaye', 'Sara Alemayehu',
-  'Biruk Assefa', 'Marta Girma', 'Abenezer Alemu', 'Ruth Mulugeta'
-];
-
-interface LiveRequest {
+interface LiveActivity {
   id: string;
   name: string;
   action: string;
   city: string;
+  vehiclePlate?: string;
   timestamp: Date;
-}
-
-interface LiveDelivery {
-  id: string;
-  name: string;
-  action: string;
-  city: string;
-  timestamp: Date;
+  type: 'request' | 'delivery' | 'movement';
 }
 
 export default function LiveDeliveryMap() {
   const { organizationId } = useAuth();
-  const [requests, setRequests] = useState<LiveRequest[]>([]);
-  const [deliveries, setDeliveries] = useState<LiveDelivery[]>([]);
-  const [connections, setConnections] = useState<{ from: string; to: string }[]>([]);
+  const { vehicles } = useVehicles();
+  const { telemetry, isVehicleOnline } = useVehicleTelemetry();
+  const { jobs } = useDispatchJobs();
+  const { drivers } = useDrivers();
+  
+  const [liveRequests, setLiveRequests] = useState<LiveActivity[]>([]);
+  const [liveDeliveries, setLiveDeliveries] = useState<LiveActivity[]>([]);
+  const [vehicleConnections, setVehicleConnections] = useState<{ from: { lat: number; lng: number }; to: { lat: number; lng: number }; vehicleId: string }[]>([]);
 
-  // Generate initial data and simulate live updates
+  // Get driver name by ID
+  const getDriverName = (driverId?: string) => {
+    if (!driverId) return 'Unknown Driver';
+    const driver = drivers.find(d => d.id === driverId);
+    return driver ? `${driver.first_name} ${driver.last_name}` : 'Unknown Driver';
+  };
+
+  // Get vehicle plate by ID
+  const getVehiclePlate = (vehicleId?: string) => {
+    if (!vehicleId) return '';
+    const vehicle = vehicles.find(v => v.id === vehicleId);
+    return vehicle?.plate_number || '';
+  };
+
+  // Process dispatch jobs into live requests and deliveries
   useEffect(() => {
-    // Generate initial requests
-    const initialRequests: LiveRequest[] = Array.from({ length: 5 }, (_, i) => ({
-      id: `req-${i}`,
-      name: ethiopianNames[Math.floor(Math.random() * ethiopianNames.length)],
-      action: 'requested pickup',
-      city: cityNames[Math.floor(Math.random() * cityNames.length)],
-      timestamp: new Date(Date.now() - Math.random() * 300000),
+    if (!jobs.length) return;
+
+    // Pending and dispatched jobs = requests
+    const pendingJobs = jobs.filter(j => j.status === 'pending' || j.status === 'dispatched' || j.status === 'en_route');
+    const completedJobs = jobs.filter(j => j.status === 'completed' || j.status === 'arrived');
+
+    const requests: LiveActivity[] = pendingJobs.slice(0, 6).map(job => ({
+      id: job.id,
+      name: job.customer_name || getDriverName(job.driver_id),
+      action: job.status === 'pending' ? 'requested pickup' : job.status === 'dispatched' ? 'dispatched' : 'en route',
+      city: job.pickup_location_name || (job.pickup_lat && job.pickup_lng ? findNearestCity(job.pickup_lat, job.pickup_lng) : 'Unknown'),
+      vehiclePlate: getVehiclePlate(job.vehicle_id),
+      timestamp: new Date(job.created_at),
+      type: 'request'
     }));
 
-    // Generate initial deliveries
-    const initialDeliveries: LiveDelivery[] = Array.from({ length: 5 }, (_, i) => ({
-      id: `del-${i}`,
-      name: ethiopianNames[Math.floor(Math.random() * ethiopianNames.length)],
+    const deliveries: LiveActivity[] = completedJobs.slice(0, 6).map(job => ({
+      id: job.id,
+      name: job.customer_name || getDriverName(job.driver_id),
       action: 'received package',
-      city: cityNames[Math.floor(Math.random() * cityNames.length)],
-      timestamp: new Date(Date.now() - Math.random() * 300000),
+      city: job.dropoff_location_name || (job.dropoff_lat && job.dropoff_lng ? findNearestCity(job.dropoff_lat, job.dropoff_lng) : 'Unknown'),
+      vehiclePlate: getVehiclePlate(job.vehicle_id),
+      timestamp: new Date(job.completed_at || job.updated_at),
+      type: 'delivery'
     }));
 
-    // Generate connections for the map
-    const initialConnections = Array.from({ length: 15 }, () => {
-      const cities = [...cityNames].sort(() => Math.random() - 0.5);
-      return { from: cities[0], to: cities[1] };
+    setLiveRequests(requests);
+    setLiveDeliveries(deliveries);
+  }, [jobs, drivers, vehicles]);
+
+  // Generate vehicle connections based on real telemetry and dispatch jobs
+  useEffect(() => {
+    const connections: { from: { lat: number; lng: number }; to: { lat: number; lng: number }; vehicleId: string }[] = [];
+
+    // Create connections from active dispatch jobs
+    jobs
+      .filter(j => j.status === 'en_route' || j.status === 'dispatched')
+      .forEach(job => {
+        if (job.pickup_lat && job.pickup_lng && job.dropoff_lat && job.dropoff_lng) {
+          connections.push({
+            from: { lat: job.pickup_lat, lng: job.pickup_lng },
+            to: { lat: job.dropoff_lat, lng: job.dropoff_lng },
+            vehicleId: job.vehicle_id || '',
+          });
+        }
+      });
+
+    // Add connections from online vehicles' current positions to nearest city center
+    vehicles.forEach(vehicle => {
+      const vTelemetry = telemetry[vehicle.id];
+      if (vTelemetry?.latitude && vTelemetry?.longitude && isVehicleOnline(vehicle.id)) {
+        const nearestCity = findNearestCity(vTelemetry.latitude, vTelemetry.longitude);
+        const cityCoords = ethiopianCities[nearestCity];
+        if (cityCoords) {
+          connections.push({
+            from: { lat: vTelemetry.latitude, lng: vTelemetry.longitude },
+            to: cityCoords,
+            vehicleId: vehicle.id,
+          });
+        }
+      }
     });
 
-    setRequests(initialRequests);
-    setDeliveries(initialDeliveries);
-    setConnections(initialConnections);
+    setVehicleConnections(connections.slice(0, 20)); // Limit for performance
+  }, [vehicles, telemetry, jobs, isVehicleOnline]);
 
-    // Simulate live updates
-    const interval = setInterval(() => {
-      // Add new request
-      if (Math.random() > 0.5) {
-        const newRequest: LiveRequest = {
-          id: `req-${Date.now()}`,
-          name: ethiopianNames[Math.floor(Math.random() * ethiopianNames.length)],
-          action: 'requested pickup',
-          city: cityNames[Math.floor(Math.random() * cityNames.length)],
-          timestamp: new Date(),
-        };
-        setRequests(prev => [newRequest, ...prev.slice(0, 4)]);
-      }
-
-      // Add new delivery
-      if (Math.random() > 0.5) {
-        const newDelivery: LiveDelivery = {
-          id: `del-${Date.now()}`,
-          name: ethiopianNames[Math.floor(Math.random() * ethiopianNames.length)],
-          action: 'received package',
-          city: cityNames[Math.floor(Math.random() * cityNames.length)],
-          timestamp: new Date(),
-        };
-        setDeliveries(prev => [newDelivery, ...prev.slice(0, 4)]);
-      }
-
-      // Update connections occasionally
-      if (Math.random() > 0.7) {
-        const cities = [...cityNames].sort(() => Math.random() - 0.5);
-        setConnections(prev => {
-          const newConnections = [...prev];
-          const idx = Math.floor(Math.random() * newConnections.length);
-          newConnections[idx] = { from: cities[0], to: cities[1] };
-          return newConnections;
-        });
-      }
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, []);
+  // Get online vehicles with positions
+  const onlineVehicles = useMemo(() => {
+    return vehicles
+      .filter(v => {
+        const vTelemetry = telemetry[v.id];
+        return vTelemetry?.latitude && vTelemetry?.longitude && isVehicleOnline(v.id);
+      })
+      .map(v => ({
+        id: v.id,
+        plate: v.plate_number,
+        lat: telemetry[v.id]?.latitude || 0,
+        lng: telemetry[v.id]?.longitude || 0,
+        speed: telemetry[v.id]?.speed_kmh || 0,
+        isMoving: (telemetry[v.id]?.speed_kmh || 0) > 2,
+      }));
+  }, [vehicles, telemetry, isVehicleOnline]);
 
   // Convert coordinates to SVG position
   const coordToSvg = (lat: number, lng: number) => {
@@ -146,11 +185,57 @@ export default function LiveDeliveryMap() {
     return { x, y };
   };
 
+  // Real-time subscription for new telemetry
+  useEffect(() => {
+    if (!organizationId) return;
+
+    const channel = supabase
+      .channel(`live-map-telemetry-${organizationId.slice(0, 8)}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'vehicle_telemetry',
+          filter: `organization_id=eq.${organizationId}`,
+        },
+        (payload) => {
+          const newData = payload.new as any;
+          if (newData.latitude && newData.longitude) {
+            const vehicle = vehicles.find(v => v.id === newData.vehicle_id);
+            if (vehicle) {
+              const city = findNearestCity(newData.latitude, newData.longitude);
+              const driverName = getDriverName(vehicle.assigned_driver_id);
+              
+              // Add to live requests as "vehicle moving"
+              if ((newData.speed_kmh || 0) > 5) {
+                const newActivity: LiveActivity = {
+                  id: `tel-${newData.id}`,
+                  name: driverName,
+                  action: 'vehicle moving',
+                  city: city,
+                  vehiclePlate: vehicle.plate_number,
+                  timestamp: new Date(),
+                  type: 'movement'
+                };
+                setLiveRequests(prev => [newActivity, ...prev.slice(0, 4)]);
+              }
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [organizationId, vehicles, drivers]);
+
   return (
-    <div className="bg-white dark:bg-[#1a2332] rounded-2xl border border-border/50 overflow-hidden">
+    <div className="bg-card rounded-2xl border border-border/50 overflow-hidden shadow-lg">
       <div className="grid grid-cols-12 h-[500px]">
         {/* Live Requests Panel */}
-        <div className="col-span-3 border-r border-border/50 flex flex-col">
+        <div className="col-span-3 border-r border-border/50 flex flex-col bg-background/50">
           <div className="p-4 border-b border-border/50">
             <motion.div 
               className="flex items-center gap-2 bg-orange-500/10 text-orange-500 px-4 py-2 rounded-full w-fit"
@@ -163,22 +248,29 @@ export default function LiveDeliveryMap() {
           </div>
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
             <AnimatePresence mode="popLayout">
-              {requests.map((request, index) => (
+              {liveRequests.length > 0 ? liveRequests.map((request, index) => (
                 <motion.div
                   key={request.id}
                   initial={{ opacity: 0, x: -50, scale: 0.8 }}
                   animate={{ opacity: 1, x: 0, scale: 1 }}
                   exit={{ opacity: 0, x: -50, scale: 0.8 }}
                   transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className="bg-muted/30 dark:bg-white/5 rounded-xl p-3 border border-border/30"
+                  className="bg-muted/30 rounded-xl p-3 border border-border/30"
                 >
                   <div className="flex items-start gap-3">
                     <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center flex-shrink-0">
-                      <User className="w-4 h-4 text-orange-500" />
+                      {request.type === 'movement' ? (
+                        <Truck className="w-4 h-4 text-orange-500" />
+                      ) : (
+                        <User className="w-4 h-4 text-orange-500" />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm text-foreground truncate">{request.name}</p>
                       <p className="text-xs text-muted-foreground">{request.action}</p>
+                      {request.vehiclePlate && (
+                        <p className="text-xs text-muted-foreground/80">{request.vehiclePlate}</p>
+                      )}
                       <div className="flex items-center gap-1 mt-1">
                         <MapPin className="w-3 h-3 text-orange-500" />
                         <span className="text-xs text-orange-500 font-medium">{request.city}</span>
@@ -186,7 +278,11 @@ export default function LiveDeliveryMap() {
                     </div>
                   </div>
                 </motion.div>
-              ))}
+              )) : (
+                <div className="text-center py-8 text-muted-foreground text-sm">
+                  No active requests
+                </div>
+              )}
             </AnimatePresence>
           </div>
         </div>
@@ -195,7 +291,7 @@ export default function LiveDeliveryMap() {
         <div className="col-span-6 relative bg-gradient-to-b from-green-50/50 to-green-100/30 dark:from-green-900/10 dark:to-green-800/5">
           {/* Floating badges on map */}
           <motion.div 
-            className="absolute top-4 left-4 flex items-center gap-2 bg-white dark:bg-[#1a2332] text-orange-500 px-3 py-1.5 rounded-full shadow-lg border border-orange-200 dark:border-orange-500/20 z-10"
+            className="absolute top-4 left-4 flex items-center gap-2 bg-background text-orange-500 px-3 py-1.5 rounded-full shadow-lg border border-orange-200 dark:border-orange-500/20 z-10"
             animate={{ y: [0, -3, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
           >
@@ -204,12 +300,20 @@ export default function LiveDeliveryMap() {
           </motion.div>
           
           <motion.div 
-            className="absolute top-4 right-4 flex items-center gap-2 bg-white dark:bg-[#1a2332] text-green-600 px-3 py-1.5 rounded-full shadow-lg border border-green-200 dark:border-green-500/20 z-10"
+            className="absolute top-4 right-4 flex items-center gap-2 bg-background text-green-600 px-3 py-1.5 rounded-full shadow-lg border border-green-200 dark:border-green-500/20 z-10"
             animate={{ y: [0, -3, 0] }}
             transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
           >
             <CheckCircle2 className="w-3 h-3" />
             <span className="text-xs font-semibold">Live Deliveries</span>
+          </motion.div>
+
+          {/* Online vehicle count */}
+          <motion.div 
+            className="absolute bottom-4 left-4 flex items-center gap-2 bg-background text-primary px-3 py-1.5 rounded-full shadow-lg border border-primary/20 z-10"
+          >
+            <Truck className="w-3 h-3" />
+            <span className="text-xs font-semibold">{onlineVehicles.length} Online</span>
           </motion.div>
 
           {/* SVG Map */}
@@ -236,13 +340,10 @@ export default function LiveDeliveryMap() {
               </filter>
             </defs>
 
-            {/* Connection lines */}
-            {connections.map((conn, i) => {
-              const from = ethiopianCities[conn.from];
-              const to = ethiopianCities[conn.to];
-              if (!from || !to) return null;
-              const fromPos = coordToSvg(from.lat, from.lng);
-              const toPos = coordToSvg(to.lat, to.lng);
+            {/* Vehicle route connections */}
+            {vehicleConnections.map((conn, i) => {
+              const fromPos = coordToSvg(conn.from.lat, conn.from.lng);
+              const toPos = coordToSvg(conn.to.lat, conn.to.lng);
               return (
                 <motion.line
                   key={`conn-${i}`}
@@ -263,9 +364,11 @@ export default function LiveDeliveryMap() {
             {/* City markers */}
             {Object.entries(ethiopianCities).map(([city, coords], i) => {
               const pos = coordToSvg(coords.lat, coords.lng);
-              const isDeliveryCity = deliveries.some(d => d.city === city);
-              const isRequestCity = requests.some(r => r.city === city);
               const isAddis = city === 'Addis Ababa';
+              const hasActiveJob = jobs.some(j => 
+                (j.pickup_location_name?.includes(city) || j.dropoff_location_name?.includes(city)) &&
+                (j.status === 'pending' || j.status === 'dispatched' || j.status === 'en_route')
+              );
               
               return (
                 <g key={city}>
@@ -273,13 +376,13 @@ export default function LiveDeliveryMap() {
                   <motion.circle
                     cx={pos.x}
                     cy={pos.y}
-                    r={isAddis ? 18 : 12}
+                    r={isAddis ? 18 : hasActiveJob ? 14 : 10}
                     fill="none"
-                    stroke={isAddis ? 'hsl(217, 91%, 60%)' : 'hsl(142, 76%, 36%)'}
+                    stroke={isAddis ? 'hsl(217, 91%, 60%)' : hasActiveJob ? 'hsl(30, 100%, 50%)' : 'hsl(142, 76%, 36%)'}
                     strokeWidth="2"
                     opacity="0.3"
                     animate={{ 
-                      r: isAddis ? [18, 22, 18] : [12, 16, 12],
+                      r: isAddis ? [18, 22, 18] : hasActiveJob ? [14, 18, 14] : [10, 13, 10],
                       opacity: [0.3, 0.1, 0.3]
                     }}
                     transition={{ duration: 2, repeat: Infinity, delay: i * 0.1 }}
@@ -288,8 +391,8 @@ export default function LiveDeliveryMap() {
                   <motion.circle
                     cx={pos.x}
                     cy={pos.y}
-                    r={isAddis ? 10 : 6}
-                    fill={isAddis ? 'hsl(217, 91%, 60%)' : 'hsl(142, 76%, 36%)'}
+                    r={isAddis ? 10 : hasActiveJob ? 8 : 5}
+                    fill={isAddis ? 'hsl(217, 91%, 60%)' : hasActiveJob ? 'hsl(30, 100%, 50%)' : 'hsl(142, 76%, 36%)'}
                     filter="url(#glow)"
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
@@ -307,11 +410,49 @@ export default function LiveDeliveryMap() {
                 </g>
               );
             })}
+
+            {/* Real online vehicle markers */}
+            {onlineVehicles.map((vehicle, i) => {
+              const pos = coordToSvg(vehicle.lat, vehicle.lng);
+              return (
+                <g key={vehicle.id}>
+                  <motion.circle
+                    cx={pos.x}
+                    cy={pos.y}
+                    r={vehicle.isMoving ? 10 : 7}
+                    fill={vehicle.isMoving ? 'hsl(217, 91%, 60%)' : 'hsl(142, 76%, 36%)'}
+                    stroke="white"
+                    strokeWidth="2"
+                    filter="url(#glow)"
+                    animate={vehicle.isMoving ? { 
+                      scale: [1, 1.2, 1],
+                    } : {}}
+                    transition={{ duration: 1, repeat: Infinity }}
+                  />
+                  {vehicle.isMoving && (
+                    <motion.circle
+                      cx={pos.x}
+                      cy={pos.y}
+                      r={15}
+                      fill="none"
+                      stroke="hsl(217, 91%, 60%)"
+                      strokeWidth="2"
+                      opacity="0.5"
+                      animate={{ 
+                        r: [15, 25, 15],
+                        opacity: [0.5, 0, 0.5]
+                      }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    />
+                  )}
+                </g>
+              );
+            })}
           </svg>
         </div>
 
         {/* Live Deliveries Panel */}
-        <div className="col-span-3 border-l border-border/50 flex flex-col">
+        <div className="col-span-3 border-l border-border/50 flex flex-col bg-background/50">
           <div className="p-4 border-b border-border/50">
             <motion.div 
               className="flex items-center gap-2 bg-green-500/10 text-green-600 px-4 py-2 rounded-full w-fit"
@@ -324,14 +465,14 @@ export default function LiveDeliveryMap() {
           </div>
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
             <AnimatePresence mode="popLayout">
-              {deliveries.map((delivery, index) => (
+              {liveDeliveries.length > 0 ? liveDeliveries.map((delivery, index) => (
                 <motion.div
                   key={delivery.id}
                   initial={{ opacity: 0, x: 50, scale: 0.8 }}
                   animate={{ opacity: 1, x: 0, scale: 1 }}
                   exit={{ opacity: 0, x: 50, scale: 0.8 }}
                   transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className="bg-muted/30 dark:bg-white/5 rounded-xl p-3 border border-border/30"
+                  className="bg-muted/30 rounded-xl p-3 border border-border/30"
                 >
                   <div className="flex items-start gap-3">
                     <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-500/20 flex items-center justify-center flex-shrink-0">
@@ -340,6 +481,9 @@ export default function LiveDeliveryMap() {
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm text-foreground truncate">{delivery.name}</p>
                       <p className="text-xs text-muted-foreground">{delivery.action}</p>
+                      {delivery.vehiclePlate && (
+                        <p className="text-xs text-muted-foreground/80">{delivery.vehiclePlate}</p>
+                      )}
                       <div className="flex items-center gap-1 mt-1">
                         <CheckCircle2 className="w-3 h-3 text-green-600" />
                         <span className="text-xs text-green-600 font-medium">{delivery.city}</span>
@@ -347,7 +491,11 @@ export default function LiveDeliveryMap() {
                     </div>
                   </div>
                 </motion.div>
-              ))}
+              )) : (
+                <div className="text-center py-8 text-muted-foreground text-sm">
+                  No recent deliveries
+                </div>
+              )}
             </AnimatePresence>
           </div>
         </div>
