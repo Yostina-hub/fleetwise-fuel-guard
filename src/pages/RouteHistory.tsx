@@ -78,12 +78,13 @@ const RouteHistory = () => {
   const [playbackProgress, setPlaybackProgress] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [showEventMarkers, setShowEventMarkers] = useState(true);
+  const [speedLimit, setSpeedLimit] = useState(100); // Configurable speed limit
+  const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const mapInstanceRef = useRef<mapboxgl.Map | null>(null);
 
-  // Callback to capture map instance
-  const handleMapReady = useCallback((mapInstance: mapboxgl.Map) => {
-    mapInstanceRef.current = mapInstance;
+  // Callback to capture map instance - triggers re-render
+  const handleMapReady = useCallback((map: mapboxgl.Map) => {
+    setMapInstance(map);
   }, []);
 
   // Update URL when vehicle/date changes
@@ -134,23 +135,38 @@ const RouteHistory = () => {
     enabled: !!selectedVehicleData?.assigned_driver_id,
   });
 
-  // Fetch telemetry for selected vehicle and date
+  // Fetch telemetry for selected vehicle and date - paginated to bypass 1000 row limit
   const { data: telemetryData, isLoading: telemetryLoading, isError: telemetryError } = useQuery({
     queryKey: ["route-history-telemetry", selectedVehicle, selectedDate],
     queryFn: async () => {
       const startOfDay = `${selectedDate}T00:00:00.000Z`;
       const endOfDay = `${selectedDate}T23:59:59.999Z`;
       
-      const { data, error } = await supabase
-        .from("vehicle_telemetry")
-        .select("id, latitude, longitude, speed_kmh, fuel_level_percent, heading, last_communication_at, engine_on")
-        .eq("vehicle_id", selectedVehicle)
-        .gte("last_communication_at", startOfDay)
-        .lte("last_communication_at", endOfDay)
-        .order("last_communication_at", { ascending: true });
+      const allData: TelemetryPoint[] = [];
+      let offset = 0;
+      const pageSize = 1000;
+      let hasMore = true;
       
-      if (error) throw error;
-      return (data || []).filter(p => p.latitude != null && p.longitude != null) as TelemetryPoint[];
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("vehicle_telemetry")
+          .select("id, latitude, longitude, speed_kmh, fuel_level_percent, heading, last_communication_at, engine_on")
+          .eq("vehicle_id", selectedVehicle)
+          .gte("last_communication_at", startOfDay)
+          .lte("last_communication_at", endOfDay)
+          .order("last_communication_at", { ascending: true })
+          .range(offset, offset + pageSize - 1);
+        
+        if (error) throw error;
+        
+        const validData = (data || []).filter(p => p.latitude != null && p.longitude != null) as TelemetryPoint[];
+        allData.push(...validData);
+        
+        hasMore = data?.length === pageSize;
+        offset += pageSize;
+      }
+      
+      return allData;
     },
     enabled: !!selectedVehicle && !!selectedDate,
   });
@@ -158,8 +174,8 @@ const RouteHistory = () => {
   const routeHistory = telemetryData || [];
   const hasData = routeHistory.length > 0;
 
-  // Calculate stop markers
-  const stopEvents = useStopMarkers({ routeData: routeHistory });
+  // Calculate stop markers with configurable speed limit
+  const stopEvents = useStopMarkers({ routeData: routeHistory, speedLimit });
 
   // Realtime: append new telemetry points for the selected vehicle/date
   useEffect(() => {
@@ -360,6 +376,38 @@ const RouteHistory = () => {
     setPlaybackProgress(Math.max(0, playbackProgress - 10));
   };
 
+  // Jump to event time
+  const handleJumpToEvent = useCallback((event: StopEvent) => {
+    if (!hasData || followLive) return;
+    
+    // Find the index of the point closest to the event's start time
+    const eventTime = new Date(event.startTime).getTime();
+    let closestIndex = 0;
+    let minDiff = Infinity;
+    
+    routeHistory.forEach((point, index) => {
+      const pointTime = new Date(point.last_communication_at).getTime();
+      const diff = Math.abs(pointTime - eventTime);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIndex = index;
+      }
+    });
+    
+    const progress = (closestIndex / Math.max(1, routeHistory.length - 1)) * 100;
+    setPlaybackProgress(progress);
+    setIsPlaying(false);
+    
+    // Pan map to event location
+    if (mapInstance && event.latitude && event.longitude) {
+      mapInstance.flyTo({
+        center: [event.longitude, event.latitude],
+        zoom: 16,
+        duration: 1000
+      });
+    }
+  }, [hasData, followLive, routeHistory, mapInstance]);
+
 
   return (
     <Layout>
@@ -407,7 +455,7 @@ const RouteHistory = () => {
           )}
 
           {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
             <div>
               <Label htmlFor="vehicle-select" className="text-sm font-medium mb-2 block">
                 Select Vehicle
@@ -470,6 +518,22 @@ const RouteHistory = () => {
                   <SelectItem value="8">8x</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="speed-limit" className="text-sm font-medium mb-2 block">
+                Speed Limit (km/h)
+              </Label>
+              <Input
+                id="speed-limit"
+                type="number"
+                min={20}
+                max={200}
+                value={speedLimit}
+                onChange={(e) => setSpeedLimit(Math.max(20, Math.min(200, Number(e.target.value) || 100)))}
+                aria-label="Set speed limit threshold for speeding detection"
+                className="w-full"
+              />
             </div>
           </div>
         </div>
@@ -537,7 +601,7 @@ const RouteHistory = () => {
             
             {/* Event Markers on Map */}
             <RouteHistoryEventMarkers 
-              map={mapInstanceRef.current}
+              map={mapInstance}
               events={stopEvents}
               visible={showEventMarkers && hasData}
             />
@@ -749,12 +813,14 @@ const RouteHistory = () => {
                           Events ({stopEvents.length})
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="px-4 pb-4 pt-0 max-h-48 overflow-y-auto">
+                      <CardContent className="px-4 pb-4 pt-0 max-h-64 overflow-y-auto">
                         <div className="space-y-2">
-                          {stopEvents.slice(0, 10).map((event) => (
-                            <div 
+                          {stopEvents.map((event) => (
+                            <button 
                               key={event.id} 
-                              className="flex items-start gap-2 text-xs p-2 rounded bg-background/50"
+                              className="w-full flex items-start gap-2 text-xs p-2 rounded bg-background/50 hover:bg-background/80 transition-colors text-left cursor-pointer"
+                              onClick={() => handleJumpToEvent(event)}
+                              aria-label={`Jump to ${event.type} event at ${format(parseISO(event.startTime), "HH:mm")}`}
                             >
                               <div 
                                 className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
@@ -773,13 +839,8 @@ const RouteHistory = () => {
                                 </div>
                                 <p className="text-muted-foreground truncate">{event.description}</p>
                               </div>
-                            </div>
+                            </button>
                           ))}
-                          {stopEvents.length > 10 && (
-                            <p className="text-xs text-muted-foreground text-center pt-1">
-                              +{stopEvents.length - 10} more events
-                            </p>
-                          )}
                         </div>
                       </CardContent>
                     </Card>
