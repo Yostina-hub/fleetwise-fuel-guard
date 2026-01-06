@@ -84,7 +84,17 @@ import QuickMetricCard from "@/components/dashboard/executive/QuickMetricCard";
 import RiskSafetyReportsChart from "@/components/dashboard/executive/RiskSafetyReportsChart";
 import FleetUsageChart from "@/components/dashboard/executive/FleetUsageChart";
 import LiveDeliveryMap from "@/components/dashboard/executive/LiveDeliveryMap";
-import { Car, Gauge, Zap } from "lucide-react";
+import CommandCenterHeader from "@/components/dashboard/executive/CommandCenterHeader";
+import HeroMetricCard from "@/components/dashboard/executive/HeroMetricCard";
+import FleetRadarWidget from "@/components/dashboard/executive/FleetRadarWidget";
+import LivePulseTimeline from "@/components/dashboard/executive/LivePulseTimeline";
+import PerformanceRadar from "@/components/dashboard/executive/PerformanceRadar";
+import AlertHeatStrip from "@/components/dashboard/executive/AlertHeatStrip";
+import SavingsGauge from "@/components/dashboard/executive/SavingsGauge";
+import TrendSparklineCard from "@/components/dashboard/executive/TrendSparklineCard";
+import TopDriversCard from "@/components/dashboard/executive/TopDriversCard";
+import TripActivityHeatmap from "@/components/dashboard/executive/TripActivityHeatmap";
+import { Car, Gauge, Zap, Truck, Route, Fuel, Shield, Power, Wrench, Moon } from "lucide-react";
 
 const Dashboard = () => {
   const navigate = useNavigate();
