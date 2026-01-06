@@ -25,8 +25,12 @@ interface TelemetryPoint {
 interface TripSummary {
   durationMinutes: number;
   totalPoints: number;
+  validPoints: number;
   movingPoints: number;
   stoppedPoints: number;
+  idlePoints: number;
+  invalidCoordPoints: number;
+  filteredSegments: number;
   avgSpeed: string;
   maxSpeed: number;
   fuelConsumed: string;
