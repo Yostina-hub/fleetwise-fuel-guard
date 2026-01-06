@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useLocation } from "react-router-dom";
 import mapboxgl from "mapbox-gl";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -79,18 +79,20 @@ const RouteHistory = () => {
   const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
 
   const today = format(new Date(), "yyyy-MM-dd");
 
-  // Initialize from URL params
-  const urlVehicle = searchParams.get("vehicle") || "";
+  // Initialize from URL params or navigation state
+  const urlVehicle = searchParams.get("vehicle") || (location.state as any)?.selectedVehicleId || "";
   const urlDate = searchParams.get("date") || today;
+  const autoplayRequested = searchParams.get("autoplay") === "true";
 
   const [selectedVehicle, setSelectedVehicle] = useState<string>(urlVehicle);
   const [selectedDate, setSelectedDate] = useState<string>(urlDate);
   const isToday = selectedDate === today;
 
-  const [followLive, setFollowLive] = useState(true);
+  const [followLive, setFollowLive] = useState(!autoplayRequested); // Disable live mode if autoplay
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackProgress, setPlaybackProgress] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
@@ -98,6 +100,7 @@ const RouteHistory = () => {
   const [speedLimit, setSpeedLimit] = useState(100); // Configurable speed limit
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const autoplayTriggered = useRef(false);
 
   // Callback to capture map instance - triggers re-render
   const handleMapReady = useCallback((map: mapboxgl.Map) => {
@@ -189,6 +192,24 @@ const RouteHistory = () => {
 
   const routeHistory = telemetryData || [];
   const hasData = routeHistory.length > 0;
+
+  // Auto-start playback when navigating from Trip Replay action
+  useEffect(() => {
+    if (autoplayRequested && hasData && !autoplayTriggered.current) {
+      autoplayTriggered.current = true;
+      setFollowLive(false);
+      setPlaybackProgress(0);
+      // Small delay to allow map to render before starting playback
+      setTimeout(() => {
+        setIsPlaying(true);
+      }, 500);
+      
+      // Clean up the autoplay param from URL
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("autoplay");
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [autoplayRequested, hasData, searchParams, setSearchParams]);
 
   // Calculate stop markers with configurable speed limit
   const stopEvents = useStopMarkers({ routeData: routeHistory, speedLimit });

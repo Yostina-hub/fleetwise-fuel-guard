@@ -245,9 +245,10 @@ const MapView = () => {
     }
   }, [mapInstance]);
 
-  // Handle Trip Replay from info panel
+  // Handle Trip Replay from info panel - navigate with URL params for automatic selection
   const handleTripReplay = useCallback((vehicleId: string, plate: string) => {
-    navigate('/route-history', { state: { selectedVehicleId: vehicleId, plate } });
+    const today = new Date().toISOString().split('T')[0];
+    navigate(`/route-history?vehicle=${vehicleId}&date=${today}&autoplay=true`);
   }, [navigate]);
 
   // Handle Manage Asset from info panel
