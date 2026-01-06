@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, Legend } from "recharts";
-import GlowingCard from "./GlowingCard";
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
 
 interface DistanceData {
   time: string;
@@ -21,24 +20,37 @@ interface DistanceByGroupChartProps {
 const DistanceByGroupChart = ({ data, groups, loading }: DistanceByGroupChartProps) => {
   if (loading) {
     return (
-      <GlowingCard className="h-80 lg:col-span-2" glowColor="primary">
+      <div className="bg-[#1a2332] border border-[#2a3a4d] rounded-lg p-4 lg:col-span-2 h-80">
         <div className="animate-pulse space-y-4">
-          <div className="h-4 bg-muted rounded w-1/3" />
-          <div className="h-56 bg-muted rounded" />
+          <div className="h-4 bg-muted/20 rounded w-1/3" />
+          <div className="h-56 bg-muted/20 rounded" />
         </div>
-      </GlowingCard>
+      </div>
     );
   }
+
+  // Multi-color scheme matching reference
+  const groupColors = [
+    '#3b82f6', // blue
+    '#22c55e', // green  
+    '#f97316', // orange
+    '#8b5cf6', // purple
+    '#06b6d4', // cyan
+    '#ec4899', // pink
+    '#eab308', // yellow
+    '#ef4444', // red
+  ];
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-popover border rounded-lg shadow-lg p-3 max-h-48 overflow-auto">
-          <p className="font-medium mb-2">{label}</p>
+        <div className="bg-[#1a2332] border border-[#2a3a4d] rounded-lg shadow-xl p-3">
+          <p className="font-medium text-foreground mb-2">{label}</p>
           {payload.map((entry: any, index: number) => (
-            <p key={index} className="text-sm flex items-center gap-2">
-              <span className="w-2 h-2 rounded" style={{ backgroundColor: entry.color }} />
-              {entry.name}: {entry.value?.toFixed(1)} km
+            <p key={index} className="text-xs flex items-center gap-2 py-0.5">
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+              <span className="text-muted-foreground">{entry.name}:</span>
+              <span className="text-foreground font-medium">{entry.value?.toFixed(1)} km</span>
             </p>
           ))}
         </div>
@@ -48,49 +60,75 @@ const DistanceByGroupChart = ({ data, groups, loading }: DistanceByGroupChartPro
   };
 
   return (
-    <GlowingCard glowColor="primary" className="lg:col-span-2">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-lg">Distance by Group per Hour</h3>
-        <div className="flex flex-wrap gap-2 text-xs max-w-md">
-          {groups.slice(0, 6).map((group) => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-[#1a2332] border border-[#2a3a4d] rounded-lg p-4 lg:col-span-2"
+    >
+      {/* Header with Legend */}
+      <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
+        <h3 className="font-semibold text-base text-foreground">Distance by Group per Hour</h3>
+        <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px]">
+          {groups.map((group, i) => (
             <div key={group.name} className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded" style={{ backgroundColor: group.color }} />
-              <span className="truncate max-w-[80px]">{group.name}</span>
+              <div 
+                className="w-3 h-0.5" 
+                style={{ backgroundColor: groupColors[i % groupColors.length] }} 
+              />
+              <span className="text-muted-foreground">{group.name}</span>
             </div>
           ))}
-          {groups.length > 6 && (
-            <span className="text-muted-foreground">+{groups.length - 6} more</span>
-          )}
         </div>
       </div>
       
+      {/* Chart */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="h-56"
+        className="h-52"
       >
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
-            <XAxis dataKey="time" tick={{ fontSize: 10 }} />
-            <YAxis tick={{ fontSize: 10 }} label={{ value: 'Distance', angle: -90, position: 'insideLeft', fontSize: 10 }} />
+          <LineChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#2a3a4d" vertical={false} />
+            <XAxis 
+              dataKey="time" 
+              tick={{ fontSize: 10, fill: '#6b7280' }}
+              axisLine={{ stroke: '#2a3a4d' }}
+              tickLine={{ stroke: '#2a3a4d' }}
+            />
+            <YAxis 
+              tick={{ fontSize: 10, fill: '#6b7280' }}
+              axisLine={{ stroke: '#2a3a4d' }}
+              tickLine={{ stroke: '#2a3a4d' }}
+              label={{ 
+                value: 'Distance', 
+                angle: -90, 
+                position: 'insideLeft', 
+                fontSize: 10,
+                fill: '#6b7280',
+                offset: 10
+              }} 
+            />
             <Tooltip content={<CustomTooltip />} />
-            {groups.map((group) => (
+            {groups.map((group, i) => (
               <Line
                 key={group.name}
                 type="monotone"
                 dataKey={group.name}
-                stroke={group.color}
+                stroke={groupColors[i % groupColors.length]}
                 strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 4 }}
+                dot={{ r: 3, fill: groupColors[i % groupColors.length], strokeWidth: 0 }}
+                activeDot={{ r: 5, strokeWidth: 2, stroke: '#1a2332' }}
               />
             ))}
           </LineChart>
         </ResponsiveContainer>
       </motion.div>
-    </GlowingCard>
+
+      {/* X-axis label */}
+      <div className="text-center text-xs text-muted-foreground mt-1">Time</div>
+    </motion.div>
   );
 };
 

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Wifi, WifiOff, Signal } from "lucide-react";
+import { Signal, WifiOff } from "lucide-react";
 
 interface ConnectionStatusProps {
   isConnected: boolean;
@@ -14,34 +14,27 @@ const ConnectionStatus = ({ isConnected, lastUpdate }: ConnectionStatusProps) =>
       className={`
         rounded-lg p-4 
         ${isConnected 
-          ? 'bg-gradient-to-r from-success/20 to-success/10 border border-success/30' 
-          : 'bg-gradient-to-r from-destructive/20 to-destructive/10 border border-destructive/30'
+          ? 'bg-gradient-to-br from-emerald-600 to-emerald-700 border border-emerald-500/50' 
+          : 'bg-gradient-to-br from-red-600 to-red-700 border border-red-500/50'
         }
       `}
     >
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">Dashboard Connection</span>
-        <div className="flex items-center gap-2">
-          {isConnected ? (
-            <motion.div
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ repeat: Infinity, duration: 2 }}
-            >
-              <Signal className="w-4 h-4 text-success" />
-            </motion.div>
-          ) : (
-            <WifiOff className="w-4 h-4 text-destructive" />
-          )}
-        </div>
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-sm text-white/80">Dashboard Connection</span>
+        {isConnected ? (
+          <motion.div
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ repeat: Infinity, duration: 2 }}
+          >
+            <Signal className="w-4 h-4 text-white" />
+          </motion.div>
+        ) : (
+          <WifiOff className="w-4 h-4 text-white" />
+        )}
       </div>
-      <div className={`text-xl font-bold mt-1 ${isConnected ? 'text-success' : 'text-destructive'}`}>
+      <div className="text-xl font-bold text-white">
         {isConnected ? 'CONNECTED' : 'DISCONNECTED'}
       </div>
-      {lastUpdate && (
-        <span className="text-xs text-muted-foreground">
-          Last update: {lastUpdate}
-        </span>
-      )}
     </motion.div>
   );
 };
