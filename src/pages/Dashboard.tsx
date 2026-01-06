@@ -22,6 +22,7 @@ import {
   Route,
   LayoutGrid,
   BarChart3,
+  Crown,
 } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
 import VehicleDetailModal from "@/components/VehicleDetailModal";
@@ -59,6 +60,15 @@ import DateRangeFilter from "@/components/dashboard/DateRangeFilter";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { startOfMonth } from "date-fns";
 
+// Executive Dashboard Components
+import ExecutiveScorecard from "@/components/dashboard/ExecutiveScorecard";
+import DriverLeaderboard from "@/components/dashboard/DriverLeaderboard";
+import ComplianceTracker from "@/components/dashboard/ComplianceTracker";
+import FinancialOverview from "@/components/dashboard/FinancialOverview";
+import LiveActivityFeed from "@/components/dashboard/LiveActivityFeed";
+import FleetHealthSummary from "@/components/dashboard/FleetHealthSummary";
+import { useExecutiveMetrics } from "@/hooks/useExecutiveMetrics";
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { organizationId } = useOrganization();
@@ -77,6 +87,7 @@ const Dashboard = () => {
   const { telemetry: telemetryMap } = useVehicleTelemetry();
   const { formatCurrency, formatDistance, settings } = useOrganizationSettings();
   const { metrics: tripMetrics } = useTripMetrics(dateRange);
+  const { kpis, driverRankings, complianceItems, financialMetrics, recentActivities, geofenceActivities, loading: execLoading } = useExecutiveMetrics();
 
   // Real-time subscriptions
   useEffect(() => {
@@ -231,7 +242,11 @@ const Dashboard = () => {
 
         {/* Tabs for different views */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsList className="grid w-full max-w-lg grid-cols-3">
+            <TabsTrigger value="executive" className="gap-2">
+              <Crown className="w-4 h-4" />
+              Executive
+            </TabsTrigger>
             <TabsTrigger value="overview" className="gap-2">
               <LayoutGrid className="w-4 h-4" />
               Overview
@@ -241,6 +256,31 @@ const Dashboard = () => {
               Analytics
             </TabsTrigger>
           </TabsList>
+
+          {/* Executive Tab */}
+          <TabsContent value="executive" className="space-y-6 mt-6">
+            <ExecutiveScorecard kpis={kpis} loading={execLoading} />
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <FinancialOverview metrics={financialMetrics} loading={execLoading} />
+              <FleetHealthSummary 
+                vehicles={dbVehicles} 
+                maintenanceOverdue={analytics.maintenance.overdueCount}
+                complianceRate={analytics.maintenance.complianceRate}
+                loading={execLoading}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <DriverLeaderboard rankings={driverRankings} loading={execLoading} />
+              <ComplianceTracker items={complianceItems} loading={execLoading} />
+              <LiveActivityFeed 
+                activities={recentActivities} 
+                geofenceActivities={geofenceActivities}
+                loading={execLoading} 
+              />
+            </div>
+          </TabsContent>
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6 mt-6">
