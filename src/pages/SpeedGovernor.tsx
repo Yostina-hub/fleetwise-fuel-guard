@@ -56,17 +56,21 @@ const SpeedGovernor = () => {
   const [isGovernorActive, setIsGovernorActive] = useState(true);
   const [showCommandDialog, setShowCommandDialog] = useState(false);
 
-  // Transform governorConfigs from hook into vehicle list for display
-  const vehicles = governorConfigs?.map((config: any) => ({
-    id: config.vehicle_id,
-    plate: config.vehicles?.plate_number || "Unknown",
-    governorActive: config.governor_active,
-    currentSpeed: 0,
-    maxSpeed: config.max_speed_limit,
-    violations: 0,
-    lastUpdate: "Live",
-    configId: config.id
-  })) || [];
+  // Transform ALL vehicles into list for display, with governor config if available
+  const vehicles = allVehicles.map((v) => {
+    const config = governorConfigs?.find((c: any) => c.vehicle_id === v.id);
+    return {
+      id: v.id,
+      plate: v.plate_number || "Unknown",
+      governorActive: config?.governor_active || false,
+      currentSpeed: 0,
+      maxSpeed: config?.max_speed_limit || 80,
+      violations: 0,
+      lastUpdate: "Live",
+      configId: config?.id || null,
+      hasConfig: !!config
+    };
+  });
 
   // All vehicles with their config status (for dropdown - includes unconfigured vehicles)
   const vehiclesWithConfig = allVehicles.map(v => {
