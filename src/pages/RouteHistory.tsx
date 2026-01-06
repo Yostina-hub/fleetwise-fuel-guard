@@ -292,23 +292,49 @@ const RouteHistory = () => {
     const fuelEnd = lastPoint.fuel_level_percent || 0;
     const fuelConsumed = fuelStart - fuelEnd;
 
-    // Approximate distance calculation (Haversine)
+    // Haversine distance helper
+    const haversine = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLng = (lng2 - lng1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) ** 2 +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLng / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    };
+
+    // Calculate distance with GPS jump filtering (ignore unrealistic jumps > 200 km/h)
     let totalDistanceKm = 0;
+    const MAX_SPEED_KMH = 200; // Max realistic speed for filtering bad GPS data
+
     for (let i = 1; i < routeHistory.length; i++) {
       const prev = routeHistory[i - 1];
       const curr = routeHistory[i];
-      const R = 6371;
+
       const prevLat = prev.latitude || 0;
       const prevLng = prev.longitude || 0;
       const currLat = curr.latitude || 0;
       const currLng = curr.longitude || 0;
-      const dLat = (currLat - prevLat) * Math.PI / 180;
-      const dLng = (currLng - prevLng) * Math.PI / 180;
-      const a = Math.sin(dLat / 2) ** 2 + 
-                Math.cos(prevLat * Math.PI / 180) * Math.cos(currLat * Math.PI / 180) * 
-                Math.sin(dLng / 2) ** 2;
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      totalDistanceKm += R * c;
+
+      // Skip invalid coordinates
+      if (!prevLat || !prevLng || !currLat || !currLng) continue;
+
+      const segmentKm = haversine(prevLat, prevLng, currLat, currLng);
+
+      // Calculate time difference in hours
+      const prevTime = new Date(prev.last_communication_at).getTime();
+      const currTime = new Date(curr.last_communication_at).getTime();
+      const timeDiffHours = (currTime - prevTime) / (1000 * 60 * 60);
+
+      // Skip if time difference is zero or negative (bad data)
+      if (timeDiffHours <= 0) continue;
+
+      // Calculate implied speed and filter out GPS jumps
+      const impliedSpeedKmh = segmentKm / timeDiffHours;
+      if (impliedSpeedKmh <= MAX_SPEED_KMH) {
+        totalDistanceKm += segmentKm;
+      }
+      // else: GPS jump detected, skip this segment
     }
 
     return {
