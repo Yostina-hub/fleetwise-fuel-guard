@@ -48,6 +48,7 @@ import { FuelSpeedometerTable } from "@/components/reports/FuelSpeedometerTable"
 import { RefuelingReportTable } from "@/components/reports/RefuelingReportTable";
 import { FuelDrainReportTable } from "@/components/reports/FuelDrainReportTable";
 import { AlarmStatisticsTable } from "@/components/reports/AlarmStatisticsTable";
+import RestrictedHoursReportTable from "@/components/reports/RestrictedHoursReportTable";
 
 const Reports = () => {
   const [activeReportTab, setActiveReportTab] = useState("vehicle");
@@ -143,6 +144,7 @@ const Reports = () => {
           { id: "mileage", label: "Mileage Statistics" },
           { id: "total_mileage", label: "Total Mileage" },
           { id: "speed_report", label: "Speed Report" },
+          { id: "restricted_hours", label: "Restricted Hours" },
         ];
       case "maintenance":
         return [
@@ -193,7 +195,7 @@ const Reports = () => {
       case "fuel":
         return [{ id: "transactions", label: "Transactions" }, { id: "events", label: "Fill/Drain Events" }, { id: "theft", label: "Theft Cases" }, { id: "mileage_fuel", label: "Daily Mileage & Fuel" }, { id: "fuel_speedometer", label: "Fuel Mileage Speedometer" }, { id: "refueling", label: "Refueling Report" }, { id: "fuel_drain", label: "Fuel Drain Report" }];
       case "trips":
-        return [{ id: "all_trips", label: "All Trips" }, { id: "idle_time", label: "Idle Time Analysis" }, { id: "stop_statistics", label: "Stop Statistics" }, { id: "ignition", label: "Ignition Statistics" }, { id: "mileage", label: "Mileage Statistics" }, { id: "total_mileage", label: "Total Mileage" }, { id: "speed_report", label: "Speed Report" }];
+        return [{ id: "all_trips", label: "All Trips" }, { id: "idle_time", label: "Idle Time Analysis" }, { id: "stop_statistics", label: "Stop Statistics" }, { id: "ignition", label: "Ignition Statistics" }, { id: "mileage", label: "Mileage Statistics" }, { id: "total_mileage", label: "Total Mileage" }, { id: "speed_report", label: "Speed Report" }, { id: "restricted_hours", label: "Restricted Hours" }];
       case "maintenance":
         return [{ id: "schedules", label: "Schedules" }, { id: "work_orders", label: "Work Orders" }, { id: "inspections", label: "Inspections" }];
       case "dispatch":
@@ -1154,6 +1156,8 @@ const Reports = () => {
             return <TotalMileageTable trips={trips} />;
           case "speed_report":
             return <SpeedReportTable violations={speedViolations} />;
+          case "restricted_hours":
+            return <RestrictedHoursReportTable startDate={startDate} endDate={endDate} searchQuery={searchQuery} />;
           default:
             return <TripsTable trips={trips} />;
         }

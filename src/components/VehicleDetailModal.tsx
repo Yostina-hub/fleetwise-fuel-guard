@@ -43,6 +43,7 @@ import TripTimeline from "@/components/vehicle/TripTimeline";
 import FuelMetricsPanel from "@/components/vehicle/FuelMetricsPanel";
 import AlertsPanel from "@/components/vehicle/AlertsPanel";
 import ZonesPanel from "@/components/vehicle/ZonesPanel";
+import RestrictedHoursPanel from "@/components/vehicle/RestrictedHoursPanel";
 import { useVehicleData } from "@/hooks/useVehicleData";
 import { useDrivers } from "@/hooks/useDrivers";
 import { format, formatDistanceToNow } from "date-fns";
@@ -556,6 +557,15 @@ const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalP
                         </p>
                       </CardContent>
                     </Card>
+
+
+                    {/* Restricted Hours Configuration */}
+                    <div className="md:col-span-2">
+                      <RestrictedHoursPanel 
+                        vehicleId={actualVehicleId} 
+                        vehiclePlate={vehicle.plate} 
+                      />
+                    </div>
 
                     {/* Quick Actions Card */}
                     <Card className="md:col-span-2">
