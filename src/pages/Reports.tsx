@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Truck, Users, MapPin, Route, Fuel, Wrench, DollarSign, Bell, ClipboardList, FileText } from "lucide-react";
@@ -18,6 +18,7 @@ import { ReportsDateFilter } from "@/components/reports/ReportsDateFilter";
 import { ReportsMetricCards } from "@/components/reports/ReportsMetricCards";
 import { ReportsInsightsCard } from "@/components/reports/ReportsInsightsCard";
 import { ReportsTrendChart } from "@/components/reports/ReportsTrendChart";
+import { ReportCatalog, REPORT_DEFINITIONS } from "@/components/reports/ReportCatalog";
 
 // Report table components
 import { SpeedingEventsTable } from "@/components/reports/SpeedingEventsTable";
@@ -50,12 +51,29 @@ import { FuelDrainReportTable } from "@/components/reports/FuelDrainReportTable"
 import { AlarmStatisticsTable } from "@/components/reports/AlarmStatisticsTable";
 import RestrictedHoursReportTable from "@/components/reports/RestrictedHoursReportTable";
 
+const FAVORITES_STORAGE_KEY = "fleet_report_favorites";
+
 const Reports = () => {
+  const [viewMode, setViewMode] = useState<"catalog" | "report">("catalog");
   const [activeReportTab, setActiveReportTab] = useState("vehicle");
   const [activeSubTab, setActiveSubTab] = useState("summary");
   const [searchQuery, setSearchQuery] = useState("");
+  const [catalogSearch, setCatalogSearch] = useState("");
   const [startDate, setStartDate] = useState(format(subDays(new Date(), 7), "yyyy-MM-dd"));
   const [endDate, setEndDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [favoriteReports, setFavoriteReports] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(FAVORITES_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Persist favorites to localStorage
+  useEffect(() => {
+    localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favoriteReports));
+  }, [favoriteReports]);
 
   const { vehicles } = useVehicles();
   const { drivers } = useDrivers();
@@ -1222,6 +1240,22 @@ const Reports = () => {
     }, 0);
   }, []);
 
+  // Toggle favorite
+  const handleToggleFavorite = (reportId: string) => {
+    setFavoriteReports(prev => 
+      prev.includes(reportId) 
+        ? prev.filter(id => id !== reportId)
+        : [...prev, reportId]
+    );
+  };
+
+  // Select report from catalog
+  const handleSelectReport = (category: string, subId: string) => {
+    setActiveReportTab(category);
+    setActiveSubTab(subId);
+    setViewMode("report");
+  };
+
   return (
     <Layout>
       <div className="p-6 md:p-8 space-y-6">
@@ -1231,56 +1265,73 @@ const Reports = () => {
           dateRange={dateRangeDisplay} 
         />
 
-        {/* Metric Cards - Context Aware */}
-        <ReportsMetricCards 
-          metrics={metrics} 
-          vehicleCount={vehicles.length} 
-          driverCount={drivers.length}
-          activeTab={activeReportTab}
-        />
-
-        {/* Navigation Tabs */}
+        {/* Navigation Tabs with View Mode Toggle */}
         <ReportsNavigation
           mainTabs={mainTabs}
-          subTabs={subTabs}
+          subTabs={viewMode === "report" ? subTabs : []}
           activeMainTab={activeReportTab}
           activeSubTab={activeSubTab}
           onMainTabChange={(id) => {
             setActiveReportTab(id);
             const newSubTabs = getSubTabsForTab(id);
             setActiveSubTab(newSubTabs[0]?.id || "summary");
+            if (viewMode === "catalog") setViewMode("report");
           }}
           onSubTabChange={setActiveSubTab}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
         />
 
-        {/* Date Filter & Export */}
-        <ReportsDateFilter
-          startDate={startDate}
-          endDate={endDate}
-          searchQuery={searchQuery}
-          onStartDateChange={setStartDate}
-          onEndDateChange={setEndDate}
-          onSearchChange={setSearchQuery}
-          onExportCSV={handleExportCSV}
-          onExportPDF={handleExportPDF}
-          onRefresh={handleRefresh}
-          isLoading={loading}
-        />
-
-        {/* Insights & Trend Chart Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ReportsInsightsCard metrics={metrics} />
-          <ReportsTrendChart 
-            trips={trips} 
-            driverEvents={driverEvents} 
-            activeTab={activeReportTab} 
+        {viewMode === "catalog" ? (
+          /* Report Catalog View */
+          <ReportCatalog
+            reports={REPORT_DEFINITIONS}
+            favoriteReports={favoriteReports}
+            onSelectReport={handleSelectReport}
+            onToggleFavorite={handleToggleFavorite}
+            searchQuery={catalogSearch}
+            onSearchChange={setCatalogSearch}
           />
-        </div>
+        ) : (
+          <>
+            {/* Metric Cards - Context Aware */}
+            <ReportsMetricCards 
+              metrics={metrics} 
+              vehicleCount={vehicles.length} 
+              driverCount={drivers.length}
+              activeTab={activeReportTab}
+            />
 
-        {/* Data Table */}
-        <div className="mt-2">
-          {renderContent()}
-        </div>
+            {/* Date Filter & Export */}
+            <ReportsDateFilter
+              startDate={startDate}
+              endDate={endDate}
+              searchQuery={searchQuery}
+              onStartDateChange={setStartDate}
+              onEndDateChange={setEndDate}
+              onSearchChange={setSearchQuery}
+              onExportCSV={handleExportCSV}
+              onExportPDF={handleExportPDF}
+              onRefresh={handleRefresh}
+              isLoading={loading}
+            />
+
+            {/* Insights & Trend Chart Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <ReportsInsightsCard metrics={metrics} />
+              <ReportsTrendChart 
+                trips={trips} 
+                driverEvents={driverEvents} 
+                activeTab={activeReportTab} 
+              />
+            </div>
+
+            {/* Data Table */}
+            <div className="mt-2">
+              {renderContent()}
+            </div>
+          </>
+        )}
       </div>
     </Layout>
   );

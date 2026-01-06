@@ -1,0 +1,307 @@
+import { useState } from "react";
+import { FileText, Plus, Search, MoreHorizontal, Star, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+interface ReportDefinition {
+  id: string;
+  category: string;
+  subId: string;
+  name: string;
+  description: string;
+  isFavorite?: boolean;
+}
+
+interface ReportCatalogProps {
+  reports: ReportDefinition[];
+  favoriteReports: string[];
+  onSelectReport: (category: string, subId: string) => void;
+  onToggleFavorite: (reportId: string) => void;
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+}
+
+// All available report types with descriptions
+export const REPORT_DEFINITIONS: ReportDefinition[] = [
+  // Vehicle Reports
+  { id: "vehicle-summary", category: "vehicle", subId: "summary", name: "Vehicle Summary", description: "Overview of all fleet vehicles with status and specifications" },
+  { id: "vehicle-utilization", category: "vehicle", subId: "utilization", name: "Vehicle Utilization", description: "Detailed usage analysis showing trips, distance, and operational time" },
+  { id: "vehicle-geofence", category: "vehicle", subId: "geofence", name: "Zone Visitation Report", description: "Shows asset visitation in and out of zones and their total duration" },
+  
+  // Driver Reports
+  { id: "driver-summary", category: "driver", subId: "summary", name: "Driver Summary", description: "Complete driver roster with license and safety information" },
+  { id: "driver-scores", category: "driver", subId: "scores", name: "Driver Behavior Scores", description: "Eco-driving report listing drivers and assets with driving scores" },
+  { id: "driver-compliance", category: "driver", subId: "compliance", name: "Driver Compliance", description: "License expiry and medical certificate compliance status" },
+  { id: "driver-speeding", category: "driver", subId: "speeding", name: "Driver Speeding Events", description: "Lists all speeding violations by driver with severity levels" },
+  { id: "driver-harsh", category: "driver", subId: "harsh_events", name: "Harsh Events Report", description: "Lists violations including harsh braking, cornering, acceleration and keep-in/no-go alerts" },
+  { id: "driver-incidents", category: "driver", subId: "incidents", name: "Driver Incidents", description: "Incident reports and accidents involving drivers" },
+  
+  // Location Reports
+  { id: "location-geofence", category: "location", subId: "geofence", name: "Geofence Events", description: "Entry and exit events for all defined geofences" },
+  { id: "location-speeding", category: "location", subId: "speeding", name: "Speeding by Location", description: "Speed violations mapped to specific locations" },
+  
+  // Fuel Reports
+  { id: "fuel-transactions", category: "fuel", subId: "transactions", name: "Fuel Transactions", description: "All fuel purchase transactions with cost analysis" },
+  { id: "fuel-events", category: "fuel", subId: "events", name: "Fuel Fill/Drain Events", description: "Detected refueling and drain events from sensors" },
+  { id: "fuel-theft", category: "fuel", subId: "theft", name: "Fuel Theft Cases", description: "Suspected fuel theft incidents with evidence" },
+  { id: "fuel-mileage", category: "fuel", subId: "mileage_fuel", name: "Daily Mileage & Fuel", description: "Daily breakdown of distance traveled and fuel consumed" },
+  { id: "fuel-speedometer", category: "fuel", subId: "fuel_speedometer", name: "Fuel Mileage Speedometer", description: "Fuel efficiency metrics with speedometer data" },
+  { id: "fuel-refueling", category: "fuel", subId: "refueling", name: "Refueling Report", description: "Detailed refueling events with location and volume" },
+  { id: "fuel-drain", category: "fuel", subId: "fuel_drain", name: "Fuel Drain Report", description: "Fuel level drops with analysis and alerts" },
+  
+  // Trip Reports
+  { id: "trips-all", category: "trips", subId: "all_trips", name: "Trip Listing Report", description: "Lists the trips for selected assets and date range" },
+  { id: "trips-idle", category: "trips", subId: "idle_time", name: "Excessive Idle Report", description: "Lists any excessive idle events with duration" },
+  { id: "trips-stop", category: "trips", subId: "stop_statistics", name: "Stoppage Report", description: "Lists the stoppages for selected assets within date range" },
+  { id: "trips-ignition", category: "trips", subId: "ignition", name: "Ignition Statistics", description: "Engine on/off events with timing analysis" },
+  { id: "trips-mileage", category: "trips", subId: "mileage", name: "Mileage Statistics", description: "Distance covered analysis by vehicle and period" },
+  { id: "trips-total-mileage", category: "trips", subId: "total_mileage", name: "Total Mileage Report", description: "Aggregated mileage totals for fleet analysis" },
+  { id: "trips-speed", category: "trips", subId: "speed_report", name: "Speed Report Graph", description: "A graph that displays general speed patterns" },
+  { id: "trips-restricted", category: "trips", subId: "restricted_hours", name: "Restricted Hours Trip Report", description: "Report displaying trip records that fall outside a specified date range" },
+  
+  // Maintenance Reports
+  { id: "maint-schedules", category: "maintenance", subId: "schedules", name: "Maintenance Due Report", description: "Upcoming maintenance reminder report" },
+  { id: "maint-work-orders", category: "maintenance", subId: "work_orders", name: "Work Orders Report", description: "All work orders with status and cost breakdown" },
+  { id: "maint-inspections", category: "maintenance", subId: "inspections", name: "Inspections Report", description: "Vehicle inspection records and findings" },
+  
+  // Dispatch Reports
+  { id: "dispatch-jobs", category: "dispatch", subId: "jobs", name: "Dispatch Jobs Report", description: "All dispatch jobs with SLA performance metrics" },
+  
+  // Cost Reports
+  { id: "costs-all", category: "costs", subId: "all_costs", name: "Vehicle Costs Report", description: "Comprehensive cost analysis by vehicle and category" },
+  
+  // Alert Reports
+  { id: "alerts-all", category: "alerts", subId: "all_alerts", name: "All Alarms Report", description: "Generate historical reports of all or specific alerts" },
+  { id: "alerts-sos", category: "alerts", subId: "sos", name: "SOS Alarm Report", description: "Emergency SOS alert records and responses" },
+  { id: "alerts-overspeed", category: "alerts", subId: "overspeed", name: "Overspeed Alarm Report", description: "Lists any device and road-speed overspeed events" },
+  { id: "alerts-fatigue", category: "alerts", subId: "fatigue", name: "Fatigue Alarm Report", description: "Driver fatigue detection alerts" },
+  { id: "alerts-battery", category: "alerts", subId: "low_battery", name: "Battery Low Status", description: "A report showing battery charge status below threshold" },
+  { id: "alerts-power", category: "alerts", subId: "power_outage", name: "Power Outage Report", description: "Device power disconnection alerts" },
+  { id: "alerts-vibration", category: "alerts", subId: "vibration", name: "Vibration/Impact Report", description: "Lists any impact events if supported by hardware" },
+  { id: "alerts-door", category: "alerts", subId: "door", name: "Door Open Alarm Report", description: "Unauthorized door access alerts" },
+  { id: "alerts-ignition", category: "alerts", subId: "ignition_alarm", name: "Ignition Alarm Report", description: "Unauthorized ignition events" },
+  { id: "alerts-movement", category: "alerts", subId: "movement", name: "Movement Alarm Report", description: "Unauthorized vehicle movement alerts" },
+  
+  // Compliance Reports
+  { id: "compliance-driver", category: "compliance", subId: "driver_compliance", name: "Driver Compliance Report", description: "Driver license and certification status" },
+  { id: "compliance-docs", category: "compliance", subId: "document_expiry", name: "Document Expiry Report", description: "Expiring documents requiring attention" },
+];
+
+export const ReportCatalog = ({
+  reports,
+  favoriteReports,
+  onSelectReport,
+  onToggleFavorite,
+  searchQuery,
+  onSearchChange,
+}: ReportCatalogProps) => {
+  const [addReportOpen, setAddReportOpen] = useState(false);
+  const [carouselPage, setCarouselPage] = useState(0);
+  
+  const itemsPerPage = 5;
+  const totalPages = Math.ceil(reports.length / itemsPerPage);
+  
+  const filteredReports = reports.filter(r => 
+    r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    r.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
+  const favoriteReportsList = filteredReports.filter(r => favoriteReports.includes(r.id));
+  const carouselReports = reports.slice(
+    carouselPage * itemsPerPage,
+    (carouselPage + 1) * itemsPerPage
+  );
+
+  return (
+    <div className="space-y-4">
+      {/* Header with Search and Add Report */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-card/50 backdrop-blur-sm rounded-xl border border-border/50">
+        <div className="flex items-center gap-3">
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search reports..."
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="pl-10 bg-background/50 border-border/50"
+            />
+          </div>
+        </div>
+        
+        <Dialog open={addReportOpen} onOpenChange={setAddReportOpen}>
+          <DialogTrigger asChild>
+            <Button className="gap-2 shadow-md shadow-primary/20">
+              <Plus className="w-4 h-4" />
+              Add Report
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-5xl p-0 overflow-hidden">
+            <DialogHeader className="px-6 py-4 bg-primary text-primary-foreground">
+              <DialogTitle className="text-lg font-semibold flex items-center gap-2">
+                <Star className="w-5 h-5" />
+                ADD TO FAVORITES
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="relative px-6 py-8">
+              {/* Carousel Navigation */}
+              <Button
+                variant="outline"
+                size="icon"
+                className="absolute left-2 top-1/2 -translate-y-1/2 z-10 rounded-full bg-background/80 backdrop-blur-sm shadow-lg"
+                onClick={() => setCarouselPage(p => Math.max(0, p - 1))}
+                disabled={carouselPage === 0}
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="icon"
+                className="absolute right-2 top-1/2 -translate-y-1/2 z-10 rounded-full bg-background/80 backdrop-blur-sm shadow-lg"
+                onClick={() => setCarouselPage(p => Math.min(totalPages - 1, p + 1))}
+                disabled={carouselPage >= totalPages - 1}
+              >
+                <ChevronRight className="w-5 h-5" />
+              </Button>
+              
+              {/* Report Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 px-8">
+                {carouselReports.map((report) => (
+                  <Card 
+                    key={report.id}
+                    className={cn(
+                      "group hover:shadow-lg transition-all duration-200 cursor-pointer border-2",
+                      favoriteReports.includes(report.id) 
+                        ? "border-primary bg-primary/5" 
+                        : "border-border/50 hover:border-primary/50"
+                    )}
+                  >
+                    <CardContent className="p-4 text-center space-y-3">
+                      <div className="w-14 h-14 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                        <FileText className="w-7 h-7 text-primary" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-sm leading-tight line-clamp-2 min-h-[2.5rem]">
+                          {report.name}
+                        </h4>
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2 min-h-[2rem]">
+                          {report.description}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant={favoriteReports.includes(report.id) ? "secondary" : "default"}
+                        className="w-full text-xs"
+                        onClick={() => onToggleFavorite(report.id)}
+                      >
+                        {favoriteReports.includes(report.id) ? "Remove" : "Add to favorites"}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              
+              {/* Pagination Dots */}
+              <div className="flex items-center justify-center gap-2 mt-6">
+                {Array.from({ length: totalPages }).map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCarouselPage(i)}
+                    className={cn(
+                      "w-2.5 h-2.5 rounded-full transition-all",
+                      carouselPage === i 
+                        ? "bg-primary w-6" 
+                        : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                    )}
+                  />
+                ))}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+      
+      {/* Report List */}
+      <Card className="border-border/50">
+        <ScrollArea className="h-[500px]">
+          <div className="divide-y divide-border/50">
+            {filteredReports.map((report) => (
+              <div
+                key={report.id}
+                className="flex items-start gap-4 p-4 hover:bg-muted/30 transition-colors cursor-pointer group"
+                onClick={() => {
+                  onSelectReport(report.category, report.subId);
+                }}
+              >
+                <div className="p-2.5 rounded-lg bg-primary/10 shrink-0">
+                  <FileText className="w-5 h-5 text-primary" />
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-semibold text-sm uppercase tracking-wide">
+                      {report.name}
+                    </h4>
+                    {favoriteReports.includes(report.id) && (
+                      <Badge variant="secondary" className="text-xs px-2 py-0">
+                        <Star className="w-3 h-3 mr-1 fill-current" />
+                        Favorite
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">
+                    {report.description}
+                  </p>
+                </div>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                    <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectReport(report.category, report.subId);
+                    }}>
+                      View Report
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleFavorite(report.id);
+                    }}>
+                      {favoriteReports.includes(report.id) ? "Remove from Favorites" : "Add to Favorites"}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            ))}
+            
+            {filteredReports.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <FileText className="w-12 h-12 text-muted-foreground/30 mb-4" />
+                <h3 className="text-lg font-medium text-muted-foreground">No Reports Found</h3>
+                <p className="text-sm text-muted-foreground/70 mt-1">
+                  Try adjusting your search query
+                </p>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      </Card>
+    </div>
+  );
+};

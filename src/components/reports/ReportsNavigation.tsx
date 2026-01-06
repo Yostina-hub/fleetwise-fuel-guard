@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
-import { LucideIcon } from "lucide-react";
+import { LucideIcon, List, Calendar } from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Tab {
   id: string;
@@ -15,6 +16,8 @@ interface ReportsNavigationProps {
   activeSubTab: string;
   onMainTabChange: (id: string) => void;
   onSubTabChange: (id: string) => void;
+  viewMode?: "catalog" | "report";
+  onViewModeChange?: (mode: "catalog" | "report") => void;
 }
 
 export const ReportsNavigation = ({
@@ -24,9 +27,29 @@ export const ReportsNavigation = ({
   activeSubTab,
   onMainTabChange,
   onSubTabChange,
+  viewMode = "report",
+  onViewModeChange,
 }: ReportsNavigationProps) => {
   return (
     <div className="space-y-4">
+      {/* View Mode Toggle */}
+      {onViewModeChange && (
+        <div className="flex items-center justify-between">
+          <Tabs value={viewMode} onValueChange={(v) => onViewModeChange(v as "catalog" | "report")}>
+            <TabsList className="bg-muted/50">
+              <TabsTrigger value="catalog" className="gap-2 data-[state=active]:bg-background">
+                <List className="w-4 h-4" />
+                My Reports
+              </TabsTrigger>
+              <TabsTrigger value="report" className="gap-2 data-[state=active]:bg-background">
+                <Calendar className="w-4 h-4" />
+                Scheduled & Custom
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+      )}
+
       {/* Main Tabs - Card Style */}
       <div className="bg-card/50 backdrop-blur-sm rounded-xl border border-border/50 p-1.5">
         <ScrollArea className="w-full">
