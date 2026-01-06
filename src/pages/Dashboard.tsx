@@ -61,12 +61,13 @@ import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { startOfMonth } from "date-fns";
 
 // Executive Dashboard Components
-import ExecutiveScorecard from "@/components/dashboard/ExecutiveScorecard";
-import DriverLeaderboard from "@/components/dashboard/DriverLeaderboard";
-import ComplianceTracker from "@/components/dashboard/ComplianceTracker";
-import FinancialOverview from "@/components/dashboard/FinancialOverview";
-import LiveActivityFeed from "@/components/dashboard/LiveActivityFeed";
-import FleetHealthSummary from "@/components/dashboard/FleetHealthSummary";
+import ExecutiveKPIGrid from "@/components/dashboard/executive/ExecutiveKPIGrid";
+import DriverPerformanceCard from "@/components/dashboard/executive/DriverPerformanceCard";
+import ComplianceGauges from "@/components/dashboard/executive/ComplianceGauges";
+import FinancialTrendCard from "@/components/dashboard/executive/FinancialTrendCard";
+import LiveActivityTimeline from "@/components/dashboard/executive/LiveActivityTimeline";
+import FleetStatusDonut from "@/components/dashboard/executive/FleetStatusDonut";
+import RadarPerformanceChart from "@/components/dashboard/executive/RadarPerformanceChart";
 import { useExecutiveMetrics } from "@/hooks/useExecutiveMetrics";
 
 const Dashboard = () => {
@@ -259,26 +260,32 @@ const Dashboard = () => {
 
           {/* Executive Tab */}
           <TabsContent value="executive" className="space-y-6 mt-6">
-            <ExecutiveScorecard kpis={kpis} loading={execLoading} />
+            {/* KPI Grid with animations */}
+            <ExecutiveKPIGrid kpis={kpis} loading={execLoading} />
             
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <FinancialOverview metrics={financialMetrics} loading={execLoading} />
-              <FleetHealthSummary 
-                vehicles={dbVehicles} 
-                maintenanceOverdue={analytics.maintenance.overdueCount}
-                complianceRate={analytics.maintenance.complianceRate}
+            {/* Financial & Performance Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <FinancialTrendCard metrics={financialMetrics} loading={execLoading} />
+              <RadarPerformanceChart 
+                data={{ vehicles: dbVehicles, drivers: [], trips: [], alerts: dbAlerts }}
                 loading={execLoading}
               />
             </div>
 
+            {/* Driver, Compliance, Activity Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <DriverLeaderboard rankings={driverRankings} loading={execLoading} />
-              <ComplianceTracker items={complianceItems} loading={execLoading} />
-              <LiveActivityFeed 
+              <DriverPerformanceCard rankings={driverRankings} loading={execLoading} />
+              <ComplianceGauges items={complianceItems} loading={execLoading} />
+              <LiveActivityTimeline 
                 activities={recentActivities} 
                 geofenceActivities={geofenceActivities}
                 loading={execLoading} 
               />
+            </div>
+
+            {/* Fleet Status */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              <FleetStatusDonut vehicles={dbVehicles} loading={execLoading} />
             </div>
           </TabsContent>
 
