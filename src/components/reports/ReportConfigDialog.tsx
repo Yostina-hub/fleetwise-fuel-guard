@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { X, Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -183,6 +183,9 @@ export const ReportConfigDialog = ({
               <X className="w-5 h-5" />
             </Button>
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Configure report filters including asset selection and time period
+          </DialogDescription>
         </DialogHeader>
 
         <div className="p-6">

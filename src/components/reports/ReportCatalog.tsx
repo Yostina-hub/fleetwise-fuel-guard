@@ -28,7 +28,7 @@ interface ReportDefinition {
 interface ReportCatalogProps {
   reports: ReportDefinition[];
   favoriteReports: string[];
-  onSelectReport: (category: string, subId: string) => void;
+  onSelectReport: (category: string, subId: string, config?: ReportConfig) => void;
   onToggleFavorite: (reportId: string) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
@@ -196,7 +196,8 @@ export const ReportCatalog = ({
 
   const handleGenerateReport = (config: ReportConfig) => {
     if (selectedReport) {
-      onSelectReport(selectedReport.category, selectedReport.subId);
+      // Pass the config to parent for filtering
+      onSelectReport(selectedReport.category, selectedReport.subId, config);
     }
   };
 
