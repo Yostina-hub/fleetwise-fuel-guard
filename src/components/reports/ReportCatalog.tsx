@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { FileText, Plus, Search, MoreHorizontal, Star, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { useState, useMemo } from "react";
+import { FileText, Plus, Search, MoreHorizontal, Star, ChevronLeft, ChevronRight, X, ChevronDown, ChevronUp, Truck, Users, MapPin, Fuel, Route, Wrench, ClipboardList, DollarSign, Bell, FileCheck, Laptop } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
@@ -13,6 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ReportConfigDialog, ReportConfig } from "./ReportConfigDialog";
 
 interface ReportDefinition {
@@ -32,6 +33,21 @@ interface ReportCatalogProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
 }
+
+// Category configuration with icons and labels
+const CATEGORY_CONFIG: Record<string, { label: string; icon: typeof Truck; color: string }> = {
+  vehicle: { label: "Vehicle Reports", icon: Truck, color: "text-blue-500" },
+  driver: { label: "Driver Reports", icon: Users, color: "text-green-500" },
+  location: { label: "Location Reports", icon: MapPin, color: "text-purple-500" },
+  fuel: { label: "Fuel Reports", icon: Fuel, color: "text-orange-500" },
+  trips: { label: "Trip Reports", icon: Route, color: "text-cyan-500" },
+  device: { label: "Device Reports", icon: Laptop, color: "text-slate-500" },
+  maintenance: { label: "Maintenance Reports", icon: Wrench, color: "text-yellow-600" },
+  dispatch: { label: "Dispatch Reports", icon: ClipboardList, color: "text-indigo-500" },
+  costs: { label: "Cost Reports", icon: DollarSign, color: "text-emerald-500" },
+  alerts: { label: "Alert Reports", icon: Bell, color: "text-red-500" },
+  compliance: { label: "Compliance Reports", icon: FileCheck, color: "text-teal-500" },
+};
 
 // All available report types with descriptions
 export const REPORT_DEFINITIONS: ReportDefinition[] = [
@@ -141,16 +157,35 @@ export const ReportCatalog = ({
   const [carouselPage, setCarouselPage] = useState(0);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ReportDefinition | null>(null);
+  const [expandedCategories, setExpandedCategories] = useState<string[]>(Object.keys(CATEGORY_CONFIG));
   
   const itemsPerPage = 5;
   const totalPages = Math.ceil(reports.length / itemsPerPage);
   
-  const filteredReports = reports.filter(r => 
-    r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    r.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredReports = useMemo(() => {
+    return reports.filter(r => 
+      r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      r.description.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [reports, searchQuery]);
   
-  const favoriteReportsList = filteredReports.filter(r => favoriteReports.includes(r.id));
+  // Group reports by category
+  const groupedReports = useMemo(() => {
+    const groups: Record<string, ReportDefinition[]> = {};
+    filteredReports.forEach(report => {
+      if (!groups[report.category]) {
+        groups[report.category] = [];
+      }
+      groups[report.category].push(report);
+    });
+    return groups;
+  }, [filteredReports]);
+  
+  const favoriteReportsList = useMemo(() => 
+    filteredReports.filter(r => favoriteReports.includes(r.id)),
+    [filteredReports, favoriteReports]
+  );
+
   const carouselReports = reports.slice(
     carouselPage * itemsPerPage,
     (carouselPage + 1) * itemsPerPage
@@ -167,11 +202,22 @@ export const ReportCatalog = ({
     }
   };
 
+  const toggleCategory = (category: string) => {
+    setExpandedCategories(prev => 
+      prev.includes(category) 
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    );
+  };
+
+  const expandAll = () => setExpandedCategories(Object.keys(CATEGORY_CONFIG));
+  const collapseAll = () => setExpandedCategories([]);
+
   return (
     <div className="space-y-4">
       {/* Header with Search and Add Report */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-card/50 backdrop-blur-sm rounded-xl border border-border/50">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-1 w-full">
           <div className="relative w-full sm:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -180,6 +226,14 @@ export const ReportCatalog = ({
               onChange={(e) => onSearchChange(e.target.value)}
               className="pl-10 bg-background/50 border-border/50"
             />
+          </div>
+          <div className="hidden sm:flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={expandAll} className="text-xs">
+              Expand All
+            </Button>
+            <Button variant="outline" size="sm" onClick={collapseAll} className="text-xs">
+              Collapse All
+            </Button>
           </div>
         </div>
         
@@ -276,74 +330,160 @@ export const ReportCatalog = ({
           </DialogContent>
         </Dialog>
       </div>
-      
-      {/* Report List */}
-      <Card className="border-border/50">
-        <ScrollArea className="h-[500px]">
-          <div className="divide-y divide-border/50">
-            {filteredReports.map((report) => (
-              <div
-                key={report.id}
-                className="flex items-start gap-4 p-4 hover:bg-muted/30 transition-colors cursor-pointer group"
-                onClick={() => handleReportClick(report)}
-              >
-                <div className="p-2.5 rounded-lg bg-primary/10 shrink-0">
-                  <FileText className="w-5 h-5 text-primary" />
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-semibold text-sm uppercase tracking-wide">
-                      {report.name}
-                    </h4>
-                    {favoriteReports.includes(report.id) && (
-                      <Badge variant="secondary" className="text-xs px-2 py-0">
-                        <Star className="w-3 h-3 mr-1 fill-current" />
-                        Favorite
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">
-                    {report.description}
-                  </p>
-                </div>
-                
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                    <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                      <MoreHorizontal className="w-4 h-4" />
+
+      {/* Favorites Section */}
+      {favoriteReportsList.length > 0 && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardHeader className="py-3 px-4">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-primary">
+              <Star className="w-4 h-4 fill-current" />
+              Favorite Reports ({favoriteReportsList.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-2 pt-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+              {favoriteReportsList.map((report) => {
+                const config = CATEGORY_CONFIG[report.category];
+                const Icon = config?.icon || FileText;
+                return (
+                  <div
+                    key={report.id}
+                    className="flex items-center gap-3 p-3 rounded-lg bg-background/60 hover:bg-background transition-colors cursor-pointer group border border-border/50"
+                    onClick={() => handleReportClick(report)}
+                  >
+                    <div className={cn("p-2 rounded-lg bg-primary/10", config?.color)}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-medium truncate">{report.name}</h4>
+                      <p className="text-xs text-muted-foreground capitalize">{report.category}</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleFavorite(report.id);
+                      }}
+                    >
+                      <X className="w-4 h-4" />
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={(e) => {
-                      e.stopPropagation();
-                      handleReportClick(report);
-                    }}>
-                      Configure & Generate
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleFavorite(report.id);
-                    }}>
-                      {favoriteReports.includes(report.id) ? "Remove from Favorites" : "Add to Favorites"}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            ))}
-            
-            {filteredReports.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <FileText className="w-12 h-12 text-muted-foreground/30 mb-4" />
-                <h3 className="text-lg font-medium text-muted-foreground">No Reports Found</h3>
-                <p className="text-sm text-muted-foreground/70 mt-1">
-                  Try adjusting your search query
-                </p>
-              </div>
-            )}
-          </div>
-        </ScrollArea>
-      </Card>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
+      {/* Categorized Report List */}
+      <div className="space-y-3">
+        {Object.entries(CATEGORY_CONFIG).map(([category, config]) => {
+          const categoryReports = groupedReports[category] || [];
+          if (categoryReports.length === 0) return null;
+          
+          const Icon = config.icon;
+          const isExpanded = expandedCategories.includes(category);
+          
+          return (
+            <Collapsible
+              key={category}
+              open={isExpanded}
+              onOpenChange={() => toggleCategory(category)}
+            >
+              <Card className="border-border/50 overflow-hidden">
+                <CollapsibleTrigger asChild>
+                  <CardHeader className="py-3 px-4 cursor-pointer hover:bg-muted/30 transition-colors">
+                    <CardTitle className="text-sm font-semibold flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={cn("p-2 rounded-lg bg-muted/50", config.color)}>
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <span className="text-base">{config.label}</span>
+                        <Badge variant="secondary" className="ml-2">
+                          {categoryReports.length}
+                        </Badge>
+                      </div>
+                      {isExpanded ? (
+                        <ChevronUp className="w-5 h-5 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                
+                <CollapsibleContent>
+                  <CardContent className="p-0 border-t border-border/50">
+                    <div className="divide-y divide-border/30">
+                      {categoryReports.map((report) => (
+                        <div
+                          key={report.id}
+                          className="flex items-start gap-4 p-4 hover:bg-muted/30 transition-colors cursor-pointer group"
+                          onClick={() => handleReportClick(report)}
+                        >
+                          <div className={cn("p-2 rounded-lg bg-muted/50 shrink-0", config.color)}>
+                            <FileText className="w-4 h-4" />
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-medium text-sm">
+                                {report.name}
+                              </h4>
+                              {favoriteReports.includes(report.id) && (
+                                <Star className="w-3.5 h-3.5 fill-yellow-500 text-yellow-500" />
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                              {report.description}
+                            </p>
+                          </div>
+                          
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                              <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 h-8 w-8">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={(e) => {
+                                e.stopPropagation();
+                                handleReportClick(report);
+                              }}>
+                                Configure & Generate
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={(e) => {
+                                e.stopPropagation();
+                                onToggleFavorite(report.id);
+                              }}>
+                                {favoriteReports.includes(report.id) ? "Remove from Favorites" : "Add to Favorites"}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
+          );
+        })}
+        
+        {Object.keys(groupedReports).length === 0 && (
+          <Card className="border-border/50">
+            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+              <FileText className="w-12 h-12 text-muted-foreground/30 mb-4" />
+              <h3 className="text-lg font-medium text-muted-foreground">No Reports Found</h3>
+              <p className="text-sm text-muted-foreground/70 mt-1">
+                Try adjusting your search query
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       {/* Report Configuration Dialog */}
       <ReportConfigDialog
