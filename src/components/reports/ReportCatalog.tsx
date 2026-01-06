@@ -16,6 +16,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReportConfigDialog, ReportConfig } from "./ReportConfigDialog";
 import { openReportInNewWindow } from "@/lib/reportWindowUtils";
+import { fetchReportData } from "@/hooks/useReportGenerator";
+import { useOrganization } from "@/hooks/useOrganization";
+import { toast } from "sonner";
 
 interface ReportDefinition {
   id: string;
@@ -154,11 +157,13 @@ export const ReportCatalog = ({
   searchQuery,
   onSearchChange,
 }: ReportCatalogProps) => {
+  const { organizationId } = useOrganization();
   const [addReportOpen, setAddReportOpen] = useState(false);
   const [carouselPage, setCarouselPage] = useState(0);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ReportDefinition | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [isGenerating, setIsGenerating] = useState(false);
   
   const itemsPerPage = 5;
   const totalPages = Math.ceil(reports.length / itemsPerPage);
@@ -195,26 +200,43 @@ export const ReportCatalog = ({
     setConfigDialogOpen(true);
   };
 
-  const handleGenerateReport = (config: ReportConfig) => {
-    if (selectedReport) {
-      // Open report in new window
+  const handleGenerateReport = async (config: ReportConfig) => {
+    if (!selectedReport || !organizationId) return;
+    
+    setIsGenerating(true);
+    toast.loading("Generating report...", { id: "report-gen" });
+    
+    try {
+      const result = await fetchReportData({
+        reportId: selectedReport.id,
+        category: selectedReport.category,
+        subId: selectedReport.subId,
+        organizationId,
+        dateRange: config.dateRange,
+        selectedAssets: config.selectedAssets,
+        violationTypes: config.violationTypes,
+      });
+      
       openReportInNewWindow({
         reportName: selectedReport.name,
+        reportDescription: selectedReport.description,
         category: selectedReport.category,
         timePeriod: config.timePeriod,
         dateRange: config.dateRange,
         selectedAssets: config.selectedAssets,
-        data: [], // Data will be fetched and populated as needed
-        columns: [
-          { key: "id", label: "ID" },
-          { key: "name", label: "Name" },
-          { key: "status", label: "Status" },
-          { key: "date", label: "Date" },
-        ],
+        data: result.data,
+        columns: result.columns,
+        summary: result.summary,
+        chartData: result.chartData,
       });
       
-      // Also notify parent to update the view
+      toast.success(`Report generated with ${result.data.length} records`, { id: "report-gen" });
       onSelectReport(selectedReport.category, selectedReport.subId, config);
+    } catch (error) {
+      console.error("Error generating report:", error);
+      toast.error("Failed to generate report", { id: "report-gen" });
+    } finally {
+      setIsGenerating(false);
     }
   };
 
