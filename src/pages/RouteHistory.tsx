@@ -9,6 +9,7 @@ import RouteHistoryInsightsCard from "@/components/routehistory/RouteHistoryInsi
 import RouteHistoryTrendChart from "@/components/routehistory/RouteHistoryTrendChart";
 import { useStopMarkers, StopEvent, getEventColor } from "@/components/routehistory/StopMarkers";
 import RouteHistoryEventMarkers from "@/components/routehistory/RouteHistoryEventMarkers";
+import EventLocationDisplay from "@/components/routehistory/EventLocationDisplay";
 import { useAddressGeocoding } from "@/hooks/useAddressGeocoding";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -19,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
   Play, 
   Pause, 
@@ -39,7 +41,8 @@ import {
   Zap,
   Eye,
   EyeOff,
-  Info
+  Info,
+  Keyboard
 } from "lucide-react";
 import LiveTrackingMap from "@/components/map/LiveTrackingMap";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -408,6 +411,55 @@ const RouteHistory = () => {
     }
   }, [hasData, followLive, routeHistory, mapInstance]);
 
+  // Keyboard shortcuts for playback
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      
+      switch (e.key) {
+        case " ": // Spacebar - play/pause
+          e.preventDefault();
+          if (hasData && !followLive) {
+            setIsPlaying(prev => !prev);
+          }
+          break;
+        case "ArrowLeft": // Left arrow - skip back
+          e.preventDefault();
+          if (hasData && !followLive) {
+            setPlaybackProgress(prev => Math.max(0, prev - 10));
+          }
+          break;
+        case "ArrowRight": // Right arrow - skip forward
+          e.preventDefault();
+          if (hasData && !followLive) {
+            setPlaybackProgress(prev => Math.min(100, prev + 10));
+          }
+          break;
+        case "r": // R - reset
+        case "R":
+          if (hasData && !followLive) {
+            setPlaybackProgress(0);
+            setIsPlaying(false);
+          }
+          break;
+        case "l": // L - toggle live mode
+        case "L":
+          if (selectedVehicle && isToday) {
+            setFollowLive(prev => !prev);
+          }
+          break;
+        case "e": // E - toggle event markers
+        case "E":
+          setShowEventMarkers(prev => !prev);
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [hasData, followLive, selectedVehicle, isToday]);
+
 
   return (
     <Layout>
@@ -692,6 +744,26 @@ const RouteHistory = () => {
                        Events
                      </Label>
                    </div>
+
+                   <TooltipProvider>
+                     <Tooltip>
+                       <TooltipTrigger asChild>
+                         <Button variant="ghost" size="icon" className="ml-2 h-8 w-8">
+                           <Keyboard className="h-4 w-4 text-muted-foreground" />
+                         </Button>
+                       </TooltipTrigger>
+                       <TooltipContent side="top" className="max-w-xs">
+                         <div className="text-xs space-y-1">
+                           <p><kbd className="px-1 py-0.5 bg-muted rounded text-[10px]">Space</kbd> Play/Pause</p>
+                           <p><kbd className="px-1 py-0.5 bg-muted rounded text-[10px]">←</kbd> Skip back 10%</p>
+                           <p><kbd className="px-1 py-0.5 bg-muted rounded text-[10px]">→</kbd> Skip forward 10%</p>
+                           <p><kbd className="px-1 py-0.5 bg-muted rounded text-[10px]">R</kbd> Reset</p>
+                           <p><kbd className="px-1 py-0.5 bg-muted rounded text-[10px]">L</kbd> Toggle Live</p>
+                           <p><kbd className="px-1 py-0.5 bg-muted rounded text-[10px]">E</kbd> Toggle Events</p>
+                         </div>
+                       </TooltipContent>
+                     </Tooltip>
+                   </TooltipProvider>
                  </div>
               </CardContent>
             </Card>
@@ -838,6 +910,13 @@ const RouteHistory = () => {
                                   </span>
                                 </div>
                                 <p className="text-muted-foreground truncate">{event.description}</p>
+                                <div className="flex items-center gap-1 mt-0.5">
+                                  <MapPin className="h-2.5 w-2.5 text-muted-foreground flex-shrink-0" aria-hidden="true" />
+                                  <EventLocationDisplay 
+                                    latitude={event.latitude} 
+                                    longitude={event.longitude} 
+                                  />
+                                </div>
                               </div>
                             </button>
                           ))}
