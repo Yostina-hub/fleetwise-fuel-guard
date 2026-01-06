@@ -13,6 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ReportConfigDialog, ReportConfig } from "./ReportConfigDialog";
 
 interface ReportDefinition {
   id: string;
@@ -138,6 +139,8 @@ export const ReportCatalog = ({
 }: ReportCatalogProps) => {
   const [addReportOpen, setAddReportOpen] = useState(false);
   const [carouselPage, setCarouselPage] = useState(0);
+  const [configDialogOpen, setConfigDialogOpen] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<ReportDefinition | null>(null);
   
   const itemsPerPage = 5;
   const totalPages = Math.ceil(reports.length / itemsPerPage);
@@ -152,6 +155,17 @@ export const ReportCatalog = ({
     carouselPage * itemsPerPage,
     (carouselPage + 1) * itemsPerPage
   );
+
+  const handleReportClick = (report: ReportDefinition) => {
+    setSelectedReport(report);
+    setConfigDialogOpen(true);
+  };
+
+  const handleGenerateReport = (config: ReportConfig) => {
+    if (selectedReport) {
+      onSelectReport(selectedReport.category, selectedReport.subId);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -271,9 +285,7 @@ export const ReportCatalog = ({
               <div
                 key={report.id}
                 className="flex items-start gap-4 p-4 hover:bg-muted/30 transition-colors cursor-pointer group"
-                onClick={() => {
-                  onSelectReport(report.category, report.subId);
-                }}
+                onClick={() => handleReportClick(report)}
               >
                 <div className="p-2.5 rounded-lg bg-primary/10 shrink-0">
                   <FileText className="w-5 h-5 text-primary" />
@@ -305,9 +317,9 @@ export const ReportCatalog = ({
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={(e) => {
                       e.stopPropagation();
-                      onSelectReport(report.category, report.subId);
+                      handleReportClick(report);
                     }}>
-                      View Report
+                      Configure & Generate
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={(e) => {
                       e.stopPropagation();
@@ -332,6 +344,14 @@ export const ReportCatalog = ({
           </div>
         </ScrollArea>
       </Card>
+
+      {/* Report Configuration Dialog */}
+      <ReportConfigDialog
+        open={configDialogOpen}
+        onOpenChange={setConfigDialogOpen}
+        reportName={selectedReport?.name || "Report"}
+        onGenerate={handleGenerateReport}
+      />
     </div>
   );
 };

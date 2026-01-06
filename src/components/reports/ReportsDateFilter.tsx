@@ -1,4 +1,4 @@
-import { Calendar, Download, FileSpreadsheet, FileText, RefreshCw, Search } from "lucide-react";
+import { Download, FileSpreadsheet, FileText, RefreshCw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -9,36 +9,42 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { ReportTimePeriodSelect, TimePeriodOption } from "./ReportTimePeriodSelect";
+
+interface DateRange {
+  from: Date;
+  to: Date;
+}
 
 interface ReportsDateFilterProps {
-  startDate: string;
-  endDate: string;
   searchQuery: string;
-  onStartDateChange: (date: string) => void;
-  onEndDateChange: (date: string) => void;
   onSearchChange: (query: string) => void;
   onExportCSV: () => void;
   onExportPDF: () => void;
   onRefresh: () => void;
   isLoading?: boolean;
+  timePeriod: TimePeriodOption;
+  onTimePeriodChange: (period: TimePeriodOption) => void;
+  dateRange: DateRange;
+  onDateRangeChange: (range: DateRange) => void;
 }
 
 export const ReportsDateFilter = ({
-  startDate,
-  endDate,
   searchQuery,
-  onStartDateChange,
-  onEndDateChange,
   onSearchChange,
   onExportCSV,
   onExportPDF,
   onRefresh,
   isLoading,
+  timePeriod,
+  onTimePeriodChange,
+  dateRange,
+  onDateRangeChange,
 }: ReportsDateFilterProps) => {
   return (
     <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 p-4 bg-card/50 backdrop-blur-sm rounded-xl border border-border/50">
-      {/* Left: Search & Date Range */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
+      {/* Left: Search & Time Period */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full lg:w-auto">
         {/* Search */}
         <div className="relative w-full sm:w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
@@ -51,29 +57,14 @@ export const ReportsDateFilter = ({
           />
         </div>
 
-        {/* Date Range */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 px-3 py-2 bg-background/50 rounded-lg border border-border/50">
-            <Calendar className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => onStartDateChange(e.target.value)}
-              className="bg-transparent text-sm outline-none w-32"
-              aria-label="Start date"
-            />
-          </div>
-          <span className="text-muted-foreground text-sm">to</span>
-          <div className="flex items-center gap-2 px-3 py-2 bg-background/50 rounded-lg border border-border/50">
-            <Calendar className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => onEndDateChange(e.target.value)}
-              className="bg-transparent text-sm outline-none w-32"
-              aria-label="End date"
-            />
-          </div>
+        {/* Time Period Select */}
+        <div className="w-full sm:w-auto">
+          <ReportTimePeriodSelect
+            value={timePeriod}
+            onChange={onTimePeriodChange}
+            dateRange={dateRange}
+            onDateRangeChange={onDateRangeChange}
+          />
         </div>
       </div>
 

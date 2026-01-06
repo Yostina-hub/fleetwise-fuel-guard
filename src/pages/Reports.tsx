@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { exportToCSV, exportToPDF } from "@/lib/exportUtils";
 import { cn } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
+import { TimePeriodOption, getDateRangeFromPeriod } from "@/components/reports/ReportTimePeriodSelect";
 
 // Report UI components
 import { ReportsHeader } from "@/components/reports/ReportsHeader";
@@ -59,8 +60,8 @@ const Reports = () => {
   const [activeSubTab, setActiveSubTab] = useState("summary");
   const [searchQuery, setSearchQuery] = useState("");
   const [catalogSearch, setCatalogSearch] = useState("");
-  const [startDate, setStartDate] = useState(format(subDays(new Date(), 7), "yyyy-MM-dd"));
-  const [endDate, setEndDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [timePeriod, setTimePeriod] = useState<TimePeriodOption>("last_7_days");
+  const [dateRange, setDateRange] = useState(() => getDateRangeFromPeriod("last_7_days"));
   const [favoriteReports, setFavoriteReports] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem(FAVORITES_STORAGE_KEY);
@@ -79,11 +80,11 @@ const Reports = () => {
   const { drivers } = useDrivers();
   const queryClient = useQueryClient();
   
-  // Convert string dates to Date objects for the hook
-  const dateRange = useMemo(() => ({
-    start: parseISO(startDate),
-    end: parseISO(endDate),
-  }), [startDate, endDate]);
+  // Convert date range to Date objects for the hook
+  const hookDateRange = useMemo(() => ({
+    start: dateRange.from,
+    end: dateRange.to,
+  }), [dateRange]);
 
   const { 
     metrics, 
@@ -104,7 +105,7 @@ const Reports = () => {
     vehicleInspections,
     documents,
     loading 
-  } = useReportData(dateRange);
+  } = useReportData(hookDateRange);
 
   // Main report tabs with icons
   const mainTabs = [
@@ -1175,7 +1176,7 @@ const Reports = () => {
           case "speed_report":
             return <SpeedReportTable violations={speedViolations} />;
           case "restricted_hours":
-            return <RestrictedHoursReportTable startDate={startDate} endDate={endDate} searchQuery={searchQuery} />;
+            return <RestrictedHoursReportTable startDate={format(dateRange.from, "yyyy-MM-dd")} endDate={format(dateRange.to, "yyyy-MM-dd")} searchQuery={searchQuery} />;
           default:
             return <TripsTable trips={trips} />;
         }
@@ -1229,8 +1230,8 @@ const Reports = () => {
 
   // Format date range for display
   const dateRangeDisplay = useMemo(() => {
-    return `${format(parseISO(startDate), "MMM d")} - ${format(parseISO(endDate), "MMM d, yyyy")}`;
-  }, [startDate, endDate]);
+    return `${format(dateRange.from, "MMM d")} - ${format(dateRange.to, "MMM d, yyyy")}`;
+  }, [dateRange]);
 
   // Count total report types available
   const totalReportTypes = useMemo(() => {
@@ -1304,16 +1305,16 @@ const Reports = () => {
 
             {/* Date Filter & Export */}
             <ReportsDateFilter
-              startDate={startDate}
-              endDate={endDate}
               searchQuery={searchQuery}
-              onStartDateChange={setStartDate}
-              onEndDateChange={setEndDate}
               onSearchChange={setSearchQuery}
               onExportCSV={handleExportCSV}
               onExportPDF={handleExportPDF}
               onRefresh={handleRefresh}
               isLoading={loading}
+              timePeriod={timePeriod}
+              onTimePeriodChange={setTimePeriod}
+              dateRange={dateRange}
+              onDateRangeChange={setDateRange}
             />
 
             {/* Insights & Trend Chart Row */}
