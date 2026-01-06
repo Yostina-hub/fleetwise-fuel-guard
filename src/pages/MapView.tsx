@@ -27,7 +27,9 @@ import {
   Filter,
   Radar,
   Clock,
-  Route
+  Route,
+  Crosshair,
+  Focus
 } from "lucide-react";
 import { GpsJammingIndicator } from "@/components/map/GpsJammingIndicator";
 import { useVehicles } from "@/hooks/useVehicles";
@@ -67,6 +69,7 @@ const MapView = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'online' | 'moving' | 'idle' | 'stopped' | 'offline'>('all');
   const [showNearbySearch, setShowNearbySearch] = useState(false);
   const [showTrails, setShowTrails] = useState(true);
+  const [followMode, setFollowMode] = useState(false);
   
   // Street View / Directions Modal state
   const [streetViewModal, setStreetViewModal] = useState<{
@@ -233,13 +236,48 @@ const MapView = () => {
     overscan: 5,
   });
 
+  // Follow mode: automatically pan map to follow selected vehicle
+  useEffect(() => {
+    if (!followMode || !selectedVehicleId || !mapInstance) return;
+    
+    const selectedVehicle = vehicles.find(v => v.id === selectedVehicleId);
+    if (!selectedVehicle || !isFinite(selectedVehicle.lat) || !isFinite(selectedVehicle.lng)) return;
+
+    // Smoothly pan to the vehicle's current position
+    mapInstance.easeTo({
+      center: [selectedVehicle.lng, selectedVehicle.lat],
+      duration: 500,
+      essential: true,
+    });
+  }, [followMode, selectedVehicleId, vehicles, mapInstance]);
+
+  // Disable follow mode when user manually interacts with the map
+  useEffect(() => {
+    if (!mapInstance || !followMode) return;
+
+    const handleDragStart = () => setFollowMode(false);
+    const handleZoomStart = (e: any) => {
+      // Only disable if user-initiated zoom (not programmatic)
+      if (!e.originalEvent) return;
+      setFollowMode(false);
+    };
+
+    mapInstance.on('dragstart', handleDragStart);
+    mapInstance.on('zoomstart', handleZoomStart);
+
+    return () => {
+      mapInstance.off('dragstart', handleDragStart);
+      mapInstance.off('zoomstart', handleZoomStart);
+    };
+  }, [mapInstance, followMode]);
+
   const handleVehicleClick = useCallback((vehicle: any) => {
     setSelectedVehicleId(vehicle.id);
     // Pan map to vehicle
     if (mapInstance) {
       mapInstance.flyTo({
         center: [vehicle.lng, vehicle.lat],
-        zoom: 15,
+        zoom: 16,
         duration: 800,
       });
     }
@@ -438,6 +476,26 @@ const MapView = () => {
                 <Radar className="w-4 h-4" aria-hidden="true" />
                 <span className="hidden sm:inline">Nearby</span>
               </Button>
+
+              {/* Follow Mode Toggle - Only show when vehicle selected */}
+              {selectedVehicleId && (
+                <Button
+                  variant={followMode ? "default" : "outline"}
+                  size="sm"
+                  className={cn(
+                    "h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium",
+                    followMode 
+                      ? "bg-blue-600 text-white hover:bg-blue-700" 
+                      : "bg-white/95 text-foreground border-border"
+                  )}
+                  onClick={() => setFollowMode(!followMode)}
+                  aria-label="Toggle follow vehicle mode"
+                  aria-pressed={followMode}
+                >
+                  <Focus className={cn("w-4 h-4", followMode && "animate-pulse")} aria-hidden="true" />
+                  <span className="hidden sm:inline">{followMode ? 'Following' : 'Follow'}</span>
+                </Button>
+              )}
             </div>
 
             {/* Nearby Vehicles Search Panel */}
@@ -727,6 +785,8 @@ const MapView = () => {
         onDirections={handleDirections}
         onTripReplay={handleTripReplay}
         onManageAsset={handleManageAsset}
+        followMode={followMode}
+        onToggleFollow={() => setFollowMode(!followMode)}
       />
 
       {/* Street View / Directions Modal */}

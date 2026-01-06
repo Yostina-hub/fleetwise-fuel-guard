@@ -18,7 +18,8 @@ import {
   Signal,
   Compass,
   Gauge,
-  Power
+  Power,
+  Focus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -49,6 +50,8 @@ interface VehicleInfoPanelProps {
   onDirections?: (lat: number, lng: number, plate: string) => void;
   onTripReplay?: (vehicleId: string, plate: string) => void;
   onManageAsset?: (vehicleId: string, plate: string) => void;
+  followMode?: boolean;
+  onToggleFollow?: () => void;
 }
 
 export const VehicleInfoPanel = ({
@@ -58,6 +61,8 @@ export const VehicleInfoPanel = ({
   onDirections,
   onTripReplay,
   onManageAsset,
+  followMode = false,
+  onToggleFollow,
 }: VehicleInfoPanelProps) => {
   const [address, setAddress] = useState<string>('');
   const [isLoadingAddress, setIsLoadingAddress] = useState(false);
@@ -413,17 +418,40 @@ export const VehicleInfoPanel = ({
 
           {/* Quick Actions - ALWAYS VISIBLE outside ScrollArea */}
           <div className="p-4 pt-3 border-t border-border/50 bg-muted/30">
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-5 gap-2">
+              {/* Follow Button */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={followMode ? "default" : "outline"}
+                    size="sm"
+                    className={cn(
+                      "h-12 flex-col gap-1 transition-all",
+                      followMode 
+                        ? "bg-blue-600 text-white hover:bg-blue-700 border-blue-600" 
+                        : "bg-background hover:bg-blue-500/10 hover:border-blue-500/50 hover:text-blue-600"
+                    )}
+                    onClick={onToggleFollow}
+                    aria-label={followMode ? `Stop following ${vehicle.plate}` : `Follow ${vehicle.plate} in real-time`}
+                    aria-pressed={followMode}
+                  >
+                    <Focus className={cn("w-5 h-5", followMode ? "text-white animate-pulse" : "text-blue-500")} aria-hidden="true" />
+                    <span className="text-[10px] font-medium">{followMode ? 'Following' : 'Follow'}</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{followMode ? 'Stop following vehicle' : 'Follow vehicle in real-time'}</TooltipContent>
+              </Tooltip>
+
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-12 flex-col gap-1 bg-background hover:bg-blue-500/10 hover:border-blue-500/50 hover:text-blue-600 transition-all"
+                    className="h-12 flex-col gap-1 bg-background hover:bg-cyan-500/10 hover:border-cyan-500/50 hover:text-cyan-600 transition-all"
                     onClick={() => onStreetView?.(vehicle.lat, vehicle.lng, vehicle.plate)}
                     aria-label={`Open street view for ${vehicle.plate}`}
                   >
-                    <MapPin className="w-5 h-5 text-blue-500" aria-hidden="true" />
+                    <MapPin className="w-5 h-5 text-cyan-500" aria-hidden="true" />
                     <span className="text-[10px] font-medium">Street View</span>
                   </Button>
                 </TooltipTrigger>
