@@ -69,6 +69,20 @@ import LiveActivityTimeline from "@/components/dashboard/executive/LiveActivityT
 import FleetStatusDonut from "@/components/dashboard/executive/FleetStatusDonut";
 import RadarPerformanceChart from "@/components/dashboard/executive/RadarPerformanceChart";
 import { useExecutiveMetrics } from "@/hooks/useExecutiveMetrics";
+import SafetyScoreGauge from "@/components/dashboard/executive/SafetyScoreGauge";
+import FleetSavingsChart from "@/components/dashboard/executive/FleetSavingsChart";
+import FuelTrendChart from "@/components/dashboard/executive/FuelTrendChart";
+import StopsAnalysisChart from "@/components/dashboard/executive/StopsAnalysisChart";
+import DistanceByGroupChart from "@/components/dashboard/executive/DistanceByGroupChart";
+import IdleTimeDonut from "@/components/dashboard/executive/IdleTimeDonut";
+import AlertsTableCard from "@/components/dashboard/executive/AlertsTableCard";
+import DriverSafetyScorecard from "@/components/dashboard/executive/DriverSafetyScorecard";
+import FleetStatusCard from "@/components/dashboard/executive/FleetStatusCard";
+import ConnectionStatus from "@/components/dashboard/executive/ConnectionStatus";
+import QuickMetricCard from "@/components/dashboard/executive/QuickMetricCard";
+import RiskSafetyReportsChart from "@/components/dashboard/executive/RiskSafetyReportsChart";
+import FleetUsageChart from "@/components/dashboard/executive/FleetUsageChart";
+import { Car, Gauge, Zap } from "lucide-react";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -260,21 +274,177 @@ const Dashboard = () => {
 
           {/* Executive Tab */}
           <TabsContent value="executive" className="space-y-6 mt-6">
-            {/* KPI Grid with animations */}
-            <ExecutiveKPIGrid kpis={kpis} loading={execLoading} />
-            
-            {/* Financial & Performance Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <FinancialTrendCard metrics={financialMetrics} loading={execLoading} />
+            {/* Quick Metrics Row - Like CompassTrac top row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <QuickMetricCard 
+                title="Distance" 
+                value={`${(tripMetrics.totalDistanceKm / 1000).toFixed(2)} km`}
+                badge="Last 8 hours"
+                badgeVariant="secondary"
+                icon={<Car className="w-5 h-5" />}
+              />
+              <QuickMetricCard 
+                title="Avg Distance/Vehicle" 
+                value={`${dbVehicles.length > 0 ? ((tripMetrics.totalDistanceKm / 1000) / dbVehicles.length).toFixed(2) : 0} km`}
+                badge="Last 8 hours"
+                badgeVariant="secondary"
+                icon={<Gauge className="w-5 h-5" />}
+              />
+              <QuickMetricCard 
+                title="Total Idle Time" 
+                value="00:21 hours"
+                badge="Last 8 hours"
+                badgeVariant="secondary"
+                icon={<Clock className="w-5 h-5" />}
+              />
+              <ConnectionStatus isConnected={true} lastUpdate={new Date().toLocaleTimeString()} />
+            </div>
+
+            {/* Fleet Status, Distance Chart, Idle Time Row - Like CompassTrac second row */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              <FleetStatusCard 
+                totalAssets={dbVehicles.length}
+                statuses={[
+                  { status: 'Active', count: dbVehicles.filter(v => v.status === 'active').length, percentage: dbVehicles.length > 0 ? (dbVehicles.filter(v => v.status === 'active').length / dbVehicles.length) * 100 : 0, color: 'hsl(var(--success))' },
+                  { status: 'Stop/Idle', count: dbVehicles.filter(v => v.status === 'maintenance').length, percentage: dbVehicles.length > 0 ? (dbVehicles.filter(v => v.status === 'maintenance').length / dbVehicles.length) * 100 : 0, color: 'hsl(var(--warning))' },
+                  { status: 'Inactive', count: dbVehicles.filter(v => v.status === 'inactive').length, percentage: dbVehicles.length > 0 ? (dbVehicles.filter(v => v.status === 'inactive').length / dbVehicles.length) * 100 : 0, color: 'hsl(var(--destructive))' },
+                ]}
+                loading={execLoading}
+              />
+              <DistanceByGroupChart 
+                data={[
+                  { time: '8:00', 'Fleet A': 5, 'Fleet B': 3, 'Fleet C': 2 },
+                  { time: '9:00', 'Fleet A': 20, 'Fleet B': 15, 'Fleet C': 8 },
+                  { time: '10:00', 'Fleet A': 15, 'Fleet B': 18, 'Fleet C': 12 },
+                  { time: '11:00', 'Fleet A': 8, 'Fleet B': 10, 'Fleet C': 6 },
+                  { time: '12:00', 'Fleet A': 3, 'Fleet B': 5, 'Fleet C': 2 },
+                  { time: '13:00', 'Fleet A': 12, 'Fleet B': 8, 'Fleet C': 10 },
+                  { time: '14:00', 'Fleet A': 18, 'Fleet B': 15, 'Fleet C': 14 },
+                ]}
+                groups={[
+                  { name: 'Fleet A', color: 'hsl(var(--chart-1))' },
+                  { name: 'Fleet B', color: 'hsl(var(--chart-2))' },
+                  { name: 'Fleet C', color: 'hsl(var(--chart-3))' },
+                ]}
+                loading={execLoading}
+              />
+              <IdleTimeDonut 
+                totalIdleTime="00:21"
+                groups={[
+                  { name: 'Fleet A', total: '00:16', idlePercent: 74.8, color: 'hsl(var(--warning))' },
+                  { name: 'Fleet B', total: '00:05', idlePercent: 25.2, color: 'hsl(var(--success))' },
+                  { name: 'Fleet C', total: '00:00', idlePercent: 0.0, color: 'hsl(var(--chart-3))' },
+                ]}
+                loading={execLoading}
+              />
+            </div>
+
+            {/* Alerts Table Row - Like CompassTrac alerts section */}
+            <AlertsTableCard 
+              alerts={dbAlerts.slice(0, 10).map(alert => ({
+                id: alert.id,
+                status: alert.status === 'resolved' ? 'resolved' : alert.status === 'acknowledged' ? 'acknowledged' : 'active',
+                alertType: alert.alert_type,
+                startDate: alert.alert_time,
+                endDate: alert.resolved_at || alert.alert_time,
+                duration: '00:00:00',
+                group: 'Fleet Group',
+                title: alert.title,
+                information: alert.message,
+                lat: alert.lat || undefined,
+                lng: alert.lng || undefined,
+              }))}
+              loading={execLoading}
+            />
+
+            {/* Safety Section - Like GreenRoad */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              <SafetyScoreGauge 
+                score={analytics.safety.averageScore}
+                label="Fleet Safety"
+                size="lg"
+              />
+              <FleetUsageChart 
+                data={Array.from({ length: 30 }, (_, i) => ({
+                  date: `${i + 1}`,
+                  trips: Math.floor(Math.random() * 50) + 20,
+                }))}
+                dateRange="Last 30 days"
+                loading={execLoading}
+              />
+              <DriverSafetyScorecard 
+                categories={[
+                  { label: '0-1: High Risk', count: Math.floor(driverRankings.length * 0.05), color: 'hsl(var(--destructive))', range: 'Score 0-20' },
+                  { label: '1-2: Medium High Risk', count: Math.floor(driverRankings.length * 0.1), color: 'hsl(var(--warning))', range: 'Score 21-40' },
+                  { label: '2-3: Medium Risk', count: Math.floor(driverRankings.length * 0.15), color: 'hsl(var(--chart-3))', range: 'Score 41-60' },
+                  { label: '3-4: Low Risk', count: Math.floor(driverRankings.length * 0.25), color: 'hsl(var(--chart-2))', range: 'Score 61-80' },
+                  { label: '4-5: No Risk', count: Math.floor(driverRankings.length * 0.45), color: 'hsl(var(--success))', range: 'Score 81-100' },
+                ]}
+                loading={execLoading}
+              />
+              <RiskSafetyReportsChart 
+                data={[
+                  { month: 'Jan', speeding: 450, harshAcceleration: 180, harshBraking: 220, excessiveIdle: 120, harshCornering: 90 },
+                  { month: 'Feb', speeding: 380, harshAcceleration: 150, harshBraking: 190, excessiveIdle: 100, harshCornering: 85 },
+                  { month: 'Mar', speeding: 520, harshAcceleration: 200, harshBraking: 280, excessiveIdle: 150, harshCornering: 110 },
+                  { month: 'Apr', speeding: 420, harshAcceleration: 170, harshBraking: 230, excessiveIdle: 130, harshCornering: 95 },
+                  { month: 'May', speeding: 480, harshAcceleration: 190, harshBraking: 250, excessiveIdle: 140, harshCornering: 100 },
+                  { month: 'Jun', speeding: 350, harshAcceleration: 140, harshBraking: 180, excessiveIdle: 90, harshCornering: 75 },
+                ]}
+                loading={execLoading}
+              />
+            </div>
+
+            {/* Fleet Savings & Fuel - Like MyGeotab */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <FleetSavingsChart 
+                data={[
+                  { category: 'Total Estimated Savings', actual: 85000, potential: 125000 },
+                  { category: 'Productivity Savings', actual: 45000, potential: 65000 },
+                  { category: 'Maintenance Savings', actual: 28000, potential: 40000 },
+                  { category: 'Fuel Savings', actual: 32000, potential: 48000 },
+                  { category: 'Safety Savings', actual: 18000, potential: 30000 },
+                ]}
+                loading={execLoading}
+              />
+              <FuelTrendChart 
+                data={financialMetrics.monthlyTrend.slice(-3).map(m => ({
+                  month: m.month,
+                  consumption: Math.round(m.costs / 50), // Approximate liters
+                  cost: m.costs,
+                }))}
+                trend={financialMetrics.monthlyTrend.length > 1 
+                  ? (financialMetrics.monthlyTrend[financialMetrics.monthlyTrend.length - 1].costs < 
+                     financialMetrics.monthlyTrend[financialMetrics.monthlyTrend.length - 2].costs ? 'down' : 'up')
+                  : 'stable'}
+                trendPercentage={8.5}
+                loading={execLoading}
+              />
+            </div>
+
+            {/* Stops Analysis - Like MyGeotab */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <StopsAnalysisChart 
+                data={[
+                  { day: 'Mon', shortStops: 25, mediumStops: 15, longStops: 5 },
+                  { day: 'Tue', shortStops: 30, mediumStops: 12, longStops: 8 },
+                  { day: 'Wed', shortStops: 22, mediumStops: 18, longStops: 6 },
+                  { day: 'Thu', shortStops: 28, mediumStops: 14, longStops: 7 },
+                  { day: 'Fri', shortStops: 35, mediumStops: 16, longStops: 4 },
+                  { day: 'Sat', shortStops: 15, mediumStops: 8, longStops: 3 },
+                  { day: 'Sun', shortStops: 10, mediumStops: 5, longStops: 2 },
+                ]}
+                loading={execLoading}
+              />
               <RadarPerformanceChart 
                 data={{ vehicles: dbVehicles, drivers: [], trips: [], alerts: dbAlerts }}
                 loading={execLoading}
               />
             </div>
 
-            {/* Driver, Compliance, Activity Row */}
+            {/* Financial & Compliance Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <DriverPerformanceCard rankings={driverRankings} loading={execLoading} />
+              <FinancialTrendCard metrics={financialMetrics} loading={execLoading} />
               <ComplianceGauges items={complianceItems} loading={execLoading} />
               <LiveActivityTimeline 
                 activities={recentActivities} 
@@ -283,9 +453,10 @@ const Dashboard = () => {
               />
             </div>
 
-            {/* Fleet Status */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              <FleetStatusDonut vehicles={dbVehicles} loading={execLoading} />
+            {/* Driver Performance */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <DriverPerformanceCard rankings={driverRankings} loading={execLoading} />
+              <ExecutiveKPIGrid kpis={kpis} loading={execLoading} />
             </div>
           </TabsContent>
 
