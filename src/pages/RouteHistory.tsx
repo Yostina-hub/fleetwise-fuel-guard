@@ -61,12 +61,26 @@ interface TelemetryPoint {
   engine_on: boolean | null;
 }
 
+const getDayBoundsISO = (dateStr: string) => {
+  // Interpret the selected date in the user's local timezone, then convert
+  // to UTC ISO bounds for querying.
+  const start = new Date(`${dateStr}T00:00:00`);
+  const end = new Date(`${dateStr}T23:59:59.999`);
+
+  return {
+    startISO: start.toISOString(),
+    endISO: end.toISOString(),
+    startMs: start.getTime(),
+    endMs: end.getTime(),
+  };
+};
+
 const RouteHistory = () => {
   const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = format(new Date(), "yyyy-MM-dd");
 
   // Initialize from URL params
   const urlVehicle = searchParams.get("vehicle") || "";
@@ -142,9 +156,8 @@ const RouteHistory = () => {
   const { data: telemetryData, isLoading: telemetryLoading, isError: telemetryError } = useQuery({
     queryKey: ["route-history-telemetry", selectedVehicle, selectedDate],
     queryFn: async () => {
-      const startOfDay = `${selectedDate}T00:00:00.000Z`;
-      const endOfDay = `${selectedDate}T23:59:59.999Z`;
-      
+      const { startISO, endISO } = getDayBoundsISO(selectedDate);
+
       const allData: TelemetryPoint[] = [];
       let offset = 0;
       const pageSize = 1000;
@@ -155,8 +168,8 @@ const RouteHistory = () => {
           .from("vehicle_telemetry")
           .select("id, latitude, longitude, speed_kmh, fuel_level_percent, heading, last_communication_at, engine_on")
           .eq("vehicle_id", selectedVehicle)
-          .gte("last_communication_at", startOfDay)
-          .lte("last_communication_at", endOfDay)
+          .gte("last_communication_at", startISO)
+          .lte("last_communication_at", endISO)
           .order("last_communication_at", { ascending: true })
           .range(offset, offset + pageSize - 1);
         
@@ -184,8 +197,7 @@ const RouteHistory = () => {
   useEffect(() => {
     if (!organizationId || !selectedVehicle || !selectedDate) return;
 
-    const startOfDay = `${selectedDate}T00:00:00.000Z`;
-    const endOfDay = `${selectedDate}T23:59:59.999Z`;
+    const { startMs, endMs } = getDayBoundsISO(selectedDate);
 
     const channel = supabase
       .channel(`route-history-live-${selectedVehicle.slice(0, 8)}`)
@@ -202,7 +214,11 @@ const RouteHistory = () => {
           if (!row || row.vehicle_id !== selectedVehicle) return;
 
           const ts = (row.last_communication_at || row.created_at) as string | undefined;
-          if (!ts || ts < startOfDay || ts > endOfDay) return;
+          if (!ts) return;
+
+          const tsMs = new Date(ts).getTime();
+          if (Number.isNaN(tsMs) || tsMs < startMs || tsMs > endMs) return;
+
           if (row.latitude == null || row.longitude == null) return;
 
           queryClient.setQueryData(
