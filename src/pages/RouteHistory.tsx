@@ -306,8 +306,14 @@ const RouteHistory = () => {
     // Calculate distance only when vehicle is moving (speed > 2 km/h)
     // This filters out GPS drift while stationary
     let totalDistanceKm = 0;
+    let filteredSegments = 0;
+    let invalidCoordPoints = 0;
     const MIN_MOVING_SPEED = 2; // km/h threshold for "moving"
     const MAX_SEGMENT_KM = 5; // Max 5km per segment (10-60 sec intervals) to filter GPS jumps
+
+    // Count invalid coordinate points
+    invalidCoordPoints = routeHistory.filter(p => !p.latitude || !p.longitude).length;
+    const validPoints = totalPoints - invalidCoordPoints;
 
     for (let i = 1; i < routeHistory.length; i++) {
       const prev = routeHistory[i - 1];
@@ -331,14 +337,23 @@ const RouteHistory = () => {
       // Filter out GPS jumps (unrealistic single-segment distance)
       if (segmentKm <= MAX_SEGMENT_KM) {
         totalDistanceKm += segmentKm;
+      } else {
+        filteredSegments++;
       }
     }
+
+    // Calculate idle time (stopped with engine on - would need engine_on data)
+    const idlePoints = routeHistory.filter(p => (p.speed_kmh || 0) <= MIN_MOVING_SPEED && p.engine_on === true).length;
 
     return {
       durationMinutes,
       totalPoints,
+      validPoints,
       movingPoints,
       stoppedPoints,
+      idlePoints,
+      invalidCoordPoints,
+      filteredSegments,
       avgSpeed: avgSpeed.toFixed(1),
       maxSpeed,
       fuelConsumed: fuelConsumed.toFixed(1),
@@ -820,6 +835,14 @@ const RouteHistory = () => {
                   maxSpeed={tripSummary.maxSpeed}
                   fuelConsumed={tripSummary.fuelConsumed}
                   totalPoints={tripSummary.totalPoints}
+                  validPoints={tripSummary.validPoints}
+                  movingPoints={tripSummary.movingPoints}
+                  stoppedPoints={tripSummary.stoppedPoints}
+                  idlePoints={tripSummary.idlePoints}
+                  invalidCoordPoints={tripSummary.invalidCoordPoints}
+                  filteredSegments={tripSummary.filteredSegments}
+                  startTime={tripSummary.startTime}
+                  endTime={tripSummary.endTime}
                 />
               )}
               
