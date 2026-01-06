@@ -426,12 +426,42 @@ export function injectMarkerAnimations() {
       border-top: 1px solid #f0f0f0;
     }
 
+    .popup-action-hint {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #f0f0f0;
+      text-align: center;
+    }
+
+    .popup-view-btn {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+      border: none;
+      padding: 6px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      width: 100%;
+    }
+
+    .popup-view-btn:hover {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
     .vehicle-hover-popup .mapboxgl-popup-content {
       padding: 0 !important;
       border-radius: 12px !important;
       box-shadow: 0 8px 30px rgba(0,0,0,0.2) !important;
       overflow: hidden;
       animation: popupFadeIn 0.15s ease-out;
+    }
+
+    .vehicle-hover-popup .mapboxgl-popup-tip {
+      border-top-color: white !important;
     }
 
     @keyframes popupFadeIn {
