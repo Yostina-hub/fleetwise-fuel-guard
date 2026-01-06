@@ -880,6 +880,13 @@ return () => {
             speedBadge.style.transition = 'transform 0.5s ease-out';
             speedBadge.style.transform = `translateX(-50%) rotate(-${currentHeading}deg)`;
           }
+          
+          // Counter-rotate plate label to keep it readable
+          const plateLabel = el.querySelector('.plate-label') as HTMLElement;
+          if (plateLabel) {
+            plateLabel.style.transition = 'transform 0.5s ease-out';
+            plateLabel.style.transform = `translateX(-50%) rotate(-${currentHeading}deg)`;
+          }
         }
         
         // Only recreate marker if critical visual state changed (not selection)
@@ -912,7 +919,8 @@ return () => {
           vehicle.engine_on,
           vehicle.heading,
           isOverspeeding,
-          vehicle.speed
+          vehicle.speed,
+          vehicle.plate
         );
         el.dataset.overspeeding = isOverspeeding.toString();
         el.dataset.status = vehicle.status;
