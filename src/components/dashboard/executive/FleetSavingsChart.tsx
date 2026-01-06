@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import GlowingCard from "./GlowingCard";
+import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
 
 interface SavingsData {
   category: string;
@@ -14,6 +15,9 @@ interface FleetSavingsChartProps {
 }
 
 const FleetSavingsChart = ({ data, loading }: FleetSavingsChartProps) => {
+  const totalActual = data.reduce((sum, d) => sum + d.actual, 0);
+  const { formattedValue: animatedTotal } = useAnimatedCounter(totalActual, { duration: 1500 });
+
   if (loading) {
     return (
       <GlowingCard className="h-80" glowColor="primary">
@@ -28,14 +32,18 @@ const FleetSavingsChart = ({ data, loading }: FleetSavingsChartProps) => {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-popover border rounded-lg shadow-lg p-3">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-popover border rounded-lg shadow-lg p-3"
+        >
           <p className="font-medium mb-1">{label}</p>
           {payload.map((entry: any, index: number) => (
             <p key={index} className="text-sm" style={{ color: entry.color }}>
               {entry.name}: ETB {(entry.value / 1000).toFixed(1)}K
             </p>
           ))}
-        </div>
+        </motion.div>
       );
     }
     return null;
@@ -47,7 +55,11 @@ const FleetSavingsChart = ({ data, loading }: FleetSavingsChartProps) => {
         <h3 className="font-semibold text-lg">Fleet Savings Summary</h3>
         <div className="flex items-center gap-4 text-xs">
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-primary" />
+            <motion.div 
+              className="w-3 h-3 rounded bg-primary"
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            />
             <span>This Month</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -80,9 +92,14 @@ const FleetSavingsChart = ({ data, loading }: FleetSavingsChartProps) => {
 
       <div className="mt-4 pt-4 border-t flex justify-between text-sm">
         <span className="text-muted-foreground">*Measured in Thousands</span>
-        <span className="font-medium text-success">
-          Total Savings: ETB {data.reduce((sum, d) => sum + d.actual, 0).toLocaleString()}
-        </span>
+        <motion.span 
+          className="font-medium text-success"
+          key={totalActual}
+          initial={{ opacity: 0, x: 10 }}
+          animate={{ opacity: 1, x: 0 }}
+        >
+          Total Savings: ETB {animatedTotal}
+        </motion.span>
       </div>
     </GlowingCard>
   );

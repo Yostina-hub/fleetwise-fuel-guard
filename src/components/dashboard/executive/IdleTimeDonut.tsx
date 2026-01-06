@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { Badge } from "@/components/ui/badge";
+import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
 
 interface IdleGroup {
   name: string;
@@ -13,9 +14,12 @@ interface IdleTimeDonutProps {
   totalIdleTime: string;
   groups: IdleGroup[];
   loading?: boolean;
+  idlePercentage?: number;
 }
 
-const IdleTimeDonut = ({ totalIdleTime, groups, loading }: IdleTimeDonutProps) => {
+const IdleTimeDonut = ({ totalIdleTime, groups, loading, idlePercentage = 25 }: IdleTimeDonutProps) => {
+  const { formattedValue: animatedIdle } = useAnimatedCounter(idlePercentage, { duration: 1500, decimals: 1 });
+
   if (loading) {
     return (
       <div className="bg-[#1a2332] border border-[#2a3a4d] rounded-lg p-4 h-72">
@@ -28,10 +32,9 @@ const IdleTimeDonut = ({ totalIdleTime, groups, loading }: IdleTimeDonutProps) =
   }
 
   // Donut data showing idle vs active
-  const idleValue = 25; // percentage idle
   const donutData = [
-    { name: "Idle", value: idleValue, color: "#f97316" }, // orange
-    { name: "Active", value: 100 - idleValue, color: "#22c55e" }, // green
+    { name: "Idle", value: idlePercentage, color: "#f97316" }, // orange
+    { name: "Active", value: 100 - idlePercentage, color: "#22c55e" }, // green
   ];
 
   // Group colors matching reference
@@ -43,7 +46,19 @@ const IdleTimeDonut = ({ totalIdleTime, groups, loading }: IdleTimeDonutProps) =
       animate={{ opacity: 1, y: 0 }}
       className="bg-[#1a2332] border border-[#2a3a4d] rounded-lg p-4"
     >
-      <h3 className="font-semibold text-base mb-4 text-foreground">Idle Time</h3>
+      <div className="flex items-center gap-2 mb-4">
+        <h3 className="font-semibold text-base text-foreground">Idle Time</h3>
+        <Badge variant="outline" className="text-xs bg-orange-500/20 text-orange-400 border-orange-500/50">
+          <motion.span
+            animate={{ opacity: [1, 0.5, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="inline-flex items-center gap-1"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
+            Live
+          </motion.span>
+        </Badge>
+      </div>
       
       <div className="flex items-start gap-4">
         {/* Donut Chart */}
@@ -73,6 +88,7 @@ const IdleTimeDonut = ({ totalIdleTime, groups, loading }: IdleTimeDonutProps) =
               initial={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3 }}
+              key={totalIdleTime}
             >
               {totalIdleTime}
             </motion.span>
@@ -85,7 +101,7 @@ const IdleTimeDonut = ({ totalIdleTime, groups, loading }: IdleTimeDonutProps) =
           <table className="w-full text-xs">
             <thead>
               <tr className="text-muted-foreground">
-                <th className="text-left py-1 font-medium">Group</th>
+                <th className="text-left py-1 font-medium">Fleet</th>
                 <th className="text-center py-1 font-medium">Total</th>
                 <th className="text-right py-1 font-medium">Idle %</th>
               </tr>
@@ -114,7 +130,13 @@ const IdleTimeDonut = ({ totalIdleTime, groups, loading }: IdleTimeDonutProps) =
                   </td>
                   <td className="text-center py-2 text-muted-foreground">{group.total}</td>
                   <td className={`text-right py-2 font-medium ${group.idlePercent > 30 ? 'text-orange-400' : 'text-green-400'}`}>
-                    {group.idlePercent.toFixed(1)}%
+                    <motion.span
+                      key={group.idlePercent}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                    >
+                      {group.idlePercent.toFixed(1)}%
+                    </motion.span>
                   </td>
                 </motion.tr>
               ))}

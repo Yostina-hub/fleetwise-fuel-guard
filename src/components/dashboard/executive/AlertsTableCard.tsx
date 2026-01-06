@@ -1,6 +1,6 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
-import { Search, Download, BarChart2, MapPin } from "lucide-react";
+import { Search, Download, BarChart2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import GlowingCard from "./GlowingCard";
 import { format } from "date-fns";
@@ -49,10 +49,30 @@ const AlertsTableCard = ({ alerts, loading }: AlertsTableCardProps) => {
     }
   };
 
+  const activeAlerts = alerts.filter(a => a.status === 'active').length;
+
   return (
     <GlowingCard glowColor="destructive" className="lg:col-span-2">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-lg">Alerts</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="font-semibold text-lg">Alerts</h3>
+          {activeAlerts > 0 && (
+            <Badge variant="destructive" className="text-xs animate-pulse">
+              <AlertTriangle className="w-3 h-3 mr-1" />
+              {activeAlerts} Active
+            </Badge>
+          )}
+          <Badge variant="outline" className="text-xs bg-red-500/20 text-red-400 border-red-500/50">
+            <motion.span
+              animate={{ opacity: [1, 0.5, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="inline-flex items-center gap-1"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+              Live
+            </motion.span>
+          </Badge>
+        </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" className="h-8 w-8">
             <Search className="h-4 w-4" />
@@ -72,47 +92,51 @@ const AlertsTableCard = ({ alerts, loading }: AlertsTableCardProps) => {
             <tr className="border-b text-muted-foreground">
               <th className="text-left py-2 px-2 font-medium">Status</th>
               <th className="text-left py-2 px-2 font-medium">Alert Type</th>
-              <th className="text-left py-2 px-2 font-medium">Start Date</th>
-              <th className="text-left py-2 px-2 font-medium">End Date</th>
-              <th className="text-left py-2 px-2 font-medium">Duration</th>
-              <th className="text-left py-2 px-2 font-medium">Group</th>
+              <th className="text-left py-2 px-2 font-medium">Time</th>
               <th className="text-left py-2 px-2 font-medium">Title</th>
-              <th className="text-left py-2 px-2 font-medium">Information</th>
+              <th className="text-left py-2 px-2 font-medium">Details</th>
             </tr>
           </thead>
           <tbody>
-            {alerts.slice(0, 5).map((alert, i) => (
-              <motion.tr
-                key={alert.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="border-b hover:bg-muted/30 transition-colors"
-              >
-                <td className="py-2 px-2">
-                  <Badge className={`text-xs ${getStatusColor(alert.status)}`}>
-                    {alert.status}
-                  </Badge>
-                </td>
-                <td className="py-2 px-2">{alert.alertType}</td>
-                <td className="py-2 px-2 text-xs">{format(new Date(alert.startDate), 'MM/dd/yyyy, h:mm a')}</td>
-                <td className="py-2 px-2 text-xs">{format(new Date(alert.endDate), 'MM/dd/yyyy, h:mm a')}</td>
-                <td className="py-2 px-2">{alert.duration}</td>
-                <td className="py-2 px-2">
-                  <Badge variant="outline" className="text-xs">{alert.group}</Badge>
-                </td>
-                <td className="py-2 px-2 max-w-[150px] truncate">{alert.title}</td>
-                <td className="py-2 px-2 max-w-[200px] truncate text-muted-foreground">{alert.information}</td>
-              </motion.tr>
-            ))}
+            <AnimatePresence mode="popLayout">
+              {alerts.slice(0, 5).map((alert, i) => (
+                <motion.tr
+                  key={alert.id}
+                  initial={{ opacity: 0, y: -10, backgroundColor: 'rgba(239, 68, 68, 0.2)' }}
+                  animate={{ opacity: 1, y: 0, backgroundColor: 'transparent' }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ delay: i * 0.05, duration: 0.3 }}
+                  className="border-b hover:bg-muted/30 transition-colors"
+                >
+                  <td className="py-2 px-2">
+                    <motion.div
+                      animate={alert.status === 'active' ? { scale: [1, 1.05, 1] } : {}}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    >
+                      <Badge className={`text-xs ${getStatusColor(alert.status)}`}>
+                        {alert.status}
+                      </Badge>
+                    </motion.div>
+                  </td>
+                  <td className="py-2 px-2">{alert.alertType}</td>
+                  <td className="py-2 px-2 text-xs">{format(new Date(alert.startDate), 'MM/dd, h:mm a')}</td>
+                  <td className="py-2 px-2 max-w-[150px] truncate">{alert.title}</td>
+                  <td className="py-2 px-2 max-w-[200px] truncate text-muted-foreground">{alert.information}</td>
+                </motion.tr>
+              ))}
+            </AnimatePresence>
           </tbody>
         </table>
       </div>
 
       {alerts.length === 0 && (
-        <div className="text-center py-8 text-muted-foreground">
-          <p>No active alerts</p>
-        </div>
+        <motion.div 
+          className="text-center py-8 text-muted-foreground"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          <p>No active alerts - Fleet running smoothly ✓</p>
+        </motion.div>
       )}
     </GlowingCard>
   );
