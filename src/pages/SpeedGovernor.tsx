@@ -346,16 +346,18 @@ const SpeedGovernor = () => {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {vehicles.map((vehicle) => (
-                      <LiveTelemetryCard
-                        key={vehicle.id}
-                        plate={vehicle.plate}
-                        telemetry={telemetry[vehicle.id] || null}
-                        maxSpeed={vehicle.maxSpeed}
-                        governorActive={vehicle.governorActive}
-                        isOnline={isVehicleOnline(vehicle.id)}
-                      />
-                    ))}
+                    {vehicles
+                      .filter((vehicle) => isVehicleOnline(vehicle.id))
+                      .map((vehicle) => (
+                        <LiveTelemetryCard
+                          key={vehicle.id}
+                          plate={vehicle.plate}
+                          telemetry={telemetry[vehicle.id] || null}
+                          maxSpeed={vehicle.maxSpeed}
+                          governorActive={vehicle.governorActive}
+                          isOnline={true}
+                        />
+                      ))}
                   </div>
                 )}
               </CardContent>
