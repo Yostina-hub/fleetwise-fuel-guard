@@ -941,13 +941,21 @@ return () => {
         const popup = new mapboxgl.Popup({
           closeButton: false,
           closeOnClick: false,
-          offset: [0, -25],
+          offset: [0, -30],
           className: 'vehicle-hover-popup',
-          maxWidth: '280px'
+          maxWidth: '280px',
+          anchor: 'bottom'
         });
 
-        // Hover to show info popup
-        el.addEventListener('mouseenter', () => {
+        let hideTimeout: NodeJS.Timeout | null = null;
+        let isHoveringPopup = false;
+
+        const showPopup = () => {
+          if (hideTimeout) {
+            clearTimeout(hideTimeout);
+            hideTimeout = null;
+          }
+          
           const vNow = vehiclesByIdRef.current.get(vehicle.id) ?? vehicle;
           const statusLabel = vNow.status.charAt(0).toUpperCase() + vNow.status.slice(1);
           const statusClass = `popup-status-${vNow.status}`;
@@ -958,7 +966,7 @@ return () => {
           
           popup.setLngLat([vNow.lng, vNow.lat])
             .setHTML(`
-              <div class="vehicle-popup-content">
+              <div class="vehicle-popup-content" data-vehicle-id="${vNow.id}">
                 <div class="popup-header">
                   <span class="popup-plate">${vNow.plate}</span>
                   <span class="popup-status ${statusClass}">${statusLabel}</span>
@@ -980,19 +988,70 @@ return () => {
                   ` : ''}
                 </div>
                 <div class="popup-address">📍 ${currentAddress}</div>
-                <div class="popup-hint">Click to view details</div>
+                <div class="popup-action-hint">
+                  <button class="popup-view-btn" data-vehicle-id="${vNow.id}">View Details →</button>
+                </div>
               </div>
             `)
             .addTo(map.current!);
-        });
+
+          // Add hover listeners to popup element to keep it visible
+          const popupEl = popup.getElement();
+          if (popupEl) {
+            popupEl.addEventListener('mouseenter', () => {
+              isHoveringPopup = true;
+              if (hideTimeout) {
+                clearTimeout(hideTimeout);
+                hideTimeout = null;
+              }
+            });
+            
+            popupEl.addEventListener('mouseleave', () => {
+              isHoveringPopup = false;
+              scheduleHide();
+            });
+
+            // Make the view button clickable
+            const viewBtn = popupEl.querySelector('.popup-view-btn');
+            if (viewBtn) {
+              viewBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                popup.remove();
+                const vNow = vehiclesByIdRef.current.get(vehicle.id) ?? vehicle;
+                
+                map.current?.flyTo({
+                  center: [vNow.lng, vNow.lat],
+                  zoom: 18,
+                  duration: 1000,
+                  pitch: 45,
+                });
+                
+                onVehicleClick?.(vNow);
+              });
+            }
+          }
+        };
+
+        const scheduleHide = () => {
+          if (hideTimeout) clearTimeout(hideTimeout);
+          hideTimeout = setTimeout(() => {
+            if (!isHoveringPopup) {
+              popup.remove();
+            }
+          }, 300); // 300ms delay before hiding
+        };
+
+        // Hover to show info popup
+        el.addEventListener('mouseenter', showPopup);
 
         el.addEventListener('mouseleave', () => {
-          popup.remove();
+          scheduleHide();
         });
 
         // Click to zoom in and show details
         el.addEventListener('click', (e) => {
           e.stopPropagation();
+          if (hideTimeout) clearTimeout(hideTimeout);
           popup.remove();
 
           const vNow = vehiclesByIdRef.current.get(vehicle.id) ?? vehicle;
