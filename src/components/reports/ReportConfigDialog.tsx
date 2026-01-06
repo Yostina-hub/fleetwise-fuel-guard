@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { X, Search, FileText, ChevronDown, CheckSquare, Square } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { X, Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -13,9 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
 import { ReportTimePeriodSelect, TimePeriodOption, getDateRangeFromPeriod } from "./ReportTimePeriodSelect";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useOrganization } from "@/hooks/useOrganization";
 
 interface Asset {
   id: string;
@@ -37,15 +38,6 @@ export interface ReportConfig {
   selectedAssets: string[];
   violationTypes?: string[];
 }
-
-// Mock asset data - in real app would come from props or API
-const MOCK_ASSETS: Asset[] = [
-  { id: "1", name: "Demo 1", type: "vehicle" },
-  { id: "2", name: "Demo 2", type: "vehicle" },
-  { id: "3", name: "Demo 3", type: "vehicle" },
-  { id: "4", name: "Truck A", type: "truck" },
-  { id: "5", name: "Truck B", type: "truck" },
-];
 
 const ASSET_TYPES = [
   { value: "all", label: "All Assets" },
@@ -69,20 +61,65 @@ export const ReportConfigDialog = ({
   reportName,
   onGenerate,
 }: ReportConfigDialogProps) => {
+  const { organizationId } = useOrganization();
   const [timePeriod, setTimePeriod] = useState<TimePeriodOption>("last_7_days");
   const [dateRange, setDateRange] = useState(getDateRangeFromPeriod("last_7_days"));
   const [assetType, setAssetType] = useState("all");
   const [assetSearch, setAssetSearch] = useState("");
   const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
   const [selectedViolations, setSelectedViolations] = useState<string[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [loadingAssets, setLoadingAssets] = useState(false);
+
+  // Fetch vehicles from database when dialog opens
+  useEffect(() => {
+    if (!open || !organizationId) return;
+
+    const fetchVehicles = async () => {
+      setLoadingAssets(true);
+      try {
+        const { data, error } = await supabase
+          .from("vehicles")
+          .select("id, plate_number, vehicle_type")
+          .eq("organization_id", organizationId)
+          .order("plate_number");
+
+        if (error) throw error;
+
+        const vehicleAssets: Asset[] = (data || []).map((v) => ({
+          id: v.id,
+          name: v.plate_number || "Unknown",
+          type: v.vehicle_type?.toLowerCase() || "vehicle",
+        }));
+
+        setAssets(vehicleAssets);
+      } catch (error) {
+        console.error("Error fetching vehicles:", error);
+        setAssets([]);
+      } finally {
+        setLoadingAssets(false);
+      }
+    };
+
+    fetchVehicles();
+  }, [open, organizationId]);
+
+  // Reset selections when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setSelectedAssets([]);
+      setAssetSearch("");
+      setAssetType("all");
+    }
+  }, [open]);
 
   const filteredAssets = useMemo(() => {
-    return MOCK_ASSETS.filter(asset => {
+    return assets.filter(asset => {
       const matchesType = assetType === "all" || asset.type === assetType;
       const matchesSearch = asset.name.toLowerCase().includes(assetSearch.toLowerCase());
       return matchesType && matchesSearch;
     });
-  }, [assetType, assetSearch]);
+  }, [assets, assetType, assetSearch]);
 
   const handleSelectAll = () => {
     if (selectedAssets.length === filteredAssets.length) {
@@ -194,17 +231,23 @@ export const ReportConfigDialog = ({
 
                   {/* Asset List */}
                   <ScrollArea className="h-48">
-                    {filteredAssets.map(asset => (
-                      <div
-                        key={asset.id}
-                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 cursor-pointer"
-                        onClick={() => handleAssetToggle(asset.id)}
-                      >
-                        <Checkbox checked={selectedAssets.includes(asset.id)} />
-                        <span className="text-sm">{asset.name}</span>
+                    {loadingAssets ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                        <span className="ml-2 text-sm text-muted-foreground">Loading vehicles...</span>
                       </div>
-                    ))}
-                    {filteredAssets.length === 0 && (
+                    ) : filteredAssets.length > 0 ? (
+                      filteredAssets.map(asset => (
+                        <div
+                          key={asset.id}
+                          className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 cursor-pointer"
+                          onClick={() => handleAssetToggle(asset.id)}
+                        >
+                          <Checkbox checked={selectedAssets.includes(asset.id)} />
+                          <span className="text-sm">{asset.name}</span>
+                        </div>
+                      ))
+                    ) : (
                       <div className="px-4 py-8 text-center text-muted-foreground text-sm">
                         No assets found
                       </div>
