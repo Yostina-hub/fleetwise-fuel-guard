@@ -104,83 +104,95 @@ const MapView = () => {
       }
     });
 
-    // Helper to ensure valid coordinates
-    const safeCoord = (val: number | null | undefined, defaultVal: number): number => {
-      if (val === null || val === undefined || !isFinite(val)) return defaultVal;
-      return val;
+    // Helper to check if coordinates are valid (not null/undefined/NaN and within bounds)
+    const hasValidCoords = (lat: number | null | undefined, lng: number | null | undefined): boolean => {
+      return (
+        lat !== null && lat !== undefined && isFinite(lat) &&
+        lng !== null && lng !== undefined && isFinite(lng) &&
+        lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180
+      );
     };
     
-    return dbVehicles.map((v) => {
-      const vehicleTelemetry = telemetry[v.id];
-      const online = isVehicleOnline(v.id);
-      const speedLimit = speedLimitMap[v.id];
-      
-      // For offline vehicles, preserve last known position if available
-      if (!online || !vehicleTelemetry) {
-        const lastKnownTelemetry = telemetry[v.id]; // May still have stale data
+    return dbVehicles
+      .map((v) => {
+        const vehicleTelemetry = telemetry[v.id];
+        const online = isVehicleOnline(v.id);
+        const speedLimit = speedLimitMap[v.id];
         const driver = v.assigned_driver;
+        
+        // Get coordinates from telemetry (could be current or last known)
+        const lat = vehicleTelemetry?.latitude;
+        const lng = vehicleTelemetry?.longitude;
+        
+        // Skip vehicles without valid GPS coordinates entirely
+        // This prevents markers from stacking at default coordinates
+        if (!hasValidCoords(lat, lng)) {
+          return null; // Will be filtered out
+        }
+        
+        // For offline vehicles, preserve last known position
+        if (!online || !vehicleTelemetry) {
+          return {
+            id: v.id,
+            plate: v.plate_number || 'Unknown',
+            status: 'offline' as const,
+            fuel: vehicleTelemetry?.fuel_level_percent || 0,
+            speed: 0,
+            lat: lat!,
+            lng: lng!,
+            engine_on: false,
+            heading: vehicleTelemetry?.heading || 0,
+            isOffline: true,
+            gps_signal_strength: 0,
+            gps_satellites_count: 0,
+            lastSeen: vehicleTelemetry?.last_communication_at,
+            gps_jamming_detected: false,
+            gps_spoofing_detected: false,
+            speedLimit,
+            driverName: driver ? `${driver.first_name} ${driver.last_name}` : undefined,
+            driverPhone: driver?.phone,
+            hasGps: true,
+          };
+        }
+        
+        // Determine status based on speed (primary) and engine state (secondary)
+        const speed = vehicleTelemetry.speed_kmh || 0;
+        const engineOn = vehicleTelemetry.engine_on || vehicleTelemetry.ignition_on;
+        let status: 'moving' | 'idle' | 'stopped' | 'offline';
+        
+        if (speed > 3) {
+          status = 'moving';
+        } else if (engineOn) {
+          status = 'idle';
+        } else {
+          status = 'stopped';
+        }
+        
         return {
           id: v.id,
           plate: v.plate_number || 'Unknown',
-          status: 'offline' as const,
-          fuel: lastKnownTelemetry?.fuel_level_percent || 0,
-          speed: 0,
-          lat: safeCoord(lastKnownTelemetry?.latitude, 9.03),
-          lng: safeCoord(lastKnownTelemetry?.longitude, 38.74),
-          engine_on: false,
-          heading: safeCoord(lastKnownTelemetry?.heading, 0),
-          isOffline: true,
-          gps_signal_strength: 0,
-          gps_satellites_count: 0,
-          lastSeen: lastKnownTelemetry?.last_communication_at,
-          gps_jamming_detected: false,
-          gps_spoofing_detected: false,
+          status,
+          fuel: vehicleTelemetry.fuel_level_percent || 0,
+          speed,
+          lat: lat!,
+          lng: lng!,
+          engine_on: engineOn,
+          heading: vehicleTelemetry.heading || 0,
+          isOffline: false,
+          lastSeen: vehicleTelemetry.last_communication_at,
+          gps_signal_strength: vehicleTelemetry.gps_signal_strength,
+          gps_satellites_count: vehicleTelemetry.gps_satellites_count,
+          gps_hdop: vehicleTelemetry.gps_hdop,
+          gps_fix_type: vehicleTelemetry.gps_fix_type,
+          gps_jamming_detected: vehicleTelemetry.gps_jamming_detected,
+          gps_spoofing_detected: vehicleTelemetry.gps_spoofing_detected,
           speedLimit,
           driverName: driver ? `${driver.first_name} ${driver.last_name}` : undefined,
           driverPhone: driver?.phone,
+          hasGps: true,
         };
-      }
-      
-      // Determine status based on speed (primary) and engine state (secondary)
-      // Speed takes priority - if moving, it's moving regardless of engine flag
-      const speed = vehicleTelemetry.speed_kmh || 0;
-      const engineOn = vehicleTelemetry.engine_on || vehicleTelemetry.ignition_on;
-      let status: 'moving' | 'idle' | 'stopped' | 'offline';
-      
-      if (speed > 3) {
-        // Speed > 3 km/h means vehicle is moving, regardless of engine flag
-        status = 'moving';
-      } else if (engineOn) {
-        // Engine/ignition on but not moving = idle
-        status = 'idle';
-      } else {
-        status = 'stopped';
-      }
-      
-      const driver = v.assigned_driver;
-      return {
-        id: v.id,
-        plate: v.plate_number || 'Unknown',
-        status,
-        fuel: vehicleTelemetry.fuel_level_percent || 0,
-        speed,
-        lat: safeCoord(vehicleTelemetry.latitude, 9.03),
-        lng: safeCoord(vehicleTelemetry.longitude, 38.74),
-        engine_on: engineOn,
-        heading: safeCoord(vehicleTelemetry.heading, 0),
-        isOffline: false,
-        lastSeen: vehicleTelemetry.last_communication_at,
-        gps_signal_strength: vehicleTelemetry.gps_signal_strength,
-        gps_satellites_count: vehicleTelemetry.gps_satellites_count,
-        gps_hdop: vehicleTelemetry.gps_hdop,
-        gps_fix_type: vehicleTelemetry.gps_fix_type,
-        gps_jamming_detected: vehicleTelemetry.gps_jamming_detected,
-        gps_spoofing_detected: vehicleTelemetry.gps_spoofing_detected,
-        speedLimit,
-        driverName: driver ? `${driver.first_name} ${driver.last_name}` : undefined,
-        driverPhone: driver?.phone,
-      };
-    });
+      })
+      .filter((v): v is NonNullable<typeof v> => v !== null); // Remove vehicles without GPS
   }, [dbVehicles, telemetry, isVehicleOnline, governorConfigs]);
 
   // Get vehicle IDs for trail tracking
