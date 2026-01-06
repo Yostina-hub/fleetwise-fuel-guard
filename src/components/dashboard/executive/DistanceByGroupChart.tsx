@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
+import { Badge } from "@/components/ui/badge";
 
 interface DistanceData {
   time: string;
@@ -44,16 +45,25 @@ const DistanceByGroupChart = ({ data, groups, loading }: DistanceByGroupChartPro
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-[#1a2332] border border-[#2a3a4d] rounded-lg shadow-xl p-3">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-[#1a2332] border border-[#2a3a4d] rounded-lg shadow-xl p-3"
+        >
           <p className="font-medium text-foreground mb-2">{label}</p>
           {payload.map((entry: any, index: number) => (
             <p key={index} className="text-xs flex items-center gap-2 py-0.5">
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+              <motion.span 
+                className="w-2 h-2 rounded-full" 
+                style={{ backgroundColor: entry.color }}
+                animate={{ scale: [1, 1.3, 1] }}
+                transition={{ duration: 1, repeat: Infinity }}
+              />
               <span className="text-muted-foreground">{entry.name}:</span>
               <span className="text-foreground font-medium">{entry.value?.toFixed(1)} km</span>
             </p>
           ))}
-        </div>
+        </motion.div>
       );
     }
     return null;
@@ -67,16 +77,36 @@ const DistanceByGroupChart = ({ data, groups, loading }: DistanceByGroupChartPro
     >
       {/* Header with Legend */}
       <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
-        <h3 className="font-semibold text-base text-foreground">Distance by Group per Hour</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="font-semibold text-base text-foreground">Distance by Fleet per Hour</h3>
+          <Badge variant="outline" className="text-xs bg-green-500/20 text-green-400 border-green-500/50">
+            <motion.span
+              animate={{ opacity: [1, 0.5, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="inline-flex items-center gap-1"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              Live
+            </motion.span>
+          </Badge>
+        </div>
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px]">
           {groups.map((group, i) => (
-            <div key={group.name} className="flex items-center gap-1">
-              <div 
+            <motion.div 
+              key={group.name} 
+              className="flex items-center gap-1"
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.1 }}
+            >
+              <motion.div 
                 className="w-3 h-0.5" 
-                style={{ backgroundColor: groupColors[i % groupColors.length] }} 
+                style={{ backgroundColor: groupColors[i % groupColors.length] }}
+                animate={{ scaleX: [1, 1.5, 1] }}
+                transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
               />
               <span className="text-muted-foreground">{group.name}</span>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>
@@ -102,7 +132,7 @@ const DistanceByGroupChart = ({ data, groups, loading }: DistanceByGroupChartPro
               axisLine={{ stroke: '#2a3a4d' }}
               tickLine={{ stroke: '#2a3a4d' }}
               label={{ 
-                value: 'Distance', 
+                value: 'Distance (km)', 
                 angle: -90, 
                 position: 'insideLeft', 
                 fontSize: 10,

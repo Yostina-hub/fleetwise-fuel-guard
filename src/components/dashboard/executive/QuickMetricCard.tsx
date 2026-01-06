@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
+import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
 
 interface QuickMetricCardProps {
   title: string;
@@ -9,6 +10,7 @@ interface QuickMetricCardProps {
   badgeVariant?: "default" | "secondary" | "outline";
   icon?: ReactNode;
   className?: string;
+  animate?: boolean;
 }
 
 const QuickMetricCard = ({ 
@@ -17,8 +19,20 @@ const QuickMetricCard = ({
   badge, 
   badgeVariant = "secondary",
   icon,
-  className = ""
+  className = "",
+  animate = true
 }: QuickMetricCardProps) => {
+  // Extract numeric value for animation
+  const numericValue = typeof value === 'number' ? value : parseFloat(String(value).replace(/[^0-9.-]/g, '')) || 0;
+  const suffix = typeof value === 'string' ? value.replace(/[0-9.-]/g, '').trim() : '';
+  
+  const { formattedValue } = useAnimatedCounter(numericValue, {
+    duration: 1500,
+    decimals: String(value).includes('.') ? 2 : 0,
+  });
+
+  const displayValue = animate ? `${formattedValue}${suffix ? ` ${suffix}` : ''}` : value;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -36,13 +50,36 @@ const QuickMetricCard = ({
             variant="outline" 
             className="text-xs bg-blue-500/20 text-blue-400 border-blue-500/50"
           >
-            {badge}
+            <motion.span
+              animate={{ opacity: [1, 0.5, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="inline-flex items-center gap-1"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+              {badge}
+            </motion.span>
           </Badge>
         )}
       </div>
       <div className="flex items-center gap-2">
-        {icon && <div className="text-primary">{icon}</div>}
-        <span className="text-2xl font-bold text-foreground">{value}</span>
+        {icon && (
+          <motion.div 
+            className="text-primary"
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            {icon}
+          </motion.div>
+        )}
+        <motion.span 
+          className="text-2xl font-bold text-foreground"
+          key={String(value)}
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          {displayValue}
+        </motion.span>
       </div>
     </motion.div>
   );
