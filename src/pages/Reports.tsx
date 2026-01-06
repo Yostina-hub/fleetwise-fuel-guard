@@ -222,136 +222,601 @@ const Reports = () => {
     );
   }, [drivers, searchQuery]);
 
-  // Export handlers
-  const handleExportCSV = () => {
-    let data: Record<string, any>[] = [];
-    let filename = "report";
-
+  // Get current export data based on active tab/subtab
+  const getExportData = (): { data: Record<string, any>[]; filename: string; columns: { key: string; label: string; width?: number }[]; title: string } => {
     switch (activeReportTab) {
       case "vehicle":
-        data = filteredVehicles.map(v => ({
-          plate_number: v.plate_number,
-          make: v.make,
-          model: v.model,
-          year: v.year,
-          status: v.status,
-          odometer_km: v.odometer_km,
-          fuel_type: v.fuel_type,
-        }));
-        filename = "vehicle_report";
-        break;
-      case "driver":
-        if (activeSubTab === "speeding") {
-          data = speedViolations.map(v => ({
-            time: format(new Date(v.violation_time), "yyyy-MM-dd HH:mm"),
-            vehicle: v.vehicle?.plate_number || "Unknown",
-            driver: v.driver ? `${v.driver.first_name} ${v.driver.last_name}` : "Unknown",
-            speed: v.speed_kmh,
-            limit: v.speed_limit_kmh,
-            severity: v.severity,
-            location: v.location_name,
-          }));
-          filename = "speeding_report";
-        } else {
-          data = filteredDrivers.map(d => ({
-            name: `${d.first_name} ${d.last_name}`,
-            employee_id: d.employee_id,
-            license_number: d.license_number,
-            status: d.status,
-            safety_score: d.safety_score,
-            total_trips: d.total_trips,
-            total_distance_km: d.total_distance_km,
-          }));
-          filename = "driver_report";
+        switch (activeSubTab) {
+          case "utilization":
+            return {
+              data: trips.map(t => ({
+                vehicle: t.vehicle?.plate_number || "Unknown",
+                date: format(new Date(t.start_time), "yyyy-MM-dd"),
+                distance_km: t.distance_km || 0,
+                duration_min: t.duration_minutes || 0,
+                fuel_consumed_l: t.fuel_consumed_liters || 0,
+                idle_time_min: t.idle_time_minutes || 0,
+                status: t.status || "-",
+              })),
+              filename: "vehicle_utilization_report",
+              columns: [
+                { key: "vehicle", label: "Vehicle", width: 40 },
+                { key: "date", label: "Date", width: 35 },
+                { key: "distance_km", label: "Distance (km)", width: 35 },
+                { key: "duration_min", label: "Duration (min)", width: 35 },
+                { key: "fuel_consumed_l", label: "Fuel (L)", width: 30 },
+                { key: "idle_time_min", label: "Idle (min)", width: 30 },
+                { key: "status", label: "Status", width: 30 },
+              ],
+              title: "Vehicle Utilization Report",
+            };
+          case "geofence":
+            return {
+              data: geofenceEvents.map(e => ({
+                time: format(new Date(e.event_time), "yyyy-MM-dd HH:mm"),
+                vehicle: e.vehicle?.plate_number || "Unknown",
+                geofence: e.geofence?.name || "Unknown",
+                event_type: e.event_type || "-",
+                dwell_time_min: e.dwell_time_minutes || "-",
+              })),
+              filename: "geofence_events_report",
+              columns: [
+                { key: "time", label: "Time", width: 50 },
+                { key: "vehicle", label: "Vehicle", width: 45 },
+                { key: "geofence", label: "Geofence", width: 55 },
+                { key: "event_type", label: "Event", width: 40 },
+                { key: "dwell_time_min", label: "Dwell (min)", width: 35 },
+              ],
+              title: "Geofence Events Report",
+            };
+          default:
+            return {
+              data: filteredVehicles.map(v => ({
+                plate_number: v.plate_number || "-",
+                make: v.make || "-",
+                model: v.model || "-",
+                year: v.year || "-",
+                status: v.status || "-",
+                odometer_km: v.odometer_km || 0,
+                fuel_type: v.fuel_type || "-",
+              })),
+              filename: "vehicle_summary_report",
+              columns: [
+                { key: "plate_number", label: "Plate", width: 40 },
+                { key: "make", label: "Make", width: 35 },
+                { key: "model", label: "Model", width: 35 },
+                { key: "year", label: "Year", width: 25 },
+                { key: "status", label: "Status", width: 30 },
+                { key: "odometer_km", label: "Odometer", width: 35 },
+                { key: "fuel_type", label: "Fuel", width: 30 },
+              ],
+              title: "Vehicle Summary Report",
+            };
         }
-        break;
-      case "fuel":
-        data = fuelTransactions.map(t => ({
-          date: format(new Date(t.transaction_date), "yyyy-MM-dd HH:mm"),
-          vehicle: t.vehicle?.plate_number || "Unknown",
-          liters: t.fuel_amount_liters,
-          cost: t.fuel_cost,
-          price_per_liter: t.fuel_price_per_liter,
-          location: t.location_name,
-        }));
-        filename = "fuel_report";
-        break;
-      case "trips":
-        data = trips.map(t => ({
-          start_time: format(new Date(t.start_time), "yyyy-MM-dd HH:mm"),
-          end_time: t.end_time ? format(new Date(t.end_time), "yyyy-MM-dd HH:mm") : "-",
-          distance_km: t.distance_km,
-          duration_min: t.duration_minutes,
-          fuel_consumed_l: t.fuel_consumed_liters,
-          status: t.status,
-        }));
-        filename = "trips_report";
-        break;
-      case "maintenance":
-        data = workOrders.map(w => ({
-          work_order: w.work_order_number,
-          service: w.service_description,
-          status: w.status,
-          priority: w.priority,
-          parts_cost: w.parts_cost,
-          labor_cost: w.labor_cost,
-          total_cost: w.total_cost,
-        }));
-        filename = "maintenance_report";
-        break;
-      case "dispatch":
-        data = dispatchJobs.map(j => ({
-          job_number: j.job_number,
-          customer: j.customer_name,
-          status: j.status,
-          sla_met: j.sla_met,
-        }));
-        filename = "dispatch_report";
-        break;
-      case "costs":
-        data = vehicleCosts.map(c => ({
-          date: format(new Date(c.cost_date), "yyyy-MM-dd"),
-          type: c.cost_type,
-          category: c.category,
-          description: c.description,
-          amount: c.amount,
-        }));
-        filename = "costs_report";
-        break;
-      case "alerts":
-        data = alerts.map(a => ({
-          time: format(new Date(a.alert_time), "yyyy-MM-dd HH:mm"),
-          title: a.title,
-          type: a.alert_type,
-          severity: a.severity,
-          status: a.status,
-        }));
-        filename = "alerts_report";
-        break;
-    }
 
+      case "driver":
+        switch (activeSubTab) {
+          case "scores":
+            return {
+              data: driverScores.map(s => ({
+                driver: s.driver ? `${s.driver.first_name} ${s.driver.last_name}` : "Unknown",
+                overall_score: s.overall_score || 0,
+                speeding_score: s.speeding_score || 0,
+                braking_score: s.braking_score || 0,
+                acceleration_score: s.acceleration_score || 0,
+                idle_score: s.idle_score || 0,
+                safety_rating: s.safety_rating || "-",
+                trend: s.trend || "-",
+              })),
+              filename: "driver_scores_report",
+              columns: [
+                { key: "driver", label: "Driver", width: 50 },
+                { key: "overall_score", label: "Overall", width: 25 },
+                { key: "speeding_score", label: "Speed", width: 25 },
+                { key: "braking_score", label: "Brake", width: 25 },
+                { key: "acceleration_score", label: "Accel", width: 25 },
+                { key: "idle_score", label: "Idle", width: 25 },
+                { key: "safety_rating", label: "Rating", width: 30 },
+                { key: "trend", label: "Trend", width: 25 },
+              ],
+              title: "Driver Behavior Scores Report",
+            };
+          case "compliance":
+            return {
+              data: drivers.map(d => ({
+                name: `${d.first_name} ${d.last_name}`,
+                employee_id: d.employee_id || "-",
+                license_number: d.license_number || "-",
+                license_expiry: d.license_expiry ? format(new Date(d.license_expiry), "yyyy-MM-dd") : "-",
+                medical_expiry: d.medical_certificate_expiry ? format(new Date(d.medical_certificate_expiry), "yyyy-MM-dd") : "-",
+                status: d.status || "-",
+              })),
+              filename: "driver_compliance_report",
+              columns: [
+                { key: "name", label: "Name", width: 50 },
+                { key: "employee_id", label: "Employee ID", width: 40 },
+                { key: "license_number", label: "License", width: 45 },
+                { key: "license_expiry", label: "License Exp", width: 35 },
+                { key: "medical_expiry", label: "Medical Exp", width: 35 },
+                { key: "status", label: "Status", width: 30 },
+              ],
+              title: "Driver Compliance Report",
+            };
+          case "speeding":
+            return {
+              data: speedViolations.map(v => ({
+                time: format(new Date(v.violation_time), "yyyy-MM-dd HH:mm"),
+                driver: v.driver ? `${v.driver.first_name} ${v.driver.last_name}` : "Unknown",
+                vehicle: v.vehicle?.plate_number || "Unknown",
+                speed_kmh: v.speed_kmh || 0,
+                limit_kmh: v.speed_limit_kmh || 0,
+                over_by: (v.speed_kmh || 0) - (v.speed_limit_kmh || 0),
+                severity: v.severity || "-",
+                location: v.location_name || "-",
+              })),
+              filename: "speeding_violations_report",
+              columns: [
+                { key: "time", label: "Time", width: 40 },
+                { key: "driver", label: "Driver", width: 45 },
+                { key: "vehicle", label: "Vehicle", width: 35 },
+                { key: "speed_kmh", label: "Speed", width: 25 },
+                { key: "limit_kmh", label: "Limit", width: 25 },
+                { key: "over_by", label: "Over By", width: 25 },
+                { key: "severity", label: "Severity", width: 30 },
+              ],
+              title: "Speeding Violations Report",
+            };
+          case "harsh_events":
+            return {
+              data: driverEvents.map(e => ({
+                time: format(new Date(e.event_time), "yyyy-MM-dd HH:mm"),
+                driver: e.driver ? `${e.driver.first_name} ${e.driver.last_name}` : "Unknown",
+                vehicle: e.vehicle?.plate_number || "Unknown",
+                event_type: e.event_type || "-",
+                severity: e.severity || "-",
+                speed_kmh: e.speed_kmh || "-",
+                address: e.address || "-",
+              })),
+              filename: "harsh_events_report",
+              columns: [
+                { key: "time", label: "Time", width: 40 },
+                { key: "driver", label: "Driver", width: 45 },
+                { key: "vehicle", label: "Vehicle", width: 35 },
+                { key: "event_type", label: "Event", width: 35 },
+                { key: "severity", label: "Severity", width: 30 },
+                { key: "speed_kmh", label: "Speed", width: 25 },
+              ],
+              title: "Harsh Driving Events Report",
+            };
+          case "incidents":
+            return {
+              data: incidents.map(i => ({
+                time: format(new Date(i.incident_time), "yyyy-MM-dd HH:mm"),
+                incident_number: i.incident_number || "-",
+                driver: i.driver ? `${i.driver.first_name} ${i.driver.last_name}` : "Unknown",
+                vehicle: i.vehicle?.plate_number || "Unknown",
+                severity: i.severity || "-",
+                status: i.status || "-",
+                location: i.location || "-",
+                estimated_cost: i.estimated_cost || 0,
+              })),
+              filename: "incidents_report",
+              columns: [
+                { key: "time", label: "Time", width: 35 },
+                { key: "incident_number", label: "Incident #", width: 35 },
+                { key: "driver", label: "Driver", width: 40 },
+                { key: "vehicle", label: "Vehicle", width: 35 },
+                { key: "severity", label: "Severity", width: 30 },
+                { key: "status", label: "Status", width: 30 },
+                { key: "estimated_cost", label: "Est. Cost", width: 30 },
+              ],
+              title: "Incidents Report",
+            };
+          default:
+            return {
+              data: filteredDrivers.map(d => ({
+                name: `${d.first_name} ${d.last_name}`,
+                employee_id: d.employee_id || "-",
+                license_number: d.license_number || "-",
+                phone: d.phone || "-",
+                status: d.status || "-",
+                safety_score: d.safety_score || "-",
+                total_trips: d.total_trips || 0,
+                total_distance_km: d.total_distance_km || 0,
+              })),
+              filename: "driver_summary_report",
+              columns: [
+                { key: "name", label: "Name", width: 45 },
+                { key: "employee_id", label: "Emp ID", width: 30 },
+                { key: "license_number", label: "License", width: 35 },
+                { key: "status", label: "Status", width: 30 },
+                { key: "safety_score", label: "Safety", width: 25 },
+                { key: "total_trips", label: "Trips", width: 25 },
+                { key: "total_distance_km", label: "Distance", width: 35 },
+              ],
+              title: "Driver Summary Report",
+            };
+        }
+
+      case "location":
+        switch (activeSubTab) {
+          case "speeding":
+            return {
+              data: speedViolations.map(v => ({
+                time: format(new Date(v.violation_time), "yyyy-MM-dd HH:mm"),
+                location: v.location_name || "Unknown",
+                vehicle: v.vehicle?.plate_number || "Unknown",
+                driver: v.driver ? `${v.driver.first_name} ${v.driver.last_name}` : "Unknown",
+                speed_kmh: v.speed_kmh || 0,
+                limit_kmh: v.speed_limit_kmh || 0,
+                severity: v.severity || "-",
+              })),
+              filename: "speeding_by_location_report",
+              columns: [
+                { key: "time", label: "Time", width: 40 },
+                { key: "location", label: "Location", width: 60 },
+                { key: "vehicle", label: "Vehicle", width: 35 },
+                { key: "speed_kmh", label: "Speed", width: 25 },
+                { key: "limit_kmh", label: "Limit", width: 25 },
+                { key: "severity", label: "Severity", width: 30 },
+              ],
+              title: "Speeding by Location Report",
+            };
+          default:
+            return {
+              data: geofenceEvents.map(e => ({
+                time: format(new Date(e.event_time), "yyyy-MM-dd HH:mm"),
+                geofence: e.geofence?.name || "Unknown",
+                category: e.geofence?.category || "-",
+                vehicle: e.vehicle?.plate_number || "Unknown",
+                event_type: e.event_type || "-",
+                dwell_time_min: e.dwell_time_minutes || "-",
+              })),
+              filename: "geofence_events_report",
+              columns: [
+                { key: "time", label: "Time", width: 45 },
+                { key: "geofence", label: "Geofence", width: 50 },
+                { key: "category", label: "Category", width: 35 },
+                { key: "vehicle", label: "Vehicle", width: 40 },
+                { key: "event_type", label: "Event", width: 30 },
+                { key: "dwell_time_min", label: "Dwell (min)", width: 30 },
+              ],
+              title: "Geofence Events Report",
+            };
+        }
+
+      case "fuel":
+        switch (activeSubTab) {
+          case "events":
+            return {
+              data: (fuelEvents || []).map(e => ({
+                time: format(new Date(e.event_time), "yyyy-MM-dd HH:mm"),
+                vehicle: e.vehicle?.plate_number || "Unknown",
+                event_type: e.event_type || "-",
+                fuel_before_l: e.fuel_before_liters?.toFixed(1) || "-",
+                fuel_after_l: e.fuel_after_liters?.toFixed(1) || "-",
+                change_l: e.fuel_change_liters?.toFixed(1) || "-",
+                status: e.status || "-",
+              })),
+              filename: "fuel_events_report",
+              columns: [
+                { key: "time", label: "Time", width: 45 },
+                { key: "vehicle", label: "Vehicle", width: 40 },
+                { key: "event_type", label: "Type", width: 30 },
+                { key: "fuel_before_l", label: "Before (L)", width: 30 },
+                { key: "fuel_after_l", label: "After (L)", width: 30 },
+                { key: "change_l", label: "Change (L)", width: 30 },
+                { key: "status", label: "Status", width: 30 },
+              ],
+              title: "Fuel Events Report",
+            };
+          case "theft":
+            return {
+              data: (fuelTheftCases || []).map(c => ({
+                detected_at: format(new Date(c.detected_at), "yyyy-MM-dd HH:mm"),
+                vehicle: c.vehicle?.plate_number || "Unknown",
+                case_number: c.case_number || "-",
+                estimated_value: c.estimated_value || 0,
+                status: c.status || "-",
+                investigation_notes: c.investigation_notes || "-",
+              })),
+              filename: "fuel_theft_report",
+              columns: [
+                { key: "detected_at", label: "Detected", width: 45 },
+                { key: "vehicle", label: "Vehicle", width: 40 },
+                { key: "case_number", label: "Case #", width: 35 },
+                { key: "estimated_value", label: "Value", width: 30 },
+                { key: "status", label: "Status", width: 35 },
+                { key: "investigation_notes", label: "Notes", width: 50 },
+              ],
+              title: "Fuel Theft Cases Report",
+            };
+          default:
+            return {
+              data: fuelTransactions.map(t => ({
+                date: format(new Date(t.transaction_date), "yyyy-MM-dd HH:mm"),
+                vehicle: t.vehicle?.plate_number || "Unknown",
+                liters: t.fuel_amount_liters || 0,
+                cost: t.fuel_cost || 0,
+                price_per_l: t.fuel_price_per_liter || 0,
+                location: t.location_name || "-",
+              })),
+              filename: "fuel_transactions_report",
+              columns: [
+                { key: "date", label: "Date", width: 40 },
+                { key: "vehicle", label: "Vehicle", width: 40 },
+                { key: "liters", label: "Liters", width: 30 },
+                { key: "cost", label: "Cost", width: 35 },
+                { key: "price_per_l", label: "Price/L", width: 30 },
+                { key: "location", label: "Location", width: 55 },
+              ],
+              title: "Fuel Transactions Report",
+            };
+        }
+
+      case "trips":
+        switch (activeSubTab) {
+          case "idle_time":
+            const tripsWithIdle = trips.filter(t => (t.idle_time_minutes || 0) > 0);
+            return {
+              data: tripsWithIdle.map(t => ({
+                date: format(new Date(t.start_time), "yyyy-MM-dd"),
+                vehicle: t.vehicle?.plate_number || "Unknown",
+                driver: t.driver ? `${t.driver.first_name} ${t.driver.last_name}` : "Unknown",
+                duration_min: t.duration_minutes || 0,
+                idle_time_min: t.idle_time_minutes || 0,
+                idle_percent: t.duration_minutes ? ((t.idle_time_minutes || 0) / t.duration_minutes * 100).toFixed(1) : "0",
+                distance_km: t.distance_km || 0,
+              })),
+              filename: "idle_time_report",
+              columns: [
+                { key: "date", label: "Date", width: 35 },
+                { key: "vehicle", label: "Vehicle", width: 35 },
+                { key: "driver", label: "Driver", width: 45 },
+                { key: "duration_min", label: "Trip (min)", width: 30 },
+                { key: "idle_time_min", label: "Idle (min)", width: 30 },
+                { key: "idle_percent", label: "Idle %", width: 25 },
+                { key: "distance_km", label: "Distance", width: 30 },
+              ],
+              title: "Idle Time Analysis Report",
+            };
+          default:
+            return {
+              data: trips.map(t => ({
+                start_time: format(new Date(t.start_time), "yyyy-MM-dd HH:mm"),
+                end_time: t.end_time ? format(new Date(t.end_time), "HH:mm") : "-",
+                vehicle: t.vehicle?.plate_number || "Unknown",
+                driver: t.driver ? `${t.driver.first_name} ${t.driver.last_name}` : "Unknown",
+                distance_km: t.distance_km || 0,
+                duration_min: t.duration_minutes || 0,
+                fuel_l: t.fuel_consumed_liters || 0,
+                status: t.status || "-",
+              })),
+              filename: "trips_report",
+              columns: [
+                { key: "start_time", label: "Start", width: 40 },
+                { key: "end_time", label: "End", width: 25 },
+                { key: "vehicle", label: "Vehicle", width: 35 },
+                { key: "driver", label: "Driver", width: 40 },
+                { key: "distance_km", label: "Distance", width: 30 },
+                { key: "duration_min", label: "Duration", width: 30 },
+                { key: "status", label: "Status", width: 30 },
+              ],
+              title: "Trips Report",
+            };
+        }
+
+      case "maintenance":
+        switch (activeSubTab) {
+          case "work_orders":
+            return {
+              data: workOrders.map(w => ({
+                work_order: w.work_order_number || "-",
+                vehicle: w.vehicle?.plate_number || "Unknown",
+                service: w.service_description || "-",
+                status: w.status || "-",
+                priority: w.priority || "-",
+                parts_cost: w.parts_cost || 0,
+                labor_cost: w.labor_cost || 0,
+                total_cost: w.total_cost || 0,
+              })),
+              filename: "work_orders_report",
+              columns: [
+                { key: "work_order", label: "WO #", width: 35 },
+                { key: "vehicle", label: "Vehicle", width: 35 },
+                { key: "service", label: "Service", width: 50 },
+                { key: "status", label: "Status", width: 30 },
+                { key: "priority", label: "Priority", width: 25 },
+                { key: "total_cost", label: "Total Cost", width: 30 },
+              ],
+              title: "Work Orders Report",
+            };
+          case "inspections":
+            return {
+              data: vehicleInspections.map(i => ({
+                date: format(new Date(i.inspection_date), "yyyy-MM-dd"),
+                vehicle: i.vehicle?.plate_number || "Unknown",
+                type: i.inspection_type || "-",
+                certified_safe: i.certified_safe ? "Yes" : "No",
+                odometer: i.odometer_km || "-",
+              })),
+              filename: "inspections_report",
+              columns: [
+                { key: "date", label: "Date", width: 45 },
+                { key: "vehicle", label: "Vehicle", width: 50 },
+                { key: "type", label: "Type", width: 50 },
+                { key: "certified_safe", label: "Safe", width: 35 },
+                { key: "odometer", label: "Odometer", width: 45 },
+              ],
+              title: "Vehicle Inspections Report",
+            };
+          default:
+            return {
+              data: maintenanceSchedules.map(m => ({
+                vehicle: m.vehicle?.plate_number || "Unknown",
+                service_type: m.service_type || "-",
+                interval: `${m.interval_value || 0} ${m.interval_type || ""}`,
+                last_service: m.last_service_date ? format(new Date(m.last_service_date), "yyyy-MM-dd") : "-",
+                last_hours: m.last_service_hours || "-",
+                status: m.is_active ? "Active" : "Inactive",
+              })),
+              filename: "maintenance_schedules_report",
+              columns: [
+                { key: "vehicle", label: "Vehicle", width: 50 },
+                { key: "service_type", label: "Service Type", width: 55 },
+                { key: "interval", label: "Interval", width: 40 },
+                { key: "last_service", label: "Last Service", width: 45 },
+                { key: "last_hours", label: "Hours", width: 35 },
+                { key: "status", label: "Status", width: 30 },
+              ],
+              title: "Maintenance Schedules Report",
+            };
+        }
+
+      case "dispatch":
+        return {
+          data: dispatchJobs.map(j => ({
+            job_number: j.job_number || "-",
+            customer: j.customer_name || "-",
+            vehicle: j.vehicle?.plate_number || "Unknown",
+            driver: j.driver ? `${j.driver.first_name} ${j.driver.last_name}` : "Unknown",
+            pickup: j.pickup_location_name || "-",
+            dropoff: j.dropoff_location_name || "-",
+            status: j.status || "-",
+            sla_met: j.sla_met ? "Yes" : j.sla_met === false ? "No" : "-",
+          })),
+          filename: "dispatch_jobs_report",
+          columns: [
+            { key: "job_number", label: "Job #", width: 30 },
+            { key: "customer", label: "Customer", width: 40 },
+            { key: "vehicle", label: "Vehicle", width: 30 },
+            { key: "driver", label: "Driver", width: 40 },
+            { key: "pickup", label: "Pickup", width: 40 },
+            { key: "status", label: "Status", width: 30 },
+            { key: "sla_met", label: "SLA", width: 20 },
+          ],
+          title: "Dispatch Jobs Report",
+        };
+
+      case "costs":
+        return {
+          data: vehicleCosts.map(c => ({
+            date: format(new Date(c.cost_date), "yyyy-MM-dd"),
+            vehicle: c.vehicle?.plate_number || "Unknown",
+            cost_type: c.cost_type || "-",
+            category: c.category || "-",
+            description: c.description || "-",
+            amount: c.amount || 0,
+            odometer: c.odometer_km || "-",
+          })),
+          filename: "vehicle_costs_report",
+          columns: [
+            { key: "date", label: "Date", width: 35 },
+            { key: "vehicle", label: "Vehicle", width: 35 },
+            { key: "cost_type", label: "Type", width: 35 },
+            { key: "category", label: "Category", width: 35 },
+            { key: "description", label: "Description", width: 50 },
+            { key: "amount", label: "Amount", width: 30 },
+          ],
+          title: "Vehicle Costs Report",
+        };
+
+      case "alerts":
+        return {
+          data: alerts.map(a => ({
+            time: format(new Date(a.alert_time), "yyyy-MM-dd HH:mm"),
+            title: a.title || "-",
+            type: a.alert_type || "-",
+            severity: a.severity || "-",
+            vehicle: a.vehicle?.plate_number || "-",
+            driver: a.driver ? `${a.driver.first_name} ${a.driver.last_name}` : "-",
+            status: a.status || "-",
+            location: a.location_name || "-",
+          })),
+          filename: "alerts_report",
+          columns: [
+            { key: "time", label: "Time", width: 40 },
+            { key: "title", label: "Title", width: 50 },
+            { key: "type", label: "Type", width: 30 },
+            { key: "severity", label: "Severity", width: 25 },
+            { key: "vehicle", label: "Vehicle", width: 30 },
+            { key: "status", label: "Status", width: 30 },
+          ],
+          title: "Alerts Report",
+        };
+
+      case "compliance":
+        switch (activeSubTab) {
+          case "document_expiry":
+            return {
+              data: documents.map(d => ({
+                document_type: d.document_type || "-",
+                file_name: d.file_name || "-",
+                entity_type: d.entity_type || "-",
+                expiry_date: d.expiry_date ? format(new Date(d.expiry_date), "yyyy-MM-dd") : "-",
+                is_verified: d.is_verified ? "Yes" : "No",
+              })),
+              filename: "document_expiry_report",
+              columns: [
+                { key: "document_type", label: "Type", width: 45 },
+                { key: "file_name", label: "Document", width: 60 },
+                { key: "entity_type", label: "Entity", width: 35 },
+                { key: "expiry_date", label: "Expiry Date", width: 40 },
+                { key: "is_verified", label: "Verified", width: 30 },
+              ],
+              title: "Document Expiry Report",
+            };
+          default:
+            return {
+              data: drivers.map(d => ({
+                name: `${d.first_name} ${d.last_name}`,
+                employee_id: d.employee_id || "-",
+                license_number: d.license_number || "-",
+                license_expiry: d.license_expiry ? format(new Date(d.license_expiry), "yyyy-MM-dd") : "-",
+                medical_expiry: d.medical_certificate_expiry ? format(new Date(d.medical_certificate_expiry), "yyyy-MM-dd") : "-",
+                status: d.status || "-",
+              })),
+              filename: "driver_compliance_report",
+              columns: [
+                { key: "name", label: "Name", width: 50 },
+                { key: "employee_id", label: "Employee ID", width: 40 },
+                { key: "license_number", label: "License", width: 45 },
+                { key: "license_expiry", label: "License Exp", width: 35 },
+                { key: "medical_expiry", label: "Medical Exp", width: 35 },
+                { key: "status", label: "Status", width: 30 },
+              ],
+              title: "Driver Compliance Report",
+            };
+        }
+
+      default:
+        return {
+          data: [],
+          filename: "report",
+          columns: [],
+          title: "Report",
+        };
+    }
+  };
+
+  // Export handlers
+  const handleExportCSV = () => {
+    const { data, filename } = getExportData();
+    if (data.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
     exportToCSV(data, filename);
     toast.success("Report exported to CSV");
   };
 
   const handleExportPDF = () => {
-    const data = filteredVehicles.map(v => ({
-      plate_number: v.plate_number || "-",
-      make: v.make || "-",
-      model: v.model || "-",
-      status: v.status || "-",
-    }));
-    exportToPDF(
-      `${mainTabs.find(t => t.id === activeReportTab)?.label || "Report"}`,
-      data,
-      [
-        { key: "plate_number", label: "Vehicle", width: 50 },
-        { key: "make", label: "Make", width: 50 },
-        { key: "model", label: "Model", width: 50 },
-        { key: "status", label: "Status", width: 40 },
-      ],
-      `${activeReportTab}_report`
-    );
+    const { data, filename, columns, title } = getExportData();
+    if (data.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
+    exportToPDF(title, data, columns, filename);
     toast.success("Report exported to PDF");
   };
 
