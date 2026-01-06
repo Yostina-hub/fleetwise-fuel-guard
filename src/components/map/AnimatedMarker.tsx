@@ -85,14 +85,15 @@ export function animatePosition(
   };
 }
 
-// Create animated marker element - Modern, minimal design with live speed indicator
+// Create animated marker element - Modern, minimal design with live speed indicator and plate label
 export function createAnimatedMarkerElement(
   status: 'moving' | 'idle' | 'stopped' | 'offline',
   isSelected: boolean = false,
   engineOn: boolean = false,
   heading: number = 0,
   isOverspeeding: boolean = false,
-  speed?: number
+  speed?: number,
+  plateNumber?: string
 ): HTMLDivElement {
   const statusColors = {
     moving: '#22c55e', // success green
@@ -143,29 +144,57 @@ export function createAnimatedMarkerElement(
     el.innerHTML = `<div style="width: 8px; height: 8px; background: white; border-radius: 50%; box-shadow: 0 1px 2px rgba(0,0,0,0.2);"></div>`;
   }
 
-  // Speed badge for moving vehicles
+  // Speed badge for moving vehicles (top position)
   if (status === 'moving' && speed !== undefined && speed > 0) {
     const speedBadge = document.createElement('div');
     const badgeColor = isOverspeeding ? '#dc2626' : '#1f2937';
     speedBadge.className = 'speed-badge';
     speedBadge.style.cssText = `
       position: absolute;
-      bottom: -8px;
+      top: -18px;
       left: 50%;
       transform: translateX(-50%) rotate(-${heading}deg);
       background: ${badgeColor};
       color: white;
       font-size: 9px;
       font-weight: 600;
-      padding: 1px 4px;
+      padding: 1px 5px;
       border-radius: 6px;
       white-space: nowrap;
       box-shadow: 0 1px 3px rgba(0,0,0,0.3);
       pointer-events: none;
-      z-index: 1;
+      z-index: 10;
     `;
-    speedBadge.textContent = `${Math.round(speed)}`;
+    speedBadge.textContent = `${Math.round(speed)} km/h`;
     el.appendChild(speedBadge);
+  }
+
+  // Plate number label below marker (counter-rotated to stay readable)
+  if (plateNumber) {
+    const plateLabel = document.createElement('div');
+    plateLabel.className = 'plate-label';
+    plateLabel.style.cssText = `
+      position: absolute;
+      bottom: -20px;
+      left: 50%;
+      transform: translateX(-50%) rotate(-${heading}deg);
+      background: rgba(255, 255, 255, 0.95);
+      color: #1f2937;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+      pointer-events: none;
+      z-index: 5;
+      border: 1px solid rgba(0,0,0,0.08);
+      max-width: 90px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    `;
+    plateLabel.textContent = plateNumber;
+    el.appendChild(plateLabel);
   }
 
   // Pulse animation for moving or overspeeding vehicles
