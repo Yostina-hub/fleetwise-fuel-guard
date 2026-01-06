@@ -1,10 +1,10 @@
 import { useState, useMemo } from "react";
-import { FileText, Plus, Search, MoreHorizontal, Star, ChevronLeft, ChevronRight, X, ChevronDown, ChevronUp, Truck, Users, MapPin, Fuel, Route, Wrench, ClipboardList, DollarSign, Bell, FileCheck, Laptop } from "lucide-react";
+import { FileText, Plus, Search, MoreHorizontal, Star, ChevronLeft, ChevronRight, X, Truck, Users, MapPin, Fuel, Route, Wrench, ClipboardList, DollarSign, Bell, FileCheck, Laptop } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
@@ -13,7 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReportConfigDialog, ReportConfig } from "./ReportConfigDialog";
 
 interface ReportDefinition {
@@ -35,18 +35,18 @@ interface ReportCatalogProps {
 }
 
 // Category configuration with icons and labels
-const CATEGORY_CONFIG: Record<string, { label: string; icon: typeof Truck; color: string }> = {
-  vehicle: { label: "Vehicle Reports", icon: Truck, color: "text-blue-500" },
-  driver: { label: "Driver Reports", icon: Users, color: "text-green-500" },
-  location: { label: "Location Reports", icon: MapPin, color: "text-purple-500" },
-  fuel: { label: "Fuel Reports", icon: Fuel, color: "text-orange-500" },
-  trips: { label: "Trip Reports", icon: Route, color: "text-cyan-500" },
-  device: { label: "Device Reports", icon: Laptop, color: "text-slate-500" },
-  maintenance: { label: "Maintenance Reports", icon: Wrench, color: "text-yellow-600" },
-  dispatch: { label: "Dispatch Reports", icon: ClipboardList, color: "text-indigo-500" },
-  costs: { label: "Cost Reports", icon: DollarSign, color: "text-emerald-500" },
-  alerts: { label: "Alert Reports", icon: Bell, color: "text-red-500" },
-  compliance: { label: "Compliance Reports", icon: FileCheck, color: "text-teal-500" },
+const CATEGORY_CONFIG: Record<string, { label: string; icon: typeof Truck; color: string; bgColor: string }> = {
+  vehicle: { label: "Vehicle", icon: Truck, color: "text-blue-500", bgColor: "bg-blue-500/10" },
+  driver: { label: "Driver", icon: Users, color: "text-green-500", bgColor: "bg-green-500/10" },
+  location: { label: "Location", icon: MapPin, color: "text-purple-500", bgColor: "bg-purple-500/10" },
+  fuel: { label: "Fuel", icon: Fuel, color: "text-orange-500", bgColor: "bg-orange-500/10" },
+  trips: { label: "Trips", icon: Route, color: "text-cyan-500", bgColor: "bg-cyan-500/10" },
+  device: { label: "Device", icon: Laptop, color: "text-slate-500", bgColor: "bg-slate-500/10" },
+  maintenance: { label: "Maintenance", icon: Wrench, color: "text-yellow-600", bgColor: "bg-yellow-500/10" },
+  dispatch: { label: "Dispatch", icon: ClipboardList, color: "text-indigo-500", bgColor: "bg-indigo-500/10" },
+  costs: { label: "Costs", icon: DollarSign, color: "text-emerald-500", bgColor: "bg-emerald-500/10" },
+  alerts: { label: "Alerts", icon: Bell, color: "text-red-500", bgColor: "bg-red-500/10" },
+  compliance: { label: "Compliance", icon: FileCheck, color: "text-teal-500", bgColor: "bg-teal-500/10" },
 };
 
 // All available report types with descriptions
@@ -157,33 +157,31 @@ export const ReportCatalog = ({
   const [carouselPage, setCarouselPage] = useState(0);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ReportDefinition | null>(null);
-  const [expandedCategories, setExpandedCategories] = useState<string[]>(Object.keys(CATEGORY_CONFIG));
+  const [activeCategory, setActiveCategory] = useState<string>("all");
   
   const itemsPerPage = 5;
   const totalPages = Math.ceil(reports.length / itemsPerPage);
   
   const filteredReports = useMemo(() => {
-    return reports.filter(r => 
+    let filtered = reports.filter(r => 
       r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.description.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [reports, searchQuery]);
-  
-  // Group reports by category
-  const groupedReports = useMemo(() => {
-    const groups: Record<string, ReportDefinition[]> = {};
-    filteredReports.forEach(report => {
-      if (!groups[report.category]) {
-        groups[report.category] = [];
-      }
-      groups[report.category].push(report);
-    });
-    return groups;
-  }, [filteredReports]);
+    
+    if (activeCategory !== "all" && activeCategory !== "favorites") {
+      filtered = filtered.filter(r => r.category === activeCategory);
+    }
+    
+    if (activeCategory === "favorites") {
+      filtered = filtered.filter(r => favoriteReports.includes(r.id));
+    }
+    
+    return filtered;
+  }, [reports, searchQuery, activeCategory, favoriteReports]);
   
   const favoriteReportsList = useMemo(() => 
-    filteredReports.filter(r => favoriteReports.includes(r.id)),
-    [filteredReports, favoriteReports]
+    reports.filter(r => favoriteReports.includes(r.id)),
+    [reports, favoriteReports]
   );
 
   const carouselReports = reports.slice(
@@ -202,16 +200,14 @@ export const ReportCatalog = ({
     }
   };
 
-  const toggleCategory = (category: string) => {
-    setExpandedCategories(prev => 
-      prev.includes(category) 
-        ? prev.filter(c => c !== category)
-        : [...prev, category]
-    );
-  };
-
-  const expandAll = () => setExpandedCategories(Object.keys(CATEGORY_CONFIG));
-  const collapseAll = () => setExpandedCategories([]);
+  // Get category counts
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: reports.length, favorites: favoriteReportsList.length };
+    reports.forEach(r => {
+      counts[r.category] = (counts[r.category] || 0) + 1;
+    });
+    return counts;
+  }, [reports, favoriteReportsList]);
 
   return (
     <div className="space-y-4">
@@ -227,14 +223,6 @@ export const ReportCatalog = ({
               className="pl-10 bg-background/50 border-border/50"
             />
           </div>
-          <div className="hidden sm:flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={expandAll} className="text-xs">
-              Expand All
-            </Button>
-            <Button variant="outline" size="sm" onClick={collapseAll} className="text-xs">
-              Collapse All
-            </Button>
-          </div>
         </div>
         
         <Dialog open={addReportOpen} onOpenChange={setAddReportOpen}>
@@ -246,84 +234,62 @@ export const ReportCatalog = ({
           </DialogTrigger>
           <DialogContent className="max-w-5xl p-0 overflow-hidden">
             <DialogHeader className="px-6 py-4 bg-primary text-primary-foreground">
-              <DialogTitle className="text-lg font-semibold flex items-center gap-2">
-                <Star className="w-5 h-5" />
-                ADD TO FAVORITES
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Add Report to Favorites
               </DialogTitle>
             </DialogHeader>
-            
-            <div className="relative px-6 py-8">
-              {/* Carousel Navigation */}
-              <Button
-                variant="outline"
-                size="icon"
-                className="absolute left-2 top-1/2 -translate-y-1/2 z-10 rounded-full bg-background/80 backdrop-blur-sm shadow-lg"
-                onClick={() => setCarouselPage(p => Math.max(0, p - 1))}
-                disabled={carouselPage === 0}
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="icon"
-                className="absolute right-2 top-1/2 -translate-y-1/2 z-10 rounded-full bg-background/80 backdrop-blur-sm shadow-lg"
-                onClick={() => setCarouselPage(p => Math.min(totalPages - 1, p + 1))}
-                disabled={carouselPage >= totalPages - 1}
-              >
-                <ChevronRight className="w-5 h-5" />
-              </Button>
-              
-              {/* Report Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 px-8">
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-4">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setCarouselPage(p => Math.max(0, p - 1))}
+                  disabled={carouselPage === 0}
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Page {carouselPage + 1} of {totalPages}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setCarouselPage(p => Math.min(totalPages - 1, p + 1))}
+                  disabled={carouselPage >= totalPages - 1}
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                 {carouselReports.map((report) => (
-                  <Card 
+                  <Card
                     key={report.id}
                     className={cn(
-                      "group hover:shadow-lg transition-all duration-200 cursor-pointer border-2",
-                      favoriteReports.includes(report.id) 
-                        ? "border-primary bg-primary/5" 
-                        : "border-border/50 hover:border-primary/50"
+                      "cursor-pointer transition-all hover:shadow-lg hover:border-primary/50 group relative",
+                      favoriteReports.includes(report.id) && "border-primary bg-primary/5"
                     )}
+                    onClick={() => onToggleFavorite(report.id)}
                   >
-                    <CardContent className="p-4 text-center space-y-3">
-                      <div className="w-14 h-14 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
-                        <FileText className="w-7 h-7 text-primary" />
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <FileText className="w-8 h-8 text-primary/70" />
+                        <Star
+                          className={cn(
+                            "w-5 h-5 transition-colors",
+                            favoriteReports.includes(report.id)
+                              ? "text-yellow-500 fill-yellow-500"
+                              : "text-muted-foreground/50 group-hover:text-yellow-500"
+                          )}
+                        />
                       </div>
-                      <div>
-                        <h4 className="font-semibold text-sm leading-tight line-clamp-2 min-h-[2.5rem]">
-                          {report.name}
-                        </h4>
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2 min-h-[2rem]">
-                          {report.description}
-                        </p>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant={favoriteReports.includes(report.id) ? "secondary" : "default"}
-                        className="w-full text-xs"
-                        onClick={() => onToggleFavorite(report.id)}
-                      >
-                        {favoriteReports.includes(report.id) ? "Remove" : "Add to favorites"}
-                      </Button>
+                      <h4 className="font-medium text-sm mb-1 line-clamp-2">{report.name}</h4>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{report.description}</p>
+                      <Badge variant="secondary" className="mt-2 text-xs capitalize">
+                        {report.category}
+                      </Badge>
                     </CardContent>
                   </Card>
-                ))}
-              </div>
-              
-              {/* Pagination Dots */}
-              <div className="flex items-center justify-center gap-2 mt-6">
-                {Array.from({ length: totalPages }).map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setCarouselPage(i)}
-                    className={cn(
-                      "w-2.5 h-2.5 rounded-full transition-all",
-                      carouselPage === i 
-                        ? "bg-primary w-6" 
-                        : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
-                    )}
-                  />
                 ))}
               </div>
             </div>
@@ -331,165 +297,155 @@ export const ReportCatalog = ({
         </Dialog>
       </div>
 
-      {/* Favorites Section */}
-      {favoriteReportsList.length > 0 && (
-        <Card className="border-primary/30 bg-primary/5">
-          <CardHeader className="py-3 px-4">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-primary">
-              <Star className="w-4 h-4 fill-current" />
-              Favorite Reports ({favoriteReportsList.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-2 pt-0">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-              {favoriteReportsList.map((report) => {
-                const config = CATEGORY_CONFIG[report.category];
-                const Icon = config?.icon || FileText;
+      {/* Modern Tab Navigation for Categories */}
+      <Tabs value={activeCategory} onValueChange={setActiveCategory} className="w-full">
+        <div className="bg-card/30 backdrop-blur-sm rounded-xl border border-border/50 p-2">
+          <ScrollArea className="w-full">
+            <TabsList className="inline-flex h-auto p-1 bg-transparent gap-1 w-max">
+              {/* All Reports Tab */}
+              <TabsTrigger
+                value="all"
+                className={cn(
+                  "px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
+                  "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md",
+                  "data-[state=inactive]:bg-muted/50 data-[state=inactive]:hover:bg-muted"
+                )}
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                All Reports
+                <Badge variant="secondary" className="ml-2 text-xs bg-background/50">
+                  {categoryCounts.all}
+                </Badge>
+              </TabsTrigger>
+
+              {/* Favorites Tab */}
+              <TabsTrigger
+                value="favorites"
+                className={cn(
+                  "px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
+                  "data-[state=active]:bg-yellow-500 data-[state=active]:text-yellow-950 data-[state=active]:shadow-md",
+                  "data-[state=inactive]:bg-muted/50 data-[state=inactive]:hover:bg-muted"
+                )}
+              >
+                <Star className="w-4 h-4 mr-2" />
+                Favorites
+                <Badge variant="secondary" className="ml-2 text-xs bg-background/50">
+                  {categoryCounts.favorites}
+                </Badge>
+              </TabsTrigger>
+
+              {/* Category Tabs */}
+              {Object.entries(CATEGORY_CONFIG).map(([key, config]) => {
+                const Icon = config.icon;
                 return (
-                  <div
-                    key={report.id}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-background/60 hover:bg-background transition-colors cursor-pointer group border border-border/50"
-                    onClick={() => handleReportClick(report)}
+                  <TabsTrigger
+                    key={key}
+                    value={key}
+                    className={cn(
+                      "px-4 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap",
+                      "data-[state=active]:shadow-md",
+                      "data-[state=inactive]:bg-muted/50 data-[state=inactive]:hover:bg-muted",
+                      activeCategory === key ? config.bgColor : ""
+                    )}
                   >
-                    <div className={cn("p-2 rounded-lg bg-primary/10", config?.color)}>
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-medium truncate">{report.name}</h4>
-                      <p className="text-xs text-muted-foreground capitalize">{report.category}</p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onToggleFavorite(report.id);
-                      }}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
+                    <Icon className={cn("w-4 h-4 mr-2", config.color)} />
+                    {config.label}
+                    <Badge variant="secondary" className="ml-2 text-xs bg-background/50">
+                      {categoryCounts[key] || 0}
+                    </Badge>
+                  </TabsTrigger>
                 );
               })}
+            </TabsList>
+          </ScrollArea>
+        </div>
+
+        {/* Reports Grid */}
+        <div className="mt-4">
+          {filteredReports.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p className="text-lg font-medium">No reports found</p>
+              <p className="text-sm">
+                {activeCategory === "favorites" 
+                  ? "Add reports to your favorites to see them here" 
+                  : "Try adjusting your search or category filter"}
+              </p>
             </div>
-          </CardContent>
-        </Card>
-      )}
-      
-      {/* Categorized Report List */}
-      <div className="space-y-3">
-        {Object.entries(CATEGORY_CONFIG).map(([category, config]) => {
-          const categoryReports = groupedReports[category] || [];
-          if (categoryReports.length === 0) return null;
-          
-          const Icon = config.icon;
-          const isExpanded = expandedCategories.includes(category);
-          
-          return (
-            <Collapsible
-              key={category}
-              open={isExpanded}
-              onOpenChange={() => toggleCategory(category)}
-            >
-              <Card className="border-border/50 overflow-hidden">
-                <CollapsibleTrigger asChild>
-                  <CardHeader className="py-3 px-4 cursor-pointer hover:bg-muted/30 transition-colors">
-                    <CardTitle className="text-sm font-semibold flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={cn("p-2 rounded-lg bg-muted/50", config.color)}>
-                          <Icon className="w-5 h-5" />
-                        </div>
-                        <span className="text-base">{config.label}</span>
-                        <Badge variant="secondary" className="ml-2">
-                          {categoryReports.length}
-                        </Badge>
-                      </div>
-                      {isExpanded ? (
-                        <ChevronUp className="w-5 h-5 text-muted-foreground" />
-                      ) : (
-                        <ChevronDown className="w-5 h-5 text-muted-foreground" />
-                      )}
-                    </CardTitle>
-                  </CardHeader>
-                </CollapsibleTrigger>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {filteredReports.map((report) => {
+                const categoryConfig = CATEGORY_CONFIG[report.category];
+                const Icon = categoryConfig?.icon || FileText;
                 
-                <CollapsibleContent>
-                  <CardContent className="p-0 border-t border-border/50">
-                    <div className="divide-y divide-border/30">
-                      {categoryReports.map((report) => (
-                        <div
-                          key={report.id}
-                          className="flex items-start gap-4 p-4 hover:bg-muted/30 transition-colors cursor-pointer group"
-                          onClick={() => handleReportClick(report)}
-                        >
-                          <div className={cn("p-2 rounded-lg bg-muted/50 shrink-0", config.color)}>
-                            <FileText className="w-4 h-4" />
-                          </div>
-                          
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-medium text-sm">
-                                {report.name}
-                              </h4>
-                              {favoriteReports.includes(report.id) && (
-                                <Star className="w-3.5 h-3.5 fill-yellow-500 text-yellow-500" />
-                              )}
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-                              {report.description}
-                            </p>
-                          </div>
-                          
+                return (
+                  <Card
+                    key={report.id}
+                    className={cn(
+                      "cursor-pointer transition-all hover:shadow-lg hover:border-primary/50 group relative overflow-hidden",
+                      favoriteReports.includes(report.id) && "ring-1 ring-yellow-500/50"
+                    )}
+                    onClick={() => handleReportClick(report)}
+                  >
+                    {/* Category color indicator */}
+                    <div className={cn("absolute top-0 left-0 right-0 h-1", categoryConfig?.bgColor?.replace('/10', ''))} />
+                    
+                    <CardContent className="p-4 pt-5">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className={cn("p-2 rounded-lg", categoryConfig?.bgColor)}>
+                          <Icon className={cn("w-5 h-5", categoryConfig?.color)} />
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {favoriteReports.includes(report.id) && (
+                            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                          )}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                              <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 h-8 w-8">
+                              <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <MoreHorizontal className="w-4 h-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={(e) => {
-                                e.stopPropagation();
-                                handleReportClick(report);
-                              }}>
-                                Configure & Generate
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={(e) => {
-                                e.stopPropagation();
-                                onToggleFavorite(report.id);
-                              }}>
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onToggleFavorite(report.id); }}>
+                                <Star className={cn("w-4 h-4 mr-2", favoriteReports.includes(report.id) ? "text-yellow-500 fill-yellow-500" : "")} />
                                 {favoriteReports.includes(report.id) ? "Remove from Favorites" : "Add to Favorites"}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleReportClick(report); }}>
+                                <FileText className="w-4 h-4 mr-2" />
+                                Configure & Generate
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </CollapsibleContent>
-              </Card>
-            </Collapsible>
-          );
-        })}
-        
-        {Object.keys(groupedReports).length === 0 && (
-          <Card className="border-border/50">
-            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <FileText className="w-12 h-12 text-muted-foreground/30 mb-4" />
-              <h3 className="text-lg font-medium text-muted-foreground">No Reports Found</h3>
-              <p className="text-sm text-muted-foreground/70 mt-1">
-                Try adjusting your search query
-              </p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+                      </div>
+                      
+                      <h4 className="font-semibold text-sm mb-1.5 line-clamp-2 group-hover:text-primary transition-colors">
+                        {report.name}
+                      </h4>
+                      <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+                        {report.description}
+                      </p>
+                      
+                      <Badge 
+                        variant="outline" 
+                        className={cn("text-xs capitalize", categoryConfig?.color)}
+                      >
+                        {categoryConfig?.label || report.category}
+                      </Badge>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </Tabs>
 
       {/* Report Configuration Dialog */}
       <ReportConfigDialog
         open={configDialogOpen}
         onOpenChange={setConfigDialogOpen}
-        reportName={selectedReport?.name || "Report"}
+        report={selectedReport}
         onGenerate={handleGenerateReport}
       />
     </div>
