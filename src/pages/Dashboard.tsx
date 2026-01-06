@@ -83,6 +83,7 @@ import ConnectionStatus from "@/components/dashboard/executive/ConnectionStatus"
 import QuickMetricCard from "@/components/dashboard/executive/QuickMetricCard";
 import RiskSafetyReportsChart from "@/components/dashboard/executive/RiskSafetyReportsChart";
 import FleetUsageChart from "@/components/dashboard/executive/FleetUsageChart";
+import LiveDeliveryMap from "@/components/dashboard/executive/LiveDeliveryMap";
 import { Car, Gauge, Zap } from "lucide-react";
 
 const Dashboard = () => {
@@ -370,6 +371,8 @@ const Dashboard = () => {
               />
             </div>
 
+            {/* Live Requests & Deliveries Map */}
+            <LiveDeliveryMap />
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               <SafetyScoreGauge 
