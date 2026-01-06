@@ -56,7 +56,7 @@ export const StopStatisticsTable = ({ trips }: StopStatisticsTableProps) => {
         startTime: trip.start_time,
         endTime: trip.end_time || trip.start_time,
         stopDurationMinutes: trip.idle_time_minutes || 0,
-        location: trip.start_location_name || trip.end_location_name || "-",
+        location: "-",
       }))
       .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
   }, [trips]);
