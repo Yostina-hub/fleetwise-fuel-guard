@@ -75,7 +75,7 @@ import FuelTrendChart from "@/components/dashboard/executive/FuelTrendChart";
 import StopsAnalysisChart from "@/components/dashboard/executive/StopsAnalysisChart";
 import DistanceByGroupChart from "@/components/dashboard/executive/DistanceByGroupChart";
 import IdleTimeDonut from "@/components/dashboard/executive/IdleTimeDonut";
-import AlertsTableCard from "@/components/dashboard/executive/AlertsTableCard";
+
 import DriverSafetyScorecard from "@/components/dashboard/executive/DriverSafetyScorecard";
 import FleetStatusCard from "@/components/dashboard/executive/FleetStatusCard";
 import ConnectionStatus from "@/components/dashboard/executive/ConnectionStatus";
@@ -339,23 +339,6 @@ const Dashboard = () => {
               />
             </div>
 
-            {/* Alerts Table Row - Like CompassTrac alerts section */}
-            <AlertsTableCard 
-              alerts={dbAlerts.slice(0, 10).map(alert => ({
-                id: alert.id,
-                status: alert.status === 'resolved' ? 'resolved' : alert.status === 'acknowledged' ? 'acknowledged' : 'active',
-                alertType: alert.alert_type,
-                startDate: alert.alert_time,
-                endDate: alert.resolved_at || alert.alert_time,
-                duration: '00:00:00',
-                group: 'Fleet Group',
-                title: alert.title,
-                information: alert.message,
-                lat: alert.lat || undefined,
-                lng: alert.lng || undefined,
-              }))}
-              loading={execLoading}
-            />
 
             {/* Safety Section - Like GreenRoad */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
