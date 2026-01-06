@@ -588,6 +588,92 @@ const Reports = () => {
               ],
               title: "Idle Time Analysis Report",
             };
+          case "stop_statistics":
+            const stopTrips = trips.filter(t => t.idle_time_minutes && t.idle_time_minutes > 2);
+            return {
+              data: stopTrips.map(t => ({
+                vehicle: t.vehicle?.plate_number || "Unknown",
+                start_time: format(new Date(t.start_time), "yyyy-MM-dd HH:mm:ss"),
+                end_time: t.end_time ? format(new Date(t.end_time), "yyyy-MM-dd HH:mm:ss") : "-",
+                stop_time_min: t.idle_time_minutes || 0,
+                location: "-",
+              })),
+              filename: "stop_statistics_report",
+              columns: [
+                { key: "vehicle", label: "Device", width: 40 },
+                { key: "start_time", label: "Starting Time", width: 45 },
+                { key: "end_time", label: "End Time", width: 45 },
+                { key: "stop_time_min", label: "Stop Time (min)", width: 35 },
+                { key: "location", label: "Location", width: 60 },
+              ],
+              title: "Stop Statistics Report",
+            };
+          case "ignition":
+            return {
+              data: trips.map(t => ({
+                vehicle: t.vehicle?.plate_number || "Unknown",
+                date: format(new Date(t.start_time), "yyyy-MM-dd HH:mm:ss"),
+                ignition_on: format(new Date(t.start_time), "HH:mm:ss"),
+                ignition_off: t.end_time ? format(new Date(t.end_time), "HH:mm:ss") : "-",
+                duration_min: t.duration_minutes || 0,
+                distance_km: t.distance_km || 0,
+              })),
+              filename: "ignition_statistics_report",
+              columns: [
+                { key: "vehicle", label: "Device", width: 40 },
+                { key: "date", label: "Date", width: 45 },
+                { key: "ignition_on", label: "Ignition On", width: 35 },
+                { key: "ignition_off", label: "Ignition Off", width: 35 },
+                { key: "duration_min", label: "Duration (min)", width: 35 },
+                { key: "distance_km", label: "Distance (km)", width: 35 },
+              ],
+              title: "Ignition Statistics Report",
+            };
+          case "mileage":
+            return {
+              data: trips.map(t => ({
+                vehicle: t.vehicle?.plate_number || "Unknown",
+                date: format(new Date(t.start_time), "yyyy-MM-dd HH:mm:ss"),
+                distance_km: t.distance_km || 0,
+                fuel_consumption: t.distance_km && t.fuel_consumed_liters 
+                  ? ((t.fuel_consumed_liters / t.distance_km) * 100).toFixed(1) 
+                  : "0",
+                fuel_amount: t.fuel_consumed_liters || 0,
+              })),
+              filename: "mileage_statistics_report",
+              columns: [
+                { key: "vehicle", label: "Device", width: 40 },
+                { key: "date", label: "Date", width: 45 },
+                { key: "distance_km", label: "Distance (km)", width: 35 },
+                { key: "fuel_consumption", label: "Consumption (L/100km)", width: 45 },
+                { key: "fuel_amount", label: "Fuel (L)", width: 30 },
+              ],
+              title: "Mileage Statistics Report",
+            };
+          case "speed_report":
+            return {
+              data: speedViolations.map(v => ({
+                time: format(new Date(v.violation_time), "yyyy-MM-dd HH:mm:ss"),
+                vehicle: v.vehicle?.plate_number || "Unknown",
+                driver: v.driver ? `${v.driver.first_name} ${v.driver.last_name}` : "Unknown",
+                speed_kmh: v.speed_kmh || 0,
+                limit_kmh: v.speed_limit_kmh || 0,
+                over_by: (v.speed_kmh || 0) - (v.speed_limit_kmh || 0),
+                severity: v.severity || "-",
+                location: v.location_name || "-",
+              })),
+              filename: "speed_report",
+              columns: [
+                { key: "time", label: "Time", width: 45 },
+                { key: "vehicle", label: "Vehicle", width: 35 },
+                { key: "driver", label: "Driver", width: 40 },
+                { key: "speed_kmh", label: "Speed", width: 25 },
+                { key: "limit_kmh", label: "Limit", width: 25 },
+                { key: "over_by", label: "Over By", width: 25 },
+                { key: "severity", label: "Severity", width: 30 },
+              ],
+              title: "Speed Report",
+            };
           default:
             return {
               data: trips.map(t => ({
@@ -893,6 +979,14 @@ const Reports = () => {
         switch (activeSubTab) {
           case "idle_time":
             return <IdleTimeTable trips={trips} />;
+          case "stop_statistics":
+            return <StopStatisticsTable trips={trips} />;
+          case "ignition":
+            return <IgnitionStatisticsTable trips={trips} />;
+          case "mileage":
+            return <MileageStatisticsTable trips={trips} />;
+          case "speed_report":
+            return <SpeedReportTable violations={speedViolations} />;
           default:
             return <TripsTable trips={trips} />;
         }
