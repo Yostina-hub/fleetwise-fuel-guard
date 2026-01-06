@@ -142,7 +142,7 @@ export const LiveTelemetryCard = ({
         </div>
 
         {/* GPS Position */}
-        {telemetry?.latitude && telemetry?.longitude ? (
+        {telemetry?.latitude != null && telemetry?.longitude != null ? (
           <div className="space-y-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
             <div className="flex items-center gap-2 text-sm font-medium text-primary">
               <MapPin className="h-4 w-4" />
@@ -151,17 +151,17 @@ export const LiveTelemetryCard = ({
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
                 <span className="text-muted-foreground">Lat:</span>
-                <span className="ml-1 font-mono">{telemetry.latitude.toFixed(6)}</span>
+                <span className="ml-1 font-mono">{Number(telemetry.latitude).toFixed(6)}</span>
               </div>
               <div>
                 <span className="text-muted-foreground">Lng:</span>
-                <span className="ml-1 font-mono">{telemetry.longitude.toFixed(6)}</span>
+                <span className="ml-1 font-mono">{Number(telemetry.longitude).toFixed(6)}</span>
               </div>
             </div>
-            {telemetry.heading !== undefined && (
+            {telemetry.heading != null && (
               <div className="text-xs">
                 <span className="text-muted-foreground">Heading:</span>
-                <span className="ml-1 font-mono">{telemetry.heading.toFixed(0)}°</span>
+                <span className="ml-1 font-mono">{Number(telemetry.heading).toFixed(0)}°</span>
               </div>
             )}
           </div>
