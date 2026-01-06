@@ -859,7 +859,28 @@ return () => {
         const wasOverspeeding = el.dataset.overspeeding === 'true';
         const previousStatus = el.dataset.status;
         const previousSpeed = parseFloat(el.dataset.speed || '0');
+        const previousHeading = parseFloat(el.dataset.heading || '0');
         const speedChanged = Math.abs(previousSpeed - vehicle.speed) >= 5; // Recreate if speed changed by 5+ km/h
+        const currentHeading = vehicle.heading || 0;
+        
+        // Update heading rotation in real-time for smooth direction changes
+        if (Math.abs(previousHeading - currentHeading) > 2) {
+          // Calculate shortest rotation path
+          let rotationDiff = currentHeading - previousHeading;
+          if (rotationDiff > 180) rotationDiff -= 360;
+          if (rotationDiff < -180) rotationDiff += 360;
+          
+          el.style.transition = 'transform 0.5s ease-out';
+          el.style.transform = `rotate(${currentHeading}deg)${isSelected ? ' scale(1.15)' : ''}`;
+          el.dataset.heading = currentHeading.toString();
+          
+          // Counter-rotate speed badge to keep it readable
+          const speedBadge = el.querySelector('.speed-badge') as HTMLElement;
+          if (speedBadge) {
+            speedBadge.style.transition = 'transform 0.5s ease-out';
+            speedBadge.style.transform = `translateX(-50%) rotate(-${currentHeading}deg)`;
+          }
+        }
         
         // Only recreate marker if critical visual state changed (not selection)
         // Preserve popup open state by not recreating unnecessarily
@@ -896,6 +917,7 @@ return () => {
         el.dataset.overspeeding = isOverspeeding.toString();
         el.dataset.status = vehicle.status;
         el.dataset.speed = vehicle.speed.toString();
+        el.dataset.heading = (vehicle.heading || 0).toString();
 
         const marker = new mapboxgl.Marker({
           element: el,

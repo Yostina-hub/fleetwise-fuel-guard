@@ -126,9 +126,17 @@ export function createAnimatedMarkerElement(
 
   // Direction arrow for moving vehicles, center dot for others
   if (status === 'moving' && engineOn) {
+    // Larger, more prominent direction arrow pointing up (vehicle heading)
     el.innerHTML = `
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="white" style="filter: drop-shadow(0 1px 1px rgba(0,0,0,0.2));">
-        <path d="M7 0L13 13H1L7 0Z"/>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="white" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));">
+        <path d="M12 2L4 20h4l4-8 4 8h4L12 2z"/>
+      </svg>
+    `;
+  } else if (status === 'idle' && engineOn) {
+    // Idle with engine on - show smaller arrow
+    el.innerHTML = `
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="white" style="filter: drop-shadow(0 1px 1px rgba(0,0,0,0.2)); opacity: 0.8;">
+        <path d="M12 2L4 20h4l4-8 4 8h4L12 2z"/>
       </svg>
     `;
   } else {
