@@ -105,44 +105,54 @@ export function createAnimatedMarkerElement(
   // Overspeeding uses a distinct red color
   const color = isOverspeeding ? '#dc2626' : statusColors[status];
   const size = isSelected ? 36 : 30;
+  const baseScale = isSelected ? 1.15 : 1;
+
+  // IMPORTANT: do NOT set `transform` on the root marker element.
+  // Mapbox uses `transform: translate(...)` on this node to position it.
+  // We rotate/scale only an inner element to avoid the marker/popup jumping to (0,0).
   const el = document.createElement('div');
   el.className = 'animated-vehicle-marker';
-  
-  // Clean, modern marker style with improved shadow
   el.style.cssText = `
     width: ${size}px;
     height: ${size}px;
-    border-radius: 50%;
+    position: relative;
+    cursor: pointer;
+  `;
+
+  const body = document.createElement('div');
+  body.className = 'marker-body';
+  body.style.cssText = `
+    width: 100%;
+    height: 100%;
+    border-radius: 9999px;
     background: ${color};
-    border: 2.5px solid white;
+    border: ${isSelected ? '3px' : '2.5px'} solid white;
     box-shadow: 0 2px 10px rgba(0,0,0,0.35), inset 0 1px 2px rgba(255,255,255,0.3);
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
     transition: transform 0.15s ease, box-shadow 0.15s ease;
-    transform: rotate(${heading}deg)${isSelected ? ' scale(1.15)' : ''};
-    position: relative;
+    transform: rotate(${heading}deg) scale(${baseScale});
   `;
 
   // Direction arrow for moving vehicles, center dot for others
   if (status === 'moving' && engineOn) {
-    // Larger, more prominent direction arrow pointing up (vehicle heading)
-    el.innerHTML = `
+    body.innerHTML = `
       <svg width="16" height="16" viewBox="0 0 24 24" fill="white" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));">
         <path d="M12 2L4 20h4l4-8 4 8h4L12 2z"/>
       </svg>
     `;
   } else if (status === 'idle' && engineOn) {
-    // Idle with engine on - show smaller arrow
-    el.innerHTML = `
+    body.innerHTML = `
       <svg width="12" height="12" viewBox="0 0 24 24" fill="white" style="filter: drop-shadow(0 1px 1px rgba(0,0,0,0.2)); opacity: 0.8;">
         <path d="M12 2L4 20h4l4-8 4 8h4L12 2z"/>
       </svg>
     `;
   } else {
-    el.innerHTML = `<div style="width: 8px; height: 8px; background: white; border-radius: 50%; box-shadow: 0 1px 2px rgba(0,0,0,0.2);"></div>`;
+    body.innerHTML = `<div style="width: 8px; height: 8px; background: white; border-radius: 9999px; box-shadow: 0 1px 2px rgba(0,0,0,0.2);"></div>`;
   }
+
+  el.appendChild(body);
 
   // Speed badge for moving vehicles (top position)
   if (status === 'moving' && speed !== undefined && speed > 0) {
@@ -153,7 +163,7 @@ export function createAnimatedMarkerElement(
       position: absolute;
       top: -18px;
       left: 50%;
-      transform: translateX(-50%) rotate(-${heading}deg);
+      transform: translateX(-50%);
       background: ${badgeColor};
       color: white;
       font-size: 9px;
@@ -169,7 +179,7 @@ export function createAnimatedMarkerElement(
     el.appendChild(speedBadge);
   }
 
-  // Plate number label below marker (counter-rotated to stay readable)
+  // Plate number label below marker
   if (plateNumber) {
     const plateLabel = document.createElement('div');
     plateLabel.className = 'plate-label';
@@ -177,7 +187,7 @@ export function createAnimatedMarkerElement(
       position: absolute;
       bottom: -20px;
       left: 50%;
-      transform: translateX(-50%) rotate(-${heading}deg);
+      transform: translateX(-50%);
       background: rgba(255, 255, 255, 0.95);
       color: #1f2937;
       font-size: 10px;
@@ -204,9 +214,8 @@ export function createAnimatedMarkerElement(
     const animationName = isOverspeeding ? 'markerPulseFast' : 'markerPulse';
     pulseRing.style.cssText = `
       position: absolute;
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
+      inset: 0;
+      border-radius: 9999px;
       border: ${isOverspeeding ? '2.5px' : '1.5px'} solid ${pulseColor};
       animation: ${animationName} ${isOverspeeding ? '0.8s' : '1.8s'} ease-out infinite;
       pointer-events: none;
@@ -215,15 +224,15 @@ export function createAnimatedMarkerElement(
     el.appendChild(pulseRing);
   }
 
-  // Hover effects
+  // Hover effects (apply to inner body only)
   el.addEventListener('mouseenter', () => {
-    el.style.transform = `rotate(${heading}deg) scale(1.2)`;
-    el.style.boxShadow = '0 6px 20px rgba(0,0,0,0.45)';
+    body.style.transform = `rotate(${heading}deg) scale(${Math.max(baseScale, 1.2)})`;
+    body.style.boxShadow = '0 6px 20px rgba(0,0,0,0.45)';
   });
 
   el.addEventListener('mouseleave', () => {
-    el.style.transform = `rotate(${heading}deg)${isSelected ? ' scale(1.15)' : ''}`;
-    el.style.boxShadow = '0 2px 10px rgba(0,0,0,0.35), inset 0 1px 2px rgba(255,255,255,0.3)';
+    body.style.transform = `rotate(${heading}deg) scale(${baseScale})`;
+    body.style.boxShadow = '0 2px 10px rgba(0,0,0,0.35), inset 0 1px 2px rgba(255,255,255,0.3)';
   });
 
   return el;
@@ -298,7 +307,7 @@ export function injectMarkerAnimations() {
       100% { transform: scale(1); opacity: 1; }
     }
 
-    .animated-vehicle-marker {
+    .animated-vehicle-marker .marker-body {
       animation: markerFadeIn 0.2s ease-out;
     }
 
