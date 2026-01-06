@@ -38,6 +38,10 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   { id: "vehicle-summary", category: "vehicle", subId: "summary", name: "Vehicle Summary", description: "Overview of all fleet vehicles with status and specifications" },
   { id: "vehicle-utilization", category: "vehicle", subId: "utilization", name: "Vehicle Utilization", description: "Detailed usage analysis showing trips, distance, and operational time" },
   { id: "vehicle-geofence", category: "vehicle", subId: "geofence", name: "Zone Visitation Report", description: "Shows asset visitation in and out of zones and their total duration" },
+  { id: "vehicle-odometer-hours", category: "vehicle", subId: "odometer_hours", name: "Odometer & Working Hours Report", description: "Report shows assets working hours & odometer readings" },
+  { id: "vehicle-asset-activation", category: "vehicle", subId: "asset_activation", name: "Asset Activation Report", description: "Asset activation report with detailed status tracking" },
+  { id: "vehicle-asset-deactivation", category: "vehicle", subId: "asset_deactivation", name: "Asset Deactivation Report", description: "A report showing when an asset will expire or be deactivated" },
+  { id: "vehicle-attached-asset", category: "vehicle", subId: "attached_asset", name: "Attached Asset Report", description: "Shows telemetry for beacons, driver ids, and attached accessories" },
   
   // Driver Reports
   { id: "driver-summary", category: "driver", subId: "summary", name: "Driver Summary", description: "Complete driver roster with license and safety information" },
@@ -46,12 +50,20 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   { id: "driver-speeding", category: "driver", subId: "speeding", name: "Driver Speeding Events", description: "Lists all speeding violations by driver with severity levels" },
   { id: "driver-harsh", category: "driver", subId: "harsh_events", name: "Harsh Events Report", description: "Lists violations including harsh braking, cornering, acceleration and keep-in/no-go alerts" },
   { id: "driver-incidents", category: "driver", subId: "incidents", name: "Driver Incidents", description: "Incident reports and accidents involving drivers" },
+  { id: "driver-fatigue", category: "driver", subId: "fatigue", name: "Driver Fatigue Report", description: "A report with driver fatigue telemetry and detection data" },
+  { id: "driver-continuous-driving", category: "driver", subId: "continuous_driving", name: "Continuous Driving Violation Report", description: "Shows drivers trip listing report filtered by continuous driving violations" },
+  { id: "driver-daily-violations", category: "driver", subId: "daily_violations", name: "Daily Violations Count Report", description: "Summarizes the number of violations that occurred daily" },
   
   // Location Reports
   { id: "location-geofence", category: "location", subId: "geofence", name: "Geofence Events", description: "Entry and exit events for all defined geofences" },
   { id: "location-speeding", category: "location", subId: "speeding", name: "Speeding by Location", description: "Speed violations mapped to specific locations" },
+  { id: "location-zone-traversal", category: "location", subId: "zone_traversal", name: "Zone Traversal Summary", description: "Analysis of the time an asset (vehicle, equipment) spent in zones" },
+  { id: "location-zone-traversal-custom", category: "location", subId: "zone_traversal_custom", name: "Zone Traversal Report", description: "Heavily customized zone traversal report with detailed metrics" },
+  { id: "location-retroactive-zone", category: "location", subId: "retroactive_zone", name: "Retroactive Asset-In-Zone Activity", description: "Draw a temporary zone, select an asset, and query historical zone activity" },
+  { id: "location-ignition-zone", category: "location", subId: "ignition_zone", name: "Ignition Status Zone Report", description: "Ignition status zone report showing engine state by location" },
   
   // Fuel Reports
+  { id: "fuel-summary", category: "fuel", subId: "summary", name: "Fuel Summary Report", description: "Summarized fuel report with consumption analysis" },
   { id: "fuel-transactions", category: "fuel", subId: "transactions", name: "Fuel Transactions", description: "All fuel purchase transactions with cost analysis" },
   { id: "fuel-events", category: "fuel", subId: "events", name: "Fuel Fill/Drain Events", description: "Detected refueling and drain events from sensors" },
   { id: "fuel-theft", category: "fuel", subId: "theft", name: "Fuel Theft Cases", description: "Suspected fuel theft incidents with evidence" },
@@ -62,18 +74,35 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   
   // Trip Reports
   { id: "trips-all", category: "trips", subId: "all_trips", name: "Trip Listing Report", description: "Lists the trips for selected assets and date range" },
+  { id: "trips-zones", category: "trips", subId: "zones_traversal", name: "Trips & Zones Traversal Report", description: "Trips & zones traversal report with combined analysis" },
   { id: "trips-idle", category: "trips", subId: "idle_time", name: "Excessive Idle Report", description: "Lists any excessive idle events with duration" },
+  { id: "trips-idle-duration", category: "trips", subId: "idle_duration", name: "Idle Duration Summary Report", description: "This report provides a summary of vehicle idling activity" },
   { id: "trips-stop", category: "trips", subId: "stop_statistics", name: "Stoppage Report", description: "Lists the stoppages for selected assets within date range" },
   { id: "trips-ignition", category: "trips", subId: "ignition", name: "Ignition Statistics", description: "Engine on/off events with timing analysis" },
   { id: "trips-mileage", category: "trips", subId: "mileage", name: "Mileage Statistics", description: "Distance covered analysis by vehicle and period" },
   { id: "trips-total-mileage", category: "trips", subId: "total_mileage", name: "Total Mileage Report", description: "Aggregated mileage totals for fleet analysis" },
+  { id: "trips-daily-mileage", category: "trips", subId: "daily_mileage", name: "Daily Odometer Report", description: "Records the odometer reading of a vehicle at the end of each day" },
+  { id: "trips-daily-working-hours", category: "trips", subId: "daily_working_hours", name: "Daily Working Hours Report", description: "Daily working hours report with operational time tracking" },
+  { id: "trips-daily-top-speed", category: "trips", subId: "daily_top_speed", name: "Daily Top Speed Report", description: "Records the fastest speed achieved during a certain period" },
   { id: "trips-speed", category: "trips", subId: "speed_report", name: "Speed Report Graph", description: "A graph that displays general speed patterns" },
+  { id: "trips-speed-episodes", category: "trips", subId: "speed_episodes", name: "Speed Episodes Report", description: "Derives speed episodes from provided threshold values" },
   { id: "trips-restricted", category: "trips", subId: "restricted_hours", name: "Restricted Hours Trip Report", description: "Report displaying trip records that fall outside a specified date range" },
+  { id: "trips-work-mode", category: "trips", subId: "work_mode", name: "Work Mode Report", description: "A summarized work mode details report" },
+  
+  // Device Reports
+  { id: "device-summary", category: "device", subId: "summary", name: "Device Summary Report", description: "Compares the initial readings of odometer and time spent by devices" },
+  { id: "device-obd-telemetry", category: "device", subId: "obd_telemetry", name: "OBD Telemetry Report", description: "A telemetry report for CANBUS only devices" },
+  { id: "device-active", category: "device", subId: "active_devices", name: "Active Devices Report", description: "A report showing devices that were reporting during selected period" },
+  { id: "device-offline", category: "device", subId: "offline", name: "Devices Offline - Power Disconnects", description: "Devices offline with power disconnect flags" },
+  { id: "device-gprs-commands", category: "device", subId: "gprs_commands", name: "GPRS Commands Report", description: "Shows sent commands history to devices" },
+  { id: "device-canbus", category: "device", subId: "canbus", name: "Latest CANbus Data Report", description: "A summary report displaying the most recent CANbus data readings" },
+  { id: "device-specific-event", category: "device", subId: "specific_event", name: "Specific Event Report", description: "A report showing details about specific events" },
   
   // Maintenance Reports
   { id: "maint-schedules", category: "maintenance", subId: "schedules", name: "Maintenance Due Report", description: "Upcoming maintenance reminder report" },
   { id: "maint-work-orders", category: "maintenance", subId: "work_orders", name: "Work Orders Report", description: "All work orders with status and cost breakdown" },
   { id: "maint-inspections", category: "maintenance", subId: "inspections", name: "Inspections Report", description: "Vehicle inspection records and findings" },
+  { id: "maint-history", category: "maintenance", subId: "history", name: "Maintenance History Report", description: "Shows maintenance items and details history" },
   
   // Dispatch Reports
   { id: "dispatch-jobs", category: "dispatch", subId: "jobs", name: "Dispatch Jobs Report", description: "All dispatch jobs with SLA performance metrics" },
@@ -96,6 +125,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   // Compliance Reports
   { id: "compliance-driver", category: "compliance", subId: "driver_compliance", name: "Driver Compliance Report", description: "Driver license and certification status" },
   { id: "compliance-docs", category: "compliance", subId: "document_expiry", name: "Document Expiry Report", description: "Expiring documents requiring attention" },
+  { id: "compliance-ntsa", category: "compliance", subId: "ntsa_technicians", name: "NTSA Technicians Report", description: "Shows fitting history of NTSA technicians" },
 ];
 
 export const ReportCatalog = ({
