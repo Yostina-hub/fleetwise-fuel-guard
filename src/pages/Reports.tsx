@@ -1,32 +1,7 @@
 import { useState, useMemo } from "react";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { 
-  FileText, 
-  Download,
-  Calendar,
-  Search,
-  FileSpreadsheet,
-  Loader2,
-  Truck,
-  Users,
-  MapPin,
-  Route,
-  Fuel,
-  Wrench,
-  DollarSign,
-  BarChart3,
-  Bell,
-  ClipboardList,
-} from "lucide-react";
+import { Loader2, Truck, Users, MapPin, Route, Fuel, Wrench, DollarSign, Bell, ClipboardList, FileText } from "lucide-react";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
 import { useReportData } from "@/hooks/useReportData";
@@ -36,12 +11,15 @@ import { exportToCSV, exportToPDF } from "@/lib/exportUtils";
 import { cn } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 
-// Report components
-import { ReportKPICards } from "@/components/reports/ReportKPICards";
-import { ReportsQuickStats } from "@/components/reports/ReportsQuickStats";
-import { ReportsQuickActions } from "@/components/reports/ReportsQuickActions";
+// Report UI components
+import { ReportsHeader } from "@/components/reports/ReportsHeader";
+import { ReportsNavigation } from "@/components/reports/ReportsNavigation";
+import { ReportsDateFilter } from "@/components/reports/ReportsDateFilter";
+import { ReportsMetricCards } from "@/components/reports/ReportsMetricCards";
 import { ReportsInsightsCard } from "@/components/reports/ReportsInsightsCard";
 import { ReportsTrendChart } from "@/components/reports/ReportsTrendChart";
+
+// Report table components
 import { SpeedingEventsTable } from "@/components/reports/SpeedingEventsTable";
 import { DriverEventsTable } from "@/components/reports/DriverEventsTable";
 import { GeofenceEventsTable } from "@/components/reports/GeofenceEventsTable";
@@ -1227,135 +1205,66 @@ const Reports = () => {
     }
   };
 
+  // Format date range for display
+  const dateRangeDisplay = useMemo(() => {
+    return `${format(parseISO(startDate), "MMM d")} - ${format(parseISO(endDate), "MMM d, yyyy")}`;
+  }, [startDate, endDate]);
+
+  // Count total report types available
+  const totalReportTypes = useMemo(() => {
+    return mainTabs.reduce((acc, tab) => {
+      const tabSubTabs = getSubTabsForTab(tab.id);
+      return acc + tabSubTabs.length;
+    }, 0);
+  }, []);
+
   return (
     <Layout>
-      <div className="p-8 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
-              Reports & Analytics
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Comprehensive fleet analytics and operational insights
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <BarChart3 className="w-10 h-10 text-primary/20" />
-          </div>
-        </div>
-
-        {/* Quick Stats */}
-        <ReportsQuickStats 
-          metrics={metrics} 
-          vehicleCount={vehicles.length} 
-          driverCount={drivers.length} 
+      <div className="p-6 md:p-8 space-y-6">
+        {/* Hero Header */}
+        <ReportsHeader 
+          totalReports={totalReportTypes} 
+          dateRange={dateRangeDisplay} 
         />
 
-        {/* Main Report Tabs */}
-        <div className="border-b border-border overflow-x-auto">
-          <nav className="flex gap-1 min-w-max">
-            {mainTabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  setActiveReportTab(tab.id);
-                  const newSubTabs = getSubTabsForTab(tab.id);
-                  setActiveSubTab(newSubTabs[0]?.id || "summary");
-                }}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap",
-                  activeReportTab === tab.id
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
-                )}
-              >
-                <tab.icon className="w-4 h-4" />
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </div>
+        {/* Metric Cards - Context Aware */}
+        <ReportsMetricCards 
+          metrics={metrics} 
+          vehicleCount={vehicles.length} 
+          driverCount={drivers.length}
+          activeTab={activeReportTab}
+        />
 
-        {/* Sub Tabs */}
-        {subTabs.length > 0 && (
-          <div className="flex items-center gap-4 flex-wrap">
-            {subTabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveSubTab(tab.id)}
-                className={cn(
-                  "px-3 py-1.5 text-sm rounded-full transition-all",
-                  activeSubTab === tab.id
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-                )}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        )}
+        {/* Navigation Tabs */}
+        <ReportsNavigation
+          mainTabs={mainTabs}
+          subTabs={subTabs}
+          activeMainTab={activeReportTab}
+          activeSubTab={activeSubTab}
+          onMainTabChange={(id) => {
+            setActiveReportTab(id);
+            const newSubTabs = getSubTabsForTab(id);
+            setActiveSubTab(newSubTabs[0]?.id || "summary");
+          }}
+          onSubTabChange={setActiveSubTab}
+        />
 
-        {/* Date Range & Export */}
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-4">
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1">Start Date</label>
-              <div className="flex items-center gap-2 border border-border rounded-md px-3 py-2 bg-background">
-                <Calendar className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="bg-transparent text-sm outline-none"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1">End Date</label>
-              <div className="flex items-center gap-2 border border-border rounded-md px-3 py-2 bg-background">
-                <Calendar className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="bg-transparent text-sm outline-none"
-                />
-              </div>
-            </div>
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button className="gap-2">
-                <Download className="w-4 h-4" aria-hidden="true" />
-                Export Report
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleExportCSV}>
-                <FileSpreadsheet className="w-4 h-4 mr-2" aria-hidden="true" />
-                Export as CSV
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportPDF}>
-                <FileText className="w-4 h-4 mr-2" aria-hidden="true" />
-                Export as PDF
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        {/* Date Filter & Export */}
+        <ReportsDateFilter
+          startDate={startDate}
+          endDate={endDate}
+          searchQuery={searchQuery}
+          onStartDateChange={setStartDate}
+          onEndDateChange={setEndDate}
+          onSearchChange={setSearchQuery}
+          onExportCSV={handleExportCSV}
+          onExportPDF={handleExportPDF}
+          onRefresh={handleRefresh}
+          isLoading={loading}
+        />
 
-        {/* KPI Cards */}
-        <ReportKPICards metrics={metrics} activeTab={activeReportTab} />
-
-        {/* Quick Actions, Insights & Trend Chart Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <ReportsQuickActions
-            onExportCSV={handleExportCSV}
-            onExportPDF={handleExportPDF}
-            onRefresh={handleRefresh}
-            isLoading={loading}
-          />
+        {/* Insights & Trend Chart Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ReportsInsightsCard metrics={metrics} />
           <ReportsTrendChart 
             trips={trips} 
@@ -1364,21 +1273,10 @@ const Reports = () => {
           />
         </div>
 
-        {/* Search */}
-        <div className="flex items-center gap-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-            <Input
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
-
         {/* Data Table */}
-        {renderContent()}
+        <div className="mt-2">
+          {renderContent()}
+        </div>
       </div>
     </Layout>
   );
