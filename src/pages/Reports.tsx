@@ -558,6 +558,100 @@ const Reports = () => {
               ],
               title: "Fuel Theft Cases Report",
             };
+          case "mileage_fuel":
+            return {
+              data: trips.map(t => ({
+                date: format(new Date(t.start_time), "yyyy-MM-dd"),
+                vehicle: t.vehicle?.plate_number || "Unknown",
+                distance_km: t.distance_km || 0,
+                fuel_l: t.fuel_consumed_liters || 0,
+                consumption: t.distance_km && t.fuel_consumed_liters 
+                  ? ((t.fuel_consumed_liters / t.distance_km) * 100).toFixed(2) 
+                  : "0",
+              })),
+              filename: "daily_mileage_fuel_report",
+              columns: [
+                { key: "date", label: "Date", width: 40 },
+                { key: "vehicle", label: "Vehicle", width: 40 },
+                { key: "distance_km", label: "Mileage (km)", width: 35 },
+                { key: "fuel_l", label: "Fuel (L)", width: 30 },
+                { key: "consumption", label: "L/100km", width: 30 },
+              ],
+              title: "Daily Mileage & Fuel Report",
+            };
+          case "fuel_speedometer":
+            return {
+              data: trips.map(t => ({
+                date: format(new Date(t.start_time), "yyyy-MM-dd"),
+                vehicle: t.vehicle?.plate_number || "Unknown",
+                distance_km: t.distance_km || 0,
+                fuel_l: t.fuel_consumed_liters || 0,
+                avg_speed: t.distance_km && t.duration_minutes 
+                  ? ((t.distance_km / t.duration_minutes) * 60).toFixed(1) 
+                  : "0",
+                consumption: t.distance_km && t.fuel_consumed_liters 
+                  ? ((t.fuel_consumed_liters / t.distance_km) * 100).toFixed(2) 
+                  : "0",
+              })),
+              filename: "fuel_speedometer_report",
+              columns: [
+                { key: "date", label: "Date", width: 40 },
+                { key: "vehicle", label: "Vehicle", width: 40 },
+                { key: "distance_km", label: "Mileage (km)", width: 35 },
+                { key: "fuel_l", label: "Fuel (L)", width: 30 },
+                { key: "avg_speed", label: "Avg Speed", width: 30 },
+                { key: "consumption", label: "L/100km", width: 30 },
+              ],
+              title: "Fuel Mileage Speedometer Report",
+            };
+          case "refueling":
+            const refuelEvents = (fuelEvents || []).filter(e => e.event_type === 'refuel');
+            return {
+              data: refuelEvents.map(e => ({
+                time: format(new Date(e.event_time), "yyyy-MM-dd HH:mm"),
+                vehicle: e.vehicle?.plate_number || "Unknown",
+                fuel_before_l: e.fuel_before_liters?.toFixed(1) || "-",
+                fuel_after_l: e.fuel_after_liters?.toFixed(1) || "-",
+                added_l: e.fuel_change_liters?.toFixed(1) || "-",
+                location: e.location_name || "-",
+              })),
+              filename: "refueling_report",
+              columns: [
+                { key: "time", label: "Time", width: 45 },
+                { key: "vehicle", label: "Vehicle", width: 40 },
+                { key: "fuel_before_l", label: "Before (L)", width: 30 },
+                { key: "fuel_after_l", label: "After (L)", width: 30 },
+                { key: "added_l", label: "Added (L)", width: 30 },
+                { key: "location", label: "Location", width: 50 },
+              ],
+              title: "Refueling Report",
+            };
+          case "fuel_drain":
+            const drainEvents = (fuelEvents || []).filter(e => 
+              e.event_type === 'drain' || e.event_type === 'theft' || 
+              (e.fuel_change_liters && e.fuel_change_liters < -5)
+            );
+            return {
+              data: drainEvents.map(e => ({
+                time: format(new Date(e.event_time), "yyyy-MM-dd HH:mm"),
+                vehicle: e.vehicle?.plate_number || "Unknown",
+                fuel_before_l: e.fuel_before_liters?.toFixed(1) || "-",
+                fuel_after_l: e.fuel_after_liters?.toFixed(1) || "-",
+                drained_l: Math.abs(e.fuel_change_liters || 0).toFixed(1),
+                location: e.location_name || "-",
+                status: e.status || "-",
+              })),
+              filename: "fuel_drain_report",
+              columns: [
+                { key: "time", label: "Time", width: 45 },
+                { key: "vehicle", label: "Vehicle", width: 40 },
+                { key: "fuel_before_l", label: "Before (L)", width: 30 },
+                { key: "fuel_after_l", label: "After (L)", width: 30 },
+                { key: "drained_l", label: "Drained (L)", width: 30 },
+                { key: "status", label: "Status", width: 30 },
+              ],
+              title: "Fuel Drain Report",
+            };
           default:
             return {
               data: fuelTransactions.map(t => ({
@@ -692,6 +786,36 @@ const Reports = () => {
                 { key: "severity", label: "Severity", width: 30 },
               ],
               title: "Speed Report",
+            };
+          case "total_mileage":
+            // Aggregate mileage by vehicle
+            const vehicleMileage = trips.reduce((acc, t) => {
+              const plate = t.vehicle?.plate_number || "Unknown";
+              if (!acc[plate]) {
+                acc[plate] = { distance: 0, trips: 0, fuel: 0 };
+              }
+              acc[plate].distance += t.distance_km || 0;
+              acc[plate].trips += 1;
+              acc[plate].fuel += t.fuel_consumed_liters || 0;
+              return acc;
+            }, {} as Record<string, { distance: number; trips: number; fuel: number }>);
+            return {
+              data: Object.entries(vehicleMileage).map(([plate, data]) => ({
+                vehicle: plate,
+                total_distance_km: data.distance.toFixed(1),
+                total_trips: data.trips,
+                total_fuel_l: data.fuel.toFixed(1),
+                avg_per_trip: data.trips ? (data.distance / data.trips).toFixed(1) : "0",
+              })),
+              filename: "total_mileage_report",
+              columns: [
+                { key: "vehicle", label: "Vehicle", width: 45 },
+                { key: "total_distance_km", label: "Total Distance (km)", width: 45 },
+                { key: "total_trips", label: "Trips", width: 30 },
+                { key: "total_fuel_l", label: "Fuel (L)", width: 35 },
+                { key: "avg_per_trip", label: "Avg/Trip (km)", width: 40 },
+              ],
+              title: "Total Mileage Report",
             };
           default:
             return {
@@ -835,8 +959,44 @@ const Reports = () => {
         };
 
       case "alerts":
+        // Filter alerts based on sub-tab
+        const getFilteredAlerts = () => {
+          const typeMap: Record<string, string[]> = {
+            sos: ['sos', 'emergency', 'panic'],
+            overspeed: ['overspeed', 'speeding', 'speed_violation'],
+            fatigue: ['fatigue', 'drowsy', 'driver_fatigue'],
+            low_battery: ['low_battery', 'battery_low'],
+            power_outage: ['power_outage', 'power_cut', 'power_off'],
+            vibration: ['vibration', 'shock', 'impact'],
+            door_open: ['door_open', 'door', 'door_alarm'],
+            ignition: ['ignition_on', 'ignition_off', 'ignition'],
+            movement: ['movement', 'tow', 'unauthorized_movement'],
+          };
+          
+          if (activeSubTab === 'all_alarms') return alerts;
+          const types = typeMap[activeSubTab] || [];
+          if (types.length === 0) return alerts;
+          return alerts.filter(a => 
+            types.some(t => a.alert_type?.toLowerCase().includes(t))
+          );
+        };
+        
+        const filteredAlerts = getFilteredAlerts();
+        const subTabTitleMap: Record<string, string> = {
+          all_alarms: 'All Alarms',
+          sos: 'SOS Alarms',
+          overspeed: 'Overspeed Alarms',
+          fatigue: 'Fatigue Alarms',
+          low_battery: 'Low Battery Alarms',
+          power_outage: 'Power Outage Alarms',
+          vibration: 'Vibration Alarms',
+          door_open: 'Door Open Alarms',
+          ignition: 'Ignition Alarms',
+          movement: 'Movement Alarms',
+        };
+        
         return {
-          data: alerts.map(a => ({
+          data: filteredAlerts.map(a => ({
             time: format(new Date(a.alert_time), "yyyy-MM-dd HH:mm"),
             title: a.title || "-",
             type: a.alert_type || "-",
@@ -846,7 +1006,7 @@ const Reports = () => {
             status: a.status || "-",
             location: a.location_name || "-",
           })),
-          filename: "alerts_report",
+          filename: `${activeSubTab || 'alerts'}_report`,
           columns: [
             { key: "time", label: "Time", width: 40 },
             { key: "title", label: "Title", width: 50 },
@@ -855,7 +1015,7 @@ const Reports = () => {
             { key: "vehicle", label: "Vehicle", width: 30 },
             { key: "status", label: "Status", width: 30 },
           ],
-          title: "Alerts Report",
+          title: subTabTitleMap[activeSubTab] || "Alerts Report",
         };
 
       case "compliance":
