@@ -65,6 +65,11 @@ import { StopStatisticsTable } from "@/components/reports/StopStatisticsTable";
 import { IgnitionStatisticsTable } from "@/components/reports/IgnitionStatisticsTable";
 import { MileageStatisticsTable } from "@/components/reports/MileageStatisticsTable";
 import { SpeedReportTable } from "@/components/reports/SpeedReportTable";
+import { TotalMileageTable } from "@/components/reports/TotalMileageTable";
+import { FuelSpeedometerTable } from "@/components/reports/FuelSpeedometerTable";
+import { RefuelingReportTable } from "@/components/reports/RefuelingReportTable";
+import { FuelDrainReportTable } from "@/components/reports/FuelDrainReportTable";
+import { AlarmStatisticsTable } from "@/components/reports/AlarmStatisticsTable";
 
 const Reports = () => {
   const [activeReportTab, setActiveReportTab] = useState("vehicle");
@@ -146,6 +151,10 @@ const Reports = () => {
           { id: "transactions", label: "Transactions" },
           { id: "events", label: "Fill/Drain Events" },
           { id: "theft", label: "Theft Cases" },
+          { id: "mileage_fuel", label: "Daily Mileage & Fuel" },
+          { id: "fuel_speedometer", label: "Fuel Mileage Speedometer" },
+          { id: "refueling", label: "Refueling Report" },
+          { id: "fuel_drain", label: "Fuel Drain Report" },
         ];
       case "trips":
         return [
@@ -154,6 +163,7 @@ const Reports = () => {
           { id: "stop_statistics", label: "Stop Statistics" },
           { id: "ignition", label: "Ignition Statistics" },
           { id: "mileage", label: "Mileage Statistics" },
+          { id: "total_mileage", label: "Total Mileage" },
           { id: "speed_report", label: "Speed Report" },
         ];
       case "maintenance":
@@ -172,7 +182,16 @@ const Reports = () => {
         ];
       case "alerts":
         return [
-          { id: "all_alerts", label: "All Alerts" },
+          { id: "all_alerts", label: "All Alarms" },
+          { id: "sos", label: "SOS Alarms" },
+          { id: "overspeed", label: "Overspeed Alarms" },
+          { id: "fatigue", label: "Fatigue Alarms" },
+          { id: "low_battery", label: "Low Battery" },
+          { id: "power_outage", label: "Power Outage" },
+          { id: "vibration", label: "Vibration Alarms" },
+          { id: "door", label: "Door Open Alarms" },
+          { id: "ignition_alarm", label: "Ignition Alarms" },
+          { id: "movement", label: "Movement Alarms" },
         ];
       case "compliance":
         return [
@@ -194,9 +213,9 @@ const Reports = () => {
       case "location":
         return [{ id: "geofence", label: "Geofence Events" }, { id: "speeding", label: "Speeding by Location" }];
       case "fuel":
-        return [{ id: "transactions", label: "Transactions" }, { id: "events", label: "Fill/Drain Events" }, { id: "theft", label: "Theft Cases" }];
+        return [{ id: "transactions", label: "Transactions" }, { id: "events", label: "Fill/Drain Events" }, { id: "theft", label: "Theft Cases" }, { id: "mileage_fuel", label: "Daily Mileage & Fuel" }, { id: "fuel_speedometer", label: "Fuel Mileage Speedometer" }, { id: "refueling", label: "Refueling Report" }, { id: "fuel_drain", label: "Fuel Drain Report" }];
       case "trips":
-        return [{ id: "all_trips", label: "All Trips" }, { id: "idle_time", label: "Idle Time Analysis" }, { id: "stop_statistics", label: "Stop Statistics" }, { id: "ignition", label: "Ignition Statistics" }, { id: "mileage", label: "Mileage Statistics" }, { id: "speed_report", label: "Speed Report" }];
+        return [{ id: "all_trips", label: "All Trips" }, { id: "idle_time", label: "Idle Time Analysis" }, { id: "stop_statistics", label: "Stop Statistics" }, { id: "ignition", label: "Ignition Statistics" }, { id: "mileage", label: "Mileage Statistics" }, { id: "total_mileage", label: "Total Mileage" }, { id: "speed_report", label: "Speed Report" }];
       case "maintenance":
         return [{ id: "schedules", label: "Schedules" }, { id: "work_orders", label: "Work Orders" }, { id: "inspections", label: "Inspections" }];
       case "dispatch":
@@ -204,7 +223,7 @@ const Reports = () => {
       case "costs":
         return [{ id: "all_costs", label: "All Costs" }];
       case "alerts":
-        return [{ id: "all_alerts", label: "All Alerts" }];
+        return [{ id: "all_alerts", label: "All Alarms" }, { id: "sos", label: "SOS Alarms" }, { id: "overspeed", label: "Overspeed Alarms" }, { id: "fatigue", label: "Fatigue Alarms" }, { id: "low_battery", label: "Low Battery" }, { id: "power_outage", label: "Power Outage" }, { id: "vibration", label: "Vibration Alarms" }, { id: "door", label: "Door Open Alarms" }, { id: "ignition_alarm", label: "Ignition Alarms" }, { id: "movement", label: "Movement Alarms" }];
       case "compliance":
         return [{ id: "driver_compliance", label: "Driver Compliance" }, { id: "document_expiry", label: "Document Expiry" }];
       default:
@@ -972,6 +991,14 @@ const Reports = () => {
             return <FuelEventsTable events={fuelEvents} />;
           case "theft":
             return <FuelTheftTable cases={fuelTheftCases} />;
+          case "mileage_fuel":
+            return <MileageStatisticsTable trips={trips} />;
+          case "fuel_speedometer":
+            return <FuelSpeedometerTable trips={trips} />;
+          case "refueling":
+            return <RefuelingReportTable events={fuelEvents} />;
+          case "fuel_drain":
+            return <FuelDrainReportTable events={fuelEvents} />;
           default:
             return <FuelTransactionsTable transactions={fuelTransactions} />;
         }
@@ -985,6 +1012,8 @@ const Reports = () => {
             return <IgnitionStatisticsTable trips={trips} />;
           case "mileage":
             return <MileageStatisticsTable trips={trips} />;
+          case "total_mileage":
+            return <TotalMileageTable trips={trips} />;
           case "speed_report":
             return <SpeedReportTable violations={speedViolations} />;
           default:
@@ -1004,7 +1033,28 @@ const Reports = () => {
       case "costs":
         return <CostsTable costs={vehicleCosts} />;
       case "alerts":
-        return <AlertsTable alerts={alerts} />;
+        switch (activeSubTab) {
+          case "sos":
+            return <AlarmStatisticsTable alerts={alerts} filterType="sos" title="SOS Alarm Statistics" />;
+          case "overspeed":
+            return <AlarmStatisticsTable alerts={alerts} filterType="overspeed" title="Overspeed Alarm Statistics" />;
+          case "fatigue":
+            return <AlarmStatisticsTable alerts={alerts} filterType="fatigue" title="Fatigue Alarm Statistics" />;
+          case "low_battery":
+            return <AlarmStatisticsTable alerts={alerts} filterType="low_battery" title="Low Battery Alarm Statistics" />;
+          case "power_outage":
+            return <AlarmStatisticsTable alerts={alerts} filterType="power_outage" title="Power Outage Alarm Statistics" />;
+          case "vibration":
+            return <AlarmStatisticsTable alerts={alerts} filterType="vibration" title="Vibration Alarm Statistics" />;
+          case "door":
+            return <AlarmStatisticsTable alerts={alerts} filterType="door" title="Door Open Alarm Statistics" />;
+          case "ignition_alarm":
+            return <AlarmStatisticsTable alerts={alerts} filterType="ignition" title="Ignition Alarm Statistics" />;
+          case "movement":
+            return <AlarmStatisticsTable alerts={alerts} filterType="movement" title="Movement Alarm Statistics" />;
+          default:
+            return <AlarmStatisticsTable alerts={alerts} title="All Alarm Statistics" />;
+        }
       case "compliance":
         switch (activeSubTab) {
           case "document_expiry":
