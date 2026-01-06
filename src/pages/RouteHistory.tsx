@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import RouteHistoryQuickStats from "@/components/routehistory/RouteHistoryQuickStats";
 import RouteHistoryQuickActions from "@/components/routehistory/RouteHistoryQuickActions";
 import RouteHistoryInsightsCard from "@/components/routehistory/RouteHistoryInsightsCard";
 import RouteHistoryTrendChart from "@/components/routehistory/RouteHistoryTrendChart";
+import { useStopMarkers, StopEvent, getEventColor } from "@/components/routehistory/StopMarkers";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { 
   Play, 
   Pause, 
@@ -25,7 +28,11 @@ import {
   Fuel,
   Gauge,
   AlertCircle,
-  Loader2
+  Loader2,
+  User,
+  StopCircle,
+  Timer,
+  Zap
 } from "lucide-react";
 import LiveTrackingMap from "@/components/map/LiveTrackingMap";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -47,11 +54,16 @@ interface TelemetryPoint {
 const RouteHistory = () => {
   const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const today = new Date().toISOString().split("T")[0];
 
-  const [selectedVehicle, setSelectedVehicle] = useState<string>("");
-  const [selectedDate, setSelectedDate] = useState<string>(today);
+  // Initialize from URL params
+  const urlVehicle = searchParams.get("vehicle") || "";
+  const urlDate = searchParams.get("date") || today;
+
+  const [selectedVehicle, setSelectedVehicle] = useState<string>(urlVehicle);
+  const [selectedDate, setSelectedDate] = useState<string>(urlDate);
   const isToday = selectedDate === today;
 
   const [followLive, setFollowLive] = useState(true);
@@ -60,24 +72,52 @@ const RouteHistory = () => {
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Update URL when vehicle/date changes
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (selectedVehicle) params.set("vehicle", selectedVehicle);
+    if (selectedDate && selectedDate !== today) params.set("date", selectedDate);
+    setSearchParams(params, { replace: true });
+  }, [selectedVehicle, selectedDate, today, setSearchParams]);
+
   // Live mode is only supported for today's date
   useEffect(() => {
     if (!isToday) setFollowLive(false);
   }, [isToday]);
 
-  // Fetch vehicles
+  // Fetch vehicles with assigned driver info
   const { data: vehicles, isLoading: vehiclesLoading, isError: vehiclesError } = useQuery({
-    queryKey: ["vehicles", organizationId],
+    queryKey: ["vehicles-with-drivers", organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("vehicles")
-        .select("id, plate_number, make, model")
+        .select("id, plate_number, make, model, assigned_driver_id")
         .eq("organization_id", organizationId!)
         .order("plate_number");
       if (error) throw error;
       return data;
     },
     enabled: !!organizationId,
+  });
+
+  // Fetch driver info for selected vehicle
+  const selectedVehicleData = vehicles?.find(v => v.id === selectedVehicle);
+  
+  const { data: assignedDriver } = useQuery({
+    queryKey: ["driver", selectedVehicleData?.assigned_driver_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("drivers")
+        .select("id, first_name, last_name, phone")
+        .eq("id", selectedVehicleData!.assigned_driver_id!)
+        .single();
+      if (error) throw error;
+      return {
+        ...data,
+        name: `${data.first_name} ${data.last_name}`.trim()
+      };
+    },
+    enabled: !!selectedVehicleData?.assigned_driver_id,
   });
 
   // Fetch telemetry for selected vehicle and date
@@ -103,6 +143,9 @@ const RouteHistory = () => {
 
   const routeHistory = telemetryData || [];
   const hasData = routeHistory.length > 0;
+
+  // Calculate stop markers
+  const stopEvents = useStopMarkers({ routeData: routeHistory });
 
   // Realtime: append new telemetry points for the selected vehicle/date
   useEffect(() => {
@@ -296,7 +339,6 @@ const RouteHistory = () => {
     setPlaybackProgress(Math.max(0, playbackProgress - 10));
   };
 
-  const selectedVehicleData = vehicles?.find(v => v.id === selectedVehicle);
 
   return (
     <Layout>
@@ -316,10 +358,32 @@ const RouteHistory = () => {
           <div className="mt-4">
             <RouteHistoryQuickActions
               hasData={hasData}
+              vehicleId={selectedVehicle}
               vehiclePlate={selectedVehicleData?.plate_number}
+              vehicleMake={selectedVehicleData?.make}
+              vehicleModel={selectedVehicleData?.model}
+              driverName={assignedDriver?.name}
               selectedDate={selectedDate}
+              tripSummary={tripSummary}
+              routeData={routeHistory}
             />
           </div>
+
+          {/* Driver Info Badge */}
+          {selectedVehicle && (
+            <div className="mt-3 flex items-center gap-2">
+              <User className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+              <span className="text-sm text-muted-foreground">Driver:</span>
+              {assignedDriver ? (
+                <Badge variant="secondary" className="gap-1">
+                  {assignedDriver.name}
+                  {assignedDriver.phone && <span className="text-muted-foreground">• {assignedDriver.phone}</span>}
+                </Badge>
+              ) : (
+                <span className="text-sm text-muted-foreground italic">Not assigned</span>
+              )}
+            </div>
+          )}
 
           {/* Filters */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
@@ -623,6 +687,51 @@ const RouteHistory = () => {
                       </div>
                     </CardContent>
                   </Card>
+
+                  {/* Stop Events Panel */}
+                  {stopEvents.length > 0 && (
+                    <Card className="bg-muted/30">
+                      <CardHeader className="pb-2 pt-4 px-4">
+                        <CardTitle className="text-sm font-medium flex items-center gap-2">
+                          <StopCircle className="h-4 w-4 text-destructive" aria-hidden="true" />
+                          Events ({stopEvents.length})
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="px-4 pb-4 pt-0 max-h-48 overflow-y-auto">
+                        <div className="space-y-2">
+                          {stopEvents.slice(0, 10).map((event) => (
+                            <div 
+                              key={event.id} 
+                              className="flex items-start gap-2 text-xs p-2 rounded bg-background/50"
+                            >
+                              <div 
+                                className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
+                                style={{ backgroundColor: getEventColor(event.type) }}
+                                aria-hidden="true"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1">
+                                  {event.type === "stop" && <StopCircle className="h-3 w-3 text-destructive" aria-hidden="true" />}
+                                  {event.type === "idle" && <Timer className="h-3 w-3 text-warning" aria-hidden="true" />}
+                                  {event.type === "speeding" && <Zap className="h-3 w-3 text-destructive" aria-hidden="true" />}
+                                  <span className="font-medium capitalize">{event.type}</span>
+                                  <span className="text-muted-foreground">
+                                    {format(parseISO(event.startTime), "HH:mm")}
+                                  </span>
+                                </div>
+                                <p className="text-muted-foreground truncate">{event.description}</p>
+                              </div>
+                            </div>
+                          ))}
+                          {stopEvents.length > 10 && (
+                            <p className="text-xs text-muted-foreground text-center pt-1">
+                              +{stopEvents.length - 10} more events
+                            </p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
 
                   {/* Insights Card */}
                   {tripSummary && (
