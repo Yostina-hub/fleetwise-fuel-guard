@@ -61,6 +61,10 @@ import { VehicleUtilizationTable } from "@/components/reports/VehicleUtilization
 import { IdleTimeTable } from "@/components/reports/IdleTimeTable";
 import { DriverComplianceTable } from "@/components/reports/DriverComplianceTable";
 import { DocumentExpiryTable } from "@/components/reports/DocumentExpiryTable";
+import { StopStatisticsTable } from "@/components/reports/StopStatisticsTable";
+import { IgnitionStatisticsTable } from "@/components/reports/IgnitionStatisticsTable";
+import { MileageStatisticsTable } from "@/components/reports/MileageStatisticsTable";
+import { SpeedReportTable } from "@/components/reports/SpeedReportTable";
 
 const Reports = () => {
   const [activeReportTab, setActiveReportTab] = useState("vehicle");
@@ -147,6 +151,10 @@ const Reports = () => {
         return [
           { id: "all_trips", label: "All Trips" },
           { id: "idle_time", label: "Idle Time Analysis" },
+          { id: "stop_statistics", label: "Stop Statistics" },
+          { id: "ignition", label: "Ignition Statistics" },
+          { id: "mileage", label: "Mileage Statistics" },
+          { id: "speed_report", label: "Speed Report" },
         ];
       case "maintenance":
         return [
@@ -188,7 +196,7 @@ const Reports = () => {
       case "fuel":
         return [{ id: "transactions", label: "Transactions" }, { id: "events", label: "Fill/Drain Events" }, { id: "theft", label: "Theft Cases" }];
       case "trips":
-        return [{ id: "all_trips", label: "All Trips" }, { id: "idle_time", label: "Idle Time Analysis" }];
+        return [{ id: "all_trips", label: "All Trips" }, { id: "idle_time", label: "Idle Time Analysis" }, { id: "stop_statistics", label: "Stop Statistics" }, { id: "ignition", label: "Ignition Statistics" }, { id: "mileage", label: "Mileage Statistics" }, { id: "speed_report", label: "Speed Report" }];
       case "maintenance":
         return [{ id: "schedules", label: "Schedules" }, { id: "work_orders", label: "Work Orders" }, { id: "inspections", label: "Inspections" }];
       case "dispatch":
