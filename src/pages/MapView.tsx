@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,12 +43,23 @@ const CLUSTER_THRESHOLD = 100;
 const MapView = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { vehicles: dbVehicles, loading, refetch } = useVehicles();
   const { telemetry, isVehicleOnline } = useVehicleTelemetry();
   const { governorConfigs } = useSpeedGovernor();
+  
+  // Support both location.state and URL query params for vehicle selection
+  const urlVehicleId = searchParams.get("vehicle");
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | undefined>(
-    location.state?.selectedVehicleId
+    location.state?.selectedVehicleId || urlVehicleId || undefined
   );
+  
+  // Update selection when URL param changes
+  useEffect(() => {
+    if (urlVehicleId && urlVehicleId !== selectedVehicleId) {
+      setSelectedVehicleId(urlVehicleId);
+    }
+  }, [urlVehicleId]);
   const [autoRefresh, setAutoRefresh] = useState("30");
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [searchQuery, setSearchQuery] = useState("");

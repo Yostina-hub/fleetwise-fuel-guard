@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
+import mapboxgl from "mapbox-gl";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import RouteHistoryQuickStats from "@/components/routehistory/RouteHistoryQuickStats";
@@ -7,6 +8,8 @@ import RouteHistoryQuickActions from "@/components/routehistory/RouteHistoryQuic
 import RouteHistoryInsightsCard from "@/components/routehistory/RouteHistoryInsightsCard";
 import RouteHistoryTrendChart from "@/components/routehistory/RouteHistoryTrendChart";
 import { useStopMarkers, StopEvent, getEventColor } from "@/components/routehistory/StopMarkers";
+import RouteHistoryEventMarkers from "@/components/routehistory/RouteHistoryEventMarkers";
+import { useAddressGeocoding } from "@/hooks/useAddressGeocoding";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { 
   Play, 
   Pause, 
@@ -32,7 +36,10 @@ import {
   User,
   StopCircle,
   Timer,
-  Zap
+  Zap,
+  Eye,
+  EyeOff,
+  Info
 } from "lucide-react";
 import LiveTrackingMap from "@/components/map/LiveTrackingMap";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -70,7 +77,14 @@ const RouteHistory = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackProgress, setPlaybackProgress] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [showEventMarkers, setShowEventMarkers] = useState(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const mapInstanceRef = useRef<mapboxgl.Map | null>(null);
+
+  // Callback to capture map instance
+  const handleMapReady = useCallback((mapInstance: mapboxgl.Map) => {
+    mapInstanceRef.current = mapInstance;
+  }, []);
 
   // Update URL when vehicle/date changes
   useEffect(() => {
@@ -215,6 +229,13 @@ const RouteHistory = () => {
     : 0;
 
   const currentPosition = hasData ? routeHistory[effectiveIndex] : null;
+
+  // Address geocoding for current position
+  const { address: currentAddress, isLoading: addressLoading } = useAddressGeocoding(
+    currentPosition?.latitude,
+    currentPosition?.longitude,
+    !!currentPosition
+  );
 
   // Calculate trip summary statistics
   const tripSummary = useMemo(() => {
@@ -510,6 +531,15 @@ const RouteHistory = () => {
                 }));
                 return new Map([["playback", trailPoints]]);
               }, [hasData, routeHistory, effectiveIndex])}
+              onMapReady={handleMapReady}
+              disablePopups={true}
+            />
+            
+            {/* Event Markers on Map */}
+            <RouteHistoryEventMarkers 
+              map={mapInstanceRef.current}
+              events={stopEvents}
+              visible={showEventMarkers && hasData}
             />
 
             {/* Playback Controls */}
@@ -585,6 +615,19 @@ const RouteHistory = () => {
                    <Button variant="outline" size="sm" className="ml-2" disabled aria-label={`Current playback speed: ${playbackSpeed}x`}>
                      {playbackSpeed}x Speed
                    </Button>
+
+                   <div className="flex items-center gap-2 ml-4 border-l pl-4">
+                     <Switch
+                       id="show-events"
+                       checked={showEventMarkers}
+                       onCheckedChange={setShowEventMarkers}
+                       aria-label="Show event markers"
+                     />
+                     <Label htmlFor="show-events" className="text-xs cursor-pointer flex items-center gap-1">
+                       {showEventMarkers ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                       Events
+                     </Label>
+                   </div>
                  </div>
               </CardContent>
             </Card>
@@ -679,8 +722,17 @@ const RouteHistory = () => {
                           <MapPin className="w-5 h-5 text-purple-600" aria-hidden="true" />
                         </div>
                         <div className="flex-1">
-                          <div className="text-xs text-muted-foreground mb-1">GPS Coordinates</div>
-                          <div className="text-xs font-mono break-all">
+                          <div className="text-xs text-muted-foreground mb-1">Location</div>
+                          {addressLoading ? (
+                            <Skeleton className="h-4 w-32" />
+                          ) : currentAddress ? (
+                            <div className="text-sm font-medium leading-tight">{currentAddress}</div>
+                          ) : (
+                            <div className="text-xs font-mono break-all">
+                              {(currentPosition.latitude || 0).toFixed(6)}, {(currentPosition.longitude || 0).toFixed(6)}
+                            </div>
+                          )}
+                          <div className="text-xs text-muted-foreground mt-1 font-mono">
                             {(currentPosition.latitude || 0).toFixed(6)}, {(currentPosition.longitude || 0).toFixed(6)}
                           </div>
                         </div>
@@ -750,11 +802,22 @@ const RouteHistory = () => {
               ) : (
                 <div className="text-center py-12 text-muted-foreground" role="status">
                   <MapPin className="w-12 h-12 mx-auto mb-3 opacity-50" aria-hidden="true" />
-                  <p className="text-sm">
+                  <p className="text-sm font-medium mb-2">
                     {!selectedVehicle 
                       ? "Select a vehicle to view route history" 
                       : "No route data found for the selected date"}
                   </p>
+                  {selectedVehicle && (
+                    <div className="text-xs space-y-1 max-w-xs mx-auto">
+                      <p className="flex items-center justify-center gap-1">
+                        <Info className="h-3 w-3" aria-hidden="true" />
+                        Try selecting a different date
+                      </p>
+                      <p className="text-muted-foreground/70">
+                        The GPS device may not have transmitted data on {format(parseISO(selectedDate), "PPP")}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
