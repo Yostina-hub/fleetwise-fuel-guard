@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReportConfigDialog, ReportConfig } from "./ReportConfigDialog";
+import { openReportInNewWindow } from "@/lib/reportWindowUtils";
 
 interface ReportDefinition {
   id: string;
@@ -196,7 +197,23 @@ export const ReportCatalog = ({
 
   const handleGenerateReport = (config: ReportConfig) => {
     if (selectedReport) {
-      // Pass the config to parent for filtering
+      // Open report in new window
+      openReportInNewWindow({
+        reportName: selectedReport.name,
+        category: selectedReport.category,
+        timePeriod: config.timePeriod,
+        dateRange: config.dateRange,
+        selectedAssets: config.selectedAssets,
+        data: [], // Data will be fetched and populated as needed
+        columns: [
+          { key: "id", label: "ID" },
+          { key: "name", label: "Name" },
+          { key: "status", label: "Status" },
+          { key: "date", label: "Date" },
+        ],
+      });
+      
+      // Also notify parent to update the view
       onSelectReport(selectedReport.category, selectedReport.subId, config);
     }
   };
