@@ -864,29 +864,14 @@ return () => {
         const currentHeading = vehicle.heading || 0;
         
         // Update heading rotation in real-time for smooth direction changes
+        // IMPORTANT: rotate the inner `.marker-body`, never the root marker element.
         if (Math.abs(previousHeading - currentHeading) > 2) {
-          // Calculate shortest rotation path
-          let rotationDiff = currentHeading - previousHeading;
-          if (rotationDiff > 180) rotationDiff -= 360;
-          if (rotationDiff < -180) rotationDiff += 360;
-          
-          el.style.transition = 'transform 0.5s ease-out';
-          el.style.transform = `rotate(${currentHeading}deg)${isSelected ? ' scale(1.15)' : ''}`;
+          const body = el.querySelector('.marker-body') as HTMLElement | null;
+          if (body) {
+            body.style.transition = 'transform 0.5s ease-out';
+            body.style.transform = `rotate(${currentHeading}deg)${isSelected ? ' scale(1.15)' : ''}`;
+          }
           el.dataset.heading = currentHeading.toString();
-          
-          // Counter-rotate speed badge to keep it readable
-          const speedBadge = el.querySelector('.speed-badge') as HTMLElement;
-          if (speedBadge) {
-            speedBadge.style.transition = 'transform 0.5s ease-out';
-            speedBadge.style.transform = `translateX(-50%) rotate(-${currentHeading}deg)`;
-          }
-          
-          // Counter-rotate plate label to keep it readable
-          const plateLabel = el.querySelector('.plate-label') as HTMLElement;
-          if (plateLabel) {
-            plateLabel.style.transition = 'transform 0.5s ease-out';
-            plateLabel.style.transform = `translateX(-50%) rotate(-${currentHeading}deg)`;
-          }
         }
         
         // Only recreate marker if critical visual state changed (not selection)
@@ -906,11 +891,14 @@ return () => {
           }
         }
         
-        // Update selection border without recreating
-        el.style.borderWidth = isSelected ? '3px' : '2.5px';
-        el.style.borderColor = isSelected ? 'white' : '';
+        // Update selection styling without recreating
+        const body = el.querySelector('.marker-body') as HTMLElement | null;
+        if (body) {
+          body.style.borderWidth = isSelected ? '3px' : '2.5px';
+          body.style.transform = `rotate(${currentHeading}deg)${isSelected ? ' scale(1.15)' : ''}`;
+        }
       }
-      
+
       // Create new marker if needed
       if (!markers.current.has(vehicle.id)) {
         const el = createAnimatedMarkerElement(
@@ -955,16 +943,27 @@ return () => {
             clearTimeout(hideTimeout);
             hideTimeout = null;
           }
-          
+
           const vNow = vehiclesByIdRef.current.get(vehicle.id) ?? vehicle;
+
+          // Guard: invalid coords make Mapbox position popups at (0,0) (top-left)
+          const lng = vNow.lng;
+          const lat = vNow.lat;
+          const validCoords = Number.isFinite(lng) && Number.isFinite(lat) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+          if (!validCoords) {
+            popup.remove();
+            return;
+          }
+
           const statusLabel = vNow.status.charAt(0).toUpperCase() + vNow.status.slice(1);
           const statusClass = `popup-status-${vNow.status}`;
           const currentAddress = vehicleAddresses.get(vNow.id) || 'Locating...';
           const driverName = vNow.driverName || 'No driver assigned';
           const speedInfo = vNow.speed > 0 ? `${Math.round(vNow.speed)} km/h` : 'Stationary';
           const isOverspeed = vNow.speed > (vNow.speed_limit || 80);
-          
-          popup.setLngLat([vNow.lng, vNow.lat])
+
+          popup
+            .setLngLat([lng, lat])
             .setHTML(`
               <div class="vehicle-popup-content" data-vehicle-id="${vNow.id}">
                 <div class="popup-header">
@@ -995,9 +994,11 @@ return () => {
             `)
             .addTo(map.current!);
 
-          // Add hover listeners to popup element to keep it visible
-          const popupEl = popup.getElement();
-          if (popupEl) {
+          // Bind popup listeners ONCE (avoid stacking handlers on repeated hover)
+          const popupEl = popup.getElement() as (HTMLElement & { __lovBound?: boolean }) | null;
+          if (popupEl && !popupEl.__lovBound) {
+            popupEl.__lovBound = true;
+
             popupEl.addEventListener('mouseenter', () => {
               isHoveringPopup = true;
               if (hideTimeout) {
@@ -1005,30 +1006,33 @@ return () => {
                 hideTimeout = null;
               }
             });
-            
+
             popupEl.addEventListener('mouseleave', () => {
               isHoveringPopup = false;
               scheduleHide();
             });
 
-            // Make the view button clickable
-            const viewBtn = popupEl.querySelector('.popup-view-btn');
-            if (viewBtn) {
-              viewBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                popup.remove();
-                const vNow = vehiclesByIdRef.current.get(vehicle.id) ?? vehicle;
-                
-                map.current?.flyTo({
-                  center: [vNow.lng, vNow.lat],
-                  zoom: 18,
-                  duration: 1000,
-                  pitch: 45,
-                });
-                
-                onVehicleClick?.(vNow);
+            popupEl.addEventListener('click', (e) => {
+              const target = e.target as HTMLElement | null;
+              const btn = target?.closest?.('.popup-view-btn') as HTMLElement | null;
+              if (!btn) return;
+
+              e.stopPropagation();
+              popup.remove();
+
+              const vid = btn.getAttribute('data-vehicle-id') || vehicle.id;
+              const v = vehiclesByIdRef.current.get(vid) ?? vNow;
+
+              // Exact location
+              map.current?.flyTo({
+                center: [v.lng, v.lat],
+                zoom: 18,
+                duration: 1000,
+                pitch: 45,
               });
-            }
+
+              onVehicleClick?.(v);
+            });
           }
         };
 
