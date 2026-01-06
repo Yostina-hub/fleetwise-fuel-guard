@@ -431,27 +431,6 @@ const MapView = () => {
                 </Button>
               </div>
 
-              {/* Status Legend - Compact */}
-              <div className="bg-background/95 backdrop-blur-md rounded-lg border border-border/50 shadow-lg px-4 py-2.5" role="img" aria-label="Vehicle status legend: Moving (green), Idle (amber), Stopped (gray), Offline (red)">
-                <div className="flex items-center gap-5 text-xs font-medium">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/40" aria-hidden="true" />
-                    <span className="text-foreground/80">Moving</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm shadow-amber-500/40" aria-hidden="true" />
-                    <span className="text-foreground/80">Idle</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-slate-400" aria-hidden="true" />
-                    <span className="text-foreground/80">Stopped</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm shadow-rose-500/40" aria-hidden="true" />
-                    <span className="text-foreground/80">Offline</span>
-                  </div>
-                </div>
-              </div>
 
               {/* Trail Toggle Button */}
               <Button
