@@ -4421,6 +4421,108 @@ export type Database = {
           },
         ]
       }
+      restricted_hours_violations: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          actual_time: string
+          allowed_end_time: string
+          allowed_start_time: string
+          created_at: string
+          distance_km: number | null
+          driver_id: string | null
+          duration_minutes: number | null
+          end_location: string | null
+          id: string
+          is_acknowledged: boolean | null
+          notes: string | null
+          organization_id: string
+          restriction_id: string | null
+          start_location: string | null
+          trip_id: string | null
+          vehicle_id: string
+          violation_time: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          actual_time: string
+          allowed_end_time: string
+          allowed_start_time: string
+          created_at?: string
+          distance_km?: number | null
+          driver_id?: string | null
+          duration_minutes?: number | null
+          end_location?: string | null
+          id?: string
+          is_acknowledged?: boolean | null
+          notes?: string | null
+          organization_id: string
+          restriction_id?: string | null
+          start_location?: string | null
+          trip_id?: string | null
+          vehicle_id: string
+          violation_time: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          actual_time?: string
+          allowed_end_time?: string
+          allowed_start_time?: string
+          created_at?: string
+          distance_km?: number | null
+          driver_id?: string | null
+          duration_minutes?: number | null
+          end_location?: string | null
+          id?: string
+          is_acknowledged?: boolean | null
+          notes?: string | null
+          organization_id?: string
+          restriction_id?: string | null
+          start_location?: string | null
+          trip_id?: string | null
+          vehicle_id?: string
+          violation_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restricted_hours_violations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restricted_hours_violations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restricted_hours_violations_restriction_id_fkey"
+            columns: ["restriction_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_restricted_hours"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restricted_hours_violations_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restricted_hours_violations_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_permissions: {
         Row: {
           created_at: string
@@ -6046,6 +6148,63 @@ export type Database = {
             foreignKeyName: "vehicle_inspections_vehicle_id_fkey"
             columns: ["vehicle_id"]
             isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_restricted_hours: {
+        Row: {
+          active_days: number[]
+          allowed_end_time: string
+          allowed_start_time: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_enabled: boolean
+          notes: string | null
+          organization_id: string
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          active_days?: number[]
+          allowed_end_time?: string
+          allowed_start_time?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_enabled?: boolean
+          notes?: string | null
+          organization_id: string
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          active_days?: number[]
+          allowed_end_time?: string
+          allowed_start_time?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_enabled?: boolean
+          notes?: string | null
+          organization_id?: string
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_restricted_hours_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_restricted_hours_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: true
             referencedRelation: "vehicles"
             referencedColumns: ["id"]
           },
