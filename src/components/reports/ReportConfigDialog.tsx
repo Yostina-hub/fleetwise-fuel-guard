@@ -24,10 +24,18 @@ interface Asset {
   type: string;
 }
 
+interface ReportDefinition {
+  id: string;
+  category: string;
+  subId: string;
+  name: string;
+  description: string;
+}
+
 interface ReportConfigDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  reportName: string;
+  report: ReportDefinition | null;
   onGenerate: (config: ReportConfig) => void;
 }
 
@@ -58,7 +66,7 @@ const VIOLATION_TYPES = [
 export const ReportConfigDialog = ({
   open,
   onOpenChange,
-  reportName,
+  report,
   onGenerate,
 }: ReportConfigDialogProps) => {
   const { organizationId } = useOrganization();
@@ -165,7 +173,7 @@ export const ReportConfigDialog = ({
         {/* Header */}
         <DialogHeader className="px-6 py-4 bg-primary text-primary-foreground">
           <DialogTitle className="text-lg font-semibold uppercase tracking-wide flex items-center justify-between">
-            {reportName}
+            {report?.name || "Configure Report"}
             <Button
               variant="ghost"
               size="icon"
@@ -257,7 +265,7 @@ export const ReportConfigDialog = ({
               </div>
 
               {/* Violation Types (conditional) */}
-              {reportName.toLowerCase().includes("violation") && (
+              {report?.name?.toLowerCase().includes("violation") && (
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-primary">Select Violation Type/s</Label>
                   <Select>
