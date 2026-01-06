@@ -416,6 +416,28 @@ export function injectMarkerAnimations() {
       color: #9ca3af;
       font-style: italic;
     }
+
+    .popup-hint {
+      font-size: 10px;
+      color: #9ca3af;
+      text-align: center;
+      margin-top: 8px;
+      padding-top: 6px;
+      border-top: 1px solid #f0f0f0;
+    }
+
+    .vehicle-hover-popup .mapboxgl-popup-content {
+      padding: 0 !important;
+      border-radius: 12px !important;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.2) !important;
+      overflow: hidden;
+      animation: popupFadeIn 0.15s ease-out;
+    }
+
+    @keyframes popupFadeIn {
+      from { opacity: 0; transform: translateY(5px) scale(0.95); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
   `;
   document.head.appendChild(style);
 }

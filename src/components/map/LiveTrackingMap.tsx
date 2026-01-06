@@ -937,17 +937,72 @@ return () => {
         // Store vehicle ID for reference
         (marker as any)._vehicleId = vehicle.id;
 
-        // When popups are disabled, just handle click for selection
+        // Create hover popup with vehicle info
+        const popup = new mapboxgl.Popup({
+          closeButton: false,
+          closeOnClick: false,
+          offset: [0, -25],
+          className: 'vehicle-hover-popup',
+          maxWidth: '280px'
+        });
+
+        // Hover to show info popup
+        el.addEventListener('mouseenter', () => {
+          const vNow = vehiclesByIdRef.current.get(vehicle.id) ?? vehicle;
+          const statusLabel = vNow.status.charAt(0).toUpperCase() + vNow.status.slice(1);
+          const statusClass = `popup-status-${vNow.status}`;
+          const currentAddress = vehicleAddresses.get(vNow.id) || 'Locating...';
+          const driverName = vNow.driverName || 'No driver assigned';
+          const speedInfo = vNow.speed > 0 ? `${Math.round(vNow.speed)} km/h` : 'Stationary';
+          const isOverspeed = vNow.speed > (vNow.speed_limit || 80);
+          
+          popup.setLngLat([vNow.lng, vNow.lat])
+            .setHTML(`
+              <div class="vehicle-popup-content">
+                <div class="popup-header">
+                  <span class="popup-plate">${vNow.plate}</span>
+                  <span class="popup-status ${statusClass}">${statusLabel}</span>
+                </div>
+                <div class="popup-driver">
+                  <span class="popup-driver-icon">👤</span>
+                  <span>${driverName}</span>
+                </div>
+                <div class="popup-stats">
+                  <div class="popup-stat">
+                    <span class="popup-stat-value" style="${isOverspeed ? 'color: #dc2626;' : ''}">${speedInfo}</span>
+                    <span class="popup-stat-label">Speed</span>
+                  </div>
+                  ${vNow.engine_on !== undefined ? `
+                  <div class="popup-stat">
+                    <span class="popup-stat-value">${vNow.engine_on ? '🟢 On' : '🔴 Off'}</span>
+                    <span class="popup-stat-label">Engine</span>
+                  </div>
+                  ` : ''}
+                </div>
+                <div class="popup-address">📍 ${currentAddress}</div>
+                <div class="popup-hint">Click to view details</div>
+              </div>
+            `)
+            .addTo(map.current!);
+        });
+
+        el.addEventListener('mouseleave', () => {
+          popup.remove();
+        });
+
+        // Click to zoom in and show details
         el.addEventListener('click', (e) => {
           e.stopPropagation();
+          popup.remove();
 
           const vNow = vehiclesByIdRef.current.get(vehicle.id) ?? vehicle;
 
-          // Fly to vehicle position
+          // Fly to vehicle position with higher zoom for exact location
           map.current?.flyTo({
             center: [vNow.lng, vNow.lat],
-            zoom: 15,
-            duration: 800,
+            zoom: 18, // Higher zoom for exact location
+            duration: 1000,
+            pitch: 45, // Add perspective for better view
           });
 
           onVehicleClick?.(vNow);
