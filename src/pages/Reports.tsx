@@ -1251,9 +1251,17 @@ const Reports = () => {
   };
 
   // Select report from catalog
-  const handleSelectReport = (category: string, subId: string) => {
+  const handleSelectReport = (category: string, subId: string, config?: { timePeriod: string; dateRange: { from: Date; to: Date }; assetType: string; selectedAssets: string[]; violationTypes?: string[] }) => {
     setActiveReportTab(category);
     setActiveSubTab(subId);
+    
+    // Apply date range from config if provided
+    if (config) {
+      setTimePeriod(config.timePeriod as TimePeriodOption);
+      setDateRange(config.dateRange);
+      toast.success(`Generating ${category} report for ${config.selectedAssets.length} selected asset(s)`);
+    }
+    
     setViewMode("report");
   };
 
