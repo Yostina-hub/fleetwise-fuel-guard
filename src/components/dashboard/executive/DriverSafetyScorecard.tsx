@@ -58,7 +58,7 @@ const DriverSafetyScorecard = ({ categories, loading }: DriverSafetyScorecardPro
 
   return (
     <GlowingCard glowColor="success">
-      <h3 className="font-bold text-lg mb-4 text-white tracking-tight">Driver Safety Scorecard</h3>
+      <h3 className="font-bold text-lg mb-4 text-foreground tracking-tight">Driver Safety Scorecard</h3>
       
       <div className="flex items-center gap-6">
         <motion.div 
@@ -97,14 +97,14 @@ const DriverSafetyScorecard = ({ categories, loading }: DriverSafetyScorecardPro
               <ShieldCheck className="w-6 h-6 text-success mb-1 drop-shadow-lg" />
             </motion.div>
             <motion.span 
-              className="text-2xl font-bold text-white"
+              className="text-2xl font-bold text-foreground"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
             >
               {total}
             </motion.span>
-            <span className="text-xs text-white/60">Drivers</span>
+            <span className="text-xs text-muted-foreground">Drivers</span>
           </div>
         </motion.div>
 
@@ -126,13 +126,13 @@ const DriverSafetyScorecard = ({ categories, loading }: DriverSafetyScorecardPro
               />
               <div className="flex-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm flex items-center gap-1.5 text-white/80 group-hover:text-white transition-colors">
+                  <span className="text-sm flex items-center gap-1.5 text-muted-foreground group-hover:text-foreground transition-colors">
                     {getIcon(cat.label)}
                     {cat.label}
                   </span>
-                  <span className="text-sm font-bold text-white">{cat.count}</span>
+                  <span className="text-sm font-bold text-foreground">{cat.count}</span>
                 </div>
-                <span className="text-xs text-white/50">{cat.range}</span>
+                <span className="text-xs text-muted-foreground">{cat.range}</span>
               </div>
             </motion.div>
           ))}

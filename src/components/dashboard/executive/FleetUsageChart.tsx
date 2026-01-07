@@ -54,7 +54,7 @@ const FleetUsageChart = ({ data, dateRange, loading }: FleetUsageChartProps) => 
   return (
     <GlowingCard glowColor="success">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-bold text-lg text-white tracking-tight">Fleet Usage Report</h3>
+        <h3 className="font-bold text-lg text-foreground tracking-tight">Fleet Usage Report</h3>
         <Badge variant="outline" className="text-xs bg-success/20 text-success border-success/50 font-medium">
           <motion.span
             animate={{ opacity: [1, 0.6, 1] }}
@@ -77,7 +77,7 @@ const FleetUsageChart = ({ data, dateRange, loading }: FleetUsageChartProps) => 
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <span className="text-xs text-white/60 font-medium">Total Trips</span>
+          <span className="text-xs text-muted-foreground font-medium">Total Trips</span>
           <motion.p 
             className="text-3xl font-bold text-success"
             key={totalTrips}
@@ -88,15 +88,15 @@ const FleetUsageChart = ({ data, dateRange, loading }: FleetUsageChartProps) => 
             {animatedTotal}
           </motion.p>
         </motion.div>
-        <div className="h-10 w-px bg-white/10" />
+        <div className="h-10 w-px bg-border" />
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <span className="text-xs text-white/60 font-medium">Avg/Day</span>
+          <span className="text-xs text-muted-foreground font-medium">Avg/Day</span>
           <motion.p 
-            className="text-3xl font-bold text-white"
+            className="text-3xl font-bold text-foreground"
             key={avgTrips}
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
@@ -115,16 +115,16 @@ const FleetUsageChart = ({ data, dateRange, loading }: FleetUsageChartProps) => 
       >
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-white/10" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
             <XAxis 
               dataKey="date" 
-              tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.6)' }} 
+              tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} 
               interval="preserveStartEnd"
-              axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+              axisLine={{ stroke: 'hsl(var(--border))' }}
             />
             <YAxis 
-              tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.6)' }}
-              axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+              axisLine={{ stroke: 'hsl(var(--border))' }}
             />
             <Tooltip content={<CustomTooltip />} />
             <Bar 
