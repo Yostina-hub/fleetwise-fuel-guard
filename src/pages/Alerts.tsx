@@ -21,6 +21,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import AlertDetailModal from "@/components/AlertDetailModal";
 import { TablePagination } from "@/components/reports/TablePagination";
 import AlertsQuickStats from "@/components/alerts/AlertsQuickStats";
@@ -539,43 +540,68 @@ const Alerts = () => {
                     </div>
 
                     {alert.status === "unacknowledged" && (
-                      <div className="mt-3 ml-12 flex gap-2">
-                        <Button 
-                          size="sm" 
-                          variant="default"
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            await acknowledgeAlert(alert.id);
-                          }}
-                        >
-                          Acknowledge
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            await resolveAlert(alert.id);
-                          }}
-                        >
-                          Resolve
-                        </Button>
-                      </div>
+                      <TooltipProvider>
+                        <div className="mt-3 ml-12 flex gap-2">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                size="sm" 
+                                variant="default"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  await acknowledgeAlert(alert.id);
+                                }}
+                              >
+                                Acknowledge
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Mark alert as acknowledged</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  await resolveAlert(alert.id);
+                                }}
+                              >
+                                Resolve
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Mark alert as resolved</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </TooltipProvider>
                     )}
 
                     {alert.status === "acknowledged" && (
-                      <div className="mt-3 ml-12">
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            await resolveAlert(alert.id);
-                          }}
-                        >
-                          Mark Resolved
-                        </Button>
-                      </div>
+                      <TooltipProvider>
+                        <div className="mt-3 ml-12">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  await resolveAlert(alert.id);
+                                }}
+                              >
+                                Mark Resolved
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Close and mark as resolved</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </TooltipProvider>
                     )}
                   </div>
                 ))}

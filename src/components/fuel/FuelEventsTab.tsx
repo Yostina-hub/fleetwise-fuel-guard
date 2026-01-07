@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Loader2, Droplet, TrendingDown, AlertTriangle, CheckCircle, Clock, Search, Download, Calendar } from "lucide-react";
 import { useFuelEvents } from "@/hooks/useFuelEvents";
 import { useFuelPageContext } from "@/contexts/FuelPageContext";
@@ -180,10 +181,19 @@ const FuelEventsTab = () => {
             </SelectContent>
           </Select>
         </div>
-        <Button variant="outline" className="gap-2" onClick={exportEventsCSV} aria-label="Export fuel events to CSV">
-          <Download className="w-4 h-4" aria-hidden="true" />
-          Export CSV
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="outline" className="gap-2" onClick={exportEventsCSV} aria-label="Export fuel events to CSV">
+                <Download className="w-4 h-4" aria-hidden="true" />
+                Export CSV
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Export all filtered events to CSV</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       {/* Summary Cards */}
@@ -282,10 +292,26 @@ const FuelEventsTab = () => {
                       </div>
                     </div>
                     {(event.event_type === 'theft' || event.event_type === 'drain') && event.status === 'pending' && (
-                      <div className="flex gap-2 mt-4 pt-3 border-t border-border">
-                        <Button size="sm" variant="default" onClick={() => markAsInvestigating(event.id)}>Investigate</Button>
-                        <Button size="sm" variant="outline" onClick={() => markAsFalsePositive(event.id)}>Mark False Positive</Button>
-                      </div>
+                      <TooltipProvider>
+                        <div className="flex gap-2 mt-4 pt-3 border-t border-border">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button size="sm" variant="default" onClick={() => markAsInvestigating(event.id)}>Investigate</Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Start investigating this event</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button size="sm" variant="outline" onClick={() => markAsFalsePositive(event.id)}>Mark False Positive</Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Mark as false positive (not theft)</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </TooltipProvider>
                     )}
                   </CardContent>
                 </Card>

@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import StatusBadge from "@/components/StatusBadge";
 import { 
   Eye, 
@@ -327,81 +328,104 @@ export const VehicleTableView = ({
                 </div>
               </TableCell>
               <TableCell className="text-right">
-                <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => onVehicleClick(vehicle)}
-                    aria-label={`View details for ${vehicle.plate}`}
-                  >
-                    <Eye className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => navigate("/map", { state: { selectedVehicleId: vehicle.vehicleId } })}
-                    aria-label={`Track ${vehicle.plate} on map`}
-                  >
-                    <MapPin className="w-4 h-4" />
-                  </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`More actions for ${vehicle.plate}`}>
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem onClick={() => onVehicleClick(vehicle)}>
-                        <Eye className="w-4 h-4 mr-2" />
-                        View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/map", { state: { selectedVehicleId: vehicle.vehicleId } })}>
-                        <MapPin className="w-4 h-4 mr-2" />
-                        Track on Map
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => onEditVehicle?.(vehicle)}>
-                        <Edit className="w-4 h-4 mr-2" />
-                        Edit Vehicle
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onAssignDriver?.(vehicle)}>
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Assign Driver
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onAssignDevice?.(vehicle)}>
-                        <Radio className="w-4 h-4 mr-2" />
-                        GPS Device
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onSendCommand?.(vehicle)}>
-                        <Power className="w-4 h-4 mr-2" />
-                        Send Command
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => navigate("/maintenance")}>
-                        <Wrench className="w-4 h-4 mr-2" />
-                        Maintenance
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onFuelHistory?.(vehicle)}>
-                        <Fuel className="w-4 h-4 mr-2" />
-                        Fuel History
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onTripHistory?.(vehicle)}>
-                        <FileText className="w-4 h-4 mr-2" />
-                        Trip History
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        className="text-destructive focus:text-destructive"
-                        onClick={() => onDeleteVehicle?.(vehicle)}
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete Vehicle
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                <TooltipProvider>
+                  <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => onVehicleClick(vehicle)}
+                          aria-label={`View details for ${vehicle.plate}`}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>View details</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => navigate("/map", { state: { selectedVehicleId: vehicle.vehicleId } })}
+                          aria-label={`Track ${vehicle.plate} on map`}
+                        >
+                          <MapPin className="w-4 h-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Track on map</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`More actions for ${vehicle.plate}`}>
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>More actions</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <DropdownMenu>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem onClick={() => onVehicleClick(vehicle)}>
+                          <Eye className="w-4 h-4 mr-2" />
+                          View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate("/map", { state: { selectedVehicleId: vehicle.vehicleId } })}>
+                          <MapPin className="w-4 h-4 mr-2" />
+                          Track on Map
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => onEditVehicle?.(vehicle)}>
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit Vehicle
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onAssignDriver?.(vehicle)}>
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          Assign Driver
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onAssignDevice?.(vehicle)}>
+                          <Radio className="w-4 h-4 mr-2" />
+                          GPS Device
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onSendCommand?.(vehicle)}>
+                          <Power className="w-4 h-4 mr-2" />
+                          Send Command
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => navigate("/maintenance")}>
+                          <Wrench className="w-4 h-4 mr-2" />
+                          Maintenance
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onFuelHistory?.(vehicle)}>
+                          <Fuel className="w-4 h-4 mr-2" />
+                          Fuel History
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onTripHistory?.(vehicle)}>
+                          <FileText className="w-4 h-4 mr-2" />
+                          Trip History
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => onDeleteVehicle?.(vehicle)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete Vehicle
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </TooltipProvider>
               </TableCell>
             </TableRow>
           ))}

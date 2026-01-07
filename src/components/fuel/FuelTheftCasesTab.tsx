@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AlertTriangle, MapPin, Clock, FileText, Loader2, Eye, Download, Search } from "lucide-react";
 import { useFuelTheftCases } from "@/hooks/useFuelTheftCases";
 import { useFuelPageContext } from "@/contexts/FuelPageContext";
@@ -180,10 +181,19 @@ const FuelTheftCasesTab = () => {
             </SelectContent>
           </Select>
         </div>
-        <Button size="sm" variant="outline" className="gap-2" onClick={exportCasesCSV} aria-label="Export theft cases to CSV">
-          <Download className="w-4 h-4" aria-hidden="true" />
-          Export CSV
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="sm" variant="outline" className="gap-2" onClick={exportCasesCSV} aria-label="Export theft cases to CSV">
+                <Download className="w-4 h-4" aria-hidden="true" />
+                Export CSV
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Export all filtered cases to CSV</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       {/* Cases Stats */}
@@ -291,47 +301,77 @@ const FuelTheftCasesTab = () => {
                     )}
                   </div>
 
-                  <div className="flex flex-row lg:flex-col gap-2 shrink-0">
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="gap-2"
-                      onClick={() => {
-                        setSelectedCase(caseItem.id);
-                        setShowDetail(true);
-                      }}
-                    >
-                      <Eye className="w-4 h-4" aria-hidden="true" />
-                      View Details
-                    </Button>
-                    {caseItem.status === 'open' && (
-                      <Button 
-                        size="sm" 
-                        variant="default"
-                        onClick={() => handleStartInvestigation(caseItem.id)}
-                      >
-                        Start Investigation
-                      </Button>
-                    )}
-                    {caseItem.status === 'investigating' && (
-                      <>
-                        <Button 
-                          size="sm" 
-                          variant="destructive"
-                          onClick={() => handleCloseCase(caseItem.id, true)}
-                        >
-                          Confirm Theft
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleCloseCase(caseItem.id, false)}
-                        >
-                          False Positive
-                        </Button>
-                      </>
-                    )}
-                  </div>
+                  <TooltipProvider>
+                    <div className="flex flex-row lg:flex-col gap-2 shrink-0">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="gap-2"
+                            onClick={() => {
+                              setSelectedCase(caseItem.id);
+                              setShowDetail(true);
+                            }}
+                          >
+                            <Eye className="w-4 h-4" aria-hidden="true" />
+                            View Details
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>View full case details</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      {caseItem.status === 'open' && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              size="sm" 
+                              variant="default"
+                              onClick={() => handleStartInvestigation(caseItem.id)}
+                            >
+                              Start Investigation
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Begin investigating this case</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                      {caseItem.status === 'investigating' && (
+                        <>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                size="sm" 
+                                variant="destructive"
+                                onClick={() => handleCloseCase(caseItem.id, true)}
+                              >
+                                Confirm Theft
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Confirm theft occurred</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleCloseCase(caseItem.id, false)}
+                              >
+                                False Positive
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Mark as false alarm</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </>
+                      )}
+                    </div>
+                  </TooltipProvider>
                 </div>
               </CardContent>
             </Card>
