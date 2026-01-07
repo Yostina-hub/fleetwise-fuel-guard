@@ -65,19 +65,28 @@ export const VehicleMisuseDonut = ({ data, loading }: VehicleMisuseDonutProps) =
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.1 }}
+      initial={{ opacity: 0, y: 30, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+      whileHover={{ scale: 1.01 }}
     >
-      <Card className="bg-card border-border/50">
-        <CardHeader className="pb-2">
+      <Card className="bg-card border-border/50 overflow-hidden hover:shadow-xl hover:shadow-amber-500/10 transition-all duration-500">
+        {/* Subtle gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-transparent to-red-500/5 pointer-events-none" />
+        
+        <CardHeader className="pb-2 relative">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-base font-semibold">
-              <Settings2 className="w-4 h-4 text-muted-foreground" />
+            <CardTitle className="flex items-center gap-2 text-lg font-bold text-white tracking-tight">
+              <motion.div
+                animate={{ rotate: [0, -10, 10, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+              >
+                <Settings2 className="w-5 h-5 text-amber-400" />
+              </motion.div>
               Vehicle Misuse Overview
             </CardTitle>
             <Select value={period} onValueChange={setPeriod}>
-              <SelectTrigger className="w-[130px] h-8 text-xs">
+              <SelectTrigger className="w-[130px] h-8 text-xs bg-background/50 border-border/50">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -91,7 +100,7 @@ export const VehicleMisuseDonut = ({ data, loading }: VehicleMisuseDonutProps) =
           </div>
         </CardHeader>
 
-        <CardContent className="pt-0">
+        <CardContent className="pt-0 relative">
           <div className="relative h-56">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -101,54 +110,70 @@ export const VehicleMisuseDonut = ({ data, loading }: VehicleMisuseDonutProps) =
                   cy="50%"
                   innerRadius={70}
                   outerRadius={95}
-                  paddingAngle={2}
+                  paddingAngle={3}
                   dataKey="value"
                   strokeWidth={0}
                 >
                   {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={entry.color}
+                      className="drop-shadow-lg"
+                    />
                   ))}
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
             
-            {/* Center Text */}
+            {/* Center Text with glow */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-sm text-muted-foreground">Total</span>
-              <span className="text-3xl font-bold text-foreground">{total.toLocaleString()}</span>
+              <motion.span 
+                className="text-sm text-white/70 font-medium"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+              >
+                Total
+              </motion.span>
+              <motion.span 
+                className="text-4xl font-bold text-white drop-shadow-lg"
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
+              >
+                {total.toLocaleString()}
+              </motion.span>
             </div>
           </div>
 
-          {/* Legend - 2 columns */}
-          <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS.speedingDevice }} />
-              <span className="text-muted-foreground truncate">Speeding (device)</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS.harshBraking }} />
-              <span className="text-muted-foreground truncate">harsh braking</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS.harshAcceleration }} />
-              <span className="text-muted-foreground truncate">harsh acceleration</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS.excessiveIdle }} />
-              <span className="text-muted-foreground truncate">excessive idle</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS.harshCornering }} />
-              <span className="text-muted-foreground truncate">harsh cornering</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS.speedingRoad }} />
-              <span className="text-muted-foreground truncate">Speeding (road speed)</span>
-            </div>
-            <div className="flex items-center gap-1.5 col-span-2">
-              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS.speedingPlatform }} />
-              <span className="text-muted-foreground truncate">Speeding (platform)</span>
-            </div>
+          {/* Enhanced Legend - 2 columns */}
+          <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+            {[
+              { label: 'Speeding (device)', color: COLORS.speedingDevice },
+              { label: 'Harsh braking', color: COLORS.harshBraking },
+              { label: 'Harsh acceleration', color: COLORS.harshAcceleration },
+              { label: 'Excessive idle', color: COLORS.excessiveIdle },
+              { label: 'Harsh cornering', color: COLORS.harshCornering },
+              { label: 'Speeding (road)', color: COLORS.speedingRoad },
+              { label: 'Speeding (platform)', color: COLORS.speedingPlatform },
+            ].map((item, index) => (
+              <motion.div 
+                key={item.label}
+                className="flex items-center gap-2 group"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 + index * 0.05 }}
+                whileHover={{ x: 2 }}
+              >
+                <motion.div 
+                  className="w-2.5 h-2.5 rounded-full shadow-lg flex-shrink-0"
+                  style={{ backgroundColor: item.color, boxShadow: `0 0 8px ${item.color}50` }}
+                  animate={{ scale: [1, 1.15, 1] }}
+                  transition={{ duration: 2.5, repeat: Infinity, delay: index * 0.15 }}
+                />
+                <span className="text-white/70 truncate group-hover:text-white transition-colors text-xs">{item.label}</span>
+              </motion.div>
+            ))}
           </div>
         </CardContent>
       </Card>
