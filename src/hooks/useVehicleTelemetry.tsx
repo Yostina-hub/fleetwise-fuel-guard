@@ -127,7 +127,7 @@ export const useVehicleTelemetry = () => {
       clearTimeout(throttleTimer);
       supabase.removeChannel(channel);
     };
-  }, [organizationId, isFirstLoad]);
+  }, [organizationId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Helper function to check if a vehicle is online (last communication within 15 minutes)
   const isVehicleOnline = (vehicleId: string): boolean => {
