@@ -70,7 +70,7 @@ export const FleetViolationsDonut = ({ data, loading }: FleetViolationsDonutProp
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ scale: 1.01 }}
     >
-      <Card className="bg-card border-border/50 relative overflow-hidden hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-500">
+      <Card className="bg-[#1a2332] border-[#2a3a4d] relative overflow-hidden hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-500">
         {/* Subtle gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-purple-500/5 pointer-events-none" />
         
