@@ -21,22 +21,21 @@ const FleetStatusCard = ({ totalAssets, statuses, loading }: FleetStatusCardProp
 
   if (loading) {
     return (
-      <div className="bg-[#1a2332] border border-[#2a3a4d] rounded-lg p-4 h-72">
+      <div className="bg-card border border-border rounded-lg p-4 h-72">
         <div className="animate-pulse space-y-4">
-          <div className="h-4 bg-muted/20 rounded w-1/3" />
-          <div className="h-48 bg-muted/20 rounded" />
+          <div className="h-4 bg-muted rounded w-1/3" />
+          <div className="h-48 bg-muted rounded" />
         </div>
       </div>
     );
   }
 
-  // Colors matching the reference
   const statusColors: Record<string, string> = {
-    'Active': '#22c55e',
+    'Active': '#8DC63F',
     'Stop/Idle': '#eab308', 
     'Inactive': '#ef4444',
-    'Moving': '#22c55e',
-    'Parked': '#3b82f6',
+    'Moving': '#8DC63F',
+    'Parked': '#0072BC',
     'Offline': '#6b7280',
   };
 
@@ -50,19 +49,19 @@ const FleetStatusCard = ({ totalAssets, statuses, loading }: FleetStatusCardProp
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      whileHover={{ scale: 1.01, borderColor: "rgba(34, 197, 94, 0.4)" }}
-      className="bg-[#1a2332] border border-[#2a3a4d] rounded-lg p-4 hover:shadow-lg hover:shadow-green-500/10 transition-all duration-300"
+      whileHover={{ scale: 1.01, borderColor: "hsl(var(--primary) / 0.4)" }}
+      className="bg-card border border-border rounded-lg p-4 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300"
     >
       <div className="flex items-center gap-3 mb-4">
-        <h3 className="font-bold text-lg text-white tracking-tight">Fleet Status</h3>
-        <Badge variant="outline" className="text-xs bg-green-500/30 text-green-300 border-green-400/60 font-medium">
+        <h3 className="font-bold text-lg text-foreground tracking-tight">Fleet Status</h3>
+        <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30 font-medium">
           <motion.span
             animate={{ opacity: [1, 0.6, 1] }}
             transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
             className="inline-flex items-center gap-1.5"
           >
             <motion.span 
-              className="w-2 h-2 rounded-full bg-green-400"
+              className="w-2 h-2 rounded-full bg-primary"
               animate={{ scale: [1, 1.4, 1], opacity: [1, 0.7, 1] }}
               transition={{ duration: 1.5, repeat: Infinity }}
             />
@@ -72,21 +71,10 @@ const FleetStatusCard = ({ totalAssets, statuses, loading }: FleetStatusCardProp
       </div>
       
       <div className="flex items-start gap-4">
-        {/* Donut Chart */}
         <div className="relative w-28 h-28 flex-shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie
-                data={chartData}
-                cx="50%"
-                cy="50%"
-                innerRadius={32}
-                outerRadius={45}
-                paddingAngle={2}
-                dataKey="count"
-                startAngle={90}
-                endAngle={-270}
-              >
+              <Pie data={chartData} cx="50%" cy="50%" innerRadius={32} outerRadius={45} paddingAngle={2} dataKey="count" startAngle={90} endAngle={-270}>
                 {chartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
                 ))}
@@ -94,24 +82,17 @@ const FleetStatusCard = ({ totalAssets, statuses, loading }: FleetStatusCardProp
             </PieChart>
           </ResponsiveContainer>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <motion.span
-              className="text-2xl font-bold text-foreground"
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3 }}
-              key={totalAssets}
-            >
+            <motion.span className="text-2xl font-bold text-foreground" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }} key={totalAssets}>
               {animatedTotal}
             </motion.span>
-            <span className="text-[10px] text-white/70 font-medium">Vehicles</span>
+            <span className="text-[10px] text-muted-foreground font-medium">Vehicles</span>
           </div>
         </div>
 
-        {/* Status Table */}
         <div className="flex-1 min-w-0">
           <table className="w-full text-xs">
             <thead>
-              <tr className="text-white/80">
+              <tr className="text-muted-foreground">
                 <th className="text-left py-1 font-semibold">Status</th>
                 <th className="text-center py-1 font-semibold">Count</th>
                 <th className="text-right py-1 font-semibold">Fleet %</th>
@@ -119,54 +100,17 @@ const FleetStatusCard = ({ totalAssets, statuses, loading }: FleetStatusCardProp
             </thead>
             <tbody>
               {statuses.map((item, i) => (
-                <motion.tr
-                  key={item.status}
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  className="border-t border-[#2a3a4d]"
-                >
+                <motion.tr key={item.status} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="border-t border-border">
                   <td className="py-2">
-                    <Badge 
-                      variant="outline" 
-                      className="text-[10px] px-2 py-0.5 font-normal"
-                      style={{ 
-                        borderColor: statusColors[item.status] || item.color,
-                        color: statusColors[item.status] || item.color,
-                        backgroundColor: `${statusColors[item.status] || item.color}15`
-                      }}
-                    >
-                      <motion.span
-                        className="inline-flex items-center gap-1"
-                      >
-                        <motion.span 
-                          className="w-1.5 h-1.5 rounded-full"
-                          style={{ backgroundColor: statusColors[item.status] || item.color }}
-                          animate={{ scale: [1, 1.3, 1] }}
-                          transition={{ duration: 2, repeat: Infinity }}
-                        />
+                    <Badge variant="outline" className="text-[10px] px-2 py-0.5 font-normal" style={{ borderColor: statusColors[item.status] || item.color, color: statusColors[item.status] || item.color, backgroundColor: `${statusColors[item.status] || item.color}15` }}>
+                      <span className="inline-flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: statusColors[item.status] || item.color }} />
                         {item.status}
-                      </motion.span>
+                      </span>
                     </Badge>
                   </td>
-                  <td className="text-center py-2 text-white font-medium">
-                    <motion.span
-                      key={item.count}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      {item.count}
-                    </motion.span>
-                  </td>
-                  <td className="text-right py-2" style={{ color: statusColors[item.status] || item.color }}>
-                    <motion.span
-                      key={item.percentage}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      {item.percentage.toFixed(1)}%
-                    </motion.span>
-                  </td>
+                  <td className="text-center py-2 text-foreground font-medium">{item.count}</td>
+                  <td className="text-right py-2" style={{ color: statusColors[item.status] || item.color }}>{item.percentage.toFixed(1)}%</td>
                 </motion.tr>
               ))}
             </tbody>

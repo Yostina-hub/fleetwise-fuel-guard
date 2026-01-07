@@ -35,7 +35,7 @@ export const TotalTripsCard = ({
 
   if (loading) {
     return (
-      <Card className="bg-card border-border/50">
+      <Card className="bg-card border-border">
         <CardContent className="p-6">
           <div className="animate-pulse space-y-4">
             <div className="h-6 bg-muted rounded w-1/2" />
@@ -53,18 +53,18 @@ export const TotalTripsCard = ({
       transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ scale: 1.01 }}
     >
-      <Card className="bg-[#1a2332] border-[#2a3a4d] overflow-hidden hover:shadow-xl hover:shadow-green-500/10 transition-all duration-500">
+      <Card className="bg-card border-border overflow-hidden hover:shadow-lg hover:shadow-primary/10 transition-all duration-500">
         {/* Subtle gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 via-transparent to-emerald-500/5 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-success/5 pointer-events-none" />
         
         <CardHeader className="pb-2 relative">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-lg font-bold text-white tracking-tight">
+            <CardTitle className="flex items-center gap-2 text-lg font-bold text-foreground tracking-tight">
               <motion.div
                 animate={{ scale: [1, 1.1, 1] }}
                 transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
               >
-                <Settings2 className="w-5 h-5 text-green-400" />
+                <Settings2 className="w-5 h-5 text-primary" />
               </motion.div>
               Total Trips
             </CardTitle>
@@ -72,10 +72,10 @@ export const TotalTripsCard = ({
               <Switch 
                 checked={showChart} 
                 onCheckedChange={setShowChart}
-                className="data-[state=checked]:bg-green-500"
+                className="data-[state=checked]:bg-primary"
               />
               <Select value={period} onValueChange={setPeriod}>
-                <SelectTrigger className="w-[100px] h-8 text-xs bg-background/50 border-border/50">
+                <SelectTrigger className="w-[100px] h-8 text-xs bg-muted/50 border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -93,9 +93,9 @@ export const TotalTripsCard = ({
           {/* Stats Row with enhanced styling */}
           <div className="grid grid-cols-3 gap-4 mb-4">
             {[
-              { label: 'All trips', value: allTrips, color: 'text-green-400' },
-              { label: 'Daily average', value: dailyAverage, color: 'text-blue-400' },
-              { label: 'Assets', value: activeAssets, color: 'text-purple-400' },
+              { label: 'All trips', value: allTrips, color: 'text-primary' },
+              { label: 'Daily average', value: dailyAverage, color: 'text-secondary' },
+              { label: 'Assets', value: activeAssets, color: 'text-success' },
             ].map((stat, index) => (
               <motion.div
                 key={stat.label}
@@ -103,7 +103,7 @@ export const TotalTripsCard = ({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 + index * 0.1 }}
               >
-                <p className="text-xs text-white/60 font-medium">{stat.label}</p>
+                <p className="text-xs text-muted-foreground font-medium">{stat.label}</p>
                 <motion.p 
                   className={`text-3xl font-bold ${stat.color}`}
                   initial={{ scale: 0 }}
@@ -131,12 +131,12 @@ export const TotalTripsCard = ({
                     dataKey="hour" 
                     axisLine={false} 
                     tickLine={false}
-                    tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.6)' }}
+                    tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                   />
                   <YAxis 
                     axisLine={false} 
                     tickLine={false}
-                    tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.6)' }}
+                    tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                     domain={[10, 'auto']}
                   />
                   <Bar dataKey="trips" radius={[6, 6, 0, 0]}>
@@ -144,7 +144,7 @@ export const TotalTripsCard = ({
                       <Cell 
                         key={`cell-${index}`} 
                         fill="#8DC63F"
-                        className="drop-shadow-lg"
+                        className="drop-shadow-sm"
                       />
                     ))}
                   </Bar>
