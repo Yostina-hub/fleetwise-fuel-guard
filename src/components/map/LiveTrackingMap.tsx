@@ -140,17 +140,40 @@ useEffect(() => {
 
     const fetchToken = async () => {
       try {
-        const localToken = token || localStorage.getItem('mapbox_token') || import.meta.env.VITE_MAPBOX_TOKEN;
+        const isValid = (value: unknown): value is string => isValidPublicToken(value);
 
-        if (localToken) {
-          if (!isValidPublicToken(localToken)) {
+        // 1) If a token prop is provided, it must be valid.
+        if (token) {
+          if (!isValid(token)) {
             setTokenError('invalid');
             return null;
           }
-          return localToken;
+          setTokenError(null);
+          return token;
         }
 
-        // Fetch from backend function (handles CORS/auth)
+        // 2) Try localStorage, then env. If localStorage is invalid, clear it and continue.
+        const lsToken = localStorage.getItem('mapbox_token');
+        if (lsToken) {
+          if (isValid(lsToken)) {
+            setTokenError(null);
+            return lsToken;
+          }
+          try {
+            localStorage.removeItem('mapbox_token');
+          } catch {}
+        }
+
+        const envToken = import.meta.env.VITE_MAPBOX_TOKEN;
+        if (envToken) {
+          if (isValid(envToken)) {
+            setTokenError(null);
+            return envToken;
+          }
+          // If env token is invalid we can't clear it; fall through to backend.
+        }
+
+        // 3) Fetch from backend function (handles CORS/auth)
         const { data, error } = await supabase.functions.invoke('get-mapbox-token');
         if (error) {
           console.error('get-mapbox-token error:', error);
@@ -159,7 +182,7 @@ useEffect(() => {
         }
 
         const fetched = (data as any)?.token as string | undefined;
-        if (!isValidPublicToken(fetched)) {
+        if (!isValid(fetched)) {
           setTokenError('missing');
           return null;
         }
@@ -168,6 +191,7 @@ useEffect(() => {
           localStorage.setItem('mapbox_token', fetched);
         } catch {}
 
+        setTokenError(null);
         return fetched;
       } catch (err) {
         console.error('Failed to fetch Mapbox token:', err);
