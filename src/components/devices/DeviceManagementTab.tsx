@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useDevices } from "@/hooks/useDevices";
 import { useDeviceCommands } from "@/hooks/useDeviceCommands";
 import { useVehicles } from "@/hooks/useVehicles";
@@ -1020,85 +1021,139 @@ export const DeviceManagementTab = () => {
                     )}
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        size="sm"
-                        variant="default"
-                        className="bg-blue-600 hover:bg-blue-700 gap-1"
-                        onClick={() => handleGetLocation(device)}
-                        disabled={sendingLocationCommand === device.id || sendCommand.isPending}
-                        aria-label={`Request location from device ${device.imei}`}
-                        title="Send command to get current location"
-                      >
-                        {sendingLocationCommand === device.id ? (
-                          <Activity className="h-4 w-4 animate-pulse" aria-hidden="true" />
+                    <TooltipProvider>
+                      <div className="flex items-center gap-1">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="default"
+                              className="bg-blue-600 hover:bg-blue-700 gap-1"
+                              onClick={() => handleGetLocation(device)}
+                              disabled={sendingLocationCommand === device.id || sendCommand.isPending}
+                              aria-label={`Request location from device ${device.imei}`}
+                            >
+                              {sendingLocationCommand === device.id ? (
+                                <Activity className="h-4 w-4 animate-pulse" aria-hidden="true" />
+                              ) : (
+                                <MapPin className="h-4 w-4" aria-hidden="true" />
+                              )}
+                              Location
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Request current GPS location</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleTestEndpoint(device)}
+                              disabled={testingDeviceId === device.id || testEndpoint.isPending}
+                              aria-label={`Test GPS endpoint for device ${device.imei}`}
+                            >
+                              {testingDeviceId === device.id ? (
+                                <Activity className="h-4 w-4 animate-pulse" aria-hidden="true" />
+                              ) : (
+                                <Zap className="h-4 w-4" aria-hidden="true" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Test connection (dry run)</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        {device.auth_token ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => handleRevokeToken(device)}
+                                disabled={revokeAuthToken.isPending}
+                                aria-label={`Revoke authentication token for device ${device.imei}`}
+                              >
+                                <ShieldOff className="h-4 w-4" aria-hidden="true" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Revoke auth token</p>
+                            </TooltipContent>
+                          </Tooltip>
                         ) : (
-                          <MapPin className="h-4 w-4" aria-hidden="true" />
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleGenerateToken(device)}
+                                disabled={generatingToken && tokenDeviceId === device.id}
+                                aria-label={`Generate authentication token for device ${device.imei}`}
+                              >
+                                <Shield className="h-4 w-4" aria-hidden="true" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Generate auth token</p>
+                            </TooltipContent>
+                          </Tooltip>
                         )}
-                        Location
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleTestEndpoint(device)}
-                        disabled={testingDeviceId === device.id || testEndpoint.isPending}
-                        aria-label={`Test GPS endpoint for device ${device.imei}`}
-                        title="Test connectivity (dry run)"
-                      >
-                        {testingDeviceId === device.id ? (
-                          <Activity className="h-4 w-4 animate-pulse" aria-hidden="true" />
-                        ) : (
-                          <Zap className="h-4 w-4" aria-hidden="true" />
-                        )}
-                      </Button>
-                      {device.auth_token ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => handleRevokeToken(device)}
-                          disabled={revokeAuthToken.isPending}
-                          aria-label={`Revoke authentication token for device ${device.imei}`}
-                        >
-                          <ShieldOff className="h-4 w-4" aria-hidden="true" />
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleGenerateToken(device)}
-                          disabled={generatingToken && tokenDeviceId === device.id}
-                          aria-label={`Generate authentication token for device ${device.imei}`}
-                        >
-                          <Shield className="h-4 w-4" aria-hidden="true" />
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => testHeartbeat.mutate(device.id)}
-                        disabled={testHeartbeat.isPending}
-                        aria-label={device.vehicle_id ? `Quick heartbeat for device ${device.imei}` : "Assign to vehicle first"}
-                      >
-                        <Activity className="h-4 w-4" aria-hidden="true" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleEdit(device)}
-                        aria-label={`Edit device ${device.imei}`}
-                      >
-                        <Edit className="h-4 w-4" aria-hidden="true" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDeleteClick(device)}
-                        aria-label={`Delete device ${device.imei}`}
-                      >
-                        <Trash2 className="h-4 w-4" aria-hidden="true" />
-                      </Button>
-                    </div>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => testHeartbeat.mutate(device.id)}
+                              disabled={testHeartbeat.isPending}
+                              aria-label={device.vehicle_id ? `Quick heartbeat for device ${device.imei}` : "Assign to vehicle first"}
+                            >
+                              <Activity className="h-4 w-4" aria-hidden="true" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Test heartbeat</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEdit(device)}
+                              aria-label={`Edit device ${device.imei}`}
+                            >
+                              <Edit className="h-4 w-4" aria-hidden="true" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Edit device</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDeleteClick(device)}
+                              aria-label={`Delete device ${device.imei}`}
+                            >
+                              <Trash2 className="h-4 w-4" aria-hidden="true" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Delete device</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </TooltipProvider>
                   </TableCell>
                 </TableRow>
               ))}
