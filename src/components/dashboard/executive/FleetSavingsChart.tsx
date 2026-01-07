@@ -52,27 +52,37 @@ const FleetSavingsChart = ({ data, loading }: FleetSavingsChartProps) => {
   return (
     <GlowingCard glowColor="primary">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-lg">Fleet Savings Summary</h3>
+        <h3 className="font-bold text-lg text-white tracking-tight">Fleet Savings Summary</h3>
         <div className="flex items-center gap-4 text-xs">
-          <div className="flex items-center gap-1.5">
+          <motion.div 
+            className="flex items-center gap-1.5"
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+          >
             <motion.div 
-              className="w-3 h-3 rounded bg-primary"
-              animate={{ scale: [1, 1.2, 1] }}
+              className="w-3 h-3 rounded bg-primary shadow-lg shadow-primary/50"
+              animate={{ scale: [1, 1.3, 1], opacity: [1, 0.8, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
             />
-            <span>This Month</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-warning" />
-            <span>Potential</span>
-          </div>
+            <span className="text-white/80">This Month</span>
+          </motion.div>
+          <motion.div 
+            className="flex items-center gap-1.5"
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <div className="w-3 h-3 rounded bg-warning shadow-lg shadow-warning/50" />
+            <span className="text-white/80">Potential</span>
+          </motion.div>
         </div>
       </div>
       
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
         className="h-56"
       >
         <ResponsiveContainer width="100%" height="100%">
@@ -81,26 +91,42 @@ const FleetSavingsChart = ({ data, loading }: FleetSavingsChartProps) => {
             layout="vertical"
             margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
           >
-            <XAxis type="number" tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} />
-            <YAxis type="category" dataKey="category" tick={{ fontSize: 12 }} />
+            <XAxis 
+              type="number" 
+              tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`}
+              tick={{ fill: 'rgba(255,255,255,0.7)' }}
+              axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+            />
+            <YAxis 
+              type="category" 
+              dataKey="category" 
+              tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.8)' }}
+              axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+            />
             <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="actual" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={16} />
-            <Bar dataKey="potential" fill="hsl(var(--warning))" radius={[0, 4, 4, 0]} barSize={16} />
+            <Bar dataKey="actual" fill="hsl(var(--primary))" radius={[0, 6, 6, 0]} barSize={18} />
+            <Bar dataKey="potential" fill="hsl(var(--warning))" radius={[0, 6, 6, 0]} barSize={18} />
           </BarChart>
         </ResponsiveContainer>
       </motion.div>
 
-      <div className="mt-4 pt-4 border-t flex justify-between text-sm">
-        <span className="text-muted-foreground">*Measured in Thousands</span>
+      <motion.div 
+        className="mt-4 pt-4 border-t border-white/10 flex justify-between text-sm"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+      >
+        <span className="text-white/50">*Measured in Thousands</span>
         <motion.span 
-          className="font-medium text-success"
+          className="font-bold text-success text-lg"
           key={totalActual}
-          initial={{ opacity: 0, x: 10 }}
-          animate={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: "spring", stiffness: 200 }}
         >
           Total Savings: ETB {animatedTotal}
         </motion.span>
-      </div>
+      </motion.div>
     </GlowingCard>
   );
 };

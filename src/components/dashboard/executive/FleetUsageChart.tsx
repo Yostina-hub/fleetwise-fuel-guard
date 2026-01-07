@@ -54,61 +54,83 @@ const FleetUsageChart = ({ data, dateRange, loading }: FleetUsageChartProps) => 
   return (
     <GlowingCard glowColor="success">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-lg">Fleet Usage Report</h3>
-        <Badge variant="outline" className="text-xs">
+        <h3 className="font-bold text-lg text-white tracking-tight">Fleet Usage Report</h3>
+        <Badge variant="outline" className="text-xs bg-success/20 text-success border-success/50 font-medium">
           <motion.span
-            animate={{ opacity: [1, 0.5, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="inline-flex items-center gap-1"
+            animate={{ opacity: [1, 0.6, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+            className="inline-flex items-center gap-1.5"
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+            <motion.span 
+              className="w-2 h-2 rounded-full bg-success"
+              animate={{ scale: [1, 1.3, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            />
             {dateRange}
           </motion.span>
         </Badge>
       </div>
 
-      <div className="flex items-center gap-4 mb-4">
-        <div>
-          <span className="text-xs text-muted-foreground">Total Trips</span>
+      <div className="flex items-center gap-6 mb-4">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <span className="text-xs text-white/60 font-medium">Total Trips</span>
           <motion.p 
-            className="text-2xl font-bold text-success"
+            className="text-3xl font-bold text-success"
             key={totalTrips}
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ scale: 0.8 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 200 }}
           >
             {animatedTotal}
           </motion.p>
-        </div>
-        <div className="h-8 w-px bg-border" />
-        <div>
-          <span className="text-xs text-muted-foreground">Avg/Day</span>
+        </motion.div>
+        <div className="h-10 w-px bg-white/10" />
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <span className="text-xs text-white/60 font-medium">Avg/Day</span>
           <motion.p 
-            className="text-2xl font-bold"
+            className="text-3xl font-bold text-white"
             key={avgTrips}
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ scale: 0.8 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 200, delay: 0.1 }}
           >
             {animatedAvg}
           </motion.p>
-        </div>
+        </motion.div>
       </div>
       
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.3 }}
         className="h-36"
       >
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" vertical={false} />
-            <XAxis dataKey="date" tick={{ fontSize: 9 }} interval="preserveStartEnd" />
-            <YAxis tick={{ fontSize: 10 }} />
+            <CartesianGrid strokeDasharray="3 3" className="stroke-white/10" vertical={false} />
+            <XAxis 
+              dataKey="date" 
+              tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.6)' }} 
+              interval="preserveStartEnd"
+              axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+            />
+            <YAxis 
+              tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.6)' }}
+              axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+            />
             <Tooltip content={<CustomTooltip />} />
             <Bar 
               dataKey="trips" 
               fill="hsl(var(--success))" 
-              radius={[2, 2, 0, 0]}
+              radius={[4, 4, 0, 0]}
               maxBarSize={20}
             />
           </BarChart>

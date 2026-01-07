@@ -56,47 +56,57 @@ const RiskSafetyReportsChart = ({ data, loading }: RiskSafetyReportsChartProps) 
   return (
     <GlowingCard glowColor="warning">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-lg">Risk and Safety Reports</h3>
+        <h3 className="font-bold text-lg text-white tracking-tight">Risk and Safety Reports</h3>
         <div className="flex flex-wrap gap-2 text-xs">
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded" style={{ backgroundColor: colors.speeding }} />
-            <span>Speeding</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded" style={{ backgroundColor: colors.harshAcceleration }} />
-            <span>Harsh Accel</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded" style={{ backgroundColor: colors.harshBraking }} />
-            <span>Harsh Braking</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded" style={{ backgroundColor: colors.excessiveIdle }} />
-            <span>Excessive Idle</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded" style={{ backgroundColor: colors.harshCornering }} />
-            <span>Harsh Cornering</span>
-          </div>
+          {[
+            { key: 'speeding', label: 'Speeding', color: colors.speeding },
+            { key: 'harshAcceleration', label: 'Harsh Accel', color: colors.harshAcceleration },
+            { key: 'harshBraking', label: 'Harsh Braking', color: colors.harshBraking },
+            { key: 'excessiveIdle', label: 'Excessive Idle', color: colors.excessiveIdle },
+            { key: 'harshCornering', label: 'Harsh Cornering', color: colors.harshCornering },
+          ].map((item, index) => (
+            <motion.div 
+              key={item.key}
+              className="flex items-center gap-1.5"
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 + index * 0.05 }}
+            >
+              <motion.div 
+                className="w-2.5 h-2.5 rounded-sm shadow-lg" 
+                style={{ backgroundColor: item.color, boxShadow: `0 0 6px ${item.color}40` }}
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 2, repeat: Infinity, delay: index * 0.2 }}
+              />
+              <span className="text-white/70">{item.label}</span>
+            </motion.div>
+          ))}
         </div>
       </div>
       
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
         className="h-56"
       >
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
-            <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 11 }} />
+            <XAxis 
+              dataKey="month" 
+              tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.7)' }}
+              axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+            />
+            <YAxis 
+              tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.7)' }}
+              axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+            />
             <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="speeding" fill={colors.speeding} name="Speeding" />
-            <Bar dataKey="harshAcceleration" fill={colors.harshAcceleration} name="Harsh Accel" />
-            <Bar dataKey="harshBraking" fill={colors.harshBraking} name="Harsh Braking" />
-            <Bar dataKey="excessiveIdle" fill={colors.excessiveIdle} name="Excessive Idle" />
-            <Bar dataKey="harshCornering" fill={colors.harshCornering} name="Harsh Cornering" />
+            <Bar dataKey="speeding" fill={colors.speeding} name="Speeding" radius={[2, 2, 0, 0]} />
+            <Bar dataKey="harshAcceleration" fill={colors.harshAcceleration} name="Harsh Accel" radius={[2, 2, 0, 0]} />
+            <Bar dataKey="harshBraking" fill={colors.harshBraking} name="Harsh Braking" radius={[2, 2, 0, 0]} />
+            <Bar dataKey="excessiveIdle" fill={colors.excessiveIdle} name="Excessive Idle" radius={[2, 2, 0, 0]} />
+            <Bar dataKey="harshCornering" fill={colors.harshCornering} name="Harsh Cornering" radius={[2, 2, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </motion.div>

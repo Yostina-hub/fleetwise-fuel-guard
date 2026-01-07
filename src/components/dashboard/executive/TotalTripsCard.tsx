@@ -48,25 +48,34 @@ export const TotalTripsCard = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.2 }}
+      initial={{ opacity: 0, y: 30, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+      whileHover={{ scale: 1.01 }}
     >
-      <Card className="bg-card border-border/50">
-        <CardHeader className="pb-2">
+      <Card className="bg-card border-border/50 overflow-hidden hover:shadow-xl hover:shadow-green-500/10 transition-all duration-500">
+        {/* Subtle gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 via-transparent to-emerald-500/5 pointer-events-none" />
+        
+        <CardHeader className="pb-2 relative">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-base font-semibold">
-              <Settings2 className="w-4 h-4 text-muted-foreground" />
+            <CardTitle className="flex items-center gap-2 text-lg font-bold text-white tracking-tight">
+              <motion.div
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <Settings2 className="w-5 h-5 text-green-400" />
+              </motion.div>
               Total Trips
             </CardTitle>
             <div className="flex items-center gap-3">
               <Switch 
                 checked={showChart} 
                 onCheckedChange={setShowChart}
-                className="data-[state=checked]:bg-primary"
+                className="data-[state=checked]:bg-green-500"
               />
               <Select value={period} onValueChange={setPeriod}>
-                <SelectTrigger className="w-[100px] h-8 text-xs">
+                <SelectTrigger className="w-[100px] h-8 text-xs bg-background/50 border-border/50">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -80,48 +89,68 @@ export const TotalTripsCard = ({
           </div>
         </CardHeader>
 
-        <CardContent className="pt-0">
-          {/* Stats Row */}
+        <CardContent className="pt-0 relative">
+          {/* Stats Row with enhanced styling */}
           <div className="grid grid-cols-3 gap-4 mb-4">
-            <div>
-              <p className="text-xs text-muted-foreground">All trips</p>
-              <p className="text-2xl font-bold text-foreground">{allTrips}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Daily average</p>
-              <p className="text-2xl font-bold text-foreground">{dailyAverage}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Assets</p>
-              <p className="text-2xl font-bold text-foreground">{activeAssets}</p>
-            </div>
+            {[
+              { label: 'All trips', value: allTrips, color: 'text-green-400' },
+              { label: 'Daily average', value: dailyAverage, color: 'text-blue-400' },
+              { label: 'Assets', value: activeAssets, color: 'text-purple-400' },
+            ].map((stat, index) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 + index * 0.1 }}
+              >
+                <p className="text-xs text-white/60 font-medium">{stat.label}</p>
+                <motion.p 
+                  className={`text-3xl font-bold ${stat.color}`}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.5 + index * 0.1, type: "spring", stiffness: 200 }}
+                >
+                  {stat.value}
+                </motion.p>
+              </motion.div>
+            ))}
           </div>
 
-          {/* Chart */}
+          {/* Chart with smooth reveal */}
           {showChart && (
-            <div className="h-40">
+            <motion.div 
+              className="h-40"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 160 }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+            >
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={defaultChartData} barSize={40}>
                   <XAxis 
                     dataKey="hour" 
                     axisLine={false} 
                     tickLine={false}
-                    tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                    tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.6)' }}
                   />
                   <YAxis 
                     axisLine={false} 
                     tickLine={false}
-                    tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                    tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.6)' }}
                     domain={[10, 'auto']}
                   />
-                  <Bar dataKey="trips" radius={[4, 4, 0, 0]}>
+                  <Bar dataKey="trips" radius={[6, 6, 0, 0]}>
                     {defaultChartData.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill="#8DC63F" />
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill="#8DC63F"
+                        className="drop-shadow-lg"
+                      />
                     ))}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-            </div>
+            </motion.div>
           )}
         </CardContent>
       </Card>
