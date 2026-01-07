@@ -103,7 +103,7 @@ const Dashboard = () => {
   const { organizationId } = useOrganization();
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("executive");
   const [dateRange, setDateRange] = useState({
     start: startOfMonth(new Date()),
     end: new Date(),
