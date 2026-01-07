@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Plus, Search, FileSpreadsheet, Loader2, CheckCircle } from "lucide-react";
 import { useFuelTransactions } from "@/hooks/useFuelTransactions";
 import { useFuelPageContext } from "@/contexts/FuelPageContext";
@@ -119,16 +120,32 @@ const FuelTransactionsTab = () => {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" className="gap-2" onClick={handleExport} aria-label="Export fuel transactions to CSV">
-            <FileSpreadsheet className="w-4 h-4" aria-hidden="true" />
-            Export
-          </Button>
-          <Button className="gap-2" onClick={() => setShowAddDialog(true)} aria-label="Add new fuel transaction">
-            <Plus className="w-4 h-4" aria-hidden="true" />
-            Add Transaction
-          </Button>
-        </div>
+        <TooltipProvider>
+          <div className="flex gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" className="gap-2" onClick={handleExport} aria-label="Export fuel transactions to CSV">
+                  <FileSpreadsheet className="w-4 h-4" aria-hidden="true" />
+                  Export
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Export transactions to CSV</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button className="gap-2" onClick={() => setShowAddDialog(true)} aria-label="Add new fuel transaction">
+                  <Plus className="w-4 h-4" aria-hidden="true" />
+                  Add Transaction
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Add new fuel transaction</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </TooltipProvider>
       </div>
 
       <Card>
@@ -190,7 +207,16 @@ const FuelTransactionsTab = () => {
                     </TableCell>
                     <TableCell>
                       {!t.is_reconciled && (
-                        <Button size="sm" variant="ghost" onClick={() => handleReconcile(t.id)}>Reconcile</Button>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button size="sm" variant="ghost" onClick={() => handleReconcile(t.id)}>Reconcile</Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Mark transaction as reconciled</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       )}
                     </TableCell>
                   </TableRow>
