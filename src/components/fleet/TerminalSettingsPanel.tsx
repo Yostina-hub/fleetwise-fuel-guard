@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from "framer-motion";
 import {
   Sheet,
@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -148,10 +149,42 @@ export const TerminalSettingsPanel = ({
   const [activeSubPanel, setActiveSubPanel] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
+  const [deviceId, setDeviceId] = useState<string | null>(null);
+  const [loadingDevice, setLoadingDevice] = useState(false);
 
   // Swipe gesture for sub-panels
   const x = useMotionValue(0);
   const opacity = useTransform(x, [-100, 0, 100], [0.5, 1, 0.5]);
+
+  // Fetch device associated with this vehicle
+  useEffect(() => {
+    const fetchDevice = async () => {
+      if (!vehicle?.vehicleId || !organizationId) return;
+      
+      setLoadingDevice(true);
+      try {
+        const { data, error } = await supabase
+          .from("devices")
+          .select("id, sim_msisdn")
+          .eq("vehicle_id", vehicle.vehicleId)
+          .eq("organization_id", organizationId)
+          .eq("status", "active")
+          .maybeSingle();
+
+        if (!error && data) {
+          setDeviceId(data.id);
+        }
+      } catch (err) {
+        console.error("Error fetching device:", err);
+      } finally {
+        setLoadingDevice(false);
+      }
+    };
+
+    if (open) {
+      fetchDevice();
+    }
+  }, [vehicle?.vehicleId, organizationId, open]);
 
   const handleSettingChange = useCallback((key: string, value: any) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
@@ -159,6 +192,13 @@ export const TerminalSettingsPanel = ({
 
   const sendCommand = async (commandType: string, commandData: Record<string, any>) => {
     if (!vehicle || !organizationId) return;
+
+    if (!deviceId) {
+      toast.error("No device assigned", {
+        description: "This vehicle has no active GPS device. Assign a device first.",
+      });
+      return;
+    }
 
     setSending(true);
     try {
@@ -212,10 +252,10 @@ export const TerminalSettingsPanel = ({
       }
 
       // Log to database
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("device_commands")
         .insert({
-          device_id: vehicle.vehicleId,
+          device_id: deviceId,
           vehicle_id: vehicle.vehicleId,
           organization_id: organizationId,
           command_type: `terminal_${commandType}`,
@@ -830,9 +870,30 @@ export const TerminalSettingsPanel = ({
                 <span>
                   {vehicle.plate} • {vehicle.make} {vehicle.model}
                 </span>
+                {loadingDevice ? (
+                  <Loader2 className="h-3 w-3 animate-spin ml-1" />
+                ) : deviceId ? (
+                  <Badge variant="outline" className="ml-1 text-xs bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
+                    Device Ready
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="ml-1 text-xs bg-amber-500/10 text-amber-600 border-amber-500/30">
+                    No Device
+                  </Badge>
+                )}
               </div>
             )}
           </SheetHeader>
+
+          {/* No device warning */}
+          {!loadingDevice && !deviceId && (
+            <div className="px-4 py-3 bg-amber-500/10 border-b border-amber-500/20">
+              <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                <span>No GPS device assigned. Settings will be saved but cannot be sent to the device.</span>
+              </div>
+            </div>
+          )}
 
           {/* Settings List */}
           <ScrollArea className="flex-1">
