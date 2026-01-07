@@ -396,38 +396,6 @@ const Dashboard = () => {
               />
             </div>
 
-            {/* Alerts Section - Like CompassTrac alerts */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <AlertsTableCard 
-                  alerts={dbAlerts.slice(0, 10).map(alert => ({
-                    id: alert.id,
-                    status: alert.status === 'resolved' ? 'resolved' : alert.status === 'acknowledged' ? 'acknowledged' : 'active',
-                    alertType: alert.alert_type,
-                    startDate: alert.alert_time,
-                    endDate: alert.resolved_at || alert.alert_time,
-                    duration: '00:00:00',
-                    group: 'Fleet Group',
-                    title: alert.title,
-                    information: alert.message,
-                  }))}
-                  loading={execLoading}
-                />
-              </div>
-              <AlertsMapCard 
-                alerts={dbAlerts.slice(0, 10).map(alert => ({
-                  id: alert.id,
-                  lat: alert.lat || undefined,
-                  lng: alert.lng || undefined,
-                  title: alert.title,
-                  severity: alert.severity,
-                }))}
-                loading={execLoading}
-              />
-            </div>
-
-            {/* Live Requests & Deliveries Map */}
-            <LiveDeliveryMap />
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               <SafetyScoreGauge 
