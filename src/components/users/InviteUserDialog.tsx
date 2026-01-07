@@ -68,40 +68,33 @@ const InviteUserDialog = ({ open, onOpenChange, onUserCreated }: InviteUserDialo
 
     setLoading(true);
     try {
-      // Create user using Supabase auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-          },
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error("No active session");
+      }
+
+      // Call edge function to create user (doesn't affect current session)
+      const { data, error } = await supabase.functions.invoke("create-user", {
+        body: {
+          email,
+          password,
+          fullName,
+          role: selectedRole,
         },
       });
 
-      if (authError) throw authError;
-
-      if (!authData.user) {
-        throw new Error("Failed to create user");
+      if (error) throw error;
+      
+      if (data.error) {
+        throw new Error(data.error);
       }
 
-      // Wait a moment for the trigger to create the profile
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Assign role to the new user
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .insert({
-          user_id: authData.user.id,
-          role: selectedRole as any,
-        } as any);
-
-      if (roleError) {
-        console.error("Role assignment error:", roleError);
-        // Don't throw, user is created just without role
+      if (data.warning) {
         toast({
           title: "Partial Success",
-          description: "User created but role assignment failed. Please assign role manually.",
+          description: data.warning + ". Please assign role manually.",
           variant: "default",
         });
       } else {
