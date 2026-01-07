@@ -18,10 +18,10 @@ interface FleetViolationsDonutProps {
 }
 
 const COLORS = {
-  overSpeeds: "#22d3ee", // cyan
+  overSpeeds: "#0072BC", // Dark Blue (brand)
   alerts: "#f59e0b", // amber/orange
   harshBehavior: "#ef4444", // red
-  noGoKeepIn: "#a855f7", // purple
+  noGoKeepIn: "#8DC63F", // Lemon Green (brand)
 };
 
 export const FleetViolationsDonut = ({ data, loading }: FleetViolationsDonutProps) => {
@@ -48,7 +48,7 @@ export const FleetViolationsDonut = ({ data, loading }: FleetViolationsDonutProp
 
   if (loading) {
     return (
-      <Card className="bg-card border-border/50">
+      <Card className="bg-card border-border">
         <CardContent className="p-6">
           <div className="animate-pulse space-y-4">
             <div className="h-6 bg-muted rounded w-1/2" />
@@ -70,9 +70,9 @@ export const FleetViolationsDonut = ({ data, loading }: FleetViolationsDonutProp
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ scale: 1.01 }}
     >
-      <Card className="bg-[#1a2332] border-[#2a3a4d] relative overflow-hidden hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-500">
+      <Card className="bg-card border-border relative overflow-hidden hover:shadow-lg hover:shadow-secondary/10 transition-all duration-500">
         {/* Subtle gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-purple-500/5 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 via-transparent to-primary/5 pointer-events-none" />
         
         <Button
           variant="ghost"
@@ -84,17 +84,17 @@ export const FleetViolationsDonut = ({ data, loading }: FleetViolationsDonutProp
         
         <CardHeader className="pb-2 relative">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-lg font-bold text-white tracking-tight">
+            <CardTitle className="flex items-center gap-2 text-lg font-bold text-foreground tracking-tight">
               <motion.div
                 animate={{ rotate: [0, 10, -10, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
               >
-                <Settings2 className="w-5 h-5 text-cyan-400" />
+                <Settings2 className="w-5 h-5 text-secondary" />
               </motion.div>
               Fleet Violations
             </CardTitle>
             <Select value={period} onValueChange={setPeriod}>
-              <SelectTrigger className="w-[130px] h-8 text-xs bg-background/50 border-border/50">
+              <SelectTrigger className="w-[130px] h-8 text-xs bg-muted/50 border-border">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -126,17 +126,17 @@ export const FleetViolationsDonut = ({ data, loading }: FleetViolationsDonutProp
                     <Cell 
                       key={`cell-${index}`} 
                       fill={entry.color}
-                      className="drop-shadow-lg"
+                      className="drop-shadow-md"
                     />
                   ))}
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
             
-            {/* Center Text with glow */}
+            {/* Center Text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <motion.span 
-                className="text-sm text-white/70 font-medium"
+                className="text-sm text-muted-foreground font-medium"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
@@ -144,7 +144,7 @@ export const FleetViolationsDonut = ({ data, loading }: FleetViolationsDonutProp
                 Total
               </motion.span>
               <motion.span 
-                className="text-4xl font-bold text-white drop-shadow-lg"
+                className="text-4xl font-bold text-foreground"
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
@@ -171,13 +171,13 @@ export const FleetViolationsDonut = ({ data, loading }: FleetViolationsDonutProp
                 whileHover={{ x: 4 }}
               >
                 <motion.div 
-                  className="w-3 h-3 rounded-sm shadow-lg"
-                  style={{ backgroundColor: item.color, boxShadow: `0 0 10px ${item.color}40` }}
+                  className="w-3 h-3 rounded-sm shadow-sm"
+                  style={{ backgroundColor: item.color }}
                   animate={{ scale: [1, 1.1, 1] }}
                   transition={{ duration: 2, repeat: Infinity, delay: index * 0.2 }}
                 />
-                <span className="text-sm text-white/80 group-hover:text-white transition-colors">{item.label}</span>
-                <span className="text-sm font-bold ml-auto text-white">{item.value}%</span>
+                <span className="text-sm text-foreground/80 group-hover:text-foreground transition-colors">{item.label}</span>
+                <span className="text-sm font-bold ml-auto text-foreground">{item.value}%</span>
               </motion.div>
             ))}
           </div>

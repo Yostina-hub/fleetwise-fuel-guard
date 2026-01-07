@@ -18,38 +18,38 @@ interface HeroMetricCardProps {
 
 const colorMap = {
   primary: {
-    bg: 'from-primary/20 to-primary/5',
+    bg: 'from-primary/10 to-primary/5',
     border: 'border-primary/30 hover:border-primary/60',
-    icon: 'bg-primary/20 text-primary',
-    glow: 'shadow-primary/20',
+    icon: 'bg-primary/15 text-primary',
+    glow: 'shadow-primary/10',
     ring: 'bg-primary',
   },
   success: {
-    bg: 'from-success/20 to-success/5',
+    bg: 'from-success/10 to-success/5',
     border: 'border-success/30 hover:border-success/60',
-    icon: 'bg-success/20 text-success',
-    glow: 'shadow-success/20',
+    icon: 'bg-success/15 text-success',
+    glow: 'shadow-success/10',
     ring: 'bg-success',
   },
   warning: {
-    bg: 'from-warning/20 to-warning/5',
+    bg: 'from-warning/10 to-warning/5',
     border: 'border-warning/30 hover:border-warning/60',
-    icon: 'bg-warning/20 text-warning',
-    glow: 'shadow-warning/20',
+    icon: 'bg-warning/15 text-warning',
+    glow: 'shadow-warning/10',
     ring: 'bg-warning',
   },
   secondary: {
-    bg: 'from-secondary/20 to-secondary/5',
+    bg: 'from-secondary/10 to-secondary/5',
     border: 'border-secondary/30 hover:border-secondary/60',
-    icon: 'bg-secondary/20 text-secondary',
-    glow: 'shadow-secondary/20',
+    icon: 'bg-secondary/15 text-secondary',
+    glow: 'shadow-secondary/10',
     ring: 'bg-secondary',
   },
   destructive: {
-    bg: 'from-destructive/20 to-destructive/5',
+    bg: 'from-destructive/10 to-destructive/5',
     border: 'border-destructive/30 hover:border-destructive/60',
-    icon: 'bg-destructive/20 text-destructive',
-    glow: 'shadow-destructive/20',
+    icon: 'bg-destructive/15 text-destructive',
+    glow: 'shadow-destructive/10',
     ring: 'bg-destructive',
   },
 };
@@ -89,10 +89,11 @@ const HeroMetricCard = ({
       className={`
         relative overflow-hidden rounded-2xl 
         bg-gradient-to-br ${colors.bg}
-        backdrop-blur-xl border ${colors.border}
+        backdrop-blur-sm border ${colors.border}
         transition-all duration-300
-        shadow-xl ${colors.glow}
+        shadow-lg ${colors.glow}
         group cursor-default
+        bg-card
       `}
     >
       {/* Animated ring */}
@@ -114,7 +115,7 @@ const HeroMetricCard = ({
 
       {/* Shine effect on hover */}
       <motion.div 
-        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"
+        className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"
       />
 
       <div className="relative z-10 p-6">
@@ -129,7 +130,7 @@ const HeroMetricCard = ({
           
           {trend !== 'stable' && (
             <motion.div 
-              className={`flex items-center gap-1 text-sm ${trendColor} bg-background/50 px-2 py-1 rounded-lg`}
+              className={`flex items-center gap-1 text-sm ${trendColor} bg-muted/50 px-2 py-1 rounded-lg`}
               initial={{ opacity: 0, x: 10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: delay + 0.3 }}
@@ -149,9 +150,9 @@ const HeroMetricCard = ({
           >
             {prefix}{formattedValue}{suffix}
           </motion.div>
-          <p className="text-sm font-medium text-white/80">{title}</p>
+          <p className="text-sm font-medium text-foreground/80">{title}</p>
           {subtitle && (
-            <p className="text-xs text-white/60">{subtitle}</p>
+            <p className="text-xs text-muted-foreground">{subtitle}</p>
           )}
         </div>
 
