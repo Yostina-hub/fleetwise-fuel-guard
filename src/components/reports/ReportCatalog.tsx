@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { FileText, Plus, Search, MoreHorizontal, Star, ChevronLeft, ChevronRight, X, Truck, Users, MapPin, Fuel, Route, Wrench, ClipboardList, DollarSign, Bell, FileCheck, Laptop } from "lucide-react";
+import { FileText, Plus, Search, MoreHorizontal, Star, ChevronLeft, ChevronRight, X, Truck, Users, MapPin, Fuel, Route, Wrench, ClipboardList, DollarSign, Bell, FileCheck, Laptop, Clock, BarChart3, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -12,9 +12,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReportConfigDialog, ReportConfig } from "./ReportConfigDialog";
+import { ScheduleReportDialog } from "./ScheduleReportDialog";
 import { openReportInNewWindow } from "@/lib/reportWindowUtils";
 import { fetchReportData } from "@/hooks/useReportGenerator";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -161,6 +163,7 @@ export const ReportCatalog = ({
   const [addReportOpen, setAddReportOpen] = useState(false);
   const [carouselPage, setCarouselPage] = useState(0);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ReportDefinition | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -198,6 +201,11 @@ export const ReportCatalog = ({
   const handleReportClick = (report: ReportDefinition) => {
     setSelectedReport(report);
     setConfigDialogOpen(true);
+  };
+
+  const handleScheduleReport = (report: ReportDefinition) => {
+    setSelectedReport(report);
+    setScheduleDialogOpen(true);
   };
 
   const handleGenerateReport = async (config: ReportConfig) => {
@@ -446,13 +454,18 @@ export const ReportCatalog = ({
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleScheduleReport(report); }}>
+                                <Clock className="w-4 h-4 mr-2" />
+                                Schedule This
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleReportClick(report); }}>
+                                <BarChart3 className="w-4 h-4 mr-2" />
+                                Show Results
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onToggleFavorite(report.id); }}>
                                 <Star className={cn("w-4 h-4 mr-2", favoriteReports.includes(report.id) ? "text-yellow-500 fill-yellow-500" : "")} />
                                 {favoriteReports.includes(report.id) ? "Remove from Favorites" : "Add to Favorites"}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleReportClick(report); }}>
-                                <FileText className="w-4 h-4 mr-2" />
-                                Configure & Generate
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -487,6 +500,13 @@ export const ReportCatalog = ({
         onOpenChange={setConfigDialogOpen}
         report={selectedReport}
         onGenerate={handleGenerateReport}
+      />
+
+      {/* Schedule Report Dialog */}
+      <ScheduleReportDialog
+        open={scheduleDialogOpen}
+        onOpenChange={setScheduleDialogOpen}
+        report={selectedReport}
       />
     </div>
   );
