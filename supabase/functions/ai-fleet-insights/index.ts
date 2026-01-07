@@ -193,21 +193,47 @@ function buildUserPrompt(insightType: string, data: FleetData, context?: any): s
   // Calculate key metrics
   const totalVehicles = vehicles.length;
   const activeVehicles = vehicles.filter(v => v.status === 'active').length;
-  const onlineVehicles = telemetry.filter(t => {
-    const lastComm = new Date(t.last_communication_at);
-    return (Date.now() - lastComm.getTime()) < 15 * 60 * 1000;
-  }).length;
+  
+  // CRITICAL: Deduplicate telemetry by vehicle_id and only count vehicles that exist in the vehicles list
+  const vehicleIds = new Set(vehicles.map(v => v.id));
+  const latestTelemetryByVehicle = new Map<string, any>();
+  telemetry.forEach(t => {
+    // Only include telemetry for vehicles that exist in our fleet
+    if (!vehicleIds.has(t.vehicle_id)) return;
+    
+    const existing = latestTelemetryByVehicle.get(t.vehicle_id);
+    if (!existing || new Date(t.last_communication_at) > new Date(existing.last_communication_at)) {
+      latestTelemetryByVehicle.set(t.vehicle_id, t);
+    }
+  });
+  
+  // Count online vehicles using the 15-minute threshold and bounded by total vehicles
+  const fifteenMinutesAgo = Date.now() - 15 * 60 * 1000;
+  let onlineCount = 0;
+  latestTelemetryByVehicle.forEach((t) => {
+    const lastComm = new Date(t.last_communication_at).getTime();
+    if (lastComm >= fifteenMinutesAgo && t.device_connected) {
+      onlineCount++;
+    }
+  });
+  
+  // Ensure online count never exceeds total vehicles
+  const onlineVehicles = Math.min(onlineCount, totalVehicles);
+  const offlineVehicles = Math.max(0, totalVehicles - onlineVehicles);
 
   const totalTrips = trips.length;
   const totalDistance = trips.reduce((sum, t) => sum + (t.distance_km || 0), 0);
-  const avgSpeed = trips.length > 0 ? trips.reduce((sum, t) => sum + (t.avg_speed_kmh || 0), 0) / trips.length : 0;
+  
+  // Only count trips with valid avg_speed_kmh for average calculation
+  const tripsWithSpeed = trips.filter(t => t.avg_speed_kmh != null && t.avg_speed_kmh > 0);
+  const avgSpeed = tripsWithSpeed.length > 0 ? tripsWithSpeed.reduce((sum, t) => sum + t.avg_speed_kmh, 0) / tripsWithSpeed.length : 0;
   const totalIdleMinutes = trips.reduce((sum, t) => sum + (t.idle_time_minutes || 0), 0);
   const totalFuelConsumed = trips.reduce((sum, t) => sum + (t.fuel_consumed_liters || 0), 0);
 
   const unacknowledgedAlerts = alerts.filter(a => a.status === 'unacknowledged');
   const criticalAlerts = alerts.filter(a => a.severity === 'critical' && a.status !== 'resolved');
 
-  const fuelAnomalies = fuelEvents.filter(e => e.event_type === 'theft' || e.event_type === 'leak');
+  const fuelAnomalies = fuelEvents.filter(e => e.event_type === 'theft' || e.event_type === 'leak' || e.event_type === 'drain').filter(e => e.status !== 'false_positive');
   const totalRefuels = fuelEvents.filter(e => e.event_type === 'refuel').reduce((sum, e) => sum + Math.abs(e.fuel_change_liters), 0);
 
   const avgDriverScore = driverScores.length > 0 ? driverScores.reduce((sum, s) => sum + s.overall_score, 0) / driverScores.length : 0;
@@ -218,7 +244,7 @@ function buildUserPrompt(insightType: string, data: FleetData, context?: any): s
 FLEET OVERVIEW:
 - Total Vehicles: ${totalVehicles}
 - Active: ${activeVehicles}, Online Now: ${onlineVehicles}
-- Offline: ${totalVehicles - onlineVehicles}
+- Offline: ${offlineVehicles}
 
 TRIP METRICS (Last 7 Days):
 - Total Trips: ${totalTrips}
