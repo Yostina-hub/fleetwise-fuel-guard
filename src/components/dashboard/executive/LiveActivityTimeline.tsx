@@ -73,7 +73,7 @@ const LiveActivityTimeline = ({ activities, geofenceActivities, loading }: LiveA
   }
 
   return (
-    <Card className="glass-strong h-full overflow-hidden">
+    <Card className="glass-strong h-full w-full overflow-hidden">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
@@ -95,9 +95,9 @@ const LiveActivityTimeline = ({ activities, geofenceActivities, loading }: LiveA
           </Badge>
         </div>
       </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-[420px]">
-          <div className="relative">
+      <CardContent className="w-full">
+        <ScrollArea className="h-[420px] w-full">
+          <div className="relative w-full">
             {/* Timeline line */}
             <div className="absolute left-5 top-0 bottom-0 w-px bg-gradient-to-b from-primary/50 via-primary/20 to-transparent" />
             
@@ -129,7 +129,7 @@ const LiveActivityTimeline = ({ activities, geofenceActivities, loading }: LiveA
                     </div>
 
                     {/* Content */}
-                    <div className={`flex-1 p-3 rounded-lg border ${getSeverityStyles(activity.severity)}`}>
+                    <div className={`flex-1 min-w-0 p-3 rounded-lg border ${getSeverityStyles(activity.severity)}`}>
                       <p className="text-sm leading-relaxed">{activity.message}</p>
                       <div className="flex items-center gap-2 mt-2 flex-wrap">
                         {activity.vehiclePlate && (
