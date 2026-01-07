@@ -186,7 +186,7 @@ export const SelectRecipientsDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl" hideClose>
         <DialogHeader className="flex flex-row items-center justify-between">
           <DialogTitle>Select Email Addresses</DialogTitle>
           <Button

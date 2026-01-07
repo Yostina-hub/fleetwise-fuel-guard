@@ -169,7 +169,7 @@ export const ReportConfigDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl p-0 overflow-hidden">
+      <DialogContent className="max-w-4xl p-0 overflow-hidden" hideClose>
         {/* Header */}
         <DialogHeader className="px-6 py-4 bg-primary text-primary-foreground">
           <DialogTitle className="text-lg font-semibold uppercase tracking-wide flex items-center justify-between">
