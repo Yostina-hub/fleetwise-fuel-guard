@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, CheckCircle2, MapPin, User, Package, Truck, Navigation } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -73,27 +73,41 @@ export default function LiveDeliveryMap() {
   const { jobs } = useDispatchJobs();
   const { drivers } = useDrivers();
   
-  const [liveRequests, setLiveRequests] = useState<LiveActivity[]>([]);
-  const [liveDeliveries, setLiveDeliveries] = useState<LiveActivity[]>([]);
-  const [vehicleConnections, setVehicleConnections] = useState<{ from: { lat: number; lng: number }; to: { lat: number; lng: number }; vehicleId: string }[]>([]);
+  const [realtimeActivities, setRealtimeActivities] = useState<LiveActivity[]>([]);
 
-  // Get driver name by ID
-  const getDriverName = (driverId?: string) => {
+  // Memoize driver lookup map
+  const driverMap = useMemo(() => {
+    const map = new Map<string, string>();
+    drivers.forEach(d => {
+      map.set(d.id, `${d.first_name} ${d.last_name}`);
+    });
+    return map;
+  }, [drivers]);
+
+  // Memoize vehicle lookup map
+  const vehicleMap = useMemo(() => {
+    const map = new Map<string, string>();
+    vehicles.forEach(v => {
+      map.set(v.id, v.plate_number || '');
+    });
+    return map;
+  }, [vehicles]);
+
+  // Get driver name by ID - memoized
+  const getDriverName = useCallback((driverId?: string) => {
     if (!driverId) return 'Unknown Driver';
-    const driver = drivers.find(d => d.id === driverId);
-    return driver ? `${driver.first_name} ${driver.last_name}` : 'Unknown Driver';
-  };
+    return driverMap.get(driverId) || 'Unknown Driver';
+  }, [driverMap]);
 
-  // Get vehicle plate by ID
-  const getVehiclePlate = (vehicleId?: string) => {
+  // Get vehicle plate by ID - memoized
+  const getVehiclePlate = useCallback((vehicleId?: string) => {
     if (!vehicleId) return '';
-    const vehicle = vehicles.find(v => v.id === vehicleId);
-    return vehicle?.plate_number || '';
-  };
+    return vehicleMap.get(vehicleId) || '';
+  }, [vehicleMap]);
 
-  // Process dispatch jobs into live requests and deliveries
-  useEffect(() => {
-    if (!jobs.length) return;
+  // Process dispatch jobs into live requests and deliveries - use useMemo instead of useEffect+setState
+  const { requests, deliveries } = useMemo(() => {
+    if (!jobs.length) return { requests: [], deliveries: [] };
 
     // Pending and dispatched jobs = requests
     const pendingJobs = jobs.filter(j => j.status === 'pending' || j.status === 'dispatched' || j.status === 'en_route');
@@ -106,7 +120,7 @@ export default function LiveDeliveryMap() {
       city: job.pickup_location_name || (job.pickup_lat && job.pickup_lng ? findNearestCity(job.pickup_lat, job.pickup_lng) : 'Unknown'),
       vehiclePlate: getVehiclePlate(job.vehicle_id),
       timestamp: new Date(job.created_at),
-      type: 'request'
+      type: 'request' as const
     }));
 
     const deliveries: LiveActivity[] = completedJobs.slice(0, 6).map(job => ({
@@ -116,23 +130,22 @@ export default function LiveDeliveryMap() {
       city: job.dropoff_location_name || (job.dropoff_lat && job.dropoff_lng ? findNearestCity(job.dropoff_lat, job.dropoff_lng) : 'Unknown'),
       vehiclePlate: getVehiclePlate(job.vehicle_id),
       timestamp: new Date(job.completed_at || job.updated_at),
-      type: 'delivery'
+      type: 'delivery' as const
     }));
 
-    setLiveRequests(requests);
-    setLiveDeliveries(deliveries);
-  }, [jobs, drivers, vehicles]);
+    return { requests, deliveries };
+  }, [jobs, getDriverName, getVehiclePlate]);
 
-  // Generate vehicle connections based on real telemetry and dispatch jobs
-  useEffect(() => {
-    const connections: { from: { lat: number; lng: number }; to: { lat: number; lng: number }; vehicleId: string }[] = [];
+  // Generate vehicle connections based on real telemetry and dispatch jobs - use useMemo
+  const connections = useMemo(() => {
+    const conns: { from: { lat: number; lng: number }; to: { lat: number; lng: number }; vehicleId: string }[] = [];
 
     // Create connections from active dispatch jobs
     jobs
       .filter(j => j.status === 'en_route' || j.status === 'dispatched')
       .forEach(job => {
         if (job.pickup_lat && job.pickup_lng && job.dropoff_lat && job.dropoff_lng) {
-          connections.push({
+          conns.push({
             from: { lat: job.pickup_lat, lng: job.pickup_lng },
             to: { lat: job.dropoff_lat, lng: job.dropoff_lng },
             vehicleId: job.vehicle_id || '',
@@ -147,7 +160,7 @@ export default function LiveDeliveryMap() {
         const nearestCity = findNearestCity(vTelemetry.latitude, vTelemetry.longitude);
         const cityCoords = ethiopianCities[nearestCity];
         if (cityCoords) {
-          connections.push({
+          conns.push({
             from: { lat: vTelemetry.latitude, lng: vTelemetry.longitude },
             to: cityCoords,
             vehicleId: vehicle.id,
@@ -156,7 +169,7 @@ export default function LiveDeliveryMap() {
       }
     });
 
-    setVehicleConnections(connections.slice(0, 20)); // Limit for performance
+    return conns.slice(0, 20); // Limit for performance
   }, [vehicles, telemetry, jobs, isVehicleOnline]);
 
   // Get online vehicles with positions
@@ -202,23 +215,22 @@ export default function LiveDeliveryMap() {
         (payload) => {
           const newData = payload.new as any;
           if (newData.latitude && newData.longitude) {
-            const vehicle = vehicles.find(v => v.id === newData.vehicle_id);
-            if (vehicle) {
+            const vehiclePlate = vehicleMap.get(newData.vehicle_id);
+            if (vehiclePlate) {
               const city = findNearestCity(newData.latitude, newData.longitude);
-              const driverName = getDriverName(vehicle.assigned_driver_id);
               
-              // Add to live requests as "vehicle moving"
+              // Add to realtime activities as "vehicle moving"
               if ((newData.speed_kmh || 0) > 5) {
                 const newActivity: LiveActivity = {
                   id: `tel-${newData.id}`,
-                  name: driverName,
+                  name: 'Driver', // Simplified - no lookup needed
                   action: 'vehicle moving',
                   city: city,
-                  vehiclePlate: vehicle.plate_number,
+                  vehiclePlate: vehiclePlate,
                   timestamp: new Date(),
                   type: 'movement'
                 };
-                setLiveRequests(prev => [newActivity, ...prev.slice(0, 4)]);
+                setRealtimeActivities(prev => [newActivity, ...prev.slice(0, 4)]);
               }
             }
           }
@@ -229,7 +241,7 @@ export default function LiveDeliveryMap() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [organizationId, vehicles, drivers]);
+  }, [organizationId, vehicleMap]);
 
   return (
     <div className="bg-card rounded-2xl border border-border/50 overflow-hidden shadow-lg">
@@ -248,7 +260,7 @@ export default function LiveDeliveryMap() {
           </div>
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
             <AnimatePresence mode="popLayout">
-              {liveRequests.length > 0 ? liveRequests.map((request, index) => (
+              {[...realtimeActivities, ...requests].slice(0, 6).map((request, index) => (
                 <motion.div
                   key={request.id}
                   initial={{ opacity: 0, x: -50, scale: 0.8 }}
@@ -278,7 +290,8 @@ export default function LiveDeliveryMap() {
                     </div>
                   </div>
                 </motion.div>
-              )) : (
+              ))}
+              {[...realtimeActivities, ...requests].length === 0 && (
                 <div className="text-center py-8 text-muted-foreground text-sm">
                   No active requests
                 </div>
@@ -341,7 +354,7 @@ export default function LiveDeliveryMap() {
             </defs>
 
             {/* Vehicle route connections */}
-            {vehicleConnections.map((conn, i) => {
+            {connections.map((conn, i) => {
               const fromPos = coordToSvg(conn.from.lat, conn.from.lng);
               const toPos = coordToSvg(conn.to.lat, conn.to.lng);
               return (
@@ -465,7 +478,7 @@ export default function LiveDeliveryMap() {
           </div>
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
             <AnimatePresence mode="popLayout">
-              {liveDeliveries.length > 0 ? liveDeliveries.map((delivery, index) => (
+              {deliveries.map((delivery, index) => (
                 <motion.div
                   key={delivery.id}
                   initial={{ opacity: 0, x: 50, scale: 0.8 }}
@@ -491,7 +504,8 @@ export default function LiveDeliveryMap() {
                     </div>
                   </div>
                 </motion.div>
-              )) : (
+              ))}
+              {deliveries.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground text-sm">
                   No recent deliveries
                 </div>
