@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { X, Search, Loader2, Clock, Calendar, Mail, UserPlus, AlertTriangle } from "lucide-react";
+import { X, Search, Loader2, Clock, Calendar, UserPlus, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -26,6 +26,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { SelectRecipientsDialog } from "./SelectRecipientsDialog";
 
 interface Asset {
   id: string;
@@ -110,7 +111,7 @@ export const ScheduleReportDialog = ({
   const [atTime, setAtTime] = useState("09:00:00");
   const [exportFormat, setExportFormat] = useState("pdf");
   const [recipients, setRecipients] = useState<string[]>([]);
-  const [newRecipient, setNewRecipient] = useState("");
+  const [recipientsDialogOpen, setRecipientsDialogOpen] = useState(false);
   
   // Asset loading
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -164,7 +165,6 @@ export const ScheduleReportDialog = ({
       setAssetSearch("");
       setAssetType("all");
       setRecipients([]);
-      setNewRecipient("");
     }
   }, [open]);
 
@@ -200,15 +200,12 @@ export const ScheduleReportDialog = ({
     );
   };
 
-  const handleAddRecipient = () => {
-    if (newRecipient && !recipients.includes(newRecipient)) {
-      setRecipients(prev => [...prev, newRecipient]);
-      setNewRecipient("");
-    }
-  };
-
   const handleRemoveRecipient = (email: string) => {
     setRecipients(prev => prev.filter(r => r !== email));
+  };
+
+  const handleRecipientsConfirm = (emails: string[]) => {
+    setRecipients(emails);
   };
 
   const handleSave = async () => {
@@ -533,12 +530,7 @@ export const ScheduleReportDialog = ({
                         variant="ghost"
                         size="sm"
                         className="text-primary gap-2"
-                        onClick={() => {
-                          const email = prompt("Enter recipient email:");
-                          if (email) {
-                            setRecipients(prev => [...prev, email]);
-                          }
-                        }}
+                        onClick={() => setRecipientsDialogOpen(true)}
                       >
                         <UserPlus className="w-4 h-4" />
                         Add recipients
@@ -588,6 +580,14 @@ export const ScheduleReportDialog = ({
           </div>
         </ScrollArea>
       </DialogContent>
+
+      {/* Recipients Selection Dialog */}
+      <SelectRecipientsDialog
+        open={recipientsDialogOpen}
+        onOpenChange={setRecipientsDialogOpen}
+        selectedRecipients={recipients}
+        onConfirm={handleRecipientsConfirm}
+      />
     </Dialog>
   );
 };
