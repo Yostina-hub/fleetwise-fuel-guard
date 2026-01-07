@@ -218,7 +218,32 @@ export const ScheduleReportDialog = ({
 
     setSaving(true);
     try {
-      // For now, show success toast - actual implementation would save to database
+      const { error } = await supabase
+        .from("scheduled_reports")
+        .insert({
+          organization_id: organizationId,
+          report_id: report.id,
+          report_name: reportName || report.name,
+          report_description: reportDescription || report.description,
+          category: report.category,
+          sub_id: report.subId,
+          selected_assets: selectedAssets,
+          asset_type: assetType,
+          data_period: dataPeriod,
+          from_time: showTimeFields ? fromTime : null,
+          to_time: showTimeFields ? toTime : null,
+          is_scheduled: enableScheduling,
+          schedule_rate: scheduleRate,
+          selected_days: selectedDays,
+          starting_date: format(startingDate, "yyyy-MM-dd"),
+          at_time: atTime,
+          export_format: exportFormat,
+          recipients: recipients,
+          is_active: true,
+        });
+
+      if (error) throw error;
+      
       toast.success("Report schedule saved successfully");
       onOpenChange(false);
     } catch (error) {
