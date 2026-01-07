@@ -212,7 +212,9 @@ async function sendSms(
   message: string
 ): Promise<{ success: boolean; response?: any; error?: string }> {
   try {
-    if (config.provider === "africastalking") {
+    if (config.provider === "ethiotelecom") {
+      return await sendEthioTelecomSms(config, phoneNumber, message);
+    } else if (config.provider === "africastalking") {
       return await sendAfricasTalkingSms(config, phoneNumber, message);
     } else if (config.provider === "twilio") {
       return await sendTwilioSms(config, phoneNumber, message);
@@ -220,6 +222,62 @@ async function sendSms(
     return { success: false, error: `Unknown provider: ${config.provider}` };
   } catch (err) {
     console.error("SMS send error:", err);
+    return { success: false, error: String(err) };
+  }
+}
+
+async function sendEthioTelecomSms(
+  config: SmsGatewayConfig,
+  phoneNumber: string,
+  message: string
+): Promise<{ success: boolean; response?: any; error?: string }> {
+  // Ethio Telecom SMS Gateway API
+  // Note: This uses the standard Ethio Telecom bulk SMS API format
+  // You may need to adjust the endpoint based on your specific integration
+  
+  const baseUrl = "https://api.ethiotelecom.et/v1/sms/send";
+  
+  // Normalize phone number to Ethiopian format
+  let normalizedPhone = phoneNumber.replace(/\s+/g, "").replace(/^0/, "+251");
+  if (!normalizedPhone.startsWith("+251")) {
+    normalizedPhone = "+251" + normalizedPhone.replace(/^\+/, "");
+  }
+
+  const payload = {
+    username: config.username,
+    password: config.api_key,
+    to: normalizedPhone,
+    message: message,
+    from: config.sender_id || "INFO",
+  };
+
+  console.log("Ethio Telecom SMS request:", { to: normalizedPhone, from: payload.from });
+
+  try {
+    const response = await fetch(baseUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${config.api_key}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+    console.log("Ethio Telecom response:", data);
+
+    // Check for success based on Ethio Telecom API response format
+    if (response.ok && (data.status === "success" || data.status === "sent" || data.messageId)) {
+      return { success: true, response: data };
+    }
+
+    return {
+      success: false,
+      error: data.message || data.error || "Ethio Telecom SMS send failed",
+      response: data,
+    };
+  } catch (err) {
+    console.error("Ethio Telecom API error:", err);
     return { success: false, error: String(err) };
   }
 }
