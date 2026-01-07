@@ -226,6 +226,27 @@ export function AIInsightsWidget({
             <div className="flex flex-col lg:flex-row gap-4">
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground mb-4">{insights.summary}</p>
+
+                {insights.computedMetrics && (
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-4">
+                    <div className="rounded-lg border bg-muted/30 p-3">
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Total Vehicles</p>
+                      <p className="text-sm font-semibold text-foreground">{insights.computedMetrics.totalVehicles}</p>
+                    </div>
+                    <div className="rounded-lg border bg-muted/30 p-3">
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Online Now</p>
+                      <p className="text-sm font-semibold text-foreground">{insights.computedMetrics.onlineVehicles}</p>
+                    </div>
+                    <div className="rounded-lg border bg-muted/30 p-3">
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Offline</p>
+                      <p className="text-sm font-semibold text-foreground">{insights.computedMetrics.offlineVehicles}</p>
+                    </div>
+                    <div className="rounded-lg border bg-muted/30 p-3">
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Trips (7d)</p>
+                      <p className="text-sm font-semibold text-foreground">{insights.computedMetrics.totalTrips}</p>
+                    </div>
+                  </div>
+                )}
                 
                 {/* Trends */}
                 <div className="flex flex-wrap gap-2">

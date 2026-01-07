@@ -11,6 +11,29 @@ export interface AIInsight {
   action?: string;
 }
 
+export interface FleetComputedMetrics {
+  totalVehicles: number;
+  activeVehicles: number;
+  onlineVehicles: number;
+  offlineVehicles: number;
+
+  totalTrips: number;
+  totalDistanceKm: number;
+  avgSpeedKmh: number;
+  totalIdleMinutes: number;
+  totalFuelConsumedLiters: number;
+
+  unacknowledgedAlerts: number;
+  criticalActiveAlerts: number;
+  alertTypes: string[];
+
+  totalRefueledLiters: number;
+  fuelAnomaliesDetected: number;
+
+  avgDriverScore: number;
+  driversBelow70: number;
+}
+
 export interface FleetAIResponse {
   summary: string;
   insights: AIInsight[];
@@ -19,6 +42,7 @@ export interface FleetAIResponse {
     improving: string[];
     declining: string[];
   };
+  computedMetrics?: FleetComputedMetrics;
 }
 
 export interface AnomalyResult {
@@ -82,7 +106,10 @@ export function useFleetAI() {
         return null;
       }
 
-      const parsedInsights = data.insights as FleetAIResponse;
+      const parsedInsights = {
+        ...(data.insights as FleetAIResponse),
+        computedMetrics: data.computedMetrics || (data.insights as FleetAIResponse)?.computedMetrics,
+      } as FleetAIResponse;
       setInsights(parsedInsights);
       return parsedInsights;
     } catch (err) {

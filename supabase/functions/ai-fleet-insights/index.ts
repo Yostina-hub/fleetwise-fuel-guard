@@ -16,6 +16,107 @@ interface FleetData {
   driverScores: any[];
 }
 
+interface FleetComputedMetrics {
+  totalVehicles: number;
+  activeVehicles: number;
+  onlineVehicles: number;
+  offlineVehicles: number;
+
+  totalTrips: number;
+  totalDistanceKm: number;
+  avgSpeedKmh: number;
+  totalIdleMinutes: number;
+  totalFuelConsumedLiters: number;
+
+  unacknowledgedAlerts: number;
+  criticalActiveAlerts: number;
+  alertTypes: string[];
+
+  totalRefueledLiters: number;
+  fuelAnomaliesDetected: number;
+
+  avgDriverScore: number;
+  driversBelow70: number;
+}
+
+function computeFleetMetrics(data: FleetData): FleetComputedMetrics {
+  const { vehicles, telemetry, trips, alerts, fuelEvents, driverScores } = data;
+
+  const totalVehicles = vehicles.length;
+  const activeVehicles = vehicles.filter(v => v.status === 'active').length;
+
+  // Deduplicate telemetry by vehicle_id and only count telemetry for known vehicles
+  const vehicleIds = new Set(vehicles.map(v => v.id));
+  const latestTelemetryByVehicle = new Map<string, any>();
+  telemetry.forEach(t => {
+    if (!vehicleIds.has(t.vehicle_id)) return;
+
+    const existing = latestTelemetryByVehicle.get(t.vehicle_id);
+    if (!existing || new Date(t.last_communication_at) > new Date(existing.last_communication_at)) {
+      latestTelemetryByVehicle.set(t.vehicle_id, t);
+    }
+  });
+
+  const fifteenMinutesAgo = Date.now() - 15 * 60 * 1000;
+  let onlineCount = 0;
+  latestTelemetryByVehicle.forEach((t) => {
+    const lastComm = new Date(t.last_communication_at).getTime();
+    if (t.device_connected && lastComm >= fifteenMinutesAgo) {
+      onlineCount++;
+    }
+  });
+
+  const onlineVehicles = Math.min(onlineCount, totalVehicles);
+  const offlineVehicles = Math.max(0, totalVehicles - onlineVehicles);
+
+  const totalTrips = trips.length;
+  const totalDistanceKm = trips.reduce((sum, t) => sum + (t.distance_km || 0), 0);
+
+  const tripsWithSpeed = trips.filter(t => t.avg_speed_kmh != null && t.avg_speed_kmh > 0);
+  const avgSpeedKmh = tripsWithSpeed.length > 0
+    ? tripsWithSpeed.reduce((sum, t) => sum + t.avg_speed_kmh, 0) / tripsWithSpeed.length
+    : 0;
+
+  const totalIdleMinutes = trips.reduce((sum, t) => sum + (t.idle_time_minutes || 0), 0);
+  const totalFuelConsumedLiters = trips.reduce((sum, t) => sum + (t.fuel_consumed_liters || 0), 0);
+
+  const unacknowledgedAlerts = alerts.filter(a => a.status === 'unacknowledged').length;
+  const criticalActiveAlerts = alerts.filter(a => a.severity === 'critical' && a.status !== 'resolved').length;
+  const alertTypes = [...new Set(alerts.map(a => a.alert_type).filter(Boolean))] as string[];
+
+  const totalRefueledLiters = fuelEvents
+    .filter(e => e.event_type === 'refuel')
+    .reduce((sum, e) => sum + Math.abs(e.fuel_change_liters || 0), 0);
+
+  const fuelAnomaliesDetected = fuelEvents.filter(e =>
+    e.event_type === 'theft' || e.event_type === 'leak' || e.event_type === 'drain' || e.event_type === 'sudden_drop'
+  ).length;
+
+  const avgDriverScore = driverScores.length > 0
+    ? driverScores.reduce((sum, s) => sum + (s.overall_score || 0), 0) / driverScores.length
+    : 0;
+  const driversBelow70 = driverScores.filter(s => (s.overall_score || 0) < 70).length;
+
+  return {
+    totalVehicles,
+    activeVehicles,
+    onlineVehicles,
+    offlineVehicles,
+    totalTrips,
+    totalDistanceKm,
+    avgSpeedKmh,
+    totalIdleMinutes,
+    totalFuelConsumedLiters,
+    unacknowledgedAlerts,
+    criticalActiveAlerts,
+    alertTypes,
+    totalRefueledLiters,
+    fuelAnomaliesDetected,
+    avgDriverScore,
+    driversBelow70,
+  };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -35,10 +136,11 @@ serve(async (req) => {
 
     // Fetch relevant fleet data based on insight type
     const fleetData = await fetchFleetData(supabase, organizationId, insightType);
+    const computedMetrics = computeFleetMetrics(fleetData);
     
     // Build context-aware prompt
     const systemPrompt = buildSystemPrompt(insightType, context);
-    const userPrompt = buildUserPrompt(insightType, fleetData, context);
+    const userPrompt = buildUserPrompt(insightType, fleetData, context, computedMetrics);
 
     console.log(`Generating ${insightType} insights for org ${organizationId}`);
 
@@ -80,7 +182,7 @@ serve(async (req) => {
     // Parse the AI response into structured insights
     const insights = parseInsights(aiResponse, insightType);
 
-    return new Response(JSON.stringify({ insights, raw: aiResponse }), {
+    return new Response(JSON.stringify({ insights, raw: aiResponse, computedMetrics }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
@@ -125,6 +227,11 @@ Your responses should be:
 - Data-driven with specific numbers when available
 - Prioritized by business impact
 - Written in a professional but accessible tone
+
+CRITICAL RULES (do not violate):
+- Never claim counts that contradict the provided fleet overview (e.g., Online Now > Total Vehicles, negative Offline).
+- Do not invent missing telemetry/trip metrics. If a metric is missing (null/0 due to no data), explicitly say it is "Not available" or "Not captured".
+- Prefer reporting "insufficient data" over reporting zeros as factual activity.
 
 Format your response as JSON with the following structure:
 {
@@ -187,84 +294,44 @@ Focus on fuel management and efficiency:
   return typeSpecificPrompts[insightType] || basePrompt;
 }
 
-function buildUserPrompt(insightType: string, data: FleetData, context?: any): string {
-  const { vehicles, telemetry, trips, alerts, fuelEvents, driverScores } = data;
+function buildUserPrompt(
+  insightType: string,
+  data: FleetData,
+  context?: any,
+  computedMetrics?: FleetComputedMetrics
+): string {
+  const m = computedMetrics ?? computeFleetMetrics(data);
 
-  // Calculate key metrics
-  const totalVehicles = vehicles.length;
-  const activeVehicles = vehicles.filter(v => v.status === 'active').length;
-  
-  // CRITICAL: Deduplicate telemetry by vehicle_id and only count vehicles that exist in the vehicles list
-  const vehicleIds = new Set(vehicles.map(v => v.id));
-  const latestTelemetryByVehicle = new Map<string, any>();
-  telemetry.forEach(t => {
-    // Only include telemetry for vehicles that exist in our fleet
-    if (!vehicleIds.has(t.vehicle_id)) return;
-    
-    const existing = latestTelemetryByVehicle.get(t.vehicle_id);
-    if (!existing || new Date(t.last_communication_at) > new Date(existing.last_communication_at)) {
-      latestTelemetryByVehicle.set(t.vehicle_id, t);
-    }
-  });
-  
-  // Count online vehicles using the 15-minute threshold and bounded by total vehicles
-  const fifteenMinutesAgo = Date.now() - 15 * 60 * 1000;
-  let onlineCount = 0;
-  latestTelemetryByVehicle.forEach((t) => {
-    const lastComm = new Date(t.last_communication_at).getTime();
-    if (lastComm >= fifteenMinutesAgo && t.device_connected) {
-      onlineCount++;
-    }
-  });
-  
-  // Ensure online count never exceeds total vehicles
-  const onlineVehicles = Math.min(onlineCount, totalVehicles);
-  const offlineVehicles = Math.max(0, totalVehicles - onlineVehicles);
-
-  const totalTrips = trips.length;
-  const totalDistance = trips.reduce((sum, t) => sum + (t.distance_km || 0), 0);
-  
-  // Only count trips with valid avg_speed_kmh for average calculation
-  const tripsWithSpeed = trips.filter(t => t.avg_speed_kmh != null && t.avg_speed_kmh > 0);
-  const avgSpeed = tripsWithSpeed.length > 0 ? tripsWithSpeed.reduce((sum, t) => sum + t.avg_speed_kmh, 0) / tripsWithSpeed.length : 0;
-  const totalIdleMinutes = trips.reduce((sum, t) => sum + (t.idle_time_minutes || 0), 0);
-  const totalFuelConsumed = trips.reduce((sum, t) => sum + (t.fuel_consumed_liters || 0), 0);
-
-  const unacknowledgedAlerts = alerts.filter(a => a.status === 'unacknowledged');
-  const criticalAlerts = alerts.filter(a => a.severity === 'critical' && a.status !== 'resolved');
-
-  const fuelAnomalies = fuelEvents.filter(e => e.event_type === 'theft' || e.event_type === 'leak' || e.event_type === 'drain').filter(e => e.status !== 'false_positive');
-  const totalRefuels = fuelEvents.filter(e => e.event_type === 'refuel').reduce((sum, e) => sum + Math.abs(e.fuel_change_liters), 0);
-
-  const avgDriverScore = driverScores.length > 0 ? driverScores.reduce((sum, s) => sum + s.overall_score, 0) / driverScores.length : 0;
-  const lowScoreDrivers = driverScores.filter(s => s.overall_score < 70).length;
+  const avgSpeedText = m.avgSpeedKmh > 0 ? `${m.avgSpeedKmh.toFixed(1)} km/h` : 'Not available';
+  const fuelConsumedText = m.totalFuelConsumedLiters > 0 ? `${m.totalFuelConsumedLiters.toFixed(0)} liters` : 'Not available';
+  const idleTimeText = m.totalIdleMinutes > 0 ? `${(m.totalIdleMinutes / 60).toFixed(1)} hours` : 'Not available';
 
   const prompt = `Analyze this fleet data and provide insights:
 
-FLEET OVERVIEW:
-- Total Vehicles: ${totalVehicles}
-- Active: ${activeVehicles}, Online Now: ${onlineVehicles}
-- Offline: ${offlineVehicles}
+FLEET OVERVIEW (authoritative counts):
+- Total Vehicles: ${m.totalVehicles}
+- Active: ${m.activeVehicles}, Online Now: ${m.onlineVehicles}
+- Offline: ${m.offlineVehicles}
 
 TRIP METRICS (Last 7 Days):
-- Total Trips: ${totalTrips}
-- Total Distance: ${totalDistance.toFixed(0)} km
-- Average Speed: ${avgSpeed.toFixed(1)} km/h
-- Total Idle Time: ${(totalIdleMinutes / 60).toFixed(1)} hours
-- Fuel Consumed: ${totalFuelConsumed.toFixed(0)} liters
+- Total Trips: ${m.totalTrips}
+- Total Distance: ${m.totalDistanceKm.toFixed(0)} km
+- Average Speed: ${avgSpeedText}
+- Total Idle Time: ${idleTimeText}
+- Fuel Consumed: ${fuelConsumedText}
 
 ALERTS:
-- Unacknowledged: ${unacknowledgedAlerts.length}
-- Critical Active: ${criticalAlerts.length}
-- Alert Types: ${[...new Set(alerts.map(a => a.alert_type))].join(', ') || 'None'}
+- Unacknowledged: ${m.unacknowledgedAlerts}
+- Critical Active: ${m.criticalActiveAlerts}
+- Alert Types: ${m.alertTypes.join(', ') || 'None'}
 
 FUEL:
-- Total Refueled: ${totalRefuels.toFixed(0)} liters
-- Anomalies Detected: ${fuelAnomalies.length}
+- Total Refueled: ${m.totalRefueledLiters.toFixed(0)} liters
+- Anomalies Detected: ${m.fuelAnomaliesDetected}
 
 DRIVER SAFETY:
-- Average Score: ${avgDriverScore.toFixed(0)}/100
-- Drivers Below 70: ${lowScoreDrivers}
+- Average Score: ${m.avgDriverScore.toFixed(0)}/100
+- Drivers Below 70: ${m.driversBelow70}
 
 ${context ? `ADDITIONAL CONTEXT: ${JSON.stringify(context)}` : ''}
 
