@@ -98,8 +98,6 @@ import FleetViolationsDonut from "@/components/dashboard/executive/FleetViolatio
 import VehicleMisuseDonut from "@/components/dashboard/executive/VehicleMisuseDonut";
 import TotalTripsCard from "@/components/dashboard/executive/TotalTripsCard";
 import { Car, Gauge, Zap, Shield, Power, Wrench, Moon } from "lucide-react";
-import { AIInsightsWidget } from "@/components/ai/AIInsightsWidget";
-import { AnomalyDetectionWidget } from "@/components/ai/AnomalyDetectionWidget";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -396,12 +394,6 @@ const Dashboard = () => {
                 ]}
                 loading={execLoading}
               />
-            </div>
-
-            {/* AI Insights Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <AIInsightsWidget insightType="dashboard" title="FleetAI Insights" />
-              <AnomalyDetectionWidget />
             </div>
 
             {/* Alerts Section - Like CompassTrac alerts */}
