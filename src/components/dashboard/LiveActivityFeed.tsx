@@ -53,7 +53,7 @@ const LiveActivityFeed = ({ activities, geofenceActivities, loading }: LiveActiv
   }
 
   return (
-    <Card className="glass-strong h-full">
+    <Card className="glass-strong h-full w-full">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
@@ -66,9 +66,9 @@ const LiveActivityFeed = ({ activities, geofenceActivities, loading }: LiveActiv
           </Badge>
         </div>
       </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-[400px]">
-          <div className="space-y-2 pr-2">
+      <CardContent className="w-full">
+        <ScrollArea className="h-[400px] w-full">
+          <div className="space-y-2 pr-2 w-full">
             {/* Geofence Activities Section */}
             {geofenceActivities.length > 0 && (
               <div className="mb-4">
