@@ -724,6 +724,7 @@ const Fleet = () => {
                 onTripHistory={handleTripHistory}
                 onSendCommand={handleSendCommand}
                 onAssignDevice={handleAssignDevice}
+                onTerminalSettings={handleTerminalSettings}
                 hasMore={hasMore}
                 onLoadMore={loadMore}
                 loading={loading}
