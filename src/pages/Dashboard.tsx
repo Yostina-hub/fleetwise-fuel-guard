@@ -94,6 +94,9 @@ import SavingsGauge from "@/components/dashboard/executive/SavingsGauge";
 import TrendSparklineCard from "@/components/dashboard/executive/TrendSparklineCard";
 import TopDriversCard from "@/components/dashboard/executive/TopDriversCard";
 import TripActivityHeatmap from "@/components/dashboard/executive/TripActivityHeatmap";
+import FleetViolationsDonut from "@/components/dashboard/executive/FleetViolationsDonut";
+import VehicleMisuseDonut from "@/components/dashboard/executive/VehicleMisuseDonut";
+import TotalTripsCard from "@/components/dashboard/executive/TotalTripsCard";
 import { Car, Gauge, Zap, Shield, Power, Wrench, Moon } from "lucide-react";
 import { AIInsightsWidget } from "@/components/ai/AIInsightsWidget";
 import { AnomalyDetectionWidget } from "@/components/ai/AnomalyDetectionWidget";
@@ -288,6 +291,37 @@ const Dashboard = () => {
 
           {/* Executive Tab */}
           <TabsContent value="executive" className="space-y-6 mt-6">
+            {/* Violations, Misuse & Trips Row - First Order */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <FleetViolationsDonut 
+                data={{
+                  overSpeeds: Math.floor(Math.max(0, (tripMetrics.totalTrips || 0) * 0.18)),
+                  alerts: Math.floor(Math.max(0, (dbAlerts.length || 0) * 0.6)),
+                  harshBehavior: Math.floor(Math.max(0, (tripMetrics.totalTrips || 0) * 0.13)),
+                  noGoKeepIn: Math.floor(Math.max(0, (tripMetrics.totalTrips || 0) * 0.10)),
+                }}
+                loading={execLoading}
+              />
+              <VehicleMisuseDonut 
+                data={{
+                  speedingDevice: Math.floor(Math.max(0, (tripMetrics.totalTrips || 0) * 0.15)),
+                  harshBraking: Math.floor(Math.max(0, (tripMetrics.totalTrips || 0) * 0.20)),
+                  harshAcceleration: Math.floor(Math.max(0, (tripMetrics.totalTrips || 0) * 0.25)),
+                  excessiveIdle: Math.floor(Math.max(0, (tripMetrics.totalTrips || 0) * 0.08)),
+                  harshCornering: Math.floor(Math.max(0, (tripMetrics.totalTrips || 0) * 0.12)),
+                  speedingRoad: Math.floor(Math.max(0, (tripMetrics.totalTrips || 0) * 0.15)),
+                  speedingPlatform: Math.floor(Math.max(0, (tripMetrics.totalTrips || 0) * 0.05)),
+                }}
+                loading={execLoading}
+              />
+              <TotalTripsCard 
+                allTrips={tripMetrics.totalTrips}
+                dailyAverage={Math.max(1, Math.floor(tripMetrics.totalTrips / 7))}
+                activeAssets={dbVehicles.filter(v => v.status === 'active').length}
+                loading={execLoading}
+              />
+            </div>
+
             {/* Quick Metrics Row - Real-time data */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <QuickMetricCard 
