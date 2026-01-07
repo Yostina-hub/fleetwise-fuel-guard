@@ -362,19 +362,19 @@ export const VehicleTableView = ({
                         <p>Track on map</p>
                       </TooltipContent>
                     </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`More actions for ${vehicle.plate}`}>
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>More actions</p>
-                      </TooltipContent>
-                    </Tooltip>
                     <DropdownMenu>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`More actions for ${vehicle.plate}`}>
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>More actions</p>
+                        </TooltipContent>
+                      </Tooltip>
                       <DropdownMenuContent align="end" className="w-48">
                         <DropdownMenuItem onClick={() => onVehicleClick(vehicle)}>
                           <Eye className="w-4 h-4 mr-2" />
