@@ -148,8 +148,12 @@ const FuelMonitoring = () => {
       .filter(e => e.event_type === 'refuel')
       .reduce((sum, e) => sum + Math.abs(e.fuel_change_liters), 0);
     
+    // Count all anomalous events (theft, leak, drain) that are not marked as false_positive
     const anomalyCount = dbFuelEvents
-      .filter(e => e.event_type === 'theft' || e.event_type === 'leak')
+      .filter(e => 
+        (e.event_type === 'theft' || e.event_type === 'leak' || e.event_type === 'drain') && 
+        e.status !== 'false_positive'
+      )
       .length;
 
     const refuelEvents = dbFuelEvents.filter(e => e.event_type === 'refuel' && e.fuel_change_liters > 0);
