@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,7 +25,9 @@ import {
   Headphones,
   Gauge,
   ChevronRight,
-  X
+  X,
+  AlertTriangle,
+  Loader2
 } from "lucide-react";
 
 interface VehicleControlPanelProps {
@@ -111,6 +114,8 @@ export const VehicleControlPanel = ({
   const organizationId = propOrganizationId || hookOrganizationId;
   const [activeSubDialog, setActiveSubDialog] = useState<SubDialogType>(null);
   const [sending, setSending] = useState(false);
+  const [deviceId, setDeviceId] = useState<string | null>(null);
+  const [loadingDevice, setLoadingDevice] = useState(false);
   
   // Stop Engine options
   const [oilCutMode, setOilCutMode] = useState<"immediate" | "delayed">("immediate");
@@ -127,12 +132,52 @@ export const VehicleControlPanel = ({
   const [messageContent, setMessageContent] = useState("");
   const [carrierNumber, setCarrierNumber] = useState("");
 
+  // Fetch device associated with this vehicle
+  useEffect(() => {
+    const fetchDevice = async () => {
+      if (!vehicle?.vehicleId || !organizationId) return;
+      
+      setLoadingDevice(true);
+      try {
+        const { data, error } = await supabase
+          .from("devices")
+          .select("id, sim_msisdn")
+          .eq("vehicle_id", vehicle.vehicleId)
+          .eq("organization_id", organizationId)
+          .eq("status", "active")
+          .maybeSingle();
+
+        if (!error && data) {
+          setDeviceId(data.id);
+        } else {
+          setDeviceId(null);
+        }
+      } catch (err) {
+        console.error("Error fetching device:", err);
+        setDeviceId(null);
+      } finally {
+        setLoadingDevice(false);
+      }
+    };
+
+    if (open) {
+      fetchDevice();
+    }
+  }, [vehicle?.vehicleId, organizationId, open]);
+
   const handleItemClick = (item: typeof CONTROL_ITEMS[0]) => {
     setActiveSubDialog(item.value);
   };
 
   const handleConfirm = async () => {
     if (!vehicle || !activeSubDialog) return;
+
+    if (!deviceId) {
+      toast.error("No device assigned", {
+        description: "This vehicle has no active GPS device. Assign a device first.",
+      });
+      return;
+    }
 
     setSending(true);
     
@@ -184,45 +229,32 @@ export const VehicleControlPanel = ({
           break;
       }
 
-      // Log command to governor_command_logs
-      const { error } = await (supabase as any)
-        .from("governor_command_logs")
+      // Log command to device_commands table
+      const { error } = await supabase
+        .from("device_commands")
         .insert({
+          device_id: deviceId,
           vehicle_id: vehicle.vehicleId,
           organization_id: organizationId,
-          command_type: activeSubDialog,
-          command_data: commandData,
-          phone_number: vehicle.phoneNumber || null,
-          sms_content: smsContent,
+          command_type: `control_${activeSubDialog}`,
+          command_payload: { ...commandData, sms_content: smsContent },
+          priority: activeSubDialog === "stop_engine" ? "critical" : "normal",
           status: "pending",
           created_by: user?.id || null,
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         });
 
       if (error) throw error;
 
-      // Optionally invoke edge function to send SMS
-      if (vehicle.phoneNumber) {
-        await supabase.functions.invoke("send-governor-command", {
-          body: {
-            vehicleId: vehicle.vehicleId,
-            commandType: activeSubDialog,
-            commandData,
-            phoneNumber: vehicle.phoneNumber,
-            organizationId,
-            userId: user?.id,
-          },
-        });
-      }
-
       const item = CONTROL_ITEMS.find(c => c.value === activeSubDialog);
-      toast.success(`Command sent: ${item?.label}`, {
-        description: `${vehicle.plate} - ${vehicle.make} ${vehicle.model}`,
+      toast.success(`Command queued: ${item?.label}`, {
+        description: `${vehicle.plate} - Will be sent to device`,
       });
       
       setActiveSubDialog(null);
     } catch (error) {
       console.error("Error sending command:", error);
-      toast.error("Failed to send command");
+      toast.error("Failed to queue command");
     } finally {
       setSending(false);
     }
@@ -411,11 +443,32 @@ export const VehicleControlPanel = ({
               <div className="w-8" /> {/* Spacer for centering */}
             </div>
             {vehicle && (
-              <p className="text-sm text-muted-foreground text-center">
-                {vehicle.plate} - {vehicle.make} {vehicle.model}
-              </p>
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <span>{vehicle.plate} - {vehicle.make} {vehicle.model}</span>
+                {loadingDevice ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : deviceId ? (
+                  <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
+                    Ready
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-600 border-amber-500/30">
+                    No Device
+                  </Badge>
+                )}
+              </div>
             )}
           </DialogHeader>
+
+          {/* No device warning */}
+          {!loadingDevice && !deviceId && (
+            <div className="px-4 py-2 bg-amber-500/10 border-b border-amber-500/20">
+              <div className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-400">
+                <AlertTriangle className="h-3 w-3 shrink-0" />
+                <span>No GPS device assigned to this vehicle.</span>
+              </div>
+            </div>
+          )}
 
           <div className="divide-y">
             {CONTROL_ITEMS.map((item) => {
