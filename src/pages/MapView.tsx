@@ -83,7 +83,6 @@ const MapView = () => {
   }>({ open: false, lat: 0, lng: 0, plate: '', type: 'streetview' });
   
   const [mapStyle, setMapStyle] = useState<'streets' | 'satellite'>('satellite');
-  const [mapToken] = useState<string>(() => localStorage.getItem('mapbox_token') || '');
   const envToken = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
   const [mapInstance, setMapInstance] = useState<any>(null);
   
@@ -393,7 +392,7 @@ const MapView = () => {
               vehicles={filteredVehicles}
               selectedVehicleId={selectedVehicleId}
               onVehicleClick={handleVehicleClick}
-              token={mapToken || envToken}
+              token={envToken}
               mapStyle={mapStyle}
               onMapReady={setMapInstance}
               showTrails={showTrails}

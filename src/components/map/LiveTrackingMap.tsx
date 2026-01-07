@@ -84,6 +84,8 @@ const trailAnimationFrames = useRef<Map<string, number>>(new Map());
 const [mapLoaded, setMapLoaded] = useState(false);
 const [tokenError, setTokenError] = useState<string | null>(null);
 const [tempToken, setTempToken] = useState('');
+const [initNonce, setInitNonce] = useState(0);
+const retriedInvalidRef = useRef(false);
 const [vehicleAddresses, setVehicleAddresses] = useState<Map<string, string>>(new Map());
 const [vehicleRoadInfo, setVehicleRoadInfo] = useState<Map<string, { road: string; distance: number; direction: string }>>(new Map());
 
@@ -249,9 +251,34 @@ useEffect(() => {
         map.current.on('error', (e: any) => {
           const msg = e?.error?.message || '';
           const status = e?.error?.status || e?.error?.statusCode;
-          if (status === 401 || status === 403 || /unauthorized|forbidden|access token|token/i.test(String(msg))) {
-            setTokenError('invalid');
+          const isAuthError =
+            status === 401 ||
+            status === 403 ||
+            /unauthorized|forbidden|access token|token/i.test(String(msg));
+
+          if (!isAuthError) return;
+
+          // If a bad token was saved previously, clear it once and retry via backend token fetch.
+          if (!retriedInvalidRef.current) {
+            retriedInvalidRef.current = true;
+            try {
+              localStorage.removeItem('mapbox_token');
+            } catch {}
+
+            try {
+              markers.current.forEach((m) => m.remove());
+              markers.current.clear();
+              map.current?.remove();
+            } catch {}
+
+            map.current = null;
+            setMapLoaded(false);
+            setTokenError(null);
+            setInitNonce((n) => n + 1);
+            return;
           }
+
+          setTokenError('invalid');
         });
       } catch (e) {
         console.error('Mapbox map initialization failed:', e);
@@ -288,7 +315,7 @@ return () => {
     map.current = null;
   }
 };
-  }, [token]);
+  }, [token, mapStyle, initNonce, onMapReady]);
 
   // Update map style when setting changes
   useEffect(() => {
@@ -1389,12 +1416,18 @@ return () => {
           </div>
           <div>
             <h3 className="font-semibold text-lg">
-              {tokenError === 'webgl' ? 'WebGL Required' : 'Map Token Needed'}
+              {tokenError === 'webgl'
+                ? 'WebGL Required'
+                : tokenError === 'invalid'
+                  ? 'Invalid Map Token'
+                  : 'Map Token Needed'}
             </h3>
             <p className="text-sm text-muted-foreground mt-1">
               {tokenError === 'webgl'
                 ? 'Enable hardware acceleration in your browser settings.'
-                : 'Add your Mapbox public token to display the map.'}
+                : tokenError === 'invalid'
+                  ? 'The saved token was rejected. Please enter a valid Mapbox public token (starts with pk.).'
+                  : 'Add your Mapbox public token to display the map.'}
             </p>
           </div>
           {tokenError !== 'webgl' && (
