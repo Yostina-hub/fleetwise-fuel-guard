@@ -34,6 +34,7 @@ import { User, UserPlus, Shield, Search, Users } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import UsersQuickStats from "@/components/users/UsersQuickStats";
 import UsersQuickActions from "@/components/users/UsersQuickActions";
+import InviteUserDialog from "@/components/users/InviteUserDialog";
 
 const roles = [
   { value: "super_admin", label: "Super Admin", color: "destructive" },
@@ -63,6 +64,7 @@ const UserManagement = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -209,7 +211,7 @@ const UserManagement = () => {
   };
 
   const handleInviteUser = () => {
-    toast({ title: "Coming Soon", description: "User invitation feature is under development" });
+    setInviteDialogOpen(true);
   };
 
   const handleExportUsers = () => {
@@ -246,6 +248,11 @@ const UserManagement = () => {
           onBulkAssignRoles={handleBulkAssign}
         />
 
+        <InviteUserDialog
+          open={inviteDialogOpen}
+          onOpenChange={setInviteDialogOpen}
+          onUserCreated={fetchUsers}
+        />
         {/* Search and Filter */}
         <Card>
           <CardContent className="pt-6">
