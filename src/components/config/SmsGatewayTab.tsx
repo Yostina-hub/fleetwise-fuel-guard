@@ -32,12 +32,12 @@ const SmsGatewayTab = () => {
   const [showApiSecret, setShowApiSecret] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    provider: "africastalking",
+    provider: "ethiotelecom",
     api_key: "",
     api_secret: "",
     sender_id: "",
     username: "",
-    environment: "sandbox",
+    environment: "production",
     is_active: true,
     is_default: true,
   });
@@ -148,12 +148,12 @@ const SmsGatewayTab = () => {
 
   const resetForm = () => {
     setFormData({
-      provider: "africastalking",
+      provider: "ethiotelecom",
       api_key: "",
       api_secret: "",
       sender_id: "",
       username: "",
-      environment: "sandbox",
+      environment: "production",
       is_active: true,
       is_default: true,
     });
@@ -303,6 +303,7 @@ const SmsGatewayTab = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="ethiotelecom">Ethio Telecom</SelectItem>
                     <SelectItem value="africastalking">Africa's Talking</SelectItem>
                     <SelectItem value="twilio">Twilio</SelectItem>
                   </SelectContent>
@@ -325,6 +326,34 @@ const SmsGatewayTab = () => {
                 </Select>
               </div>
             </div>
+
+            {formData.provider === "ethiotelecom" && (
+              <div className="space-y-4 p-4 bg-muted/50 rounded-lg border">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <MessageSquare className="h-4 w-4" />
+                  <span>Ethio Telecom SMS Gateway Configuration</span>
+                </div>
+                <div className="space-y-2">
+                  <Label>Username / Account ID *</Label>
+                  <Input
+                    value={formData.username}
+                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                    placeholder="Your Ethio Telecom account ID"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Sender ID (Short Code) *</Label>
+                  <Input
+                    value={formData.sender_id}
+                    onChange={(e) => setFormData({ ...formData, sender_id: e.target.value })}
+                    placeholder="e.g., 8585 or registered short code"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Your registered Ethio Telecom SMS short code
+                  </p>
+                </div>
+              </div>
+            )}
 
             {formData.provider === "africastalking" && (
               <div className="space-y-2">
