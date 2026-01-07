@@ -394,7 +394,7 @@ export const VehicleInfoPanel = ({
                 </div>
               </div>
 
-              {/* Location */}
+              {/* Location with Loading Skeleton */}
               <div className="p-3 bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20 rounded-xl">
                 <div className="flex items-start gap-2.5">
                   <div className="w-8 h-8 bg-emerald-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -402,14 +402,16 @@ export const VehicleInfoPanel = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-[10px] text-emerald-700 font-semibold uppercase tracking-wider mb-0.5">Current Location</div>
-                    <div className="text-sm text-emerald-700/90 font-medium leading-relaxed">
-                      {isLoadingAddress ? (
-                        <span className="flex items-center gap-2">
-                          <span className="w-3 h-3 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-                          Locating...
-                        </span>
-                      ) : address}
-                    </div>
+                    {isLoadingAddress ? (
+                      <div className="space-y-1.5 mt-1">
+                        <div className="h-3 bg-emerald-500/20 animate-pulse rounded w-full" />
+                        <div className="h-3 bg-emerald-500/20 animate-pulse rounded w-3/4" />
+                      </div>
+                    ) : (
+                      <div className="text-sm text-emerald-700/90 font-medium leading-relaxed">
+                        {address || 'Location unavailable'}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
