@@ -35,7 +35,7 @@ const AlertsMapCard = ({ alerts, loading }: AlertsMapCardProps) => {
       className="bg-[#1a2332] border border-[#2a3a4d] rounded-lg p-4 h-full"
     >
       {/* Header */}
-      <h3 className="font-semibold text-base text-foreground flex items-center gap-2 mb-4">
+      <h3 className="font-semibold text-base text-white flex items-center gap-2 mb-4">
         <MapPin className="h-4 w-4 text-primary" />
         Alerts Map
       </h3>
@@ -116,9 +116,9 @@ const AlertsMapCard = ({ alerts, loading }: AlertsMapCardProps) => {
             })
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center text-muted-foreground">
-                <MapPin className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                <p className="text-xs">No alerts with location</p>
+              <div className="text-center text-white/60">
+                <MapPin className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                <p className="text-xs font-medium">No alerts with location</p>
               </div>
             </div>
           )}
@@ -142,7 +142,7 @@ const AlertsMapCard = ({ alerts, loading }: AlertsMapCardProps) => {
           </div>
 
           {/* Map Attribution */}
-          <div className="absolute bottom-1 right-2 text-[8px] text-muted-foreground/50">
+          <div className="absolute bottom-1 right-2 text-[8px] text-white/40">
             © Fleet Map
           </div>
         </div>

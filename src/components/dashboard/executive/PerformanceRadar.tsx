@@ -54,8 +54,8 @@ const PerformanceRadar = ({ data, overallScore, loading }: PerformanceRadarProps
       <div className="relative z-10 p-6">
         <div className="flex items-center justify-between mb-2">
           <div>
-            <h3 className="text-lg font-semibold text-foreground">Performance Analysis</h3>
-            <p className="text-sm text-muted-foreground">Fleet vs Target Metrics</p>
+            <h3 className="text-lg font-semibold text-white">Performance Analysis</h3>
+            <p className="text-sm text-white/70">Fleet vs Target Metrics</p>
           </div>
           <motion.div 
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 border border-primary/30"
@@ -63,7 +63,7 @@ const PerformanceRadar = ({ data, overallScore, loading }: PerformanceRadarProps
           >
             <Target className="w-5 h-5 text-primary" />
             <div>
-              <p className="text-xs text-muted-foreground">Overall</p>
+              <p className="text-xs text-white/70">Overall</p>
               <p className="text-xl font-bold text-primary">{overallScore}%</p>
             </div>
           </motion.div>
@@ -78,12 +78,12 @@ const PerformanceRadar = ({ data, overallScore, loading }: PerformanceRadarProps
               />
               <PolarAngleAxis 
                 dataKey="subject" 
-                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                tick={{ fill: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: 500 }}
               />
               <PolarRadiusAxis 
                 angle={30} 
                 domain={[0, 100]} 
-                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 10 }}
               />
               <Radar
                 name="Target"
@@ -109,11 +109,11 @@ const PerformanceRadar = ({ data, overallScore, loading }: PerformanceRadarProps
         <div className="flex items-center justify-center gap-6 mt-2">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-primary" />
-            <span className="text-xs text-muted-foreground">Current Performance</span>
+            <span className="text-xs text-white/80 font-medium">Current Performance</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-muted border border-muted-foreground/30" />
-            <span className="text-xs text-muted-foreground">Target</span>
+            <div className="w-3 h-3 rounded-full bg-muted border border-white/30" />
+            <span className="text-xs text-white/80 font-medium">Target</span>
           </div>
         </div>
       </div>

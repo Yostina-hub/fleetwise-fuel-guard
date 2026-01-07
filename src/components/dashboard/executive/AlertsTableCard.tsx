@@ -89,12 +89,12 @@ const AlertsTableCard = ({ alerts, loading }: AlertsTableCardProps) => {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b text-muted-foreground">
-              <th className="text-left py-2 px-2 font-medium">Status</th>
-              <th className="text-left py-2 px-2 font-medium">Alert Type</th>
-              <th className="text-left py-2 px-2 font-medium">Time</th>
-              <th className="text-left py-2 px-2 font-medium">Title</th>
-              <th className="text-left py-2 px-2 font-medium">Details</th>
+            <tr className="border-b border-white/20 text-white/80">
+              <th className="text-left py-2 px-2 font-semibold">Status</th>
+              <th className="text-left py-2 px-2 font-semibold">Alert Type</th>
+              <th className="text-left py-2 px-2 font-semibold">Time</th>
+              <th className="text-left py-2 px-2 font-semibold">Title</th>
+              <th className="text-left py-2 px-2 font-semibold">Details</th>
             </tr>
           </thead>
           <tbody>
@@ -118,10 +118,10 @@ const AlertsTableCard = ({ alerts, loading }: AlertsTableCardProps) => {
                       </Badge>
                     </motion.div>
                   </td>
-                  <td className="py-2 px-2">{alert.alertType}</td>
-                  <td className="py-2 px-2 text-xs">{format(new Date(alert.startDate), 'MM/dd, h:mm a')}</td>
-                  <td className="py-2 px-2 max-w-[150px] truncate">{alert.title}</td>
-                  <td className="py-2 px-2 max-w-[200px] truncate text-muted-foreground">{alert.information}</td>
+                  <td className="py-2 px-2 text-white/90">{alert.alertType}</td>
+                  <td className="py-2 px-2 text-xs text-white/80">{format(new Date(alert.startDate), 'MM/dd, h:mm a')}</td>
+                  <td className="py-2 px-2 max-w-[150px] truncate text-white/90">{alert.title}</td>
+                  <td className="py-2 px-2 max-w-[200px] truncate text-white/70">{alert.information}</td>
                 </motion.tr>
               ))}
             </AnimatePresence>

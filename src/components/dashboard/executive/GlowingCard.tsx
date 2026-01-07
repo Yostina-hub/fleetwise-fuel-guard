@@ -60,9 +60,9 @@ const GlowingCard = ({
         )} />
         {/* Animated shimmer effect */}
         <motion.div
-          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent"
           animate={{ x: ['-100%', '100%'] }}
-          transition={{ duration: 3, repeat: Infinity, repeatDelay: 5, ease: "linear" }}
+          transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 4, ease: "linear" }}
         />
       </div>
       

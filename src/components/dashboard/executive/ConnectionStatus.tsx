@@ -37,7 +37,7 @@ const ConnectionStatus = ({ isConnected, lastUpdate }: ConnectionStatusProps) =>
       />
       
       <div className="relative flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-white/90">Dashboard Connection</span>
+        <span className="text-sm font-semibold text-white drop-shadow-sm">Dashboard Connection</span>
         {isConnected ? (
           <motion.div
             animate={{ 

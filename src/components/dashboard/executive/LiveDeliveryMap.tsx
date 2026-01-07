@@ -278,21 +278,21 @@ export default function LiveDeliveryMap() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm text-foreground truncate">{request.name}</p>
-                      <p className="text-xs text-muted-foreground">{request.action}</p>
+                      <p className="font-semibold text-sm text-white truncate">{request.name}</p>
+                      <p className="text-xs text-white/70">{request.action}</p>
                       {request.vehiclePlate && (
-                        <p className="text-xs text-muted-foreground/80">{request.vehiclePlate}</p>
+                        <p className="text-xs text-white/60">{request.vehiclePlate}</p>
                       )}
                       <div className="flex items-center gap-1 mt-1">
-                        <MapPin className="w-3 h-3 text-orange-500" />
-                        <span className="text-xs text-orange-500 font-medium">{request.city}</span>
+                        <MapPin className="w-3 h-3 text-orange-400" />
+                        <span className="text-xs text-orange-400 font-semibold">{request.city}</span>
                       </div>
                     </div>
                   </div>
                 </motion.div>
               ))}
               {[...realtimeActivities, ...requests].length === 0 && (
-                <div className="text-center py-8 text-muted-foreground text-sm">
+                <div className="text-center py-8 text-white/60 text-sm font-medium">
                   No active requests
                 </div>
               )}
@@ -492,21 +492,21 @@ export default function LiveDeliveryMap() {
                       <Package className="w-4 h-4 text-green-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm text-foreground truncate">{delivery.name}</p>
-                      <p className="text-xs text-muted-foreground">{delivery.action}</p>
+                      <p className="font-semibold text-sm text-white truncate">{delivery.name}</p>
+                      <p className="text-xs text-white/70">{delivery.action}</p>
                       {delivery.vehiclePlate && (
-                        <p className="text-xs text-muted-foreground/80">{delivery.vehiclePlate}</p>
+                        <p className="text-xs text-white/60">{delivery.vehiclePlate}</p>
                       )}
                       <div className="flex items-center gap-1 mt-1">
-                        <CheckCircle2 className="w-3 h-3 text-green-600" />
-                        <span className="text-xs text-green-600 font-medium">{delivery.city}</span>
+                        <CheckCircle2 className="w-3 h-3 text-green-400" />
+                        <span className="text-xs text-green-400 font-semibold">{delivery.city}</span>
                       </div>
                     </div>
                   </div>
                 </motion.div>
               ))}
               {deliveries.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground text-sm">
+                <div className="text-center py-8 text-white/60 text-sm font-medium">
                   No recent deliveries
                 </div>
               )}

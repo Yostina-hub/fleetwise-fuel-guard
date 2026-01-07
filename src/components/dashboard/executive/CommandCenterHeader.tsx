@@ -98,7 +98,7 @@ const CommandCenterHeader = ({
                   />
                   Live Operations
                 </Badge>
-                <span className="text-sm text-muted-foreground flex items-center gap-1">
+                <span className="text-sm text-white/70 flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5" />
                   {format(currentTime, 'HH:mm:ss')}
                 </span>
@@ -116,9 +116,9 @@ const CommandCenterHeader = ({
                 <Activity className="w-5 h-5 text-success" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Active Fleet</p>
-                <p className="text-xl font-bold text-foreground">
-                  {animatedVehicles}<span className="text-muted-foreground text-sm">/{totalVehicles}</span>
+                <p className="text-xs text-white/70 uppercase tracking-wider">Active Fleet</p>
+                <p className="text-xl font-bold text-white">
+                  {animatedVehicles}<span className="text-white/60 text-sm">/{totalVehicles}</span>
                 </p>
               </div>
             </motion.div>
@@ -131,8 +131,8 @@ const CommandCenterHeader = ({
                 <Signal className="w-5 h-5 text-secondary" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Today's Trips</p>
-                <p className="text-xl font-bold text-foreground">{animatedTrips}</p>
+                <p className="text-xs text-white/70 uppercase tracking-wider">Today's Trips</p>
+                <p className="text-xl font-bold text-white">{animatedTrips}</p>
               </div>
             </motion.div>
 
