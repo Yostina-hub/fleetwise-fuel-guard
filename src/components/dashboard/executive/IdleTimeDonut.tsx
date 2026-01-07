@@ -42,19 +42,25 @@ const IdleTimeDonut = ({ totalIdleTime, groups, loading, idlePercentage = 25 }: 
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-[#1a2332] border border-[#2a3a4d] rounded-lg p-4"
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      whileHover={{ scale: 1.01, borderColor: "rgba(249, 115, 22, 0.4)" }}
+      className="bg-[#1a2332] border border-[#2a3a4d] rounded-lg p-4 hover:shadow-lg hover:shadow-orange-500/10 transition-all duration-300"
     >
-      <div className="flex items-center gap-2 mb-4">
-        <h3 className="font-semibold text-base text-foreground">Idle Time</h3>
-        <Badge variant="outline" className="text-xs bg-orange-500/20 text-orange-400 border-orange-500/50">
+      <div className="flex items-center gap-3 mb-4">
+        <h3 className="font-bold text-lg text-white tracking-tight">Idle Time</h3>
+        <Badge variant="outline" className="text-xs bg-orange-500/30 text-orange-300 border-orange-400/60 font-medium">
           <motion.span
-            animate={{ opacity: [1, 0.5, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="inline-flex items-center gap-1"
+            animate={{ opacity: [1, 0.6, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            className="inline-flex items-center gap-1.5"
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
+            <motion.span 
+              className="w-2 h-2 rounded-full bg-orange-400"
+              animate={{ scale: [1, 1.4, 1], opacity: [1, 0.7, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            />
             Live
           </motion.span>
         </Badge>

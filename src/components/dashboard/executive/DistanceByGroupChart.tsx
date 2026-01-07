@@ -71,21 +71,27 @@ const DistanceByGroupChart = ({ data, groups, loading }: DistanceByGroupChartPro
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-[#1a2332] border border-[#2a3a4d] rounded-lg p-4 lg:col-span-2"
+      initial={{ opacity: 0, y: 20, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      whileHover={{ borderColor: "rgba(59, 130, 246, 0.4)" }}
+      className="bg-[#1a2332] border border-[#2a3a4d] rounded-lg p-4 lg:col-span-2 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300"
     >
       {/* Header with Legend */}
       <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
-        <div className="flex items-center gap-2">
-          <h3 className="font-semibold text-base text-foreground">Distance by Fleet per Hour</h3>
-          <Badge variant="outline" className="text-xs bg-green-500/20 text-green-400 border-green-500/50">
+        <div className="flex items-center gap-3">
+          <h3 className="font-bold text-lg text-white tracking-tight">Distance by Fleet per Hour</h3>
+          <Badge variant="outline" className="text-xs bg-green-500/30 text-green-300 border-green-400/60 font-medium">
             <motion.span
-              animate={{ opacity: [1, 0.5, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="inline-flex items-center gap-1"
+              animate={{ opacity: [1, 0.6, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+              className="inline-flex items-center gap-1.5"
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              <motion.span 
+                className="w-2 h-2 rounded-full bg-green-400"
+                animate={{ scale: [1, 1.4, 1], opacity: [1, 0.7, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              />
               Live
             </motion.span>
           </Badge>
