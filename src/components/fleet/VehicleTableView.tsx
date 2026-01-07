@@ -32,7 +32,8 @@ import {
   Gauge,
   Clock,
   Wifi,
-  WifiOff
+  WifiOff,
+  Settings2
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
