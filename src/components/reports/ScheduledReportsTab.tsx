@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FileText, Plus, Search, MoreHorizontal, Clock, Trash2, Edit, Play, Pause, Loader2 } from "lucide-react";
+import { FileText, Plus, Search, MoreHorizontal, Clock, Trash2, Edit, Ban, Copy, BarChart3, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -113,6 +113,40 @@ export const ScheduledReportsTab = ({ onAddReport }: ScheduledReportsTabProps) =
     }
   };
 
+  const handleDuplicateReport = async (report: ScheduledReport) => {
+    try {
+      const { data, error } = await supabase
+        .from("scheduled_reports")
+        .insert({
+          organization_id: organizationId,
+          report_id: report.report_id,
+          report_name: `${report.report_name} (Copy)`,
+          report_description: report.report_description,
+          category: report.category,
+          sub_id: report.sub_id,
+          schedule_rate: report.schedule_rate,
+          export_format: report.export_format,
+          recipients: report.recipients,
+          is_active: true,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setScheduledReports(prev => [data as ScheduledReport, ...prev]);
+      toast.success("Report duplicated successfully");
+    } catch (error) {
+      console.error("Error duplicating report:", error);
+      toast.error("Failed to duplicate report");
+    }
+  };
+
+  const handleShowResults = (report: ScheduledReport) => {
+    toast.info(`Generating ${report.report_name}...`);
+    // This would trigger report generation
+  };
+
   const handleEditReport = (report: ScheduledReport) => {
     // Find the report definition
     const reportDef = REPORT_DEFINITIONS.find(r => r.id === report.report_id);
@@ -216,34 +250,33 @@ export const ScheduledReportsTab = ({ onAddReport }: ScheduledReportsTabProps) =
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="w-4 h-4" />
+                        <MoreHorizontal className="w-5 h-5 text-primary" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEditReport(report)}>
-                        <Edit className="w-4 h-4 mr-2" />
-                        Edit Schedule
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem onClick={() => handleEditReport(report)} className="gap-3 py-2.5">
+                        <Edit className="w-4 h-4" />
+                        <span className="font-medium">EDIT REPORT</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleToggleActive(report)}>
-                        {report.is_active ? (
-                          <>
-                            <Pause className="w-4 h-4 mr-2" />
-                            Pause
-                          </>
-                        ) : (
-                          <>
-                            <Play className="w-4 h-4 mr-2" />
-                            Activate
-                          </>
-                        )}
+                      <DropdownMenuItem onClick={() => handleToggleActive(report)} className="gap-3 py-2.5">
+                        <Ban className="w-4 h-4" />
+                        <span className="font-medium">{report.is_active ? "SET AS INACTIVE" : "SET AS ACTIVE"}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDuplicateReport(report)} className="gap-3 py-2.5">
+                        <Copy className="w-4 h-4" />
+                        <span className="font-medium">DUPLICATE</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleShowResults(report)} className="gap-3 py-2.5">
+                        <BarChart3 className="w-4 h-4" />
+                        <span className="font-medium">SHOW RESULTS</span>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
                         onClick={() => handleDeleteReport(report)}
-                        className="text-destructive focus:text-destructive"
+                        className="gap-3 py-2.5 text-destructive focus:text-destructive"
                       >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete
+                        <Trash2 className="w-4 h-4" />
+                        <span className="font-medium">DELETE</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
