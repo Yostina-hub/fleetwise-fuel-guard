@@ -103,7 +103,7 @@ const FleetStatusCard = ({ totalAssets, statuses, loading }: FleetStatusCardProp
             >
               {animatedTotal}
             </motion.span>
-            <span className="text-[10px] text-muted-foreground">Vehicles</span>
+            <span className="text-[10px] text-white/70 font-medium">Vehicles</span>
           </div>
         </div>
 
@@ -111,10 +111,10 @@ const FleetStatusCard = ({ totalAssets, statuses, loading }: FleetStatusCardProp
         <div className="flex-1 min-w-0">
           <table className="w-full text-xs">
             <thead>
-              <tr className="text-muted-foreground">
-                <th className="text-left py-1 font-medium">Status</th>
-                <th className="text-center py-1 font-medium">Count</th>
-                <th className="text-right py-1 font-medium">Fleet %</th>
+              <tr className="text-white/80">
+                <th className="text-left py-1 font-semibold">Status</th>
+                <th className="text-center py-1 font-semibold">Count</th>
+                <th className="text-right py-1 font-semibold">Fleet %</th>
               </tr>
             </thead>
             <tbody>
@@ -149,7 +149,7 @@ const FleetStatusCard = ({ totalAssets, statuses, loading }: FleetStatusCardProp
                       </motion.span>
                     </Badge>
                   </td>
-                  <td className="text-center py-2 text-foreground">
+                  <td className="text-center py-2 text-white font-medium">
                     <motion.span
                       key={item.count}
                       initial={{ opacity: 0 }}

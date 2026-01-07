@@ -149,9 +149,9 @@ const HeroMetricCard = ({
           >
             {prefix}{formattedValue}{suffix}
           </motion.div>
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <p className="text-sm font-medium text-white/80">{title}</p>
           {subtitle && (
-            <p className="text-xs text-muted-foreground/70">{subtitle}</p>
+            <p className="text-xs text-white/60">{subtitle}</p>
           )}
         </div>
 

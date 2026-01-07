@@ -103,7 +103,7 @@ const ExecutiveKPIGrid = ({ kpis, loading }: ExecutiveKPIGridProps) => {
                     {kpiIcons[kpi.label] || categoryIcons[kpi.category]}
                   </div>
                 </div>
-                <span className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
+                <span className="text-xs uppercase tracking-wider text-white/70 font-medium">
                   {kpi.category}
                 </span>
               </div>
@@ -118,7 +118,7 @@ const ExecutiveKPIGrid = ({ kpis, loading }: ExecutiveKPIGridProps) => {
                 >
                   {kpi.value}
                 </motion.h3>
-                <p className="text-sm text-muted-foreground">{kpi.label}</p>
+                <p className="text-sm text-white/80 font-medium">{kpi.label}</p>
               </div>
 
               {/* Trend & Sparkline */}
@@ -128,7 +128,7 @@ const ExecutiveKPIGrid = ({ kpis, loading }: ExecutiveKPIGridProps) => {
                   <span className="font-medium">
                     {kpi.change >= 0 ? '+' : ''}{kpi.change.toFixed(1)}%
                   </span>
-                  <span className="text-muted-foreground text-xs">{kpi.changeLabel}</span>
+                  <span className="text-white/60 text-xs">{kpi.changeLabel}</span>
                 </div>
                 
                 <div className="opacity-70">
