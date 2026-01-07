@@ -4624,6 +4624,98 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_reports: {
+        Row: {
+          asset_type: string | null
+          at_time: string
+          category: string
+          created_at: string
+          created_by: string | null
+          data_period: string | null
+          export_format: string
+          from_time: string | null
+          id: string
+          is_active: boolean
+          is_scheduled: boolean
+          last_run_at: string | null
+          next_run_at: string | null
+          organization_id: string
+          recipients: string[]
+          report_description: string | null
+          report_id: string
+          report_name: string
+          schedule_rate: string
+          selected_assets: string[] | null
+          selected_days: number[] | null
+          starting_date: string
+          sub_id: string
+          to_time: string | null
+          updated_at: string
+        }
+        Insert: {
+          asset_type?: string | null
+          at_time?: string
+          category: string
+          created_at?: string
+          created_by?: string | null
+          data_period?: string | null
+          export_format?: string
+          from_time?: string | null
+          id?: string
+          is_active?: boolean
+          is_scheduled?: boolean
+          last_run_at?: string | null
+          next_run_at?: string | null
+          organization_id: string
+          recipients?: string[]
+          report_description?: string | null
+          report_id: string
+          report_name: string
+          schedule_rate?: string
+          selected_assets?: string[] | null
+          selected_days?: number[] | null
+          starting_date?: string
+          sub_id: string
+          to_time?: string | null
+          updated_at?: string
+        }
+        Update: {
+          asset_type?: string | null
+          at_time?: string
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          data_period?: string | null
+          export_format?: string
+          from_time?: string | null
+          id?: string
+          is_active?: boolean
+          is_scheduled?: boolean
+          last_run_at?: string | null
+          next_run_at?: string | null
+          organization_id?: string
+          recipients?: string[]
+          report_description?: string | null
+          report_id?: string
+          report_name?: string
+          schedule_rate?: string
+          selected_assets?: string[] | null
+          selected_days?: number[] | null
+          starting_date?: string
+          sub_id?: string
+          to_time?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_reports_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sensors: {
         Row: {
           calibration_curve: Json | null

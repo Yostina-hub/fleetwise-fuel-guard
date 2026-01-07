@@ -11,6 +11,7 @@ import { exportToCSV, exportToPDF } from "@/lib/exportUtils";
 import { cn } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { TimePeriodOption, getDateRangeFromPeriod } from "@/components/reports/ReportTimePeriodSelect";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 // Report UI components
 import { ReportsHeader } from "@/components/reports/ReportsHeader";
@@ -20,6 +21,8 @@ import { ReportsMetricCards } from "@/components/reports/ReportsMetricCards";
 import { ReportsInsightsCard } from "@/components/reports/ReportsInsightsCard";
 import { ReportsTrendChart } from "@/components/reports/ReportsTrendChart";
 import { ReportCatalog, REPORT_DEFINITIONS } from "@/components/reports/ReportCatalog";
+import { ScheduledReportsTab } from "@/components/reports/ScheduledReportsTab";
+import { ScheduleReportDialog } from "@/components/reports/ScheduleReportDialog";
 
 // Report table components
 import { SpeedingEventsTable } from "@/components/reports/SpeedingEventsTable";
@@ -55,6 +58,7 @@ import RestrictedHoursReportTable from "@/components/reports/RestrictedHoursRepo
 const FAVORITES_STORAGE_KEY = "fleet_report_favorites";
 
 const Reports = () => {
+  const [mainTab, setMainTab] = useState<"my_reports" | "scheduled">("my_reports");
   const [viewMode, setViewMode] = useState<"catalog" | "report">("catalog");
   const [activeReportTab, setActiveReportTab] = useState("vehicle");
   const [activeSubTab, setActiveSubTab] = useState("summary");
@@ -62,6 +66,8 @@ const Reports = () => {
   const [catalogSearch, setCatalogSearch] = useState("");
   const [timePeriod, setTimePeriod] = useState<TimePeriodOption>("last_7_days");
   const [dateRange, setDateRange] = useState(() => getDateRangeFromPeriod("last_7_days"));
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [selectedReportForSchedule, setSelectedReportForSchedule] = useState<any>(null);
   const [favoriteReports, setFavoriteReports] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem(FAVORITES_STORAGE_KEY);
@@ -1265,6 +1271,12 @@ const Reports = () => {
     setViewMode("report");
   };
 
+  const handleAddScheduledReport = () => {
+    // Open the schedule dialog with a default report
+    setSelectedReportForSchedule(REPORT_DEFINITIONS[0]);
+    setScheduleDialogOpen(true);
+  };
+
   return (
     <Layout>
       <div className="p-6 md:p-8 space-y-6">
@@ -1274,73 +1286,106 @@ const Reports = () => {
           dateRange={dateRangeDisplay} 
         />
 
-        {/* Navigation Tabs with View Mode Toggle */}
-        <ReportsNavigation
-          mainTabs={mainTabs}
-          subTabs={viewMode === "report" ? subTabs : []}
-          activeMainTab={activeReportTab}
-          activeSubTab={activeSubTab}
-          onMainTabChange={(id) => {
-            setActiveReportTab(id);
-            const newSubTabs = getSubTabsForTab(id);
-            setActiveSubTab(newSubTabs[0]?.id || "summary");
-            if (viewMode === "catalog") setViewMode("report");
-          }}
-          onSubTabChange={setActiveSubTab}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-        />
+        {/* Main Tabs: My Reports / Scheduled & Custom */}
+        <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as "my_reports" | "scheduled")} className="w-full">
+          <div className="flex items-center justify-center mb-4">
+            <TabsList className="bg-muted/50 p-1">
+              <TabsTrigger 
+                value="my_reports" 
+                className="px-6 py-2.5 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              >
+                MY REPORTS
+              </TabsTrigger>
+              <TabsTrigger 
+                value="scheduled" 
+                className="px-6 py-2.5 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              >
+                SCHEDULED & CUSTOM
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-        {viewMode === "catalog" ? (
-          /* Report Catalog View */
-          <ReportCatalog
-            reports={REPORT_DEFINITIONS}
-            favoriteReports={favoriteReports}
-            onSelectReport={handleSelectReport}
-            onToggleFavorite={handleToggleFavorite}
-            searchQuery={catalogSearch}
-            onSearchChange={setCatalogSearch}
-          />
-        ) : (
-          <>
-            {/* Metric Cards - Context Aware */}
-            <ReportsMetricCards 
-              metrics={metrics} 
-              vehicleCount={vehicles.length} 
-              driverCount={drivers.length}
-              activeTab={activeReportTab}
+          <TabsContent value="my_reports" className="mt-0">
+            {/* Navigation Tabs with View Mode Toggle */}
+            <ReportsNavigation
+              mainTabs={mainTabs}
+              subTabs={viewMode === "report" ? subTabs : []}
+              activeMainTab={activeReportTab}
+              activeSubTab={activeSubTab}
+              onMainTabChange={(id) => {
+                setActiveReportTab(id);
+                const newSubTabs = getSubTabsForTab(id);
+                setActiveSubTab(newSubTabs[0]?.id || "summary");
+                if (viewMode === "catalog") setViewMode("report");
+              }}
+              onSubTabChange={setActiveSubTab}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
             />
 
-            {/* Date Filter & Export */}
-            <ReportsDateFilter
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              onExportCSV={handleExportCSV}
-              onExportPDF={handleExportPDF}
-              onRefresh={handleRefresh}
-              isLoading={loading}
-              timePeriod={timePeriod}
-              onTimePeriodChange={setTimePeriod}
-              dateRange={dateRange}
-              onDateRangeChange={setDateRange}
-            />
-
-            {/* Insights & Trend Chart Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ReportsInsightsCard metrics={metrics} />
-              <ReportsTrendChart 
-                trips={trips} 
-                driverEvents={driverEvents} 
-                activeTab={activeReportTab} 
+            {viewMode === "catalog" ? (
+              /* Report Catalog View */
+              <ReportCatalog
+                reports={REPORT_DEFINITIONS}
+                favoriteReports={favoriteReports}
+                onSelectReport={handleSelectReport}
+                onToggleFavorite={handleToggleFavorite}
+                searchQuery={catalogSearch}
+                onSearchChange={setCatalogSearch}
               />
-            </div>
+            ) : (
+              <>
+                {/* Metric Cards - Context Aware */}
+                <ReportsMetricCards 
+                  metrics={metrics} 
+                  vehicleCount={vehicles.length} 
+                  driverCount={drivers.length}
+                  activeTab={activeReportTab}
+                />
 
-            {/* Data Table */}
-            <div className="mt-2">
-              {renderContent()}
-            </div>
-          </>
-        )}
+                {/* Date Filter & Export */}
+                <ReportsDateFilter
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  onExportCSV={handleExportCSV}
+                  onExportPDF={handleExportPDF}
+                  onRefresh={handleRefresh}
+                  isLoading={loading}
+                  timePeriod={timePeriod}
+                  onTimePeriodChange={setTimePeriod}
+                  dateRange={dateRange}
+                  onDateRangeChange={setDateRange}
+                />
+
+                {/* Insights & Trend Chart Row */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <ReportsInsightsCard metrics={metrics} />
+                  <ReportsTrendChart 
+                    trips={trips} 
+                    driverEvents={driverEvents} 
+                    activeTab={activeReportTab} 
+                  />
+                </div>
+
+                {/* Data Table */}
+                <div className="mt-2">
+                  {renderContent()}
+                </div>
+              </>
+            )}
+          </TabsContent>
+
+          <TabsContent value="scheduled" className="mt-0">
+            <ScheduledReportsTab onAddReport={handleAddScheduledReport} />
+          </TabsContent>
+        </Tabs>
+
+        {/* Schedule Report Dialog */}
+        <ScheduleReportDialog
+          open={scheduleDialogOpen}
+          onOpenChange={setScheduleDialogOpen}
+          report={selectedReportForSchedule}
+        />
       </div>
     </Layout>
   );
