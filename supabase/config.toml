@@ -3,6 +3,12 @@ project_id = "kkmjwmyqakprqdhrlsoz"
 [functions.ai-chat]
 verify_jwt = false
 
+[functions.ai-fleet-insights]
+verify_jwt = false
+
+[functions.ai-anomaly-detector]
+verify_jwt = false
+
 [functions.get-mapbox-token]
 verify_jwt = false
 
