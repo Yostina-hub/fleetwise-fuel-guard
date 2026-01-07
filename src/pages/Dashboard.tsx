@@ -94,7 +94,7 @@ import SavingsGauge from "@/components/dashboard/executive/SavingsGauge";
 import TrendSparklineCard from "@/components/dashboard/executive/TrendSparklineCard";
 import TopDriversCard from "@/components/dashboard/executive/TopDriversCard";
 import TripActivityHeatmap from "@/components/dashboard/executive/TripActivityHeatmap";
-import { Car, Gauge, Zap, Truck, Route, Fuel, Shield, Power, Wrench, Moon } from "lucide-react";
+import { Car, Gauge, Zap, Shield, Power, Wrench, Moon } from "lucide-react";
 
 const Dashboard = () => {
   const navigate = useNavigate();
