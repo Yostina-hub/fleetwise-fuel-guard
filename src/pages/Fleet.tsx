@@ -20,7 +20,7 @@ import DeleteVehicleDialog from "@/components/fleet/DeleteVehicleDialog";
 import BulkActionsToolbar from "@/components/fleet/BulkActionsToolbar";
 import AssignDriverDialog from "@/components/fleet/AssignDriverDialog";
 import BulkImportDialog from "@/components/fleet/BulkImportDialog";
-import { SendCommandDialog } from "@/components/fleet/SendCommandDialog";
+import { VehicleControlPanel } from "@/components/fleet/VehicleControlPanel";
 import { GPSDeviceDialog } from "@/components/fleet/GPSDeviceDialog";
 import { VehicleVirtualGrid } from "@/components/fleet/VehicleVirtualGrid";
 import { VehicleTableView } from "@/components/fleet/VehicleTableView";
@@ -841,7 +841,7 @@ const Fleet = () => {
           onOpenChange={setImportDialogOpen}
         />
 
-        <SendCommandDialog
+        <VehicleControlPanel
           open={commandDialogOpen}
           onOpenChange={setCommandDialogOpen}
           vehicle={vehicleForCommand}
