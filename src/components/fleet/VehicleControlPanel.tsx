@@ -321,12 +321,12 @@ export const VehicleControlPanel = ({
                   <label
                     className={`flex items-center justify-center p-3 rounded-full cursor-pointer transition-all ${
                       listenMode === "listen"
-                        ? "bg-muted hover:bg-muted/80"
+                        ? "bg-primary text-primary-foreground"
                         : "bg-muted hover:bg-muted/80"
                     }`}
                   >
                     <RadioGroupItem value="listen" className="sr-only" />
-                    <span>listen mode</span>
+                    <span>Listen mode</span>
                   </label>
                   <label
                     className={`flex items-center justify-center p-3 rounded-full cursor-pointer transition-all ${
