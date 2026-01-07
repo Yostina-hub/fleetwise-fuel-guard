@@ -22,12 +22,17 @@ import {
 import { format, addDays, subDays, isSameDay, differenceInDays } from "date-fns";
 import { useNavigate } from "react-router-dom";
 
+interface LocationData {
+  lat?: number;
+  lng?: number;
+}
+
 interface Trip {
   id?: string;
   start_time: string;
   end_time?: string | null;
-  start_location?: string | null;
-  end_location?: string | null;
+  start_location?: string | LocationData | null;
+  end_location?: string | LocationData | null;
   distance_km?: number | null;
   duration_minutes?: number | null;
   status?: string | null;
@@ -35,6 +40,16 @@ interface Trip {
   avg_speed_kmh?: number | null;
   fuel_consumed_liters?: number | null;
 }
+
+// Helper to format location - handles both string and {lat, lng} object
+const formatLocation = (location: string | LocationData | null | undefined, fallback: string): string => {
+  if (!location) return fallback;
+  if (typeof location === 'string') return location;
+  if (typeof location === 'object' && 'lat' in location && 'lng' in location) {
+    return `${Number(location.lat).toFixed(4)}°, ${Number(location.lng).toFixed(4)}°`;
+  }
+  return fallback;
+};
 
 interface TripTimelineProps {
   trips: Trip[];
@@ -258,13 +273,13 @@ const TripTimeline = ({ trips, isLoading, vehicleId }: TripTimelineProps) => {
                             <div className="flex items-start gap-2">
                               <div className="w-2 h-2 rounded-full bg-success mt-1.5 shrink-0" />
                               <p className="text-sm text-foreground truncate">
-                                {trip.start_location || "Unknown start location"}
+                                {formatLocation(trip.start_location, "Unknown start location")}
                               </p>
                             </div>
                             <div className="flex items-start gap-2">
                               <div className="w-2 h-2 rounded-full bg-destructive mt-1.5 shrink-0" />
                               <p className="text-sm text-foreground truncate">
-                                {trip.end_location || "Unknown destination"}
+                                {formatLocation(trip.end_location, "Unknown destination")}
                               </p>
                             </div>
                           </div>
