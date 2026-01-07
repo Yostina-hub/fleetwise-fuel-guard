@@ -397,13 +397,8 @@ const Dashboard = () => {
             </div>
 
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              <SafetyScoreGauge 
-                score={analytics.safety.averageScore}
-                label="Fleet Safety"
-                size="lg"
-              />
-              <FleetUsageChart 
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <FleetUsageChart
                 data={useMemo(() => {
                   // Generate last 30 days trip data from actual metrics
                   const baseTrips = Math.max(1, Math.floor(tripMetrics.totalTrips / 30));
