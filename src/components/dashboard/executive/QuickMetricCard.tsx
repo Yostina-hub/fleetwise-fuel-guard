@@ -35,48 +35,55 @@ const QuickMetricCard = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      whileHover={{ scale: 1.02, borderColor: "hsl(var(--primary))" }}
       className={`
         bg-[#1a2332] border border-[#2a3a4d] rounded-lg p-4
-        hover:border-primary/40 transition-all duration-300
+        hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10 
+        transition-all duration-300
         ${className}
       `}
     >
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm text-muted-foreground">{title}</span>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-sm font-medium text-white/90">{title}</span>
         {badge && (
           <Badge 
             variant="outline" 
-            className="text-xs bg-blue-500/20 text-blue-400 border-blue-500/50"
+            className="text-xs bg-blue-500/30 text-blue-300 border-blue-400/60 font-medium"
           >
             <motion.span
-              animate={{ opacity: [1, 0.5, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="inline-flex items-center gap-1"
+              animate={{ opacity: [1, 0.6, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+              className="inline-flex items-center gap-1.5"
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+              <motion.span 
+                className="w-2 h-2 rounded-full bg-blue-400"
+                animate={{ scale: [1, 1.4, 1], opacity: [1, 0.7, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              />
               {badge}
             </motion.span>
           </Badge>
         )}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         {icon && (
           <motion.div 
             className="text-primary"
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
+            animate={{ scale: [1, 1.15, 1], rotate: [0, 5, -5, 0] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
           >
             {icon}
           </motion.div>
         )}
         <motion.span 
-          className="text-2xl font-bold text-foreground"
+          className="text-3xl font-bold text-white tracking-tight"
           key={String(value)}
-          initial={{ opacity: 0, y: -10 }}
+          initial={{ opacity: 0, y: -15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
+          transition={{ duration: 0.4, type: "spring", stiffness: 100 }}
         >
           {displayValue}
         </motion.span>
