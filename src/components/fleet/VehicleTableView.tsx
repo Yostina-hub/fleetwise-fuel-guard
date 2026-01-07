@@ -71,6 +71,7 @@ interface VehicleTableViewProps {
   onTripHistory?: (vehicle: VehicleItem) => void;
   onSendCommand?: (vehicle: VehicleItem) => void;
   onAssignDevice?: (vehicle: VehicleItem) => void;
+  onTerminalSettings?: (vehicle: VehicleItem) => void;
   selectedIds?: string[];
   onSelectionChange?: (ids: string[]) => void;
   // Server-side sorting
@@ -89,6 +90,7 @@ export const VehicleTableView = ({
   onTripHistory,
   onSendCommand,
   onAssignDevice,
+  onTerminalSettings,
   selectedIds = [],
   onSelectionChange,
   sortField: externalSortField,
@@ -400,6 +402,10 @@ export const VehicleTableView = ({
                         <DropdownMenuItem onClick={() => onSendCommand?.(vehicle)}>
                           <Power className="w-4 h-4 mr-2" />
                           Send Command
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onTerminalSettings?.(vehicle)}>
+                          <Settings2 className="w-4 h-4 mr-2" />
+                          Terminal Settings
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => navigate("/maintenance")}>

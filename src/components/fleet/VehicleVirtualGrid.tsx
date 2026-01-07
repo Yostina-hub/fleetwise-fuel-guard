@@ -65,6 +65,7 @@ interface VehicleVirtualGridProps {
   onTripHistory?: (vehicle: VehicleItem) => void;
   onSendCommand?: (vehicle: VehicleItem) => void;
   onAssignDevice?: (vehicle: VehicleItem) => void;
+  onTerminalSettings?: (vehicle: VehicleItem) => void;
   hasMore: boolean;
   onLoadMore: () => void;
   loading: boolean;
@@ -83,6 +84,7 @@ export const VehicleVirtualGrid = ({
   onTripHistory,
   onSendCommand,
   onAssignDevice,
+  onTerminalSettings,
   hasMore,
   onLoadMore,
   loading,
@@ -269,6 +271,10 @@ export const VehicleVirtualGrid = ({
                           <DropdownMenuItem onClick={() => onSendCommand?.(vehicle)}>
                             <Power className="w-4 h-4 mr-2" />
                             Send Command
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onTerminalSettings?.(vehicle)}>
+                            <Settings2 className="w-4 h-4 mr-2" />
+                            Terminal Settings
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => navigate("/maintenance")}>
