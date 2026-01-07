@@ -148,11 +148,31 @@ export function createAnimatedMarkerElement(
         <path d="M12 2L4 20h4l4-8 4 8h4L12 2z"/>
       </svg>
     `;
+  } else if (status === 'offline') {
+    // X icon for offline
+    body.innerHTML = `
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round">
+        <path d="M18 6L6 18M6 6l12 12"/>
+      </svg>
+    `;
   } else {
     body.innerHTML = `<div style="width: 8px; height: 8px; background: white; border-radius: 9999px; box-shadow: 0 1px 2px rgba(0,0,0,0.2);"></div>`;
   }
 
   el.appendChild(body);
+
+  // Add offline badge indicator
+  if (status === 'offline') {
+    const offlineBadge = document.createElement('div');
+    offlineBadge.className = 'offline-badge';
+    offlineBadge.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M1 1l22 22M9 9a3 3 0 014 4m-4-4L3 3m6 6l6 6m0 0l6 6"/>
+      </svg>
+    `;
+    offlineBadge.title = 'Device Offline';
+    el.appendChild(offlineBadge);
+  }
 
   // Speed badge for moving vehicles (top position)
   if (status === 'moving' && speed !== undefined && speed > 0) {
@@ -476,6 +496,77 @@ export function injectMarkerAnimations() {
     @keyframes popupFadeIn {
       from { opacity: 0; transform: translateY(5px) scale(0.95); }
       to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Popup drag handle styles */
+    .vehicle-popup-drag-handle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 0 10px;
+      cursor: grab;
+      user-select: none;
+      border-bottom: 1px solid #f0f0f0;
+      margin-bottom: 12px;
+    }
+
+    .vehicle-popup-drag-handle:active {
+      cursor: grabbing;
+    }
+
+    .vehicle-popup-drag-grip {
+      width: 32px;
+      height: 4px;
+      background: #d1d5db;
+      border-radius: 2px;
+    }
+
+    /* Trail car animation marker */
+    .trail-car-marker {
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .trail-car {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5), 0 0 0 3px rgba(255, 255, 255, 0.9);
+      transition: transform 0.1s linear;
+    }
+
+    .trail-car svg {
+      fill: white;
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Offline marker badge */
+    .offline-badge {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      width: 14px;
+      height: 14px;
+      background: #ef4444;
+      border: 2px solid white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      z-index: 10;
+    }
+
+    .offline-badge svg {
+      width: 8px;
+      height: 8px;
+      stroke: white;
+      stroke-width: 3;
     }
   `;
   document.head.appendChild(style);
