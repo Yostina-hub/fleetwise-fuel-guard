@@ -22,6 +22,7 @@ import AssignDriverDialog from "@/components/fleet/AssignDriverDialog";
 import BulkImportDialog from "@/components/fleet/BulkImportDialog";
 import { VehicleControlPanel } from "@/components/fleet/VehicleControlPanel";
 import { GPSDeviceDialog } from "@/components/fleet/GPSDeviceDialog";
+import { TerminalSettingsPanel } from "@/components/fleet/TerminalSettingsPanel";
 import { VehicleVirtualGrid } from "@/components/fleet/VehicleVirtualGrid";
 import { VehicleTableView } from "@/components/fleet/VehicleTableView";
 import { useFleetExport } from "@/components/fleet/FleetExportUtils";
@@ -102,11 +103,13 @@ const Fleet = () => {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [commandDialogOpen, setCommandDialogOpen] = useState(false);
   const [deviceDialogOpen, setDeviceDialogOpen] = useState(false);
+  const [terminalSettingsOpen, setTerminalSettingsOpen] = useState(false);
   const [vehicleToEdit, setVehicleToEdit] = useState<any>(null);
   const [vehicleToDelete, setVehicleToDelete] = useState<any>(null);
   const [vehicleToAssign, setVehicleToAssign] = useState<any>(null);
   const [vehicleForCommand, setVehicleForCommand] = useState<any>(null);
   const [vehicleForDevice, setVehicleForDevice] = useState<any>(null);
+  const [vehicleForTerminal, setVehicleForTerminal] = useState<any>(null);
   
   const [searchInput, setSearchInput] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -310,6 +313,17 @@ const Fleet = () => {
   const handleAssignDevice = useCallback((vehicle: any) => {
     setVehicleForDevice(vehicle);
     setDeviceDialogOpen(true);
+  }, []);
+
+  const handleTerminalSettings = useCallback((vehicle: any) => {
+    setVehicleForTerminal({
+      vehicleId: vehicle.id,
+      plate: vehicle.plate_number,
+      make: vehicle.make,
+      model: vehicle.model,
+      phoneNumber: vehicle.phoneNumber || null,
+    });
+    setTerminalSettingsOpen(true);
   }, []);
 
   const handlePageChange = useCallback((page: number) => {
@@ -728,6 +742,7 @@ const Fleet = () => {
                 onTripHistory={handleTripHistory}
                 onSendCommand={handleSendCommand}
                 onAssignDevice={handleAssignDevice}
+                onTerminalSettings={handleTerminalSettings}
                 selectedIds={selectedIds}
                 onSelectionChange={setSelectedIds}
                 sortField={sortField as any}
@@ -851,6 +866,12 @@ const Fleet = () => {
           open={deviceDialogOpen}
           onOpenChange={setDeviceDialogOpen}
           vehicle={vehicleForDevice}
+        />
+
+        <TerminalSettingsPanel
+          open={terminalSettingsOpen}
+          onOpenChange={setTerminalSettingsOpen}
+          vehicle={vehicleForTerminal}
         />
       </div>
     </Layout>
