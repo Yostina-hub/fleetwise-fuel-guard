@@ -56,7 +56,7 @@ const RiskSafetyReportsChart = ({ data, loading }: RiskSafetyReportsChartProps) 
   return (
     <GlowingCard glowColor="warning">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-bold text-lg text-white tracking-tight">Risk and Safety Reports</h3>
+        <h3 className="font-bold text-lg text-foreground tracking-tight">Risk and Safety Reports</h3>
         <div className="flex flex-wrap gap-2 text-xs">
           {[
             { key: 'speeding', label: 'Speeding', color: colors.speeding },
@@ -78,7 +78,7 @@ const RiskSafetyReportsChart = ({ data, loading }: RiskSafetyReportsChartProps) 
                 animate={{ scale: [1, 1.1, 1] }}
                 transition={{ duration: 2, repeat: Infinity, delay: index * 0.2 }}
               />
-              <span className="text-white/70">{item.label}</span>
+              <span className="text-muted-foreground">{item.label}</span>
             </motion.div>
           ))}
         </div>
@@ -94,12 +94,12 @@ const RiskSafetyReportsChart = ({ data, loading }: RiskSafetyReportsChartProps) 
           <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
             <XAxis 
               dataKey="month" 
-              tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.7)' }}
-              axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+              tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+              axisLine={{ stroke: 'hsl(var(--border))' }}
             />
             <YAxis 
-              tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.7)' }}
-              axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+              tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+              axisLine={{ stroke: 'hsl(var(--border))' }}
             />
             <Tooltip content={<CustomTooltip />} />
             <Bar dataKey="speeding" fill={colors.speeding} name="Speeding" radius={[2, 2, 0, 0]} />

@@ -52,7 +52,7 @@ const FleetSavingsChart = ({ data, loading }: FleetSavingsChartProps) => {
   return (
     <GlowingCard glowColor="primary">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-bold text-lg text-white tracking-tight">Fleet Savings Summary</h3>
+        <h3 className="font-bold text-lg text-foreground tracking-tight">Fleet Savings Summary</h3>
         <div className="flex items-center gap-4 text-xs">
           <motion.div 
             className="flex items-center gap-1.5"
@@ -65,7 +65,7 @@ const FleetSavingsChart = ({ data, loading }: FleetSavingsChartProps) => {
               animate={{ scale: [1, 1.3, 1], opacity: [1, 0.8, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
             />
-            <span className="text-white/80">This Month</span>
+            <span className="text-muted-foreground">This Month</span>
           </motion.div>
           <motion.div 
             className="flex items-center gap-1.5"
@@ -74,7 +74,7 @@ const FleetSavingsChart = ({ data, loading }: FleetSavingsChartProps) => {
             transition={{ delay: 0.4 }}
           >
             <div className="w-3 h-3 rounded bg-warning shadow-lg shadow-warning/50" />
-            <span className="text-white/80">Potential</span>
+            <span className="text-muted-foreground">Potential</span>
           </motion.div>
         </div>
       </div>
@@ -94,14 +94,14 @@ const FleetSavingsChart = ({ data, loading }: FleetSavingsChartProps) => {
             <XAxis 
               type="number" 
               tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`}
-              tick={{ fill: 'rgba(255,255,255,0.7)' }}
-              axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+              tick={{ fill: 'hsl(var(--muted-foreground))' }}
+              axisLine={{ stroke: 'hsl(var(--border))' }}
             />
             <YAxis 
               type="category" 
               dataKey="category" 
-              tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.8)' }}
-              axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+              tick={{ fontSize: 12, fill: 'hsl(var(--foreground))' }}
+              axisLine={{ stroke: 'hsl(var(--border))' }}
             />
             <Tooltip content={<CustomTooltip />} />
             <Bar dataKey="actual" fill="hsl(var(--primary))" radius={[0, 6, 6, 0]} barSize={18} />
@@ -111,12 +111,12 @@ const FleetSavingsChart = ({ data, loading }: FleetSavingsChartProps) => {
       </motion.div>
 
       <motion.div 
-        className="mt-4 pt-4 border-t border-white/10 flex justify-between text-sm"
+        className="mt-4 pt-4 border-t border-border flex justify-between text-sm"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
       >
-        <span className="text-white/50">*Measured in Thousands</span>
+        <span className="text-muted-foreground">*Measured in Thousands</span>
         <motion.span 
           className="font-bold text-success text-lg"
           key={totalActual}
