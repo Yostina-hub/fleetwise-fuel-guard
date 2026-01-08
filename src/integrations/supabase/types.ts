@@ -4117,6 +4117,7 @@ export type Database = {
           fuel_unit: string
           id: string
           logo_url: string | null
+          mapbox_token: string | null
           organization_id: string
           primary_color: string | null
           secondary_color: string | null
@@ -4154,6 +4155,7 @@ export type Database = {
           fuel_unit?: string
           id?: string
           logo_url?: string | null
+          mapbox_token?: string | null
           organization_id: string
           primary_color?: string | null
           secondary_color?: string | null
@@ -4191,6 +4193,7 @@ export type Database = {
           fuel_unit?: string
           id?: string
           logo_url?: string | null
+          mapbox_token?: string | null
           organization_id?: string
           primary_color?: string | null
           secondary_color?: string | null

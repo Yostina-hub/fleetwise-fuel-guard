@@ -4,6 +4,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
+import { useOrganization } from "@/hooks/useOrganization";
 import { 
   createAnimatedMarkerElement, 
   animatePosition, 
@@ -71,6 +72,7 @@ const LiveTrackingMap = ({
   onManageAsset,
   disablePopups = false
 }: LiveTrackingMapProps) => {
+const { organizationId } = useOrganization();
 const mapContainer = useRef<HTMLDivElement>(null);
 const map = useRef<mapboxgl.Map | null>(null);
 const markers = useRef<Map<string, mapboxgl.Marker>>(new Map());
@@ -134,7 +136,7 @@ useEffect(() => {
   };
 }, [onTripReplay, onManageAsset]);
 
-  // Fetch token from backend
+  // Fetch token from backend (organization settings or edge function)
   useEffect(() => {
     const isValidPublicToken = (value: unknown): value is string => {
       return typeof value === 'string' && value.trim().startsWith('pk.');
@@ -154,29 +156,49 @@ useEffect(() => {
           return token;
         }
 
-        // 2) Try localStorage, then env. If localStorage is invalid, clear it and continue.
-        const lsToken = localStorage.getItem('mapbox_token');
-        if (lsToken) {
-          if (isValid(lsToken)) {
-            setTokenError(null);
-            return lsToken;
-          }
+        // 2) Try to fetch from organization_settings first (the "map settings" source)
+        if (organizationId) {
           try {
-            localStorage.removeItem('mapbox_token');
-          } catch {}
-        }
+            const { data: orgSettings } = await supabase
+              .from('organization_settings')
+              .select('mapbox_token')
+              .eq('organization_id', organizationId)
+              .maybeSingle();
 
-        const envToken = import.meta.env.VITE_MAPBOX_TOKEN;
-        if (envToken) {
-          if (isValid(envToken)) {
-            setTokenError(null);
-            return envToken;
+            if (orgSettings?.mapbox_token && isValid(orgSettings.mapbox_token)) {
+              console.log('Using mapbox token from organization settings');
+              setTokenError(null);
+              // Cache it locally for faster subsequent loads
+              try { localStorage.setItem('mapbox_token', orgSettings.mapbox_token); } catch {}
+              return orgSettings.mapbox_token;
+            }
+          } catch (e) {
+            console.warn('Failed to fetch token from org settings:', e);
           }
-          // If env token is invalid we can't clear it; fall through to backend.
         }
 
-        // 3) Fetch from backend function (handles CORS/auth)
-        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
+        // 3) Try localStorage cache
+        const lsToken = localStorage.getItem('mapbox_token');
+        if (lsToken && isValid(lsToken)) {
+          setTokenError(null);
+          return lsToken;
+        }
+        // Clear invalid cached token
+        if (lsToken) {
+          try { localStorage.removeItem('mapbox_token'); } catch {}
+        }
+
+        // 4) Try env variable
+        const envToken = import.meta.env.VITE_MAPBOX_TOKEN;
+        if (envToken && isValid(envToken)) {
+          setTokenError(null);
+          return envToken;
+        }
+
+        // 5) Fetch from backend edge function (handles CORS/auth, checks org settings + env)
+        const { data, error } = await supabase.functions.invoke('get-mapbox-token', {
+          body: { organization_id: organizationId }
+        });
         if (error) {
           console.error('get-mapbox-token error:', error);
           setTokenError('missing');
@@ -189,9 +211,7 @@ useEffect(() => {
           return null;
         }
 
-        try {
-          localStorage.setItem('mapbox_token', fetched);
-        } catch {}
+        try { localStorage.setItem('mapbox_token', fetched); } catch {}
 
         setTokenError(null);
         return fetched;
@@ -315,7 +335,7 @@ return () => {
     map.current = null;
   }
 };
-  }, [token, mapStyle, initNonce, onMapReady]);
+  }, [token, mapStyle, initNonce, onMapReady, organizationId]);
 
   // Update map style when setting changes
   useEffect(() => {
