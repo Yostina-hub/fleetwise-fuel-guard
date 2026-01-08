@@ -23,6 +23,7 @@ import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useMapboxToken } from "@/hooks/useMapboxToken";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -55,12 +56,12 @@ const VEHICLE_COLORS = [
 
 export const RouteComparisonMap = ({ availableVehicles }: RouteComparisonMapProps) => {
   const { organizationId } = useOrganization();
+  const { token: mapboxToken } = useMapboxToken();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const animationRef = useRef<number | null>(null);
   const vehicleMarkers = useRef<Map<string, mapboxgl.Marker>>(new Map());
   
-  const [mapboxToken, setMapboxToken] = useState<string>("");
   const [selectedVehicleIds, setSelectedVehicleIds] = useState<string[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -68,22 +69,6 @@ export const RouteComparisonMap = ({ availableVehicles }: RouteComparisonMapProp
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [startTime, setStartTime] = useState("00:00");
   const [endTime, setEndTime] = useState("23:59");
-
-  // Fetch Mapbox token
-  useEffect(() => {
-    const fetchToken = async () => {
-      try {
-        const response = await fetch(
-          "https://kkmjwmyqakprqdhrlsoz.supabase.co/functions/v1/get-mapbox-token"
-        );
-        const data = await response.json();
-        setMapboxToken(data.token);
-      } catch (error) {
-        console.error("Error fetching Mapbox token:", error);
-      }
-    };
-    fetchToken();
-  }, []);
 
   // Fetch routes for selected vehicles
   const { data: vehicleRoutes, isLoading } = useQuery({

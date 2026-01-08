@@ -11,7 +11,7 @@ import {
   getSpeedColor,
 } from "./AnimatedMarker";
 import { useMapMatching } from "@/hooks/useMapMatching";
-
+import { useMapboxToken } from "@/hooks/useMapboxToken";
 
 interface VehiclePoint {
   id: string;
@@ -74,7 +74,7 @@ const ClusteredMap = ({
   const trailAnimationFrames = useRef<Map<string, number>>(new Map());
   const matchedTrailsCache = useRef<Map<string, [number, number][] | string>>(new Map());
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [mapboxToken, setMapboxToken] = useState<string>("");
+  const { token: mapboxToken } = useMapboxToken();
 
   const { matchTrailToRoads } = useMapMatching(mapboxToken);
 
@@ -232,31 +232,7 @@ const ClusteredMap = ({
     return cluster;
   }, [vehicles]);
 
-  // Fetch token
-  useEffect(() => {
-    const fetchToken = async () => {
-      try {
-        const localToken =
-          localStorage.getItem("mapbox_token") ||
-          import.meta.env.VITE_MAPBOX_TOKEN;
-        if (localToken) {
-          setMapboxToken(localToken);
-          return;
-        }
-
-        const { data, error } = await supabase.functions.invoke(
-          "get-mapbox-token"
-        );
-        if (!error && data?.token) {
-          setMapboxToken(data.token);
-          localStorage.setItem("mapbox_token", data.token);
-        }
-      } catch (err) {
-        console.error("Failed to fetch Mapbox token:", err);
-      }
-    };
-    fetchToken();
-  }, []);
+  // Token is now fetched via useMapboxToken hook
 
   // Initialize map
   useEffect(() => {

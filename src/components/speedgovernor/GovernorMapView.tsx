@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { GpsSignalHeatmap } from "./GpsSignalHeatmap";
 import { MovementHeatmap } from "./MovementHeatmap";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useMapboxToken } from "@/hooks/useMapboxToken";
 
 interface Vehicle {
   id: string;
@@ -31,24 +32,8 @@ export const GovernorMapView = ({ vehicles, telemetry, isVehicleOnline }: Govern
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<Record<string, mapboxgl.Marker>>({});
   const trails = useRef<Record<string, VehicleTrail>>({});
-  const [mapboxToken, setMapboxToken] = useState<string>("");
+  const { token: mapboxToken } = useMapboxToken();
   const { organizationId } = useOrganization();
-
-  // Fetch Mapbox token from edge function
-  useEffect(() => {
-    const fetchToken = async () => {
-      try {
-        const response = await fetch(
-          "https://kkmjwmyqakprqdhrlsoz.supabase.co/functions/v1/get-mapbox-token"
-        );
-        const data = await response.json();
-        setMapboxToken(data.token);
-      } catch (error) {
-        console.error("Error fetching Mapbox token:", error);
-      }
-    };
-    fetchToken();
-  }, []);
 
   // Initialize map
   useEffect(() => {
