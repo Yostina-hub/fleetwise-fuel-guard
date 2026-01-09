@@ -1,0 +1,189 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "import": "Import",
+    "refresh": "Refresh",
+    "submit": "Submit",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "all": "All",
+    "none": "None",
+    "select": "Select",
+    "actions": "Actions",
+    "status": "Status",
+    "date": "Date",
+    "time": "Time",
+    "name": "Name",
+    "description": "Description",
+    "type": "Type",
+    "priority": "Priority",
+    "notes": "Notes",
+    "details": "Details",
+    "settings": "Settings",
+    "noData": "No data available",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Information"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "liveMap": "Live Map",
+    "fleet": "Fleet",
+    "drivers": "Drivers",
+    "trips": "Trips",
+    "geofences": "Geofences",
+    "alerts": "Alerts",
+    "fuel": "Fuel",
+    "maintenance": "Maintenance",
+    "dispatch": "Dispatch",
+    "reports": "Reports",
+    "administration": "Administration",
+    "settings": "Settings"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "totalVehicles": "Total Vehicles",
+    "activeDrivers": "Active Drivers",
+    "tripsToday": "Trips Today",
+    "fuelEfficiency": "Fuel Efficiency",
+    "alerts": "Active Alerts",
+    "fleetOverview": "Fleet Overview",
+    "recentActivity": "Recent Activity"
+  },
+  "fleet": {
+    "title": "Fleet Management",
+    "vehicles": "Vehicles",
+    "addVehicle": "Add Vehicle",
+    "editVehicle": "Edit Vehicle",
+    "deleteVehicle": "Delete Vehicle",
+    "plateNumber": "Plate Number",
+    "make": "Make",
+    "model": "Model",
+    "year": "Year",
+    "status": "Status",
+    "fuelType": "Fuel Type",
+    "tankCapacity": "Tank Capacity",
+    "odometer": "Odometer",
+    "statuses": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "maintenance": "In Maintenance",
+      "offline": "Offline"
+    }
+  },
+  "drivers": {
+    "title": "Driver Management",
+    "addDriver": "Add Driver",
+    "editDriver": "Edit Driver",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "licenseNumber": "License Number",
+    "licenseExpiry": "License Expiry",
+    "phone": "Phone",
+    "email": "Email",
+    "status": "Status",
+    "safetyScore": "Safety Score",
+    "totalTrips": "Total Trips",
+    "totalDistance": "Total Distance",
+    "statuses": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "suspended": "Suspended",
+      "onLeave": "On Leave"
+    }
+  },
+  "dispatch": {
+    "title": "Dispatch & Scheduling",
+    "jobs": "Dispatch Jobs",
+    "createJob": "Create Job",
+    "assignVehicle": "Assign Vehicle",
+    "assignDriver": "Assign Driver",
+    "jobNumber": "Job Number",
+    "customer": "Customer",
+    "pickup": "Pickup",
+    "dropoff": "Dropoff",
+    "scheduledTime": "Scheduled Time",
+    "statuses": {
+      "pending": "Pending",
+      "dispatched": "Dispatched",
+      "enRoute": "En Route",
+      "arrived": "Arrived",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "priorities": {
+      "low": "Low",
+      "normal": "Normal",
+      "high": "High",
+      "urgent": "Urgent"
+    },
+    "vehicleInMaintenance": "Vehicle is scheduled for maintenance",
+    "noAvailableVehicles": "No available vehicles"
+  },
+  "maintenance": {
+    "title": "Maintenance",
+    "schedules": "Schedules",
+    "workOrders": "Work Orders",
+    "inspections": "Inspections",
+    "serviceType": "Service Type",
+    "dueDate": "Due Date",
+    "lastService": "Last Service",
+    "statuses": {
+      "scheduled": "Scheduled",
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "overdue": "Overdue"
+    }
+  },
+  "fuel": {
+    "title": "Fuel Management",
+    "transactions": "Transactions",
+    "consumption": "Consumption",
+    "efficiency": "Efficiency",
+    "liters": "Liters",
+    "cost": "Cost",
+    "station": "Station"
+  },
+  "alerts": {
+    "title": "Alerts",
+    "active": "Active Alerts",
+    "history": "Alert History",
+    "severity": {
+      "info": "Info",
+      "warning": "Warning",
+      "critical": "Critical"
+    }
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot Password?",
+    "signUp": "Sign Up",
+    "welcomeBack": "Welcome Back"
+  },
+  "settings": {
+    "title": "Settings",
+    "general": "General",
+    "notifications": "Notifications",
+    "security": "Security",
+    "language": "Language",
+    "timezone": "Timezone",
+    "currency": "Currency"
+  }
+}

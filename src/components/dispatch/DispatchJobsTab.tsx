@@ -23,6 +23,7 @@ import {
   Square
 } from "lucide-react";
 import { useDispatchJobs } from "@/hooks/useDispatchJobs";
+import { useAvailableVehicles } from "@/hooks/useAvailableVehicles";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
 import { format } from "date-fns";
@@ -42,6 +43,7 @@ const DispatchJobsTab = () => {
     status: statusFilter !== 'all' ? statusFilter : undefined,
   });
   const { vehicles } = useVehicles();
+  const { available: availableVehicles, unavailable: unavailableVehicles } = useAvailableVehicles();
   const { drivers } = useDrivers();
 
   const [newJob, setNewJob] = useState({
@@ -487,11 +489,28 @@ const DispatchJobsTab = () => {
                   <SelectValue placeholder="Select vehicle" />
                 </SelectTrigger>
                 <SelectContent>
-                  {vehicles.filter(v => v.status !== 'maintenance').map(v => (
+                  {availableVehicles.length === 0 && (
+                    <div className="px-2 py-4 text-sm text-muted-foreground text-center">
+                      No available vehicles
+                    </div>
+                  )}
+                  {availableVehicles.map(v => (
                     <SelectItem key={v.id} value={v.id}>
                       {v.plate_number} - {v.make} {v.model}
                     </SelectItem>
                   ))}
+                  {unavailableVehicles.length > 0 && (
+                    <>
+                      <div className="px-2 py-2 text-xs text-muted-foreground border-t mt-1">
+                        Unavailable
+                      </div>
+                      {unavailableVehicles.map(v => (
+                        <SelectItem key={v.id} value={v.id} disabled className="opacity-50">
+                          {v.plate_number} - {v.unavailableReason}
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
                 </SelectContent>
               </Select>
             </div>

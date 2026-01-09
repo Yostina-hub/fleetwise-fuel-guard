@@ -1,0 +1,189 @@
+{
+  "common": {
+    "loading": "በመጫን ላይ...",
+    "save": "አስቀምጥ",
+    "cancel": "ሰርዝ",
+    "delete": "ሰርዝ",
+    "edit": "አስተካክል",
+    "create": "ፍጠር",
+    "search": "ፈልግ",
+    "filter": "አጣራ",
+    "export": "ላክ",
+    "import": "አስገባ",
+    "refresh": "አድስ",
+    "submit": "አስገባ",
+    "close": "ዝጋ",
+    "yes": "አዎ",
+    "no": "አይ",
+    "confirm": "አረጋግጥ",
+    "back": "ተመለስ",
+    "next": "ቀጣይ",
+    "previous": "ቀዳሚ",
+    "all": "ሁሉም",
+    "none": "ምንም",
+    "select": "ምረጥ",
+    "actions": "ተግባሮች",
+    "status": "ሁኔታ",
+    "date": "ቀን",
+    "time": "ሰዓት",
+    "name": "ስም",
+    "description": "መግለጫ",
+    "type": "ዓይነት",
+    "priority": "ቅድሚያ",
+    "notes": "ማስታወሻዎች",
+    "details": "ዝርዝሮች",
+    "settings": "ቅንብሮች",
+    "noData": "ምንም መረጃ የለም",
+    "error": "ስህተት",
+    "success": "ተሳክቷል",
+    "warning": "ማስጠንቀቂያ",
+    "info": "መረጃ"
+  },
+  "nav": {
+    "dashboard": "ዳሽቦርድ",
+    "liveMap": "የቀጥታ ካርታ",
+    "fleet": "ተሽከርካሪዎች",
+    "drivers": "ሹፌሮች",
+    "trips": "ጉዞዎች",
+    "geofences": "ጂኦፌንስ",
+    "alerts": "ማንቂያዎች",
+    "fuel": "ነዳጅ",
+    "maintenance": "ጥገና",
+    "dispatch": "ማሰራጨት",
+    "reports": "ሪፖርቶች",
+    "administration": "አስተዳደር",
+    "settings": "ቅንብሮች"
+  },
+  "dashboard": {
+    "title": "ዳሽቦርድ",
+    "totalVehicles": "ጠቅላላ ተሽከርካሪዎች",
+    "activeDrivers": "ንቁ ሹፌሮች",
+    "tripsToday": "የዛሬ ጉዞዎች",
+    "fuelEfficiency": "የነዳጅ ቁጠባ",
+    "alerts": "ንቁ ማንቂያዎች",
+    "fleetOverview": "የፍሊት አጠቃላይ ዕይታ",
+    "recentActivity": "የቅርብ ጊዜ እንቅስቃሴ"
+  },
+  "fleet": {
+    "title": "የፍሊት አስተዳደር",
+    "vehicles": "ተሽከርካሪዎች",
+    "addVehicle": "ተሽከርካሪ ጨምር",
+    "editVehicle": "ተሽከርካሪ አስተካክል",
+    "deleteVehicle": "ተሽከርካሪ ሰርዝ",
+    "plateNumber": "ሰሌዳ ቁጥር",
+    "make": "አምራች",
+    "model": "ሞዴል",
+    "year": "ዓመት",
+    "status": "ሁኔታ",
+    "fuelType": "የነዳጅ ዓይነት",
+    "tankCapacity": "የታንክ አቅም",
+    "odometer": "ኪሎሜትር",
+    "statuses": {
+      "active": "ንቁ",
+      "inactive": "ንቁ ያልሆነ",
+      "maintenance": "በጥገና ላይ",
+      "offline": "ከመስመር ውጪ"
+    }
+  },
+  "drivers": {
+    "title": "የሹፌር አስተዳደር",
+    "addDriver": "ሹፌር ጨምር",
+    "editDriver": "ሹፌር አስተካክል",
+    "firstName": "ስም",
+    "lastName": "የአባት ስም",
+    "licenseNumber": "የመንጃ ፍቃድ ቁጥር",
+    "licenseExpiry": "የፍቃድ ማብቂያ",
+    "phone": "ስልክ",
+    "email": "ኢሜይል",
+    "status": "ሁኔታ",
+    "safetyScore": "የደህንነት ውጤት",
+    "totalTrips": "ጠቅላላ ጉዞዎች",
+    "totalDistance": "ጠቅላላ ርቀት",
+    "statuses": {
+      "active": "ንቁ",
+      "inactive": "ንቁ ያልሆነ",
+      "suspended": "የታገደ",
+      "onLeave": "በፈቃድ ላይ"
+    }
+  },
+  "dispatch": {
+    "title": "ማሰራጨት እና መርሐ ግብር",
+    "jobs": "የስራ ትዕዛዞች",
+    "createJob": "ስራ ፍጠር",
+    "assignVehicle": "ተሽከርካሪ መድብ",
+    "assignDriver": "ሹፌር መድብ",
+    "jobNumber": "የስራ ቁጥር",
+    "customer": "ደንበኛ",
+    "pickup": "መውሰጃ",
+    "dropoff": "ማስረከቢያ",
+    "scheduledTime": "የተያዘ ሰዓት",
+    "statuses": {
+      "pending": "በመጠባበቅ ላይ",
+      "dispatched": "ተልኳል",
+      "enRoute": "በመንገድ ላይ",
+      "arrived": "ደርሷል",
+      "completed": "ተጠናቋል",
+      "cancelled": "ተሰርዟል"
+    },
+    "priorities": {
+      "low": "ዝቅተኛ",
+      "normal": "መደበኛ",
+      "high": "ከፍተኛ",
+      "urgent": "አስቸኳይ"
+    },
+    "vehicleInMaintenance": "ተሽከርካሪው ለጥገና ታቅዷል",
+    "noAvailableVehicles": "ምንም ነጻ ተሽከርካሪ የለም"
+  },
+  "maintenance": {
+    "title": "ጥገና",
+    "schedules": "የጥገና መርሐ ግብሮች",
+    "workOrders": "የስራ ትዕዛዞች",
+    "inspections": "ምርመራዎች",
+    "serviceType": "የአገልግሎት ዓይነት",
+    "dueDate": "የማብቂያ ቀን",
+    "lastService": "የመጨረሻ አገልግሎት",
+    "statuses": {
+      "scheduled": "ታቅዷል",
+      "inProgress": "በሂደት ላይ",
+      "completed": "ተጠናቋል",
+      "overdue": "አልፏል"
+    }
+  },
+  "fuel": {
+    "title": "የነዳጅ አስተዳደር",
+    "transactions": "ግብይቶች",
+    "consumption": "ፍጆታ",
+    "efficiency": "ቁጠባ",
+    "liters": "ሊትር",
+    "cost": "ወጪ",
+    "station": "ጣቢያ"
+  },
+  "alerts": {
+    "title": "ማንቂያዎች",
+    "active": "ንቁ ማንቂያዎች",
+    "history": "የማንቂያ ታሪክ",
+    "severity": {
+      "info": "መረጃ",
+      "warning": "ማስጠንቀቂያ",
+      "critical": "ወሳኝ"
+    }
+  },
+  "auth": {
+    "login": "ግባ",
+    "logout": "ውጣ",
+    "email": "ኢሜይል",
+    "password": "የይለፍ ቃል",
+    "forgotPassword": "የይለፍ ቃል ረሱ?",
+    "signUp": "ተመዝገብ",
+    "welcomeBack": "እንኳን ደህና መጡ"
+  },
+  "settings": {
+    "title": "ቅንብሮች",
+    "general": "አጠቃላይ",
+    "notifications": "ማሳወቂያዎች",
+    "security": "ደህንነት",
+    "language": "ቋንቋ",
+    "timezone": "የሰዓት ክልል",
+    "currency": "ገንዘብ"
+  }
+}
