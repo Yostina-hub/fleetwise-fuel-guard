@@ -33,17 +33,21 @@ import {
   Gauge,
   Clock,
   Truck,
+  ShieldAlert,
 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import CreateIncidentDialog from "@/components/incidents/CreateIncidentDialog";
 import DriverDetailDialog from "@/components/fleet/DriverDetailDialog";
+import { useQuery } from "@tanstack/react-query";
 import TripTimeline from "@/components/vehicle/TripTimeline";
 import FuelMetricsPanel from "@/components/vehicle/FuelMetricsPanel";
 import AlertsPanel from "@/components/vehicle/AlertsPanel";
 import ZonesPanel from "@/components/vehicle/ZonesPanel";
 import RestrictedHoursPanel from "@/components/vehicle/RestrictedHoursPanel";
+import { SpeedCutoffSettings } from "@/components/fleet/SpeedCutoffSettings";
+import { SpeedBypassAlertPanel } from "@/components/alerts/SpeedBypassAlertPanel";
 import { useVehicleData } from "@/hooks/useVehicleData";
 import { useDrivers } from "@/hooks/useDrivers";
 import { format, formatDistanceToNow } from "date-fns";
@@ -99,6 +103,26 @@ const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalP
     performanceMetrics,
     isLoading 
   } = useVehicleData(actualVehicleId);
+
+  // Fetch vehicle details including speed cutoff settings and device info
+  const { data: vehicleDetails } = useQuery({
+    queryKey: ["vehicle-details-modal", actualVehicleId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vehicles")
+        .select(`
+          speed_cutoff_enabled,
+          speed_cutoff_limit_kmh,
+          speed_cutoff_grace_seconds,
+          devices!devices_vehicle_id_fkey(id)
+        `)
+        .eq("id", actualVehicleId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!actualVehicleId,
+  });
 
   // Early return if vehicle is null - AFTER all hooks
   if (!vehicle) {
@@ -558,6 +582,24 @@ const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalP
                       </CardContent>
                     </Card>
 
+
+                    {/* Speed Cutoff Settings */}
+                    <SpeedCutoffSettings
+                      vehicleId={actualVehicleId}
+                      vehiclePlate={vehicle.plate}
+                      deviceId={vehicleDetails?.devices?.[0]?.id || null}
+                      currentSettings={{
+                        speed_cutoff_enabled: vehicleDetails?.speed_cutoff_enabled ?? false,
+                        speed_cutoff_limit_kmh: vehicleDetails?.speed_cutoff_limit_kmh ?? 120,
+                        speed_cutoff_grace_seconds: vehicleDetails?.speed_cutoff_grace_seconds ?? 5,
+                      }}
+                    />
+
+                    {/* Speed Bypass Alert Panel */}
+                    <SpeedBypassAlertPanel
+                      vehicleId={actualVehicleId}
+                      vehiclePlate={vehicle.plate}
+                    />
 
                     {/* Restricted Hours Configuration */}
                     <div className="md:col-span-2">
