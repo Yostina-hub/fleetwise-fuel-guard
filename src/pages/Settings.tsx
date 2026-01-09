@@ -15,9 +15,12 @@ import {
   MapPin,
   Fuel,
   Globe,
-  Key
+  Key,
+  Wrench
 } from "lucide-react";
 import PushNotificationSettings from "@/components/settings/PushNotificationSettings";
+import { FuelAlertSettings } from "@/components/alerts/FuelAlertSettings";
+import { MaintenanceAlertSettings } from "@/components/alerts/MaintenanceAlertSettings";
 
 const Settings = () => {
   const [apiKeys, setApiKeys] = useState({
@@ -50,7 +53,7 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:w-auto">
+          <TabsList className="grid w-full grid-cols-6 lg:w-auto">
             <TabsTrigger value="general" className="gap-2">
               <SettingsIcon className="w-4 h-4" aria-hidden="true" />
               General
@@ -66,6 +69,10 @@ const Settings = () => {
             <TabsTrigger value="fuel" className="gap-2">
               <Fuel className="w-4 h-4" aria-hidden="true" />
               Fuel
+            </TabsTrigger>
+            <TabsTrigger value="maintenance" className="gap-2">
+              <Wrench className="w-4 h-4" aria-hidden="true" />
+              Maintenance
             </TabsTrigger>
             <TabsTrigger value="users" className="gap-2">
               <User className="w-4 h-4" aria-hidden="true" />
@@ -435,6 +442,9 @@ const Settings = () => {
 
           {/* Fuel Settings */}
           <TabsContent value="fuel" className="space-y-6">
+            {/* New Fuel Alert Settings */}
+            <FuelAlertSettings />
+            
             <Card>
               <CardHeader>
                 <CardTitle>Fuel Detection Settings</CardTitle>
@@ -495,6 +505,45 @@ const Settings = () => {
                   Configure sensor calibration curves for accurate fuel readings
                 </div>
                 <Button variant="outline">Manage Calibration Curves</Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Maintenance Settings */}
+          <TabsContent value="maintenance" className="space-y-6">
+            <MaintenanceAlertSettings />
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Maintenance Scheduling</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Block Vehicles for Dispatch</Label>
+                    <div className="text-sm text-muted-foreground">
+                      Prevent assignment of vehicles with scheduled maintenance
+                    </div>
+                  </div>
+                  <Switch defaultChecked />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Auto-create Work Orders</Label>
+                    <div className="text-sm text-muted-foreground">
+                      Automatically create work orders when maintenance is due
+                    </div>
+                  </div>
+                  <Switch />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="maint-block-days">Block Dispatch Days Before Due</Label>
+                  <Input id="maint-block-days" type="number" defaultValue="3" />
+                  <div className="text-xs text-muted-foreground">
+                    Block vehicle from dispatch this many days before maintenance
+                  </div>
+                </div>
+                <Button>Save Scheduling Settings</Button>
               </CardContent>
             </Card>
           </TabsContent>
