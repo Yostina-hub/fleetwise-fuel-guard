@@ -2227,6 +2227,66 @@ export type Database = {
           },
         ]
       }
+      fuel_alert_settings: {
+        Row: {
+          consumption_alert_enabled: boolean | null
+          consumption_variance_percent: number | null
+          created_at: string
+          fuel_theft_alert_enabled: boolean | null
+          fuel_theft_threshold_liters: number | null
+          id: string
+          low_fuel_alert_enabled: boolean | null
+          low_fuel_threshold_percent: number | null
+          organization_id: string
+          refueling_alert_enabled: boolean | null
+          updated_at: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          consumption_alert_enabled?: boolean | null
+          consumption_variance_percent?: number | null
+          created_at?: string
+          fuel_theft_alert_enabled?: boolean | null
+          fuel_theft_threshold_liters?: number | null
+          id?: string
+          low_fuel_alert_enabled?: boolean | null
+          low_fuel_threshold_percent?: number | null
+          organization_id: string
+          refueling_alert_enabled?: boolean | null
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          consumption_alert_enabled?: boolean | null
+          consumption_variance_percent?: number | null
+          created_at?: string
+          fuel_theft_alert_enabled?: boolean | null
+          fuel_theft_threshold_liters?: number | null
+          id?: string
+          low_fuel_alert_enabled?: boolean | null
+          low_fuel_threshold_percent?: number | null
+          organization_id?: string
+          refueling_alert_enabled?: boolean | null
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_alert_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_alert_settings_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fuel_consumption_alerts: {
         Row: {
           acknowledged_at: string | null
@@ -4042,6 +4102,53 @@ export type Database = {
           },
         ]
       }
+      maintenance_alert_settings: {
+        Row: {
+          created_at: string
+          days_before_alert: number | null
+          id: string
+          notify_email: boolean | null
+          notify_push: boolean | null
+          notify_sms: boolean | null
+          organization_id: string
+          overdue_maintenance_enabled: boolean | null
+          upcoming_maintenance_enabled: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          days_before_alert?: number | null
+          id?: string
+          notify_email?: boolean | null
+          notify_push?: boolean | null
+          notify_sms?: boolean | null
+          organization_id: string
+          overdue_maintenance_enabled?: boolean | null
+          upcoming_maintenance_enabled?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          days_before_alert?: number | null
+          id?: string
+          notify_email?: boolean | null
+          notify_push?: boolean | null
+          notify_sms?: boolean | null
+          organization_id?: string
+          overdue_maintenance_enabled?: boolean | null
+          upcoming_maintenance_enabled?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_alert_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maintenance_schedules: {
         Row: {
           checklist_template_id: string | null
@@ -5301,6 +5408,102 @@ export type Database = {
             foreignKeyName: "speed_governor_config_vehicle_id_fkey"
             columns: ["vehicle_id"]
             isOneToOne: true
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      speed_governor_events: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_id: string | null
+          created_at: string
+          device_id: string | null
+          driver_id: string | null
+          event_time: string
+          event_type: string
+          id: string
+          lat: number | null
+          lng: number | null
+          location_name: string | null
+          notes: string | null
+          organization_id: string
+          speed_at_event: number | null
+          speed_limit_set: number | null
+          vehicle_id: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_id?: string | null
+          created_at?: string
+          device_id?: string | null
+          driver_id?: string | null
+          event_time?: string
+          event_type: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          location_name?: string | null
+          notes?: string | null
+          organization_id: string
+          speed_at_event?: number | null
+          speed_limit_set?: number | null
+          vehicle_id: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_id?: string | null
+          created_at?: string
+          device_id?: string | null
+          driver_id?: string | null
+          event_time?: string
+          event_type?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          location_name?: string | null
+          notes?: string | null
+          organization_id?: string
+          speed_at_event?: number | null
+          speed_limit_set?: number | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "speed_governor_events_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "alerts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "speed_governor_events_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "speed_governor_events_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "speed_governor_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "speed_governor_events_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
             referencedRelation: "vehicles"
             referencedColumns: ["id"]
           },
@@ -6719,6 +6922,7 @@ export type Database = {
           speed_cutoff_enabled: boolean | null
           speed_cutoff_grace_seconds: number | null
           speed_cutoff_limit_kmh: number | null
+          speed_governor_bypass_alert: boolean | null
           status: string
           tank_capacity_liters: number | null
           updated_at: string
@@ -6747,6 +6951,7 @@ export type Database = {
           speed_cutoff_enabled?: boolean | null
           speed_cutoff_grace_seconds?: number | null
           speed_cutoff_limit_kmh?: number | null
+          speed_governor_bypass_alert?: boolean | null
           status?: string
           tank_capacity_liters?: number | null
           updated_at?: string
@@ -6775,6 +6980,7 @@ export type Database = {
           speed_cutoff_enabled?: boolean | null
           speed_cutoff_grace_seconds?: number | null
           speed_cutoff_limit_kmh?: number | null
+          speed_governor_bypass_alert?: boolean | null
           status?: string
           tank_capacity_liters?: number | null
           updated_at?: string
