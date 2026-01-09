@@ -1,7 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const VAPID_PUBLIC_KEY = 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U';
-
 function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
   const base64 = (base64String + padding)
@@ -15,6 +13,25 @@ function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
     outputArray[i] = rawData.charCodeAt(i);
   }
   return outputArray.buffer;
+}
+
+// Fetch VAPID public key from organization settings
+async function getVapidPublicKey(organizationId: string): Promise<string | null> {
+  try {
+    const { data, error } = await (supabase as any)
+      .from('organization_settings')
+      .select('vapid_public_key, push_notifications_enabled')
+      .eq('organization_id', organizationId)
+      .maybeSingle();
+
+    if (error || !data?.push_notifications_enabled) {
+      return null;
+    }
+
+    return data.vapid_public_key || null;
+  } catch {
+    return null;
+  }
 }
 
 export const pushNotificationService = {
@@ -39,6 +56,13 @@ export const pushNotificationService = {
         return false;
       }
 
+      // Get VAPID public key from organization settings
+      const vapidPublicKey = await getVapidPublicKey(organizationId);
+      if (!vapidPublicKey) {
+        console.warn('Push notifications not configured for this organization');
+        return false;
+      }
+
       const permission = await this.requestPermission();
       if (permission !== 'granted') {
         console.warn('Push notification permission denied');
@@ -52,7 +76,7 @@ export const pushNotificationService = {
       if (!subscription) {
         subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
         });
       }
 

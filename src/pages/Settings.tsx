@@ -17,6 +17,7 @@ import {
   Globe,
   Key
 } from "lucide-react";
+import PushNotificationSettings from "@/components/settings/PushNotificationSettings";
 
 const Settings = () => {
   const [apiKeys, setApiKeys] = useState({
@@ -254,6 +255,9 @@ const Settings = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Push Notifications */}
+            <PushNotificationSettings />
           </TabsContent>
 
           {/* General Settings */}
