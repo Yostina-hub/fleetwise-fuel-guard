@@ -9,13 +9,14 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Bell, Key, ExternalLink, Copy, Check, AlertCircle, Loader2 } from "lucide-react";
+import { Bell, Key, ExternalLink, Copy, Check, AlertCircle, Loader2, Send } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 const PushNotificationSettings = () => {
   const { organizationId } = useOrganization();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isSubscribed, showTestNotification } = usePushNotifications();
   const [copiedPublic, setCopiedPublic] = useState(false);
   const [showPrivateKey, setShowPrivateKey] = useState(false);
 
@@ -237,8 +238,25 @@ const PushNotificationSettings = () => {
             </p>
           </div>
 
-          {/* Save Button */}
-          <div className="flex justify-end pt-4 border-t">
+          {/* Action Buttons */}
+          <div className="flex justify-between items-center pt-4 border-t">
+            {isSubscribed && isConfigured && (
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={showTestNotification}
+                className="gap-2"
+              >
+                <Send className="w-4 h-4" />
+                Send Test Notification
+              </Button>
+            )}
+            {!isSubscribed && isConfigured && (
+              <p className="text-sm text-muted-foreground">
+                Subscribe to push notifications to test
+              </p>
+            )}
+            {!isConfigured && <div />}
             <Button type="submit" disabled={saveMutation.isPending}>
               {saveMutation.isPending ? (
                 <>
