@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { NotificationCenter } from "@/components/scheduling/NotificationCenter";
 import { AIAssistant } from "@/components/AIAssistant";
 import { SidebarMenuItem } from "@/components/sidebar/SidebarMenuItem";
+import LanguageSelector from "@/components/settings/LanguageSelector";
 
 interface LayoutProps {
   children: ReactNode;
@@ -188,8 +189,13 @@ const Layout = ({ children }: LayoutProps) => {
           )}
         </nav>
 
-        {/* Keyboard shortcut hint */}
+        {/* Language Selector */}
         <div className="px-3 py-2 border-t border-sidebar-border/50">
+          <LanguageSelector variant="compact" className="w-full" />
+        </div>
+
+        {/* Keyboard shortcut hint */}
+        <div className="px-3 py-2">
           <div className="flex items-center justify-center gap-2 text-[11px] text-sidebar-foreground/50">
             <span>Press</span>
             <kbd className="px-1.5 py-0.5 bg-sidebar-accent/50 rounded text-[10px] font-mono border border-sidebar-border">

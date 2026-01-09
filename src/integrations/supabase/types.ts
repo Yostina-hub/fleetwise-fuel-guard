@@ -4121,6 +4121,7 @@ export type Database = {
           organization_id: string
           primary_color: string | null
           secondary_color: string | null
+          sms_gateway_config: Json | null
           smtp_host: string | null
           smtp_password: string | null
           smtp_port: number | null
@@ -4159,6 +4160,7 @@ export type Database = {
           organization_id: string
           primary_color?: string | null
           secondary_color?: string | null
+          sms_gateway_config?: Json | null
           smtp_host?: string | null
           smtp_password?: string | null
           smtp_port?: number | null
@@ -4197,6 +4199,7 @@ export type Database = {
           organization_id?: string
           primary_color?: string | null
           secondary_color?: string | null
+          sms_gateway_config?: Json | null
           smtp_host?: string | null
           smtp_password?: string | null
           smtp_port?: number | null

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
 import { toast } from "@/hooks/use-toast";
+import { sendDispatchSms } from "@/services/smsNotificationService";
 
 export interface DispatchJob {
   id: string;
@@ -201,8 +202,11 @@ export const useDispatchJobs = (filters?: {
     }
   };
 
-  const assignJob = async (id: string, vehicleId: string, driverId: string) => {
+  const assignJob = async (id: string, vehicleId: string, driverId: string, sendSmsNotification = true) => {
     try {
+      // Get job details for SMS
+      const job = jobs.find(j => j.id === id);
+      
       const { error } = await supabase
         .from("dispatch_jobs")
         .update({
@@ -214,7 +218,49 @@ export const useDispatchJobs = (filters?: {
         .eq("id", id);
 
       if (error) throw error;
-      toast({ title: "Job assigned", description: "Vehicle and driver assigned" });
+      
+      // Send SMS notification to driver
+      if (sendSmsNotification && job) {
+        // Get driver details
+        const { data: driver } = await supabase
+          .from("drivers")
+          .select("first_name, last_name, phone")
+          .eq("id", driverId)
+          .single();
+        
+        if (driver?.phone) {
+          const smsResult = await sendDispatchSms({
+            driverPhone: driver.phone,
+            driverName: `${driver.first_name} ${driver.last_name}`,
+            jobNumber: job.job_number,
+            pickupLocation: job.pickup_location_name || 'See app',
+            dropoffLocation: job.dropoff_location_name || 'See app',
+            customerName: job.customer_name,
+            specialInstructions: job.special_instructions,
+          });
+          
+          if (smsResult.success) {
+            toast({ 
+              title: "Job assigned", 
+              description: "Vehicle and driver assigned. SMS notification sent." 
+            });
+          } else {
+            toast({ 
+              title: "Job assigned", 
+              description: `Assigned successfully. SMS failed: ${smsResult.error}`,
+              variant: "default"
+            });
+          }
+        } else {
+          toast({ 
+            title: "Job assigned", 
+            description: "Vehicle and driver assigned. No phone number for SMS." 
+          });
+        }
+      } else {
+        toast({ title: "Job assigned", description: "Vehicle and driver assigned" });
+      }
+      
       fetchJobs();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
