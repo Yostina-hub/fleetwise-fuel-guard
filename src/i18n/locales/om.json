@@ -1,0 +1,189 @@
+{
+  "common": {
+    "loading": "Fe'aa jira...",
+    "save": "Ol kaa'i",
+    "cancel": "Haqi",
+    "delete": "Haqi",
+    "edit": "Gulaali",
+    "create": "Uumi",
+    "search": "Barbaadi",
+    "filter": "Filt godi",
+    "export": "Alergaa",
+    "import": "Galchi",
+    "refresh": "Haaromsi",
+    "submit": "Galchi",
+    "close": "Cufi",
+    "yes": "Eeyyee",
+    "no": "Lakki",
+    "confirm": "Mirkaneessi",
+    "back": "Duubatti",
+    "next": "Itti aanee",
+    "previous": "Duraa",
+    "all": "Hunda",
+    "none": "Homaa",
+    "select": "Fili",
+    "actions": "Tarkaanfiiwwan",
+    "status": "Haala",
+    "date": "Guyyaa",
+    "time": "Yeroo",
+    "name": "Maqaa",
+    "description": "Ibsa",
+    "type": "Gosa",
+    "priority": "Dursa",
+    "notes": "Yaadannoo",
+    "details": "Bal'inaan",
+    "settings": "Qindaa'ina",
+    "noData": "Odeeffannoon hin jiru",
+    "error": "Dogoggora",
+    "success": "Milkaa'e",
+    "warning": "Akeekkachiisa",
+    "info": "Odeeffannoo"
+  },
+  "nav": {
+    "dashboard": "Daashboordii",
+    "liveMap": "Kaartaa Kallattii",
+    "fleet": "Konkolaataalee",
+    "drivers": "Konkolaachiftootaa",
+    "trips": "Imala",
+    "geofences": "Geofence",
+    "alerts": "Akeekkachiisa",
+    "fuel": "Boba'aa",
+    "maintenance": "Suphaa",
+    "dispatch": "Ergaa",
+    "reports": "Gabaasa",
+    "administration": "Bulchiinsa",
+    "settings": "Qindaa'ina"
+  },
+  "dashboard": {
+    "title": "Daashboordii",
+    "totalVehicles": "Konkolaataa Waliigalaa",
+    "activeDrivers": "Konkolaachiftootaa Hojii Irra",
+    "tripsToday": "Imala Har'aa",
+    "fuelEfficiency": "Qusannoo Boba'aa",
+    "alerts": "Akeekkachiisa Hojii Irra",
+    "fleetOverview": "Haala Waliigalaa",
+    "recentActivity": "Sochii Dhiyoo"
+  },
+  "fleet": {
+    "title": "Bulchiinsa Konkolaataa",
+    "vehicles": "Konkolaataalee",
+    "addVehicle": "Konkolaataa Dabali",
+    "editVehicle": "Konkolaataa Gulaali",
+    "deleteVehicle": "Konkolaataa Haqi",
+    "plateNumber": "Lakkoofsa Gabatee",
+    "make": "Omishaa",
+    "model": "Moodeela",
+    "year": "Bara",
+    "status": "Haala",
+    "fuelType": "Gosa Boba'aa",
+    "tankCapacity": "Dandeettii Tankii",
+    "odometer": "Kilomeetira",
+    "statuses": {
+      "active": "Hojii Irra",
+      "inactive": "Hojii Irra Hin Jiru",
+      "maintenance": "Suphaa Irra",
+      "offline": "Offline"
+    }
+  },
+  "drivers": {
+    "title": "Bulchiinsa Konkolaachiftootaa",
+    "addDriver": "Konkolaachisaa Dabali",
+    "editDriver": "Konkolaachisaa Gulaali",
+    "firstName": "Maqaa",
+    "lastName": "Maqaa Abbaa",
+    "licenseNumber": "Lakkoofsa Hayyama",
+    "licenseExpiry": "Guyyaa Dhumaa Hayyamaa",
+    "phone": "Bilbila",
+    "email": "Imeelii",
+    "status": "Haala",
+    "safetyScore": "Qabxii Nageenya",
+    "totalTrips": "Imala Waliigalaa",
+    "totalDistance": "Fageenya Waliigalaa",
+    "statuses": {
+      "active": "Hojii Irra",
+      "inactive": "Hojii Irra Hin Jiru",
+      "suspended": "Dhaabame",
+      "onLeave": "Boqonnaa Irra"
+    }
+  },
+  "dispatch": {
+    "title": "Ergaa fi Sagantaa",
+    "jobs": "Hojii",
+    "createJob": "Hojii Uumi",
+    "assignVehicle": "Konkolaataa Ramadi",
+    "assignDriver": "Konkolaachisaa Ramadi",
+    "jobNumber": "Lakkoofsa Hojii",
+    "customer": "Maamilaa",
+    "pickup": "Bakka Fudhatamu",
+    "dropoff": "Bakka Geessamu",
+    "scheduledTime": "Yeroo Sagantaa",
+    "statuses": {
+      "pending": "Eeggaa Jira",
+      "dispatched": "Ergame",
+      "enRoute": "Karaa Irra",
+      "arrived": "Ga'e",
+      "completed": "Xumure",
+      "cancelled": "Haqame"
+    },
+    "priorities": {
+      "low": "Gadi",
+      "normal": "Idilee",
+      "high": "Ol'aanaa",
+      "urgent": "Ariifachiisaa"
+    },
+    "vehicleInMaintenance": "Konkolaataan suphaa irratti saganteeffame",
+    "noAvailableVehicles": "Konkolaataan jiru hin jiru"
+  },
+  "maintenance": {
+    "title": "Suphaa",
+    "schedules": "Sagantaa Suphaa",
+    "workOrders": "Ajaja Hojii",
+    "inspections": "To'annoo",
+    "serviceType": "Gosa Tajaajila",
+    "dueDate": "Guyyaa Dhumaa",
+    "lastService": "Tajaajila Dhumaa",
+    "statuses": {
+      "scheduled": "Saganteeffame",
+      "inProgress": "Hojii Irra",
+      "completed": "Xumure",
+      "overdue": "Dabarse"
+    }
+  },
+  "fuel": {
+    "title": "Bulchiinsa Boba'aa",
+    "transactions": "Daldalaa",
+    "consumption": "Fayyadama",
+    "efficiency": "Qusannoo",
+    "liters": "Liitira",
+    "cost": "Gatii",
+    "station": "Buufata"
+  },
+  "alerts": {
+    "title": "Akeekkachiisa",
+    "active": "Akeekkachiisa Hojii Irra",
+    "history": "Seenaa Akeekkachiisaa",
+    "severity": {
+      "info": "Odeeffannoo",
+      "warning": "Akeekkachiisa",
+      "critical": "Murteessaa"
+    }
+  },
+  "auth": {
+    "login": "Seeni",
+    "logout": "Ba'i",
+    "email": "Imeelii",
+    "password": "Jecha Darbii",
+    "forgotPassword": "Jecha Darbii Dagatte?",
+    "signUp": "Galmaa'i",
+    "welcomeBack": "Baga Nagaan Dhufte"
+  },
+  "settings": {
+    "title": "Qindaa'ina",
+    "general": "Waliigalaa",
+    "notifications": "Beeksisa",
+    "security": "Nageenya",
+    "language": "Afaan",
+    "timezone": "Naannoo Yeroo",
+    "currency": "Maallaq"
+  }
+}
