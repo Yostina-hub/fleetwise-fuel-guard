@@ -96,34 +96,47 @@ export const PushNotificationToggle = ({
 
   // Default: switch variant
   return (
-    <div className="flex items-center justify-between gap-4">
-      <div className="flex items-center gap-3">
-        {isSubscribed ? (
-          <BellRing className="h-5 w-5 text-primary" />
-        ) : (
-          <Bell className="h-5 w-5 text-muted-foreground" />
-        )}
-        {showLabel && (
-          <div>
-            <Label htmlFor="push-notifications" className="cursor-pointer">
-              Push Notifications
-            </Label>
-            <p className="text-sm text-muted-foreground">
-              {permission === 'denied' 
-                ? "Blocked in browser settings"
-                : isSubscribed 
-                  ? "Receiving alerts for critical events" 
-                  : "Get notified about fleet events"}
-            </p>
-          </div>
-        )}
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          {isSubscribed ? (
+            <BellRing className="h-5 w-5 text-primary" />
+          ) : (
+            <Bell className="h-5 w-5 text-muted-foreground" />
+          )}
+          {showLabel && (
+            <div>
+              <Label htmlFor="push-notifications" className="cursor-pointer">
+                Push Notifications
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                {permission === 'denied' 
+                  ? "Blocked in browser settings"
+                  : isSubscribed 
+                    ? "Receiving alerts for critical events" 
+                    : "Get notified about fleet events"}
+              </p>
+            </div>
+          )}
+        </div>
+        <Switch
+          id="push-notifications"
+          checked={isSubscribed}
+          onCheckedChange={handleToggle}
+          disabled={isLoading || permission === 'denied'}
+        />
       </div>
-      <Switch
-        id="push-notifications"
-        checked={isSubscribed}
-        onCheckedChange={handleToggle}
-        disabled={isLoading || permission === 'denied'}
-      />
+      {isSubscribed && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={showTestNotification}
+          className="gap-2"
+        >
+          <Bell className="h-4 w-4" />
+          Send Test Notification
+        </Button>
+      )}
     </div>
   );
 };
