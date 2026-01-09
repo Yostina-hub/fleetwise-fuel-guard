@@ -1882,8 +1882,11 @@ export type Database = {
           license_class: string | null
           license_expiry: string | null
           license_number: string
+          license_verified: boolean | null
           medical_certificate_expiry: string | null
           medical_info: Json | null
+          national_id: string | null
+          national_id_verified: boolean | null
           notes: string | null
           organization_id: string
           phone: string | null
@@ -1894,6 +1897,10 @@ export type Database = {
           total_trips: number | null
           updated_at: string
           user_id: string | null
+          verification_notes: string | null
+          verification_status: string | null
+          verified_at: string | null
+          verified_by: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -1912,8 +1919,11 @@ export type Database = {
           license_class?: string | null
           license_expiry?: string | null
           license_number: string
+          license_verified?: boolean | null
           medical_certificate_expiry?: string | null
           medical_info?: Json | null
+          national_id?: string | null
+          national_id_verified?: boolean | null
           notes?: string | null
           organization_id: string
           phone?: string | null
@@ -1924,6 +1934,10 @@ export type Database = {
           total_trips?: number | null
           updated_at?: string
           user_id?: string | null
+          verification_notes?: string | null
+          verification_status?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -1942,8 +1956,11 @@ export type Database = {
           license_class?: string | null
           license_expiry?: string | null
           license_number?: string
+          license_verified?: boolean | null
           medical_certificate_expiry?: string | null
           medical_info?: Json | null
+          national_id?: string | null
+          national_id_verified?: boolean | null
           notes?: string | null
           organization_id?: string
           phone?: string | null
@@ -1954,6 +1971,10 @@ export type Database = {
           total_trips?: number | null
           updated_at?: string
           user_id?: string | null
+          verification_notes?: string | null
+          verification_status?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Relationships: [
           {
@@ -4335,6 +4356,102 @@ export type Database = {
         }
         Relationships: []
       }
+      overspeed_cutoff_events: {
+        Row: {
+          created_at: string
+          cutoff_command_id: string | null
+          cutoff_reason: string | null
+          cutoff_triggered: boolean | null
+          device_id: string | null
+          driver_id: string | null
+          event_time: string
+          id: string
+          lat: number | null
+          lng: number | null
+          organization_id: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          speed_kmh: number
+          speed_limit_kmh: number
+          vehicle_id: string
+        }
+        Insert: {
+          created_at?: string
+          cutoff_command_id?: string | null
+          cutoff_reason?: string | null
+          cutoff_triggered?: boolean | null
+          device_id?: string | null
+          driver_id?: string | null
+          event_time?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          speed_kmh: number
+          speed_limit_kmh: number
+          vehicle_id: string
+        }
+        Update: {
+          created_at?: string
+          cutoff_command_id?: string | null
+          cutoff_reason?: string | null
+          cutoff_triggered?: boolean | null
+          device_id?: string | null
+          driver_id?: string | null
+          event_time?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          speed_kmh?: number
+          speed_limit_kmh?: number
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "overspeed_cutoff_events_cutoff_command_id_fkey"
+            columns: ["cutoff_command_id"]
+            isOneToOne: false
+            referencedRelation: "device_commands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "overspeed_cutoff_events_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "overspeed_cutoff_events_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "overspeed_cutoff_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "overspeed_cutoff_events_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       password_policies: {
         Row: {
           created_at: string
@@ -6599,6 +6716,9 @@ export type Database = {
           organization_id: string
           ownership_type: string | null
           plate_number: string
+          speed_cutoff_enabled: boolean | null
+          speed_cutoff_grace_seconds: number | null
+          speed_cutoff_limit_kmh: number | null
           status: string
           tank_capacity_liters: number | null
           updated_at: string
@@ -6624,6 +6744,9 @@ export type Database = {
           organization_id: string
           ownership_type?: string | null
           plate_number: string
+          speed_cutoff_enabled?: boolean | null
+          speed_cutoff_grace_seconds?: number | null
+          speed_cutoff_limit_kmh?: number | null
           status?: string
           tank_capacity_liters?: number | null
           updated_at?: string
@@ -6649,6 +6772,9 @@ export type Database = {
           organization_id?: string
           ownership_type?: string | null
           plate_number?: string
+          speed_cutoff_enabled?: boolean | null
+          speed_cutoff_grace_seconds?: number | null
+          speed_cutoff_limit_kmh?: number | null
           status?: string
           tank_capacity_liters?: number | null
           updated_at?: string

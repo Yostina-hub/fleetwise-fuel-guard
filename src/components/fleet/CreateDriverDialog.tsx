@@ -29,6 +29,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 const driverSchema = z.object({
   first_name: z.string().trim().min(1, "First name is required").max(50),
   last_name: z.string().trim().min(1, "Last name is required").max(50),
+  national_id: z.string().trim().max(50).nullish(),
   license_number: z.string().trim().min(1, "License number is required").max(50),
   license_class: z.string().trim().max(20).nullish(),
   license_expiry: z.string().nullish(),
@@ -68,6 +69,7 @@ export default function CreateDriverDialog({ open, onOpenChange }: CreateDriverD
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
+    national_id: "",
     license_number: "",
     license_class: "",
     license_expiry: "",
@@ -116,6 +118,7 @@ export default function CreateDriverDialog({ open, onOpenChange }: CreateDriverD
     setFormData({
       first_name: "",
       last_name: "",
+      national_id: "",
       license_number: "",
       license_class: "",
       license_expiry: "",
@@ -140,6 +143,7 @@ export default function CreateDriverDialog({ open, onOpenChange }: CreateDriverD
       const cleanData = {
         first_name: formData.first_name,
         last_name: formData.last_name,
+        national_id: formData.national_id || null,
         license_number: formData.license_number,
         license_class: formData.license_class || null,
         license_expiry: formData.license_expiry || null,
@@ -156,6 +160,7 @@ export default function CreateDriverDialog({ open, onOpenChange }: CreateDriverD
         emergency_contact_phone: formData.emergency_contact_phone || null,
         emergency_contact_relationship: formData.emergency_contact_relationship || null,
         medical_certificate_expiry: formData.medical_certificate_expiry || null,
+        verification_status: 'pending',
       };
 
       driverSchema.parse(cleanData);
@@ -279,13 +284,26 @@ export default function CreateDriverDialog({ open, onOpenChange }: CreateDriverD
               </div>
             </div>
 
-            {/* License Information Section */}
+            {/* License & ID Information Section */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
                 <CreditCard className="w-5 h-5 text-primary" />
-                License Information
+                License & Identification
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="national_id">National ID Number</Label>
+                  <Input
+                    id="national_id"
+                    value={formData.national_id}
+                    onChange={(e) => setFormData({ ...formData, national_id: e.target.value })}
+                    placeholder="e.g., 12345678"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Used for driver verification
+                  </p>
+                </div>
+
                 <div>
                   <Label htmlFor="license_number">License Number *</Label>
                   <Input
