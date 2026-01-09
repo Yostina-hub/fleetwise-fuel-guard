@@ -4120,6 +4120,7 @@ export type Database = {
           mapbox_token: string | null
           organization_id: string
           primary_color: string | null
+          push_notifications_enabled: boolean | null
           secondary_color: string | null
           sms_gateway_config: Json | null
           smtp_host: string | null
@@ -4128,6 +4129,8 @@ export type Database = {
           smtp_username: string | null
           time_format: string | null
           updated_at: string
+          vapid_private_key: string | null
+          vapid_public_key: string | null
         }
         Insert: {
           avg_insurance_per_vehicle_annual?: number
@@ -4159,6 +4162,7 @@ export type Database = {
           mapbox_token?: string | null
           organization_id: string
           primary_color?: string | null
+          push_notifications_enabled?: boolean | null
           secondary_color?: string | null
           sms_gateway_config?: Json | null
           smtp_host?: string | null
@@ -4167,6 +4171,8 @@ export type Database = {
           smtp_username?: string | null
           time_format?: string | null
           updated_at?: string
+          vapid_private_key?: string | null
+          vapid_public_key?: string | null
         }
         Update: {
           avg_insurance_per_vehicle_annual?: number
@@ -4198,6 +4204,7 @@ export type Database = {
           mapbox_token?: string | null
           organization_id?: string
           primary_color?: string | null
+          push_notifications_enabled?: boolean | null
           secondary_color?: string | null
           sms_gateway_config?: Json | null
           smtp_host?: string | null
@@ -4206,6 +4213,8 @@ export type Database = {
           smtp_username?: string | null
           time_format?: string | null
           updated_at?: string
+          vapid_private_key?: string | null
+          vapid_public_key?: string | null
         }
         Relationships: [
           {

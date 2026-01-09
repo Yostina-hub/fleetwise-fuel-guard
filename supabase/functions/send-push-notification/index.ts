@@ -6,9 +6,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Web Push VAPID keys - in production, store these as secrets
-const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY") || "";
-const VAPID_PUBLIC_KEY = "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U";
 const VAPID_SUBJECT = "mailto:admin@fleettrack.app";
 
 interface PushPayload {
@@ -27,9 +24,31 @@ interface RequestBody {
   payload: PushPayload;
 }
 
+interface VapidKeys {
+  vapid_public_key: string | null;
+  vapid_private_key: string | null;
+  push_notifications_enabled: boolean | null;
+}
+
+async function getVapidKeys(supabase: any, organizationId: string): Promise<VapidKeys | null> {
+  const { data, error } = await supabase
+    .from("organization_settings")
+    .select("vapid_public_key, vapid_private_key, push_notifications_enabled")
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  if (error || !data) {
+    console.error("Error fetching VAPID keys:", error);
+    return null;
+  }
+
+  return data as VapidKeys;
+}
+
 async function sendPushToEndpoint(
   subscription: { endpoint: string; p256dh_key: string; auth_key: string },
-  payload: PushPayload
+  payload: PushPayload,
+  vapidPrivateKey: string
 ): Promise<boolean> {
   try {
     // For now, we'll use a simple fetch approach
@@ -52,6 +71,7 @@ async function sendPushToEndpoint(
     
     console.log(`Would send push to: ${subscription.endpoint}`);
     console.log(`Payload: ${pushData}`);
+    console.log(`Using VAPID private key: ${vapidPrivateKey ? "configured" : "missing"}`);
     
     return true;
   } catch (error) {
@@ -79,6 +99,30 @@ serve(async (req) => {
       );
     }
 
+    if (!organization_id) {
+      return new Response(
+        JSON.stringify({ error: "organization_id is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Fetch VAPID keys from organization settings
+    const vapidKeys = await getVapidKeys(supabase, organization_id);
+    
+    if (!vapidKeys || !vapidKeys.push_notifications_enabled) {
+      return new Response(
+        JSON.stringify({ error: "Push notifications not enabled for this organization" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!vapidKeys.vapid_private_key) {
+      return new Response(
+        JSON.stringify({ error: "VAPID private key not configured" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Build query for subscriptions
     let query = supabase
       .from("push_subscriptions")
@@ -89,11 +133,6 @@ serve(async (req) => {
       query = query.in("user_id", user_ids);
     } else if (organization_id) {
       query = query.eq("organization_id", organization_id);
-    } else {
-      return new Response(
-        JSON.stringify({ error: "Must specify user_ids or organization_id" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
     }
 
     const { data: subscriptions, error: fetchError } = await query;
@@ -119,7 +158,7 @@ serve(async (req) => {
     const failedEndpoints: string[] = [];
 
     for (const subscription of subscriptions) {
-      const success = await sendPushToEndpoint(subscription, payload);
+      const success = await sendPushToEndpoint(subscription, payload, vapidKeys.vapid_private_key);
       if (success) {
         successCount++;
         // Update last_used_at
