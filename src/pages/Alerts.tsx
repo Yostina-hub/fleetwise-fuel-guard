@@ -4,6 +4,8 @@ import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SOSAlertPanel } from "@/components/alerts/SOSAlertPanel";
+import { FuelAlertsTab } from "@/components/alerts/FuelAlertsTab";
+import { MaintenanceAlertsTab } from "@/components/alerts/MaintenanceAlertsTab";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -42,7 +44,9 @@ import {
   CalendarIcon,
   X,
   CheckCheck,
-  FileText
+  FileText,
+  Fuel,
+  Wrench
 } from "lucide-react";
 import { useAlerts, Alert } from "@/hooks/useAlerts";
 import { useVehicles } from "@/hooks/useVehicles";
@@ -291,7 +295,25 @@ const Alerts = () => {
         {/* SOS Alert Panel */}
         <SOSAlertPanel />
 
+        {/* Main Alert Tabs */}
+        <Tabs defaultValue="all" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-flex">
+            <TabsTrigger value="all" className="gap-2">
+              <AlertTriangle className="w-4 h-4" />
+              All Alerts
+            </TabsTrigger>
+            <TabsTrigger value="fuel" className="gap-2">
+              <Fuel className="w-4 h-4" />
+              Fuel Alerts
+            </TabsTrigger>
+            <TabsTrigger value="maintenance" className="gap-2">
+              <Wrench className="w-4 h-4" />
+              Maintenance
+            </TabsTrigger>
+          </TabsList>
 
+          {/* All Alerts Tab */}
+          <TabsContent value="all" className="space-y-6">
         {/* Filters */}
         <Card className="glass-strong border">
           <CardContent className="pt-6">
@@ -617,6 +639,18 @@ const Alerts = () => {
             />
           </CardContent>
         </Card>
+          </TabsContent>
+
+          {/* Fuel Alerts Tab */}
+          <TabsContent value="fuel">
+            <FuelAlertsTab />
+          </TabsContent>
+
+          {/* Maintenance Alerts Tab */}
+          <TabsContent value="maintenance">
+            <MaintenanceAlertsTab />
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Alert Detail Modal */}
