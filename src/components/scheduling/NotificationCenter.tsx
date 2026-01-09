@@ -12,6 +12,7 @@ import { Bell, Check, CheckCheck, Trash2, X } from "lucide-react";
 import { useNotifications } from "@/hooks/useNotifications";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import { PushNotificationToggle } from "@/components/notifications/PushNotificationToggle";
 
 const notificationIcons: Record<string, string> = {
   trip_request_submitted: "📝",
@@ -191,6 +192,12 @@ export const NotificationCenter = () => {
             </div>
           )}
         </ScrollArea>
+
+        {/* Push notification toggle */}
+        <Separator />
+        <div className="p-3 bg-muted/30">
+          <PushNotificationToggle variant="switch" showLabel={true} />
+        </div>
 
         {notifications.length > 0 && (
           <>

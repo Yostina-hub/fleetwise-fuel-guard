@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useToast } from "./use-toast";
+import { pushNotificationService } from "@/services/pushNotificationService";
 
 export const useNotifications = () => {
   const { user } = useAuth();
@@ -52,7 +53,7 @@ export const useNotifications = () => {
           table: "notifications",
           filter: `user_id=eq.${user.id}`,
         },
-        (payload) => {
+        async (payload) => {
           queryClient.invalidateQueries({ queryKey: ["notifications"] });
           
           // Show toast for new notification
@@ -61,6 +62,27 @@ export const useNotifications = () => {
             title: notification.title,
             description: notification.message,
           });
+
+          // Also show browser push notification if subscribed
+          try {
+            const isSubscribed = await pushNotificationService.isSubscribed();
+            if (isSubscribed && Notification.permission === 'granted') {
+              await pushNotificationService.showLocalNotification(
+                notification.title,
+                {
+                  body: notification.message,
+                  tag: `notification-${notification.id}`,
+                  data: {
+                    type: notification.type,
+                    url: notification.action_url
+                  }
+                }
+              );
+            }
+          } catch (e) {
+            // Silently fail - push is optional
+            console.debug("Push notification not sent:", e);
+          }
         }
       )
       .subscribe();
