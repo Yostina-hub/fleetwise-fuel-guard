@@ -73,18 +73,43 @@ const PushNotificationSettings = () => {
 
   const saveMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const { error } = await (supabase as any)
+      if (!organizationId) throw new Error("Missing organization");
+
+      const payload = {
+        vapid_public_key: data.vapid_public_key || null,
+        vapid_private_key: data.vapid_private_key || null,
+        push_notifications_enabled: data.push_notifications_enabled,
+      };
+
+      // Upsert requires INSERT permission even when a row already exists,
+      // so we do an explicit update-or-insert instead.
+      const { data: existing, error: existsError } = await (supabase as any)
         .from("organization_settings")
-        .upsert(
-          {
-            organization_id: organizationId,
-            vapid_public_key: data.vapid_public_key || null,
-            vapid_private_key: data.vapid_private_key || null,
-            push_notifications_enabled: data.push_notifications_enabled,
-          },
-          { onConflict: "organization_id" }
-        );
-      if (error) throw error;
+        .select("organization_id")
+        .eq("organization_id", organizationId)
+        .maybeSingle();
+
+      if (existsError) throw existsError;
+
+      if (existing) {
+        const { data: updatedRows, error: updateError } = await (supabase as any)
+          .from("organization_settings")
+          .update(payload)
+          .eq("organization_id", organizationId)
+          .select("organization_id");
+
+        if (updateError) throw updateError;
+        if (!updatedRows || updatedRows.length === 0) {
+          throw new Error("You don't have permission to update these settings");
+        }
+        return;
+      }
+
+      const { error: insertError } = await (supabase as any)
+        .from("organization_settings")
+        .insert({ organization_id: organizationId, ...payload });
+
+      if (insertError) throw insertError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["push_notification_settings"] });
