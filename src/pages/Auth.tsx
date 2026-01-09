@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -282,27 +283,24 @@ const Auth = () => {
                         <Label htmlFor="signin-password" className="text-sm font-medium">Password</Label>
                         <button 
                           type="button"
-                          onClick={() => {
+                          onClick={async () => {
                             const email = (document.getElementById('signin-email') as HTMLInputElement)?.value;
                             if (email) {
-                              import('@/integrations/supabase/client').then(({ supabase }) => {
-                                supabase.auth.resetPasswordForEmail(email, {
-                                  redirectTo: `${window.location.origin}/auth`,
-                                }).then(({ error }) => {
-                                  if (error) {
-                                    toast({
-                                      title: "Error",
-                                      description: error.message,
-                                      variant: "destructive",
-                                    });
-                                  } else {
-                                    toast({
-                                      title: "Password Reset Email Sent",
-                                      description: "Check your email for a password reset link.",
-                                    });
-                                  }
-                                });
+                              const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                                redirectTo: `${window.location.origin}/auth`,
                               });
+                              if (error) {
+                                toast({
+                                  title: "Error",
+                                  description: error.message,
+                                  variant: "destructive",
+                                });
+                              } else {
+                                toast({
+                                  title: "Password Reset Email Sent",
+                                  description: "Check your email for a password reset link.",
+                                });
+                              }
                             } else {
                               toast({
                                 title: "Email Required",
