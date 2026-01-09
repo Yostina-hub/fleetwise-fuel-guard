@@ -1776,6 +1776,94 @@ export type Database = {
           },
         ]
       }
+      driver_wellness_checks: {
+        Row: {
+          check_time: string
+          created_at: string
+          driver_id: string
+          fatigue_level: number
+          feeling_well: boolean
+          hours_slept: number | null
+          id: string
+          is_fit_to_drive: boolean
+          lat: number | null
+          lng: number | null
+          notes: string | null
+          organization_id: string
+          rejection_reason: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          sobriety_confirmed: boolean
+          updated_at: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          check_time?: string
+          created_at?: string
+          driver_id: string
+          fatigue_level: number
+          feeling_well?: boolean
+          hours_slept?: number | null
+          id?: string
+          is_fit_to_drive?: boolean
+          lat?: number | null
+          lng?: number | null
+          notes?: string | null
+          organization_id: string
+          rejection_reason?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          sobriety_confirmed?: boolean
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          check_time?: string
+          created_at?: string
+          driver_id?: string
+          fatigue_level?: number
+          feeling_well?: boolean
+          hours_slept?: number | null
+          id?: string
+          is_fit_to_drive?: boolean
+          lat?: number | null
+          lng?: number | null
+          notes?: string | null
+          organization_id?: string
+          rejection_reason?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          sobriety_confirmed?: boolean
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_wellness_checks_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_wellness_checks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_wellness_checks_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drivers: {
         Row: {
           avatar_url: string | null

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,11 +11,15 @@ import {
   FileText, 
   Settings,
   User,
+  Heart,
 } from "lucide-react";
 import { DriverMobileView } from "@/components/driver/DriverMobileView";
 import { useDispatchJobs, DispatchJob } from "@/hooks/useDispatchJobs";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { WellnessCheckForm } from "@/components/drivers/WellnessCheckForm";
+import { WellnessCheckHistory } from "@/components/drivers/WellnessCheckHistory";
+import { supabase } from "@/integrations/supabase/client";
 
 // Map hook dispatch job to mobile view format
 interface MobileDispatchJob {
@@ -49,9 +53,24 @@ const mapToMobileJob = (job: DispatchJob): MobileDispatchJob => ({
 });
 
 const DriverApp = () => {
-  const [activeTab, setActiveTab] = useState("jobs");
+  const [activeTab, setActiveTab] = useState("wellness");
+  const [driverId, setDriverId] = useState<string | null>(null);
   const { user } = useAuth();
   const { jobs, updateJobStatus, capturePOD } = useDispatchJobs();
+
+  // Fetch the driver ID for the current user
+  useEffect(() => {
+    async function fetchDriverId() {
+      if (!user?.id) return;
+      const { data } = await supabase
+        .from("drivers")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (data) setDriverId(data.id);
+    }
+    fetchDriverId();
+  }, [user?.id]);
 
   // Filter jobs assigned to current driver (for demo, show all dispatched jobs)
   const driverJobs = jobs.filter(j => j.status !== "pending").map(mapToMobileJob);
@@ -90,6 +109,17 @@ const DriverApp = () => {
       <div className="min-h-screen bg-background">
         {/* Mobile-optimized tabs at bottom */}
         <div className="pb-20">
+          {activeTab === "wellness" && driverId && (
+            <div className="p-4 space-y-4">
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <Heart className="h-6 w-6 text-primary" />
+                Wellness Check
+              </h1>
+              <WellnessCheckForm driverId={driverId} />
+              <WellnessCheckHistory driverId={driverId} limit={5} />
+            </div>
+          )}
+
           {activeTab === "jobs" && (
             <DriverMobileView
               jobs={driverJobs}
@@ -236,6 +266,15 @@ const DriverApp = () => {
         {/* Bottom Navigation */}
         <div className="fixed bottom-0 left-0 right-0 bg-background border-t z-50">
           <div className="flex justify-around py-2">
+            <button
+              onClick={() => setActiveTab("wellness")}
+              className={`flex flex-col items-center gap-1 px-4 py-2 ${
+                activeTab === "wellness" ? "text-primary" : "text-muted-foreground"
+              }`}
+            >
+              <Heart className="w-5 h-5" />
+              <span className="text-xs">Wellness</span>
+            </button>
             <button
               onClick={() => setActiveTab("jobs")}
               className={`flex flex-col items-center gap-1 px-4 py-2 ${
