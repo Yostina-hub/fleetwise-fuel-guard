@@ -30,11 +30,13 @@ import {
   Heart,
   UserCircle,
   DollarSign,
-  Award
+  Award,
+  ShieldCheck
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import type { Driver } from "@/hooks/useDrivers";
 import LicenseExpiryBadge from "./LicenseExpiryBadge";
+import { DriverVerificationPanel } from "@/components/drivers/DriverVerificationPanel";
 
 interface DriverDetailDialogProps {
   open: boolean;
@@ -229,6 +231,12 @@ export default function DriverDetailDialog({ open, onOpenChange, driver }: Drive
                     <div className="flex items-center gap-3 mb-2">
                       <h2 className="text-2xl font-bold">{driver.first_name} {driver.last_name}</h2>
                       {getStatusBadge(driver.status || "active")}
+                      {(driver as any).verification_status === 'verified' && (
+                        <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
+                          <ShieldCheck className="w-3 h-3 mr-1" />
+                          Verified
+                        </Badge>
+                      )}
                     </div>
                     {driver.employee_id && (
                       <p className="text-muted-foreground font-mono">ID: {driver.employee_id}</p>
@@ -370,6 +378,23 @@ export default function DriverDetailDialog({ open, onOpenChange, driver }: Drive
                 </CardContent>
               </Card>
             )}
+
+            {/* Driver Verification Panel */}
+            <DriverVerificationPanel 
+              driver={{
+                id: driver.id,
+                first_name: driver.first_name,
+                last_name: driver.last_name,
+                license_number: driver.license_number,
+                national_id: (driver as any).national_id,
+                national_id_verified: (driver as any).national_id_verified,
+                license_verified: (driver as any).license_verified,
+                verification_status: (driver as any).verification_status,
+                verified_by: (driver as any).verified_by,
+                verified_at: (driver as any).verified_at,
+                verification_notes: (driver as any).verification_notes,
+              }}
+            />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* License Information */}
               <Card>
