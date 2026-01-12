@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import KPICard from "@/components/KPICard";
+import { DownloadProposalButton } from "@/components/DownloadProposalButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -255,6 +256,7 @@ const Dashboard = () => {
             <p className="text-muted-foreground mt-1">Real-time overview of your fleet operations</p>
           </div>
           <div className="flex items-center gap-3">
+            <DownloadProposalButton />
             <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
             <DashboardSearch />
             <Button 
