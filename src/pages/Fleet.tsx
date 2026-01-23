@@ -30,6 +30,7 @@ import FleetQuickStats from "@/components/fleet/FleetQuickStats";
 import FleetQuickActions from "@/components/fleet/FleetQuickActions";
 import FleetStatusBadges from "@/components/fleet/FleetStatusBadges";
 import TripStatusFilters from "@/components/fleet/TripStatusFilters";
+import FleetMiniMap from "@/components/fleet/FleetMiniMap";
 import { VehicleGridSkeleton, StatsRowSkeleton } from "@/components/ui/skeletons";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -123,6 +124,7 @@ const Fleet = () => {
   const [sortField, setSortField] = useState<string>("created_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [showMap, setShowMap] = useState(true);
   
   // Selection state for bulk actions
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -725,48 +727,73 @@ const Fleet = () => {
           </Card>
         ) : (
           <>
-            {/* View Rendering */}
-            {viewMode === "grid" ? (
-              <VehicleVirtualGrid
-                vehicles={vehicles}
-                onVehicleClick={handleVehicleClick}
-                onEditVehicle={handleEditVehicle}
-                onDeleteVehicle={handleDeleteVehicle}
-                onAssignDriver={handleAssignDriver}
-                onFuelHistory={handleFuelHistory}
-                onTripHistory={handleTripHistory}
-                onSendCommand={handleSendCommand}
-                onAssignDevice={handleAssignDevice}
-                onTerminalSettings={handleTerminalSettings}
-                hasMore={hasMore}
-                onLoadMore={loadMore}
-                loading={loading}
-                columns={3}
-                selectedIds={selectedIds}
-                onSelectionChange={setSelectedIds}
-              />
-            ) : (
-              <VehicleTableView
-                vehicles={vehicles}
-                onVehicleClick={handleVehicleClick}
-                onEditVehicle={handleEditVehicle}
-                onDeleteVehicle={handleDeleteVehicle}
-                onAssignDriver={handleAssignDriver}
-                onFuelHistory={handleFuelHistory}
-                onTripHistory={handleTripHistory}
-                onSendCommand={handleSendCommand}
-                onAssignDevice={handleAssignDevice}
-                onTerminalSettings={handleTerminalSettings}
-                selectedIds={selectedIds}
-                onSelectionChange={setSelectedIds}
-                sortField={sortField as any}
-                sortDirection={sortDirection}
-                onSortChange={(field, direction) => {
-                  setSortField(field);
-                  setSortDirection(direction);
-                }}
-              />
-            )}
+            {/* Split View: Table + Map */}
+            <div className={`grid gap-4 ${showMap ? 'lg:grid-cols-2' : 'grid-cols-1'}`}>
+              {/* Left: Vehicle List */}
+              <div className="space-y-4">
+                {viewMode === "grid" ? (
+                  <VehicleVirtualGrid
+                    vehicles={vehicles}
+                    onVehicleClick={handleVehicleClick}
+                    onEditVehicle={handleEditVehicle}
+                    onDeleteVehicle={handleDeleteVehicle}
+                    onAssignDriver={handleAssignDriver}
+                    onFuelHistory={handleFuelHistory}
+                    onTripHistory={handleTripHistory}
+                    onSendCommand={handleSendCommand}
+                    onAssignDevice={handleAssignDevice}
+                    onTerminalSettings={handleTerminalSettings}
+                    hasMore={hasMore}
+                    onLoadMore={loadMore}
+                    loading={loading}
+                    columns={showMap ? 1 : 3}
+                    selectedIds={selectedIds}
+                    onSelectionChange={setSelectedIds}
+                  />
+                ) : (
+                  <VehicleTableView
+                    vehicles={vehicles}
+                    onVehicleClick={handleVehicleClick}
+                    onEditVehicle={handleEditVehicle}
+                    onDeleteVehicle={handleDeleteVehicle}
+                    onAssignDriver={handleAssignDriver}
+                    onFuelHistory={handleFuelHistory}
+                    onTripHistory={handleTripHistory}
+                    onSendCommand={handleSendCommand}
+                    onAssignDevice={handleAssignDevice}
+                    onTerminalSettings={handleTerminalSettings}
+                    selectedIds={selectedIds}
+                    onSelectionChange={setSelectedIds}
+                    sortField={sortField as any}
+                    sortDirection={sortDirection}
+                    onSortChange={(field, direction) => {
+                      setSortField(field);
+                      setSortDirection(direction);
+                    }}
+                  />
+                )}
+              </div>
+              
+              {/* Right: Mini Map */}
+              {showMap && (
+                <div className="hidden lg:block sticky top-4">
+                  <FleetMiniMap
+                    vehicles={vehicles.map(v => ({
+                      id: v.vehicleId,
+                      plate: v.plate,
+                      lat: v.latitude || 0,
+                      lng: v.longitude || 0,
+                      status: v.status,
+                    }))}
+                    onVehicleClick={(vehicleId) => {
+                      const vehicle = vehicles.find(v => v.vehicleId === vehicleId);
+                      if (vehicle) handleVehicleClick(vehicle);
+                    }}
+                    className="h-[600px]"
+                  />
+                </div>
+              )}
+            </div>
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
