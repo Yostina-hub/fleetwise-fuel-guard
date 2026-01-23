@@ -5,6 +5,7 @@ import {
   LayoutDashboard, 
   Map, 
   Truck, 
+  Car,
   Fuel, 
   Bell, 
   Wrench,
@@ -37,7 +38,7 @@ interface LayoutProps {
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: Map, label: "Live Tracking", path: "/map" },
-  { icon: Truck, label: "Vehicles", path: "/vehicles" },
+  { icon: Car, label: "Vehicles", path: "/vehicles" },
   { 
     icon: Truck, 
     label: "Fleet Management", 
