@@ -28,6 +28,8 @@ import { VehicleTableView } from "@/components/fleet/VehicleTableView";
 import { useFleetExport } from "@/components/fleet/FleetExportUtils";
 import FleetQuickStats from "@/components/fleet/FleetQuickStats";
 import FleetQuickActions from "@/components/fleet/FleetQuickActions";
+import FleetStatusBadges from "@/components/fleet/FleetStatusBadges";
+import TripStatusFilters from "@/components/fleet/TripStatusFilters";
 import { VehicleGridSkeleton, StatsRowSkeleton } from "@/components/ui/skeletons";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -430,24 +432,35 @@ const Fleet = () => {
           </div>
         </div>
 
-        {/* Fleet Quick Stats */}
-        <FleetQuickStats
-          totalVehicles={fleetStats.total}
-          movingVehicles={fleetStats.moving}
-          idleVehicles={fleetStats.idle}
-          offlineVehicles={fleetStats.offline}
-          inMaintenance={0}
-          avgFuelLevel={0}
-        />
+        {/* Fleet Status Badges - Like Reference Image */}
+        <Card className="border-border/50">
+          <CardContent className="py-4">
+            <FleetStatusBadges
+              total={fleetStats.total}
+              running={fleetStats.moving}
+              stopped={fleetStats.offline}
+              overspeed={0}
+              idle={fleetStats.idle}
+              unreachable={fleetStats.offline}
+              newVehicles={0}
+            />
+          </CardContent>
+        </Card>
 
-        {/* Fleet Quick Actions */}
-        <FleetQuickActions
-          onAddVehicle={() => setCreateDialogOpen(true)}
-          onImport={() => setImportDialogOpen(true)}
-          onExport={handleExportAll}
-          onViewMap={() => navigate("/map")}
-          onScheduleMaintenance={() => navigate("/maintenance")}
-        />
+        {/* Trip Status Filters */}
+        <Card className="border-border/50">
+          <CardContent className="py-4">
+            <TripStatusFilters
+              onTrip={0}
+              inTransit={0}
+              notOnTrip={fleetStats.total}
+              atLoading={0}
+              atUnloading={0}
+              notRecognized={0}
+              deviated={0}
+            />
+          </CardContent>
+        </Card>
 
         {/* Bulk Actions Toolbar */}
         {selectedIds.length > 0 && (
