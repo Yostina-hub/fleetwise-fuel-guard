@@ -10,6 +10,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -36,12 +41,19 @@ import {
   Map,
   Maximize2,
   Minimize2,
+  Fuel,
+  Gauge,
+  MapPin,
+  Clock,
+  Eye,
+  Navigation,
 } from "lucide-react";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { useDebounce } from "@/hooks/useDebounce";
 import { cn } from "@/lib/utils";
 import mapboxgl from "mapbox-gl";
+import { formatDistanceToNow } from "date-fns";
 
 // Status filter badges configuration
 const STATUS_BADGES = [
@@ -385,43 +397,168 @@ const Vehicles = () => {
                       </TableRow>
                     ) : (
                       filteredVehicles.map((vehicle, index) => (
-                        <TableRow
-                          key={vehicle.id}
-                          className={cn(
-                            "cursor-pointer transition-colors",
-                            selectedVehicleId === vehicle.id 
-                              ? "bg-primary/10" 
-                              : index % 2 === 0 
-                                ? "bg-background" 
-                                : "bg-muted/30",
-                            "hover:bg-primary/5"
-                          )}
-                          onClick={() => handleVehicleRowClick(vehicle)}
-                          onDoubleClick={() => handleVehicleClick(vehicle)}
-                        >
-                          <TableCell className="font-medium">{index + 1}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center justify-center">
-                              {getVehicleIcon(vehicle.make, vehicle.status)}
+                        <HoverCard key={vehicle.id} openDelay={200} closeDelay={100}>
+                          <HoverCardTrigger asChild>
+                            <TableRow
+                              className={cn(
+                                "cursor-pointer transition-colors",
+                                selectedVehicleId === vehicle.id 
+                                  ? "bg-primary/10" 
+                                  : index % 2 === 0 
+                                    ? "bg-background" 
+                                    : "bg-muted/30",
+                                "hover:bg-primary/5"
+                              )}
+                              onClick={() => handleVehicleRowClick(vehicle)}
+                              onDoubleClick={() => handleVehicleClick(vehicle)}
+                            >
+                              <TableCell className="font-medium">{index + 1}</TableCell>
+                              <TableCell>
+                                <div className="flex items-center justify-center">
+                                  {getVehicleIcon(vehicle.make, vehicle.status)}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-sm">
+                                {vehicle.make}
+                                {vehicle.model && <span className="block text-xs text-muted-foreground">{vehicle.model}</span>}
+                              </TableCell>
+                              <TableCell className="font-mono font-medium">{vehicle.plate}</TableCell>
+                              <TableCell>
+                                <Badge 
+                                  variant="outline" 
+                                  className={cn(
+                                    "text-xs capitalize",
+                                    vehicle.status === 'moving' && "border-green-500 text-green-600 bg-green-50",
+                                    vehicle.status === 'idle' && "border-yellow-500 text-yellow-600 bg-yellow-50",
+                                    vehicle.status === 'stopped' && "border-red-500 text-red-600 bg-red-50",
+                                    vehicle.status === 'offline' && "border-muted text-muted-foreground"
+                                  )}
+                                >
+                                  {vehicle.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-sm max-w-[200px]">
+                                <p className="truncate text-muted-foreground">
+                                  {vehicle.lat && vehicle.lng 
+                                    ? `${vehicle.lat.toFixed(4)}, ${vehicle.lng.toFixed(4)}`
+                                    : "No location"}
+                                </p>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1">
+                                  {vehicle.isOverspeed && (
+                                    <AlertTriangle className="w-4 h-4 text-destructive" />
+                                  )}
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleVehicleClick(vehicle);
+                                    }}
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          </HoverCardTrigger>
+                          <HoverCardContent 
+                            side="right" 
+                            align="start" 
+                            className="w-72 p-0 overflow-hidden animate-scale-in"
+                          >
+                            {/* Hover Card Header */}
+                            <div className={cn(
+                              "p-3 text-white",
+                              vehicle.status === 'moving' && "bg-gradient-to-r from-green-500 to-green-600",
+                              vehicle.status === 'idle' && "bg-gradient-to-r from-yellow-500 to-yellow-600",
+                              vehicle.status === 'stopped' && "bg-gradient-to-r from-red-500 to-red-600",
+                              vehicle.status === 'offline' && "bg-gradient-to-r from-gray-500 to-gray-600"
+                            )}>
+                              <div className="flex items-center gap-2">
+                                {getVehicleIcon(vehicle.make, vehicle.status)}
+                                <div>
+                                  <p className="font-bold text-lg">{vehicle.plate}</p>
+                                  <p className="text-xs opacity-90">{vehicle.make} {vehicle.model} {vehicle.year}</p>
+                                </div>
+                              </div>
                             </div>
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {vehicle.make}
-                            {vehicle.model && <span className="block text-xs text-muted-foreground">{vehicle.model}</span>}
-                          </TableCell>
-                          <TableCell className="font-mono font-medium">{vehicle.plate}</TableCell>
-                          <TableCell>
-                            <span className="text-muted-foreground">--</span>
-                          </TableCell>
-                          <TableCell className="text-sm max-w-[200px]">
-                            <p className="truncate text-muted-foreground">Location data...</p>
-                          </TableCell>
-                          <TableCell>
-                            {vehicle.isOverspeed && (
-                              <AlertTriangle className="w-4 h-4 text-warning" />
-                            )}
-                          </TableCell>
-                        </TableRow>
+                            
+                            {/* Hover Card Body */}
+                            <div className="p-3 space-y-3">
+                              {/* Speed & Fuel Row */}
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                                  <Gauge className="w-4 h-4 text-primary" />
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Speed</p>
+                                    <p className="font-semibold">{vehicle.speed} km/h</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                                  <Fuel className="w-4 h-4 text-primary" />
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Fuel</p>
+                                    <p className="font-semibold">{vehicle.fuel}%</p>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Location */}
+                              {vehicle.lat && vehicle.lng && (
+                                <div className="flex items-start gap-2 p-2 rounded-lg bg-muted/50">
+                                  <MapPin className="w-4 h-4 text-primary mt-0.5" />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs text-muted-foreground">Location</p>
+                                    <p className="text-sm truncate">{vehicle.lat.toFixed(5)}, {vehicle.lng.toFixed(5)}</p>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Last Update */}
+                              <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                                <Clock className="w-4 h-4 text-primary" />
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Last Update</p>
+                                  <p className="text-sm">
+                                    {vehicle.lastUpdate 
+                                      ? formatDistanceToNow(new Date(vehicle.lastUpdate), { addSuffix: true })
+                                      : "No data"}
+                                  </p>
+                                </div>
+                              </div>
+                              
+                              {/* Quick Actions */}
+                              <div className="flex gap-2 pt-2 border-t">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="flex-1 gap-1"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleVehicleRowClick(vehicle);
+                                  }}
+                                >
+                                  <Navigation className="w-3 h-3" />
+                                  Locate
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  className="flex-1 gap-1"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleVehicleClick(vehicle);
+                                  }}
+                                >
+                                  <Eye className="w-3 h-3" />
+                                  Details
+                                </Button>
+                              </div>
+                            </div>
+                          </HoverCardContent>
+                        </HoverCard>
                       ))
                     )}
                   </TableBody>
