@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import StatusBadge from "@/components/StatusBadge";
+import VehicleTypeImage from "./VehicleTypeImage";
 import { 
   Eye, 
   MapPin, 
@@ -33,7 +34,8 @@ import {
   Clock,
   Wifi,
   WifiOff,
-  Settings2
+  Settings2,
+  AlertTriangle
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -104,12 +106,6 @@ export const VehicleTableView = ({
   const sortField = externalSortField;
   const sortDirection = externalSortDirection || 'asc';
 
-  const getFuelColor = (level: number) => {
-    if (level > 60) return "bg-success";
-    if (level > 30) return "bg-warning";
-    return "bg-destructive";
-  };
-
   const handleSort = (field: SortField) => {
     if (!onSortChange) return;
     
@@ -127,17 +123,7 @@ export const VehicleTableView = ({
       : <ArrowDown className="w-4 h-4 ml-1" />;
   };
 
-  const formatLastSeen = (lastSeen: string | null) => {
-    if (!lastSeen) return "Never";
-    try {
-      return formatDistanceToNow(new Date(lastSeen), { addSuffix: true });
-    } catch {
-      return "Unknown";
-    }
-  };
-
   // When server-side sorting is used, don't sort client-side
-  // Just use the vehicles array as-is since it comes pre-sorted from the server
   const sortedVehicles = vehicles;
 
   const allSelected = vehicles.length > 0 && selectedIds.length === vehicles.length;
@@ -160,12 +146,12 @@ export const VehicleTableView = ({
   };
 
   return (
-    <div className="rounded-lg border bg-card">
+    <div className="rounded-lg border bg-card overflow-hidden">
       <Table>
         <TableHeader>
-          <TableRow className="bg-muted/50">
+          <TableRow className="bg-[#4B0082]">
             {onSelectionChange && (
-              <TableHead className="w-[50px]">
+              <TableHead className="w-[50px] text-white">
                 <Checkbox 
                   checked={allSelected}
                   onCheckedChange={handleSelectAll}
@@ -174,79 +160,51 @@ export const VehicleTableView = ({
                 />
               </TableHead>
             )}
-            <TableHead className="w-[140px]">
+            <TableHead className="w-[60px] text-white font-semibold">SN</TableHead>
+            <TableHead className="w-[80px] text-white font-semibold">State</TableHead>
+            <TableHead className="w-[140px] text-white">
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="h-8 -ml-3 font-medium"
-                onClick={() => handleSort('plate_number')}
-              >
-                Plate {getSortIcon('plate_number')}
-              </Button>
-            </TableHead>
-            <TableHead className="w-[120px]">VIN</TableHead>
-            <TableHead>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-8 -ml-3 font-medium"
+                className="h-8 -ml-3 font-semibold text-white hover:text-white hover:bg-white/20"
                 onClick={() => handleSort('make')}
               >
-                Vehicle {getSortIcon('make')}
+                Branch {getSortIcon('make')}
               </Button>
             </TableHead>
-            <TableHead>
+            <TableHead className="w-[120px] text-white">
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="h-8 -ml-3 font-medium"
+                className="h-8 -ml-3 font-semibold text-white hover:text-white hover:bg-white/20"
+                onClick={() => handleSort('plate_number')}
+              >
+                Vehicle {getSortIcon('plate_number')}
+              </Button>
+            </TableHead>
+            <TableHead className="text-white">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 -ml-3 font-semibold text-white hover:text-white hover:bg-white/20"
                 onClick={() => handleSort('status')}
               >
-                Status {getSortIcon('status')}
+                Current_Status {getSortIcon('status')}
               </Button>
             </TableHead>
-            <TableHead className="w-[80px]">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-8 -ml-3 font-medium"
-                onClick={() => handleSort('speed_kmh')}
-              >
-                Speed {getSortIcon('speed_kmh')}
-              </Button>
+            <TableHead className="text-white font-semibold">
+              Address
             </TableHead>
-            <TableHead className="w-[120px]">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-8 -ml-3 font-medium"
-                onClick={() => handleSort('fuel_level_percent')}
-              >
-                Fuel {getSortIcon('fuel_level_percent')}
-              </Button>
-            </TableHead>
-            <TableHead>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-8 -ml-3 font-medium"
-                onClick={() => handleSort('odometer_km')}
-              >
-                Odometer {getSortIcon('odometer_km')}
-              </Button>
-            </TableHead>
-            <TableHead>Driver</TableHead>
-            <TableHead>Last Update</TableHead>
-            <TableHead className="text-right w-[200px]">Actions</TableHead>
+            <TableHead className="text-right w-[80px] text-white font-semibold">Alert</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sortedVehicles.map((vehicle) => (
+          {sortedVehicles.map((vehicle, index) => (
             <TableRow 
               key={vehicle.id} 
               className={`hover:bg-muted/50 cursor-pointer transition-colors ${
                 selectedIds.includes(vehicle.vehicleId) ? 'bg-primary/5' : ''
-              }`}
+              } ${index % 2 === 1 ? 'bg-[#FFF5EE]' : 'bg-white'}`}
               onClick={() => onVehicleClick(vehicle)}
             >
               {onSelectionChange && (
@@ -258,187 +216,59 @@ export const VehicleTableView = ({
                   />
                 </TableCell>
               )}
+              {/* SN - Serial Number */}
+              <TableCell className="text-center font-medium">
+                {index + 1}
+              </TableCell>
+              {/* State - Vehicle Image */}
+              <TableCell>
+                <VehicleTypeImage 
+                  vehicleType={vehicle.vehicleType}
+                  make={vehicle.make}
+                  status={vehicle.status}
+                  size="md"
+                />
+              </TableCell>
+              {/* Branch - Make/Model as Branch */}
               <TableCell>
                 <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-foreground">{vehicle.plate}</span>
-                    {vehicle.deviceConnected ? (
-                      <Wifi className="w-3 h-3 text-success" />
-                    ) : (
-                      <WifiOff className="w-3 h-3 text-muted-foreground" />
-                    )}
-                  </div>
-                  {vehicle.vehicleType && (
-                    <Badge variant="outline" className="text-xs w-fit mt-1 capitalize">
-                      {vehicle.vehicleType.replace('_', ' ')}
-                    </Badge>
+                  <span className="font-medium">{vehicle.make}</span>
+                  {vehicle.model && (
+                    <span className="text-xs text-muted-foreground">{vehicle.model}</span>
                   )}
                 </div>
               </TableCell>
+              {/* Vehicle - Plate Number */}
               <TableCell>
-                <span className="text-xs font-mono text-muted-foreground">
-                  {vehicle.vin ? vehicle.vin.substring(0, 11) + '...' : '-'}
-                </span>
+                <span className="font-bold text-foreground">{vehicle.plate}</span>
               </TableCell>
+              {/* Current Status */}
               <TableCell>
-                <div className="flex flex-col">
-                  <span className="font-medium">{vehicle.make} {vehicle.model}</span>
-                  <span className="text-sm text-muted-foreground">{vehicle.year}</span>
+                <span className="text-muted-foreground">--</span>
+              </TableCell>
+              {/* Address */}
+              <TableCell>
+                <div className="max-w-[300px]">
+                  {vehicle.latitude && vehicle.longitude ? (
+                    <span className="text-sm text-muted-foreground line-clamp-2">
+                      {vehicle.latitude.toFixed(4)}°N, {vehicle.longitude.toFixed(4)}°E
+                    </span>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">Location unavailable</span>
+                  )}
                 </div>
               </TableCell>
-              <TableCell>
-                <StatusBadge status={vehicle.status} />
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-1.5">
-                  <Gauge className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span className="font-medium">{vehicle.speed || 0}</span>
-                  <span className="text-xs text-muted-foreground">km/h</span>
-                </div>
-              </TableCell>
-              <TableCell>
-                {vehicle.fuel !== null ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-16 bg-muted rounded-full h-2">
-                      <div
-                        className={`h-2 rounded-full ${getFuelColor(vehicle.fuel)}`}
-                        style={{ width: `${vehicle.fuel}%` }}
-                      />
-                    </div>
-                    <span className="text-sm font-medium w-10">{vehicle.fuel}%</span>
-                  </div>
-                ) : (
-                  <span className="text-sm text-muted-foreground">-</span>
-                )}
-              </TableCell>
-              <TableCell>
-                <span className="font-medium">{vehicle.odometer.toLocaleString()} km</span>
-              </TableCell>
-              <TableCell>
-                {vehicle.assignedDriver ? (
-                  <div className="flex items-center gap-1.5">
-                    <User className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span className="text-sm">{vehicle.assignedDriver}</span>
-                  </div>
-                ) : (
-                  <span className="text-sm text-muted-foreground">Unassigned</span>
-                )}
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">{formatLastSeen(vehicle.lastSeen)}</span>
-                </div>
-              </TableCell>
+              {/* Alert */}
               <TableCell className="text-right">
-                <TooltipProvider>
-                  <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => onVehicleClick(vehicle)}
-                          aria-label={`View details for ${vehicle.plate}`}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>View details</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => navigate("/map", { state: { selectedVehicleId: vehicle.vehicleId } })}
-                          aria-label={`Track ${vehicle.plate} on map`}
-                        >
-                          <MapPin className="w-4 h-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Track on map</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <DropdownMenu>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`More actions for ${vehicle.plate}`}>
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>More actions</p>
-                        </TooltipContent>
-                      </Tooltip>
-                      <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem onClick={() => onVehicleClick(vehicle)}>
-                          <Eye className="w-4 h-4 mr-2" />
-                          View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate("/map", { state: { selectedVehicleId: vehicle.vehicleId } })}>
-                          <MapPin className="w-4 h-4 mr-2" />
-                          Track on Map
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => onEditVehicle?.(vehicle)}>
-                          <Edit className="w-4 h-4 mr-2" />
-                          Edit Vehicle
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onAssignDriver?.(vehicle)}>
-                          <UserPlus className="w-4 h-4 mr-2" />
-                          Assign Driver
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onAssignDevice?.(vehicle)}>
-                          <Radio className="w-4 h-4 mr-2" />
-                          GPS Device
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onSendCommand?.(vehicle)}>
-                          <Power className="w-4 h-4 mr-2" />
-                          Send Command
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onTerminalSettings?.(vehicle)}>
-                          <Settings2 className="w-4 h-4 mr-2" />
-                          Terminal Settings
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => navigate("/maintenance")}>
-                          <Wrench className="w-4 h-4 mr-2" />
-                          Maintenance
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onFuelHistory?.(vehicle)}>
-                          <Fuel className="w-4 h-4 mr-2" />
-                          Fuel History
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onTripHistory?.(vehicle)}>
-                          <FileText className="w-4 h-4 mr-2" />
-                          Trip History
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          className="text-destructive focus:text-destructive"
-                          onClick={() => onDeleteVehicle?.(vehicle)}
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete Vehicle
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </TooltipProvider>
+                {vehicle.status === 'offline' && (
+                  <AlertTriangle className="w-5 h-5 text-[#F44336] ml-auto" />
+                )}
               </TableCell>
             </TableRow>
           ))}
           {vehicles.length === 0 && (
             <TableRow>
-              <TableCell colSpan={onSelectionChange ? 11 : 10} className="text-center py-12">
+              <TableCell colSpan={onSelectionChange ? 8 : 7} className="text-center py-12">
                 <p className="text-muted-foreground">No vehicles found</p>
               </TableCell>
             </TableRow>
