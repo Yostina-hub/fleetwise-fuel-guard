@@ -37,11 +37,12 @@ interface LayoutProps {
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: Map, label: "Live Tracking", path: "/map" },
+  { icon: Truck, label: "Vehicles", path: "/vehicles" },
   { 
     icon: Truck, 
     label: "Fleet Management", 
     subItems: [
-      { label: "Vehicles", path: "/fleet" },
+      { label: "Vehicle List", path: "/fleet" },
       { label: "Drivers", path: "/drivers" },
       { label: "Driver Scoring", path: "/driver-scoring" },
       { label: "Device Management", path: "/devices" },
