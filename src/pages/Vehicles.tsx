@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/table";
 import VehicleDetailModal from "@/components/VehicleDetailModal";
 import ClusteredMap from "@/components/map/ClusteredMap";
-import { VehicleInfoPanel } from "@/components/map/VehicleInfoPanel";
+import { VehicleDetailPanel } from "@/components/vehicles/VehicleDetailPanel";
 import {
   Search,
   SlidersHorizontal,
@@ -47,6 +47,7 @@ import {
   Clock,
   Eye,
   Navigation,
+  MapPinned,
 } from "lucide-react";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
@@ -275,23 +276,37 @@ const Vehicles = () => {
     setSelectedVehicleId(vehicleId);
   }, []);
   
-  const selectedVehicleForPanel = useMemo(() => {
+  // Get selected vehicle data for detail panel
+  const selectedVehicleData = useMemo(() => {
     if (!selectedVehicleId) return null;
     const vehicle = filteredVehicles.find(v => v.id === selectedVehicleId);
-    if (!vehicle || !vehicle.lat || !vehicle.lng) return null;
+    if (!vehicle) return null;
+    
+    const vehicleTelemetry = telemetry[vehicle.id];
     
     return {
       id: vehicle.id,
       plate: vehicle.plate,
+      make: vehicle.make,
+      model: vehicle.model,
       status: vehicle.status,
       speed: vehicle.speed,
-      heading: vehicle.heading,
       lat: vehicle.lat,
       lng: vehicle.lng,
       fuel: vehicle.fuel,
+      heading: vehicle.heading,
+      lastUpdate: vehicle.lastUpdate,
+      odometer: vehicleTelemetry?.odometer_km,
+      todayDistance: undefined, // Would come from trip calculations
+      odoDuration: undefined, // Would come from trip calculations
+      distanceFromLastStop: undefined,
+      durationFromLastStop: undefined,
+      ignitionOn: vehicleTelemetry?.ignition_on,
+      acOn: false,
+      alias: undefined,
     };
-  }, [selectedVehicleId, filteredVehicles]);
-  
+  }, [selectedVehicleId, filteredVehicles, telemetry]);
+
   return (
     <Layout>
       <div className="h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
@@ -640,25 +655,31 @@ const Vehicles = () => {
               onMapReady={setMapInstance}
             />
             
-            {/* Selected Vehicle Info Panel */}
-            {selectedVehicleForPanel && selectedVehicleId && (
-              <div className="absolute bottom-4 left-4 right-4 z-10 max-w-md">
-                <VehicleInfoPanel
-                  vehicle={selectedVehicleForPanel}
-                  onClose={() => setSelectedVehicleId(undefined)}
-                  onStreetView={() => {}}
-                  onDirections={() => {}}
-                  onManageAsset={(vehicleId) => {
-                    const vehicle = filteredVehicles.find(v => v.id === vehicleId);
-                    if (vehicle) {
-                      handleVehicleClick(vehicle);
-                    }
-                  }}
-                />
-              </div>
+            {/* Redirect to Map Button */}
+            {selectedVehicleData && (
+              <Button
+                variant="default"
+                size="sm"
+                className="absolute top-4 left-4 z-10 gap-2 shadow-lg"
+                onClick={() => navigate(`/map?vehicle=${selectedVehicleId}`)}
+              >
+                <MapPinned className="w-4 h-4" />
+                Redirect to Map
+              </Button>
             )}
           </div>
         </div>
+
+        {/* Bottom Vehicle Detail Panel */}
+        {selectedVehicleData && (
+          <VehicleDetailPanel
+            vehicle={selectedVehicleData}
+            onClose={() => setSelectedVehicleId(undefined)}
+            onDrivers={() => navigate(`/drivers?vehicle=${selectedVehicleId}`)}
+            onTrack={() => navigate(`/map?vehicle=${selectedVehicleId}&track=true`)}
+            onHistory={() => navigate(`/route-history?vehicle=${selectedVehicleId}`)}
+          />
+        )}
         
         {/* Vehicle Detail Modal */}
         {selectedVehicle && (
