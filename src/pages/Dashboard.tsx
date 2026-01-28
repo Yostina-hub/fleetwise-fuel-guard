@@ -119,50 +119,45 @@ const Dashboard = () => {
   const { metrics: tripMetrics } = useTripMetrics(dateRange);
   const { kpis, driverRankings, complianceItems, financialMetrics, recentActivities, geofenceActivities, loading: execLoading } = useExecutiveMetrics();
 
-  // Real-time subscriptions
+  // Real-time subscriptions for live dashboard updates
   useEffect(() => {
     if (!organizationId) return;
 
     let debounceTimer: NodeJS.Timeout;
+    const refetchAll = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        refetch();
+        refetchAlerts();
+      }, 500);
+    };
 
-    const vehiclesChannel = supabase
-      .channel(`dashboard-vehicles-${organizationId.slice(0, 8)}`)
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'vehicles',
-          filter: `organization_id=eq.${organizationId}`
-        },
-        () => {
-          clearTimeout(debounceTimer);
-          debounceTimer = setTimeout(refetch, 500);
-        }
-      )
-      .subscribe();
-
-    const alertsChannel = supabase
-      .channel(`dashboard-alerts-${organizationId.slice(0, 8)}`)
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'alerts',
-          filter: `organization_id=eq.${organizationId}`
-        },
-        () => {
-          clearTimeout(debounceTimer);
-          debounceTimer = setTimeout(refetchAlerts, 500);
-        }
-      )
-      .subscribe();
+    const channels = [
+      // Vehicle status changes
+      supabase.channel(`dashboard-vehicles-${organizationId.slice(0, 8)}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles', filter: `organization_id=eq.${organizationId}` }, refetchAll)
+        .subscribe(),
+      // Alerts
+      supabase.channel(`dashboard-alerts-${organizationId.slice(0, 8)}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'alerts', filter: `organization_id=eq.${organizationId}` }, refetchAll)
+        .subscribe(),
+      // Trips (for trip metrics)
+      supabase.channel(`dashboard-trips-${organizationId.slice(0, 8)}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'trips', filter: `organization_id=eq.${organizationId}` }, refetchAll)
+        .subscribe(),
+      // Telemetry for live vehicle positions and statuses
+      supabase.channel(`dashboard-telemetry-${organizationId.slice(0, 8)}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicle_telemetry', filter: `organization_id=eq.${organizationId}` }, refetchAll)
+        .subscribe(),
+      // Fuel events
+      supabase.channel(`dashboard-fuel-${organizationId.slice(0, 8)}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'fuel_events', filter: `organization_id=eq.${organizationId}` }, refetchAll)
+        .subscribe(),
+    ];
 
     return () => {
       clearTimeout(debounceTimer);
-      supabase.removeChannel(vehiclesChannel);
-      supabase.removeChannel(alertsChannel);
+      channels.forEach(ch => supabase.removeChannel(ch));
     };
   }, [organizationId, refetch, refetchAlerts]);
 
