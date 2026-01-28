@@ -53,6 +53,7 @@ const App = () => {
               <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/map" element={<ProtectedRoute><MapView /></ProtectedRoute>} />
               <Route path="/vehicles" element={<ProtectedRoute><Vehicles /></ProtectedRoute>} />
+              <Route path="/vehicles/" element={<ProtectedRoute><Vehicles /></ProtectedRoute>} />
               <Route path="/fleet" element={<ProtectedRoute><Fleet /></ProtectedRoute>} />
               <Route path="/driver-scoring" element={<ProtectedRoute><DriverScoring /></ProtectedRoute>} />
               <Route path="/drivers" element={<ProtectedRoute><Drivers /></ProtectedRoute>} />
