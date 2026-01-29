@@ -1,7 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 
 interface TripMetrics {
   totalTrips: number;
@@ -19,6 +19,7 @@ interface DateRange {
 
 export const useTripMetrics = (dateRange?: DateRange) => {
   const { organizationId } = useOrganization();
+  const queryClient = useQueryClient();
 
   const effectiveDateRange = useMemo(() => {
     if (dateRange) return dateRange;
@@ -29,8 +30,10 @@ export const useTripMetrics = (dateRange?: DateRange) => {
     };
   }, [dateRange]);
 
-  const { data: trips, isLoading } = useQuery({
-    queryKey: ['trip-metrics', organizationId, effectiveDateRange.start.toISOString(), effectiveDateRange.end.toISOString()],
+  const queryKey = ['trip-metrics', organizationId, effectiveDateRange.start.toISOString(), effectiveDateRange.end.toISOString()];
+
+  const { data: trips, isLoading, refetch } = useQuery({
+    queryKey,
     queryFn: async () => {
       if (!organizationId) return [];
 
@@ -46,6 +49,29 @@ export const useTripMetrics = (dateRange?: DateRange) => {
     },
     enabled: !!organizationId,
   });
+
+  // Real-time subscription for trips
+  useEffect(() => {
+    if (!organizationId) return;
+
+    let debounceTimer: NodeJS.Timeout;
+    const refetchDebounced = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey });
+      }, 500);
+    };
+
+    const channel = supabase
+      .channel(`trip-metrics-${organizationId.slice(0, 8)}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'trips', filter: `organization_id=eq.${organizationId}` }, refetchDebounced)
+      .subscribe();
+
+    return () => {
+      clearTimeout(debounceTimer);
+      supabase.removeChannel(channel);
+    };
+  }, [organizationId, queryClient, queryKey]);
 
   const metrics = useMemo<TripMetrics>(() => {
     if (!trips || trips.length === 0) {
@@ -115,5 +141,6 @@ export const useTripMetrics = (dateRange?: DateRange) => {
   return {
     metrics,
     loading: isLoading,
+    refetch,
   };
 };

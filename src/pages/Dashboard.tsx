@@ -116,8 +116,8 @@ const Dashboard = () => {
   const { analytics, loading: analyticsLoading } = useFleetAnalytics();
   const { telemetry: telemetryMap } = useVehicleTelemetry();
   const { formatCurrency, formatDistance, settings } = useOrganizationSettings();
-  const { metrics: tripMetrics } = useTripMetrics(dateRange);
-  const { kpis, driverRankings, complianceItems, financialMetrics, recentActivities, geofenceActivities, loading: execLoading } = useExecutiveMetrics();
+  const { metrics: tripMetrics, refetch: refetchTrips } = useTripMetrics(dateRange);
+  const { kpis, driverRankings, complianceItems, financialMetrics, recentActivities, geofenceActivities, loading: execLoading, refetch: refetchExec } = useExecutiveMetrics();
 
   // Real-time subscriptions for live dashboard updates
   useEffect(() => {
@@ -129,6 +129,8 @@ const Dashboard = () => {
       debounceTimer = setTimeout(() => {
         refetch();
         refetchAlerts();
+        refetchTrips();
+        refetchExec();
       }, 500);
     };
 
@@ -159,12 +161,14 @@ const Dashboard = () => {
       clearTimeout(debounceTimer);
       channels.forEach(ch => supabase.removeChannel(ch));
     };
-  }, [organizationId, refetch, refetchAlerts]);
+  }, [organizationId, refetch, refetchAlerts, refetchTrips, refetchExec]);
 
   const handleRefresh = () => {
     setRefreshing(true);
     refetch();
     refetchAlerts();
+    refetchTrips();
+    refetchExec();
     setTimeout(() => setRefreshing(false), 1000);
   };
 
