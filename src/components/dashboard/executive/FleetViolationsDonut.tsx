@@ -48,14 +48,14 @@ export const FleetViolationsDonut = ({ data, loading }: FleetViolationsDonutProp
 
   if (loading) {
     return (
-      <Card className="bg-card border-border">
+      <Card className="border-cyan-500/20 backdrop-blur-sm" style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}>
         <CardContent className="p-6">
           <div className="animate-pulse space-y-4">
-            <div className="h-6 bg-muted rounded w-1/2" />
-            <div className="h-48 bg-muted rounded-full w-48 mx-auto" />
+            <div className="h-6 bg-white/10 rounded w-1/2" />
+            <div className="h-48 bg-white/10 rounded-full w-48 mx-auto" />
             <div className="space-y-2">
-              <div className="h-4 bg-muted rounded w-3/4" />
-              <div className="h-4 bg-muted rounded w-2/3" />
+              <div className="h-4 bg-white/10 rounded w-3/4" />
+              <div className="h-4 bg-white/10 rounded w-2/3" />
             </div>
           </div>
         </CardContent>
@@ -70,9 +70,9 @@ export const FleetViolationsDonut = ({ data, loading }: FleetViolationsDonutProp
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ scale: 1.01 }}
     >
-      <Card className="bg-card border-border relative overflow-hidden hover:shadow-lg hover:shadow-secondary/10 transition-all duration-500">
+      <Card className="border-cyan-500/20 backdrop-blur-sm relative overflow-hidden hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-500" style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}>
         {/* Subtle gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 via-transparent to-primary/5 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-[#8DC63F]/5 pointer-events-none" />
         
         <Button
           variant="ghost"
@@ -84,17 +84,17 @@ export const FleetViolationsDonut = ({ data, loading }: FleetViolationsDonutProp
         
         <CardHeader className="pb-2 relative">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-lg font-bold text-foreground tracking-tight">
+            <CardTitle className="flex items-center gap-2 text-lg font-bold text-white tracking-tight">
               <motion.div
                 animate={{ rotate: [0, 10, -10, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
               >
-                <Settings2 className="w-5 h-5 text-secondary" />
+                <Settings2 className="w-5 h-5 text-cyan-400" />
               </motion.div>
               Fleet Violations
             </CardTitle>
             <Select value={period} onValueChange={setPeriod}>
-              <SelectTrigger className="w-[130px] h-8 text-xs bg-muted/50 border-border">
+              <SelectTrigger className="w-[130px] h-8 text-xs bg-white/10 border-cyan-500/30 text-white">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

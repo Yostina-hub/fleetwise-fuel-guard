@@ -237,6 +237,13 @@ All colors MUST be HSL.
     border: 1px solid hsla(var(--border) / 0.5);
   }
 
+  .glass-executive {
+    background: linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 180, 255, 0.2);
+  }
+
   /* Advanced Card Effects */
   .card-premium {
     position: relative;

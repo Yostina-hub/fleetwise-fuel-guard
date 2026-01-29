@@ -54,10 +54,10 @@ const LiveActivityTimeline = ({ activities, geofenceActivities, loading }: LiveA
 
   if (loading) {
     return (
-      <Card className="glass-strong h-full">
+      <Card className="glass-executive h-full">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Radio className="w-5 h-5 text-success animate-pulse" />
+          <CardTitle className="flex items-center gap-2 text-white">
+            <Radio className="w-5 h-5 text-emerald-400 animate-pulse" />
             Live Activity
           </CardTitle>
         </CardHeader>

@@ -35,11 +35,11 @@ export const TotalTripsCard = ({
 
   if (loading) {
     return (
-      <Card className="bg-card border-border">
+      <Card className="border-cyan-500/20 backdrop-blur-sm" style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}>
         <CardContent className="p-6">
           <div className="animate-pulse space-y-4">
-            <div className="h-6 bg-muted rounded w-1/2" />
-            <div className="h-32 bg-muted rounded" />
+            <div className="h-6 bg-white/10 rounded w-1/2" />
+            <div className="h-32 bg-white/10 rounded" />
           </div>
         </CardContent>
       </Card>
@@ -53,18 +53,18 @@ export const TotalTripsCard = ({
       transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ scale: 1.01 }}
     >
-      <Card className="bg-card border-border overflow-hidden hover:shadow-lg hover:shadow-primary/10 transition-all duration-500">
+      <Card className="border-cyan-500/20 backdrop-blur-sm overflow-hidden hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-500" style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}>
         {/* Subtle gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-success/5 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#8DC63F]/5 via-transparent to-cyan-500/5 pointer-events-none" />
         
         <CardHeader className="pb-2 relative">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-lg font-bold text-foreground tracking-tight">
+            <CardTitle className="flex items-center gap-2 text-lg font-bold text-white tracking-tight">
               <motion.div
                 animate={{ scale: [1, 1.1, 1] }}
                 transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
               >
-                <Settings2 className="w-5 h-5 text-primary" />
+                <Settings2 className="w-5 h-5 text-[#8DC63F]" />
               </motion.div>
               Total Trips
             </CardTitle>
@@ -72,10 +72,10 @@ export const TotalTripsCard = ({
               <Switch 
                 checked={showChart} 
                 onCheckedChange={setShowChart}
-                className="data-[state=checked]:bg-primary"
+                className="data-[state=checked]:bg-[#8DC63F]"
               />
               <Select value={period} onValueChange={setPeriod}>
-                <SelectTrigger className="w-[100px] h-8 text-xs bg-muted/50 border-border">
+                <SelectTrigger className="w-[100px] h-8 text-xs bg-white/10 border-cyan-500/30 text-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -93,9 +93,9 @@ export const TotalTripsCard = ({
           {/* Stats Row with enhanced styling */}
           <div className="grid grid-cols-3 gap-4 mb-4">
             {[
-              { label: 'All trips', value: allTrips, color: 'text-primary' },
-              { label: 'Daily average', value: dailyAverage, color: 'text-secondary' },
-              { label: 'Assets', value: activeAssets, color: 'text-success' },
+              { label: 'All trips', value: allTrips, color: 'text-[#8DC63F]' },
+              { label: 'Daily average', value: dailyAverage, color: 'text-cyan-400' },
+              { label: 'Assets', value: activeAssets, color: 'text-emerald-400' },
             ].map((stat, index) => (
               <motion.div
                 key={stat.label}
@@ -103,7 +103,7 @@ export const TotalTripsCard = ({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 + index * 0.1 }}
               >
-                <p className="text-xs text-muted-foreground font-medium">{stat.label}</p>
+                <p className="text-xs text-white/60 font-medium">{stat.label}</p>
                 <motion.p 
                   className={`text-3xl font-bold ${stat.color}`}
                   initial={{ scale: 0 }}
@@ -131,12 +131,12 @@ export const TotalTripsCard = ({
                     dataKey="hour" 
                     axisLine={false} 
                     tickLine={false}
-                    tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                    tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.6)' }}
                   />
                   <YAxis 
                     axisLine={false} 
                     tickLine={false}
-                    tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                    tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.6)' }}
                     domain={[10, 'auto']}
                   />
                   <Bar dataKey="trips" radius={[6, 6, 0, 0]}>

@@ -21,31 +21,31 @@ const FinancialTrendCard = ({ metrics, loading }: FinancialTrendCardProps) => {
 
   if (loading) {
     return (
-      <Card className="glass-strong col-span-2">
+      <Card className="glass-executive col-span-2">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-success" />
+          <CardTitle className="flex items-center gap-2 text-white">
+            <DollarSign className="w-5 h-5 text-emerald-400" />
             Financial Performance
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px] bg-muted/50 rounded-lg animate-pulse" />
+          <div className="h-[300px] bg-white/10 rounded-lg animate-pulse" />
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="glass-strong col-span-2 overflow-hidden">
+    <Card className="glass-executive col-span-2 overflow-hidden">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-success" />
+          <CardTitle className="flex items-center gap-2 text-white">
+            <DollarSign className="w-5 h-5 text-emerald-400" />
             Financial Performance
           </CardTitle>
           <Badge 
             variant="outline" 
-            className={`gap-1 ${isProfit ? 'text-success border-success/30' : 'text-destructive border-destructive/30'}`}
+            className={`gap-1 ${isProfit ? 'text-emerald-400 border-emerald-400/30 bg-emerald-500/10' : 'text-red-400 border-red-400/30 bg-red-500/10'}`}
           >
             {isProfit ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
             {metrics.profitMargin.toFixed(1)}% Margin

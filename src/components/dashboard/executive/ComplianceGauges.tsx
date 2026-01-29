@@ -35,30 +35,30 @@ const ComplianceGauges = ({ items, loading }: ComplianceGaugesProps) => {
 
   if (loading) {
     return (
-      <Card className="glass-strong">
+      <Card className="glass-executive">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-primary" />
+          <CardTitle className="flex items-center gap-2 text-white">
+            <Shield className="w-5 h-5 text-[#8DC63F]" />
             Compliance Overview
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[350px] bg-muted/50 rounded-lg animate-pulse" />
+          <div className="h-[350px] bg-white/10 rounded-lg animate-pulse" />
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="glass-strong h-full">
+    <Card className="glass-executive h-full">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-primary" />
+          <CardTitle className="flex items-center gap-2 text-white">
+            <Shield className="w-5 h-5 text-[#8DC63F]" />
             Compliance Overview
           </CardTitle>
           {expiredCount > 0 && (
-            <Badge variant="destructive" className="gap-1">
+            <Badge variant="destructive" className="gap-1 bg-red-500/20 text-red-400 border-red-400/40">
               <AlertTriangle className="w-3 h-3" />
               {expiredCount} Critical
             </Badge>
