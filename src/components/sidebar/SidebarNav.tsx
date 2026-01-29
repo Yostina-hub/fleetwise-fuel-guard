@@ -26,6 +26,7 @@ interface SidebarNavProps {
   navItems: NavItem[];
   adminItems: AdminItem[];
   isSuperAdmin: boolean;
+  isDark: boolean;
 }
 
 // Pinned items so they never get scrolled out of view.
@@ -43,7 +44,7 @@ const isQuickPath = (path?: string) => {
   return QUICK_PATHS.has(normalizePath(path));
 };
 
-export function SidebarNav({ navItems, adminItems, isSuperAdmin }: SidebarNavProps) {
+export function SidebarNav({ navItems, adminItems, isSuperAdmin, isDark }: SidebarNavProps) {
   const location = useLocation();
 
   const quickItems = navItems.filter((item) => isQuickPath(item.path));
@@ -61,11 +62,12 @@ export function SidebarNav({ navItems, adminItems, isSuperAdmin }: SidebarNavPro
             path={item.path}
             subItems={item.subItems}
             highlight={item.highlight}
+            isDark={isDark}
           />
         ))}
       </div>
 
-      <div className="border-t border-[#2a3a4d]/50" />
+      <div className={cn("border-t", isDark ? "border-[#2a3a4d]/50" : "border-border")} />
 
       {/* Main (scroll) */}
       <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto custom-scrollbar min-h-0">
@@ -77,13 +79,17 @@ export function SidebarNav({ navItems, adminItems, isSuperAdmin }: SidebarNavPro
             path={item.path}
             subItems={item.subItems}
             highlight={item.highlight}
+            isDark={isDark}
           />
         ))}
 
         {isSuperAdmin && (
           <>
             <div className="pt-3 pb-1.5">
-              <div className="px-3 text-[10px] font-semibold text-white/50 uppercase tracking-wider">
+              <div className={cn(
+                "px-3 text-[10px] font-semibold uppercase tracking-wider",
+                isDark ? "text-white/50" : "text-muted-foreground"
+              )}>
                 Admin
               </div>
             </div>
@@ -94,8 +100,12 @@ export function SidebarNav({ navItems, adminItems, isSuperAdmin }: SidebarNavPro
                 className={cn(
                   "flex items-center gap-2.5 px-3 py-2 rounded-md transition-all duration-200 group text-sm",
                   location.pathname === item.path
-                    ? "bg-primary/20 text-white shadow-sm"
-                    : "text-white/70 hover:bg-[#2a3a4d] hover:text-white"
+                    ? isDark
+                      ? "bg-primary/20 text-white shadow-sm"
+                      : "bg-primary/10 text-foreground shadow-sm"
+                    : isDark
+                      ? "text-white/70 hover:bg-[#2a3a4d] hover:text-white"
+                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 )}
               >
                 <item.icon className="w-4 h-4 shrink-0" />

@@ -19,6 +19,7 @@ interface SidebarMenuItemProps {
   path?: string;
   subItems?: SubItem[];
   highlight?: boolean;
+  isDark?: boolean;
 }
 
 // Helper to check if path matches (handles query params)
@@ -48,6 +49,7 @@ export const SidebarMenuItem = ({
   path,
   subItems,
   highlight,
+  isDark = true,
 }: SidebarMenuItemProps) => {
   const location = useLocation();
   const isActive = path ? isPathActive(location.pathname, location.search, path) : false;
@@ -64,8 +66,12 @@ export const SidebarMenuItem = ({
         className={cn(
           "flex items-center gap-2.5 px-3 py-2 rounded-md transition-all duration-200 group relative text-sm",
           isActive
-            ? "bg-primary/20 text-white shadow-sm"
-            : "text-white/70 hover:bg-[#2a3a4d] hover:text-white"
+            ? isDark 
+              ? "bg-primary/20 text-white shadow-sm"
+              : "bg-primary/10 text-foreground shadow-sm"
+            : isDark
+              ? "text-white/70 hover:bg-[#2a3a4d] hover:text-white"
+              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
         )}
       >
         <Icon className="w-4 h-4 shrink-0" />
@@ -87,8 +93,12 @@ export const SidebarMenuItem = ({
           className={cn(
             "w-full flex items-center gap-2.5 px-3 py-2 rounded-md transition-all duration-200 group text-sm",
             isChildActive
-              ? "bg-primary/20 text-white shadow-sm"
-              : "text-white/70 hover:bg-[#2a3a4d] hover:text-white"
+              ? isDark
+                ? "bg-primary/20 text-white shadow-sm"
+                : "bg-primary/10 text-foreground shadow-sm"
+              : isDark
+                ? "text-white/70 hover:bg-[#2a3a4d] hover:text-white"
+                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
           )}
         >
           <Icon className="w-4 h-4 shrink-0" />
@@ -111,8 +121,12 @@ export const SidebarMenuItem = ({
               className={cn(
                 "flex items-center gap-2 px-3 py-1.5 rounded-md transition-all duration-200 text-sm border-l-2 ml-2",
                 isSubActive
-                  ? "border-primary bg-primary/10 text-white font-medium"
-                  : "border-[#2a3a4d] text-white/60 hover:bg-[#2a3a4d]/50 hover:text-white hover:border-primary/50"
+                  ? isDark
+                    ? "border-primary bg-primary/10 text-white font-medium"
+                    : "border-primary bg-primary/10 text-foreground font-medium"
+                  : isDark
+                    ? "border-[#2a3a4d] text-white/60 hover:bg-[#2a3a4d]/50 hover:text-white hover:border-primary/50"
+                    : "border-border text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground hover:border-primary/50"
               )}
             >
               <span className="truncate">{item.label}</span>
