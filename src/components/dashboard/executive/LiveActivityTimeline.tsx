@@ -54,7 +54,7 @@ const LiveActivityTimeline = ({ activities, geofenceActivities, loading }: LiveA
 
   if (loading) {
     return (
-      <Card className="glass-executive h-full">
+      <Card className="bg-[#1a2332] border-[#2a3a4d] h-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-white">
             <Radio className="w-5 h-5 text-emerald-400 animate-pulse" />
@@ -64,7 +64,7 @@ const LiveActivityTimeline = ({ activities, geofenceActivities, loading }: LiveA
         <CardContent>
           <div className="space-y-3">
             {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="h-16 bg-muted/50 rounded-lg animate-pulse" />
+              <div key={i} className="h-16 bg-white/10 rounded-lg animate-pulse" />
             ))}
           </div>
         </CardContent>
@@ -73,10 +73,10 @@ const LiveActivityTimeline = ({ activities, geofenceActivities, loading }: LiveA
   }
 
   return (
-    <Card className="glass-strong h-full w-full overflow-hidden">
+    <Card className="bg-[#1a2332] border-[#2a3a4d] h-full w-full overflow-hidden">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-white">
             <motion.div
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
@@ -85,7 +85,7 @@ const LiveActivityTimeline = ({ activities, geofenceActivities, loading }: LiveA
             </motion.div>
             Live Activity
           </CardTitle>
-          <Badge variant="outline" className="gap-1.5">
+          <Badge variant="outline" className="gap-1.5 bg-success/20 text-success border-success/50">
             <motion.span 
               className="w-2 h-2 bg-success rounded-full"
               animate={{ opacity: [1, 0.5, 1] }}
@@ -129,21 +129,25 @@ const LiveActivityTimeline = ({ activities, geofenceActivities, loading }: LiveA
                     </div>
 
                     {/* Content */}
-                    <div className={`flex-1 min-w-0 p-3 rounded-lg border ${getSeverityStyles(activity.severity)}`}>
-                      <p className="text-sm leading-relaxed">{activity.message}</p>
+                    <div className={`flex-1 min-w-0 p-3 rounded-lg border ${
+                      activity.severity === 'critical' ? 'border-destructive/50 bg-destructive/10' :
+                      activity.severity === 'warning' ? 'border-warning/50 bg-warning/10' :
+                      'border-primary/20 bg-primary/10'
+                    }`}>
+                      <p className="text-sm leading-relaxed text-white">{activity.message}</p>
                       <div className="flex items-center gap-2 mt-2 flex-wrap">
                         {activity.vehiclePlate && (
-                          <Badge variant="secondary" className="text-xs gap-1">
+                          <Badge variant="secondary" className="text-xs gap-1 bg-[#2a3a4d] text-white border-[#3a4a5d]">
                             <Truck className="w-3 h-3" />
                             {activity.vehiclePlate}
                           </Badge>
                         )}
                         {activity.driverName && (
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-xs text-white/60">
                             {activity.driverName}
                           </span>
                         )}
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground ml-auto">
+                        <span className="flex items-center gap-1 text-xs text-white/60 ml-auto">
                           <Clock className="w-3 h-3" />
                           {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
                         </span>
@@ -155,7 +159,7 @@ const LiveActivityTimeline = ({ activities, geofenceActivities, loading }: LiveA
             </AnimatePresence>
 
             {allActivities.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <div className="flex flex-col items-center justify-center py-12 text-white/60">
                 <Activity className="w-12 h-12 mb-4 opacity-50" />
                 <p className="text-sm">No recent activity</p>
               </div>

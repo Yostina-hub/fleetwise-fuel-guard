@@ -22,10 +22,10 @@ const PerformanceRadar = ({ data, overallScore, loading }: PerformanceRadarProps
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="rounded-2xl bg-gradient-to-br from-card to-card/80 border border-border p-6 h-80"
+        className="rounded-2xl bg-[#1a2332] border border-[#2a3a4d] p-6 h-80"
       >
         <div className="animate-pulse flex items-center justify-center h-full">
-          <div className="w-48 h-48 rounded-full bg-muted/30" />
+          <div className="w-48 h-48 rounded-full bg-white/10" />
         </div>
       </motion.div>
     );
@@ -42,7 +42,7 @@ const PerformanceRadar = ({ data, overallScore, loading }: PerformanceRadarProps
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative rounded-2xl bg-gradient-to-br from-card via-card/95 to-card/90 border border-border overflow-hidden"
+      className="relative rounded-2xl bg-[#1a2332] border border-[#2a3a4d] overflow-hidden"
     >
       {/* Glow effect */}
       <motion.div 
@@ -54,16 +54,16 @@ const PerformanceRadar = ({ data, overallScore, loading }: PerformanceRadarProps
       <div className="relative z-10 p-6">
         <div className="flex items-center justify-between mb-2">
           <div>
-            <h3 className="text-lg font-semibold text-foreground">Performance Analysis</h3>
-            <p className="text-sm text-muted-foreground">Fleet vs Target Metrics</p>
+            <h3 className="text-lg font-semibold text-white">Performance Analysis</h3>
+            <p className="text-sm text-white/60">Fleet vs Target Metrics</p>
           </div>
           <motion.div 
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 border border-primary/30"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/20 border border-primary/40"
             whileHover={{ scale: 1.05 }}
           >
             <Target className="w-5 h-5 text-primary" />
             <div>
-              <p className="text-xs text-muted-foreground">Overall</p>
+              <p className="text-xs text-white/60">Overall</p>
               <p className="text-xl font-bold text-primary">{overallScore}%</p>
             </div>
           </motion.div>
@@ -78,12 +78,12 @@ const PerformanceRadar = ({ data, overallScore, loading }: PerformanceRadarProps
               />
               <PolarAngleAxis 
                 dataKey="subject" 
-                tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 500 }}
+                tick={{ fill: 'rgba(255,255,255,0.8)', fontSize: 11, fontWeight: 500 }}
               />
               <PolarRadiusAxis 
                 angle={30} 
                 domain={[0, 100]} 
-                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }}
               />
               <Radar
                 name="Target"
@@ -109,11 +109,11 @@ const PerformanceRadar = ({ data, overallScore, loading }: PerformanceRadarProps
         <div className="flex items-center justify-center gap-6 mt-2">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-primary" />
-            <span className="text-xs text-foreground/80 font-medium">Current Performance</span>
+            <span className="text-xs text-white/80 font-medium">Current Performance</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-muted border border-border" />
-            <span className="text-xs text-foreground/80 font-medium">Target</span>
+            <div className="w-3 h-3 rounded-full bg-[#2a3a4d] border border-[#3a4a5d]" />
+            <span className="text-xs text-white/80 font-medium">Target</span>
           </div>
         </div>
       </div>
