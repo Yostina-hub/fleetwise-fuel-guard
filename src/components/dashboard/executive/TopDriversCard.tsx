@@ -23,15 +23,15 @@ interface TopDriversCardProps {
 const TopDriversCard = ({ drivers, loading }: TopDriversCardProps) => {
   if (loading) {
     return (
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-2xl bg-card border border-border p-6">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-2xl bg-[#1a2332] border border-[#2a3a4d] p-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-muted rounded w-1/3" />
+          <div className="h-6 bg-muted/20 rounded w-1/3" />
           {[1, 2, 3].map(i => (
             <div key={i} className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-muted" />
+              <div className="w-12 h-12 rounded-full bg-muted/20" />
               <div className="flex-1 space-y-2">
-                <div className="h-4 bg-muted rounded w-1/2" />
-                <div className="h-2 bg-muted rounded" />
+                <div className="h-4 bg-muted/20 rounded w-1/2" />
+                <div className="h-2 bg-muted/20 rounded" />
               </div>
             </div>
           ))}
@@ -60,8 +60,8 @@ const TopDriversCard = ({ drivers, loading }: TopDriversCardProps) => {
   };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative rounded-2xl bg-card border border-border overflow-hidden">
-      <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-primary/5 to-transparent" />
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative rounded-2xl bg-[#1a2332] border border-[#2a3a4d] overflow-hidden">
+      <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-primary/10 to-transparent" />
 
       <div className="relative z-10 p-6">
         <div className="flex items-center justify-between mb-5">
@@ -70,33 +70,33 @@ const TopDriversCard = ({ drivers, loading }: TopDriversCardProps) => {
               <Star className="w-5 h-5 text-warning" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-foreground">Top Drivers</h3>
-              <p className="text-sm text-muted-foreground">By safety performance</p>
+              <h3 className="text-lg font-semibold text-white">Top Drivers</h3>
+              <p className="text-sm text-white/60">By safety performance</p>
             </div>
           </div>
-          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">This Month</Badge>
+          <Badge variant="outline" className="bg-primary/20 text-primary border-primary/40">This Month</Badge>
         </div>
 
         <div className="space-y-4">
           {drivers.slice(0, 5).map((driver, index) => (
-            <motion.div key={driver.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.1 }} className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors group">
-              <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">{getRankIcon(driver.rank)}</div>
-              <Avatar className="h-10 w-10 border-2 border-background shadow-sm">
+            <motion.div key={driver.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.1 }} className="flex items-center gap-3 p-3 rounded-xl bg-[#0d1520] hover:bg-[#0d1520]/80 transition-colors group">
+              <div className="w-8 h-8 rounded-lg bg-[#2a3a4d] flex items-center justify-center">{getRankIcon(driver.rank)}</div>
+              <Avatar className="h-10 w-10 border-2 border-[#2a3a4d] shadow-sm">
                 <AvatarImage src={driver.avatarUrl} alt={driver.name} />
                 <AvatarFallback className="bg-primary/20 text-primary text-sm">{driver.name.split(' ').map(n => n[0]).join('').slice(0, 2)}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
-                  <p className="font-medium text-foreground text-sm truncate">{driver.name}</p>
+                  <p className="font-medium text-white text-sm truncate">{driver.name}</p>
                   <div className="flex items-center gap-1">
                     <span className={`text-lg font-bold ${getScoreColor(driver.safetyScore)}`}>{driver.safetyScore}</span>
                     {driver.trend !== 'stable' && (driver.trend === 'up' ? <TrendingUp className="w-3.5 h-3.5 text-success" /> : <TrendingDown className="w-3.5 h-3.5 text-destructive" />)}
                   </div>
                 </div>
-                <div className="relative h-1.5 bg-muted rounded-full overflow-hidden">
+                <div className="relative h-1.5 bg-[#2a3a4d] rounded-full overflow-hidden">
                   <motion.div className={`absolute inset-y-0 left-0 rounded-full ${getProgressColor(driver.safetyScore)}`} initial={{ width: '0%' }} animate={{ width: `${driver.safetyScore}%` }} transition={{ duration: 1, delay: index * 0.15 }} />
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">{driver.totalTrips} trips • {driver.totalDistance.toLocaleString()} km</p>
+                <p className="text-xs text-white/60 mt-1">{driver.totalTrips} trips • {driver.totalDistance.toLocaleString()} km</p>
               </div>
             </motion.div>
           ))}

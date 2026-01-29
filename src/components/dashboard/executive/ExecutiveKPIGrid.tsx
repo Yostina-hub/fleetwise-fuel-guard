@@ -103,7 +103,7 @@ const ExecutiveKPIGrid = ({ kpis, loading }: ExecutiveKPIGridProps) => {
                     {kpiIcons[kpi.label] || categoryIcons[kpi.category]}
                   </div>
                 </div>
-                <span className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
+                <span className="text-xs uppercase tracking-wider text-white/60 font-medium">
                   {kpi.category}
                 </span>
               </div>
@@ -111,24 +111,24 @@ const ExecutiveKPIGrid = ({ kpis, loading }: ExecutiveKPIGridProps) => {
               {/* Value */}
               <div className="space-y-1">
                 <motion.h3 
-                  className="text-3xl font-bold tracking-tight text-foreground"
+                  className="text-3xl font-bold tracking-tight text-white"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.05 + 0.3 }}
                 >
                   {kpi.value}
                 </motion.h3>
-                <p className="text-sm text-foreground/80 font-medium">{kpi.label}</p>
+                <p className="text-sm text-white/80 font-medium">{kpi.label}</p>
               </div>
 
               {/* Trend & Sparkline */}
-              <div className="flex items-center justify-between pt-2 border-t border-border/50">
+              <div className="flex items-center justify-between pt-2 border-t border-[#2a3a4d]">
                 <div className={`flex items-center gap-1 text-sm ${trendColor}`}>
                   {getTrendIcon(kpi.trend)}
                   <span className="font-medium">
                     {kpi.change >= 0 ? '+' : ''}{kpi.change.toFixed(1)}%
                   </span>
-                  <span className="text-muted-foreground text-xs">{kpi.changeLabel}</span>
+                  <span className="text-white/60 text-xs">{kpi.changeLabel}</span>
                 </div>
                 
                 <div className="opacity-70">

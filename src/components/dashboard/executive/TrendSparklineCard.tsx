@@ -67,10 +67,10 @@ const TrendSparklineCard = ({
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="rounded-2xl bg-gradient-to-br from-card to-card/80 border border-border/50 p-5 h-48"
+        className="rounded-2xl bg-[#1a2332] border border-[#2a3a4d] p-5 h-48"
       >
         <div className="animate-pulse space-y-3">
-          <div className="h-4 bg-muted/30 rounded w-1/2" />
+          <div className="h-4 bg-muted/20 rounded w-1/2" />
           <div className="h-8 bg-muted/20 rounded w-2/3" />
           <div className="h-20 bg-muted/10 rounded" />
         </div>
@@ -83,14 +83,14 @@ const TrendSparklineCard = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -3 }}
-      className="relative rounded-2xl bg-gradient-to-br from-card via-card/95 to-card/90 border border-border/50 overflow-hidden p-5 hover:border-primary/30 transition-colors"
+      className="relative rounded-2xl bg-[#1a2332] border border-[#2a3a4d] overflow-hidden p-5 hover:border-primary/30 transition-colors"
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div>
-          <p className="text-sm text-muted-foreground font-medium">{title}</p>
+          <p className="text-sm text-white/60 font-medium">{title}</p>
           <motion.p 
-            className="text-2xl font-bold text-foreground mt-1"
+            className="text-2xl font-bold text-white mt-1"
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
@@ -142,7 +142,7 @@ const TrendSparklineCard = ({
       </div>
 
       {subtitle && (
-        <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+        <p className="text-xs text-white/60 mt-2 flex items-center gap-1">
           <Calendar className="w-3 h-3" />
           {subtitle}
         </p>
