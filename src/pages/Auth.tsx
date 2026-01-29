@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
+import { ExecutiveTechBackground } from "@/components/dashboard/executive/ExecutiveTechBackground";
 import { 
   Truck, Shield, CheckCircle, ArrowLeft, 
   MapPin, Gauge, BarChart3, Lock, Eye, EyeOff,
@@ -132,8 +133,12 @@ const Auth = () => {
           backgroundPosition: "left top",
         }}
       />
+      {/* Animated particles overlay */}
+      <div className="absolute inset-0 z-[1]">
+        <ExecutiveTechBackground />
+      </div>
       {/* Subtle overlay for better readability */}
-      <div className="absolute inset-0 bg-[#001a33]/30" />
+      <div className="absolute inset-0 bg-[#001a33]/20 z-[2]" />
 
       <div className="relative z-10 min-h-screen grid lg:grid-cols-2">
         {/* Left Side - Branding & Features */}
