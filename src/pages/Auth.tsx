@@ -129,7 +129,7 @@ const Auth = () => {
         className="absolute inset-0 bg-cover bg-no-repeat"
         style={{
           backgroundImage: `url(${ethioTelecomBg})`,
-          backgroundPosition: "left 3px top 3px",
+          backgroundPosition: "left top",
         }}
       />
       {/* Subtle overlay for better readability */}
