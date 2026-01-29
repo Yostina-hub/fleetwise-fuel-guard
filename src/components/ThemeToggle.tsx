@@ -17,7 +17,7 @@ export function ThemeToggle({ className, variant = "default" }: ThemeToggleProps
         onClick={toggleTheme}
         className={cn(
           "flex items-center gap-2.5 w-full px-3 py-2 rounded-md transition-all duration-200 text-sm",
-          "text-white/70 hover:bg-[#2a3a4d] hover:text-white",
+          "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
           className
         )}
       >
@@ -41,7 +41,7 @@ export function ThemeToggle({ className, variant = "default" }: ThemeToggleProps
       variant="ghost"
       size="icon"
       onClick={toggleTheme}
-      className={cn("h-9 w-9", className)}
+      className={cn("h-9 w-9 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent", className)}
     >
       {theme === "dark" ? (
         <Sun className="h-4 w-4" />
