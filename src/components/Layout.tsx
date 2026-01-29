@@ -1,6 +1,5 @@
 import { ReactNode, useEffect, useRef } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { cn } from "@/lib/utils";
+import { useLocation } from "react-router-dom";
 import { 
   LayoutDashboard, 
   Map, 
@@ -27,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationCenter } from "@/components/scheduling/NotificationCenter";
 import { AIAssistant } from "@/components/AIAssistant";
-import { SidebarMenuItem } from "@/components/sidebar/SidebarMenuItem";
+import { SidebarNav } from "@/components/sidebar/SidebarNav";
 import LanguageSelector from "@/components/settings/LanguageSelector";
 
 interface LayoutProps {
@@ -103,7 +102,6 @@ const adminItems = [
 
 const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
-  const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const { isSuperAdmin } = usePermissions();
   const { toast } = useToast();
@@ -153,43 +151,7 @@ const Layout = ({ children }: LayoutProps) => {
           <NotificationCenter />
         </div>
         
-        <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto custom-scrollbar">
-          {navItems.map((item, index) => (
-            <SidebarMenuItem
-              key={item.path || `menu-${index}`}
-              icon={item.icon}
-              label={item.label}
-              path={item.path}
-              subItems={item.subItems}
-              highlight={item.highlight}
-            />
-          ))}
-          
-          {isSuperAdmin && (
-            <>
-              <div className="pt-3 pb-1.5">
-                <div className="px-3 text-[10px] font-semibold text-sidebar-foreground/50 uppercase tracking-wider">
-                  Admin
-                </div>
-              </div>
-              {adminItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={cn(
-                    "flex items-center gap-2.5 px-3 py-2 rounded-md transition-all duration-200 group text-sm",
-                    location.pathname === item.path
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-                  )}
-                >
-                  <item.icon className="w-4 h-4 shrink-0" />
-                  <span className="font-medium">{item.label}</span>
-                </Link>
-              ))}
-            </>
-          )}
-        </nav>
+        <SidebarNav navItems={navItems} adminItems={adminItems} isSuperAdmin={isSuperAdmin} />
 
         {/* Language Selector */}
         <div className="px-3 py-2 border-t border-sidebar-border/50">
