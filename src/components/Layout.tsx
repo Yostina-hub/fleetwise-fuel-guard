@@ -139,11 +139,11 @@ const Layout = ({ children }: LayoutProps) => {
       {/* Sidebar */}
       <aside className="w-60 bg-[#1a2332] border-r border-[#2a3a4d] flex flex-col shrink-0 relative z-10">
         {/* Header with Logo */}
-        <div className="px-3 py-3 bg-[#001a33] flex items-center justify-between">
+        <div className="px-3 py-4 bg-[#001a33] flex items-center justify-between">
           <img 
             src={ethioTelecomLogo} 
             alt="ethio telecom" 
-            className="h-10 w-auto object-contain"
+            className="h-14 w-auto object-contain"
           />
           <NotificationCenter />
         </div>
