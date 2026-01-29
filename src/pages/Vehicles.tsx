@@ -28,6 +28,8 @@ import VehicleDetailModal from "@/components/VehicleDetailModal";
 import ClusteredMap from "@/components/map/ClusteredMap";
 import { VehicleDetailPanel } from "@/components/vehicles/VehicleDetailPanel";
 import { VehicleMapInfoCard } from "@/components/vehicles/VehicleMapInfoCard";
+import { VehicleHoverCard } from "@/components/vehicles/VehicleHoverCard";
+import { TablePagination, usePagination } from "@/components/reports/TablePagination";
 import {
   Search,
   SlidersHorizontal,
@@ -49,6 +51,7 @@ import {
   Eye,
   Navigation,
   MapPinned,
+  X,
 } from "lucide-react";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
@@ -56,6 +59,8 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { cn } from "@/lib/utils";
 import mapboxgl from "mapbox-gl";
 import { formatDistanceToNow } from "date-fns";
+
+const ITEMS_PER_PAGE = 10;
 
 // Status filter badges configuration
 const STATUS_BADGES = [
@@ -158,6 +163,7 @@ const Vehicles = () => {
         heading: vehicleTelemetry?.heading ?? 0,
         lastUpdate: vehicleTelemetry?.last_communication_at,
         deviceConnected: online,
+        ignitionOn: vehicleTelemetry?.ignition_on || vehicleTelemetry?.engine_on,
         isOverspeed: speed > 80, // Configurable threshold
       };
     });
@@ -190,18 +196,29 @@ const Vehicles = () => {
     };
   }, [vehicles]);
   
-  // Filter vehicles
+  // Filter vehicles with smart search
   const filteredVehicles = useMemo(() => {
     let filtered = vehicles;
     
-    // Search filter
+    // Smart search filter - search across multiple fields
     if (debouncedSearch) {
-      const query = debouncedSearch.toLowerCase();
-      filtered = filtered.filter(v => 
-        v.plate.toLowerCase().includes(query) ||
-        v.make.toLowerCase().includes(query) ||
-        v.model.toLowerCase().includes(query)
-      );
+      const query = debouncedSearch.toLowerCase().trim();
+      const searchTerms = query.split(/\s+/); // Split by whitespace for multi-term search
+      
+      filtered = filtered.filter(v => {
+        const searchableText = [
+          v.plate,
+          v.make,
+          v.model,
+          v.status,
+          v.speed.toString(),
+          v.lat?.toString() || '',
+          v.lng?.toString() || '',
+        ].join(' ').toLowerCase();
+        
+        // All search terms must match
+        return searchTerms.every(term => searchableText.includes(term));
+      });
     }
     
     // Status filter
@@ -228,7 +245,18 @@ const Vehicles = () => {
     return filtered;
   }, [vehicles, debouncedSearch, statusFilter]);
   
-  // Map vehicles data - format for ClusteredMap
+  // Pagination
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(
+    filteredVehicles.length,
+    ITEMS_PER_PAGE
+  );
+  
+  // Paginated vehicles for table display
+  const paginatedVehicles = useMemo(() => {
+    return filteredVehicles.slice(startIndex, endIndex);
+  }, [filteredVehicles, startIndex, endIndex]);
+  
+  // Map vehicles data - format for ClusteredMap (use all filtered, not paginated)
   const mapVehicles = useMemo(() => {
     return filteredVehicles
       .filter(v => v.lat && v.lng)
@@ -315,15 +343,30 @@ const Vehicles = () => {
         <div className="p-4 border-b bg-background space-y-3">
           {/* Search Bar and Actions */}
           <div className="flex items-center gap-3">
-            <div className="relative flex-1 max-w-sm">
+            <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Search Vehicle"
+                placeholder="Smart search: plate, make, model, status..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="pl-9"
+                className="pl-9 pr-9"
               />
+              {searchInput && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
+                  onClick={() => setSearchInput("")}
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              )}
             </div>
+            
+            {/* Result Count */}
+            <Badge variant="secondary" className="text-xs px-3 py-1">
+              {filteredVehicles.length} / {vehicles.length} vehicles
+            </Badge>
             <Button variant="outline" size="sm" className="gap-2">
               <SlidersHorizontal className="w-4 h-4" />
               FILTER
@@ -398,90 +441,114 @@ const Vehicles = () => {
                   </TableHeader>
                   <TableBody>
                     {loading ? (
-                      Array.from({ length: 10 }).map((_, i) => (
+                      Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
                         <TableRow key={i}>
                           <TableCell colSpan={7}>
                             <Skeleton className="h-12 w-full" />
                           </TableCell>
                         </TableRow>
                       ))
-                    ) : filteredVehicles.length === 0 ? (
+                    ) : paginatedVehicles.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
-                          No vehicles found
+                          {filteredVehicles.length === 0 && searchInput 
+                            ? `No vehicles match "${searchInput}"`
+                            : "No vehicles found"
+                          }
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredVehicles.map((vehicle, index) => (
-                        <TableRow
-                          key={vehicle.id}
-                          className={cn(
-                            "cursor-pointer transition-colors",
-                            selectedVehicleId === vehicle.id 
-                              ? "bg-primary/10" 
-                              : index % 2 === 0 
-                                ? "bg-background" 
-                                : "bg-muted/30",
-                            "hover:bg-primary/5"
-                          )}
-                          onClick={() => handleVehicleRowClick(vehicle)}
-                          onDoubleClick={() => handleVehicleClick(vehicle)}
-                        >
-                          <TableCell className="font-medium">{index + 1}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center justify-center">
-                              {getVehicleIcon(vehicle.make, vehicle.status)}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {vehicle.make}
-                            {vehicle.model && <span className="block text-xs text-muted-foreground">{vehicle.model}</span>}
-                          </TableCell>
-                          <TableCell className="font-mono font-medium">{vehicle.plate}</TableCell>
-                          <TableCell>
-                            <Badge 
-                              variant="outline" 
+                      paginatedVehicles.map((vehicle, index) => (
+                        <HoverCard key={vehicle.id} openDelay={300} closeDelay={100}>
+                          <HoverCardTrigger asChild>
+                            <TableRow
                               className={cn(
-                                "text-xs capitalize",
-                                vehicle.status === 'moving' && "border-green-500 text-green-600 bg-green-50",
-                                vehicle.status === 'idle' && "border-yellow-500 text-yellow-600 bg-yellow-50",
-                                vehicle.status === 'stopped' && "border-red-500 text-red-600 bg-red-50",
-                                vehicle.status === 'offline' && "border-muted text-muted-foreground"
+                                "cursor-pointer transition-colors",
+                                selectedVehicleId === vehicle.id 
+                                  ? "bg-primary/10" 
+                                  : index % 2 === 0 
+                                    ? "bg-background" 
+                                    : "bg-muted/30",
+                                "hover:bg-primary/5"
                               )}
+                              onClick={() => handleVehicleRowClick(vehicle)}
+                              onDoubleClick={() => handleVehicleClick(vehicle)}
                             >
-                              {vehicle.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-sm max-w-[200px]">
-                            <p className="truncate text-muted-foreground">
-                              {vehicle.lat && vehicle.lng 
-                                ? `${vehicle.lat.toFixed(4)}, ${vehicle.lng.toFixed(4)}`
-                                : "No location"}
-                            </p>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              {vehicle.isOverspeed && (
-                                <AlertTriangle className="w-4 h-4 text-destructive" />
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleVehicleClick(vehicle);
-                                }}
-                              >
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                              <TableCell className="font-medium">
+                                {startIndex + index + 1}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center justify-center">
+                                  {getVehicleIcon(vehicle.make, vehicle.status)}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-sm">
+                                {vehicle.make}
+                                {vehicle.model && <span className="block text-xs text-muted-foreground">{vehicle.model}</span>}
+                              </TableCell>
+                              <TableCell className="font-mono font-medium">{vehicle.plate}</TableCell>
+                              <TableCell>
+                                <Badge 
+                                  variant="outline" 
+                                  className={cn(
+                                    "text-xs capitalize",
+                                    vehicle.status === 'moving' && "border-success text-success bg-success/10",
+                                    vehicle.status === 'idle' && "border-warning text-warning bg-warning/10",
+                                    vehicle.status === 'stopped' && "border-destructive text-destructive bg-destructive/10",
+                                    vehicle.status === 'offline' && "border-muted text-muted-foreground"
+                                  )}
+                                >
+                                  {vehicle.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-sm max-w-[200px]">
+                                <p className="truncate text-muted-foreground">
+                                  {vehicle.lat && vehicle.lng 
+                                    ? `${vehicle.lat.toFixed(4)}, ${vehicle.lng.toFixed(4)}`
+                                    : "No location"}
+                                </p>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1">
+                                  {vehicle.isOverspeed && (
+                                    <AlertTriangle className="w-4 h-4 text-destructive" />
+                                  )}
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleVehicleClick(vehicle);
+                                    }}
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          </HoverCardTrigger>
+                          <HoverCardContent 
+                            side="right" 
+                            align="start" 
+                            className="w-auto p-3"
+                            sideOffset={8}
+                          >
+                            <VehicleHoverCard vehicle={vehicle} />
+                          </HoverCardContent>
+                        </HoverCard>
                       ))
                     )}
                   </TableBody>
                 </Table>
+                
+                {/* Pagination */}
+                <TablePagination
+                  currentPage={currentPage}
+                  totalItems={filteredVehicles.length}
+                  itemsPerPage={ITEMS_PER_PAGE}
+                  onPageChange={setCurrentPage}
+                />
               </ScrollArea>
             )}
           </div>
