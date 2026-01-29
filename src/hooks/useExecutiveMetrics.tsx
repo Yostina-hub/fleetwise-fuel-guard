@@ -190,6 +190,10 @@ export const useExecutiveMetrics = (): ExecutiveMetricsResult => {
       supabase.channel(`exec-alerts-${organizationId.slice(0, 8)}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'alerts', filter: `organization_id=eq.${organizationId}` }, refetchDebounced)
         .subscribe(),
+      // Driver events (violations/misuse) updates
+      supabase.channel(`exec-driver-events-${organizationId.slice(0, 8)}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_events', filter: `organization_id=eq.${organizationId}` }, refetchDebounced)
+        .subscribe(),
       // Geofence events
       supabase.channel(`exec-geofence-${organizationId.slice(0, 8)}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'geofence_events', filter: `organization_id=eq.${organizationId}` }, refetchDebounced)
