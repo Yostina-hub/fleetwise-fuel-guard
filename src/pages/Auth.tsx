@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
 import { ExecutiveTechBackground } from "@/components/dashboard/executive/ExecutiveTechBackground";
+import { TechBackground } from "@/components/auth/TechBackground";
+import { useTheme } from "@/contexts/ThemeContext";
 import { 
   Truck, Shield, CheckCircle, ArrowLeft, 
   MapPin, Gauge, BarChart3, Lock, Eye, EyeOff,
@@ -20,6 +22,7 @@ import ethioTelecomBg from "@/assets/ethio-telecom-bg.png";
 const Auth = () => {
   const navigate = useNavigate();
   const { signIn, signUp, user } = useAuth();
+  const { theme } = useTheme();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -125,20 +128,30 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Ethio Telecom Background */}
-      <div
-        className="absolute inset-0 bg-cover bg-no-repeat"
-        style={{
-          backgroundImage: `url(${ethioTelecomBg})`,
-          backgroundPosition: "left top",
-        }}
-      />
-      {/* Animated particles overlay */}
-      <div className="absolute inset-0 z-[1]">
-        <ExecutiveTechBackground />
-      </div>
-      {/* Subtle overlay for better readability */}
-      <div className="absolute inset-0 bg-[#001a33]/20 z-[2]" />
+      {/* Theme-based backgrounds */}
+      {theme === 'dark' ? (
+        <>
+          {/* Dark theme: Ethio Telecom Background */}
+          <div
+            className="absolute inset-0 bg-cover bg-no-repeat"
+            style={{
+              backgroundImage: `url(${ethioTelecomBg})`,
+              backgroundPosition: "left top",
+            }}
+          />
+          {/* Animated particles overlay */}
+          <div className="absolute inset-0 z-[1]">
+            <ExecutiveTechBackground />
+          </div>
+          {/* Subtle overlay for better readability */}
+          <div className="absolute inset-0 bg-[#001a33]/20 z-[2]" />
+        </>
+      ) : (
+        <>
+          {/* Light theme: TechBackground with animated particles */}
+          <TechBackground />
+        </>
+      )}
 
       <div className="relative z-10 min-h-screen grid lg:grid-cols-2">
         {/* Left Side - Branding & Features */}
