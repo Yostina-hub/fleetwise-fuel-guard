@@ -15,6 +15,8 @@ import {
   MapPin, Gauge, BarChart3, Lock, Eye, EyeOff,
   Zap, Globe, Wifi, Server
 } from "lucide-react";
+import ethioTelecomLogo from "@/assets/ethio-telecom-logo.png";
+import telebirrLogo from "@/assets/telebirr-logo.png";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -127,7 +129,28 @@ const Auth = () => {
       {/* Tech Background with dark blue theme */}
       <TechBackground />
 
-      <div className="relative z-10 min-h-screen grid lg:grid-cols-2">
+      {/* Top Header with Logos */}
+      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 py-4">
+        {/* Ethio Telecom Logo - Top Left */}
+        <div className="flex items-center">
+          <img 
+            src={ethioTelecomLogo} 
+            alt="ethio telecom" 
+            className="h-12 md:h-14 object-contain"
+          />
+        </div>
+        
+        {/* Telebirr Logo - Top Right */}
+        <div className="flex items-center">
+          <img 
+            src={telebirrLogo} 
+            alt="telebirr" 
+            className="h-10 md:h-12 object-contain"
+          />
+        </div>
+      </div>
+
+      <div className="relative z-10 min-h-screen grid lg:grid-cols-2 pt-20">
         {/* Left Side - Branding & Features */}
         <div className="hidden lg:flex flex-col justify-between p-12">
           <div>
