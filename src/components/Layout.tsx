@@ -138,9 +138,9 @@ const Layout = ({ children }: LayoutProps) => {
       <div className="parallax-bg"></div>
       
       {/* Sidebar */}
-      <aside className="w-60 bg-[#1a2332] border-r border-[#2a3a4d] flex flex-col shrink-0 relative z-10">
+      <aside className="w-60 bg-sidebar border-r border-sidebar-border flex flex-col shrink-0 relative z-10">
         {/* Header with Logo */}
-        <div className="px-3 py-4 bg-[#001a33] flex items-center justify-between">
+        <div className="px-3 py-4 bg-sidebar-accent flex items-center justify-between">
           <img 
             src={ethioTelecomLogo} 
             alt="ethio telecom" 
@@ -155,16 +155,16 @@ const Layout = ({ children }: LayoutProps) => {
         <SidebarNav navItems={navItems} adminItems={adminItems} isSuperAdmin={isSuperAdmin} />
 
         {/* Language Selector */}
-        <div className="px-3 py-2 border-t border-[#2a3a4d]/50">
-          <LanguageSelector variant="compact" className="w-full text-white/70" />
+        <div className="px-3 py-2 border-t border-sidebar-border/50">
+          <LanguageSelector variant="compact" className="w-full text-sidebar-foreground/70" />
         </div>
 
 
         {/* Keyboard shortcut hint */}
         <div className="px-3 py-2">
-          <div className="flex items-center justify-center gap-2 text-[11px] text-white/50">
+          <div className="flex items-center justify-center gap-2 text-[11px] text-sidebar-foreground/50">
             <span>Press</span>
-            <kbd className="px-1.5 py-0.5 bg-[#2a3a4d]/50 rounded text-[10px] font-mono border border-[#2a3a4d]">
+            <kbd className="px-1.5 py-0.5 bg-sidebar-accent/50 rounded text-[10px] font-mono border border-sidebar-border">
               ⌘K
             </kbd>
             <span>for commands</span>
@@ -172,21 +172,21 @@ const Layout = ({ children }: LayoutProps) => {
         </div>
 
         {/* Compact Footer */}
-        <div className="px-2 py-2 border-t border-[#2a3a4d] bg-[#1a2332]">
-          <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-[#0d1520]">
+        <div className="px-2 py-2 border-t border-sidebar-border bg-sidebar">
+          <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-sidebar-accent">
             <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
               <span className="text-xs font-semibold text-primary">
                 {user?.email?.charAt(0).toUpperCase() || 'U'}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-white truncate">{user?.email}</p>
-              <p className="text-[10px] text-white/50">v1.0.0</p>
+              <p className="text-xs font-medium text-sidebar-foreground truncate">{user?.email}</p>
+              <p className="text-[10px] text-sidebar-foreground/50">v1.0.0</p>
             </div>
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 shrink-0 text-white/60 hover:text-white hover:bg-destructive/10"
+              className="h-7 w-7 shrink-0 text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-destructive/10"
               onClick={handleSignOut}
             >
               <LogOut className="w-3.5 h-3.5" />
