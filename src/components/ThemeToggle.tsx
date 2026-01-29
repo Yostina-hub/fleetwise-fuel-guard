@@ -41,7 +41,7 @@ export function ThemeToggle({ className, variant = "default" }: ThemeToggleProps
       variant="ghost"
       size="icon"
       onClick={toggleTheme}
-      className={cn("h-9 w-9", className)}
+      className={cn("h-9 w-9 text-white/70 hover:text-white hover:bg-white/10", className)}
     >
       {theme === "dark" ? (
         <Sun className="h-4 w-4" />
