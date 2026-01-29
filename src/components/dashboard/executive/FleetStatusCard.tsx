@@ -21,10 +21,10 @@ const FleetStatusCard = ({ totalAssets, statuses, loading }: FleetStatusCardProp
 
   if (loading) {
     return (
-      <div className="bg-card border border-border rounded-lg p-4 h-72">
+      <div className="border border-cyan-500/20 backdrop-blur-sm rounded-lg p-4 h-72" style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}>
         <div className="animate-pulse space-y-4">
-          <div className="h-4 bg-muted rounded w-1/3" />
-          <div className="h-48 bg-muted rounded" />
+          <div className="h-4 bg-white/10 rounded w-1/3" />
+          <div className="h-48 bg-white/10 rounded" />
         </div>
       </div>
     );
@@ -49,19 +49,20 @@ const FleetStatusCard = ({ totalAssets, statuses, loading }: FleetStatusCardProp
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      whileHover={{ scale: 1.01, borderColor: "hsl(var(--primary) / 0.4)" }}
-      className="bg-card border border-border rounded-lg p-4 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300"
+      whileHover={{ scale: 1.01, borderColor: "rgba(0, 180, 255, 0.4)" }}
+      className="border border-cyan-500/20 backdrop-blur-sm rounded-lg p-4 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-300"
+      style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}
     >
       <div className="flex items-center gap-3 mb-4">
-        <h3 className="font-bold text-lg text-foreground tracking-tight">Fleet Status</h3>
-        <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30 font-medium">
+        <h3 className="font-bold text-lg text-white tracking-tight">Fleet Status</h3>
+        <Badge variant="outline" className="text-xs bg-[#8DC63F]/20 text-[#8DC63F] border-[#8DC63F]/40 font-medium">
           <motion.span
             animate={{ opacity: [1, 0.6, 1] }}
             transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
             className="inline-flex items-center gap-1.5"
           >
             <motion.span 
-              className="w-2 h-2 rounded-full bg-primary"
+              className="w-2 h-2 rounded-full bg-[#8DC63F]"
               animate={{ scale: [1, 1.4, 1], opacity: [1, 0.7, 1] }}
               transition={{ duration: 1.5, repeat: Infinity }}
             />
@@ -82,17 +83,17 @@ const FleetStatusCard = ({ totalAssets, statuses, loading }: FleetStatusCardProp
             </PieChart>
           </ResponsiveContainer>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <motion.span className="text-2xl font-bold text-foreground" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }} key={totalAssets}>
+            <motion.span className="text-2xl font-bold text-white" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }} key={totalAssets}>
               {animatedTotal}
             </motion.span>
-            <span className="text-[10px] text-muted-foreground font-medium">Vehicles</span>
+            <span className="text-[10px] text-white/60 font-medium">Vehicles</span>
           </div>
         </div>
 
         <div className="flex-1 min-w-0">
           <table className="w-full text-xs">
             <thead>
-              <tr className="text-muted-foreground">
+              <tr className="text-white/60">
                 <th className="text-left py-1 font-semibold">Status</th>
                 <th className="text-center py-1 font-semibold">Count</th>
                 <th className="text-right py-1 font-semibold">Fleet %</th>
@@ -100,7 +101,7 @@ const FleetStatusCard = ({ totalAssets, statuses, loading }: FleetStatusCardProp
             </thead>
             <tbody>
               {statuses.map((item, i) => (
-                <motion.tr key={item.status} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="border-t border-border">
+                <motion.tr key={item.status} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="border-t border-cyan-500/20">
                   <td className="py-2">
                     <Badge variant="outline" className="text-[10px] px-2 py-0.5 font-normal" style={{ borderColor: statusColors[item.status] || item.color, color: statusColors[item.status] || item.color, backgroundColor: `${statusColors[item.status] || item.color}15` }}>
                       <span className="inline-flex items-center gap-1">
@@ -109,7 +110,7 @@ const FleetStatusCard = ({ totalAssets, statuses, loading }: FleetStatusCardProp
                       </span>
                     </Badge>
                   </td>
-                  <td className="text-center py-2 text-foreground font-medium">{item.count}</td>
+                  <td className="text-center py-2 text-white font-medium">{item.count}</td>
                   <td className="text-right py-2" style={{ color: statusColors[item.status] || item.color }}>{item.percentage.toFixed(1)}%</td>
                 </motion.tr>
               ))}

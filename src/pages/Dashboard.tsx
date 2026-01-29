@@ -97,7 +97,7 @@ import TripActivityHeatmap from "@/components/dashboard/executive/TripActivityHe
 import FleetViolationsDonut from "@/components/dashboard/executive/FleetViolationsDonut";
 import VehicleMisuseDonut from "@/components/dashboard/executive/VehicleMisuseDonut";
 import TotalTripsCard from "@/components/dashboard/executive/TotalTripsCard";
-import { TechBackground } from "@/components/auth/TechBackground";
+import { ExecutiveTechBackground } from "@/components/dashboard/executive/ExecutiveTechBackground";
 import { Car, Gauge, Zap, Shield, Power, Wrench, Moon } from "lucide-react";
 
 const Dashboard = () => {
@@ -248,26 +248,26 @@ const Dashboard = () => {
       <div className="relative min-h-screen">
         {/* Tech Background for Executive Dashboard */}
         {activeTab === 'executive' && (
-          <div className="absolute inset-0 z-0">
-            <TechBackground />
+          <div className="absolute inset-0 z-0 overflow-hidden">
+            <ExecutiveTechBackground />
           </div>
         )}
         
-        <div className={`relative z-10 p-8 space-y-6 animate-fade-in ${activeTab === 'executive' ? '' : ''}`}>
+        <div className={`relative z-10 p-8 space-y-6 animate-fade-in`}>
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            <h1 className={`text-3xl font-bold ${activeTab === 'executive' ? 'text-white' : 'bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent'}`}>
               Fleet Dashboard
             </h1>
-            <p className="text-muted-foreground mt-1">Real-time overview of your fleet operations</p>
+            <p className={`mt-1 ${activeTab === 'executive' ? 'text-white/70' : 'text-muted-foreground'}`}>Real-time overview of your fleet operations</p>
           </div>
           <div className="flex items-center gap-3">
             <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
             <DashboardSearch />
             <Button 
               variant="outline" 
-              className="gap-2" 
+              className={`gap-2 ${activeTab === 'executive' ? 'border-cyan-500/30 bg-white/10 text-white hover:bg-white/20' : ''}`}
               onClick={handleRefresh}
               disabled={refreshing}
               aria-label="Refresh dashboard data"
@@ -280,8 +280,8 @@ const Dashboard = () => {
 
         {/* Tabs for different views */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full max-w-lg grid-cols-3">
-            <TabsTrigger value="executive" className="gap-2">
+          <TabsList className={`grid w-full max-w-lg grid-cols-3 ${activeTab === 'executive' ? 'bg-white/10 border border-cyan-500/20' : ''}`}>
+            <TabsTrigger value="executive" className={`gap-2 ${activeTab === 'executive' ? 'data-[state=active]:bg-[#8DC63F] data-[state=active]:text-white' : ''}`}>
               <Crown className="w-4 h-4" />
               Executive
             </TabsTrigger>

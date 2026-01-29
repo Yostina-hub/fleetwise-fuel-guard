@@ -47,15 +47,15 @@ const DriverPerformanceCard = ({ rankings, loading }: DriverPerformanceCardProps
 
   if (loading) {
     return (
-      <Card className="glass-strong">
+      <Card className="glass-executive">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-white">
             <Trophy className="w-5 h-5 text-yellow-500" />
             Driver Performance
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[400px] bg-muted/50 rounded-lg animate-pulse" />
+          <div className="h-[400px] bg-white/10 rounded-lg animate-pulse" />
         </CardContent>
       </Card>
     );
