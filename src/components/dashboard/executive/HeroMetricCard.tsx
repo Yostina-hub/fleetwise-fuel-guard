@@ -88,12 +88,12 @@ const HeroMetricCard = ({
       whileHover={{ y: -5, scale: 1.02 }}
       className={`
         relative overflow-hidden rounded-2xl 
-        bg-gradient-to-br ${colors.bg}
-        backdrop-blur-sm border ${colors.border}
+        bg-[#1a2332] border border-[#2a3a4d]
+        backdrop-blur-sm
         transition-all duration-300
         shadow-lg ${colors.glow}
         group cursor-default
-        bg-card
+        hover:border-primary/40 hover:shadow-primary/10
       `}
     >
       {/* Animated ring */}
@@ -143,16 +143,16 @@ const HeroMetricCard = ({
 
         <div className="space-y-1">
           <motion.div 
-            className="text-4xl font-bold text-foreground tracking-tight"
+            className="text-4xl font-bold text-white tracking-tight"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: delay + 0.2 }}
           >
             {prefix}{formattedValue}{suffix}
           </motion.div>
-          <p className="text-sm font-medium text-foreground/80">{title}</p>
+          <p className="text-sm font-medium text-white/80">{title}</p>
           {subtitle && (
-            <p className="text-xs text-muted-foreground">{subtitle}</p>
+            <p className="text-xs text-white/60">{subtitle}</p>
           )}
         </div>
 

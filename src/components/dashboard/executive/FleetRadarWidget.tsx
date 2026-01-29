@@ -24,9 +24,9 @@ const FleetRadarWidget = ({ statuses, totalVehicles, loading }: FleetRadarWidget
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="relative h-80 rounded-2xl bg-gradient-to-br from-card to-card/80 border border-border/50 flex items-center justify-center"
+        className="relative h-80 rounded-2xl bg-[#1a2332] border border-[#2a3a4d] flex items-center justify-center"
       >
-        <div className="animate-pulse w-48 h-48 rounded-full bg-muted/30" />
+        <div className="animate-pulse w-48 h-48 rounded-full bg-muted/20" />
       </motion.div>
     );
   }
@@ -42,7 +42,7 @@ const FleetRadarWidget = ({ statuses, totalVehicles, loading }: FleetRadarWidget
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.6 }}
-      className="relative rounded-2xl bg-gradient-to-br from-card via-card/95 to-card/90 border border-border/50 overflow-hidden"
+      className="relative rounded-2xl bg-[#1a2332] border border-[#2a3a4d] overflow-hidden"
     >
       {/* Radar circles background */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -71,8 +71,8 @@ const FleetRadarWidget = ({ statuses, totalVehicles, loading }: FleetRadarWidget
       <div className="relative z-10 p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-lg font-semibold text-foreground">Fleet Status Radar</h3>
-            <p className="text-sm text-muted-foreground">Real-time vehicle distribution</p>
+            <h3 className="text-lg font-semibold text-white">Fleet Status Radar</h3>
+            <p className="text-sm text-white/60">Real-time vehicle distribution</p>
           </div>
           <motion.div 
             className="px-3 py-1 rounded-full bg-primary/20 text-primary text-sm font-medium"
@@ -108,14 +108,14 @@ const FleetRadarWidget = ({ statuses, totalVehicles, loading }: FleetRadarWidget
             {/* Center display */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <motion.span 
-                className="text-3xl font-bold text-foreground"
+                className="text-3xl font-bold text-white"
                 key={totalVehicles}
                 initial={{ scale: 1.2 }}
                 animate={{ scale: 1 }}
               >
                 {animatedTotal}
               </motion.span>
-              <span className="text-xs text-muted-foreground">Total Fleet</span>
+              <span className="text-xs text-white/60">Total Fleet</span>
             </div>
           </div>
 
@@ -127,7 +127,7 @@ const FleetRadarWidget = ({ statuses, totalVehicles, loading }: FleetRadarWidget
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="flex items-center justify-between p-2 rounded-lg bg-background/50 hover:bg-background/80 transition-colors"
+                className="flex items-center justify-between p-2 rounded-lg bg-[#0d1520] hover:bg-[#0d1520]/80 transition-colors"
               >
                 <div className="flex items-center gap-2">
                   <div 
@@ -136,10 +136,10 @@ const FleetRadarWidget = ({ statuses, totalVehicles, loading }: FleetRadarWidget
                   >
                     <div style={{ color: status.color }}>{status.icon}</div>
                   </div>
-                  <span className="text-sm font-medium text-foreground">{status.status}</span>
+                  <span className="text-sm font-medium text-white">{status.status}</span>
                 </div>
                 <motion.span 
-                  className="text-lg font-bold text-foreground"
+                  className="text-lg font-bold text-white"
                   key={status.count}
                   initial={{ scale: 1.3 }}
                   animate={{ scale: 1 }}

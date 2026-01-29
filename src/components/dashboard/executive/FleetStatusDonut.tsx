@@ -28,24 +28,24 @@ const FleetStatusDonut = ({ vehicles, loading }: FleetStatusDonutProps) => {
 
   if (loading) {
     return (
-      <Card className="glass-strong">
+      <Card className="bg-[#1a2332] border-[#2a3a4d]">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-white">
             <Truck className="w-5 h-5 text-primary" />
             Fleet Status
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[240px] bg-muted/50 rounded-lg animate-pulse" />
+          <div className="h-[240px] bg-muted/20 rounded-lg animate-pulse" />
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="glass-strong">
+    <Card className="bg-[#1a2332] border-[#2a3a4d]">
       <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-white">
           <Truck className="w-5 h-5 text-primary" />
           Fleet Status
         </CardTitle>
@@ -93,8 +93,8 @@ const FleetStatusDonut = ({ vehicles, loading }: FleetStatusDonutProps) => {
               transition={{ delay: 0.5, duration: 0.5 }}
               className="text-center"
             >
-              <span className="text-3xl font-bold">{vehicles.length}</span>
-              <p className="text-xs text-muted-foreground">Total Fleet</p>
+              <span className="text-3xl font-bold text-white">{vehicles.length}</span>
+              <p className="text-xs text-white/60">Total Fleet</p>
             </motion.div>
           </div>
         </div>
@@ -108,17 +108,17 @@ const FleetStatusDonut = ({ vehicles, loading }: FleetStatusDonutProps) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.8 + index * 0.1 }}
               className="text-center p-2 rounded-lg"
-              style={{ backgroundColor: `${item.color}10` }}
+              style={{ backgroundColor: `${item.color}15` }}
             >
               <div className="flex items-center justify-center gap-1 mb-1">
                 <div 
                   className="w-2 h-2 rounded-full"
                   style={{ backgroundColor: item.color }}
                 />
-                <span className="text-xs text-muted-foreground">{item.name}</span>
+                <span className="text-xs text-white/60">{item.name}</span>
               </div>
-              <span className="text-lg font-bold">{item.value}</span>
-              <span className="text-xs text-muted-foreground ml-1">
+              <span className="text-lg font-bold text-white">{item.value}</span>
+              <span className="text-xs text-white/60 ml-1">
                 ({item.percentage.toFixed(0)}%)
               </span>
             </motion.div>
@@ -130,10 +130,10 @@ const FleetStatusDonut = ({ vehicles, loading }: FleetStatusDonutProps) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.2 }}
-          className="flex items-center justify-center gap-2 mt-4 pt-4 border-t"
+          className="flex items-center justify-center gap-2 mt-4 pt-4 border-t border-[#2a3a4d]"
         >
           <Activity className={`w-4 h-4 ${activePercentage >= 70 ? 'text-success' : activePercentage >= 50 ? 'text-warning' : 'text-destructive'}`} />
-          <span className="text-sm">
+          <span className="text-sm text-white/80">
             Fleet is {activePercentage >= 70 ? 'operating optimally' : activePercentage >= 50 ? 'moderately active' : 'underutilized'}
           </span>
         </motion.div>
