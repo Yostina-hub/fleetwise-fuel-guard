@@ -151,7 +151,7 @@ const Layout = ({ children }: LayoutProps) => {
       )}>
         {/* Header with Logo */}
         <div className={cn(
-          "px-3 py-4 flex items-center justify-between",
+          "px-3 py-4 flex items-center",
           isDark ? "bg-[#001a33]" : "bg-muted"
         )}>
           <img 
@@ -159,7 +159,6 @@ const Layout = ({ children }: LayoutProps) => {
             alt="ethio telecom" 
             className="h-14 w-auto object-contain"
           />
-          <NotificationCenter />
         </div>
         
         <SidebarNav navItems={navItems} adminItems={adminItems} isSuperAdmin={isSuperAdmin} isDark={isDark} />
@@ -227,9 +226,10 @@ const Layout = ({ children }: LayoutProps) => {
       <main className="flex-1 bg-background relative z-10 overflow-hidden flex flex-col">
         {/* Content Header with Theme Toggle */}
         <div className={cn(
-          "flex items-center justify-end px-6 py-2 border-b shrink-0",
+          "flex items-center justify-end gap-2 px-6 py-2 border-b shrink-0",
           isDark ? "bg-[#1a2332]/50 border-[#2a3a4d]" : "bg-card/80 border-border"
         )}>
+          <NotificationCenter />
           <ThemeToggle />
         </div>
         <div ref={scrollRef} className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar">
