@@ -18,13 +18,15 @@ const AlertsQuickActions = ({
   onBulkAcknowledge,
 }: AlertsQuickActionsProps) => {
   return (
-    <Card className="glass-strong">
+    <Card 
+      className="border border-cyan-500/20"
+      style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}
+    >
       <CardContent className="p-4">
         <div className="flex flex-wrap gap-3 items-center">
           {selectedCount > 0 && onBulkAcknowledge && (
             <Button
-              variant="default"
-              className="gap-2 bg-success hover:bg-success/90"
+              className="gap-2 bg-gradient-to-r from-[#8DC63F] to-[#6ba32d] hover:from-[#7ab534] hover:to-[#5a9226] text-white border-0"
               onClick={onBulkAcknowledge}
               aria-label={`Acknowledge ${selectedCount} selected alerts`}
             >
@@ -34,7 +36,7 @@ const AlertsQuickActions = ({
           )}
           <Button
             variant="outline"
-            className="gap-2 border-primary/50 hover:bg-primary/10"
+            className="gap-2 bg-white/5 border-cyan-500/50 text-cyan-300 hover:bg-cyan-500/10 hover:text-cyan-200"
             onClick={onAcknowledgeAll}
             aria-label="Acknowledge all pending alerts"
           >
@@ -43,7 +45,7 @@ const AlertsQuickActions = ({
           </Button>
           <Button
             variant="outline"
-            className="gap-2 border-success/50 hover:bg-success/10"
+            className="gap-2 bg-white/5 border-[#8DC63F]/50 text-[#8DC63F] hover:bg-[#8DC63F]/10"
             onClick={onExport}
             aria-label="Export alerts to CSV"
           >
@@ -52,7 +54,7 @@ const AlertsQuickActions = ({
           </Button>
           <Button
             variant="outline"
-            className="gap-2 border-warning/50 hover:bg-warning/10"
+            className="gap-2 bg-white/5 border-amber-400/50 text-amber-400 hover:bg-amber-400/10"
             onClick={onConfigureRules}
             aria-label="Configure alert rules"
           >

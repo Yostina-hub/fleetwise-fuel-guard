@@ -38,18 +38,21 @@ const DriverScoringInsightsCard = ({
   ];
 
   return (
-    <Card className="glass-strong">
+    <Card 
+      className="border border-cyan-500/20"
+      style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}
+    >
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Lightbulb className="h-5 w-5 text-yellow-500" aria-hidden="true" />
+        <CardTitle className="flex items-center gap-2 text-lg text-white">
+          <Lightbulb className="h-5 w-5 text-amber-400" aria-hidden="true" />
           Driver Scoring Insights
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {insights.map((insight, index) => (
-          <div key={index} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
-            <insight.icon className={`h-4 w-4 ${insight.color}`} aria-hidden="true" />
-            <span className="text-sm">{insight.text}</span>
+          <div key={index} className="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/10">
+            <insight.icon className={`h-4 w-4 ${insight.color === "text-green-500" ? "text-[#8DC63F]" : insight.color === "text-orange-500" ? "text-amber-400" : insight.color}`} aria-hidden="true" />
+            <span className="text-sm text-white/80">{insight.text}</span>
           </div>
         ))}
       </CardContent>
