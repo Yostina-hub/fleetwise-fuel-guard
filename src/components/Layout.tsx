@@ -192,6 +192,11 @@ const Layout = ({ children }: LayoutProps) => {
           
           <div className="h-5 w-px bg-border" />
           
+          <NotificationCenter />
+          <ThemeToggle />
+          
+          <div className="h-5 w-px bg-border" />
+          
           <div className="flex items-center gap-2">
             <div className={cn(
               "flex items-center gap-2 px-2 py-1 rounded-md",
@@ -219,11 +224,6 @@ const Layout = ({ children }: LayoutProps) => {
               <LogOut className="w-4 h-4" />
             </Button>
           </div>
-          
-          <div className="h-5 w-px bg-border" />
-          
-          <NotificationCenter />
-          <ThemeToggle />
         </div>
         <div ref={scrollRef} className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar">
           <div className="min-h-full min-w-full">
