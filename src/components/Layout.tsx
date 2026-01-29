@@ -28,6 +28,7 @@ import { NotificationCenter } from "@/components/scheduling/NotificationCenter";
 import { AIAssistant } from "@/components/AIAssistant";
 import { SidebarNav } from "@/components/sidebar/SidebarNav";
 import LanguageSelector from "@/components/settings/LanguageSelector";
+import ethioTelecomLogo from "@/assets/ethio-telecom-logo.png";
 
 interface LayoutProps {
   children: ReactNode;
@@ -137,17 +138,13 @@ const Layout = ({ children }: LayoutProps) => {
       
       {/* Sidebar */}
       <aside className="w-60 bg-[#1a2332] border-r border-[#2a3a4d] flex flex-col shrink-0 relative z-10">
-        {/* Compact Header */}
-        <div className="px-4 py-3 bg-primary flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary-foreground/20 flex items-center justify-center">
-              <Truck className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-sm font-bold text-primary-foreground tracking-tight">FleetTrack</h1>
-              <p className="text-[10px] text-primary-foreground/80">FMS</p>
-            </div>
-          </div>
+        {/* Header with Logo */}
+        <div className="px-3 py-3 bg-[#001a33] flex items-center justify-between">
+          <img 
+            src={ethioTelecomLogo} 
+            alt="ethio telecom" 
+            className="h-10 w-auto object-contain"
+          />
           <NotificationCenter />
         </div>
         
