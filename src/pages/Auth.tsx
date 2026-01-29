@@ -125,9 +125,13 @@ const Auth = () => {
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Ethio Telecom Background */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${ethioTelecomBg})` }}
+      <div
+        className="absolute inset-0 bg-cover bg-no-repeat"
+        style={{
+          backgroundImage: `url(${ethioTelecomBg})`,
+          // Avoid cropping the logo at the top-left edge when using bg-cover
+          backgroundPosition: "left 32px top 32px",
+        }}
       />
       {/* Subtle overlay for better readability */}
       <div className="absolute inset-0 bg-[#001a33]/30" />
