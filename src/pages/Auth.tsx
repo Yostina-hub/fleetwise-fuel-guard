@@ -15,8 +15,8 @@ import {
   MapPin, Gauge, BarChart3, Lock, Eye, EyeOff,
   Zap, Globe, Wifi, Server
 } from "lucide-react";
-import EthioTelecomLogo from "@/components/logos/EthioTelecomLogo";
-import TelebirrLogo from "@/components/logos/TelebirrLogo";
+import ethioTelecomLogo from "@/assets/ethio-telecom-logo.png";
+import telebirrLogo from "@/assets/telebirr-logo.png";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -133,12 +133,20 @@ const Auth = () => {
       <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 py-4">
         {/* Ethio Telecom Logo - Top Left */}
         <div className="flex items-center">
-          <EthioTelecomLogo className="h-14 md:h-16 w-auto" />
+          <img 
+            src={ethioTelecomLogo} 
+            alt="ethio telecom" 
+            className="h-12 md:h-14 object-contain"
+          />
         </div>
         
         {/* Telebirr Logo - Top Right */}
         <div className="flex items-center">
-          <TelebirrLogo className="h-12 md:h-14 w-auto" />
+          <img 
+            src={telebirrLogo} 
+            alt="telebirr" 
+            className="h-10 md:h-12 object-contain"
+          />
         </div>
       </div>
 
