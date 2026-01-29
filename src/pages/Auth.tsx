@@ -9,12 +9,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
-import { TechBackground } from "@/components/auth/TechBackground";
 import { 
   Truck, Shield, CheckCircle, ArrowLeft, 
   MapPin, Gauge, BarChart3, Lock, Eye, EyeOff,
   Zap, Globe, Wifi, Server
 } from "lucide-react";
+import ethioTelecomBg from "@/assets/ethio-telecom-bg.png";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -124,9 +124,13 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Tech Background with dark blue theme */}
-      <TechBackground />
-
+      {/* Ethio Telecom Background */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${ethioTelecomBg})` }}
+      />
+      {/* Subtle overlay for better readability */}
+      <div className="absolute inset-0 bg-[#001a33]/30" />
 
       <div className="relative z-10 min-h-screen grid lg:grid-cols-2">
         {/* Left Side - Branding & Features */}
