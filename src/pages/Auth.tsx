@@ -135,9 +135,9 @@ const Auth = () => {
       <div className="relative z-10 min-h-screen grid lg:grid-cols-2">
         {/* Left Side - Branding & Features */}
         <div className="hidden lg:flex flex-col justify-between p-12">
-          <div>
+          <div className="mt-16">
             {/* Logo */}
-            <div className="flex items-center gap-4 mb-12 animate-fade-in">
+            <div className="flex items-center gap-4 mb-12 animate-fade-in mt-8">
               <div className="relative">
                 <div className="absolute inset-0 bg-[#8DC63F]/40 rounded-2xl blur-xl animate-pulse" />
                 <div className="relative p-4 bg-gradient-to-br from-[#8DC63F] to-[#6ba32d] rounded-2xl shadow-lg shadow-[#8DC63F]/30">
