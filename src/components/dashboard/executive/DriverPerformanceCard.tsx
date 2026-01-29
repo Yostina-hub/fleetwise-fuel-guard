@@ -47,7 +47,7 @@ const DriverPerformanceCard = ({ rankings, loading }: DriverPerformanceCardProps
 
   if (loading) {
     return (
-      <Card className="glass-executive">
+      <Card className="bg-[#1a2332] border-[#2a3a4d]">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-white">
             <Trophy className="w-5 h-5 text-yellow-500" />
@@ -62,14 +62,14 @@ const DriverPerformanceCard = ({ rankings, loading }: DriverPerformanceCardProps
   }
 
   return (
-    <Card className="glass-strong h-full">
+    <Card className="bg-[#1a2332] border-[#2a3a4d] h-full">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-white">
             <Trophy className="w-5 h-5 text-yellow-500" />
             Driver Performance
           </CardTitle>
-          <Badge variant="outline" className="gap-1">
+          <Badge variant="outline" className="gap-1 bg-orange-500/20 text-orange-400 border-orange-500/50">
             <Flame className="w-3 h-3 text-orange-500" />
             Top 10
           </Badge>
@@ -95,10 +95,10 @@ const DriverPerformanceCard = ({ rankings, loading }: DriverPerformanceCardProps
               </Avatar>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <h4 className="font-semibold">{topDriver.name}</h4>
-                  <Badge variant="secondary" className="text-xs">MVP</Badge>
+                  <h4 className="font-semibold text-white">{topDriver.name}</h4>
+                  <Badge variant="secondary" className="text-xs bg-yellow-500/20 text-yellow-400 border-yellow-500/50">MVP</Badge>
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-white/60">
                   {topDriver.tripsCompleted} trips · {formatDistance(topDriver.totalDistance)}
                 </p>
               </div>
@@ -114,10 +114,10 @@ const DriverPerformanceCard = ({ rankings, loading }: DriverPerformanceCardProps
         )}
 
         {/* Fleet Average */}
-        <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-          <span className="text-sm text-muted-foreground">Fleet Average Score</span>
+        <div className="flex items-center justify-between p-3 rounded-lg bg-[#0d1520]">
+          <span className="text-sm text-white/60">Fleet Average Score</span>
           <div className="flex items-center gap-2">
-            <div className="h-2 w-24 rounded-full bg-muted overflow-hidden">
+            <div className="h-2 w-24 rounded-full bg-[#2a3a4d] overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${avgScore}%` }}
@@ -126,7 +126,7 @@ const DriverPerformanceCard = ({ rankings, loading }: DriverPerformanceCardProps
                 style={{ backgroundColor: getScoreColor(avgScore) }}
               />
             </div>
-            <span className="font-bold">{avgScore.toFixed(0)}</span>
+            <span className="font-bold text-white">{avgScore.toFixed(0)}</span>
           </div>
         </div>
 
@@ -139,8 +139,8 @@ const DriverPerformanceCard = ({ rankings, loading }: DriverPerformanceCardProps
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className={`flex items-center gap-3 p-3 rounded-lg transition-all hover:bg-muted/50 ${
-                  driver.rank <= 3 ? 'bg-gradient-to-r from-primary/5 to-transparent' : ''
+                className={`flex items-center gap-3 p-3 rounded-lg transition-all hover:bg-[#0d1520] ${
+                  driver.rank <= 3 ? 'bg-gradient-to-r from-primary/10 to-transparent' : ''
                 }`}
               >
                 <div className="w-8 flex justify-center">
@@ -149,17 +149,17 @@ const DriverPerformanceCard = ({ rankings, loading }: DriverPerformanceCardProps
                 
                 <Avatar className="h-9 w-9">
                   <AvatarImage src={driver.avatar} alt={driver.name} />
-                  <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                  <AvatarFallback className="bg-primary/20 text-primary text-xs">
                     {driver.name.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
                 </Avatar>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm truncate">{driver.name}</span>
+                    <span className="font-medium text-sm truncate text-white">{driver.name}</span>
                     {getTrendIcon(driver.trend)}
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2 text-xs text-white/60">
                     <span className="flex items-center gap-1">
                       <Route className="w-3 h-3" />
                       {driver.tripsCompleted}
