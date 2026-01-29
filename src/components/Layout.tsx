@@ -142,18 +142,10 @@ const Layout = ({ children }: LayoutProps) => {
       {/* Animated Background */}
       <div className="parallax-bg"></div>
       
-      {/* Sidebar */}
-      <aside className={cn(
-        "w-60 border-r flex flex-col shrink-0 relative z-10",
-        isDark 
-          ? "bg-[#1a2332] border-[#2a3a4d]" 
-          : "bg-card border-border"
-      )}>
+      {/* Sidebar - Always Dark */}
+      <aside className="w-60 bg-[#1a2332] border-r border-[#2a3a4d] flex flex-col shrink-0 relative z-10">
         {/* Header with Logo */}
-        <div className={cn(
-          "px-3 py-4 flex items-center",
-          isDark ? "bg-[#001a33]" : "bg-muted"
-        )}>
+        <div className="px-3 py-4 bg-[#001a33] flex items-center">
           <img 
             src={ethioTelecomLogo} 
             alt="ethio telecom" 
@@ -161,19 +153,13 @@ const Layout = ({ children }: LayoutProps) => {
           />
         </div>
         
-        <SidebarNav navItems={navItems} adminItems={adminItems} isSuperAdmin={isSuperAdmin} isDark={isDark} />
+        <SidebarNav navItems={navItems} adminItems={adminItems} isSuperAdmin={isSuperAdmin} isDark={true} />
 
         {/* Keyboard shortcut hint */}
         <div className="px-3 py-2 mt-auto">
-          <div className={cn(
-            "flex items-center justify-center gap-2 text-[11px]",
-            isDark ? "text-white/50" : "text-muted-foreground"
-          )}>
+          <div className="flex items-center justify-center gap-2 text-[11px] text-white/50">
             <span>Press</span>
-            <kbd className={cn(
-              "px-1.5 py-0.5 rounded text-[10px] font-mono border",
-              isDark ? "bg-[#2a3a4d]/50 border-[#2a3a4d]" : "bg-muted border-border"
-            )}>
+            <kbd className="px-1.5 py-0.5 bg-[#2a3a4d]/50 rounded text-[10px] font-mono border border-[#2a3a4d]">
               ⌘K
             </kbd>
             <span>for commands</span>
@@ -183,41 +169,32 @@ const Layout = ({ children }: LayoutProps) => {
 
       {/* Main Content - Scrollable container for all pages */}
       <main className="flex-1 bg-background relative z-10 overflow-hidden flex flex-col">
-        {/* Content Header with Theme Toggle */}
-        <div className={cn(
-          "flex items-center justify-end gap-3 px-6 py-2 border-b shrink-0",
-          isDark ? "bg-[#1a2332]/50 border-[#2a3a4d]" : "bg-card/80 border-border"
-        )}>
-          <LanguageSelector variant="compact" className="text-sm" />
+        {/* Content Header - Always Dark */}
+        <div className="flex items-center justify-end gap-3 px-6 py-2 border-b shrink-0 bg-[#1a2332] border-[#2a3a4d]">
+          <LanguageSelector variant="compact" className="text-sm text-white/70" />
           
-          <div className="h-5 w-px bg-border" />
+          <div className="h-5 w-px bg-[#2a3a4d]" />
           
           <NotificationCenter />
           <ThemeToggle />
           
-          <div className="h-5 w-px bg-border" />
+          <div className="h-5 w-px bg-[#2a3a4d]" />
           
           <div className="flex items-center gap-2">
-            <div className={cn(
-              "flex items-center gap-2 px-2 py-1 rounded-md",
-              isDark ? "bg-[#0d1520]" : "bg-muted"
-            )}>
+            <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-[#0d1520]">
               <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
                 <span className="text-xs font-semibold text-primary">
                   {user?.email?.charAt(0).toUpperCase() || 'U'}
                 </span>
               </div>
-              <span className={cn("text-xs font-medium max-w-[120px] truncate", isDark ? "text-white" : "text-foreground")}>
+              <span className="text-xs font-medium max-w-[120px] truncate text-white">
                 {user?.email}
               </span>
             </div>
             <Button
               variant="ghost"
               size="icon"
-              className={cn(
-                "h-8 w-8 shrink-0 hover:bg-destructive/10",
-                isDark ? "text-white/60 hover:text-white" : "text-muted-foreground hover:text-destructive"
-              )}
+              className="h-8 w-8 shrink-0 text-white/60 hover:text-white hover:bg-destructive/10"
               onClick={handleSignOut}
               title="Sign out"
             >
