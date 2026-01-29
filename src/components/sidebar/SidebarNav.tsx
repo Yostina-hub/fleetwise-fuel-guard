@@ -29,13 +29,25 @@ interface SidebarNavProps {
 }
 
 // Pinned items so they never get scrolled out of view.
+// IMPORTANT: normalize paths (strip query + trailing slash) so aliases like "/vehicles/" don't break pinning.
 const QUICK_PATHS = new Set(["/", "/map", "/vehicles"]);
+
+const normalizePath = (path: string) => {
+  const base = path.split("?")[0] ?? path;
+  if (base.length > 1 && base.endsWith("/")) return base.slice(0, -1);
+  return base;
+};
+
+const isQuickPath = (path?: string) => {
+  if (!path) return false;
+  return QUICK_PATHS.has(normalizePath(path));
+};
 
 export function SidebarNav({ navItems, adminItems, isSuperAdmin }: SidebarNavProps) {
   const location = useLocation();
 
-  const quickItems = navItems.filter((item) => item.path && QUICK_PATHS.has(item.path));
-  const restItems = navItems.filter((item) => !(item.path && QUICK_PATHS.has(item.path)));
+  const quickItems = navItems.filter((item) => isQuickPath(item.path));
+  const restItems = navItems.filter((item) => !isQuickPath(item.path));
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
