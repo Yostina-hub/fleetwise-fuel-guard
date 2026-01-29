@@ -163,17 +163,8 @@ const Layout = ({ children }: LayoutProps) => {
         
         <SidebarNav navItems={navItems} adminItems={adminItems} isSuperAdmin={isSuperAdmin} isDark={isDark} />
 
-        {/* Language Selector */}
-        <div className={cn(
-          "px-3 py-2 border-t",
-          isDark ? "border-[#2a3a4d]/50" : "border-border"
-        )}>
-          <LanguageSelector variant="compact" className={cn("w-full", isDark ? "text-white/70" : "text-foreground")} />
-        </div>
-
-
         {/* Keyboard shortcut hint */}
-        <div className="px-3 py-2">
+        <div className="px-3 py-2 mt-auto">
           <div className={cn(
             "flex items-center justify-center gap-2 text-[11px]",
             isDark ? "text-white/50" : "text-muted-foreground"
@@ -188,47 +179,49 @@ const Layout = ({ children }: LayoutProps) => {
             <span>for commands</span>
           </div>
         </div>
-
-        {/* Compact Footer */}
-        <div className={cn(
-          "px-2 py-2 border-t",
-          isDark ? "border-[#2a3a4d] bg-[#1a2332]" : "border-border bg-card"
-        )}>
-          <div className={cn(
-            "flex items-center gap-2 px-2 py-1.5 rounded-md",
-            isDark ? "bg-[#0d1520]" : "bg-muted"
-          )}>
-            <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-              <span className="text-xs font-semibold text-primary">
-                {user?.email?.charAt(0).toUpperCase() || 'U'}
-              </span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className={cn("text-xs font-medium truncate", isDark ? "text-white" : "text-foreground")}>{user?.email}</p>
-              <p className={cn("text-[10px]", isDark ? "text-white/50" : "text-muted-foreground")}>v1.0.0</p>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "h-7 w-7 shrink-0 hover:bg-destructive/10",
-                isDark ? "text-white/60 hover:text-white" : "text-muted-foreground hover:text-destructive"
-              )}
-              onClick={handleSignOut}
-            >
-              <LogOut className="w-3.5 h-3.5" />
-            </Button>
-          </div>
-        </div>
       </aside>
 
       {/* Main Content - Scrollable container for all pages */}
       <main className="flex-1 bg-background relative z-10 overflow-hidden flex flex-col">
         {/* Content Header with Theme Toggle */}
         <div className={cn(
-          "flex items-center justify-end gap-2 px-6 py-2 border-b shrink-0",
+          "flex items-center justify-end gap-3 px-6 py-2 border-b shrink-0",
           isDark ? "bg-[#1a2332]/50 border-[#2a3a4d]" : "bg-card/80 border-border"
         )}>
+          <LanguageSelector variant="compact" className="text-sm" />
+          
+          <div className="h-5 w-px bg-border" />
+          
+          <div className="flex items-center gap-2">
+            <div className={cn(
+              "flex items-center gap-2 px-2 py-1 rounded-md",
+              isDark ? "bg-[#0d1520]" : "bg-muted"
+            )}>
+              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                <span className="text-xs font-semibold text-primary">
+                  {user?.email?.charAt(0).toUpperCase() || 'U'}
+                </span>
+              </div>
+              <span className={cn("text-xs font-medium max-w-[120px] truncate", isDark ? "text-white" : "text-foreground")}>
+                {user?.email}
+              </span>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "h-8 w-8 shrink-0 hover:bg-destructive/10",
+                isDark ? "text-white/60 hover:text-white" : "text-muted-foreground hover:text-destructive"
+              )}
+              onClick={handleSignOut}
+              title="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
+            </Button>
+          </div>
+          
+          <div className="h-5 w-px bg-border" />
+          
           <NotificationCenter />
           <ThemeToggle />
         </div>
