@@ -220,12 +220,34 @@ export const TechBackground = memo(function TechBackground() {
         ref={canvasRef}
         className="fixed inset-0 pointer-events-none z-0"
       />
-      {/* Green accent corners */}
-      <div className="fixed top-0 right-0 w-32 h-32 z-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-16 -right-16 w-64 h-64 bg-gradient-to-bl from-[#8DC63F] via-[#6ba32d] to-transparent rounded-full opacity-80" />
+      {/* Top-right green corner edge - large curved accent like in reference */}
+      <div className="fixed top-0 right-0 z-0 pointer-events-none">
+        <svg 
+          width="180" 
+          height="200" 
+          viewBox="0 0 180 200" 
+          className="block"
+        >
+          <path 
+            d="M180 0 L180 180 Q180 140, 140 100 Q80 40, 0 0 L180 0 Z"
+            fill="#8DC63F"
+          />
+        </svg>
       </div>
-      <div className="fixed bottom-0 left-0 w-48 h-16 z-0 overflow-hidden pointer-events-none">
-        <div className="absolute -bottom-8 -left-8 w-64 h-24 bg-gradient-to-tr from-[#8DC63F] via-[#6ba32d] to-transparent rounded-full opacity-70" />
+      
+      {/* Bottom-left green corner edge - large curved accent like in reference */}
+      <div className="fixed bottom-0 left-0 z-0 pointer-events-none">
+        <svg 
+          width="180" 
+          height="80" 
+          viewBox="0 0 180 80" 
+          className="block"
+        >
+          <path 
+            d="M0 80 L0 0 Q40 0, 100 30 Q160 60, 180 80 L0 80 Z"
+            fill="#8DC63F"
+          />
+        </svg>
       </div>
     </>
   );

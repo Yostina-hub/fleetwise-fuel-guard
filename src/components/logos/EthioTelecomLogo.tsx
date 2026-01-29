@@ -1,58 +1,58 @@
 const EthioTelecomLogo = ({ className = "h-12" }: { className?: string }) => {
   return (
     <svg 
-      viewBox="0 0 280 80" 
+      viewBox="0 0 260 70" 
       className={className}
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Wave/Swirl Icon */}
-      <g transform="translate(0, 5)">
-        {/* Outer blue arc */}
+      {/* Wave/Swirl Icon - Blue circular shape with inner curve */}
+      <g transform="translate(5, 8)">
+        {/* Outer blue C-shape */}
         <path 
-          d="M35 10 C55 10, 65 25, 65 40 C65 55, 55 70, 35 70 C20 70, 8 58, 5 45"
+          d="M28 5 C45 5, 55 18, 55 32 C55 46, 45 58, 28 58 C14 58, 4 48, 2 35"
           fill="none"
           stroke="#0072BC"
-          strokeWidth="8"
+          strokeWidth="7"
           strokeLinecap="round"
         />
-        {/* Inner green swirl */}
+        {/* Inner green/teal swirl shape */}
         <path 
-          d="M25 25 C40 20, 50 30, 48 42 C46 52, 35 55, 25 50 C18 46, 20 35, 28 32"
-          fill="#8DC63F"
+          d="M22 20 C35 16, 42 26, 40 36 C38 44, 30 48, 22 44 C16 40, 16 30, 24 26"
+          fill="#00A99D"
         />
-        <ellipse cx="32" cy="38" rx="8" ry="10" fill="#8DC63F" />
+        <ellipse cx="28" cy="32" rx="7" ry="9" fill="#00A99D" />
       </g>
       
-      {/* "ethio telecom" text - WHITE for dark backgrounds */}
+      {/* "ethio telecom" text - WHITE */}
       <text 
-        x="80" 
-        y="38" 
+        x="70" 
+        y="32" 
         fontFamily="Arial, sans-serif" 
-        fontSize="24" 
+        fontSize="22" 
         fontWeight="bold"
         fill="white"
       >
         ethio telecom
       </text>
       
-      {/* Amharic text */}
+      {/* Amharic text - Orange/Yellow color like in reference */}
       <text 
-        x="80" 
-        y="58" 
+        x="70" 
+        y="50" 
         fontFamily="'Noto Sans Ethiopic', Arial, sans-serif" 
-        fontSize="14"
-        fill="rgba(255,255,255,0.7)"
+        fontSize="12"
+        fill="#F7941D"
       >
         ኢትዮ ቴሌኮም
       </text>
       
       {/* TM symbol */}
       <text 
-        x="248" 
-        y="30" 
+        x="232" 
+        y="26" 
         fontFamily="Arial, sans-serif" 
-        fontSize="10"
-        fill="rgba(255,255,255,0.6)"
+        fontSize="8"
+        fill="rgba(255,255,255,0.7)"
       >
         ™
       </text>
