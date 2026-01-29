@@ -296,11 +296,7 @@ const Dashboard = () => {
           </TabsList>
 
           {/* Executive Tab */}
-          {/*
-            Use a local dark theme scope so all semantic tokens (bg-card, text-foreground,
-            text-muted-foreground, borders, etc.) become high-contrast for the Executive view.
-          */}
-          <TabsContent value="executive" className="dark text-foreground space-y-6 mt-6">
+          <TabsContent value="executive" className="text-foreground space-y-6 mt-6">
             {/* Violations, Misuse & Trips Row - First Order */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <FleetViolationsDonut 

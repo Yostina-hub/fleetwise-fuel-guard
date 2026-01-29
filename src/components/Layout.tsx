@@ -28,6 +28,7 @@ import { NotificationCenter } from "@/components/scheduling/NotificationCenter";
 import { AIAssistant } from "@/components/AIAssistant";
 import { SidebarNav } from "@/components/sidebar/SidebarNav";
 import LanguageSelector from "@/components/settings/LanguageSelector";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import ethioTelecomLogo from "@/assets/ethio-telecom-logo.png";
 
 interface LayoutProps {
@@ -153,6 +154,11 @@ const Layout = ({ children }: LayoutProps) => {
         {/* Language Selector */}
         <div className="px-3 py-2 border-t border-[#2a3a4d]/50">
           <LanguageSelector variant="compact" className="w-full text-white/70" />
+        </div>
+
+        {/* Theme Toggle */}
+        <div className="px-2 py-1">
+          <ThemeToggle variant="sidebar" />
         </div>
 
         {/* Keyboard shortcut hint */}

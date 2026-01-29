@@ -87,13 +87,14 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 356 7% 13%;
+    /* Executive Dashboard Dark Theme - #1a2332 base */
+    --background: 213 33% 15%;
     --foreground: 0 0% 95%;
 
-    --card: 356 7% 18%;
+    --card: 213 33% 15%;
     --card-foreground: 0 0% 95%;
 
-    --popover: 356 7% 18%;
+    --popover: 213 33% 18%;
     --popover-foreground: 0 0% 95%;
 
     --primary: 84 54% 56%;
@@ -102,7 +103,7 @@ All colors MUST be HSL.
     --secondary: 202 100% 37%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 356 7% 25%;
+    --muted: 213 33% 20%;
     --muted-foreground: 0 0% 70%;
 
     --accent: 84 54% 56%;
@@ -117,23 +118,23 @@ All colors MUST be HSL.
     --warning: 38 92% 55%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 356 7% 30%;
-    --input: 356 7% 30%;
+    --border: 213 33% 25%;
+    --input: 213 33% 25%;
     --ring: 84 54% 56%;
 
-    --header-background: 356 7% 18%;
+    --header-background: 213 50% 10%;
     --header-foreground: 0 0% 95%;
     
-    --footer-background: 356 7% 20%;
+    --footer-background: 213 33% 12%;
     --footer-foreground: 0 0% 95%;
 
-    --sidebar-background: 356 7% 15%;
+    --sidebar-background: 213 33% 15%;
     --sidebar-foreground: 0 0% 90%;
     --sidebar-primary: 84 54% 56%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 356 7% 22%;
+    --sidebar-accent: 213 33% 20%;
     --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 356 7% 22%;
+    --sidebar-border: 213 33% 22%;
     --sidebar-ring: 84 54% 56%;
 
     --chart-1: 84 54% 56%;
@@ -147,7 +148,7 @@ All colors MUST be HSL.
     --gradient-secondary: linear-gradient(135deg, hsl(202 100% 37%) 0%, hsl(202 100% 47%) 100%);
     --gradient-success: linear-gradient(135deg, hsl(145 65% 50%) 0%, hsl(145 75% 60%) 100%);
     --gradient-warning: linear-gradient(135deg, hsl(38 92% 55%) 0%, hsl(45 100% 65%) 100%);
-    --gradient-glass: linear-gradient(135deg, hsla(356 7% 18% / 0.8) 0%, hsla(356 7% 18% / 0.4) 100%);
+    --gradient-glass: linear-gradient(135deg, hsla(213 33% 18% / 0.8) 0%, hsla(213 33% 18% / 0.4) 100%);
     
     --shadow-glow: 0 0 40px hsla(84 54% 56% / 0.3);
     --shadow-glow-strong: 0 0 60px hsla(84 54% 56% / 0.5);
