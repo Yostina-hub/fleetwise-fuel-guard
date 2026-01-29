@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationCenter } from "@/components/scheduling/NotificationCenter";
@@ -29,6 +30,7 @@ import { AIAssistant } from "@/components/AIAssistant";
 import { SidebarNav } from "@/components/sidebar/SidebarNav";
 import LanguageSelector from "@/components/settings/LanguageSelector";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { cn } from "@/lib/utils";
 import ethioTelecomLogo from "@/assets/ethio-telecom-logo.png";
 
 interface LayoutProps {
@@ -106,8 +108,11 @@ const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
   const { signOut, user } = useAuth();
   const { isSuperAdmin } = usePermissions();
+  const { theme } = useTheme();
   const { toast } = useToast();
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  
+  const isDark = theme === "dark";
 
   const handleSignOut = async () => {
     const { error } = await signOut();
@@ -138,33 +143,47 @@ const Layout = ({ children }: LayoutProps) => {
       <div className="parallax-bg"></div>
       
       {/* Sidebar */}
-      <aside className="w-60 bg-[#1a2332] border-r border-[#2a3a4d] flex flex-col shrink-0 relative z-10">
+      <aside className={cn(
+        "w-60 border-r flex flex-col shrink-0 relative z-10",
+        isDark 
+          ? "bg-[#1a2332] border-[#2a3a4d]" 
+          : "bg-card border-border"
+      )}>
         {/* Header with Logo */}
-        <div className="px-3 py-4 bg-[#001a33] flex items-center justify-between">
+        <div className={cn(
+          "px-3 py-4 flex items-center justify-between",
+          isDark ? "bg-[#001a33]" : "bg-muted"
+        )}>
           <img 
             src={ethioTelecomLogo} 
             alt="ethio telecom" 
             className="h-14 w-auto object-contain"
           />
-          <div className="flex items-center gap-1">
-            <ThemeToggle />
-            <NotificationCenter />
-          </div>
+          <NotificationCenter />
         </div>
         
-        <SidebarNav navItems={navItems} adminItems={adminItems} isSuperAdmin={isSuperAdmin} />
+        <SidebarNav navItems={navItems} adminItems={adminItems} isSuperAdmin={isSuperAdmin} isDark={isDark} />
 
         {/* Language Selector */}
-        <div className="px-3 py-2 border-t border-[#2a3a4d]/50">
-          <LanguageSelector variant="compact" className="w-full text-white/70" />
+        <div className={cn(
+          "px-3 py-2 border-t",
+          isDark ? "border-[#2a3a4d]/50" : "border-border"
+        )}>
+          <LanguageSelector variant="compact" className={cn("w-full", isDark ? "text-white/70" : "text-foreground")} />
         </div>
 
 
         {/* Keyboard shortcut hint */}
         <div className="px-3 py-2">
-          <div className="flex items-center justify-center gap-2 text-[11px] text-white/50">
+          <div className={cn(
+            "flex items-center justify-center gap-2 text-[11px]",
+            isDark ? "text-white/50" : "text-muted-foreground"
+          )}>
             <span>Press</span>
-            <kbd className="px-1.5 py-0.5 bg-[#2a3a4d]/50 rounded text-[10px] font-mono border border-[#2a3a4d]">
+            <kbd className={cn(
+              "px-1.5 py-0.5 rounded text-[10px] font-mono border",
+              isDark ? "bg-[#2a3a4d]/50 border-[#2a3a4d]" : "bg-muted border-border"
+            )}>
               ⌘K
             </kbd>
             <span>for commands</span>
@@ -172,21 +191,30 @@ const Layout = ({ children }: LayoutProps) => {
         </div>
 
         {/* Compact Footer */}
-        <div className="px-2 py-2 border-t border-[#2a3a4d] bg-[#1a2332]">
-          <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-[#0d1520]">
+        <div className={cn(
+          "px-2 py-2 border-t",
+          isDark ? "border-[#2a3a4d] bg-[#1a2332]" : "border-border bg-card"
+        )}>
+          <div className={cn(
+            "flex items-center gap-2 px-2 py-1.5 rounded-md",
+            isDark ? "bg-[#0d1520]" : "bg-muted"
+          )}>
             <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
               <span className="text-xs font-semibold text-primary">
                 {user?.email?.charAt(0).toUpperCase() || 'U'}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-white truncate">{user?.email}</p>
-              <p className="text-[10px] text-white/50">v1.0.0</p>
+              <p className={cn("text-xs font-medium truncate", isDark ? "text-white" : "text-foreground")}>{user?.email}</p>
+              <p className={cn("text-[10px]", isDark ? "text-white/50" : "text-muted-foreground")}>v1.0.0</p>
             </div>
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 shrink-0 text-white/60 hover:text-white hover:bg-destructive/10"
+              className={cn(
+                "h-7 w-7 shrink-0 hover:bg-destructive/10",
+                isDark ? "text-white/60 hover:text-white" : "text-muted-foreground hover:text-destructive"
+              )}
               onClick={handleSignOut}
             >
               <LogOut className="w-3.5 h-3.5" />
@@ -196,8 +224,15 @@ const Layout = ({ children }: LayoutProps) => {
       </aside>
 
       {/* Main Content - Scrollable container for all pages */}
-      <main className="flex-1 bg-background relative z-10 overflow-hidden">
-        <div ref={scrollRef} className="h-full overflow-x-auto overflow-y-auto custom-scrollbar">
+      <main className="flex-1 bg-background relative z-10 overflow-hidden flex flex-col">
+        {/* Content Header with Theme Toggle */}
+        <div className={cn(
+          "flex items-center justify-end px-6 py-2 border-b shrink-0",
+          isDark ? "bg-[#1a2332]/50 border-[#2a3a4d]" : "bg-card/80 border-border"
+        )}>
+          <ThemeToggle />
+        </div>
+        <div ref={scrollRef} className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar">
           <div className="min-h-full min-w-full">
             {children}
           </div>
