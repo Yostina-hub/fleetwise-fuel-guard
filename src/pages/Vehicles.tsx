@@ -27,6 +27,7 @@ import {
 import VehicleDetailModal from "@/components/VehicleDetailModal";
 import ClusteredMap from "@/components/map/ClusteredMap";
 import { VehicleDetailPanel } from "@/components/vehicles/VehicleDetailPanel";
+import { VehicleMapInfoCard } from "@/components/vehicles/VehicleMapInfoCard";
 import {
   Search,
   SlidersHorizontal,
@@ -569,6 +570,20 @@ const Vehicles = () => {
                 <MapPinned className="w-4 h-4" />
                 Redirect to Map
               </Button>
+            )}
+
+            {/* Map Side Info Card */}
+            {selectedVehicleData && (
+              <VehicleMapInfoCard
+                plate={selectedVehicleData.plate}
+                speed={selectedVehicleData.speed}
+                ignitionOn={selectedVehicleData.ignitionOn}
+                acOn={selectedVehicleData.acOn}
+                fuel={selectedVehicleData.fuel}
+                lastUpdate={selectedVehicleData.lastUpdate}
+                onToday={() => navigate(`/route-history?vehicle=${selectedVehicleId}&date=today`)}
+                onAddPOI={() => navigate(`/geofences?add=true&lat=${selectedVehicleData.lat}&lng=${selectedVehicleData.lng}`)}
+              />
             )}
           </div>
         </div>
