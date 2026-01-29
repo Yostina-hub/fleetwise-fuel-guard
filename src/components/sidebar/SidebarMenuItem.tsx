@@ -64,8 +64,8 @@ export const SidebarMenuItem = ({
         className={cn(
           "flex items-center gap-2.5 px-3 py-2 rounded-md transition-all duration-200 group relative text-sm",
           isActive
-            ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-            : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+            ? "bg-primary/20 text-white shadow-sm"
+            : "text-white/70 hover:bg-[#2a3a4d] hover:text-white"
         )}
       >
         <Icon className="w-4 h-4 shrink-0" />
@@ -87,8 +87,8 @@ export const SidebarMenuItem = ({
           className={cn(
             "w-full flex items-center gap-2.5 px-3 py-2 rounded-md transition-all duration-200 group text-sm",
             isChildActive
-              ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-              : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+              ? "bg-primary/20 text-white shadow-sm"
+              : "text-white/70 hover:bg-[#2a3a4d] hover:text-white"
           )}
         >
           <Icon className="w-4 h-4 shrink-0" />
@@ -111,8 +111,8 @@ export const SidebarMenuItem = ({
               className={cn(
                 "flex items-center gap-2 px-3 py-1.5 rounded-md transition-all duration-200 text-sm border-l-2 ml-2",
                 isSubActive
-                  ? "border-primary bg-sidebar-accent/50 text-sidebar-accent-foreground font-medium"
-                  : "border-sidebar-border text-sidebar-foreground/60 hover:bg-sidebar-accent/30 hover:text-sidebar-accent-foreground hover:border-primary/50"
+                  ? "border-primary bg-primary/10 text-white font-medium"
+                  : "border-[#2a3a4d] text-white/60 hover:bg-[#2a3a4d]/50 hover:text-white hover:border-primary/50"
               )}
             >
               <span className="truncate">{item.label}</span>
