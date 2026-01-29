@@ -459,84 +459,90 @@ const Vehicles = () => {
                       </TableRow>
                     ) : (
                       paginatedVehicles.map((vehicle, index) => (
-                        <HoverCard key={vehicle.id} openDelay={300} closeDelay={100}>
-                          <HoverCardTrigger asChild>
-                            <TableRow
+                        <TableRow
+                          key={vehicle.id}
+                          className={cn(
+                            "cursor-pointer transition-colors",
+                            selectedVehicleId === vehicle.id 
+                              ? "bg-primary/10" 
+                              : index % 2 === 0 
+                                ? "bg-background" 
+                                : "bg-muted/30",
+                            "hover:bg-primary/5"
+                          )}
+                          onClick={() => handleVehicleRowClick(vehicle)}
+                          onDoubleClick={() => handleVehicleClick(vehicle)}
+                        >
+                          <TableCell className="font-medium">
+                            {startIndex + index + 1}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center justify-center">
+                              {getVehicleIcon(vehicle.make, vehicle.status)}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {vehicle.make}
+                            {vehicle.model && <span className="block text-xs text-muted-foreground">{vehicle.model}</span>}
+                          </TableCell>
+                          <TableCell>
+                            {/* Hover card on plate number */}
+                            <HoverCard openDelay={300} closeDelay={100}>
+                              <HoverCardTrigger asChild>
+                                <span className="font-mono font-medium cursor-pointer hover:text-primary hover:underline">
+                                  {vehicle.plate}
+                                </span>
+                              </HoverCardTrigger>
+                              <HoverCardContent 
+                                side="right" 
+                                align="start" 
+                                className="w-[450px] p-4 shadow-xl border-border/50"
+                                sideOffset={12}
+                              >
+                                <VehicleHoverCard vehicle={vehicle} />
+                              </HoverCardContent>
+                            </HoverCard>
+                          </TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant="outline" 
                               className={cn(
-                                "cursor-pointer transition-colors",
-                                selectedVehicleId === vehicle.id 
-                                  ? "bg-primary/10" 
-                                  : index % 2 === 0 
-                                    ? "bg-background" 
-                                    : "bg-muted/30",
-                                "hover:bg-primary/5"
+                                "text-xs capitalize",
+                                vehicle.status === 'moving' && "border-success text-success bg-success/10",
+                                vehicle.status === 'idle' && "border-warning text-warning bg-warning/10",
+                                vehicle.status === 'stopped' && "border-destructive text-destructive bg-destructive/10",
+                                vehicle.status === 'offline' && "border-muted text-muted-foreground"
                               )}
-                              onClick={() => handleVehicleRowClick(vehicle)}
-                              onDoubleClick={() => handleVehicleClick(vehicle)}
                             >
-                              <TableCell className="font-medium">
-                                {startIndex + index + 1}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center justify-center">
-                                  {getVehicleIcon(vehicle.make, vehicle.status)}
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-sm">
-                                {vehicle.make}
-                                {vehicle.model && <span className="block text-xs text-muted-foreground">{vehicle.model}</span>}
-                              </TableCell>
-                              <TableCell className="font-mono font-medium">{vehicle.plate}</TableCell>
-                              <TableCell>
-                                <Badge 
-                                  variant="outline" 
-                                  className={cn(
-                                    "text-xs capitalize",
-                                    vehicle.status === 'moving' && "border-success text-success bg-success/10",
-                                    vehicle.status === 'idle' && "border-warning text-warning bg-warning/10",
-                                    vehicle.status === 'stopped' && "border-destructive text-destructive bg-destructive/10",
-                                    vehicle.status === 'offline' && "border-muted text-muted-foreground"
-                                  )}
-                                >
-                                  {vehicle.status}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-sm max-w-[200px]">
-                                <p className="truncate text-muted-foreground">
-                                  {vehicle.lat && vehicle.lng 
-                                    ? `${vehicle.lat.toFixed(4)}, ${vehicle.lng.toFixed(4)}`
-                                    : "No location"}
-                                </p>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-1">
-                                  {vehicle.isOverspeed && (
-                                    <AlertTriangle className="w-4 h-4 text-destructive" />
-                                  )}
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-7 w-7"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleVehicleClick(vehicle);
-                                    }}
-                                  >
-                                    <Eye className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          </HoverCardTrigger>
-                          <HoverCardContent 
-                            side="right" 
-                            align="start" 
-                            className="w-auto p-3"
-                            sideOffset={8}
-                          >
-                            <VehicleHoverCard vehicle={vehicle} />
-                          </HoverCardContent>
-                        </HoverCard>
+                              {vehicle.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm max-w-[200px]">
+                            <p className="truncate text-muted-foreground">
+                              {vehicle.lat && vehicle.lng 
+                                ? `${vehicle.lat.toFixed(4)}, ${vehicle.lng.toFixed(4)}`
+                                : "No location"}
+                            </p>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              {vehicle.isOverspeed && (
+                                <AlertTriangle className="w-4 h-4 text-destructive" />
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleVehicleClick(vehicle);
+                                }}
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
                       ))
                     )}
                   </TableBody>
