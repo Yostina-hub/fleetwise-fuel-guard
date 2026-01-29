@@ -146,7 +146,10 @@ const Layout = ({ children }: LayoutProps) => {
             alt="ethio telecom" 
             className="h-14 w-auto object-contain"
           />
-          <NotificationCenter />
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            <NotificationCenter />
+          </div>
         </div>
         
         <SidebarNav navItems={navItems} adminItems={adminItems} isSuperAdmin={isSuperAdmin} />
@@ -156,10 +159,6 @@ const Layout = ({ children }: LayoutProps) => {
           <LanguageSelector variant="compact" className="w-full text-white/70" />
         </div>
 
-        {/* Theme Toggle */}
-        <div className="px-2 py-1">
-          <ThemeToggle variant="sidebar" />
-        </div>
 
         {/* Keyboard shortcut hint */}
         <div className="px-3 py-2">
