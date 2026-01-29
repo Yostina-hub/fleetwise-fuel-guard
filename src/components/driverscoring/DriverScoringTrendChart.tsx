@@ -14,10 +14,13 @@ const DriverScoringTrendChart = () => {
   ];
 
   return (
-    <Card className="glass-strong">
+    <Card 
+      className="border border-cyan-500/20"
+      style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}
+    >
       <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <TrendingUp className="h-5 w-5 text-primary" aria-hidden="true" />
+        <CardTitle className="flex items-center gap-2 text-lg text-white">
+          <TrendingUp className="h-5 w-5 text-cyan-400" aria-hidden="true" />
           Fleet Score Trends
         </CardTitle>
       </CardHeader>
@@ -25,21 +28,22 @@ const DriverScoringTrendChart = () => {
         <div className="h-[200px]">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-              <XAxis dataKey="month" className="text-xs" />
-              <YAxis className="text-xs" domain={[60, 100]} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <XAxis dataKey="month" stroke="rgba(255,255,255,0.5)" tick={{ fill: 'rgba(255,255,255,0.6)' }} />
+              <YAxis stroke="rgba(255,255,255,0.5)" tick={{ fill: 'rgba(255,255,255,0.6)' }} domain={[60, 100]} />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px'
+                  backgroundColor: '#001a33',
+                  border: '1px solid rgba(0, 191, 255, 0.3)',
+                  borderRadius: '8px',
+                  color: '#fff'
                 }}
               />
               <Area
                 type="monotone"
                 dataKey="avgScore"
-                stroke="hsl(var(--primary))"
-                fill="hsl(var(--primary))"
+                stroke="#8DC63F"
+                fill="#8DC63F"
                 fillOpacity={0.3}
                 name="Avg Score"
               />

@@ -67,18 +67,22 @@ export const ReportsQuickStats = ({ metrics, vehicleCount, driverCount }: Report
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
       {stats.map((stat, index) => (
-        <Card key={index} className="bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-md transition-all">
+        <Card 
+          key={index} 
+          className="border border-cyan-500/20 hover:border-cyan-500/40 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-300"
+          style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}
+        >
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
-              <div className={cn("p-2 rounded-lg", stat.bgColor)}>
-                <stat.icon className={cn("w-4 h-4", stat.color)} />
+              <div className={cn("p-2 rounded-lg bg-white/5 border border-white/10")}>
+                <stat.icon className={cn("w-4 h-4", stat.color === "text-primary" ? "text-cyan-400" : stat.color === "text-green-500" ? "text-[#8DC63F]" : stat.color)} />
               </div>
               {stat.trend !== null && stat.trend !== 0 && (
                 <div className={cn(
                   "flex items-center gap-1 text-xs font-medium",
                   stat.trendPositive 
-                    ? stat.trend > 0 ? "text-green-500" : "text-destructive"
-                    : stat.trend > 0 ? "text-destructive" : "text-green-500"
+                    ? stat.trend > 0 ? "text-[#8DC63F]" : "text-red-400"
+                    : stat.trend > 0 ? "text-red-400" : "text-[#8DC63F]"
                 )}>
                   {stat.trend > 0 ? (
                     <TrendingUp className="w-3 h-3" />
@@ -89,8 +93,8 @@ export const ReportsQuickStats = ({ metrics, vehicleCount, driverCount }: Report
                 </div>
               )}
             </div>
-            <div className="text-2xl font-bold text-foreground">{stat.value.toLocaleString()}</div>
-            <div className="text-xs text-muted-foreground mt-1">{stat.label}</div>
+            <div className="text-2xl font-bold text-white">{stat.value.toLocaleString()}</div>
+            <div className="text-xs text-white/60 mt-1">{stat.label}</div>
           </CardContent>
         </Card>
       ))}

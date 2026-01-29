@@ -53,10 +53,13 @@ export const ReportsQuickActions = ({
   ];
 
   return (
-    <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+    <Card 
+      className="border border-cyan-500/20"
+      style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}
+    >
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <Download className="w-4 h-4 text-primary" />
+        <CardTitle className="text-sm font-medium flex items-center gap-2 text-white">
+          <Download className="w-4 h-4 text-[#8DC63F]" />
           Quick Actions
         </CardTitle>
       </CardHeader>
@@ -65,13 +68,13 @@ export const ReportsQuickActions = ({
           {actions.map((action, index) => (
             <Button
               key={index}
-              variant={action.variant}
+              variant="outline"
               size="sm"
               onClick={action.onClick}
               disabled={action.loading}
-              className="justify-start gap-2 h-9"
+              className="justify-start gap-2 h-9 bg-white/5 border-white/20 text-white/80 hover:text-white hover:bg-white/10 hover:border-cyan-500/50"
             >
-              <action.icon className={`w-4 h-4 ${action.loading ? 'animate-spin' : ''}`} />
+              <action.icon className={`w-4 h-4 text-cyan-400 ${action.loading ? 'animate-spin' : ''}`} />
               <span className="truncate">{action.label}</span>
             </Button>
           ))}

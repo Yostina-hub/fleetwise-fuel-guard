@@ -50,8 +50,8 @@ export const ReportsNavigation = ({
         </div>
       )}
 
-      {/* Main Tabs - Card Style */}
-      <div className="bg-card/50 backdrop-blur-sm rounded-xl border border-border/50 p-1.5">
+      {/* Main Tabs - Tech Style */}
+      <div className="rounded-xl border border-cyan-500/20 p-1.5" style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}>
         <ScrollArea className="w-full">
           <nav className="flex gap-1" role="tablist" aria-label="Report categories">
             {mainTabs.map((tab) => {
@@ -66,11 +66,11 @@ export const ReportsNavigation = ({
                   className={cn(
                     "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap",
                     isActive
-                      ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      ? "bg-gradient-to-r from-[#8DC63F] to-[#6ba32d] text-white shadow-md shadow-[#8DC63F]/25"
+                      : "text-white/60 hover:text-white hover:bg-white/10"
                   )}
                 >
-                  {Icon && <Icon className="w-4 h-4" aria-hidden="true" />}
+                  {Icon && <Icon className={cn("w-4 h-4", isActive ? "text-white" : "text-cyan-400")} aria-hidden="true" />}
                   {tab.label}
                 </button>
               );
@@ -80,7 +80,7 @@ export const ReportsNavigation = ({
         </ScrollArea>
       </div>
 
-      {/* Sub Tabs - Pill Style */}
+      {/* Sub Tabs - Tech Pill Style */}
       {subTabs.length > 0 && (
         <ScrollArea className="w-full">
           <div className="flex items-center gap-2 pb-1" role="tablist" aria-label="Report sub-categories">
@@ -95,8 +95,8 @@ export const ReportsNavigation = ({
                   className={cn(
                     "px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 whitespace-nowrap border",
                     isActive
-                      ? "bg-secondary text-secondary-foreground border-secondary shadow-sm"
-                      : "bg-background text-muted-foreground border-border/50 hover:border-border hover:text-foreground hover:bg-muted/30"
+                      ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-sm shadow-cyan-500/20"
+                      : "bg-[#001a33] text-white/60 border-white/10 hover:border-cyan-500/30 hover:text-white hover:bg-white/5"
                   )}
                 >
                   {tab.label}
