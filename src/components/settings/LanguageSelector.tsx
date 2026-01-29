@@ -27,13 +27,13 @@ const LanguageSelector = ({ variant = 'default', className }: LanguageSelectorPr
   if (variant === 'compact') {
     return (
       <Select value={i18n.language} onValueChange={handleLanguageChange}>
-        <SelectTrigger className={`w-[120px] ${className}`}>
+        <SelectTrigger className={`w-[120px] bg-[#0d1520] border-[#2a3a4d] text-white/80 hover:bg-[#2a3a4d] ${className}`}>
           <Globe className="w-4 h-4 mr-2" />
           <SelectValue>{currentLang.code.toUpperCase()}</SelectValue>
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="bg-[#1a2332] border-[#2a3a4d]">
           {languages.map((lang) => (
-            <SelectItem key={lang.code} value={lang.code}>
+            <SelectItem key={lang.code} value={lang.code} className="text-white/80 hover:bg-[#2a3a4d] focus:bg-[#2a3a4d] focus:text-white">
               <span className="flex items-center gap-2">
                 <span>{lang.nativeName}</span>
               </span>
