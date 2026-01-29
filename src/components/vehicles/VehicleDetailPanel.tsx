@@ -160,12 +160,12 @@ export const VehicleDetailPanel = ({
         </div>
       </div>
 
-      {/* Detail Grid */}
-      <div className="grid grid-cols-5 gap-6 p-4">
-        {/* Row 1: Speed, Odometer, Today Distance, Ododuration */}
+      {/* Detail Grid - 2 rows layout like reference */}
+      <div className="grid grid-cols-6 gap-4 p-4">
+        {/* Row 1 */}
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center">
-            <Gauge className="w-5 h-5 text-red-600" />
+          <div className="w-9 h-9 rounded-full bg-destructive/10 flex items-center justify-center">
+            <Gauge className="w-5 h-5 text-destructive" />
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Speed</p>
@@ -174,8 +174,8 @@ export const VehicleDetailPanel = ({
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center">
-            <Navigation className="w-5 h-5 text-green-600" />
+          <div className="w-9 h-9 rounded-full bg-success/10 flex items-center justify-center">
+            <Navigation className="w-5 h-5 text-success" />
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Odometer</p>
@@ -186,8 +186,8 @@ export const VehicleDetailPanel = ({
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center">
-            <Route className="w-5 h-5 text-orange-600" />
+          <div className="w-9 h-9 rounded-full bg-warning/10 flex items-center justify-center">
+            <Route className="w-5 h-5 text-warning" />
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Today Distance</p>
@@ -198,8 +198,8 @@ export const VehicleDetailPanel = ({
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center">
-            <Timer className="w-5 h-5 text-green-600" />
+          <div className="w-9 h-9 rounded-full bg-success/10 flex items-center justify-center">
+            <Timer className="w-5 h-5 text-success" />
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Ododuration</p>
@@ -210,8 +210,8 @@ export const VehicleDetailPanel = ({
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center">
-            <Power className="w-5 h-5 text-purple-600" />
+          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+            <Power className="w-5 h-5 text-primary" />
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Ignition</p>
@@ -222,8 +222,8 @@ export const VehicleDetailPanel = ({
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-cyan-100 flex items-center justify-center">
-            <Thermometer className="w-5 h-5 text-cyan-600" />
+          <div className="w-9 h-9 rounded-full bg-accent flex items-center justify-center">
+            <Thermometer className="w-5 h-5 text-accent-foreground" />
           </div>
           <div>
             <p className="text-xs text-muted-foreground">AC</p>
@@ -233,10 +233,10 @@ export const VehicleDetailPanel = ({
           </div>
         </div>
 
-        {/* Row 2: Distance From Last Stop, Duration From Last Stop, Coordinates, Last Updated, Fuel */}
+        {/* Row 2 */}
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-pink-100 flex items-center justify-center">
-            <MapPin className="w-5 h-5 text-pink-600" />
+          <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center">
+            <MapPin className="w-5 h-5 text-secondary-foreground" />
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Distance From Last Stop</p>
@@ -247,8 +247,8 @@ export const VehicleDetailPanel = ({
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-teal-100 flex items-center justify-center">
-            <Timer className="w-5 h-5 text-teal-600" />
+          <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center">
+            <Timer className="w-5 h-5 text-muted-foreground" />
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Duration From Last Stop</p>
@@ -259,8 +259,8 @@ export const VehicleDetailPanel = ({
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center">
-            <Crosshair className="w-5 h-5 text-blue-600" />
+          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+            <Crosshair className="w-5 h-5 text-primary" />
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Co-ordinates</p>
@@ -286,8 +286,8 @@ export const VehicleDetailPanel = ({
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center">
-            <Clock className="w-5 h-5 text-red-600" />
+          <div className="w-9 h-9 rounded-full bg-destructive/10 flex items-center justify-center">
+            <Clock className="w-5 h-5 text-destructive" />
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Last Updated</p>
@@ -300,8 +300,8 @@ export const VehicleDetailPanel = ({
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center">
-            <Fuel className="w-5 h-5 text-amber-600" />
+          <div className="w-9 h-9 rounded-full bg-warning/10 flex items-center justify-center">
+            <Fuel className="w-5 h-5 text-warning" />
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Fuel</p>
@@ -310,17 +310,20 @@ export const VehicleDetailPanel = ({
             </p>
           </div>
         </div>
-      </div>
 
-      {/* Alias Row */}
-      {vehicle.alias && (
-        <div className="px-4 pb-4">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">Alias:</span>
-            <span className="font-medium text-foreground">{vehicle.alias}</span>
+        {/* Alias if available */}
+        {vehicle.alias && (
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center">
+              <Users className="w-5 h-5 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Alias</p>
+              <p className="font-semibold text-foreground">{vehicle.alias}</p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
