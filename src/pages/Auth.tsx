@@ -136,15 +136,6 @@ const Auth = () => {
         {/* Left Side - Branding & Features */}
         <div className="hidden lg:flex flex-col justify-between p-12">
           <div>
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate("/")}
-              className="mb-8 gap-2 text-white/70 hover:text-white hover:bg-white/10 transition-all duration-300 group"
-            >
-              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-              Back to Home
-            </Button>
-
             {/* Logo */}
             <div className="flex items-center gap-4 mb-12 animate-fade-in">
               <div className="relative">
@@ -211,16 +202,6 @@ const Auth = () => {
         {/* Right Side - Auth Forms */}
         <div className="flex items-center justify-center p-4 lg:p-12">
           <div className="w-full max-w-md">
-            {/* Mobile back button */}
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate("/")}
-              className="mb-6 lg:hidden gap-2 text-white/70 hover:text-white hover:bg-white/10"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Home
-            </Button>
-
             <Card className="border border-white/20 shadow-2xl shadow-black/50 backdrop-blur-xl bg-[#001a33]/80 animate-scale-in overflow-hidden">
               {/* Card glow effect */}
               <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-[#8DC63F]/5 pointer-events-none" />
