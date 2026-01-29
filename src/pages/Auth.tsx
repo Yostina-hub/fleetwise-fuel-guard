@@ -134,7 +134,7 @@ const Auth = () => {
 
       <div className="relative z-10 min-h-screen grid lg:grid-cols-2">
         {/* Left Side - Branding & Features */}
-        <div className="hidden lg:flex flex-col justify-between p-12">
+        <div className="hidden lg:flex flex-col justify-between p-12 pl-20">
           <div className="mt-16">
             {/* Logo */}
             <div className="flex items-center gap-4 mb-12 animate-fade-in mt-8">
