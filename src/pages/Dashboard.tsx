@@ -97,6 +97,7 @@ import TripActivityHeatmap from "@/components/dashboard/executive/TripActivityHe
 import FleetViolationsDonut from "@/components/dashboard/executive/FleetViolationsDonut";
 import VehicleMisuseDonut from "@/components/dashboard/executive/VehicleMisuseDonut";
 import TotalTripsCard from "@/components/dashboard/executive/TotalTripsCard";
+import { TechBackground } from "@/components/auth/TechBackground";
 import { Car, Gauge, Zap, Shield, Power, Wrench, Moon } from "lucide-react";
 
 const Dashboard = () => {
@@ -244,7 +245,15 @@ const Dashboard = () => {
 
   return (
     <Layout>
-      <div className="p-8 space-y-6 animate-fade-in">
+      <div className="relative min-h-screen">
+        {/* Tech Background for Executive Dashboard */}
+        {activeTab === 'executive' && (
+          <div className="absolute inset-0 z-0">
+            <TechBackground />
+          </div>
+        )}
+        
+        <div className={`relative z-10 p-8 space-y-6 animate-fade-in ${activeTab === 'executive' ? '' : ''}`}>
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
@@ -939,6 +948,7 @@ const Dashboard = () => {
             </Card>
           </TabsContent>
         </Tabs>
+        </div>
       </div>
 
       {/* Vehicle Detail Modal */}
