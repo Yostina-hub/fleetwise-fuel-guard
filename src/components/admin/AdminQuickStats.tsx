@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Settings, Users, Lock, AlertTriangle, CheckCircle, Shield } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface AdminQuickStatsProps {
   totalUsers: number;
@@ -19,6 +20,7 @@ const AdminQuickStats = ({
   const stats = [
     {
       label: "Organization Users",
+      tooltip: "Total number of users in your organization",
       value: totalUsers.toString(),
       icon: Users,
       color: "text-primary",
@@ -26,6 +28,7 @@ const AdminQuickStats = ({
     },
     {
       label: "SSO Status",
+      tooltip: activeSSO ? "Single Sign-On is configured and active" : "Single Sign-On is not configured",
       value: activeSSO ? "Active" : "Disabled",
       icon: Shield,
       color: activeSSO ? "text-success" : "text-muted-foreground",
@@ -33,6 +36,7 @@ const AdminQuickStats = ({
     },
     {
       label: "Password Policy",
+      tooltip: passwordPolicyEnabled ? "Strong password requirements enforced" : "Basic password requirements only",
       value: passwordPolicyEnabled ? "Enforced" : "Basic",
       icon: Lock,
       color: passwordPolicyEnabled ? "text-success" : "text-warning",
@@ -40,6 +44,7 @@ const AdminQuickStats = ({
     },
     {
       label: "Pending Penalties",
+      tooltip: "Driver violations awaiting review",
       value: pendingPenalties.toString(),
       icon: pendingPenalties > 0 ? AlertTriangle : CheckCircle,
       color: pendingPenalties > 0 ? "text-warning" : "text-success",
@@ -47,6 +52,7 @@ const AdminQuickStats = ({
     },
     {
       label: "Logins Today",
+      tooltip: "Number of successful logins today",
       value: loginAttemptsToday.toString(),
       icon: Settings,
       color: "text-blue-600",
@@ -55,23 +61,32 @@ const AdminQuickStats = ({
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-      {stats.map((stat) => (
-        <Card key={stat.label} className="glass-strong hover:scale-[1.02] transition-transform duration-300">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                <stat.icon className={`w-5 h-5 ${stat.color}`} aria-hidden="true" />
-              </div>
-              <div>
-                <p className="text-xl font-bold">{stat.value}</p>
-                <p className="text-xs text-muted-foreground">{stat.label}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+    <TooltipProvider>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {stats.map((stat) => (
+          <Tooltip key={stat.label}>
+            <TooltipTrigger asChild>
+              <Card className="glass-strong hover:scale-[1.02] transition-transform duration-300 cursor-default">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${stat.bgColor}`}>
+                      <stat.icon className={`w-5 h-5 ${stat.color}`} aria-hidden="true" />
+                    </div>
+                    <div>
+                      <p className="text-xl font-bold">{stat.value}</p>
+                      <p className="text-xs text-muted-foreground">{stat.label}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{stat.tooltip}</p>
+            </TooltipContent>
+          </Tooltip>
+        ))}
+      </div>
+    </TooltipProvider>
   );
 };
 
