@@ -128,30 +128,23 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Theme-based backgrounds */}
-      {theme === 'dark' ? (
-        <>
-          {/* Dark theme: Ethio Telecom Background */}
-          <div
-            className="absolute inset-0 bg-cover bg-no-repeat"
-            style={{
-              backgroundImage: `url(${ethioTelecomBg})`,
-              backgroundPosition: "left top",
-            }}
-          />
-          {/* Animated particles overlay */}
-          <div className="absolute inset-0 z-[1]">
-            <ExecutiveTechBackground />
-          </div>
-          {/* Subtle overlay for better readability */}
-          <div className="absolute inset-0 bg-[#001a33]/20 z-[2]" />
-        </>
-      ) : (
-        <>
-          {/* Light theme: TechBackground with animated particles */}
-          <TechBackground />
-        </>
-      )}
+      {/* Always use dark branded background for Auth page */}
+      <>
+        {/* Ethio Telecom Background */}
+        <div
+          className="absolute inset-0 bg-cover bg-no-repeat"
+          style={{
+            backgroundImage: `url(${ethioTelecomBg})`,
+            backgroundPosition: "left top",
+          }}
+        />
+        {/* Animated particles overlay */}
+        <div className="absolute inset-0 z-[1]">
+          <ExecutiveTechBackground />
+        </div>
+        {/* Subtle overlay for better readability */}
+        <div className="absolute inset-0 bg-[#001a33]/20 z-[2]" />
+      </>
 
       <div className="relative z-10 min-h-screen grid lg:grid-cols-2">
         {/* Left Side - Branding & Features */}
