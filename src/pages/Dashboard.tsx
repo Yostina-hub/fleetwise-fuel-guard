@@ -99,6 +99,7 @@ import VehicleMisuseDonut from "@/components/dashboard/executive/VehicleMisuseDo
 import TotalTripsCard from "@/components/dashboard/executive/TotalTripsCard";
 import { ExecutiveTechBackground } from "@/components/dashboard/executive/ExecutiveTechBackground";
 import MileageDurationCharts from "@/components/analytics/MileageDurationCharts";
+import DistanceDurationSummary from "@/components/analytics/DistanceDurationSummary";
 import { Car, Gauge, Zap, Shield, Power, Wrench, Moon } from "lucide-react";
 
 const Dashboard = () => {
@@ -815,7 +816,10 @@ const Dashboard = () => {
 
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-6 mt-6">
-            {/* Mileage & Duration Charts - TOP */}
+            {/* Distance & Duration Summary - TOP */}
+            <DistanceDurationSummary />
+
+            {/* Mileage & Duration Charts */}
             <MileageDurationCharts />
 
             {/* Key Metrics Row */}
