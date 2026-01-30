@@ -24,17 +24,25 @@ const VehicleListItem = ({ plate, value, icon, iconBg }: VehicleListItemProps) =
 );
 
 const DistanceDurationSummary = () => {
-  const { vehicles } = useVehicles();
+  const { vehicles, loading: vehiclesLoading } = useVehicles();
   const dateRange = { start: startOfMonth(new Date()), end: new Date() };
-  const { metrics } = useTripMetrics(dateRange);
+  const { metrics, loading: metricsLoading } = useTripMetrics(dateRange);
 
-  // Generate mock ranking data from vehicles
-  const vehicleDistances = vehicles.slice(0, 5).map((v, idx) => ({
+  // Generate mock ranking data from vehicles - use fallback data if no vehicles
+  const vehicleData = vehicles.length > 0 ? vehicles : [
+    { id: '1', plate_number: 'V-001' },
+    { id: '2', plate_number: 'V-002' },
+    { id: '3', plate_number: 'V-003' },
+    { id: '4', plate_number: 'V-004' },
+    { id: '5', plate_number: 'V-005' },
+  ];
+
+  const vehicleDistances = vehicleData.slice(0, 5).map((v: any, idx) => ({
     plate: v.plate_number || `V-${idx + 1}`,
     distance: Math.max(100, 1200 - idx * 150 + Math.random() * 100),
   }));
 
-  const vehicleDurations = vehicles.slice(0, 5).map((v, idx) => ({
+  const vehicleDurations = vehicleData.slice(0, 5).map((v: any, idx) => ({
     plate: v.plate_number || `V-${idx + 1}`,
     hours: Math.max(10, 160 - idx * 20 + Math.random() * 10),
     minutes: Math.floor(Math.random() * 60),
@@ -53,8 +61,10 @@ const DistanceDurationSummary = () => {
 
   // Use averageDurationMinutes * totalTrips as estimate for total duration
   const estimatedTotalDurationMinutes = (metrics.averageDurationMinutes || 0) * (metrics.totalTrips || 1);
-  const totalHours = Math.floor(estimatedTotalDurationMinutes / 60) || vehicleDurations.reduce((sum, v) => sum + v.hours, 0);
-  const totalMinutes = Math.floor(estimatedTotalDurationMinutes % 60) || vehicleDurations.reduce((sum, v) => sum + v.minutes, 0) % 60;
+  const fallbackHours = vehicleDurations.reduce((sum, v) => sum + v.hours, 0);
+  const fallbackMinutes = vehicleDurations.reduce((sum, v) => sum + v.minutes, 0) % 60;
+  const totalHours = estimatedTotalDurationMinutes > 0 ? Math.floor(estimatedTotalDurationMinutes / 60) : fallbackHours;
+  const totalMinutes = estimatedTotalDurationMinutes > 0 ? Math.floor(estimatedTotalDurationMinutes % 60) : fallbackMinutes;
   const lastPeriodHours = Math.floor(totalHours * 0.88);
   const lastPeriodMinutes = Math.floor(totalMinutes * 0.9);
   const durationTrend = 11.84; // Mock positive trend
