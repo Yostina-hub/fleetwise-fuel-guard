@@ -98,6 +98,7 @@ import FleetViolationsDonut from "@/components/dashboard/executive/FleetViolatio
 import VehicleMisuseDonut from "@/components/dashboard/executive/VehicleMisuseDonut";
 import TotalTripsCard from "@/components/dashboard/executive/TotalTripsCard";
 import { ExecutiveTechBackground } from "@/components/dashboard/executive/ExecutiveTechBackground";
+import MileageDurationCharts from "@/components/analytics/MileageDurationCharts";
 import { Car, Gauge, Zap, Shield, Power, Wrench, Moon } from "lucide-react";
 
 const Dashboard = () => {
@@ -902,6 +903,9 @@ const Dashboard = () => {
                 trendPercentage={analytics.safety.trendPercentage}
               />
             </div>
+
+            {/* Mileage & Duration Charts */}
+            <MileageDurationCharts />
 
             {/* Performance Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
