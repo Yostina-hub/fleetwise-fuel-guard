@@ -815,6 +815,9 @@ const Dashboard = () => {
 
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-6 mt-6">
+            {/* Mileage & Duration Charts - TOP */}
+            <MileageDurationCharts />
+
             {/* Key Metrics Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <MetricCard
@@ -903,9 +906,6 @@ const Dashboard = () => {
                 trendPercentage={analytics.safety.trendPercentage}
               />
             </div>
-
-            {/* Mileage & Duration Charts */}
-            <MileageDurationCharts />
 
             {/* Performance Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
