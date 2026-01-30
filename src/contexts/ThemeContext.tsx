@@ -17,7 +17,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
     // Check localStorage first, default to "cyber" (futuristic theme)
     const stored = localStorage.getItem("app-theme") as Theme;
-    if (stored === "dark" || stored === "light") return stored;
+    if (stored === "dark" || stored === "light" || stored === "cyber") return stored;
     return "cyber";
   });
 
