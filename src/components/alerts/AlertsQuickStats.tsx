@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertTriangle, AlertCircle, Info, CheckCircle, Clock, Bell } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface AlertsQuickStatsProps {
   total: number;
@@ -21,6 +22,7 @@ const AlertsQuickStats = ({
   const stats = [
     {
       label: "Total Alerts",
+      tooltip: "All alerts across all severity levels",
       value: total.toString(),
       icon: Bell,
       color: "text-primary",
@@ -28,6 +30,7 @@ const AlertsQuickStats = ({
     },
     {
       label: "Critical",
+      tooltip: "High priority alerts requiring immediate attention",
       value: critical.toString(),
       icon: AlertTriangle,
       color: critical > 0 ? "text-destructive" : "text-muted-foreground",
@@ -35,6 +38,7 @@ const AlertsQuickStats = ({
     },
     {
       label: "Warning",
+      tooltip: "Medium priority alerts to monitor",
       value: warning.toString(),
       icon: AlertCircle,
       color: warning > 0 ? "text-warning" : "text-muted-foreground",
@@ -42,6 +46,7 @@ const AlertsQuickStats = ({
     },
     {
       label: "Info",
+      tooltip: "Informational alerts for awareness",
       value: info.toString(),
       icon: Info,
       color: "text-primary",
@@ -49,6 +54,7 @@ const AlertsQuickStats = ({
     },
     {
       label: "Pending",
+      tooltip: "Alerts awaiting acknowledgement",
       value: unacknowledged.toString(),
       icon: Clock,
       color: unacknowledged > 0 ? "text-warning" : "text-success",
@@ -56,6 +62,7 @@ const AlertsQuickStats = ({
     },
     {
       label: "Resolved",
+      tooltip: "Alerts that have been resolved",
       value: resolved.toString(),
       icon: CheckCircle,
       color: "text-success",
@@ -64,27 +71,35 @@ const AlertsQuickStats = ({
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-      {stats.map((stat) => (
-        <Card 
-          key={stat.label} 
-          className="border border-cyan-500/20 hover:border-cyan-500/40 hover:scale-[1.02] transition-all duration-300"
-          style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}
-        >
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-white/5 border border-white/10">
-                <stat.icon className={`w-5 h-5 ${stat.color === "text-primary" ? "text-cyan-400" : stat.color === "text-success" ? "text-[#8DC63F]" : stat.color === "text-warning" ? "text-amber-400" : stat.color === "text-destructive" ? "text-red-400" : stat.color}`} aria-hidden="true" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-white">{stat.value}</p>
-                <p className="text-xs text-white/60">{stat.label}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+    <TooltipProvider>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {stats.map((stat) => (
+          <Tooltip key={stat.label}>
+            <TooltipTrigger asChild>
+              <Card 
+                className="border border-cyan-500/20 hover:border-cyan-500/40 hover:scale-[1.02] transition-all duration-300 cursor-default"
+                style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-white/5 border border-white/10">
+                      <stat.icon className={`w-5 h-5 ${stat.color === "text-primary" ? "text-cyan-400" : stat.color === "text-success" ? "text-[#8DC63F]" : stat.color === "text-warning" ? "text-amber-400" : stat.color === "text-destructive" ? "text-red-400" : stat.color}`} aria-hidden="true" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-white">{stat.value}</p>
+                      <p className="text-xs text-white/60">{stat.label}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{stat.tooltip}</p>
+            </TooltipContent>
+          </Tooltip>
+        ))}
+      </div>
+    </TooltipProvider>
   );
 };
 

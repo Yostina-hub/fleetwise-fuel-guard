@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Settings, Mail, AlertTriangle, Shield } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface AdminQuickActionsProps {
   onConfigureSSO: () => void;
@@ -18,6 +19,7 @@ const AdminQuickActions = ({
   const actions = [
     {
       label: "Configure SSO",
+      tooltip: "Set up Single Sign-On authentication",
       icon: Shield,
       onClick: onConfigureSSO,
       variant: "default" as const,
@@ -25,6 +27,7 @@ const AdminQuickActions = ({
     },
     {
       label: "Email Reports",
+      tooltip: "Configure automated email reports",
       icon: Mail,
       onClick: onCreateEmailReport,
       variant: "outline" as const,
@@ -32,6 +35,7 @@ const AdminQuickActions = ({
     },
     {
       label: "Driver Penalties",
+      tooltip: "View and manage driver violations",
       icon: AlertTriangle,
       onClick: onViewPenalties,
       variant: "outline" as const,
@@ -39,6 +43,7 @@ const AdminQuickActions = ({
     },
     {
       label: "Org Settings",
+      tooltip: "Manage organization settings",
       icon: Settings,
       onClick: onManageSettings,
       variant: "outline" as const,
@@ -49,20 +54,28 @@ const AdminQuickActions = ({
   return (
     <Card className="glass-strong">
       <CardContent className="p-4">
-        <div className="flex flex-wrap gap-3">
-          {actions.map((action) => (
-            <Button
-              key={action.label}
-              variant={action.variant}
-              className={`gap-2 ${action.className}`}
-              onClick={action.onClick}
-              aria-label={action.label}
-            >
-              <action.icon className="w-4 h-4" aria-hidden="true" />
-              {action.label}
-            </Button>
-          ))}
-        </div>
+        <TooltipProvider>
+          <div className="flex flex-wrap gap-3">
+            {actions.map((action) => (
+              <Tooltip key={action.label}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={action.variant}
+                    className={`gap-2 ${action.className}`}
+                    onClick={action.onClick}
+                    aria-label={action.label}
+                  >
+                    <action.icon className="w-4 h-4" aria-hidden="true" />
+                    {action.label}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{action.tooltip}</p>
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+        </TooltipProvider>
       </CardContent>
     </Card>
   );
