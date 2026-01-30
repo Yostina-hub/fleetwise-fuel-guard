@@ -11,14 +11,14 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-const themeOrder: Theme[] = ["dark", "light", "cyber"];
+const themeOrder: Theme[] = ["cyber", "dark", "light"];
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
-    // Check localStorage first, default to "dark" (executive theme)
+    // Check localStorage first, default to "cyber" (futuristic theme)
     const stored = localStorage.getItem("app-theme") as Theme;
-    if (stored === "light" || stored === "cyber") return stored;
-    return "dark";
+    if (stored === "dark" || stored === "light") return stored;
+    return "cyber";
   });
 
   useEffect(() => {
