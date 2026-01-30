@@ -30,6 +30,7 @@ import { VehicleDetailPanel } from "@/components/vehicles/VehicleDetailPanel";
 import { VehicleMapInfoCard } from "@/components/vehicles/VehicleMapInfoCard";
 import { VehicleHoverCard } from "@/components/vehicles/VehicleHoverCard";
 import { VehicleListItem } from "@/components/vehicles/VehicleListItem";
+import { VehicleQuickInfoPopup } from "@/components/vehicles/VehicleQuickInfoPopup";
 import { TablePagination, usePagination } from "@/components/reports/TablePagination";
 import {
   Search,
@@ -124,6 +125,7 @@ const Vehicles = () => {
   const [mapStyle, setMapStyle] = useState<'streets' | 'satellite'>('streets');
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
   const [viewMode, setViewMode] = useState<'table' | 'list'>('list');
+  const [showQuickInfo, setShowQuickInfo] = useState(false);
   
   const debouncedSearch = useDebounce(searchInput, 300);
   
@@ -294,6 +296,7 @@ const Vehicles = () => {
   
   const handleVehicleRowClick = useCallback((vehicle: any) => {
     setSelectedVehicleId(vehicle.id);
+    setShowQuickInfo(true);
     
     // Fly to vehicle on map if it has coordinates
     if (vehicle.lat && vehicle.lng && mapInstance) {
@@ -307,6 +310,7 @@ const Vehicles = () => {
   
   const handleMapVehicleSelect = useCallback((vehicleId: string) => {
     setSelectedVehicleId(vehicleId);
+    setShowQuickInfo(true);
   }, []);
   
   // Get selected vehicle data for detail panel
@@ -629,6 +633,22 @@ const Vehicles = () => {
               </ScrollArea>
             )}
           </div>
+          
+          {/* Quick Info Popup Panel */}
+          {showQuickInfo && selectedVehicleData && (
+            <div className="w-[340px] border-r bg-background overflow-hidden">
+              <VehicleQuickInfoPopup
+                vehicle={selectedVehicleData}
+                onClose={() => {
+                  setShowQuickInfo(false);
+                  setSelectedVehicleId(undefined);
+                }}
+                onDrivers={() => navigate(`/drivers?vehicle=${selectedVehicleId}`)}
+                onTrack={() => navigate(`/map?vehicle=${selectedVehicleId}&track=true`)}
+                onHistory={() => navigate(`/route-history?vehicle=${selectedVehicleId}`)}
+              />
+            </div>
+          )}
           
           {/* Resize Handle */}
           <div className="relative flex items-center">
