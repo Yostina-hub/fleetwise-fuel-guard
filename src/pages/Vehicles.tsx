@@ -451,9 +451,26 @@ const Vehicles = () => {
           <div 
             className={cn(
               "border-r transition-all duration-300 flex flex-col bg-background",
-              mapExpanded ? "w-0 overflow-hidden" : sidebarCollapsed ? "w-16" : "flex-1"
+              mapExpanded ? "w-0 overflow-hidden" : sidebarCollapsed ? "w-14" : "flex-1"
             )}
           >
+            {/* Collapsed state - show toggle only */}
+            {sidebarCollapsed && !mapExpanded && (
+              <div className="flex flex-col items-center py-4 gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 rounded-full hover:bg-primary/10"
+                  onClick={() => setSidebarCollapsed(false)}
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </Button>
+                <span className="text-xs text-muted-foreground writing-mode-vertical rotate-180" style={{ writingMode: 'vertical-rl' }}>
+                  {filteredVehicles.length} Vehicles
+                </span>
+              </div>
+            )}
+            
             {!sidebarCollapsed && (
               <ScrollArea className="flex-1">
                 {viewMode === 'list' ? (
@@ -650,17 +667,20 @@ const Vehicles = () => {
             </div>
           )}
           
-          {/* Resize Handle */}
-          <div className="relative flex items-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute z-20 -left-3 top-1/2 -translate-y-1/2 h-8 w-6 rounded-full bg-background border shadow-sm"
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            >
-              {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-            </Button>
-          </div>
+          {/* Sidebar Toggle Handle */}
+          {!mapExpanded && (
+            <div className="relative flex items-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute z-20 -left-3 top-1/2 -translate-y-1/2 h-8 w-6 rounded-full bg-background border shadow-md hover:bg-primary/10 transition-colors"
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              >
+                {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+              </Button>
+            </div>
+          )}
           
           {/* Map Panel */}
           <div className={cn(
