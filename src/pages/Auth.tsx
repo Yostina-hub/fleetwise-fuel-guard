@@ -18,6 +18,7 @@ import {
   Zap, Globe, Wifi, Server
 } from "lucide-react";
 import ethioTelecomBg from "@/assets/ethio-telecom-bg.png";
+import ethioTelecomCyberBg from "@/assets/ethio-telecom-cyber-bg.png";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -128,23 +129,37 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Always use dark branded background for Auth page */}
-      <>
-        {/* Ethio Telecom Background */}
-        <div
-          className="absolute inset-0 bg-cover bg-no-repeat"
-          style={{
-            backgroundImage: `url(${ethioTelecomBg})`,
-            backgroundPosition: "left top",
-          }}
-        />
-        {/* Animated particles overlay */}
-        <div className="absolute inset-0 z-[1]">
-          <ExecutiveTechBackground />
-        </div>
-        {/* Subtle overlay for better readability */}
-        <div className="absolute inset-0 bg-[#001a33]/20 z-[2]" />
-      </>
+      {/* Theme-based backgrounds */}
+      {theme === 'cyber' ? (
+        <>
+          {/* Cyber theme: Futuristic tech corridor background */}
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{
+              backgroundImage: `url(${ethioTelecomCyberBg})`,
+            }}
+          />
+          {/* Cyan glow overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628]/80 via-transparent to-[#0a1628]/40 z-[1]" />
+        </>
+      ) : (
+        <>
+          {/* Dark/Light themes: Ethio Telecom Background */}
+          <div
+            className="absolute inset-0 bg-cover bg-no-repeat"
+            style={{
+              backgroundImage: `url(${ethioTelecomBg})`,
+              backgroundPosition: "left top",
+            }}
+          />
+          {/* Animated particles overlay */}
+          <div className="absolute inset-0 z-[1]">
+            <ExecutiveTechBackground />
+          </div>
+          {/* Subtle overlay for better readability */}
+          <div className="absolute inset-0 bg-[#001a33]/20 z-[2]" />
+        </>
+      )}
 
       <div className="relative z-10 min-h-screen grid lg:grid-cols-2">
         {/* Left Side - Branding & Features */}
