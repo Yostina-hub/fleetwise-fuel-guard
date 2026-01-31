@@ -783,22 +783,76 @@ async function processRecord(supabase: any, record: TelemetryRecord): Promise<Pr
 
     // Check for overspeeding
     if (speedKmh > 0) {
-      const { data: governorConfig } = await supabase
+      // Get or create governor config for this vehicle
+      let { data: governorConfig } = await supabase
         .from('speed_governor_config')
         .select('max_speed_limit, governor_active')
         .eq('vehicle_id', device.vehicle_id)
-        .eq('governor_active', true)
-        .single();
+        .maybeSingle();
+
+      // Auto-create governor config if it doesn't exist
+      if (!governorConfig) {
+        const { data: newConfig } = await supabase
+          .from('speed_governor_config')
+          .insert({
+            organization_id: device.organization_id,
+            vehicle_id: device.vehicle_id,
+            max_speed_limit: 80,
+            governor_active: true,
+          })
+          .select('max_speed_limit, governor_active')
+          .single();
+        governorConfig = newConfig;
+        console.log(`Auto-created governor config for vehicle ${device.vehicle_id}`);
+      }
 
       const speedLimit = governorConfig?.max_speed_limit || 80;
+      const isGovernorActive = governorConfig?.governor_active ?? true;
 
-      if (speedKmh > speedLimit) {
+      if (isGovernorActive && speedKmh > speedLimit) {
         const { data: vehicleData } = await supabase
           .from('vehicles')
           .select('assigned_driver_id')
           .eq('id', device.vehicle_id)
           .single();
 
+        // Determine severity based on how much over the limit
+        const speedOver = speedKmh - speedLimit;
+        const severity = speedOver >= 30 ? 'critical' : speedOver >= 15 ? 'high' : speedOver >= 5 ? 'medium' : 'low';
+
+        // Check for duplicate violation in last 5 minutes
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+        const { data: recentViolation } = await supabase
+          .from('speed_violations')
+          .select('id')
+          .eq('vehicle_id', device.vehicle_id)
+          .gte('violation_time', fiveMinutesAgo)
+          .maybeSingle();
+
+        if (!recentViolation) {
+          // Insert into speed_violations table
+          const { error: violationError } = await supabase
+            .from('speed_violations')
+            .insert({
+              organization_id: device.organization_id,
+              vehicle_id: device.vehicle_id,
+              driver_id: vehicleData?.assigned_driver_id || null,
+              violation_time: record.timestamp || processedAt,
+              speed_kmh: speedKmh,
+              speed_limit_kmh: speedLimit,
+              lat: record.latitude,
+              lng: record.longitude,
+              severity: severity,
+            });
+
+          if (violationError) {
+            console.error('Error inserting speed violation:', violationError);
+          } else {
+            console.log(`Speed violation recorded: ${speedKmh} km/h (limit: ${speedLimit})`);
+          }
+        }
+
+        // Also process driver penalties if driver assigned
         if (vehicleData?.assigned_driver_id) {
           try {
             await supabase.functions.invoke('process-driver-penalties', {
