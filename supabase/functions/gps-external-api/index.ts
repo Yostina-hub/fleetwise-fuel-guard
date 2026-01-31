@@ -243,6 +243,169 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
   return Math.round(R * c * 100) / 100;
 }
 
+// Check restricted hours and trigger engine lock if violation detected
+async function checkRestrictedHours(
+  supabase: any,
+  vehicleId: string,
+  organizationId: string,
+  deviceId: string,
+  lat: number,
+  lng: number
+) {
+  try {
+    // Get restricted hours config for this vehicle
+    const { data: config, error: configError } = await supabase
+      .from('vehicle_restricted_hours')
+      .select('*')
+      .eq('vehicle_id', vehicleId)
+      .eq('is_enabled', true)
+      .maybeSingle();
+
+    if (configError || !config) {
+      return; // No active config
+    }
+
+    const now = new Date();
+    const currentDayOfWeek = now.getDay(); // 0 = Sunday, 6 = Saturday
+    const currentTimeStr = now.toTimeString().slice(0, 8); // HH:MM:SS
+
+    // Check if today is an active day
+    const activeDays = config.active_days || [1, 2, 3, 4, 5];
+    if (!activeDays.includes(currentDayOfWeek)) {
+      return; // Not an active day
+    }
+
+    const allowedStart = config.allowed_start_time; // HH:MM:SS
+    const allowedEnd = config.allowed_end_time;     // HH:MM:SS
+
+    // Check if current time is within allowed hours
+    let isWithinAllowed = false;
+    if (allowedStart <= allowedEnd) {
+      // Normal range (e.g., 08:00 - 18:00)
+      isWithinAllowed = currentTimeStr >= allowedStart && currentTimeStr <= allowedEnd;
+    } else {
+      // Overnight range (e.g., 22:00 - 06:00)
+      isWithinAllowed = currentTimeStr >= allowedStart || currentTimeStr <= allowedEnd;
+    }
+
+    if (isWithinAllowed) {
+      return; // Within allowed hours
+    }
+
+    // Violation detected - check for recent violations to avoid spamming
+    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000).toISOString();
+    const { data: recentViolation } = await supabase
+      .from('restricted_hours_violations')
+      .select('id')
+      .eq('vehicle_id', vehicleId)
+      .gte('violation_time', fiveMinutesAgo)
+      .maybeSingle();
+
+    if (recentViolation) {
+      return; // Already logged a violation recently
+    }
+
+    // Get driver info
+    const { data: vehicleData } = await supabase
+      .from('vehicles')
+      .select('assigned_driver_id')
+      .eq('id', vehicleId)
+      .single();
+
+    // Log the violation - match actual table schema
+    const violationData: Record<string, any> = {
+      organization_id: organizationId,
+      vehicle_id: vehicleId,
+      driver_id: vehicleData?.assigned_driver_id || null,
+      restriction_id: config.id,
+      violation_time: now.toISOString(),
+      allowed_start_time: allowedStart,
+      allowed_end_time: allowedEnd,
+      actual_time: currentTimeStr,
+      start_location: { lat, lng },
+      notes: `Day of week: ${currentDayOfWeek}, Engine lock: ${config.engine_lock_enabled ? 'enabled' : 'disabled'}`,
+    };
+
+    // If engine lock is enabled, send cutoff command
+    if (config.engine_lock_enabled) {
+      let commandId: string | null = null;
+
+      // Queue the engine cutoff command
+      const commandPayload = {
+        command_type: 'engine_cutoff',
+        command_payload: {
+          action: config.send_warning_first ? 'delayed_cutoff' : 'immediate_cutoff',
+          delay_seconds: config.lock_delay_seconds || 30,
+          reason: 'restricted_hours_violation',
+          warning_message: config.warning_message || 'Vehicle operating outside allowed hours',
+        },
+        device_id: deviceId,
+        vehicle_id: vehicleId,
+        organization_id: organizationId,
+        status: 'pending',
+        priority: 'high',
+        expires_at: new Date(now.getTime() + 10 * 60 * 1000).toISOString(),
+      };
+
+      const { data: commandData, error: commandError } = await supabase
+        .from('device_commands')
+        .insert(commandPayload)
+        .select('id')
+        .single();
+
+      if (commandError) {
+        console.error('Error queuing engine cutoff command:', commandError);
+        violationData.notes = `Day of week: ${currentDayOfWeek}, Warning sent (command failed)`;
+      } else {
+        commandId = commandData.id;
+        violationData.notes = `Day of week: ${currentDayOfWeek}, Engine lock command ID: ${commandId}`;
+        console.log(`Engine cutoff command queued for vehicle ${vehicleId}, command ID: ${commandId}`);
+      }
+    }
+
+    // Insert violation record
+    const { error: violationError } = await supabase
+      .from('restricted_hours_violations')
+      .insert(violationData);
+
+    if (violationError) {
+      console.error('Error logging restricted hours violation:', violationError);
+    } else {
+      console.log(`Restricted hours violation logged for vehicle ${vehicleId}`);
+    }
+
+    // Create an alert for the violation
+    const { error: alertError } = await supabase
+      .from('alerts')
+      .insert({
+        organization_id: organizationId,
+        vehicle_id: vehicleId,
+        driver_id: vehicleData?.assigned_driver_id || null,
+        alert_type: 'restricted_hours',
+        title: 'Restricted Hours Violation',
+        message: `Vehicle operating outside allowed hours (${allowedStart.slice(0, 5)} - ${allowedEnd.slice(0, 5)})`,
+        severity: config.engine_lock_enabled ? 'high' : 'medium',
+        status: 'active',
+        alert_time: now.toISOString(),
+        lat: lat,
+        lng: lng,
+        alert_data: {
+          allowed_start: allowedStart,
+          allowed_end: allowedEnd,
+          actual_time: currentTimeStr,
+          engine_lock_enabled: config.engine_lock_enabled,
+        },
+      });
+
+    if (alertError) {
+      console.error('Error creating restricted hours alert:', alertError);
+    }
+
+  } catch (error) {
+    console.error('Error checking restricted hours:', error);
+  }
+}
+
 // Detect trip transitions
 async function detectTripTransition(
   supabase: any,
@@ -544,6 +707,16 @@ async function processRecord(supabase: any, record: TelemetryRecord): Promise<Pr
     } catch (e) {
       console.warn('Geofence processing error:', e);
     }
+
+    // Check restricted hours and enforce engine lock if enabled
+    await checkRestrictedHours(
+      supabase,
+      device.vehicle_id,
+      device.organization_id,
+      device.id,
+      record.latitude!,
+      record.longitude!
+    );
   }
 
   console.log(`Telemetry processed for ${record.imei}: lat=${record.latitude}, lng=${record.longitude}`);
