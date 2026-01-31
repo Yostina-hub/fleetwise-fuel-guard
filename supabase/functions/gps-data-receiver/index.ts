@@ -611,20 +611,18 @@ async function checkRestrictedHours(
       .eq('id', vehicleId)
       .single();
 
-    // Log the violation
+    // Log the violation - match actual table schema
     const violationData: Record<string, any> = {
       organization_id: organizationId,
       vehicle_id: vehicleId,
       driver_id: vehicleData?.assigned_driver_id || null,
-      config_id: config.id,
+      restriction_id: config.id,
       violation_time: now.toISOString(),
-      day_of_week: currentDayOfWeek,
       allowed_start_time: allowedStart,
       allowed_end_time: allowedEnd,
       actual_time: currentTimeStr,
-      lat: lat,
-      lng: lng,
-      action_taken: 'none',
+      start_location: { lat, lng },
+      notes: `Day of week: ${currentDayOfWeek}, Engine lock: ${config.engine_lock_enabled ? 'enabled' : 'disabled'}`,
     };
 
     // If engine lock is enabled, send cutoff command
@@ -656,19 +654,12 @@ async function checkRestrictedHours(
 
       if (commandError) {
         console.error('Error queuing engine cutoff command:', commandError);
-        violationData.action_taken = 'warning_sent';
+        violationData.notes = `Day of week: ${currentDayOfWeek}, Warning sent (command failed)`;
       } else {
         commandId = commandData.id;
-        violationData.action_taken = 'engine_locked';
+        violationData.notes = `Day of week: ${currentDayOfWeek}, Engine lock command ID: ${commandId}`;
         console.log(`Engine cutoff command queued for vehicle ${vehicleId}, command ID: ${commandId}`);
       }
-
-      // Update violation with command ID
-      if (commandId) {
-        violationData['command_id'] = commandId;
-      }
-    } else {
-      violationData.action_taken = 'warning_sent';
     }
 
     // Insert violation record
