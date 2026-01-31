@@ -477,6 +477,122 @@ async function detectTripTransition(
   }
 }
 
+// ==================== Fuel Event Detection ====================
+const FUEL_REFUEL_THRESHOLD_PERCENT = 5;
+const FUEL_THEFT_THRESHOLD_PERCENT = 10;
+const FUEL_DRAIN_THRESHOLD_PERCENT = 8;
+const FUEL_LEAK_THRESHOLD_PERCENT = 3;
+const FUEL_DETECTION_COOLDOWN_MS = 5 * 60 * 1000;
+
+async function detectFuelEvents(
+  supabase: any,
+  vehicleId: string,
+  organizationId: string,
+  currentFuel: number,
+  lat: number,
+  lng: number,
+  ignitionOn: boolean,
+  speedKmh: number
+) {
+  try {
+    const { data: lastTelemetry } = await supabase
+      .from('vehicle_telemetry')
+      .select('fuel_level_percent, ignition_on, speed_kmh, created_at')
+      .eq('vehicle_id', vehicleId)
+      .order('created_at', { ascending: false })
+      .limit(2);
+
+    if (!lastTelemetry || lastTelemetry.length < 2) return;
+
+    const previousFuel = lastTelemetry[1]?.fuel_level_percent;
+    if (previousFuel == null || currentFuel == null) return;
+
+    const fuelChange = currentFuel - previousFuel;
+    if (Math.abs(fuelChange) < 2) return;
+
+    const cooldownTime = new Date(Date.now() - FUEL_DETECTION_COOLDOWN_MS).toISOString();
+    const { data: recentEvent } = await supabase
+      .from('fuel_events')
+      .select('id')
+      .eq('vehicle_id', vehicleId)
+      .gte('event_time', cooldownTime)
+      .maybeSingle();
+
+    if (recentEvent) return;
+
+    let eventType: 'refuel' | 'theft' | 'drain' | 'leak' | null = null;
+    let confidenceScore = 0.5;
+
+    if (fuelChange >= FUEL_REFUEL_THRESHOLD_PERCENT) {
+      eventType = 'refuel';
+      confidenceScore = Math.min(0.9, 0.5 + (fuelChange / 50));
+    } else if (fuelChange <= -FUEL_THEFT_THRESHOLD_PERCENT && !ignitionOn && speedKmh < 5) {
+      eventType = 'theft';
+      confidenceScore = Math.min(0.95, 0.7 + (Math.abs(fuelChange) / 100));
+    } else if (fuelChange <= -FUEL_DRAIN_THRESHOLD_PERCENT && !ignitionOn) {
+      eventType = 'drain';
+      confidenceScore = 0.7;
+    } else if (fuelChange <= -FUEL_LEAK_THRESHOLD_PERCENT && ignitionOn && speedKmh > 0) {
+      eventType = 'leak';
+      confidenceScore = 0.5;
+    }
+
+    if (!eventType) return;
+
+    const { data: activeTrip } = await supabase
+      .from('trips')
+      .select('id')
+      .eq('vehicle_id', vehicleId)
+      .eq('status', 'in_progress')
+      .limit(1)
+      .maybeSingle();
+
+    await supabase.from('fuel_events').insert({
+      organization_id: organizationId,
+      vehicle_id: vehicleId,
+      trip_id: activeTrip?.id || null,
+      event_type: eventType,
+      event_time: new Date().toISOString(),
+      fuel_before_liters: previousFuel * 0.6,
+      fuel_after_liters: currentFuel * 0.6,
+      fuel_change_liters: fuelChange * 0.6,
+      fuel_change_percent: fuelChange,
+      lat: lat,
+      lng: lng,
+      speed_kmh: speedKmh,
+      ignition_status: ignitionOn,
+      confidence_score: confidenceScore,
+      status: eventType === 'refuel' ? 'confirmed' : 'pending',
+    });
+
+    console.log(`Fuel ${eventType} detected at (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
+
+    if (eventType === 'theft' || eventType === 'drain') {
+      const { data: vehicleData } = await supabase
+        .from('vehicles')
+        .select('plate_number, assigned_driver_id')
+        .eq('id', vehicleId)
+        .single();
+
+      await supabase.from('alerts').insert({
+        organization_id: organizationId,
+        vehicle_id: vehicleId,
+        driver_id: vehicleData?.assigned_driver_id || null,
+        alert_type: eventType === 'theft' ? 'fuel_theft' : 'fuel_drain',
+        title: eventType === 'theft' ? 'Potential Fuel Theft Detected' : 'Fuel Drain Detected',
+        message: `${Math.abs(fuelChange).toFixed(1)}% fuel ${eventType === 'theft' ? 'stolen' : 'drained'} from ${vehicleData?.plate_number || 'vehicle'}`,
+        severity: eventType === 'theft' ? 'critical' : 'high',
+        status: 'active',
+        alert_time: new Date().toISOString(),
+        lat: lat,
+        lng: lng,
+      });
+    }
+  } catch (error) {
+    console.error('Error in fuel event detection:', error);
+  }
+}
+
 // Process a single telemetry record
 async function processRecord(supabase: any, record: TelemetryRecord): Promise<ProcessResult> {
   const processedAt = new Date().toISOString();
@@ -649,6 +765,20 @@ async function processRecord(supabase: any, record: TelemetryRecord): Promise<Pr
     if (telemetryError) {
       console.error('Error inserting telemetry:', telemetryError);
       return { success: false, error: 'Failed to store telemetry', code: 'DB_ERROR' };
+    }
+
+    // Detect fuel events (refuel, theft, drain, leak) with GPS coordinates
+    if (record.fuel_level_percent != null) {
+      await detectFuelEvents(
+        supabase,
+        device.vehicle_id,
+        device.organization_id,
+        record.fuel_level_percent,
+        record.latitude!,
+        record.longitude!,
+        ignitionState,
+        speedKmh
+      );
     }
 
     // Check for overspeeding
