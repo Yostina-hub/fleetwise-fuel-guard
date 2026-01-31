@@ -1,8 +1,10 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, Droplet, CheckCircle, Clock, AlertTriangle } from "lucide-react";
+import { Eye, Droplet, CheckCircle, Clock, AlertTriangle, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import EventLocationDisplay from "@/components/routehistory/EventLocationDisplay";
 
 interface FuelEvent {
   id: string;
@@ -13,6 +15,8 @@ interface FuelEvent {
   fuel_change_percent: number;
   location_name?: string | null;
   status?: string | null;
+  lat?: number | null;
+  lng?: number | null;
 }
 
 interface FuelEventsListViewProps {
@@ -22,6 +26,7 @@ interface FuelEventsListViewProps {
   onViewEvent?: (event: FuelEvent) => void;
   onInvestigate?: (eventId: string) => void;
   onMarkFalsePositive?: (eventId: string) => void;
+  onViewOnMap?: (event: FuelEvent) => void;
 }
 
 const FuelEventsListView = ({
@@ -31,6 +36,7 @@ const FuelEventsListView = ({
   onViewEvent,
   onInvestigate,
   onMarkFalsePositive,
+  onViewOnMap,
 }: FuelEventsListViewProps) => {
   const getEventTypeIcon = (type: string) => {
     switch (type) {
@@ -90,6 +96,19 @@ const FuelEventsListView = ({
     }
   };
 
+  const hasValidLocation = (event: FuelEvent) => {
+    return (
+      event.lat != null &&
+      event.lng != null &&
+      isFinite(event.lat) &&
+      isFinite(event.lng) &&
+      event.lat >= -90 &&
+      event.lat <= 90 &&
+      event.lng >= -180 &&
+      event.lng <= 180
+    );
+  };
+
   if (events.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -102,14 +121,14 @@ const FuelEventsListView = ({
   return (
     <div className="rounded-lg border border-border overflow-hidden">
       {/* Table Header */}
-      <div className="grid grid-cols-[60px_1fr_1fr_140px_120px_1fr_80px] gap-4 px-4 py-3 bg-primary/10 text-foreground text-xs font-semibold uppercase tracking-wider">
+      <div className="grid grid-cols-[60px_1fr_1fr_140px_120px_1fr_100px] gap-4 px-4 py-3 bg-primary/10 text-foreground text-xs font-semibold uppercase tracking-wider">
         <div>SN</div>
         <div>Vehicle</div>
         <div>Event Type</div>
         <div>Status</div>
         <div className="text-right">Fuel Change</div>
         <div>Location</div>
-        <div className="text-center">Action</div>
+        <div className="text-center">Actions</div>
       </div>
 
       {/* Table Body */}
@@ -118,7 +137,7 @@ const FuelEventsListView = ({
           <div
             key={event.id}
             className={cn(
-              "grid grid-cols-[60px_1fr_1fr_140px_120px_1fr_80px] gap-4 px-4 py-3 items-center hover:bg-muted/50 transition-colors",
+              "grid grid-cols-[60px_1fr_1fr_140px_120px_1fr_100px] gap-4 px-4 py-3 items-center hover:bg-muted/50 transition-colors",
               (event.event_type === "theft" || event.event_type === "drain") &&
                 "bg-destructive/5 hover:bg-destructive/10"
             )}
@@ -172,21 +191,55 @@ const FuelEventsListView = ({
             </div>
 
             {/* Location */}
-            <div className="text-sm text-muted-foreground truncate" title={event.location_name || "No location"}>
-              {event.location_name || "No location"}
+            <div className="text-sm truncate">
+              {event.location_name ? (
+                <span className="text-muted-foreground" title={event.location_name}>
+                  {event.location_name}
+                </span>
+              ) : hasValidLocation(event) ? (
+                <EventLocationDisplay latitude={event.lat!} longitude={event.lng!} />
+              ) : (
+                <span className="text-muted-foreground/50 italic">No location</span>
+              )}
             </div>
 
-            {/* Action */}
-            <div className="flex justify-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => onViewEvent?.(event)}
-                aria-label="View event details"
-              >
-                <Eye className="w-4 h-4" />
-              </Button>
+            {/* Actions */}
+            <div className="flex justify-center gap-1">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => onViewEvent?.(event)}
+                      aria-label="View event details"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>View Details</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              {hasValidLocation(event) && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-primary"
+                        onClick={() => onViewOnMap?.(event)}
+                        aria-label="View on map"
+                      >
+                        <MapPin className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>View on Map</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
           </div>
         ))}

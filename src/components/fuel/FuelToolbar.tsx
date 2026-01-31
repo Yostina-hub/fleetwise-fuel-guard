@@ -1,4 +1,4 @@
-import { Search, Filter, Settings, LayoutList, LayoutGrid } from "lucide-react";
+import { Search, Filter, Settings, LayoutList, LayoutGrid, Map } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,8 +9,8 @@ interface FuelToolbarProps {
   onSearchChange: (query: string) => void;
   totalCount: number;
   filteredCount: number;
-  viewMode: "list" | "grid";
-  onViewModeChange: (mode: "list" | "grid") => void;
+  viewMode: "list" | "grid" | "map";
+  onViewModeChange: (mode: "list" | "grid" | "map") => void;
   onFilterClick?: () => void;
   onSettingsClick?: () => void;
 }
@@ -68,7 +68,7 @@ const FuelToolbar = ({
         SETTING
       </Button>
 
-      {/* View Toggle */}
+      {/* View Toggle - List | Grid | Map */}
       <div className="flex items-center border rounded-md overflow-hidden">
         <Button
           variant="ghost"
@@ -93,6 +93,18 @@ const FuelToolbar = ({
           aria-label="Grid view"
         >
           <LayoutGrid className="w-4 h-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={cn(
+            "rounded-none h-9 px-3",
+            viewMode === "map" && "bg-muted"
+          )}
+          onClick={() => onViewModeChange("map")}
+          aria-label="Map view"
+        >
+          <Map className="w-4 h-4" />
         </Button>
       </div>
     </div>

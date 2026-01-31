@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, Droplet, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,14 +12,29 @@ import { TablePagination, usePagination } from "@/components/reports/TablePagina
 import FuelToolbar from "./FuelToolbar";
 import FuelStatusChips from "./FuelStatusChips";
 import FuelEventsListView from "./FuelEventsListView";
+import FuelEventsMapView from "./FuelEventsMapView";
 
 const ITEMS_PER_PAGE = 10;
+
+interface FuelEvent {
+  id: string;
+  vehicle_id: string;
+  event_type: string;
+  event_time: string;
+  fuel_change_liters: number;
+  fuel_change_percent: number;
+  location_name?: string | null;
+  status?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+}
 
 const FuelEventsTab = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list"); // Default to list
+  const [viewMode, setViewMode] = useState<"list" | "grid" | "map">("list");
   const [dateRange] = useState<string>("30");
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   
   const { fuelEvents, loading, markAsInvestigating, markAsFalsePositive } = useFuelEvents();
   const { vehicles, getVehiclePlate } = useFuelPageContext();
@@ -77,9 +92,20 @@ const FuelEventsTab = () => {
   const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(filteredEvents.length, ITEMS_PER_PAGE);
   const paginatedEvents = filteredEvents.slice(startIndex, endIndex);
 
+  // Handle "View on Map" from list view
+  const handleViewOnMap = useCallback((event: FuelEvent) => {
+    setSelectedEventId(event.id);
+    setViewMode("map");
+  }, []);
+
+  // Handle event selection in map view
+  const handleEventSelect = useCallback((event: FuelEvent) => {
+    setSelectedEventId(event.id);
+  }, []);
+
   // Export to CSV - exports all filtered events
   const exportEventsCSV = () => {
-    const headers = ["Date/Time", "Vehicle", "Event Type", "Status", "Fuel Change (L)", "Change %", "Location"];
+    const headers = ["Date/Time", "Vehicle", "Event Type", "Status", "Fuel Change (L)", "Change %", "Location", "Latitude", "Longitude"];
     const rows = filteredEvents.map(e => [
       format(new Date(e.event_time), "yyyy-MM-dd HH:mm"),
       getVehiclePlate(e.vehicle_id),
@@ -87,7 +113,9 @@ const FuelEventsTab = () => {
       e.status || "",
       e.fuel_change_liters.toFixed(1),
       e.fuel_change_percent.toFixed(1),
-      e.location_name || ""
+      e.location_name || "",
+      e.lat?.toString() || "",
+      e.lng?.toString() || ""
     ]);
     
     const csvContent = [headers.join(","), ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(","))].join("\n");
@@ -146,13 +174,22 @@ const FuelEventsTab = () => {
       </div>
 
       {/* Events Display */}
-      {viewMode === "list" ? (
+      {viewMode === "map" ? (
+        <FuelEventsMapView
+          events={filteredEvents}
+          getVehiclePlate={getVehiclePlate}
+          formatFuel={formatFuel}
+          selectedEventId={selectedEventId}
+          onEventSelect={handleEventSelect}
+        />
+      ) : viewMode === "list" ? (
         <FuelEventsListView
           events={paginatedEvents}
           getVehiclePlate={getVehiclePlate}
           formatFuel={formatFuel}
           onInvestigate={markAsInvestigating}
           onMarkFalsePositive={markAsFalsePositive}
+          onViewOnMap={handleViewOnMap}
         />
       ) : (
         // Grid View - Card-based display
@@ -205,13 +242,15 @@ const FuelEventsTab = () => {
         </div>
       )}
 
-      {/* Pagination */}
-      <TablePagination
-        currentPage={currentPage}
-        totalItems={filteredEvents.length}
-        itemsPerPage={ITEMS_PER_PAGE}
-        onPageChange={setCurrentPage}
-      />
+      {/* Pagination - only for list and grid views */}
+      {viewMode !== "map" && (
+        <TablePagination
+          currentPage={currentPage}
+          totalItems={filteredEvents.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
+      )}
     </div>
   );
 };
