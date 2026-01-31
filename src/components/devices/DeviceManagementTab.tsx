@@ -15,6 +15,7 @@ import { useDevices } from "@/hooks/useDevices";
 import { useDeviceCommands } from "@/hooks/useDeviceCommands";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useDeviceProtocols } from "@/hooks/useDeviceProtocols";
+import { useDeviceFuelStatus } from "@/hooks/useDeviceFuelStatus";
 import { useToast } from "@/hooks/use-toast";
 import { useOrganization } from "@/hooks/useOrganization";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,6 +68,7 @@ export const DeviceManagementTab = () => {
   const { vehicles } = useVehicles();
   const { sendCommand } = useDeviceCommands();
   const { protocols } = useDeviceProtocols();
+  const { fuelStatusMap, devicesWithFuel } = useDeviceFuelStatus();
   const { organizationId } = useOrganization();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -774,7 +776,7 @@ export const DeviceManagementTab = () => {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -822,6 +824,23 @@ export const DeviceManagementTab = () => {
             <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
               {maintenanceCount}
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+              <Fuel className="h-4 w-4" aria-hidden="true" />
+              Fuel Sensors
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              {devicesWithFuel}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              of {devices?.length || 0} devices
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -922,6 +941,7 @@ export const DeviceManagementTab = () => {
                 <TableHead>IMEI</TableHead>
                 <TableHead>Tracker Model</TableHead>
                 <TableHead>Protocol</TableHead>
+                <TableHead>Fuel Sensor</TableHead>
                 <TableHead>SIM Card</TableHead>
                 <TableHead>Heartbeat</TableHead>
                 <TableHead>Connection</TableHead>
@@ -983,6 +1003,44 @@ export const DeviceManagementTab = () => {
                     ) : (
                       <span className="text-xs text-muted-foreground">Not set</span>
                     )}
+                  </TableCell>
+                  <TableCell>
+                    {(() => {
+                      const fuelStatus = fuelStatusMap.get(device.id);
+                      if (!fuelStatus || !fuelStatus.has_fuel_data) {
+                        return (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="secondary" className="text-xs gap-1">
+                                  <Fuel className="h-3 w-3" aria-hidden="true" />
+                                  No Data
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>No fuel sensor connected or no data received</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        );
+                      }
+                      return (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge className="bg-blue-500/10 text-blue-700 border-blue-500/20 dark:text-blue-400 text-xs gap-1">
+                                <Fuel className="h-3 w-3" aria-hidden="true" />
+                                {fuelStatus.last_fuel_reading?.toFixed(1)}%
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Last reading: {fuelStatus.last_fuel_reading?.toFixed(1)}%</p>
+                              <p className="text-xs text-muted-foreground">{fuelStatus.fuel_records_count} records</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell className="font-mono text-sm">
                     <div className="flex items-center gap-2">
