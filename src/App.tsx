@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { SidebarProvider } from "@/contexts/SidebarContext";
 import Dashboard from "./pages/Dashboard";
 import MapView from "./pages/MapView";
 import Fleet from "./pages/Fleet";
@@ -46,52 +47,54 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <CommandPalette />
-              <ErrorBoundary>
-                <Routes>
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                  <Route path="/map" element={<ProtectedRoute><MapView /></ProtectedRoute>} />
-                  <Route path="/vehicles" element={<ProtectedRoute><Vehicles /></ProtectedRoute>} />
-                  <Route path="/fleet" element={<ProtectedRoute><Fleet /></ProtectedRoute>} />
-                  <Route path="/driver-scoring" element={<ProtectedRoute><DriverScoring /></ProtectedRoute>} />
-                  <Route path="/drivers" element={<ProtectedRoute><Drivers /></ProtectedRoute>} />
-                  <Route path="/fuel" element={<ProtectedRoute><FuelMonitoring /></ProtectedRoute>} />
-                  <Route path="/fuel-monitoring" element={<ProtectedRoute><FuelMonitoring /></ProtectedRoute>} />
-                  <Route path="/incidents" element={<ProtectedRoute><Incidents /></ProtectedRoute>} />
-                  <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
-                  <Route path="/maintenance" element={<ProtectedRoute><Maintenance /></ProtectedRoute>} />
-                  <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-                  <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-                  <Route path="/users" element={<ProtectedRoute requiredRole="super_admin"><UserManagement /></ProtectedRoute>} />
-                  <Route path="/security" element={<ProtectedRoute requiredRole="super_admin"><Security /></ProtectedRoute>} />
-                  <Route path="/security-dashboard" element={<ProtectedRoute requiredRole="super_admin"><SecurityDashboard /></ProtectedRoute>} />
-                  <Route path="/integrations" element={<ProtectedRoute requiredRole="super_admin"><Integrations /></ProtectedRoute>} />
-                  <Route path="/administration" element={<ProtectedRoute requiredRole="super_admin"><Administration /></ProtectedRoute>} />
-                  <Route path="/routes" element={<ProtectedRoute><RoutesPage /></ProtectedRoute>} />
-                  <Route path="/route-history" element={<ProtectedRoute><RouteHistory /></ProtectedRoute>} />
-                  <Route path="/geofencing" element={<ProtectedRoute><Geofencing /></ProtectedRoute>} />
-                  <Route path="/speed-governor" element={<ProtectedRoute><SpeedGovernor /></ProtectedRoute>} />
-                  <Route path="/work-orders" element={<ProtectedRoute><WorkOrders /></ProtectedRoute>} />
-                  <Route path="/fleet-scheduling" element={<ProtectedRoute><FleetScheduling /></ProtectedRoute>} />
-                  <Route path="/dispatch" element={<ProtectedRoute><Dispatch /></ProtectedRoute>} />
-                  <Route path="/driver-app" element={<ProtectedRoute><DriverApp /></ProtectedRoute>} />
-                  <Route path="/config" element={<ProtectedRoute requiredRole="super_admin"><SystemConfig /></ProtectedRoute>} />
-                  <Route path="/devices" element={<ProtectedRoute><DeviceIntegration /></ProtectedRoute>} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </ErrorBoundary>
-            </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+          <SidebarProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <CommandPalette />
+                <ErrorBoundary>
+                  <Routes>
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                    <Route path="/map" element={<ProtectedRoute><MapView /></ProtectedRoute>} />
+                    <Route path="/vehicles" element={<ProtectedRoute><Vehicles /></ProtectedRoute>} />
+                    <Route path="/fleet" element={<ProtectedRoute><Fleet /></ProtectedRoute>} />
+                    <Route path="/driver-scoring" element={<ProtectedRoute><DriverScoring /></ProtectedRoute>} />
+                    <Route path="/drivers" element={<ProtectedRoute><Drivers /></ProtectedRoute>} />
+                    <Route path="/fuel" element={<ProtectedRoute><FuelMonitoring /></ProtectedRoute>} />
+                    <Route path="/fuel-monitoring" element={<ProtectedRoute><FuelMonitoring /></ProtectedRoute>} />
+                    <Route path="/incidents" element={<ProtectedRoute><Incidents /></ProtectedRoute>} />
+                    <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
+                    <Route path="/maintenance" element={<ProtectedRoute><Maintenance /></ProtectedRoute>} />
+                    <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+                    <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                    <Route path="/users" element={<ProtectedRoute requiredRole="super_admin"><UserManagement /></ProtectedRoute>} />
+                    <Route path="/security" element={<ProtectedRoute requiredRole="super_admin"><Security /></ProtectedRoute>} />
+                    <Route path="/security-dashboard" element={<ProtectedRoute requiredRole="super_admin"><SecurityDashboard /></ProtectedRoute>} />
+                    <Route path="/integrations" element={<ProtectedRoute requiredRole="super_admin"><Integrations /></ProtectedRoute>} />
+                    <Route path="/administration" element={<ProtectedRoute requiredRole="super_admin"><Administration /></ProtectedRoute>} />
+                    <Route path="/routes" element={<ProtectedRoute><RoutesPage /></ProtectedRoute>} />
+                    <Route path="/route-history" element={<ProtectedRoute><RouteHistory /></ProtectedRoute>} />
+                    <Route path="/geofencing" element={<ProtectedRoute><Geofencing /></ProtectedRoute>} />
+                    <Route path="/speed-governor" element={<ProtectedRoute><SpeedGovernor /></ProtectedRoute>} />
+                    <Route path="/work-orders" element={<ProtectedRoute><WorkOrders /></ProtectedRoute>} />
+                    <Route path="/fleet-scheduling" element={<ProtectedRoute><FleetScheduling /></ProtectedRoute>} />
+                    <Route path="/dispatch" element={<ProtectedRoute><Dispatch /></ProtectedRoute>} />
+                    <Route path="/driver-app" element={<ProtectedRoute><DriverApp /></ProtectedRoute>} />
+                    <Route path="/config" element={<ProtectedRoute requiredRole="super_admin"><SystemConfig /></ProtectedRoute>} />
+                    <Route path="/devices" element={<ProtectedRoute><DeviceIntegration /></ProtectedRoute>} />
+                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </ErrorBoundary>
+              </BrowserRouter>
+            </TooltipProvider>
+          </SidebarProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
 };
 
 export default App;
