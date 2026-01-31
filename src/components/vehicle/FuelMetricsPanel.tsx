@@ -15,7 +15,8 @@ import {
   RefreshCw
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
-import { format, subDays, isSameDay, startOfDay, endOfDay, isWithinInterval } from "date-fns";
+import { format, subDays, isSameDay, startOfDay, endOfDay, isWithinInterval, formatDistanceToNow } from "date-fns";
+import { useVehicleFuelSensor } from "@/hooks/useVehicleFuelSensor";
 
 interface FuelTransaction {
   id: string;
@@ -43,6 +44,8 @@ const FuelMetricsPanel = ({
   fuelUnit = "liters"
 }: FuelMetricsPanelProps) => {
   const [dateRange, setDateRange] = useState("week");
+
+  const { data: sensorReading } = useVehicleFuelSensor(vehicleId);
 
   // Filter transactions by date range
   const filteredTransactions = useMemo(() => {
@@ -201,6 +204,39 @@ const FuelMetricsPanel = ({
           </Select>
         </div>
       </div>
+
+      {/* Fuel Sensor Reading (Telemetry) */}
+      <Card className="bg-primary/5 border-primary/20">
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Droplet className="h-4 w-4 text-primary" />
+              <div>
+                <p className="text-sm font-medium text-foreground">Fuel Sensor (last reading)</p>
+                <p className="text-xs text-muted-foreground">
+                  Telemetry-based; may be older than the selected period.
+                </p>
+              </div>
+            </div>
+            {sensorReading && Number.isFinite(sensorReading.last_fuel_reading) ? (
+              <div className="text-right">
+                <p className="text-2xl font-bold text-foreground">
+                  {Math.round(sensorReading.last_fuel_reading)}%
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {formatDistanceToNow(new Date(sensorReading.last_communication_at), { addSuffix: true })}
+                  {sensorReading.fuel_records_count ? ` • ${sensorReading.fuel_records_count} readings` : ""}
+                </p>
+              </div>
+            ) : (
+              <div className="text-right">
+                <p className="text-sm font-medium text-foreground">No sensor data</p>
+                <p className="text-xs text-muted-foreground">No fuel_level telemetry yet</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Metric Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

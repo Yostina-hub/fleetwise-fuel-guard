@@ -312,7 +312,7 @@ export const VehicleTableView = ({
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <div className="flex items-center gap-2">
-                                <Droplets className="w-3.5 h-3.5 text-blue-500" />
+                                <Droplets className="w-3.5 h-3.5 text-primary" />
                                 <div className="w-16 bg-muted rounded-full h-2">
                                   <div
                                     className={`h-2 rounded-full ${getFuelColor(fuelLevel)}`}
