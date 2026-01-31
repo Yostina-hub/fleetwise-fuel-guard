@@ -37,9 +37,11 @@ const incidentSchema = z.object({
 
 interface CreateIncidentDialogProps {
   trigger?: React.ReactNode;
+  vehicleId?: string;
+  driverId?: string;
 }
 
-const CreateIncidentDialog = ({ trigger }: CreateIncidentDialogProps) => {
+const CreateIncidentDialog = ({ trigger, vehicleId, driverId }: CreateIncidentDialogProps) => {
   const { organizationId } = useOrganization();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -64,6 +66,8 @@ const CreateIncidentDialog = ({ trigger }: CreateIncidentDialogProps) => {
           ...validated,
           incident_number: incidentNumber,
           organization_id: organizationId,
+          vehicle_id: vehicleId || null,
+          driver_id: driverId || null,
           status: "open",
         });
       if (error) throw error;
