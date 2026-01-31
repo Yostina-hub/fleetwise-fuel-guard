@@ -161,6 +161,8 @@ const Vehicles = () => {
         make: v.make || "Unknown",
         model: v.model || "",
         year: v.year,
+        vehicleType: v.vehicle_type || "Vehicle",
+        branch: v.depot?.name || "Head Office",
         status,
         speed,
         lat,
@@ -546,7 +548,7 @@ const Vehicles = () => {
                         <TableHead className="text-foreground font-semibold w-20">State</TableHead>
                         <TableHead className="text-foreground font-semibold">Branch</TableHead>
                         <TableHead className="text-foreground font-semibold">Vehicle</TableHead>
-                        <TableHead className="text-foreground font-semibold">Current_Status</TableHead>
+                        <TableHead className="text-foreground font-semibold">Status</TableHead>
                         <TableHead className="text-foreground font-semibold">Address</TableHead>
                         <TableHead className="text-foreground font-semibold w-10"></TableHead>
                       </TableRow>
@@ -594,8 +596,8 @@ const Vehicles = () => {
                               </div>
                             </TableCell>
                             <TableCell className="text-sm">
-                              {vehicle.make}
-                              {vehicle.model && <span className="block text-xs text-muted-foreground">{vehicle.model}</span>}
+                              <div className="font-medium">{vehicle.branch}</div>
+                              <span className="text-xs text-muted-foreground">{vehicle.vehicleType}</span>
                             </TableCell>
                             <TableCell>
                               {/* Hover card on plate number */}

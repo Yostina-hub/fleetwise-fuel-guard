@@ -10,10 +10,17 @@ export interface AssignedDriver {
   avatar_url?: string;
 }
 
+export interface Depot {
+  id: string;
+  name: string;
+  address?: string;
+}
+
 export interface Vehicle {
   id: string;
   organization_id: string;
   depot_id?: string;
+  depot?: Depot;
   vin?: string;
   plate_number: string;
   make: string;
@@ -34,6 +41,7 @@ export interface Vehicle {
   updated_at: string;
   assigned_driver_id?: string;
   assigned_driver?: AssignedDriver;
+  vehicle_type?: string;
   // Computed fields
   current_fuel?: number;
   current_speed?: number;
@@ -69,7 +77,11 @@ export const useVehicles = (skip = false) => {
         // Include assigned driver info via join
         const { data, error } = await supabase
           .from("vehicles")
-          .select("*, assigned_driver:drivers!vehicles_assigned_driver_id_fkey(id, first_name, last_name, phone, avatar_url)")
+          .select(`
+            *,
+            assigned_driver:drivers!vehicles_assigned_driver_id_fkey(id, first_name, last_name, phone, avatar_url),
+            depot:depots!vehicles_depot_id_fkey(id, name, address)
+          `)
           .eq("organization_id", organizationId)
           .order("created_at", { ascending: false })
           .limit(5000);
@@ -132,7 +144,11 @@ export const useVehicles = (skip = false) => {
         setLoading(true);
         supabase
           .from("vehicles")
-          .select("*, assigned_driver:drivers!vehicles_assigned_driver_id_fkey(id, first_name, last_name, phone, avatar_url)")
+          .select(`
+            *,
+            assigned_driver:drivers!vehicles_assigned_driver_id_fkey(id, first_name, last_name, phone, avatar_url),
+            depot:depots!vehicles_depot_id_fkey(id, name, address)
+          `)
           .eq("organization_id", organizationId)
           .then(({ data }) => {
             setVehicles((data as any) || []);
