@@ -1192,11 +1192,11 @@ async function processGPSData(
     const speedLimit = governorConfig?.max_speed_limit || 80;
     const isGovernorActive = governorConfig?.governor_active ?? true;
 
-    // Check for overspeed and trigger penalty
+    // Check for overspeed and trigger penalty + speed cutoff
     if (isGovernorActive && speedValue > speedLimit) {
       const { data: vehicleData } = await supabase
         .from('vehicles')
-        .select('assigned_driver_id')
+        .select('assigned_driver_id, speed_cutoff_enabled, speed_cutoff_limit_kmh, speed_cutoff_grace_seconds')
         .eq('id', device.vehicle_id)
         .single();
 
@@ -1234,6 +1234,79 @@ async function processGPSData(
           console.error('Error inserting speed violation:', violationError);
         } else {
           console.log(`Speed violation recorded: ${speedValue} km/h (limit: ${speedLimit})`);
+        }
+
+        // ==================== SPEED CUTOFF ENFORCEMENT ====================
+        // Check if speed cutoff is enabled for this vehicle
+        const cutoffEnabled = vehicleData?.speed_cutoff_enabled === true;
+        const cutoffLimit = vehicleData?.speed_cutoff_limit_kmh || speedLimit;
+        const graceSeconds = vehicleData?.speed_cutoff_grace_seconds || 10;
+
+        if (cutoffEnabled && speedValue > cutoffLimit) {
+          // Check for recent cutoff command to avoid spamming (within grace period + 60s)
+          const cutoffCooldown = new Date(Date.now() - (graceSeconds + 60) * 1000).toISOString();
+          const { data: recentCutoff } = await supabase
+            .from('device_commands')
+            .select('id')
+            .eq('vehicle_id', device.vehicle_id)
+            .eq('command_type', 'engine_cutoff')
+            .gte('created_at', cutoffCooldown)
+            .maybeSingle();
+
+          if (!recentCutoff) {
+            // Queue engine cutoff command after grace period
+            const cutoffCommand = {
+              device_id: device.id,
+              vehicle_id: device.vehicle_id,
+              organization_id: device.organization_id,
+              command_type: 'engine_cutoff',
+              command_payload: {
+                action: 'speed_cutoff',
+                reason: 'overspeed_violation',
+                speed_kmh: speedValue,
+                speed_limit_kmh: cutoffLimit,
+                grace_seconds: graceSeconds,
+                relay_command: 'relay,1#', // TK103/GT06 relay OFF command
+                warning_message: `Speed limit ${cutoffLimit} km/h exceeded. Engine will be disabled.`,
+              },
+              status: 'pending',
+              priority: severity === 'critical' ? 'critical' : 'high',
+              expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 min expiry
+            };
+
+            const { data: commandData, error: commandError } = await supabase
+              .from('device_commands')
+              .insert(cutoffCommand)
+              .select('id')
+              .single();
+
+            if (commandError) {
+              console.error('Error queuing speed cutoff command:', commandError);
+            } else {
+              console.log(`⚠️ SPEED CUTOFF queued for vehicle ${device.vehicle_id}: ${speedValue} km/h > ${cutoffLimit} km/h, command ID: ${commandData.id}`);
+
+              // Create high-priority alert for cutoff
+              await supabase.from('alerts').insert({
+                organization_id: device.organization_id,
+                vehicle_id: device.vehicle_id,
+                driver_id: vehicleData?.assigned_driver_id || null,
+                alert_type: 'speed_cutoff',
+                title: 'Speed Cutoff Triggered',
+                message: `Engine cutoff command sent. Speed: ${speedValue} km/h (limit: ${cutoffLimit} km/h)`,
+                severity: 'critical',
+                status: 'active',
+                alert_time: violationTime,
+                lat: latValue,
+                lng: lngValue,
+                alert_data: {
+                  speed_kmh: speedValue,
+                  speed_limit_kmh: cutoffLimit,
+                  command_id: commandData.id,
+                  grace_seconds: graceSeconds,
+                },
+              });
+            }
+          }
         }
       }
 
