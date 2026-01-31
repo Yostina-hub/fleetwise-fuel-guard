@@ -32,16 +32,46 @@ export function useVehicleFuelStatus() {
       
       if (vehicleIds.length === 0) return statusMap;
 
-      // Get all telemetry records with fuel data in one query
-      const { data: telemetryData, error: telemetryError } = await supabase
+      // Get fuel record counts per vehicle
+      const { data: countData, error: countError } = await supabase
         .from("vehicle_telemetry")
-        .select("vehicle_id, fuel_level_percent, last_communication_at")
+        .select("vehicle_id")
         .in("vehicle_id", vehicleIds)
-        .not("fuel_level_percent", "is", null)
-        .order("last_communication_at", { ascending: false });
+        .not("fuel_level_percent", "is", null);
 
-      if (telemetryError) {
-        console.error("Error fetching fuel telemetry:", telemetryError);
+      // Group by vehicle_id to get counts
+      const vehicleFuelCounts = new Map<string, number>();
+      countData?.forEach((record) => {
+        vehicleFuelCounts.set(record.vehicle_id, (vehicleFuelCounts.get(record.vehicle_id) || 0) + 1);
+      });
+
+      // Get latest fuel reading for each vehicle (limit to 1 per vehicle)
+      // Query each vehicle separately to ensure we get the latest reading
+      const vehicleFuelData = new Map<string, { latest: number | null; count: number }>();
+      
+      // Get vehicles that have fuel data
+      const vehiclesWithFuelIds = Array.from(vehicleFuelCounts.keys());
+      
+      for (const vehicleId of vehiclesWithFuelIds) {
+        const { data: latestReading } = await supabase
+          .from("vehicle_telemetry")
+          .select("fuel_level_percent")
+          .eq("vehicle_id", vehicleId)
+          .not("fuel_level_percent", "is", null)
+          .order("last_communication_at", { ascending: false })
+          .limit(1)
+          .single();
+        
+        if (latestReading) {
+          vehicleFuelData.set(vehicleId, {
+            latest: latestReading.fuel_level_percent,
+            count: vehicleFuelCounts.get(vehicleId) || 0,
+          });
+        }
+      }
+
+      if (countError) {
+        console.error("Error fetching fuel telemetry:", countError);
         // Initialize all vehicles as no fuel data
         vehicleIds.forEach((id) => {
           statusMap.set(id, {
@@ -53,21 +83,6 @@ export function useVehicleFuelStatus() {
         });
         return statusMap;
       }
-
-      // Group by vehicle_id and get counts + latest reading
-      const vehicleFuelData = new Map<string, { latest: number | null; count: number }>();
-      
-      telemetryData?.forEach((record) => {
-        const existing = vehicleFuelData.get(record.vehicle_id);
-        if (!existing) {
-          vehicleFuelData.set(record.vehicle_id, {
-            latest: record.fuel_level_percent,
-            count: 1,
-          });
-        } else {
-          existing.count++;
-        }
-      });
 
       // Build status map for all vehicles
       vehicleIds.forEach((id) => {
