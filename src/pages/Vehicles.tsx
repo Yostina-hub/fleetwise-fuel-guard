@@ -66,26 +66,26 @@ import { formatDistanceToNow } from "date-fns";
 
 const ITEMS_PER_PAGE = 10;
 
-// Status filter badges configuration
+// Status filter badges configuration - horizontal compact style
 const STATUS_BADGES = [
-  { key: "all", label: "ALL", color: "bg-primary text-primary-foreground" },
-  { key: "running", label: "RUNNING", color: "bg-green-500 text-white" },
-  { key: "stopped", label: "STOPPED", color: "bg-yellow-500 text-white" },
-  { key: "overspeed", label: "OVERSPEED", color: "bg-red-500 text-white" },
-  { key: "idle", label: "IDLE", color: "bg-orange-400 text-white" },
-  { key: "unreachable", label: "UNREACHABLE", color: "bg-red-600 text-white" },
-  { key: "new", label: "NEW", color: "bg-gray-400 text-white" },
+  { key: "all", label: "ALL", color: "bg-primary/20 text-primary border-primary/30" },
+  { key: "running", label: "RUNNING", color: "bg-success/20 text-success border-success/30" },
+  { key: "stopped", label: "STOPPED", color: "bg-warning/20 text-warning border-warning/30" },
+  { key: "overspeed", label: "OVERSPEED", color: "bg-destructive/20 text-destructive border-destructive/30" },
+  { key: "idle", label: "IDLE", color: "bg-orange-500/20 text-orange-500 border-orange-500/30" },
+  { key: "unreachable", label: "UNREACHABLE", color: "bg-red-600/20 text-red-600 border-red-600/30" },
+  { key: "new", label: "NEW", color: "bg-muted text-muted-foreground border-border" },
 ];
 
 // Trip status pills configuration
 const TRIP_STATUS_PILLS = [
-  { key: "on_trip", label: "On Trip", color: "border-green-500 text-green-600 bg-green-50" },
-  { key: "intransit", label: "Intransit", color: "border-yellow-500 text-yellow-600 bg-yellow-50" },
-  { key: "not_on_trip", label: "Not On Trip", color: "border-red-500 text-red-600 bg-red-50" },
-  { key: "at_loading", label: "At Loading", color: "border-muted text-muted-foreground bg-muted/20" },
-  { key: "at_unloading", label: "At UnLoading", color: "border-muted text-muted-foreground bg-muted/20" },
-  { key: "not_recognized", label: "Not Recognized", color: "border-muted text-muted-foreground bg-muted/20" },
-  { key: "deviated", label: "Deviated", color: "border-muted text-muted-foreground bg-muted/20" },
+  { key: "on_trip", label: "On Trip", color: "bg-success/10 text-success border-success/30" },
+  { key: "intransit", label: "Intransit", color: "bg-warning/10 text-warning border-warning/30" },
+  { key: "not_on_trip", label: "Not On Trip", color: "bg-destructive/10 text-destructive border-destructive/30" },
+  { key: "at_loading", label: "At Loading", color: "bg-blue-500/10 text-blue-500 border-blue-500/30" },
+  { key: "at_unloading", label: "At UnLoading", color: "bg-purple-500/10 text-purple-500 border-purple-500/30" },
+  { key: "not_recognized", label: "Not Recognized", color: "bg-muted text-muted-foreground border-border" },
+  { key: "deviated", label: "Deviated", color: "bg-orange-500/10 text-orange-500 border-orange-500/30" },
 ];
 
 // Get vehicle type icon
@@ -124,7 +124,7 @@ const Vehicles = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mapStyle, setMapStyle] = useState<'streets' | 'satellite'>('streets');
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
-  const [viewMode, setViewMode] = useState<'table' | 'list'>('list');
+  const [viewMode, setViewMode] = useState<'table' | 'list'>('table'); // Default to table (list view in UI)
   const [showQuickInfo, setShowQuickInfo] = useState(false);
   
   const debouncedSearch = useDebounce(searchInput, 300);
@@ -349,15 +349,16 @@ const Vehicles = () => {
       <div className="h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
         {/* Header with Search and Filters */}
         <div className="p-4 border-b bg-background space-y-3">
-          {/* Search Bar and Actions */}
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1 max-w-md">
+          {/* Row 1: Search, Count Badge, Filter, View Toggle, Settings, Status Badges */}
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Search */}
+            <div className="relative min-w-[200px] max-w-sm flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Smart search: plate, make, model, status..."
+                placeholder="Smart search..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="pl-9 pr-9"
+                className="pl-9 pr-9 bg-background/50 border-border/50"
               />
               {searchInput && (
                 <Button
@@ -371,75 +372,95 @@ const Vehicles = () => {
               )}
             </div>
             
-            {/* Result Count */}
-            <Badge variant="secondary" className="text-xs px-3 py-1">
+            {/* Result Count Badge */}
+            <Badge 
+              variant="default" 
+              className="px-3 py-1.5 text-sm font-semibold bg-primary text-primary-foreground"
+            >
               {filteredVehicles.length} / {vehicles.length} vehicles
             </Badge>
+            
+            {/* Filter Button */}
             <Button variant="outline" size="sm" className="gap-2">
               <SlidersHorizontal className="w-4 h-4" />
               FILTER
             </Button>
             
+            {/* Settings Button */}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-2 bg-primary/10 border-primary/30 text-primary hover:bg-primary/20"
+            >
+              <Settings className="w-4 h-4" />
+              SETTING
+            </Button>
+            
             {/* View Mode Toggle */}
-            <div className="flex items-center border rounded-md">
+            <div className="flex items-center border rounded-md overflow-hidden">
               <Button
-                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                variant="ghost"
                 size="sm"
-                className="h-8 px-2 rounded-r-none"
-                onClick={() => setViewMode('list')}
+                className={cn(
+                  "rounded-none h-9 px-3",
+                  viewMode === 'table' && "bg-muted"
+                )}
+                onClick={() => setViewMode('table')}
+                aria-label="List view"
               >
                 <LayoutList className="w-4 h-4" />
               </Button>
               <Button
-                variant={viewMode === 'table' ? 'default' : 'ghost'}
+                variant="ghost"
                 size="sm"
-                className="h-8 px-2 rounded-l-none"
-                onClick={() => setViewMode('table')}
+                className={cn(
+                  "rounded-none h-9 px-3",
+                  viewMode === 'list' && "bg-muted"
+                )}
+                onClick={() => setViewMode('list')}
+                aria-label="Card view"
               >
                 <LayoutGrid className="w-4 h-4" />
               </Button>
             </div>
             
-            <Button variant="outline" size="sm" className="gap-2">
-              <Settings className="w-4 h-4" />
-              SETTING
-            </Button>
+            {/* Spacer */}
+            <div className="flex-1" />
             
-            {/* Status Badges */}
-            <div className="flex-1 flex items-center justify-end gap-2">
+            {/* Status Badges - Horizontal */}
+            <div className="flex items-center gap-2">
               {STATUS_BADGES.map((badge) => (
-                <Badge
+                <button
                   key={badge.key}
-                  variant="secondary"
-                  className={cn(
-                    "cursor-pointer transition-all px-3 py-1 text-xs font-semibold",
-                    statusFilter === badge.key
-                      ? badge.color
-                      : "bg-muted text-muted-foreground hover:opacity-80",
-                    statusFilter === badge.key && "ring-2 ring-offset-1 ring-primary/50"
-                  )}
                   onClick={() => setStatusFilter(badge.key)}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all",
+                    badge.color,
+                    statusFilter === badge.key && "ring-2 ring-offset-2 ring-offset-background ring-primary/50"
+                  )}
                 >
-                  {statusCounts[badge.key] || 0} {badge.label}
-                </Badge>
+                  <span className="font-bold">{statusCounts[badge.key] || 0}</span>
+                  <span>{badge.label}</span>
+                </button>
               ))}
             </div>
           </div>
           
-          {/* Trip Status Pills */}
-          <div className="flex items-center gap-2">
+          {/* Row 2: Trip Status Pills */}
+          <div className="flex items-center gap-2 flex-wrap">
             {TRIP_STATUS_PILLS.map((pill) => (
               <button
                 key={pill.key}
                 onClick={() => setTripStatusFilter(tripStatusFilter === pill.key ? null : pill.key)}
                 className={cn(
-                  "px-4 py-1.5 rounded-full border-2 text-sm font-medium transition-all",
+                  "flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-medium transition-all",
                   tripStatusFilter === pill.key
                     ? pill.color
                     : "border-border text-muted-foreground bg-background hover:border-primary/30"
                 )}
               >
-                {tripStatusCounts[pill.key as keyof typeof tripStatusCounts] || 0} {pill.label}
+                <span className="font-bold">{tripStatusCounts[pill.key as keyof typeof tripStatusCounts] || 0}</span>
+                <span>{pill.label}</span>
               </button>
             ))}
           </div>
@@ -517,17 +538,17 @@ const Vehicles = () => {
                     )}
                   </div>
                 ) : (
-                  /* Table View */
+                  /* Table View (List in UI terminology) */
                   <Table>
                     <TableHeader className="sticky top-0 z-10">
-                      <TableRow className="bg-primary hover:bg-primary">
-                        <TableHead className="text-primary-foreground font-semibold w-12">SN</TableHead>
-                        <TableHead className="text-primary-foreground font-semibold w-20">State</TableHead>
-                        <TableHead className="text-primary-foreground font-semibold">Branch</TableHead>
-                        <TableHead className="text-primary-foreground font-semibold">Vehicle</TableHead>
-                        <TableHead className="text-primary-foreground font-semibold">Current_Status</TableHead>
-                        <TableHead className="text-primary-foreground font-semibold">Address</TableHead>
-                        <TableHead className="text-primary-foreground font-semibold w-10"></TableHead>
+                      <TableRow className="bg-primary/10 hover:bg-primary/10">
+                        <TableHead className="text-foreground font-semibold w-12">SN</TableHead>
+                        <TableHead className="text-foreground font-semibold w-20">State</TableHead>
+                        <TableHead className="text-foreground font-semibold">Branch</TableHead>
+                        <TableHead className="text-foreground font-semibold">Vehicle</TableHead>
+                        <TableHead className="text-foreground font-semibold">Current_Status</TableHead>
+                        <TableHead className="text-foreground font-semibold">Address</TableHead>
+                        <TableHead className="text-foreground font-semibold w-10"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
