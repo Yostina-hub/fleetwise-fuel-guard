@@ -111,7 +111,10 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { vehicle_id, lat, lng, speed_kmh, organization_id } = await req.json() as VehicleTelemetry;
+    const body = await req.json();
+    const { vehicle_id, lat, lng, speed_kmh, organization_id } = body as VehicleTelemetry;
+    
+    console.log(`Processing geofence for vehicle ${vehicle_id}: lat=${lat}, lng=${lng}, speed=${speed_kmh}`);
 
     if (!vehicle_id || lat === undefined || lng === undefined || !organization_id) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
@@ -162,16 +165,39 @@ Deno.serve(async (req) => {
 
       // Entry event
       if (isInside && !wasInside) {
+        console.log(`Vehicle ${vehicle_id} ENTERED geofence ${geofence.name} (alarm enabled: ${geofence.enable_entry_alarm})`);
         if (geofence.enable_entry_alarm) {
           eventsToCreate.push({
             organization_id,
             geofence_id: geofence.id,
             vehicle_id,
-            event_type: "entry",
+            event_type: "enter",
             event_time: new Date().toISOString(),
             lat,
             lng,
-            speed_kmh: telemetry.speed_kmh,
+          });
+          
+          // Create entry alert
+          const { data: vehicleData } = await supabase
+            .from("vehicles")
+            .select("assigned_driver_id, plate_number")
+            .eq("id", vehicle_id)
+            .single();
+            
+          await supabase.from("alerts").insert({
+            organization_id,
+            vehicle_id,
+            driver_id: vehicleData?.assigned_driver_id || null,
+            alert_type: "geofence_enter",
+            severity: "info",
+            title: `Vehicle entered: ${geofence.name}`,
+            message: `Vehicle ${vehicleData?.plate_number || vehicle_id} entered geofence "${geofence.name}"`,
+            alert_time: new Date().toISOString(),
+            lat,
+            lng,
+            location_name: geofence.name,
+            status: "active",
+            alert_data: { geofence_id: geofence.id, geofence_name: geofence.name, entry_speed_kmh: telemetry.speed_kmh },
           });
         }
         statesToCreate.push({
@@ -183,6 +209,7 @@ Deno.serve(async (req) => {
 
       // Exit event - trigger penalty and create alert
       if (!isInside && wasInside) {
+        console.log(`Vehicle ${vehicle_id} EXITED geofence ${geofence.name} (alarm enabled: ${geofence.enable_exit_alarm})`);
         if (geofence.enable_exit_alarm) {
           const enteredAt = currentStateMap.get(geofence.id)?.entered_at;
           const dwellMinutes = enteredAt
@@ -197,7 +224,6 @@ Deno.serve(async (req) => {
             event_time: new Date().toISOString(),
             lat,
             lng,
-            speed_kmh: telemetry.speed_kmh,
             dwell_time_minutes: dwellMinutes,
           });
 
@@ -278,7 +304,6 @@ Deno.serve(async (req) => {
             event_time: new Date().toISOString(),
             lat,
             lng,
-            speed_kmh: telemetry.speed_kmh,
             speed_limit_kmh: geofence.speed_limit,
           });
         }
