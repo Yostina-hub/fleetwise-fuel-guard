@@ -29,51 +29,72 @@ interface SidebarNavProps {
   isDark: boolean;
 }
 
-// Pinned items so they never get scrolled out of view.
-// IMPORTANT: normalize paths (strip query + trailing slash) so aliases like "/vehicles/" don't break pinning.
-const QUICK_PATHS = new Set(["/", "/map", "/vehicles"]);
+// Pinned paths - these items ALWAYS appear in the non-scrollable quick section
+// Using an array for order preservation and explicit matching
+const PINNED_PATHS = ["/", "/map", "/vehicles"] as const;
 
-const normalizePath = (path: string) => {
-  const base = path.split("?")[0] ?? path;
-  if (base.length > 1 && base.endsWith("/")) return base.slice(0, -1);
+// Normalize path by removing query strings and trailing slashes
+const normalizePath = (path: string): string => {
+  // Remove query string
+  const base = path.split("?")[0] || path;
+  // Remove trailing slash (except for root "/")
+  if (base.length > 1 && base.endsWith("/")) {
+    return base.slice(0, -1);
+  }
   return base;
 };
 
-const isQuickPath = (path?: string) => {
-  if (!path) return false;
-  return QUICK_PATHS.has(normalizePath(path));
+// Check if a nav item should be pinned (non-scrollable)
+const isPinnedItem = (item: NavItem): boolean => {
+  // Items with subItems are never pinned (they go to scrollable section)
+  if (item.subItems && item.subItems.length > 0) {
+    return false;
+  }
+  // Items without a path are never pinned
+  if (!item.path) {
+    return false;
+  }
+  // Check if the normalized path matches any pinned path
+  const normalized = normalizePath(item.path);
+  return PINNED_PATHS.includes(normalized as typeof PINNED_PATHS[number]);
 };
 
 export function SidebarNav({ navItems, adminItems, isSuperAdmin, isDark }: SidebarNavProps) {
   const location = useLocation();
 
-  const quickItems = navItems.filter((item) => isQuickPath(item.path));
-  const restItems = navItems.filter((item) => !isQuickPath(item.path));
+  // Separate pinned (quick) items from scrollable items
+  // Use stable filtering to prevent React reconciliation issues
+  const pinnedItems = navItems.filter(isPinnedItem);
+  const scrollableItems = navItems.filter((item) => !isPinnedItem(item));
 
   return (
-    <div className="flex-1 flex flex-col min-h-0">
-      {/* Quick (non-scroll) */}
-      <div className="px-2 py-3 space-y-0.5 shrink-0">
-        {quickItems.map((item) => (
-          <SidebarMenuItem
-            key={item.path}
-            icon={item.icon}
-            label={item.label}
-            path={item.path}
-            subItems={item.subItems}
-            highlight={item.highlight}
-            isDark={isDark}
-          />
-        ))}
-      </div>
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+      {/* Pinned Quick Access Section - Never scrolls, always visible */}
+      {pinnedItems.length > 0 && (
+        <div className="px-2 py-3 space-y-0.5 shrink-0 flex-none">
+          {pinnedItems.map((item, index) => (
+            <SidebarMenuItem
+              key={`pinned-${item.path || index}`}
+              icon={item.icon}
+              label={item.label}
+              path={item.path}
+              subItems={item.subItems}
+              highlight={item.highlight}
+              isDark={isDark}
+            />
+          ))}
+        </div>
+      )}
 
-      <div className={cn("border-t", isDark ? "border-[#2a3a4d]/50" : "border-border")} />
+      {pinnedItems.length > 0 && (
+        <div className={cn("border-t shrink-0", isDark ? "border-[#2a3a4d]/50" : "border-border")} />
+      )}
 
-      {/* Main (scroll) */}
+      {/* Main Scrollable Navigation Section */}
       <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto custom-scrollbar min-h-0">
-        {restItems.map((item, index) => (
+        {scrollableItems.map((item, index) => (
           <SidebarMenuItem
-            key={item.path || `menu-${index}`}
+            key={`scroll-${item.path || `menu-${index}`}`}
             icon={item.icon}
             label={item.label}
             path={item.path}
