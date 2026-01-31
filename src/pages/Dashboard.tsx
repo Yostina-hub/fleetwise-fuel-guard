@@ -299,35 +299,11 @@ const Dashboard = () => {
 
           {/* Executive Tab */}
           <TabsContent value="executive" className="text-foreground space-y-6 mt-6">
-            {/* Violations, Misuse & Trips Row - First Order */}
+            {/* Violations, Misuse & Trips Row - With Independent Filters */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <FleetViolationsDonut 
-                data={{
-                  overSpeeds: Math.floor(Math.max(0, (tripMetrics.totalTrips || 0) * 0.18)),
-                  alerts: Math.floor(Math.max(0, (dbAlerts.length || 0) * 0.6)),
-                  harshBehavior: Math.floor(Math.max(0, (tripMetrics.totalTrips || 0) * 0.13)),
-                  noGoKeepIn: Math.floor(Math.max(0, (tripMetrics.totalTrips || 0) * 0.10)),
-                }}
-                loading={execLoading}
-              />
-              <VehicleMisuseDonut 
-                data={{
-                  speedingDevice: Math.floor(Math.max(0, (tripMetrics.totalTrips || 0) * 0.15)),
-                  harshBraking: Math.floor(Math.max(0, (tripMetrics.totalTrips || 0) * 0.20)),
-                  harshAcceleration: Math.floor(Math.max(0, (tripMetrics.totalTrips || 0) * 0.25)),
-                  excessiveIdle: Math.floor(Math.max(0, (tripMetrics.totalTrips || 0) * 0.08)),
-                  harshCornering: Math.floor(Math.max(0, (tripMetrics.totalTrips || 0) * 0.12)),
-                  speedingRoad: Math.floor(Math.max(0, (tripMetrics.totalTrips || 0) * 0.15)),
-                  speedingPlatform: Math.floor(Math.max(0, (tripMetrics.totalTrips || 0) * 0.05)),
-                }}
-                loading={execLoading}
-              />
-              <TotalTripsCard 
-                allTrips={tripMetrics.totalTrips}
-                dailyAverage={Math.max(1, Math.floor(tripMetrics.totalTrips / 7))}
-                activeAssets={dbVehicles.filter(v => v.status === 'active').length}
-                loading={execLoading}
-              />
+              <FleetViolationsDonut />
+              <VehicleMisuseDonut />
+              <TotalTripsCard />
             </div>
 
             {/* Quick Metrics Row - Real-time data */}

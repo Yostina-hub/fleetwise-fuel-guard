@@ -3,48 +3,97 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Settings2 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip } from "recharts";
 import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useOrganization } from "@/hooks/useOrganization";
+import { useVehicles } from "@/hooks/useVehicles";
+import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, format, eachDayOfInterval } from "date-fns";
 
-interface TotalTripsCardProps {
-  allTrips: number;
-  dailyAverage: number;
-  activeAssets: number;
-  chartData?: { hour: string; trips: number }[];
-  loading?: boolean;
-}
+type TimePeriod = "today" | "yesterday" | "last_7_days" | "last_30_days";
 
-export const TotalTripsCard = ({ 
-  allTrips, 
-  dailyAverage, 
-  activeAssets, 
-  chartData,
-  loading 
-}: TotalTripsCardProps) => {
-  const [period, setPeriod] = useState("today");
-  const [showChart, setShowChart] = useState(true);
+const TIME_OPTIONS: { value: TimePeriod; label: string }[] = [
+  { value: "today", label: "Today" },
+  { value: "yesterday", label: "Yesterday" },
+  { value: "last_7_days", label: "Last 7 Days" },
+  { value: "last_30_days", label: "Last 30 Days" },
+];
 
-  const defaultChartData = useMemo(() => {
-    if (chartData) return chartData;
-    // Generate sample hourly data
-    return Array.from({ length: 8 }, (_, i) => ({
-      hour: `${10 + i}`,
-      trips: Math.floor(Math.random() * 4) + 10,
-    }));
-  }, [chartData]);
+const getDateRange = (period: TimePeriod) => {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  if (loading) {
-    return (
-      <Card className="border-cyan-500/20 backdrop-blur-sm" style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}>
-        <CardContent className="p-6">
-          <div className="animate-pulse space-y-4">
-            <div className="h-6 bg-white/10 rounded w-1/2" />
-            <div className="h-32 bg-white/10 rounded" />
-          </div>
-        </CardContent>
-      </Card>
-    );
+  switch (period) {
+    case "today":
+      return { start: startOfDay(today), end: endOfDay(today) };
+    case "yesterday":
+      const yesterday = subDays(today, 1);
+      return { start: startOfDay(yesterday), end: endOfDay(yesterday) };
+    case "last_7_days":
+      return { start: subDays(today, 6), end: endOfDay(today) };
+    case "last_30_days":
+      return { start: subDays(today, 29), end: endOfDay(today) };
+    default:
+      return { start: subDays(today, 6), end: endOfDay(today) };
   }
+};
+
+export const TotalTripsCard = () => {
+  const [period, setPeriod] = useState<TimePeriod>("today");
+  const [showChart, setShowChart] = useState(true);
+  const { organizationId } = useOrganization();
+  const { vehicles } = useVehicles();
+
+  const dateRange = useMemo(() => getDateRange(period), [period]);
+  const daysInRange = useMemo(() => eachDayOfInterval({ start: dateRange.start, end: dateRange.end }), [dateRange]);
+
+  // Fetch trips
+  const { data: trips = [] } = useQuery({
+    queryKey: ["total-trips-widget", organizationId, dateRange.start.toISOString(), dateRange.end.toISOString()],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data, error } = await supabase
+        .from("trips")
+        .select("id, start_time")
+        .eq("organization_id", organizationId)
+        .gte("start_time", dateRange.start.toISOString())
+        .lte("start_time", dateRange.end.toISOString());
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId,
+  });
+
+  // Calculate metrics
+  const totalTrips = trips.length;
+  const dailyAverage = daysInRange.length > 0 ? Math.round(totalTrips / daysInRange.length) : 0;
+  const activeAssets = vehicles.filter(v => v.status === 'active').length;
+
+  // Prepare chart data
+  const chartData = useMemo(() => {
+    const tripsByDay: Record<string, number> = {};
+
+    // Initialize all days
+    daysInRange.forEach((day) => {
+      tripsByDay[format(day, "d")] = 0;
+    });
+
+    // Count trips per day
+    trips.forEach((trip) => {
+      const day = format(new Date(trip.start_time), "d");
+      if (tripsByDay[day] !== undefined) {
+        tripsByDay[day]++;
+      }
+    });
+
+    return Object.entries(tripsByDay).map(([day, count]) => ({
+      day,
+      trips: count,
+    }));
+  }, [trips, daysInRange]);
+
+  const maxTrips = Math.max(...chartData.map((d) => d.trips), 1);
 
   return (
     <motion.div
@@ -54,7 +103,6 @@ export const TotalTripsCard = ({
       whileHover={{ scale: 1.01 }}
     >
       <Card className="border-cyan-500/20 backdrop-blur-sm overflow-hidden hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-500" style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}>
-        {/* Subtle gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-[#8DC63F]/5 via-transparent to-cyan-500/5 pointer-events-none" />
         
         <CardHeader className="pb-2 relative">
@@ -74,15 +122,16 @@ export const TotalTripsCard = ({
                 onCheckedChange={setShowChart}
                 className="data-[state=checked]:bg-[#8DC63F]"
               />
-              <Select value={period} onValueChange={setPeriod}>
+              <Select value={period} onValueChange={(v) => setPeriod(v as TimePeriod)}>
                 <SelectTrigger className="w-[100px] h-8 text-xs bg-white/10 border-cyan-500/30 text-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="today">Today</SelectItem>
-                  <SelectItem value="yesterday">Yesterday</SelectItem>
-                  <SelectItem value="last_7_days">Last 7 Days</SelectItem>
-                  <SelectItem value="last_30_days">Last 30 Days</SelectItem>
+                  {TIME_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -90,10 +139,9 @@ export const TotalTripsCard = ({
         </CardHeader>
 
         <CardContent className="pt-0 relative">
-          {/* Stats Row with enhanced styling */}
           <div className="grid grid-cols-3 gap-4 mb-4">
             {[
-              { label: 'All trips', value: allTrips, color: 'text-[#8DC63F]' },
+              { label: 'All trips', value: totalTrips, color: 'text-[#8DC63F]' },
               { label: 'Daily average', value: dailyAverage, color: 'text-cyan-400' },
               { label: 'Assets', value: activeAssets, color: 'text-emerald-400' },
             ].map((stat, index) => (
@@ -116,8 +164,7 @@ export const TotalTripsCard = ({
             ))}
           </div>
 
-          {/* Chart with smooth reveal */}
-          {showChart && (
+          {showChart && chartData.length > 0 && (
             <motion.div 
               className="h-40"
               initial={{ opacity: 0, height: 0 }}
@@ -126,9 +173,9 @@ export const TotalTripsCard = ({
               transition={{ duration: 0.4, ease: "easeOut" }}
             >
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={defaultChartData} barSize={40}>
+                <BarChart data={chartData} barSize={40}>
                   <XAxis 
-                    dataKey="hour" 
+                    dataKey="day" 
                     axisLine={false} 
                     tickLine={false}
                     tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.6)' }}
@@ -137,13 +184,23 @@ export const TotalTripsCard = ({
                     axisLine={false} 
                     tickLine={false}
                     tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.6)' }}
-                    domain={[10, 'auto']}
+                    domain={[0, Math.ceil(maxTrips * 1.2)]}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                    }}
+                    formatter={(value: number) => [`${value} trips`, "Trips"]}
                   />
                   <Bar dataKey="trips" radius={[6, 6, 0, 0]}>
-                    {defaultChartData.map((_, index) => (
+                    {chartData.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
                         fill="#8DC63F"
+                        fillOpacity={0.6 + (entry.trips / maxTrips) * 0.4}
                         className="drop-shadow-sm"
                       />
                     ))}
