@@ -13,7 +13,9 @@ export const SpeedQuickStats = () => {
       icon: Shield,
       color: "text-green-600",
       bgColor: "bg-green-500/10",
-      trend: kpis?.complianceRate >= 90 ? "Excellent" : kpis?.complianceRate >= 75 ? "Good" : "Needs Attention"
+      trend: kpis?.complianceRate && kpis.complianceRate >= 90 ? "Excellent" : 
+             kpis?.complianceRate && kpis.complianceRate >= 75 ? "Good" : 
+             kpis?.complianceRate ? "Needs Attention" : "—"
     },
     {
       label: "Active Governors",
@@ -21,7 +23,7 @@ export const SpeedQuickStats = () => {
       icon: Gauge,
       color: "text-blue-600",
       bgColor: "bg-blue-500/10",
-      trend: "Monitored"
+      trend: kpis?.activeGovernors === kpis?.totalGovernors ? "All protected" : "Monitored"
     },
     {
       label: "Today's Violations",
@@ -30,7 +32,8 @@ export const SpeedQuickStats = () => {
       color: "text-orange-600",
       bgColor: "bg-orange-500/10",
       trend: kpis?.todayViolations === 0 ? "Zero violations!" : 
-             kpis && kpis.todayViolations < (kpis.yesterdayViolations || 0) ? "Improving" : "Monitor closely"
+             kpis && kpis.todayViolations < (kpis.yesterdayViolations || 0) ? "↓ Improving" : 
+             kpis && kpis.todayViolations > (kpis.yesterdayViolations || 0) ? "↑ Monitor closely" : "Stable"
     },
     {
       label: "Avg Speed Limit",
@@ -42,7 +45,7 @@ export const SpeedQuickStats = () => {
     },
     {
       label: "ISA Status",
-      value: kpisLoading ? null : "Active",
+      value: kpisLoading ? null : kpis?.activeGovernors && kpis.activeGovernors > 0 ? "Active" : "Inactive",
       icon: Zap,
       color: "text-purple-600",
       bgColor: "bg-purple-500/10",
@@ -54,7 +57,7 @@ export const SpeedQuickStats = () => {
       icon: Users,
       color: "text-teal-600",
       bgColor: "bg-teal-500/10",
-      trend: "Notifications sent"
+      trend: "Speed notifications"
     }
   ];
 
