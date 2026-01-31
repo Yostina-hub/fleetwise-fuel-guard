@@ -55,6 +55,11 @@ import { FuelDrainReportTable } from "@/components/reports/FuelDrainReportTable"
 import { AlarmStatisticsTable } from "@/components/reports/AlarmStatisticsTable";
 import RestrictedHoursReportTable from "@/components/reports/RestrictedHoursReportTable";
 
+// Dashboard Widgets
+import { FleetViolationsWidget } from "@/components/reports/FleetViolationsWidget";
+import { VehicleMisuseWidget } from "@/components/reports/VehicleMisuseWidget";
+import { TotalTripsWidget } from "@/components/reports/TotalTripsWidget";
+
 const FAVORITES_STORAGE_KEY = "fleet_report_favorites";
 
 const Reports = () => {
@@ -1335,6 +1340,13 @@ const Reports = () => {
               />
             ) : (
               <>
+                {/* Dashboard Widgets Row - Each with independent filters */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                  <FleetViolationsWidget />
+                  <VehicleMisuseWidget />
+                  <TotalTripsWidget />
+                </div>
+
                 {/* Metric Cards - Context Aware */}
                 <ReportsMetricCards 
                   metrics={metrics} 
