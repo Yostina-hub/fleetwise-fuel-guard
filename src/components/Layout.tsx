@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useRef } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { 
   LayoutDashboard, 
@@ -26,11 +26,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useSidebar } from "@/contexts/SidebarContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationCenter } from "@/components/scheduling/NotificationCenter";
 import { AIAssistant } from "@/components/AIAssistant";
 import { SidebarNav } from "@/components/sidebar/SidebarNav";
+import { MobileNav } from "@/components/sidebar/MobileNav";
 import LanguageSelector from "@/components/settings/LanguageSelector";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { cn } from "@/lib/utils";
@@ -118,12 +120,15 @@ const Layout = ({ children }: LayoutProps) => {
   const { isSuperAdmin } = usePermissions();
   const { theme } = useTheme();
   const { isCollapsed, toggleSidebar } = useSidebar();
+  const isMobile = useIsMobile();
   const { toast } = useToast();
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   
   const isDark = theme === "dark";
 
   const handleSignOut = async () => {
+    setMobileNavOpen(false);
     const { error } = await signOut();
     if (error) {
       console.error("Sign out error:", error);
@@ -133,7 +138,6 @@ const Layout = ({ children }: LayoutProps) => {
         variant: "destructive",
       });
     } else {
-      // Navigation will happen automatically via auth state change
       toast({
         title: "Success",
         description: "Signed out successfully",
@@ -141,8 +145,12 @@ const Layout = ({ children }: LayoutProps) => {
     }
   };
 
+  // Close mobile nav on route change
   useEffect(() => {
-    // Reset scroll positions between pages so horizontal scroll doesn't "carry" to the next route.
+    setMobileNavOpen(false);
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
     scrollRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [location.pathname, location.search]);
 
@@ -151,10 +159,10 @@ const Layout = ({ children }: LayoutProps) => {
       {/* Animated Background */}
       <div className="parallax-bg"></div>
       
-      {/* Sidebar - Always Dark */}
+      {/* Desktop Sidebar - Hidden on mobile */}
       <aside 
         className={cn(
-          "bg-[#1a2332] border-r border-[#2a3a4d] flex flex-col shrink-0 relative z-10 transition-all duration-300",
+          "hidden md:flex bg-[#1a2332] border-r border-[#2a3a4d] flex-col shrink-0 relative z-10 transition-all duration-300",
           isCollapsed ? "w-16" : "w-60"
         )}
       >
@@ -223,27 +231,45 @@ const Layout = ({ children }: LayoutProps) => {
         </div>
       </aside>
 
-      {/* Main Content - Scrollable container for all pages */}
+      {/* Main Content */}
       <main className="flex-1 bg-background relative z-10 overflow-hidden flex flex-col">
         {/* Content Header - Always Dark */}
-        <div className="flex items-center justify-between gap-3 px-6 py-2 border-b shrink-0 bg-[#1a2332] border-[#2a3a4d]">
-          {/* Left side - Mobile toggle (optional) */}
-          <div className="flex items-center">
-            {/* Placeholder for mobile menu button if needed */}
+        <div className="flex items-center justify-between gap-2 md:gap-3 px-3 md:px-6 py-2 border-b shrink-0 bg-[#1a2332] border-[#2a3a4d]">
+          {/* Left side - Mobile menu */}
+          <div className="flex items-center gap-2">
+            {/* Mobile Navigation */}
+            <MobileNav
+              navItems={navItems}
+              adminItems={adminItems}
+              isSuperAdmin={isSuperAdmin}
+              isOpen={mobileNavOpen}
+              onOpenChange={setMobileNavOpen}
+              onSignOut={handleSignOut}
+              userEmail={user?.email}
+            />
+            
+            {/* Mobile logo */}
+            <img 
+              src={ethioTelecomLogo} 
+              alt="ethio telecom" 
+              className="h-8 w-auto object-contain md:hidden"
+            />
           </div>
           
           {/* Right side - Actions */}
-          <div className="flex items-center gap-3 ml-auto">
-            <LanguageSelector variant="compact" className="text-sm text-white/70" />
+          <div className="flex items-center gap-2 md:gap-3 ml-auto">
+            <div className="hidden sm:block">
+              <LanguageSelector variant="compact" className="text-sm text-white/70" />
+            </div>
             
-            <div className="h-5 w-px bg-[#2a3a4d]" />
+            <div className="hidden sm:block h-5 w-px bg-[#2a3a4d]" />
             
             <NotificationCenter />
             <ThemeToggle />
             
-            <div className="h-5 w-px bg-[#2a3a4d]" />
-            
-            <div className="flex items-center gap-2">
+            {/* Desktop user section */}
+            <div className="hidden md:flex items-center gap-2">
+              <div className="h-5 w-px bg-[#2a3a4d]" />
               <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-[#0d1520]">
                 <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
                   <span className="text-xs font-semibold text-primary">
@@ -273,8 +299,10 @@ const Layout = ({ children }: LayoutProps) => {
         </div>
       </main>
       
-      {/* AI Assistant */}
-      <AIAssistant />
+      {/* AI Assistant - Hide on mobile */}
+      <div className="hidden md:block">
+        <AIAssistant />
+      </div>
     </div>
   );
 };
