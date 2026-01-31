@@ -360,7 +360,11 @@ const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalP
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Fuel Level</span>
-                          <span className="font-medium">{vehicle.fuel}%</span>
+                          <span className="font-medium">
+                            {typeof vehicle.fuel === "number" && Number.isFinite(vehicle.fuel)
+                              ? `${Math.round(vehicle.fuel)}%`
+                              : "N/A"}
+                          </span>
                         </div>
                       </CardContent>
                     </Card>
