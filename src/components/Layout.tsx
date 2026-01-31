@@ -29,12 +29,14 @@ import { useSidebar } from "@/contexts/SidebarContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { NotificationCenter } from "@/components/scheduling/NotificationCenter";
 import { AIAssistant } from "@/components/AIAssistant";
 import { SidebarNav } from "@/components/sidebar/SidebarNav";
 import { MobileNav } from "@/components/sidebar/MobileNav";
+import { BottomNav } from "@/components/mobile/BottomNav";
+import { MobileHeader } from "@/components/mobile/MobileHeader";
 import LanguageSelector from "@/components/settings/LanguageSelector";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { NotificationCenter } from "@/components/scheduling/NotificationCenter";
 import { cn } from "@/lib/utils";
 import ethioTelecomLogo from "@/assets/ethio-telecom-logo.png";
 import {
@@ -231,31 +233,24 @@ const Layout = ({ children }: LayoutProps) => {
         </div>
       </aside>
 
+      {/* Mobile Slide-out Navigation Drawer */}
+      <MobileNav
+        navItems={navItems}
+        adminItems={adminItems}
+        isSuperAdmin={isSuperAdmin}
+        isOpen={mobileNavOpen}
+        onOpenChange={setMobileNavOpen}
+        onSignOut={handleSignOut}
+        userEmail={user?.email}
+      />
+
       {/* Main Content */}
       <main className="flex-1 bg-background relative z-10 overflow-hidden flex flex-col">
-        {/* Content Header - Always Dark */}
-        <div className="flex items-center justify-between gap-2 md:gap-3 px-3 md:px-6 py-2 border-b shrink-0 bg-[#1a2332] border-[#2a3a4d]">
-          {/* Left side - Mobile menu */}
-          <div className="flex items-center gap-2">
-            {/* Mobile Navigation */}
-            <MobileNav
-              navItems={navItems}
-              adminItems={adminItems}
-              isSuperAdmin={isSuperAdmin}
-              isOpen={mobileNavOpen}
-              onOpenChange={setMobileNavOpen}
-              onSignOut={handleSignOut}
-              userEmail={user?.email}
-            />
-            
-            {/* Mobile logo */}
-            <img 
-              src={ethioTelecomLogo} 
-              alt="ethio telecom" 
-              className="h-8 w-auto object-contain md:hidden"
-            />
-          </div>
-          
+        {/* Mobile Header - Native app style */}
+        <MobileHeader />
+
+        {/* Desktop Content Header */}
+        <div className="hidden md:flex items-center justify-between gap-2 md:gap-3 px-3 md:px-6 py-2 border-b shrink-0 bg-[#1a2332] border-[#2a3a4d]">
           {/* Right side - Actions */}
           <div className="flex items-center gap-2 md:gap-3 ml-auto">
             <div className="hidden sm:block">
@@ -268,7 +263,7 @@ const Layout = ({ children }: LayoutProps) => {
             <ThemeToggle />
             
             {/* Desktop user section */}
-            <div className="hidden md:flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <div className="h-5 w-px bg-[#2a3a4d]" />
               <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-[#0d1520]">
                 <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
@@ -292,12 +287,25 @@ const Layout = ({ children }: LayoutProps) => {
             </div>
           </div>
         </div>
-        <div ref={scrollRef} className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar">
-          <div className="min-h-full min-w-full">
+
+        {/* Content with mobile-aware padding */}
+        <div 
+          ref={scrollRef} 
+          className={cn(
+            "flex-1 overflow-x-auto overflow-y-auto custom-scrollbar scroll-smooth-native",
+            // Add bottom padding on mobile for bottom nav
+            "pb-0 md:pb-0",
+            isMobile && "pb-20"
+          )}
+        >
+          <div className="min-h-full min-w-full page-enter">
             {children}
           </div>
         </div>
       </main>
+      
+      {/* Mobile Bottom Navigation - Native app style */}
+      <BottomNav onMenuClick={() => setMobileNavOpen(true)} />
       
       {/* AI Assistant - Hide on mobile */}
       <div className="hidden md:block">
