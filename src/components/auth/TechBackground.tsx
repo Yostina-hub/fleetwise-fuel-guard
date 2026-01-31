@@ -12,7 +12,6 @@ interface Particle {
 export const TechBackground = memo(function TechBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
-  const animationRef = useRef<number>();
 
   useEffect(() => {
     const canvas = canvasRef.current;

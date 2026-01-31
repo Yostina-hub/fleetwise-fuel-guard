@@ -13,7 +13,6 @@ interface Particle {
 export const ParticleBackground = memo(function ParticleBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
-  const animationRef = useRef<number>();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -52,22 +51,11 @@ export const ParticleBackground = memo(function ParticleBackground() {
 
     particlesRef.current = createParticles();
 
-    const animate = () => {
+    // Draw static scene once (no animation)
+    const drawStaticScene = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       particlesRef.current.forEach((particle) => {
-        // Update position
-        particle.y -= particle.speedY;
-        particle.x += particle.speedX;
-
-        // Reset if off screen
-        if (particle.y < -10) {
-          particle.y = canvas.height + 10;
-          particle.x = Math.random() * canvas.width;
-        }
-        if (particle.x < -10) particle.x = canvas.width + 10;
-        if (particle.x > canvas.width + 10) particle.x = -10;
-
         // Draw particle with glow
         const gradient = ctx.createRadialGradient(
           particle.x, particle.y, 0,
@@ -105,17 +93,12 @@ export const ParticleBackground = memo(function ParticleBackground() {
           }
         });
       });
-
-      animationRef.current = requestAnimationFrame(animate);
     };
 
-    animate();
+    drawStaticScene();
 
     return () => {
       window.removeEventListener('resize', resizeCanvas);
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
     };
   }, []);
 
