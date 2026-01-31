@@ -40,6 +40,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import CreateIncidentDialog from "@/components/incidents/CreateIncidentDialog";
 import ScheduleMaintenanceDialog from "@/components/maintenance/ScheduleMaintenanceDialog";
+import AssignRouteDialog from "@/components/fleet/AssignRouteDialog";
 import DriverDetailDialog from "@/components/fleet/DriverDetailDialog";
 import { useQuery } from "@tanstack/react-query";
 import TripTimeline from "@/components/vehicle/TripTimeline";
@@ -621,10 +622,16 @@ const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalP
                             <MapPin className="h-4 w-4" />
                             Track on Map
                           </Button>
-                          <Button variant="outline" className="gap-2">
-                            <Route className="h-4 w-4" />
-                            Assign Route
-                          </Button>
+                          <AssignRouteDialog
+                            vehicleId={actualVehicleId}
+                            vehiclePlate={vehicle.plate}
+                            trigger={
+                              <Button variant="outline" className="gap-2">
+                                <Route className="h-4 w-4" />
+                                Assign Route
+                              </Button>
+                            }
+                          />
                           <ScheduleMaintenanceDialog
                             vehicleId={actualVehicleId}
                             trigger={
@@ -635,6 +642,8 @@ const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalP
                             }
                           />
                           <CreateIncidentDialog
+                            vehicleId={actualVehicleId}
+                            driverId={vehicle.driverId}
                             trigger={
                               <Button variant="outline" className="gap-2">
                                 <AlertTriangle className="h-4 w-4" />
