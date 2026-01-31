@@ -42,6 +42,19 @@ import { formatDistanceToNow } from "date-fns";
 
 const CLUSTER_THRESHOLD = 100;
 
+const hasValidCoords = (lat: number | null | undefined, lng: number | null | undefined): lat is number => {
+  return (
+    typeof lat === 'number' &&
+    typeof lng === 'number' &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+  );
+};
+
 const MapView = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -93,7 +106,8 @@ const MapView = () => {
     return minutesSince > 5;
   };
   
-  // Transform vehicles for map display with telemetry data
+  // Build sidebar vehicle list (ALL registered vehicles), enriching with telemetry.
+  // Map markers will be derived from this list by filtering vehicles with valid coordinates.
   const vehicles = useMemo(() => {
     // Build speed limit lookup from governor configs
     const speedLimitMap: Record<string, number> = {};
@@ -102,18 +116,8 @@ const MapView = () => {
         speedLimitMap[config.vehicle_id] = config.max_speed_limit;
       }
     });
-
-    // Helper to check if coordinates are valid (not null/undefined/NaN and within bounds)
-    const hasValidCoords = (lat: number | null | undefined, lng: number | null | undefined): boolean => {
-      return (
-        lat !== null && lat !== undefined && isFinite(lat) &&
-        lng !== null && lng !== undefined && isFinite(lng) &&
-        lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180
-      );
-    };
     
-    return dbVehicles
-      .map((v) => {
+    return dbVehicles.map((v) => {
         const vehicleTelemetry = telemetry[v.id];
         const online = isVehicleOnline(v.id);
         const speedLimit = speedLimitMap[v.id];
@@ -122,14 +126,10 @@ const MapView = () => {
         // Get coordinates from telemetry (could be current or last known)
         const lat = vehicleTelemetry?.latitude;
         const lng = vehicleTelemetry?.longitude;
+
+        const hasGps = hasValidCoords(lat, lng);
         
-        // Skip vehicles without valid GPS coordinates entirely
-        // This prevents markers from stacking at default coordinates
-        if (!hasValidCoords(lat, lng)) {
-          return null; // Will be filtered out
-        }
-        
-        // For offline vehicles, preserve last known position
+        // For offline vehicles, preserve last known telemetry values (if any)
         if (!online || !vehicleTelemetry) {
           return {
             id: v.id,
@@ -137,8 +137,8 @@ const MapView = () => {
             status: 'offline' as const,
             fuel: vehicleTelemetry?.fuel_level_percent || 0,
             speed: 0,
-            lat: lat!,
-            lng: lng!,
+            lat: hasGps ? lat! : undefined,
+            lng: hasGps ? lng! : undefined,
             engine_on: false,
             heading: vehicleTelemetry?.heading || 0,
             isOffline: true,
@@ -150,7 +150,7 @@ const MapView = () => {
             speedLimit,
             driverName: driver ? `${driver.first_name} ${driver.last_name}` : undefined,
             driverPhone: driver?.phone,
-            hasGps: true,
+            hasGps,
           };
         }
         
@@ -173,8 +173,8 @@ const MapView = () => {
           status,
           fuel: vehicleTelemetry.fuel_level_percent || 0,
           speed,
-          lat: lat!,
-          lng: lng!,
+          lat: hasGps ? lat! : undefined,
+          lng: hasGps ? lng! : undefined,
           engine_on: engineOn,
           heading: vehicleTelemetry.heading || 0,
           isOffline: false,
@@ -188,14 +188,20 @@ const MapView = () => {
           speedLimit,
           driverName: driver ? `${driver.first_name} ${driver.last_name}` : undefined,
           driverPhone: driver?.phone,
-          hasGps: true,
+          hasGps,
         };
-      })
-      .filter((v): v is NonNullable<typeof v> => v !== null); // Remove vehicles without GPS
+      });
   }, [dbVehicles, telemetry, isVehicleOnline, governorConfigs]);
 
+  const mapVehicles = useMemo(() => {
+    return vehicles.filter(
+      (v): v is typeof v & { lat: number; lng: number } =>
+        v.hasGps && typeof v.lat === 'number' && typeof v.lng === 'number' && Number.isFinite(v.lat) && Number.isFinite(v.lng)
+    );
+  }, [vehicles]);
+
   // Get vehicle IDs for trail tracking
-  const vehicleIds = useMemo(() => vehicles.map(v => v.id), [vehicles]);
+  const vehicleIds = useMemo(() => mapVehicles.map(v => v.id), [mapVehicles]);
   
   // Use vehicle trail hook for live path drawing
   const { trails, clearAllTrails } = useVehicleTrail(vehicleIds);
@@ -223,6 +229,11 @@ const MapView = () => {
     return filtered;
   }, [vehicles, searchQuery, statusFilter]);
 
+  const filteredMapVehicles = useMemo(() => {
+    const filteredIds = new Set(filteredVehicles.map(v => v.id));
+    return mapVehicles.filter(v => filteredIds.has(v.id));
+  }, [filteredVehicles, mapVehicles]);
+
   // Auto-refresh
   useEffect(() => {
     if (autoRefresh === "off") return;
@@ -236,7 +247,7 @@ const MapView = () => {
   }, [autoRefresh, refetch]);
 
   const isInitialLoading = loading && vehicles.length === 0;
-  const useClusteredMap = vehicles.length > CLUSTER_THRESHOLD;
+  const useClusteredMap = filteredMapVehicles.length > CLUSTER_THRESHOLD;
 
   // Virtual list for sidebar
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -251,8 +262,8 @@ const MapView = () => {
   useEffect(() => {
     if (!followMode || !selectedVehicleId || !mapInstance) return;
     
-    const selectedVehicle = vehicles.find(v => v.id === selectedVehicleId);
-    if (!selectedVehicle || !isFinite(selectedVehicle.lat) || !isFinite(selectedVehicle.lng)) return;
+    const selectedVehicle = mapVehicles.find(v => v.id === selectedVehicleId);
+    if (!selectedVehicle) return;
 
     // Smoothly pan to the vehicle's current position
     mapInstance.easeTo({
@@ -285,7 +296,7 @@ const MapView = () => {
   const handleVehicleClick = useCallback((vehicle: any) => {
     setSelectedVehicleId(vehicle.id);
     // Pan map to vehicle
-    if (mapInstance) {
+    if (mapInstance && typeof vehicle.lng === 'number' && typeof vehicle.lat === 'number') {
       mapInstance.flyTo({
         center: [vehicle.lng, vehicle.lat],
         zoom: 16,
@@ -368,7 +379,7 @@ const MapView = () => {
         <div className="flex-1 relative">
           {useClusteredMap ? (
             <ClusteredMap
-              vehicles={filteredVehicles.map(v => ({
+              vehicles={filteredMapVehicles.map(v => ({
                 id: v.id,
                 plate: v.plate,
                 status: v.status,
@@ -389,7 +400,7 @@ const MapView = () => {
             />
           ) : (
             <LiveTrackingMap
-              vehicles={filteredVehicles}
+              vehicles={filteredMapVehicles}
               selectedVehicleId={selectedVehicleId}
               onVehicleClick={handleVehicleClick}
               token={envToken}
@@ -492,7 +503,7 @@ const MapView = () => {
             {showNearbySearch && (
               <div className="absolute top-36 left-4 z-10">
                 <NearbyVehiclesSearch
-                  vehicles={vehicles}
+                  vehicles={mapVehicles}
                   onVehicleSelect={(v) => {
                     setSelectedVehicleId(v.id);
                     setShowNearbySearch(false);

@@ -27,8 +27,8 @@ interface Vehicle {
   id: string;
   plate: string;
   status: 'moving' | 'idle' | 'stopped' | 'offline';
-  lat: number;
-  lng: number;
+  lat?: number;
+  lng?: number;
   speed: number;
   fuel: number;
   heading?: number;
@@ -67,6 +67,8 @@ export const VehicleInfoPanel = ({
   const [address, setAddress] = useState<string>('');
   const [isLoadingAddress, setIsLoadingAddress] = useState(false);
 
+  const hasLocation = Number.isFinite(vehicle?.lat) && Number.isFinite(vehicle?.lng);
+
   // Fetch address when vehicle changes
   useEffect(() => {
     if (!vehicle) {
@@ -75,7 +77,7 @@ export const VehicleInfoPanel = ({
     }
 
     const fetchAddress = async () => {
-      if (!isFinite(vehicle.lat) || !isFinite(vehicle.lng)) {
+      if (!Number.isFinite(vehicle.lat) || !Number.isFinite(vehicle.lng)) {
         setAddress('Location unavailable');
         return;
       }
@@ -84,26 +86,30 @@ export const VehicleInfoPanel = ({
       try {
         const token = localStorage.getItem('mapbox_token') || import.meta.env.VITE_MAPBOX_TOKEN;
         if (!token) {
-          setAddress(`${vehicle.lat.toFixed(6)}, ${vehicle.lng.toFixed(6)}`);
+          setAddress(`${vehicle.lat!.toFixed(6)}, ${vehicle.lng!.toFixed(6)}`);
           return;
         }
 
-        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${vehicle.lng.toFixed(6)},${vehicle.lat.toFixed(6)}.json?access_token=${token}&types=address&limit=1&language=en`;
+        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${vehicle.lng!.toFixed(6)},${vehicle.lat!.toFixed(6)}.json?access_token=${token}&types=address&limit=1&language=en`;
         const res = await fetch(url);
         if (!res.ok) {
-          setAddress(`${vehicle.lat.toFixed(6)}, ${vehicle.lng.toFixed(6)}`);
+          setAddress(`${vehicle.lat!.toFixed(6)}, ${vehicle.lng!.toFixed(6)}`);
           return;
         }
         
         const json = await res.json();
         const features = json?.features || [];
         if (features.length > 0) {
-          setAddress(features[0].place_name || `${vehicle.lat.toFixed(4)}°N, ${vehicle.lng.toFixed(4)}°E`);
+          setAddress(features[0].place_name || `${vehicle.lat!.toFixed(4)}°N, ${vehicle.lng!.toFixed(4)}°E`);
         } else {
-          setAddress(`Near ${vehicle.lat.toFixed(4)}°N, ${vehicle.lng.toFixed(4)}°E`);
+          setAddress(`Near ${vehicle.lat!.toFixed(4)}°N, ${vehicle.lng!.toFixed(4)}°E`);
         }
       } catch {
-        setAddress(`${vehicle.lat.toFixed(6)}, ${vehicle.lng.toFixed(6)}`);
+        if (Number.isFinite(vehicle.lat) && Number.isFinite(vehicle.lng)) {
+          setAddress(`${vehicle.lat!.toFixed(6)}, ${vehicle.lng!.toFixed(6)}`);
+        } else {
+          setAddress('Location unavailable');
+        }
       } finally {
         setIsLoadingAddress(false);
       }
@@ -379,16 +385,16 @@ export const VehicleInfoPanel = ({
                     </div>
                   </div>
                 </div>
-                <div className="p-3 bg-muted/40 rounded-xl border border-border/50">
+                 <div className="p-3 bg-muted/40 rounded-xl border border-border/50">
                   <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mb-1.5">Coordinates</div>
                   <div className="space-y-1 text-xs">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Lat:</span>
-                      <span className="font-mono font-semibold tabular-nums">{vehicle.lat.toFixed(6)}</span>
+                       <span className="font-mono font-semibold tabular-nums">{hasLocation ? vehicle.lat!.toFixed(6) : 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Lng:</span>
-                      <span className="font-mono font-semibold tabular-nums">{vehicle.lng.toFixed(6)}</span>
+                       <span className="font-mono font-semibold tabular-nums">{hasLocation ? vehicle.lng!.toFixed(6) : 'N/A'}</span>
                     </div>
                   </div>
                 </div>
@@ -450,7 +456,11 @@ export const VehicleInfoPanel = ({
                     variant="outline"
                     size="sm"
                     className="h-12 flex-col gap-1 bg-background hover:bg-cyan-500/10 hover:border-cyan-500/50 hover:text-cyan-600 transition-all"
-                    onClick={() => onStreetView?.(vehicle.lat, vehicle.lng, vehicle.plate)}
+                    onClick={() => {
+                      if (!hasLocation) return;
+                      onStreetView?.(vehicle.lat!, vehicle.lng!, vehicle.plate);
+                    }}
+                    disabled={!hasLocation}
                     aria-label={`Open street view for ${vehicle.plate}`}
                   >
                     <MapPin className="w-5 h-5 text-cyan-500" aria-hidden="true" />
@@ -466,7 +476,11 @@ export const VehicleInfoPanel = ({
                     variant="outline"
                     size="sm"
                     className="h-12 flex-col gap-1 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/50 hover:text-emerald-600 transition-all"
-                    onClick={() => onDirections?.(vehicle.lat, vehicle.lng, vehicle.plate)}
+                    onClick={() => {
+                      if (!hasLocation) return;
+                      onDirections?.(vehicle.lat!, vehicle.lng!, vehicle.plate);
+                    }}
+                    disabled={!hasLocation}
                     aria-label={`Get directions to ${vehicle.plate}`}
                   >
                     <Navigation2 className="w-5 h-5 text-emerald-500" aria-hidden="true" />
