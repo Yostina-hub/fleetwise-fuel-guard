@@ -1,7 +1,6 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown, Minus, Fuel, Gauge, AlertTriangle, DollarSign } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Fuel, Gauge, AlertTriangle, DollarSign, Droplet, Clock } from "lucide-react";
 import { useOrganizationSettings } from "@/hooks/useOrganizationSettings";
+import { cn } from "@/lib/utils";
 
 interface FuelQuickStatsProps {
   totalConsumption: number;
@@ -23,93 +22,98 @@ const FuelQuickStats = ({
   const { formatCurrency } = useOrganizationSettings();
 
   const estimatedMonthlyCost = totalConsumption * avgCostPerLiter;
-  const potentialSavings = estimatedMonthlyCost * 0.12; // 12% potential savings through optimization
+  const potentialSavings = estimatedMonthlyCost * 0.12;
+
+  const stats = [
+    {
+      label: "ALL",
+      value: eventsCount,
+      icon: Droplet,
+      color: "text-primary",
+      bgColor: "bg-primary/20 border-primary/30",
+      highlight: true,
+    },
+    {
+      label: "CONSUMPTION",
+      value: `${totalConsumption.toLocaleString()}L`,
+      icon: Fuel,
+      color: "text-success",
+      bgColor: "bg-success/10 border-success/30",
+      trend: consumptionTrend,
+    },
+    {
+      label: "EFFICIENCY",
+      value: avgEfficiency || "—",
+      icon: Gauge,
+      color: "text-blue-500",
+      bgColor: "bg-blue-500/10 border-blue-500/30",
+    },
+    {
+      label: "ANOMALIES",
+      value: anomalyCount,
+      icon: AlertTriangle,
+      color: anomalyCount > 0 ? "text-destructive" : "text-muted-foreground",
+      bgColor: anomalyCount > 0 ? "bg-destructive/10 border-destructive/30" : "bg-muted border-border",
+      alert: anomalyCount > 0,
+    },
+    {
+      label: "SAVINGS",
+      value: formatCurrency(potentialSavings),
+      icon: DollarSign,
+      color: "text-warning",
+      bgColor: "bg-warning/10 border-warning/30",
+    },
+    {
+      label: "MONTHLY COST",
+      value: formatCurrency(estimatedMonthlyCost),
+      icon: Clock,
+      color: "text-muted-foreground",
+      bgColor: "bg-muted border-border",
+    },
+  ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {/* Consumption Trend */}
-      <Card className="glass-card hover:shadow-lg transition-shadow">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Fuel className="w-4 h-4 text-primary" />
-            </div>
-            <Badge 
-              variant="outline" 
-              className={consumptionTrend.direction === 'down' ? 'text-success border-success/30' : 'text-destructive border-destructive/30'}
-            >
-              {consumptionTrend.direction === 'down' ? (
-                <TrendingDown className="w-3 h-3 mr-1" />
-              ) : consumptionTrend.direction === 'up' ? (
-                <TrendingUp className="w-3 h-3 mr-1" />
-              ) : (
-                <Minus className="w-3 h-3 mr-1" />
+    <div className="flex items-center gap-3 flex-wrap">
+      {stats.map((stat) => (
+        <div
+          key={stat.label}
+          className={cn(
+            "flex items-center gap-3 px-4 py-3 rounded-lg border transition-all",
+            stat.bgColor,
+            stat.highlight && "ring-2 ring-primary/30"
+          )}
+        >
+          <stat.icon className={cn("w-5 h-5", stat.color)} />
+          <div className="flex flex-col">
+            <span className="text-lg font-bold leading-tight">
+              {stat.value}
+              {stat.trend && (
+                <span className={cn(
+                  "ml-2 text-xs font-medium",
+                  stat.trend.direction === 'down' ? 'text-success' : 
+                  stat.trend.direction === 'up' ? 'text-destructive' : 
+                  'text-muted-foreground'
+                )}>
+                  {stat.trend.direction === 'down' ? (
+                    <TrendingDown className="w-3 h-3 inline mr-0.5" />
+                  ) : stat.trend.direction === 'up' ? (
+                    <TrendingUp className="w-3 h-3 inline mr-0.5" />
+                  ) : (
+                    <Minus className="w-3 h-3 inline mr-0.5" />
+                  )}
+                  {Math.abs(stat.trend.value)}%
+                </span>
               )}
-              {Math.abs(consumptionTrend.value)}%
-            </Badge>
+            </span>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+              {stat.label}
+            </span>
           </div>
-          <div className="mt-3">
-            <div className="text-2xl font-bold">{totalConsumption.toLocaleString()}L</div>
-            <p className="text-xs text-muted-foreground">vs last period</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Efficiency Score */}
-      <Card className="glass-card hover:shadow-lg transition-shadow">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="p-2 rounded-lg bg-success/10">
-              <Gauge className="w-4 h-4 text-success" />
-            </div>
-            <Badge variant="outline" className="text-success border-success/30">
-              Good
-            </Badge>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl font-bold">{avgEfficiency || '—'}</div>
-            <p className="text-xs text-muted-foreground">Fleet efficiency</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Potential Savings */}
-      <Card className="glass-card hover:shadow-lg transition-shadow">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="p-2 rounded-lg bg-warning/10">
-              <DollarSign className="w-4 h-4 text-warning" />
-            </div>
-            <Badge variant="outline" className="text-warning border-warning/30">
-              Optimize
-            </Badge>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl font-bold">{formatCurrency(potentialSavings)}</div>
-            <p className="text-xs text-muted-foreground">Potential savings/mo</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Anomaly Alert */}
-      <Card className={`glass-card hover:shadow-lg transition-shadow ${anomalyCount > 0 ? 'border-destructive/30' : ''}`}>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className={`p-2 rounded-lg ${anomalyCount > 0 ? 'bg-destructive/10' : 'bg-muted'}`}>
-              <AlertTriangle className={`w-4 h-4 ${anomalyCount > 0 ? 'text-destructive' : 'text-muted-foreground'}`} />
-            </div>
-            {anomalyCount > 0 && (
-              <Badge variant="destructive" className="animate-pulse">
-                Action Required
-              </Badge>
-            )}
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl font-bold">{anomalyCount}</div>
-            <p className="text-xs text-muted-foreground">Anomalies detected</p>
-          </div>
-        </CardContent>
-      </Card>
+          {stat.alert && (
+            <span className="ml-auto w-2 h-2 rounded-full bg-destructive animate-pulse" />
+          )}
+        </div>
+      ))}
     </div>
   );
 };
