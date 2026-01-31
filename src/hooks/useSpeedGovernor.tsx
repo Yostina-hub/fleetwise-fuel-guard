@@ -62,6 +62,12 @@ export const useSpeedGovernor = () => {
       const today = startOfDay(new Date());
       const yesterday = startOfDay(subDays(new Date(), 1));
 
+      // Get total vehicles count
+      const { count: totalVehicles } = await supabase
+        .from("vehicles")
+        .select("*", { count: "exact", head: true })
+        .eq("organization_id", organizationId!);
+
       // Get governor configs
       const { data: configs, error: configError } = await supabase
         .from("speed_governor_config")
@@ -71,7 +77,7 @@ export const useSpeedGovernor = () => {
       if (configError) throw configError;
 
       const activeGovernors = configs?.filter(c => c.governor_active).length || 0;
-      const totalGovernors = configs?.length || 0;
+      const totalGovernors = totalVehicles || 0; // Use total vehicles as the baseline
       const avgSpeedLimit = configs?.length 
         ? Math.round(configs.reduce((acc, c) => acc + c.max_speed_limit, 0) / configs.length)
         : 80;
@@ -91,19 +97,24 @@ export const useSpeedGovernor = () => {
         .gte("violation_time", yesterday.toISOString())
         .lt("violation_time", today.toISOString());
 
-      // Get alerts sent in last 24 hours from driver_events (speed warnings)
+      // Get alerts sent in last 24 hours (speed-related alerts)
       const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
       const { count: alertsCount } = await supabase
-        .from("driver_events")
+        .from("alerts")
         .select("*", { count: "exact", head: true })
         .eq("organization_id", organizationId!)
-        .eq("event_type", "speeding")
-        .gte("event_time", last24h.toISOString());
+        .in("alert_type", ["overspeed", "speeding", "speed_violation"])
+        .gte("alert_time", last24h.toISOString());
+
+      // Calculate compliance rate based on vehicles with active governors vs total
+      const complianceRate = totalGovernors > 0 
+        ? Math.round((activeGovernors / totalGovernors) * 100) 
+        : 0;
 
       return {
         activeGovernors,
         totalGovernors,
-        complianceRate: totalGovernors > 0 ? Math.round((activeGovernors / totalGovernors) * 100) : 0,
+        complianceRate,
         todayViolations: todayCount || 0,
         yesterdayViolations: yesterdayCount || 0,
         avgSpeedLimit,
