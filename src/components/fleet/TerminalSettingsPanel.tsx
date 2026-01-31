@@ -146,6 +146,24 @@ export const TerminalSettingsPanel = ({
     bluetoothSwitch: true,
   });
 
+  // Alarm settings state
+  const [alarmSettings, setAlarmSettings] = useState({
+    sos: true,
+    vibration: true,
+    lowBattery: true,
+    powerCut: true,
+    geofence: true,
+    speeding: true,
+  });
+
+  // Driving behavior settings state
+  const [drivingBehavior, setDrivingBehavior] = useState({
+    harshBraking: 50,
+    harshAcceleration: 40,
+    sharpTurn: 30,
+    idling: 5,
+  });
+
   const [activeSubPanel, setActiveSubPanel] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
@@ -246,6 +264,20 @@ export const TerminalSettingsPanel = ({
           break;
         case "factoryReset":
           smsContent = "reset123456";
+          break;
+        case "alarmSettings":
+          // Build alarm config command
+          const alarms = commandData.alarms || {};
+          const enabledAlarms = Object.entries(alarms)
+            .filter(([_, enabled]) => enabled)
+            .map(([key]) => key)
+            .join(",");
+          smsContent = `alarm123456 ${enabledAlarms || "none"}`;
+          break;
+        case "drivingBehavior":
+          // Build behavior thresholds command
+          const thresholds = commandData.thresholds || {};
+          smsContent = `behavior123456 brake:${thresholds.harshBraking || 50},accel:${thresholds.harshAcceleration || 40},turn:${thresholds.sharpTurn || 30},idle:${thresholds.idling || 5}`;
           break;
         default:
           smsContent = `${commandType}123456`;
@@ -810,9 +842,29 @@ export const TerminalSettingsPanel = ({
                     <alarm.icon className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm font-medium">{alarm.label}</span>
                   </div>
-                  <Switch defaultChecked />
+                  <Switch 
+                    checked={alarmSettings[alarm.id as keyof typeof alarmSettings]}
+                    onCheckedChange={(checked) => {
+                      setAlarmSettings(prev => ({ ...prev, [alarm.id]: checked }));
+                    }}
+                  />
                 </div>
               ))}
+              <Button
+                className="w-full mt-4"
+                onClick={() => {
+                  sendCommand("alarmSettings", { alarms: alarmSettings });
+                  setActiveSubPanel(null);
+                }}
+                disabled={sending}
+              >
+                {sending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Check className="h-4 w-4 mr-2" />
+                )}
+                Save Alarm Settings
+              </Button>
             </div>
           )}
 
@@ -822,21 +874,44 @@ export const TerminalSettingsPanel = ({
                 Configure driving behavior detection thresholds.
               </p>
               {[
-                { id: "harshBraking", label: "Harsh Braking", value: 0.5 },
-                { id: "harshAcceleration", label: "Harsh Acceleration", value: 0.4 },
-                { id: "sharpTurn", label: "Sharp Turn", value: 30 },
-                { id: "idling", label: "Idling Timeout (min)", value: 5 },
+                { id: "harshBraking", label: "Harsh Braking (G-force %)", unit: "%" },
+                { id: "harshAcceleration", label: "Harsh Acceleration (G-force %)", unit: "%" },
+                { id: "sharpTurn", label: "Sharp Turn (degrees)", unit: "°" },
+                { id: "idling", label: "Idling Timeout", unit: "min" },
               ].map((behavior) => (
                 <div key={behavior.id} className="space-y-2">
                   <div className="flex justify-between">
                     <Label className="text-sm">{behavior.label}</Label>
-                    <span className="text-sm text-muted-foreground">
-                      {behavior.value}
+                    <span className="text-sm font-medium text-primary">
+                      {drivingBehavior[behavior.id as keyof typeof drivingBehavior]}{behavior.unit}
                     </span>
                   </div>
-                  <Slider defaultValue={[behavior.value * 100]} max={100} />
+                  <Slider 
+                    value={[drivingBehavior[behavior.id as keyof typeof drivingBehavior]]} 
+                    max={behavior.id === "idling" ? 30 : 100}
+                    min={behavior.id === "idling" ? 1 : 10}
+                    step={behavior.id === "idling" ? 1 : 5}
+                    onValueChange={([value]) => {
+                      setDrivingBehavior(prev => ({ ...prev, [behavior.id]: value }));
+                    }}
+                  />
                 </div>
               ))}
+              <Button
+                className="w-full mt-4"
+                onClick={() => {
+                  sendCommand("drivingBehavior", { thresholds: drivingBehavior });
+                  setActiveSubPanel(null);
+                }}
+                disabled={sending}
+              >
+                {sending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Check className="h-4 w-4 mr-2" />
+                )}
+                Save Behavior Settings
+              </Button>
             </div>
           )}
         </ScrollArea>
