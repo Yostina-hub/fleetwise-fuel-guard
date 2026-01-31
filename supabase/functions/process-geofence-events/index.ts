@@ -304,7 +304,36 @@ Deno.serve(async (req) => {
             event_time: new Date().toISOString(),
             lat,
             lng,
+            speed_kmh: telemetry.speed_kmh,
             speed_limit_kmh: geofence.speed_limit,
+          });
+          
+          // Create speed violation alert
+          const { data: vehicleData } = await supabase
+            .from("vehicles")
+            .select("assigned_driver_id, plate_number")
+            .eq("id", vehicle_id)
+            .single();
+            
+          await supabase.from("alerts").insert({
+            organization_id,
+            vehicle_id,
+            driver_id: vehicleData?.assigned_driver_id || null,
+            alert_type: "geofence_speed_violation",
+            severity: "high",
+            title: `Speed violation in ${geofence.name}`,
+            message: `Vehicle ${vehicleData?.plate_number || vehicle_id} exceeded speed limit: ${telemetry.speed_kmh} km/h in ${geofence.speed_limit} km/h zone`,
+            alert_time: new Date().toISOString(),
+            lat,
+            lng,
+            location_name: geofence.name,
+            status: "active",
+            alert_data: { 
+              geofence_id: geofence.id, 
+              geofence_name: geofence.name, 
+              speed_kmh: telemetry.speed_kmh, 
+              speed_limit_kmh: geofence.speed_limit 
+            },
           });
         }
       }
@@ -335,6 +364,34 @@ Deno.serve(async (req) => {
                 lat,
                 lng,
                 dwell_time_minutes: dwellMinutes,
+              });
+              
+              // Create dwell exceeded alert
+              const { data: vehicleData } = await supabase
+                .from("vehicles")
+                .select("assigned_driver_id, plate_number")
+                .eq("id", vehicle_id)
+                .single();
+                
+              await supabase.from("alerts").insert({
+                organization_id,
+                vehicle_id,
+                driver_id: vehicleData?.assigned_driver_id || null,
+                alert_type: "dwell_exceeded",
+                severity: "warning",
+                title: `Dwell time exceeded: ${geofence.name}`,
+                message: `Vehicle ${vehicleData?.plate_number || vehicle_id} has been in "${geofence.name}" for ${dwellMinutes} minutes (limit: ${geofence.max_dwell_minutes} min)`,
+                alert_time: new Date().toISOString(),
+                lat,
+                lng,
+                location_name: geofence.name,
+                status: "active",
+                alert_data: { 
+                  geofence_id: geofence.id, 
+                  geofence_name: geofence.name, 
+                  dwell_minutes: dwellMinutes, 
+                  max_dwell_minutes: geofence.max_dwell_minutes 
+                },
               });
             }
           }

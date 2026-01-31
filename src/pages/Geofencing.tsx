@@ -118,7 +118,7 @@ const Geofencing = () => {
     totalGeofences: geofences?.length || 0,
     activeGeofences: geofences?.filter(g => g.is_active !== false).length || 0,
     eventsToday: recentEvents?.length || 0,
-    entryEvents: recentEvents?.filter(e => e.event_type === 'entry').length || 0,
+    entryEvents: recentEvents?.filter(e => e.event_type === 'enter').length || 0,
     exitEvents: recentEvents?.filter(e => e.event_type === 'exit').length || 0,
     dwellAlerts: recentEvents?.filter(e => e.event_type === 'dwell_exceeded').length || 0,
   };
