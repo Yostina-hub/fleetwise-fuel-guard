@@ -43,7 +43,7 @@ const GeofenceTrendChart = () => {
 
       return {
         date: format(day, "EEE"),
-        entries: dayEvents.filter((e) => e.event_type === "entry").length,
+        entries: dayEvents.filter((e) => e.event_type === "enter").length,
         exits: dayEvents.filter((e) => e.event_type === "exit").length,
         dwellAlerts: dayEvents.filter((e) => e.event_type === "dwell_exceeded").length,
       };
