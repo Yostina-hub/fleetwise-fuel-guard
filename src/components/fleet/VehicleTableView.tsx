@@ -303,8 +303,9 @@ export const VehicleTableView = ({
                 {(() => {
                   const fuelStatus = fuelStatusMap.get(vehicle.vehicleId);
                   const hasSensor = fuelStatus?.has_fuel_sensor;
+                  const fuelLevel = fuelStatus?.last_fuel_reading ?? vehicle.fuel;
                   
-                  if (vehicle.fuel !== null) {
+                  if (hasSensor && fuelLevel !== null) {
                     return (
                       <div className="flex items-center gap-2">
                         <TooltipProvider>
@@ -314,16 +315,16 @@ export const VehicleTableView = ({
                                 <Droplets className="w-3.5 h-3.5 text-blue-500" />
                                 <div className="w-16 bg-muted rounded-full h-2">
                                   <div
-                                    className={`h-2 rounded-full ${getFuelColor(vehicle.fuel)}`}
-                                    style={{ width: `${vehicle.fuel}%` }}
+                                    className={`h-2 rounded-full ${getFuelColor(fuelLevel)}`}
+                                    style={{ width: `${fuelLevel}%` }}
                                   />
                                 </div>
-                                <span className="text-sm font-medium w-10">{vehicle.fuel}%</span>
+                                <span className="text-sm font-medium w-10">{Math.round(fuelLevel)}%</span>
                               </div>
                             </TooltipTrigger>
                             <TooltipContent>
                               <p>Fuel sensor active</p>
-                              {fuelStatus && <p className="text-xs text-muted-foreground">{fuelStatus.fuel_records_count} readings</p>}
+                              <p className="text-xs text-muted-foreground">{fuelStatus.fuel_records_count} readings</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -335,10 +336,12 @@ export const VehicleTableView = ({
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Badge variant="secondary" className="text-xs gap-1">
-                            <Fuel className="h-3 w-3" />
-                            No Sensor
-                          </Badge>
+                          <span>
+                            <Badge variant="secondary" className="text-xs gap-1">
+                              <Fuel className="h-3 w-3" />
+                              No Sensor
+                            </Badge>
+                          </span>
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>No fuel sensor data available</p>
