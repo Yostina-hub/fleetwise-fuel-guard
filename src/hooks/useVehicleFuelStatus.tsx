@@ -30,47 +30,46 @@ export function useVehicleFuelStatus() {
       
       if (vehicleIds.length === 0) return statusMap;
 
-      // Use a raw SQL query via RPC or get all fuel records grouped
-      // First, get distinct vehicles that have fuel data
-      const { data: vehiclesWithFuel, error: fuelError } = await supabase
-        .from("vehicle_telemetry")
-        .select("vehicle_id, fuel_level_percent, last_communication_at")
-        .in("vehicle_id", vehicleIds)
-        .not("fuel_level_percent", "is", null)
-        .order("last_communication_at", { ascending: false })
-        .limit(5000); // Increase limit to capture more records
+      // Fetch per-vehicle latest fuel + count via RPC (avoids row-limit issues)
+      const { data: fuelRows, error: fuelError } = await supabase.rpc(
+        "get_vehicle_fuel_status",
+        {
+          p_vehicle_ids: vehicleIds,
+        }
+      );
 
       if (fuelError) {
-        console.error("Error fetching fuel telemetry:", fuelError);
+        console.error("Error fetching fuel status:", fuelError);
       }
 
-      // Group by vehicle_id to get count and latest reading
-      const vehicleFuelData = new Map<string, { latest: number; count: number; latestTime: string }>();
-      
-      (vehiclesWithFuel || []).forEach((record) => {
-        const existing = vehicleFuelData.get(record.vehicle_id);
-        if (!existing) {
-          // First record for this vehicle (already sorted by time desc, so this is the latest)
-          vehicleFuelData.set(record.vehicle_id, {
-            latest: record.fuel_level_percent!,
-            count: 1,
-            latestTime: record.last_communication_at || '',
-          });
-        } else {
-          // Just increment count
-          existing.count++;
-        }
-      });
+      const fuelByVehicleId = new Map<
+        string,
+        { last: number | null; count: number }
+      >();
 
-      console.log("Vehicles with fuel data:", Array.from(vehicleFuelData.entries()));
+      (fuelRows || []).forEach((row: any) => {
+        const vehicleId = String(row.vehicle_id);
+        const lastRaw = row.last_fuel_reading;
+        const countRaw = row.fuel_records_count;
+
+        const last =
+          lastRaw === null || lastRaw === undefined ? null : Number(lastRaw);
+        const count =
+          countRaw === null || countRaw === undefined ? 0 : Number(countRaw);
+
+        fuelByVehicleId.set(vehicleId, {
+          last: Number.isFinite(last as number) ? (last as number) : null,
+          count: Number.isFinite(count) ? count : 0,
+        });
+      });
 
       // Build status map for all vehicles
       vehicleIds.forEach((id) => {
-        const fuelData = vehicleFuelData.get(id);
+        const fuelData = fuelByVehicleId.get(id);
         statusMap.set(id, {
           vehicle_id: id,
           has_fuel_sensor: !!fuelData,
-          last_fuel_reading: fuelData?.latest ?? null,
+          last_fuel_reading: fuelData?.last ?? null,
           fuel_records_count: fuelData?.count ?? 0,
         });
       });

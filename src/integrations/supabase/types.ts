@@ -7435,6 +7435,15 @@ export type Database = {
     }
     Functions: {
       get_user_organization: { Args: { _user_id: string }; Returns: string }
+      get_vehicle_fuel_status: {
+        Args: { p_vehicle_ids: string[] }
+        Returns: {
+          fuel_records_count: number
+          last_communication_at: string
+          last_fuel_reading: number
+          vehicle_id: string
+        }[]
+      }
       has_permission: {
         Args: { _permission_name: string; _user_id: string }
         Returns: boolean
