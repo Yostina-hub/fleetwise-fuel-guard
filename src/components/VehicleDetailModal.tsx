@@ -39,6 +39,7 @@ import StatusBadge from "./StatusBadge";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import CreateIncidentDialog from "@/components/incidents/CreateIncidentDialog";
+import ScheduleMaintenanceDialog from "@/components/maintenance/ScheduleMaintenanceDialog";
 import DriverDetailDialog from "@/components/fleet/DriverDetailDialog";
 import { useQuery } from "@tanstack/react-query";
 import TripTimeline from "@/components/vehicle/TripTimeline";
@@ -624,10 +625,15 @@ const VehicleDetailModal = ({ open, onOpenChange, vehicle }: VehicleDetailModalP
                             <Route className="h-4 w-4" />
                             Assign Route
                           </Button>
-                          <Button variant="outline" className="gap-2">
-                            <Calendar className="h-4 w-4" />
-                            Schedule Maintenance
-                          </Button>
+                          <ScheduleMaintenanceDialog
+                            vehicleId={actualVehicleId}
+                            trigger={
+                              <Button variant="outline" className="gap-2">
+                                <Calendar className="h-4 w-4" />
+                                Schedule Maintenance
+                              </Button>
+                            }
+                          />
                           <CreateIncidentDialog
                             trigger={
                               <Button variant="outline" className="gap-2">
