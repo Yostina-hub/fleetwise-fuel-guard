@@ -31,7 +31,9 @@ import { VehicleMapInfoCard } from "@/components/vehicles/VehicleMapInfoCard";
 import { VehicleHoverCard } from "@/components/vehicles/VehicleHoverCard";
 import { VehicleListItem } from "@/components/vehicles/VehicleListItem";
 import { VehicleQuickInfoPopup } from "@/components/vehicles/VehicleQuickInfoPopup";
+import { MobileVehiclesList } from "@/components/mobile/MobileVehiclesList";
 import { TablePagination, usePagination } from "@/components/reports/TablePagination";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Search,
   SlidersHorizontal,
@@ -64,7 +66,7 @@ import { cn } from "@/lib/utils";
 import mapboxgl from "mapbox-gl";
 import { formatDistanceToNow } from "date-fns";
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 20; // Updated to 20 items per page
 
 // Status filter badges configuration - horizontal compact style
 const STATUS_BADGES = [
@@ -111,6 +113,7 @@ const getVehicleIcon = (make: string, status: string) => {
 
 const Vehicles = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const { vehicles: dbVehicles, loading } = useVehicles();
   const { telemetry, isVehicleOnline } = useVehicleTelemetry();
   
@@ -128,6 +131,11 @@ const Vehicles = () => {
   const [showQuickInfo, setShowQuickInfo] = useState(false);
   
   const debouncedSearch = useDebounce(searchInput, 300);
+  
+  // Mobile view handler
+  const handleMobileVehicleSelect = useCallback((vehicleId: string) => {
+    navigate(`/map?vehicle=${vehicleId}`);
+  }, [navigate]);
   
   // Transform vehicles with telemetry
   const vehicles = useMemo(() => {
@@ -345,6 +353,17 @@ const Vehicles = () => {
       alias: undefined,
     };
   }, [selectedVehicleId, filteredVehicles, telemetry]);
+
+  // Render mobile view
+  if (isMobile) {
+    return (
+      <Layout>
+        <div className="h-[calc(100vh-8rem)] flex flex-col overflow-hidden">
+          <MobileVehiclesList onVehicleSelect={handleMobileVehicleSelect} />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
