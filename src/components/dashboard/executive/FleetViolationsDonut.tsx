@@ -3,29 +3,131 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Settings2, X } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useOrganization } from "@/hooks/useOrganization";
+import { startOfDay, endOfDay, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 
-interface FleetViolationsDonutProps {
-  data: {
-    overSpeeds: number;
-    alerts: number;
-    harshBehavior: number;
-    noGoKeepIn: number;
-  };
-  loading?: boolean;
-}
+type TimePeriod = "today" | "yesterday" | "last_7_days" | "last_30_days" | "this_month";
 
-const COLORS = {
-  overSpeeds: "#0072BC", // Dark Blue (brand)
-  alerts: "#f59e0b", // amber/orange
-  harshBehavior: "#ef4444", // red
-  noGoKeepIn: "#8DC63F", // Lemon Green (brand)
+const TIME_OPTIONS: { value: TimePeriod; label: string }[] = [
+  { value: "today", label: "Today" },
+  { value: "yesterday", label: "Yesterday" },
+  { value: "last_7_days", label: "Last 7 Days" },
+  { value: "last_30_days", label: "Last 30 Days" },
+  { value: "this_month", label: "This Month" },
+];
+
+const getDateRange = (period: TimePeriod) => {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  switch (period) {
+    case "today":
+      return { start: startOfDay(today), end: endOfDay(today) };
+    case "yesterday":
+      const yesterday = subDays(today, 1);
+      return { start: startOfDay(yesterday), end: endOfDay(yesterday) };
+    case "last_7_days":
+      return { start: subDays(today, 6), end: endOfDay(today) };
+    case "last_30_days":
+      return { start: subDays(today, 29), end: endOfDay(today) };
+    case "this_month":
+      return { start: startOfMonth(today), end: endOfMonth(today) };
+    default:
+      return { start: subDays(today, 6), end: endOfDay(today) };
+  }
 };
 
-export const FleetViolationsDonut = ({ data, loading }: FleetViolationsDonutProps) => {
-  const [period, setPeriod] = useState("last_7_days");
+const COLORS = {
+  overSpeeds: "#0072BC",
+  alerts: "#f59e0b",
+  harshBehavior: "#ef4444",
+  noGoKeepIn: "#8DC63F",
+};
+
+export const FleetViolationsDonut = () => {
+  const [period, setPeriod] = useState<TimePeriod>("last_7_days");
+  const { organizationId } = useOrganization();
+
+  const dateRange = useMemo(() => getDateRange(period), [period]);
+
+  // Fetch speed violations
+  const { data: speedViolations = [] } = useQuery({
+    queryKey: ["fleet-violations-speed", organizationId, dateRange.start.toISOString(), dateRange.end.toISOString()],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data, error } = await supabase
+        .from("speed_violations")
+        .select("id")
+        .eq("organization_id", organizationId)
+        .gte("violation_time", dateRange.start.toISOString())
+        .lte("violation_time", dateRange.end.toISOString());
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId,
+  });
+
+  // Fetch alerts
+  const { data: alerts = [] } = useQuery({
+    queryKey: ["fleet-violations-alerts", organizationId, dateRange.start.toISOString(), dateRange.end.toISOString()],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data, error } = await supabase
+        .from("alerts")
+        .select("id")
+        .eq("organization_id", organizationId)
+        .gte("alert_time", dateRange.start.toISOString())
+        .lte("alert_time", dateRange.end.toISOString());
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId,
+  });
+
+  // Fetch driver events (harsh behavior)
+  const { data: driverEvents = [] } = useQuery({
+    queryKey: ["fleet-violations-driver-events", organizationId, dateRange.start.toISOString(), dateRange.end.toISOString()],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data, error } = await supabase
+        .from("driver_events")
+        .select("id, event_type")
+        .eq("organization_id", organizationId)
+        .gte("event_time", dateRange.start.toISOString())
+        .lte("event_time", dateRange.end.toISOString());
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId,
+  });
+
+  // Fetch geofence events (no-go/keep-in)
+  const { data: geofenceEvents = [] } = useQuery({
+    queryKey: ["fleet-violations-geofence", organizationId, dateRange.start.toISOString(), dateRange.end.toISOString()],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data, error } = await supabase
+        .from("geofence_events")
+        .select("id")
+        .eq("organization_id", organizationId)
+        .gte("event_time", dateRange.start.toISOString())
+        .lte("event_time", dateRange.end.toISOString());
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId,
+  });
+
+  const data = useMemo(() => ({
+    overSpeeds: speedViolations.length,
+    alerts: alerts.length,
+    harshBehavior: driverEvents.length,
+    noGoKeepIn: geofenceEvents.length,
+  }), [speedViolations.length, alerts.length, driverEvents.length, geofenceEvents.length]);
 
   const total = useMemo(() => 
     data.overSpeeds + data.alerts + data.harshBehavior + data.noGoKeepIn,
@@ -46,23 +148,6 @@ export const FleetViolationsDonut = ({ data, loading }: FleetViolationsDonutProp
     noGoKeepIn: total > 0 ? ((data.noGoKeepIn / total) * 100).toFixed(1) : "0",
   }), [data, total]);
 
-  if (loading) {
-    return (
-      <Card className="border-cyan-500/20 backdrop-blur-sm" style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}>
-        <CardContent className="p-6">
-          <div className="animate-pulse space-y-4">
-            <div className="h-6 bg-white/10 rounded w-1/2" />
-            <div className="h-48 bg-white/10 rounded-full w-48 mx-auto" />
-            <div className="space-y-2">
-              <div className="h-4 bg-white/10 rounded w-3/4" />
-              <div className="h-4 bg-white/10 rounded w-2/3" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 30, scale: 0.95 }}
@@ -71,7 +156,6 @@ export const FleetViolationsDonut = ({ data, loading }: FleetViolationsDonutProp
       whileHover={{ scale: 1.01 }}
     >
       <Card className="border-cyan-500/20 backdrop-blur-sm relative overflow-hidden hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-500" style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}>
-        {/* Subtle gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-[#8DC63F]/5 pointer-events-none" />
         
         <Button
@@ -93,16 +177,16 @@ export const FleetViolationsDonut = ({ data, loading }: FleetViolationsDonutProp
               </motion.div>
               Fleet Violations
             </CardTitle>
-            <Select value={period} onValueChange={setPeriod}>
+            <Select value={period} onValueChange={(v) => setPeriod(v as TimePeriod)}>
               <SelectTrigger className="w-[130px] h-8 text-xs bg-white/10 border-cyan-500/30 text-white">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="yesterday">Yesterday</SelectItem>
-                <SelectItem value="last_7_days">Last 7 Days</SelectItem>
-                <SelectItem value="last_30_days">Last 30 Days</SelectItem>
-                <SelectItem value="this_month">This Month</SelectItem>
+                {TIME_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -113,7 +197,7 @@ export const FleetViolationsDonut = ({ data, loading }: FleetViolationsDonutProp
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={chartData}
+                  data={chartData.length > 0 && total > 0 ? chartData : [{ name: "No Data", value: 1, color: "hsl(var(--muted))" }]}
                   cx="50%"
                   cy="50%"
                   innerRadius={70}
@@ -122,7 +206,7 @@ export const FleetViolationsDonut = ({ data, loading }: FleetViolationsDonutProp
                   dataKey="value"
                   strokeWidth={0}
                 >
-                  {chartData.map((entry, index) => (
+                  {(chartData.length > 0 && total > 0 ? chartData : [{ name: "No Data", value: 1, color: "hsl(var(--muted))" }]).map((entry, index) => (
                     <Cell 
                       key={`cell-${index}`} 
                       fill={entry.color}
@@ -133,7 +217,6 @@ export const FleetViolationsDonut = ({ data, loading }: FleetViolationsDonutProp
               </PieChart>
             </ResponsiveContainer>
             
-            {/* Center Text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <motion.span 
                 className="text-sm text-muted-foreground font-medium"
@@ -154,7 +237,6 @@ export const FleetViolationsDonut = ({ data, loading }: FleetViolationsDonutProp
             </div>
           </div>
 
-          {/* Enhanced Legend */}
           <div className="mt-4 space-y-2.5">
             {[
               { key: 'overSpeeds', label: 'OverSpeeds', color: COLORS.overSpeeds, value: percentages.overSpeeds },
