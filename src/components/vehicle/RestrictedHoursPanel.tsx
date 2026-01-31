@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Clock, Save, AlertTriangle, Shield, Calendar } from "lucide-react";
+import { Clock, Save, AlertTriangle, Shield, Calendar, Lock, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 
@@ -17,6 +17,10 @@ interface RestrictedHoursConfig {
   allowed_start_time: string;
   allowed_end_time: string;
   active_days: number[];
+  engine_lock_enabled: boolean;
+  lock_delay_seconds: number;
+  send_warning_first: boolean;
+  warning_message: string;
   notes?: string;
 }
 
@@ -44,6 +48,10 @@ const RestrictedHoursPanel = ({ vehicleId, vehiclePlate }: RestrictedHoursPanelP
     allowed_start_time: "08:00:00",
     allowed_end_time: "18:00:00",
     active_days: [1, 2, 3, 4, 5], // Monday - Friday
+    engine_lock_enabled: false,
+    lock_delay_seconds: 30,
+    send_warning_first: true,
+    warning_message: "Vehicle operating outside allowed hours. Engine will be disabled.",
     notes: "",
   });
 
@@ -70,6 +78,10 @@ const RestrictedHoursPanel = ({ vehicleId, vehiclePlate }: RestrictedHoursPanelP
           allowed_start_time: data.allowed_start_time,
           allowed_end_time: data.allowed_end_time,
           active_days: data.active_days || [1, 2, 3, 4, 5],
+          engine_lock_enabled: data.engine_lock_enabled ?? false,
+          lock_delay_seconds: data.lock_delay_seconds ?? 30,
+          send_warning_first: data.send_warning_first ?? true,
+          warning_message: data.warning_message || "Vehicle operating outside allowed hours. Engine will be disabled.",
           notes: data.notes || "",
         });
       }
@@ -95,6 +107,10 @@ const RestrictedHoursPanel = ({ vehicleId, vehiclePlate }: RestrictedHoursPanelP
         allowed_start_time: config.allowed_start_time,
         allowed_end_time: config.allowed_end_time,
         active_days: config.active_days,
+        engine_lock_enabled: config.engine_lock_enabled,
+        lock_delay_seconds: config.lock_delay_seconds,
+        send_warning_first: config.send_warning_first,
+        warning_message: config.warning_message || null,
         notes: config.notes || null,
       };
 
@@ -251,6 +267,84 @@ const RestrictedHoursPanel = ({ vehicleId, vehiclePlate }: RestrictedHoursPanelP
             ))}
           </div>
         </div>
+
+        {/* Engine Lock Section */}
+        {config.is_enabled && (
+          <div className="space-y-4 p-4 rounded-lg border border-destructive/30 bg-destructive/5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-destructive/10">
+                  <Lock className="h-4 w-4 text-destructive" />
+                </div>
+                <div>
+                  <p className="font-medium">Engine Lock on Violation</p>
+                  <p className="text-xs text-muted-foreground">
+                    Automatically disable engine outside allowed hours
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={config.engine_lock_enabled}
+                onCheckedChange={(checked) =>
+                  setConfig((prev) => ({ ...prev, engine_lock_enabled: checked }))
+                }
+              />
+            </div>
+
+            {config.engine_lock_enabled && (
+              <div className="space-y-4 pt-2">
+                {/* Warning First */}
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                    Send Warning First
+                  </Label>
+                  <Switch
+                    checked={config.send_warning_first}
+                    onCheckedChange={(checked) =>
+                      setConfig((prev) => ({ ...prev, send_warning_first: checked }))
+                    }
+                  />
+                </div>
+
+                {/* Lock Delay */}
+                <div className="space-y-2">
+                  <Label>Lock Delay (seconds after warning)</Label>
+                  <Input
+                    type="number"
+                    min={10}
+                    max={300}
+                    value={config.lock_delay_seconds}
+                    onChange={(e) =>
+                      setConfig((prev) => ({
+                        ...prev,
+                        lock_delay_seconds: parseInt(e.target.value) || 30,
+                      }))
+                    }
+                    className="font-mono"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Time before engine is disabled (10-300 seconds)
+                  </p>
+                </div>
+
+                {/* Warning Message */}
+                {config.send_warning_first && (
+                  <div className="space-y-2">
+                    <Label>Warning Message</Label>
+                    <Input
+                      value={config.warning_message}
+                      onChange={(e) =>
+                        setConfig((prev) => ({ ...prev, warning_message: e.target.value }))
+                      }
+                      placeholder="Message sent to driver before engine lock"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Notes */}
         <div className="space-y-2">
