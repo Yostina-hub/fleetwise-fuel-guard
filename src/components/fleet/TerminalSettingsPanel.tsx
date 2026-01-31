@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useDeviceTerminalSettings, DEFAULT_TERMINAL_SETTINGS } from "@/hooks/useDeviceTerminalSettings";
 import {
   Clock,
   Lock,
@@ -129,7 +130,13 @@ export const TerminalSettingsPanel = ({
   const { organizationId: hookOrganizationId } = useOrganization();
   const organizationId = propOrganizationId || hookOrganizationId;
 
-  // Settings state
+  const [deviceId, setDeviceId] = useState<string | null>(null);
+  const [loadingDevice, setLoadingDevice] = useState(false);
+
+  // Use the terminal settings hook for persistence
+  const { settings: savedSettings, isLoading: loadingSettings, saveSettings } = useDeviceTerminalSettings(deviceId || undefined);
+
+  // Settings state - initialized from saved settings
   const [settings, setSettings] = useState({
     timezone: "+3",
     smsPassword: "123456",
@@ -167,8 +174,41 @@ export const TerminalSettingsPanel = ({
   const [activeSubPanel, setActiveSubPanel] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
-  const [deviceId, setDeviceId] = useState<string | null>(null);
-  const [loadingDevice, setLoadingDevice] = useState(false);
+
+  // Load saved settings when they're available
+  useEffect(() => {
+    if (savedSettings && deviceId) {
+      setSettings({
+        timezone: savedSettings.timezone || "+3",
+        smsPassword: savedSettings.sms_password || "123456",
+        authNumber: savedSettings.auth_number || "",
+        tankVolume: savedSettings.tank_volume || 0,
+        oilCalibration: "zero",
+        initialMileage: savedSettings.initial_mileage || 0,
+        mileageUnit: savedSettings.unit_system || "metric",
+        accNotify: savedSettings.acc_notify_on || false,
+        turningAngle: savedSettings.turning_angle || 15,
+        alarmSendTimes: savedSettings.alarm_send_times || 1,
+        sensitivity: savedSettings.sensitivity === 10 ? "high" : savedSettings.sensitivity === 5 ? "medium" : "low",
+        speakerSwitch: savedSettings.speaker_enabled ?? true,
+        bluetoothSwitch: savedSettings.bluetooth_enabled ?? true,
+      });
+      setAlarmSettings({
+        sos: savedSettings.alarm_sos ?? true,
+        vibration: savedSettings.alarm_vibration ?? true,
+        lowBattery: savedSettings.alarm_low_battery ?? true,
+        powerCut: savedSettings.alarm_power_cut ?? true,
+        geofence: savedSettings.alarm_geofence ?? true,
+        speeding: savedSettings.alarm_overspeed ?? false,
+      });
+      setDrivingBehavior({
+        harshBraking: savedSettings.harsh_braking_threshold || 50,
+        harshAcceleration: savedSettings.harsh_acceleration_threshold || 40,
+        sharpTurn: savedSettings.sharp_turn_threshold || 30,
+        idling: savedSettings.idling_threshold || 5,
+      });
+    }
+  }, [savedSettings, deviceId]);
 
   // Swipe gesture for sub-panels
   const x = useMotionValue(0);
@@ -220,50 +260,54 @@ export const TerminalSettingsPanel = ({
 
     setSending(true);
     try {
+      // Use the configured SMS password instead of hardcoded 123456
+      const password = settings.smsPassword || "123456";
+      
       // Generate SMS content based on command type
       let smsContent = "";
       switch (commandType) {
         case "timezone":
-          smsContent = `timezone123456 ${commandData.value}`;
+          smsContent = `timezone${password} ${commandData.value}`;
           break;
         case "smsPassword":
-          smsContent = `password123456 ${commandData.value}`;
+          // Password change uses the OLD password to authenticate
+          smsContent = `password${password} ${commandData.value}`;
           break;
         case "authNumber":
-          smsContent = `admin123456 ${commandData.value}`;
+          smsContent = `admin${password} ${commandData.value}`;
           break;
         case "tankVolume":
-          smsContent = `tank123456 ${commandData.value}`;
+          smsContent = `tank${password} ${commandData.value}`;
           break;
         case "oilCalibration":
-          smsContent = commandData.value === "zero" ? "oilreset123456" : "oilcal123456";
+          smsContent = commandData.value === "zero" ? `oilreset${password}` : `oilcal${password}`;
           break;
         case "initialMileage":
-          smsContent = `mileage123456 ${commandData.value}`;
+          smsContent = `mileage${password} ${commandData.value}`;
           break;
         case "mileageUnit":
-          smsContent = commandData.value === "metric" ? "metric123456" : "imperial123456";
+          smsContent = commandData.value === "metric" ? `metric${password}` : `imperial${password}`;
           break;
         case "accNotify":
-          smsContent = commandData.value ? "accon123456" : "accoff123456";
+          smsContent = commandData.value ? `accon${password}` : `accoff${password}`;
           break;
         case "turningAngle":
-          smsContent = `angle123456 ${commandData.value}`;
+          smsContent = `angle${password} ${commandData.value}`;
           break;
         case "alarmSendTimes":
-          smsContent = `alarmtimes123456 ${commandData.value}`;
+          smsContent = `alarmtimes${password} ${commandData.value}`;
           break;
         case "sensitivity":
-          smsContent = `sensitivity123456 ${commandData.value}`;
+          smsContent = `sensitivity${password} ${commandData.value}`;
           break;
         case "speakerSwitch":
-          smsContent = commandData.value ? "speaker123456" : "mute123456";
+          smsContent = commandData.value ? `speaker${password}` : `mute${password}`;
           break;
         case "bluetoothSwitch":
-          smsContent = commandData.value ? "bton123456" : "btoff123456";
+          smsContent = commandData.value ? `bton${password}` : `btoff${password}`;
           break;
         case "factoryReset":
-          smsContent = "reset123456";
+          smsContent = `reset${password}`;
           break;
         case "alarmSettings":
           // Build alarm config command
@@ -272,15 +316,78 @@ export const TerminalSettingsPanel = ({
             .filter(([_, enabled]) => enabled)
             .map(([key]) => key)
             .join(",");
-          smsContent = `alarm123456 ${enabledAlarms || "none"}`;
+          smsContent = `alarm${password} ${enabledAlarms || "none"}`;
           break;
         case "drivingBehavior":
           // Build behavior thresholds command
           const thresholds = commandData.thresholds || {};
-          smsContent = `behavior123456 brake:${thresholds.harshBraking || 50},accel:${thresholds.harshAcceleration || 40},turn:${thresholds.sharpTurn || 30},idle:${thresholds.idling || 5}`;
+          smsContent = `behavior${password} brake:${thresholds.harshBraking || 50},accel:${thresholds.harshAcceleration || 40},turn:${thresholds.sharpTurn || 30},idle:${thresholds.idling || 5}`;
           break;
         default:
-          smsContent = `${commandType}123456`;
+          smsContent = `${commandType}${password}`;
+      }
+      
+      // Build settings update for database persistence
+      const settingsUpdate: Record<string, any> = {};
+      switch (commandType) {
+        case "timezone":
+          settingsUpdate.timezone = commandData.value;
+          break;
+        case "smsPassword":
+          settingsUpdate.sms_password = commandData.value;
+          break;
+        case "authNumber":
+          settingsUpdate.auth_number = commandData.value;
+          break;
+        case "tankVolume":
+          settingsUpdate.tank_volume = commandData.value;
+          break;
+        case "initialMileage":
+          settingsUpdate.initial_mileage = commandData.value;
+          break;
+        case "mileageUnit":
+          settingsUpdate.unit_system = commandData.value;
+          break;
+        case "accNotify":
+          settingsUpdate.acc_notify_on = commandData.value;
+          settingsUpdate.acc_notify_off = commandData.value;
+          break;
+        case "turningAngle":
+          settingsUpdate.turning_angle = commandData.value;
+          break;
+        case "alarmSendTimes":
+          settingsUpdate.alarm_send_times = commandData.value;
+          break;
+        case "sensitivity":
+          settingsUpdate.sensitivity = commandData.value === "high" ? 10 : commandData.value === "medium" ? 5 : 1;
+          break;
+        case "speakerSwitch":
+          settingsUpdate.speaker_enabled = commandData.value;
+          break;
+        case "bluetoothSwitch":
+          settingsUpdate.bluetooth_enabled = commandData.value;
+          break;
+        case "alarmSettings":
+          const alarmData = commandData.alarms || {};
+          settingsUpdate.alarm_sos = alarmData.sos ?? true;
+          settingsUpdate.alarm_vibration = alarmData.vibration ?? true;
+          settingsUpdate.alarm_power_cut = alarmData.powerCut ?? true;
+          settingsUpdate.alarm_low_battery = alarmData.lowBattery ?? true;
+          settingsUpdate.alarm_overspeed = alarmData.speeding ?? false;
+          settingsUpdate.alarm_geofence = alarmData.geofence ?? true;
+          break;
+        case "drivingBehavior":
+          const behaviorData = commandData.thresholds || {};
+          settingsUpdate.harsh_braking_threshold = behaviorData.harshBraking || 50;
+          settingsUpdate.harsh_acceleration_threshold = behaviorData.harshAcceleration || 40;
+          settingsUpdate.sharp_turn_threshold = behaviorData.sharpTurn || 30;
+          settingsUpdate.idling_threshold = behaviorData.idling || 5;
+          break;
+      }
+      
+      // Persist settings to database (non-blocking)
+      if (Object.keys(settingsUpdate).length > 0) {
+        saveSettings.mutate(settingsUpdate);
       }
 
       // Log to database

@@ -860,6 +860,117 @@ export type Database = {
           },
         ]
       }
+      device_terminal_settings: {
+        Row: {
+          acc_notify_off: boolean | null
+          acc_notify_on: boolean | null
+          alarm_geofence: boolean | null
+          alarm_low_battery: boolean | null
+          alarm_overspeed: boolean | null
+          alarm_power_cut: boolean | null
+          alarm_send_times: number | null
+          alarm_sos: boolean | null
+          alarm_vibration: boolean | null
+          auth_number: string | null
+          bluetooth_enabled: boolean | null
+          created_at: string
+          device_id: string
+          harsh_acceleration_threshold: number | null
+          harsh_braking_threshold: number | null
+          id: string
+          idling_threshold: number | null
+          initial_mileage: number | null
+          oil_calibration: number | null
+          organization_id: string
+          sensitivity: number | null
+          sharp_turn_threshold: number | null
+          sms_password: string | null
+          speaker_enabled: boolean | null
+          tank_volume: number | null
+          timezone: string | null
+          turning_angle: number | null
+          unit_system: string | null
+          updated_at: string
+        }
+        Insert: {
+          acc_notify_off?: boolean | null
+          acc_notify_on?: boolean | null
+          alarm_geofence?: boolean | null
+          alarm_low_battery?: boolean | null
+          alarm_overspeed?: boolean | null
+          alarm_power_cut?: boolean | null
+          alarm_send_times?: number | null
+          alarm_sos?: boolean | null
+          alarm_vibration?: boolean | null
+          auth_number?: string | null
+          bluetooth_enabled?: boolean | null
+          created_at?: string
+          device_id: string
+          harsh_acceleration_threshold?: number | null
+          harsh_braking_threshold?: number | null
+          id?: string
+          idling_threshold?: number | null
+          initial_mileage?: number | null
+          oil_calibration?: number | null
+          organization_id: string
+          sensitivity?: number | null
+          sharp_turn_threshold?: number | null
+          sms_password?: string | null
+          speaker_enabled?: boolean | null
+          tank_volume?: number | null
+          timezone?: string | null
+          turning_angle?: number | null
+          unit_system?: string | null
+          updated_at?: string
+        }
+        Update: {
+          acc_notify_off?: boolean | null
+          acc_notify_on?: boolean | null
+          alarm_geofence?: boolean | null
+          alarm_low_battery?: boolean | null
+          alarm_overspeed?: boolean | null
+          alarm_power_cut?: boolean | null
+          alarm_send_times?: number | null
+          alarm_sos?: boolean | null
+          alarm_vibration?: boolean | null
+          auth_number?: string | null
+          bluetooth_enabled?: boolean | null
+          created_at?: string
+          device_id?: string
+          harsh_acceleration_threshold?: number | null
+          harsh_braking_threshold?: number | null
+          id?: string
+          idling_threshold?: number | null
+          initial_mileage?: number | null
+          oil_calibration?: number | null
+          organization_id?: string
+          sensitivity?: number | null
+          sharp_turn_threshold?: number | null
+          sms_password?: string | null
+          speaker_enabled?: boolean | null
+          tank_volume?: number | null
+          timezone?: string | null
+          turning_angle?: number | null
+          unit_system?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_terminal_settings_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: true
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "device_terminal_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       devices: {
         Row: {
           apn: string | null
