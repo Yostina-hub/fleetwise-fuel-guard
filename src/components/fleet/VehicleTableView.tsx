@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import StatusBadge from "@/components/StatusBadge";
+import { useVehicleFuelStatus } from "@/hooks/useVehicleFuelStatus";
 import { 
   Eye, 
   MapPin, 
@@ -33,7 +34,8 @@ import {
   Clock,
   Wifi,
   WifiOff,
-  Settings2
+  Settings2,
+  Droplets
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -99,6 +101,7 @@ export const VehicleTableView = ({
   onSortChange
 }: VehicleTableViewProps) => {
   const navigate = useNavigate();
+  const { fuelStatusMap } = useVehicleFuelStatus();
   
   // Use external sort state if provided, otherwise use local state
   const sortField = externalSortField;
@@ -297,19 +300,53 @@ export const VehicleTableView = ({
                 </div>
               </TableCell>
               <TableCell>
-                {vehicle.fuel !== null ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-16 bg-muted rounded-full h-2">
-                      <div
-                        className={`h-2 rounded-full ${getFuelColor(vehicle.fuel)}`}
-                        style={{ width: `${vehicle.fuel}%` }}
-                      />
-                    </div>
-                    <span className="text-sm font-medium w-10">{vehicle.fuel}%</span>
-                  </div>
-                ) : (
-                  <span className="text-sm text-muted-foreground">-</span>
-                )}
+                {(() => {
+                  const fuelStatus = fuelStatusMap.get(vehicle.vehicleId);
+                  const hasSensor = fuelStatus?.has_fuel_sensor;
+                  
+                  if (vehicle.fuel !== null) {
+                    return (
+                      <div className="flex items-center gap-2">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center gap-2">
+                                <Droplets className="w-3.5 h-3.5 text-blue-500" />
+                                <div className="w-16 bg-muted rounded-full h-2">
+                                  <div
+                                    className={`h-2 rounded-full ${getFuelColor(vehicle.fuel)}`}
+                                    style={{ width: `${vehicle.fuel}%` }}
+                                  />
+                                </div>
+                                <span className="text-sm font-medium w-10">{vehicle.fuel}%</span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Fuel sensor active</p>
+                              {fuelStatus && <p className="text-xs text-muted-foreground">{fuelStatus.fuel_records_count} readings</p>}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                    );
+                  }
+                  
+                  return (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge variant="secondary" className="text-xs gap-1">
+                            <Fuel className="h-3 w-3" />
+                            No Sensor
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>No fuel sensor data available</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  );
+                })()}
               </TableCell>
               <TableCell>
                 <span className="font-medium">{vehicle.odometer.toLocaleString()} km</span>

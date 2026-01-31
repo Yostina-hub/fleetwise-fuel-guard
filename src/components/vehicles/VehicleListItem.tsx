@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useVehicleFuelStatus } from "@/hooks/useVehicleFuelStatus";
 import {
   Signal,
   Snowflake,
@@ -14,6 +16,8 @@ import {
   Car,
   Bus,
   Truck,
+  Droplets,
+  Fuel,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow, format } from "date-fns";
@@ -75,6 +79,8 @@ export const VehicleListItem = ({
   onRefresh,
   onSettings,
 }: VehicleListItemProps) => {
+  const { fuelStatusMap } = useVehicleFuelStatus();
+  const fuelStatus = fuelStatusMap.get(vehicle.id);
   const formatDuration = (minutes?: number) => {
     if (!minutes) return "--:--:--";
     const hours = Math.floor(minutes / 60);
@@ -187,6 +193,39 @@ export const VehicleListItem = ({
               )}
             />
           </div>
+
+          {/* Fuel Sensor Status */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div
+                  className={cn(
+                    "w-5 h-5 rounded-full flex items-center justify-center",
+                    fuelStatus?.has_fuel_sensor ? "bg-blue-100" : "bg-muted"
+                  )}
+                >
+                  <Droplets
+                    className={cn(
+                      "w-3 h-3",
+                      fuelStatus?.has_fuel_sensor ? "text-blue-600" : "text-muted-foreground"
+                    )}
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                {fuelStatus?.has_fuel_sensor ? (
+                  <>
+                    <p>Fuel sensor active</p>
+                    <p className="text-xs text-muted-foreground">
+                      {fuelStatus.last_fuel_reading?.toFixed(1)}% • {fuelStatus.fuel_records_count} readings
+                    </p>
+                  </>
+                ) : (
+                  <p>No fuel sensor</p>
+                )}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
           <Button
             variant="ghost"
