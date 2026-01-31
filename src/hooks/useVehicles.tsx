@@ -52,29 +52,22 @@ export interface Vehicle {
 export const useVehicles = (skip = false) => {
   const { organizationId } = useOrganization();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [loading, setLoading] = useState(false); // Start false for instant feel
-  const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (skip || !organizationId) {
       setVehicles([]);
       setLoading(false);
-      setIsFirstLoad(false);
       return;
     }
 
     let isMounted = true;
     let debounceTimer: NodeJS.Timeout;
 
-    const fetchVehicles = async (showLoading = true) => {
+    const fetchVehicles = async () => {
       try {
-        // Only show loading on first load
-        if (showLoading && isFirstLoad) {
-          setLoading(true);
-        }
-        // Use explicit limit to handle large fleets (up to 5000 vehicles)
-        // Include assigned driver info via join
+        setLoading(true);
         const { data, error } = await supabase
           .from("vehicles")
           .select(`
@@ -89,7 +82,6 @@ export const useVehicles = (skip = false) => {
         if (error) throw error;
         if (isMounted) {
           setVehicles((data as any) || []);
-          setIsFirstLoad(false);
         }
       } catch (err: any) {
         console.error("Error fetching vehicles:", err);
@@ -117,11 +109,10 @@ export const useVehicles = (skip = false) => {
           filter: `organization_id=eq.${organizationId}`
         },
         () => {
-          // Debounce to prevent rapid refetches, update in background
           clearTimeout(debounceTimer);
           debounceTimer = setTimeout(() => {
             if (isMounted) {
-              fetchVehicles(false); // Don't show loading for background updates
+              fetchVehicles();
             }
           }, 500);
         }
@@ -133,7 +124,7 @@ export const useVehicles = (skip = false) => {
       clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
-  }, [organizationId, isFirstLoad, skip]);
+  }, [organizationId, skip]);
 
   return {
     vehicles,
