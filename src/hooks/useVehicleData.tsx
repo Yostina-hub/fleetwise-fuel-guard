@@ -108,7 +108,6 @@ export function useVehicleData(vehicleId: string | undefined) {
         .limit(20);
       if (error) throw error;
       return (data || []) as VehicleMaintenanceRecord[];
-      return (data || []) as VehicleMaintenanceRecord[];
     },
     enabled: !!vehicleId,
   });
