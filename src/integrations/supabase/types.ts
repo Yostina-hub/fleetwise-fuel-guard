@@ -3379,6 +3379,7 @@ export type Database = {
           lat: number | null
           lng: number | null
           organization_id: string
+          speed_kmh: number | null
           speed_limit_kmh: number | null
           trip_id: string | null
           vehicle_id: string
@@ -3393,6 +3394,7 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           organization_id: string
+          speed_kmh?: number | null
           speed_limit_kmh?: number | null
           trip_id?: string | null
           vehicle_id: string
@@ -3407,6 +3409,7 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           organization_id?: string
+          speed_kmh?: number | null
           speed_limit_kmh?: number | null
           trip_id?: string | null
           vehicle_id?: string
