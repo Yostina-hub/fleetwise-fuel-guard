@@ -61,6 +61,7 @@ import {
 } from "lucide-react";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
+import { useVehicleCalculatedMetrics } from "@/hooks/useVehicleCalculatedMetrics";
 import { useDebounce } from "@/hooks/useDebounce";
 import { cn } from "@/lib/utils";
 import mapboxgl from "mapbox-gl";
@@ -116,6 +117,10 @@ const Vehicles = () => {
   const isMobile = useIsMobile();
   const { vehicles: dbVehicles, loading } = useVehicles();
   const { telemetry, isVehicleOnline } = useVehicleTelemetry();
+  
+  // Get all vehicle IDs for calculated metrics
+  const allVehicleIds = useMemo(() => dbVehicles.map(v => v.id), [dbVehicles]);
+  const { getMetrics } = useVehicleCalculatedMetrics(allVehicleIds);
   
   const [searchInput, setSearchInput] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -330,6 +335,7 @@ const Vehicles = () => {
     if (!vehicle) return null;
     
     const vehicleTelemetry = telemetry[vehicle.id];
+    const calculatedMetrics = getMetrics(vehicle.id);
     
     return {
       id: vehicle.id,
@@ -344,15 +350,15 @@ const Vehicles = () => {
       heading: vehicle.heading,
       lastUpdate: vehicle.lastUpdate,
       odometer: vehicleTelemetry?.odometer_km,
-      todayDistance: undefined, // Would come from trip calculations
-      odoDuration: undefined, // Would come from trip calculations
-      distanceFromLastStop: undefined,
-      durationFromLastStop: undefined,
+      todayDistance: calculatedMetrics.todayDistance || undefined,
+      odoDuration: undefined, // Would need engine hours tracking
+      distanceFromLastStop: calculatedMetrics.distanceFromLastStop ?? undefined,
+      durationFromLastStop: calculatedMetrics.durationFromLastStop ?? undefined,
       ignitionOn: vehicleTelemetry?.ignition_on,
       acOn: false,
       alias: undefined,
     };
-  }, [selectedVehicleId, filteredVehicles, telemetry]);
+  }, [selectedVehicleId, filteredVehicles, telemetry, getMetrics]);
 
   // Render mobile view
   if (isMobile) {
