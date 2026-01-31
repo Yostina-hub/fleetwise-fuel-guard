@@ -89,6 +89,8 @@ export const useExecutiveMetrics = (): ExecutiveMetricsResult => {
     documents: any[];
     geofenceEvents: any[];
     driverScores: any[];
+    telemetry: any[];
+    driverEvents: any[];
   }>({
     vehicles: [],
     drivers: [],
@@ -99,6 +101,8 @@ export const useExecutiveMetrics = (): ExecutiveMetricsResult => {
     documents: [],
     geofenceEvents: [],
     driverScores: [],
+    telemetry: [],
+    driverEvents: [],
   });
   const [loading, setLoading] = useState(true);
 
@@ -125,6 +129,8 @@ export const useExecutiveMetrics = (): ExecutiveMetricsResult => {
         documentsRes,
         geofenceRes,
         scoresRes,
+        telemetryRes,
+        driverEventsRes,
       ] = await Promise.all([
         supabase.from('vehicles').select('*').eq('organization_id', organizationId),
         supabase.from('drivers').select('*').eq('organization_id', organizationId),
@@ -143,7 +149,8 @@ export const useExecutiveMetrics = (): ExecutiveMetricsResult => {
           .eq('organization_id', organizationId),
         supabase.from('documents').select('*')
           .eq('organization_id', organizationId),
-        supabase.from('geofence_events').select('*, vehicle:vehicles(plate_number), geofence:geofences(name), driver:drivers(first_name, last_name)')
+        // Fixed: geofence_events doesn't have driver_id - get driver from trip if available
+        supabase.from('geofence_events').select('*, vehicle:vehicles(plate_number), geofence:geofences(name), trip:trips(driver_id, driver:drivers(first_name, last_name))')
           .eq('organization_id', organizationId)
           .gte('event_time', thisMonth.toISOString())
           .order('event_time', { ascending: false })
@@ -151,6 +158,16 @@ export const useExecutiveMetrics = (): ExecutiveMetricsResult => {
         supabase.from('driver_behavior_scores').select('*, driver:drivers(first_name, last_name)')
           .eq('organization_id', organizationId)
           .order('score_period_end', { ascending: false }),
+        // Fetch latest telemetry for real-time vehicle status
+        supabase.from('vehicle_telemetry').select('*')
+          .eq('organization_id', organizationId)
+          .order('timestamp', { ascending: false }),
+        // Fetch driver events for violation data
+        supabase.from('driver_events').select('*, driver:drivers(first_name, last_name), vehicle:vehicles(plate_number)')
+          .eq('organization_id', organizationId)
+          .gte('event_time', thisMonth.toISOString())
+          .order('event_time', { ascending: false })
+          .limit(100),
       ]);
 
       setData({
@@ -163,6 +180,8 @@ export const useExecutiveMetrics = (): ExecutiveMetricsResult => {
         documents: documentsRes.data || [],
         geofenceEvents: geofenceRes.data || [],
         driverScores: scoresRes.data || [],
+        telemetry: telemetryRes.data || [],
+        driverEvents: driverEventsRes.data || [],
       });
     } catch (error) {
       console.error('Error fetching executive metrics:', error);
@@ -176,19 +195,54 @@ export const useExecutiveMetrics = (): ExecutiveMetricsResult => {
   useEffect(() => {
     fetchData(true); // Initial load with loading state
     
-    // Set up 5-minute interval refresh (300000ms)
+    // Set up 2-minute interval refresh (120000ms) for more responsive updates
     const intervalId = setInterval(() => {
       fetchData(false); // Background refresh without loading state
-    }, 300000);
+    }, 120000);
     
     return () => clearInterval(intervalId);
   }, [organizationId]);
 
-  // Removed aggressive real-time subscriptions that caused flickering
-  // Dashboard now refreshes every 5 minutes instead
+  // Real-time subscriptions for immediate updates on critical events
+  useEffect(() => {
+    if (!organizationId) return;
+
+    let debounceTimer: NodeJS.Timeout;
+    const debouncedRefetch = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        fetchData(false); // Silent refresh
+      }, 1000); // 1 second debounce
+    };
+
+    // Subscribe to critical real-time changes
+    const channels = [
+      // Alerts channel - important for safety metrics
+      supabase.channel(`exec-alerts-${organizationId.slice(0, 8)}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'alerts', filter: `organization_id=eq.${organizationId}` }, debouncedRefetch)
+        .subscribe(),
+      // Trips channel - for operations metrics
+      supabase.channel(`exec-trips-${organizationId.slice(0, 8)}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'trips', filter: `organization_id=eq.${organizationId}` }, debouncedRefetch)
+        .subscribe(),
+      // Vehicle status changes
+      supabase.channel(`exec-vehicles-${organizationId.slice(0, 8)}`)
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'vehicles', filter: `organization_id=eq.${organizationId}` }, debouncedRefetch)
+        .subscribe(),
+      // Driver events for safety scores
+      supabase.channel(`exec-driver-events-${organizationId.slice(0, 8)}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'driver_events', filter: `organization_id=eq.${organizationId}` }, debouncedRefetch)
+        .subscribe(),
+    ];
+
+    return () => {
+      clearTimeout(debounceTimer);
+      channels.forEach(ch => supabase.removeChannel(ch));
+    };
+  }, [organizationId]);
 
   const kpis = useMemo<ExecutiveKPI[]>(() => {
-    const { vehicles, drivers, trips, alerts, fuelEvents } = data;
+    const { vehicles, drivers, trips, alerts, fuelEvents, driverEvents, telemetry } = data;
     const now = new Date();
     const thisMonthTrips = trips.filter(t => new Date(t.created_at) >= startOfMonth(now));
     const lastMonthTrips = trips.filter(t => {
@@ -199,90 +253,111 @@ export const useExecutiveMetrics = (): ExecutiveMetricsResult => {
     const activeVehicles = vehicles.filter(v => v.status === 'active').length;
     const utilizationRate = vehicles.length > 0 ? (activeVehicles / vehicles.length) * 100 : 0;
     
+    // Calculate last month's utilization for comparison
+    const lastMonthUtilization = vehicles.length > 0 ? 70 : 0; // Baseline
+    const utilizationChange = utilizationRate - lastMonthUtilization;
+    
     const completedTrips = thisMonthTrips.filter(t => t.status === 'completed').length;
     const lastMonthCompleted = lastMonthTrips.filter(t => t.status === 'completed').length;
     const tripChange = lastMonthCompleted > 0 ? ((completedTrips - lastMonthCompleted) / lastMonthCompleted) * 100 : 0;
 
     const criticalAlerts = alerts.filter(a => a.severity === 'critical' && a.status !== 'resolved').length;
-    const totalDistance = thisMonthTrips.reduce((sum, t) => sum + (t.distance_km || 0), 0);
+    const warningAlerts = alerts.filter(a => a.severity === 'warning' && a.status !== 'resolved').length;
     
+    // Calculate total distance from real trip data
+    const totalDistance = thisMonthTrips.reduce((sum, t) => sum + (t.distance_km || 0), 0);
+    const lastMonthDistance = lastMonthTrips.reduce((sum, t) => sum + (t.distance_km || 0), 0);
+    const distanceChange = lastMonthDistance > 0 ? ((totalDistance - lastMonthDistance) / lastMonthDistance) * 100 : 0;
+    
+    // Calculate fuel costs from real fuel events
     const fuelCost = fuelEvents.filter(e => e.event_type === 'refuel')
-      .reduce((sum, e) => sum + (Math.abs(e.fuel_change_liters) * 50), 0); // Approximate cost
+      .reduce((sum, e) => sum + (Math.abs(e.fuel_change_liters) * 50), 0); // ETB 50 per liter
     
     const activeDrivers = drivers.filter(d => d.status === 'active').length;
-    const avgSafetyScore = drivers.reduce((sum, d) => sum + (d.safety_score || 80), 0) / Math.max(drivers.length, 1);
+    
+    // Calculate real average safety score from drivers
+    const driversWithScores = drivers.filter(d => d.safety_score !== null);
+    const avgSafetyScore = driversWithScores.length > 0 
+      ? driversWithScores.reduce((sum, d) => sum + (d.safety_score || 0), 0) / driversWithScores.length 
+      : 0;
+    
+    // Count driver violations from real driver_events data
+    const violationEvents = driverEvents.filter(e => 
+      e.event_type === 'speeding' || e.event_type === 'harsh_braking' || e.event_type === 'harsh_acceleration'
+    );
+    const totalViolations = violationEvents.length;
 
     return [
       {
         label: 'Fleet Utilization',
         value: `${utilizationRate.toFixed(1)}%`,
-        change: utilizationRate > 70 ? 5.2 : -3.1,
-        changeLabel: 'vs target',
-        trend: utilizationRate > 70 ? 'up' : 'down',
-        priority: utilizationRate < 50 ? 'high' : 'medium',
+        change: utilizationChange,
+        changeLabel: 'vs target 70%',
+        trend: utilizationChange >= 0 ? 'up' : 'down',
+        priority: utilizationRate < 50 ? 'high' : utilizationRate < 70 ? 'medium' : 'low',
         category: 'Operations'
       },
       {
         label: 'Trips Completed',
         value: completedTrips,
-        change: tripChange,
+        change: parseFloat(tripChange.toFixed(1)),
         changeLabel: 'vs last month',
         trend: tripChange >= 0 ? 'up' : 'down',
-        priority: 'medium',
+        priority: completedTrips < 10 ? 'medium' : 'low',
         category: 'Operations'
       },
       {
         label: 'Critical Alerts',
         value: criticalAlerts,
-        change: criticalAlerts > 5 ? 15 : -10,
-        changeLabel: 'active',
-        trend: criticalAlerts > 5 ? 'up' : 'down',
-        priority: criticalAlerts > 0 ? 'high' : 'low',
+        change: warningAlerts,
+        changeLabel: `+ ${warningAlerts} warnings`,
+        trend: criticalAlerts > 0 ? 'up' : 'down',
+        priority: criticalAlerts > 0 ? 'high' : warningAlerts > 5 ? 'medium' : 'low',
         category: 'Safety'
       },
       {
         label: 'Total Distance',
-        value: `${(totalDistance / 1000).toFixed(1)}K km`,
-        change: 8.5,
+        value: totalDistance >= 1000 ? `${(totalDistance / 1000).toFixed(1)}K km` : `${totalDistance.toFixed(1)} km`,
+        change: parseFloat(distanceChange.toFixed(1)),
         changeLabel: 'vs last month',
-        trend: 'up',
+        trend: distanceChange >= 0 ? 'up' : 'down',
         priority: 'medium',
         category: 'Operations'
       },
       {
         label: 'Active Drivers',
         value: activeDrivers,
-        change: 0,
+        change: drivers.length > 0 ? parseFloat(((activeDrivers / drivers.length) * 100).toFixed(0)) : 0,
         changeLabel: `of ${drivers.length} total`,
-        trend: 'stable',
-        priority: 'low',
+        trend: activeDrivers === drivers.length ? 'stable' : 'down',
+        priority: activeDrivers < drivers.length * 0.8 ? 'medium' : 'low',
         category: 'HR'
       },
       {
         label: 'Avg Safety Score',
-        value: avgSafetyScore.toFixed(0),
-        change: avgSafetyScore > 80 ? 3.2 : -2.1,
-        changeLabel: 'fleet average',
-        trend: avgSafetyScore > 80 ? 'up' : 'down',
-        priority: avgSafetyScore < 70 ? 'high' : 'medium',
+        value: avgSafetyScore > 0 ? avgSafetyScore.toFixed(0) : 'N/A',
+        change: totalViolations,
+        changeLabel: `${totalViolations} violations`,
+        trend: avgSafetyScore >= 90 ? 'up' : avgSafetyScore >= 70 ? 'stable' : 'down',
+        priority: avgSafetyScore < 70 ? 'high' : avgSafetyScore < 85 ? 'medium' : 'low',
         category: 'Safety'
       },
       {
         label: 'Fuel Expenses',
-        value: `ETB ${(fuelCost / 1000).toFixed(1)}K`,
-        change: -4.5,
-        changeLabel: 'vs budget',
-        trend: 'down',
+        value: fuelCost >= 1000 ? `ETB ${(fuelCost / 1000).toFixed(1)}K` : `ETB ${fuelCost.toFixed(0)}`,
+        change: fuelEvents.length,
+        changeLabel: `${fuelEvents.length} events`,
+        trend: 'stable',
         priority: 'medium',
         category: 'Finance'
       },
       {
         label: 'Active Vehicles',
         value: activeVehicles,
-        change: 0,
+        change: vehicles.length > 0 ? parseFloat(((activeVehicles / vehicles.length) * 100).toFixed(0)) : 0,
         changeLabel: `of ${vehicles.length} fleet`,
-        trend: 'stable',
-        priority: 'low',
+        trend: activeVehicles === vehicles.length ? 'up' : 'stable',
+        priority: activeVehicles < vehicles.length * 0.8 ? 'medium' : 'low',
         category: 'Operations'
       },
     ];
@@ -484,14 +559,18 @@ export const useExecutiveMetrics = (): ExecutiveMetricsResult => {
   }, [data]);
 
   const geofenceActivities = useMemo<GeofenceActivity[]>(() => {
-    return data.geofenceEvents.map(event => ({
-      id: event.id,
-      vehiclePlate: event.vehicle?.plate_number || 'Unknown',
-      geofenceName: event.geofence?.name || 'Unknown Zone',
-      eventType: event.event_type as 'entry' | 'exit',
-      timestamp: event.event_time,
-      driverName: event.driver ? `${event.driver.first_name} ${event.driver.last_name}` : undefined,
-    }));
+    return data.geofenceEvents.map(event => {
+      // Get driver from the trip if available (since geofence_events doesn't have driver_id)
+      const driverFromTrip = event.trip?.driver;
+      return {
+        id: event.id,
+        vehiclePlate: event.vehicle?.plate_number || 'Unknown',
+        geofenceName: event.geofence?.name || 'Unknown Zone',
+        eventType: event.event_type as 'entry' | 'exit',
+        timestamp: event.event_time,
+        driverName: driverFromTrip ? `${driverFromTrip.first_name} ${driverFromTrip.last_name}` : undefined,
+      };
+    });
   }, [data.geofenceEvents]);
 
   return {
