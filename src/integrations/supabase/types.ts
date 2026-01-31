@@ -6728,12 +6728,16 @@ export type Database = {
           allowed_start_time: string
           created_at: string
           created_by: string | null
+          engine_lock_enabled: boolean | null
           id: string
           is_enabled: boolean
+          lock_delay_seconds: number | null
           notes: string | null
           organization_id: string
+          send_warning_first: boolean | null
           updated_at: string
           vehicle_id: string
+          warning_message: string | null
         }
         Insert: {
           active_days?: number[]
@@ -6741,12 +6745,16 @@ export type Database = {
           allowed_start_time?: string
           created_at?: string
           created_by?: string | null
+          engine_lock_enabled?: boolean | null
           id?: string
           is_enabled?: boolean
+          lock_delay_seconds?: number | null
           notes?: string | null
           organization_id: string
+          send_warning_first?: boolean | null
           updated_at?: string
           vehicle_id: string
+          warning_message?: string | null
         }
         Update: {
           active_days?: number[]
@@ -6754,12 +6762,16 @@ export type Database = {
           allowed_start_time?: string
           created_at?: string
           created_by?: string | null
+          engine_lock_enabled?: boolean | null
           id?: string
           is_enabled?: boolean
+          lock_delay_seconds?: number | null
           notes?: string | null
           organization_id?: string
+          send_warning_first?: boolean | null
           updated_at?: string
           vehicle_id?: string
+          warning_message?: string | null
         }
         Relationships: [
           {
