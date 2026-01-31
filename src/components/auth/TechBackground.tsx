@@ -147,22 +147,13 @@ export const TechBackground = memo(function TechBackground() {
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     };
 
-    const animate = () => {
+    // Draw static background once (no animation)
+    const drawStaticScene = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       drawBackground();
 
-      // Draw and animate particles
+      // Draw static particles (no movement)
       particlesRef.current.forEach((particle) => {
-        particle.y -= particle.speedY;
-        particle.x += particle.speedX;
-
-        if (particle.y < -10) {
-          particle.y = canvas.height + 10;
-          particle.x = Math.random() * canvas.width;
-        }
-        if (particle.x < -10) particle.x = canvas.width + 10;
-        if (particle.x > canvas.width + 10) particle.x = -10;
-
         // Draw particle glow
         const gradient = ctx.createRadialGradient(
           particle.x, particle.y, 0,
@@ -200,17 +191,12 @@ export const TechBackground = memo(function TechBackground() {
           }
         });
       });
-
-      animationRef.current = requestAnimationFrame(animate);
     };
 
-    animate();
+    drawStaticScene();
 
     return () => {
       window.removeEventListener('resize', resizeCanvas);
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
     };
   }, []);
 
