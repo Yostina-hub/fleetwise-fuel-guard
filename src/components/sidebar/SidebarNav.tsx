@@ -27,6 +27,7 @@ interface SidebarNavProps {
   adminItems: AdminItem[];
   isSuperAdmin: boolean;
   isDark: boolean;
+  isCollapsed?: boolean;
 }
 
 // Pinned paths - these items ALWAYS appear in the non-scrollable quick section
@@ -59,7 +60,7 @@ const isPinnedItem = (item: NavItem): boolean => {
   return PINNED_PATHS.includes(normalized as typeof PINNED_PATHS[number]);
 };
 
-export function SidebarNav({ navItems, adminItems, isSuperAdmin, isDark }: SidebarNavProps) {
+export function SidebarNav({ navItems, adminItems, isSuperAdmin, isDark, isCollapsed = false }: SidebarNavProps) {
   const location = useLocation();
 
   // Separate pinned (quick) items from scrollable items
@@ -71,7 +72,7 @@ export function SidebarNav({ navItems, adminItems, isSuperAdmin, isDark }: Sideb
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
       {/* Pinned Quick Access Section - Never scrolls, always visible */}
       {pinnedItems.length > 0 && (
-        <div className="px-2 py-3 space-y-0.5 shrink-0 flex-none">
+        <div className={cn("py-3 space-y-0.5 shrink-0 flex-none", isCollapsed ? "px-1.5" : "px-2")}>
           {pinnedItems.map((item, index) => (
             <SidebarMenuItem
               key={`pinned-${item.path || index}`}
@@ -81,6 +82,7 @@ export function SidebarNav({ navItems, adminItems, isSuperAdmin, isDark }: Sideb
               subItems={item.subItems}
               highlight={item.highlight}
               isDark={isDark}
+              isCollapsed={isCollapsed}
             />
           ))}
         </div>
@@ -91,7 +93,7 @@ export function SidebarNav({ navItems, adminItems, isSuperAdmin, isDark }: Sideb
       )}
 
       {/* Main Scrollable Navigation Section */}
-      <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto custom-scrollbar min-h-0">
+      <nav className={cn("flex-1 py-3 space-y-0.5 overflow-y-auto custom-scrollbar min-h-0", isCollapsed ? "px-1.5" : "px-2")}>
         {scrollableItems.map((item, index) => (
           <SidebarMenuItem
             key={`scroll-${item.path || `menu-${index}`}`}
@@ -101,25 +103,30 @@ export function SidebarNav({ navItems, adminItems, isSuperAdmin, isDark }: Sideb
             subItems={item.subItems}
             highlight={item.highlight}
             isDark={isDark}
+            isCollapsed={isCollapsed}
           />
         ))}
 
         {isSuperAdmin && (
           <>
-            <div className="pt-3 pb-1.5">
-              <div className={cn(
-                "px-3 text-[10px] font-semibold uppercase tracking-wider",
-                isDark ? "text-white/50" : "text-muted-foreground"
-              )}>
-                Admin
+            {!isCollapsed && (
+              <div className="pt-3 pb-1.5">
+                <div className={cn(
+                  "px-3 text-[10px] font-semibold uppercase tracking-wider",
+                  isDark ? "text-white/50" : "text-muted-foreground"
+                )}>
+                  Admin
+                </div>
               </div>
-            </div>
+            )}
+            {isCollapsed && <div className="border-t border-[#2a3a4d]/50 my-2" />}
             {adminItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
                 className={cn(
                   "flex items-center gap-2.5 px-3 py-2 rounded-md transition-all duration-200 group text-sm",
+                  isCollapsed && "justify-center px-2",
                   location.pathname === item.path
                     ? isDark
                       ? "bg-primary/20 text-white shadow-sm"
@@ -130,7 +137,7 @@ export function SidebarNav({ navItems, adminItems, isSuperAdmin, isDark }: Sideb
                 )}
               >
                 <item.icon className="w-4 h-4 shrink-0" />
-                <span className="font-medium">{item.label}</span>
+                {!isCollapsed && <span className="font-medium">{item.label}</span>}
               </Link>
             ))}
           </>

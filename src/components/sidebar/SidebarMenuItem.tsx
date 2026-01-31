@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { ChevronDown, LucideIcon } from "lucide-react";
@@ -7,6 +7,11 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface SubItem {
   label: string;
@@ -20,6 +25,7 @@ interface SidebarMenuItemProps {
   subItems?: SubItem[];
   highlight?: boolean;
   isDark?: boolean;
+  isCollapsed?: boolean;
 }
 
 // Helper to check if path matches (handles query params)
@@ -50,6 +56,7 @@ export const SidebarMenuItem = ({
   subItems,
   highlight,
   isDark = true,
+  isCollapsed = false,
 }: SidebarMenuItemProps) => {
   const location = useLocation();
   const isActive = path ? isPathActive(location.pathname, location.search, path) : false;
@@ -60,11 +67,12 @@ export const SidebarMenuItem = ({
 
   // If no sub-items, render a simple link
   if (!subItems || subItems.length === 0) {
-    return (
+    const linkContent = (
       <Link
         to={path || "/"}
         className={cn(
           "flex items-center gap-2.5 px-3 py-2 rounded-md transition-all duration-200 group relative text-sm",
+          isCollapsed && "justify-center px-2",
           isActive
             ? isDark 
               ? "bg-primary/20 text-white shadow-sm"
@@ -75,17 +83,87 @@ export const SidebarMenuItem = ({
         )}
       >
         <Icon className="w-4 h-4 shrink-0" />
-        <span className="font-medium truncate">{label}</span>
-        {highlight && (
-          <span className="ml-auto px-1.5 py-0.5 text-[9px] font-bold bg-primary text-primary-foreground rounded">
-            NEW
-          </span>
+        {!isCollapsed && (
+          <>
+            <span className="font-medium truncate">{label}</span>
+            {highlight && (
+              <span className="ml-auto px-1.5 py-0.5 text-[9px] font-bold bg-primary text-primary-foreground rounded">
+                NEW
+              </span>
+            )}
+          </>
         )}
       </Link>
     );
+
+    if (isCollapsed) {
+      return (
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            {linkContent}
+          </TooltipTrigger>
+          <TooltipContent side="right" className="flex items-center gap-2">
+            {label}
+            {highlight && (
+              <span className="px-1.5 py-0.5 text-[9px] font-bold bg-primary text-primary-foreground rounded">
+                NEW
+              </span>
+            )}
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+
+    return linkContent;
   }
 
-  // Render collapsible menu with sub-items
+  // Collapsed state with sub-items - show tooltip with sub-menu
+  if (isCollapsed) {
+    return (
+      <Tooltip delayDuration={0}>
+        <TooltipTrigger asChild>
+          <button
+            className={cn(
+              "w-full flex items-center justify-center px-2 py-2 rounded-md transition-all duration-200 group text-sm",
+              isChildActive
+                ? isDark
+                  ? "bg-primary/20 text-white shadow-sm"
+                  : "bg-primary/10 text-foreground shadow-sm"
+                : isDark
+                  ? "text-white/70 hover:bg-[#2a3a4d] hover:text-white"
+                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            )}
+          >
+            <Icon className="w-4 h-4 shrink-0" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="right" className="p-0" sideOffset={8}>
+          <div className="py-1.5 min-w-[160px]">
+            <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground">{label}</div>
+            {subItems.map((item) => {
+              const isSubActive = isPathActive(location.pathname, location.search, item.path);
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={cn(
+                    "block px-3 py-1.5 text-sm transition-colors",
+                    isSubActive
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-foreground hover:bg-accent"
+                  )}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  // Render collapsible menu with sub-items (expanded state)
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <CollapsibleTrigger asChild>

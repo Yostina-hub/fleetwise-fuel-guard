@@ -18,11 +18,14 @@ import {
   ShieldCheck,
   Settings2,
   Building2,
-  CalendarClock
+  CalendarClock,
+  PanelLeftClose,
+  PanelLeft
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useSidebar } from "@/contexts/SidebarContext";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationCenter } from "@/components/scheduling/NotificationCenter";
@@ -32,6 +35,11 @@ import LanguageSelector from "@/components/settings/LanguageSelector";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { cn } from "@/lib/utils";
 import ethioTelecomLogo from "@/assets/ethio-telecom-logo.png";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface LayoutProps {
   children: ReactNode;
@@ -109,6 +117,7 @@ const Layout = ({ children }: LayoutProps) => {
   const { signOut, user } = useAuth();
   const { isSuperAdmin } = usePermissions();
   const { theme } = useTheme();
+  const { isCollapsed, toggleSidebar } = useSidebar();
   const { toast } = useToast();
   const scrollRef = useRef<HTMLDivElement | null>(null);
   
@@ -143,63 +152,118 @@ const Layout = ({ children }: LayoutProps) => {
       <div className="parallax-bg"></div>
       
       {/* Sidebar - Always Dark */}
-      <aside className="w-60 bg-[#1a2332] border-r border-[#2a3a4d] flex flex-col shrink-0 relative z-10">
+      <aside 
+        className={cn(
+          "bg-[#1a2332] border-r border-[#2a3a4d] flex flex-col shrink-0 relative z-10 transition-all duration-300",
+          isCollapsed ? "w-16" : "w-60"
+        )}
+      >
         {/* Header with Logo */}
-        <div className="px-3 py-4 bg-[#001a33] flex items-center">
+        <div className={cn(
+          "py-4 bg-[#001a33] flex items-center",
+          isCollapsed ? "px-2 justify-center" : "px-3"
+        )}>
           <img 
             src={ethioTelecomLogo} 
             alt="ethio telecom" 
-            className="h-14 w-auto object-contain"
+            className={cn(
+              "object-contain transition-all duration-300",
+              isCollapsed ? "h-8 w-8" : "h-14 w-auto"
+            )}
           />
         </div>
         
-        <SidebarNav navItems={navItems} adminItems={adminItems} isSuperAdmin={isSuperAdmin} isDark={true} />
+        <SidebarNav 
+          navItems={navItems} 
+          adminItems={adminItems} 
+          isSuperAdmin={isSuperAdmin} 
+          isDark={true} 
+          isCollapsed={isCollapsed}
+        />
 
-        {/* Keyboard shortcut hint */}
-        <div className="px-3 py-2 mt-auto">
-          <div className="flex items-center justify-center gap-2 text-[11px] text-white/50">
-            <span>Press</span>
-            <kbd className="px-1.5 py-0.5 bg-[#2a3a4d]/50 rounded text-[10px] font-mono border border-[#2a3a4d]">
-              ⌘K
-            </kbd>
-            <span>for commands</span>
-          </div>
+        {/* Toggle Button & Keyboard shortcut hint */}
+        <div className={cn("py-2 mt-auto border-t border-[#2a3a4d]/50", isCollapsed ? "px-2" : "px-3")}>
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleSidebar}
+                className={cn(
+                  "w-full text-white/60 hover:text-white hover:bg-[#2a3a4d]",
+                  isCollapsed ? "justify-center px-2" : "justify-start"
+                )}
+              >
+                {isCollapsed ? (
+                  <PanelLeft className="w-4 h-4" />
+                ) : (
+                  <>
+                    <PanelLeftClose className="w-4 h-4 mr-2" />
+                    <span className="text-xs">Collapse</span>
+                  </>
+                )}
+              </Button>
+            </TooltipTrigger>
+            {isCollapsed && (
+              <TooltipContent side="right">
+                Expand sidebar
+              </TooltipContent>
+            )}
+          </Tooltip>
+          
+          {!isCollapsed && (
+            <div className="flex items-center justify-center gap-2 text-[11px] text-white/50 mt-2">
+              <span>Press</span>
+              <kbd className="px-1.5 py-0.5 bg-[#2a3a4d]/50 rounded text-[10px] font-mono border border-[#2a3a4d]">
+                ⌘K
+              </kbd>
+              <span>for commands</span>
+            </div>
+          )}
         </div>
       </aside>
 
       {/* Main Content - Scrollable container for all pages */}
       <main className="flex-1 bg-background relative z-10 overflow-hidden flex flex-col">
         {/* Content Header - Always Dark */}
-        <div className="flex items-center justify-end gap-3 px-6 py-2 border-b shrink-0 bg-[#1a2332] border-[#2a3a4d]">
-          <LanguageSelector variant="compact" className="text-sm text-white/70" />
+        <div className="flex items-center justify-between gap-3 px-6 py-2 border-b shrink-0 bg-[#1a2332] border-[#2a3a4d]">
+          {/* Left side - Mobile toggle (optional) */}
+          <div className="flex items-center">
+            {/* Placeholder for mobile menu button if needed */}
+          </div>
           
-          <div className="h-5 w-px bg-[#2a3a4d]" />
-          
-          <NotificationCenter />
-          <ThemeToggle />
-          
-          <div className="h-5 w-px bg-[#2a3a4d]" />
-          
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-[#0d1520]">
-              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                <span className="text-xs font-semibold text-primary">
-                  {user?.email?.charAt(0).toUpperCase() || 'U'}
+          {/* Right side - Actions */}
+          <div className="flex items-center gap-3 ml-auto">
+            <LanguageSelector variant="compact" className="text-sm text-white/70" />
+            
+            <div className="h-5 w-px bg-[#2a3a4d]" />
+            
+            <NotificationCenter />
+            <ThemeToggle />
+            
+            <div className="h-5 w-px bg-[#2a3a4d]" />
+            
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-[#0d1520]">
+                <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                  <span className="text-xs font-semibold text-primary">
+                    {user?.email?.charAt(0).toUpperCase() || 'U'}
+                  </span>
+                </div>
+                <span className="text-xs font-medium max-w-[120px] truncate text-white">
+                  {user?.email}
                 </span>
               </div>
-              <span className="text-xs font-medium max-w-[120px] truncate text-white">
-                {user?.email}
-              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0 text-white/60 hover:text-white hover:bg-destructive/10"
+                onClick={handleSignOut}
+                title="Sign out"
+              >
+                <LogOut className="w-4 h-4" />
+              </Button>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 shrink-0 text-white/60 hover:text-white hover:bg-destructive/10"
-              onClick={handleSignOut}
-              title="Sign out"
-            >
-              <LogOut className="w-4 h-4" />
-            </Button>
           </div>
         </div>
         <div ref={scrollRef} className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar">
