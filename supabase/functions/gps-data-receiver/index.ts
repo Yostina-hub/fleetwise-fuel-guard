@@ -1189,14 +1189,71 @@ async function processGPSData(
       console.log(`Auto-created governor config for vehicle ${device.vehicle_id}`);
     }
 
-    const speedLimit = governorConfig?.max_speed_limit || 80;
+    let speedLimit = governorConfig?.max_speed_limit || 80;
     const isGovernorActive = governorConfig?.governor_active ?? true;
+    let zoneSpeedLimit: number | null = null;
+    let zoneName: string | null = null;
+
+    // Check zone-based speed limits from speed_limit_zones (joined with geofences)
+    if (isGovernorActive && latValue && lngValue) {
+      const { data: zones } = await supabase
+        .from('speed_limit_zones')
+        .select(`
+          id, name, speed_limit_kmh, is_active,
+          geofences:geofence_id(id, name, center_lat, center_lng, radius_meters, speed_limit)
+        `)
+        .eq('organization_id', device.organization_id)
+        .eq('is_active', true);
+
+      if (zones && zones.length > 0) {
+        for (const zone of zones) {
+          const geofence = zone.geofences as { center_lat: number; center_lng: number; radius_meters: number; speed_limit: number } | null;
+          if (geofence?.center_lat && geofence?.center_lng && geofence?.radius_meters) {
+            const distance = calculateDistance(latValue, lngValue, geofence.center_lat, geofence.center_lng) * 1000;
+            if (distance <= geofence.radius_meters) {
+              const effectiveLimit = zone.speed_limit_kmh || geofence.speed_limit || 80;
+              if (!zoneSpeedLimit || effectiveLimit < zoneSpeedLimit) {
+                zoneSpeedLimit = effectiveLimit;
+                zoneName = zone.name;
+              }
+            }
+          }
+        }
+      }
+
+      // Also check geofences directly with speed_limit set
+      const { data: geofencesWithSpeed } = await supabase
+        .from('geofences')
+        .select('id, name, center_lat, center_lng, radius_meters, speed_limit')
+        .eq('organization_id', device.organization_id)
+        .eq('is_active', true)
+        .not('speed_limit', 'is', null);
+
+      if (geofencesWithSpeed && geofencesWithSpeed.length > 0) {
+        for (const gf of geofencesWithSpeed) {
+          if (gf.center_lat && gf.center_lng && gf.radius_meters && gf.speed_limit) {
+            const distance = calculateDistance(latValue, lngValue, gf.center_lat, gf.center_lng) * 1000;
+            if (distance <= gf.radius_meters) {
+              if (!zoneSpeedLimit || gf.speed_limit < zoneSpeedLimit) {
+                zoneSpeedLimit = gf.speed_limit;
+                zoneName = gf.name;
+              }
+            }
+          }
+        }
+      }
+      
+      if (zoneSpeedLimit !== null && zoneSpeedLimit < speedLimit) {
+        speedLimit = zoneSpeedLimit;
+        console.log(`Zone limit applied: ${zoneName} (${speedLimit} km/h)`);
+      }
+    }
 
     // Check for overspeed and trigger penalty + speed cutoff
     if (isGovernorActive && speedValue > speedLimit) {
       const { data: vehicleData } = await supabase
         .from('vehicles')
-        .select('assigned_driver_id, speed_cutoff_enabled, speed_cutoff_limit_kmh, speed_cutoff_grace_seconds')
+        .select('plate_number, assigned_driver_id, speed_cutoff_enabled, speed_cutoff_limit_kmh, speed_cutoff_grace_seconds')
         .eq('id', device.vehicle_id)
         .single();
 
@@ -1216,25 +1273,57 @@ async function processGPSData(
 
       if (!recentViolation) {
         // Insert into speed_violations table
+        const violationData: Record<string, any> = {
+          organization_id: device.organization_id,
+          vehicle_id: device.vehicle_id,
+          driver_id: vehicleData?.assigned_driver_id || null,
+          violation_time: violationTime,
+          speed_kmh: speedValue,
+          speed_limit_kmh: speedLimit,
+          lat: latValue,
+          lng: lngValue,
+          severity: severity,
+        };
+        
+        if (zoneName) {
+          violationData.location_name = `Zone: ${zoneName}`;
+        }
+
         const { error: violationError } = await supabase
           .from('speed_violations')
-          .insert({
-            organization_id: device.organization_id,
-            vehicle_id: device.vehicle_id,
-            driver_id: vehicleData?.assigned_driver_id || null,
-            violation_time: violationTime,
-            speed_kmh: speedValue,
-            speed_limit_kmh: speedLimit,
-            lat: latValue,
-            lng: lngValue,
-            severity: severity,
-          });
+          .insert(violationData);
 
         if (violationError) {
           console.error('Error inserting speed violation:', violationError);
         } else {
-          console.log(`Speed violation recorded: ${speedValue} km/h (limit: ${speedLimit})`);
+          console.log(`Speed violation recorded: ${speedValue} km/h (limit: ${speedLimit}${zoneName ? ` in ${zoneName}` : ''})`);
         }
+
+        // Create overspeed alert
+        const alertTitle = zoneName 
+          ? `Zone Speed Limit Exceeded: ${zoneName}`
+          : 'Speed Limit Exceeded';
+        const alertMessage = `${vehicleData?.plate_number || 'Vehicle'} traveling at ${speedValue.toFixed(0)} km/h (limit: ${speedLimit} km/h)${zoneName ? ` in ${zoneName}` : ''}`;
+        
+        await supabase.from('alerts').insert({
+          organization_id: device.organization_id,
+          vehicle_id: device.vehicle_id,
+          driver_id: vehicleData?.assigned_driver_id || null,
+          alert_type: 'overspeed',
+          title: alertTitle,
+          message: alertMessage,
+          severity: severity,
+          status: 'active',
+          alert_time: violationTime,
+          lat: latValue,
+          lng: lngValue,
+          alert_data: {
+            speed_kmh: speedValue,
+            speed_limit_kmh: speedLimit,
+            speed_over: speedOver,
+            zone_name: zoneName,
+          },
+        });
 
         // ==================== SPEED CUTOFF ENFORCEMENT ====================
         // Check if speed cutoff is enabled for this vehicle
