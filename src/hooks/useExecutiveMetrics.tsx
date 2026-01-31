@@ -102,10 +102,14 @@ export const useExecutiveMetrics = (): ExecutiveMetricsResult => {
   });
   const [loading, setLoading] = useState(true);
 
-  const fetchData = async () => {
+  const fetchData = async (isInitialLoad = false) => {
     if (!organizationId) return;
     
-    setLoading(true);
+    // Only show loading spinner on initial load to prevent flickering
+    if (isInitialLoad) {
+      setLoading(true);
+    }
+    
     const now = new Date();
     const thisMonth = startOfMonth(now);
     const lastMonth = startOfMonth(subMonths(now, 1));
@@ -163,68 +167,25 @@ export const useExecutiveMetrics = (): ExecutiveMetricsResult => {
     } catch (error) {
       console.error('Error fetching executive metrics:', error);
     } finally {
-      setLoading(false);
+      if (isInitialLoad) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    fetchData();
+    fetchData(true); // Initial load with loading state
+    
+    // Set up 5-minute interval refresh (300000ms)
+    const intervalId = setInterval(() => {
+      fetchData(false); // Background refresh without loading state
+    }, 300000);
+    
+    return () => clearInterval(intervalId);
   }, [organizationId]);
 
-  // Real-time subscriptions for all dashboard data sources
-  useEffect(() => {
-    if (!organizationId) return;
-
-    let debounceTimer: NodeJS.Timeout;
-    const refetchDebounced = () => {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(fetchData, 500);
-    };
-
-    const channels = [
-      // Trips updates
-      supabase.channel(`exec-trips-${organizationId.slice(0, 8)}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'trips', filter: `organization_id=eq.${organizationId}` }, refetchDebounced)
-        .subscribe(),
-      // Alerts updates
-      supabase.channel(`exec-alerts-${organizationId.slice(0, 8)}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'alerts', filter: `organization_id=eq.${organizationId}` }, refetchDebounced)
-        .subscribe(),
-      // Driver events (violations/misuse) updates
-      supabase.channel(`exec-driver-events-${organizationId.slice(0, 8)}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_events', filter: `organization_id=eq.${organizationId}` }, refetchDebounced)
-        .subscribe(),
-      // Geofence events
-      supabase.channel(`exec-geofence-${organizationId.slice(0, 8)}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'geofence_events', filter: `organization_id=eq.${organizationId}` }, refetchDebounced)
-        .subscribe(),
-      // Vehicle updates (status changes, new vehicles)
-      supabase.channel(`exec-vehicles-${organizationId.slice(0, 8)}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles', filter: `organization_id=eq.${organizationId}` }, refetchDebounced)
-        .subscribe(),
-      // Driver updates
-      supabase.channel(`exec-drivers-${organizationId.slice(0, 8)}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers', filter: `organization_id=eq.${organizationId}` }, refetchDebounced)
-        .subscribe(),
-      // Fuel events
-      supabase.channel(`exec-fuel-${organizationId.slice(0, 8)}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'fuel_events', filter: `organization_id=eq.${organizationId}` }, refetchDebounced)
-        .subscribe(),
-      // Telemetry for live status
-      supabase.channel(`exec-telemetry-${organizationId.slice(0, 8)}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicle_telemetry', filter: `organization_id=eq.${organizationId}` }, refetchDebounced)
-        .subscribe(),
-      // Maintenance schedules
-      supabase.channel(`exec-maintenance-${organizationId.slice(0, 8)}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'maintenance_schedules', filter: `organization_id=eq.${organizationId}` }, refetchDebounced)
-        .subscribe(),
-    ];
-
-    return () => {
-      clearTimeout(debounceTimer);
-      channels.forEach(ch => supabase.removeChannel(ch));
-    };
-  }, [organizationId]);
+  // Removed aggressive real-time subscriptions that caused flickering
+  // Dashboard now refreshes every 5 minutes instead
 
   const kpis = useMemo<ExecutiveKPI[]>(() => {
     const { vehicles, drivers, trips, alerts, fuelEvents } = data;
