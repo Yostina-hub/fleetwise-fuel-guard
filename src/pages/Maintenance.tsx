@@ -9,7 +9,8 @@ import {
   Loader2,
   ClipboardCheck,
   ListChecks,
-  Search
+  Search,
+  History
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useVehicles } from "@/hooks/useVehicles";
@@ -18,10 +19,12 @@ import { useMaintenanceSchedules } from "@/hooks/useMaintenanceSchedules";
 import MaintenanceSchedulesTab from "@/components/maintenance/MaintenanceSchedulesTab";
 import VehicleInspectionsTab from "@/components/maintenance/VehicleInspectionsTab";
 import MaintenanceHistoryTab from "@/components/maintenance/MaintenanceHistoryTab";
+import ServiceHistoryTab from "@/components/maintenance/ServiceHistoryTab";
 import MaintenanceQuickStats from "@/components/maintenance/MaintenanceQuickStats";
 import MaintenanceQuickActions from "@/components/maintenance/MaintenanceQuickActions";
 import MaintenanceInsightsCard from "@/components/maintenance/MaintenanceInsightsCard";
 import MaintenanceTrendChart from "@/components/maintenance/MaintenanceTrendChart";
+import LowStockAlert from "@/components/maintenance/LowStockAlert";
 import DateRangeFilter from "@/components/dashboard/DateRangeFilter";
 import { subDays, differenceInDays, parseISO, isAfter } from "date-fns";
 
@@ -123,16 +126,17 @@ const Maintenance = () => {
         />
 
         {/* Insights & Trend Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <MaintenanceTrendChart />
           <MaintenanceInsightsCard />
+          <LowStockAlert />
         </div>
 
 
         {/* Tabbed Content */}
         <div ref={tabsRef}>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full max-w-lg grid-cols-3">
+            <TabsList className="grid w-full max-w-2xl grid-cols-4">
               <TabsTrigger value="schedules" className="gap-2">
                 <Calendar className="w-4 h-4" aria-hidden="true" />
                 Schedules
@@ -141,9 +145,13 @@ const Maintenance = () => {
                 <ClipboardCheck className="w-4 h-4" aria-hidden="true" />
                 Inspections
               </TabsTrigger>
-              <TabsTrigger value="history" className="gap-2">
+              <TabsTrigger value="service-history" className="gap-2">
+                <History className="w-4 h-4" aria-hidden="true" />
+                Service Log
+              </TabsTrigger>
+              <TabsTrigger value="work-orders" className="gap-2">
                 <ListChecks className="w-4 h-4" aria-hidden="true" />
-                History
+                Work Orders
               </TabsTrigger>
             </TabsList>
 
@@ -155,7 +163,11 @@ const Maintenance = () => {
               <VehicleInspectionsTab />
             </TabsContent>
 
-            <TabsContent value="history">
+            <TabsContent value="service-history">
+              <ServiceHistoryTab />
+            </TabsContent>
+
+            <TabsContent value="work-orders">
               <MaintenanceHistoryTab />
             </TabsContent>
           </Tabs>
