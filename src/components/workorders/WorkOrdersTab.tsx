@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
-import { Search, Eye, Trash2, CheckCircle, X, Download } from "lucide-react";
+import { Search, Eye, Trash2, CheckCircle, X, Download, Package, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -45,10 +45,10 @@ import {
 import { TablePagination } from "@/components/reports/TablePagination";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { z } from "zod";
+import WorkOrderPartsDialog from "./WorkOrderPartsDialog";
 
 const workOrderSchema = z.object({
   vehicle_id: z.string().uuid("Please select a vehicle"),
@@ -96,6 +96,7 @@ const WorkOrdersTab = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [partsDialogOpen, setPartsDialogOpen] = useState(false);
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrder | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -836,7 +837,18 @@ const WorkOrdersTab = () => {
               {/* Cost tracking - only show for non-completed orders */}
               {selectedWorkOrder.status !== 'completed' && selectedWorkOrder.status !== 'cancelled' && (
                 <div className="border-t pt-4 space-y-4">
-                  <h4 className="font-medium">Cost Tracking</h4>
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium">Cost Tracking</h4>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => setPartsDialogOpen(true)}
+                    >
+                      <Package className="w-4 h-4" aria-hidden="true" />
+                      Manage Parts
+                    </Button>
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="parts-cost">Parts Cost ($)</Label>
@@ -953,6 +965,18 @@ const WorkOrdersTab = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Parts Dialog */}
+      {selectedWorkOrder && (
+        <WorkOrderPartsDialog
+          open={partsDialogOpen}
+          onOpenChange={setPartsDialogOpen}
+          workOrderId={selectedWorkOrder.id}
+          onPartsUpdate={(totalCost) => {
+            setCostFormData(prev => ({ ...prev, parts_cost: totalCost }));
+          }}
+        />
+      )}
     </div>
   );
 };
