@@ -37,6 +37,7 @@ import SpeedGovernor from "./pages/SpeedGovernor";
 import FleetScheduling from "./pages/FleetScheduling";
 import Dispatch from "./pages/Dispatch";
 import DriverApp from "./pages/DriverApp";
+import WorkflowBuilder from "./pages/WorkflowBuilder";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { CommandPalette } from "./components/CommandPalette";
@@ -86,6 +87,7 @@ const App = () => {
                     <Route path="/driver-app" element={<ProtectedRoute><DriverApp /></ProtectedRoute>} />
                     <Route path="/config" element={<ProtectedRoute requiredRole="super_admin"><SystemConfig /></ProtectedRoute>} />
                     <Route path="/devices" element={<ProtectedRoute><DeviceIntegration /></ProtectedRoute>} />
+                    <Route path="/workflow-builder" element={<ProtectedRoute><WorkflowBuilder /></ProtectedRoute>} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>

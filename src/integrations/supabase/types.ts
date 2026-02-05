@@ -9466,6 +9466,119 @@ export type Database = {
           },
         ]
       }
+      workflow_runs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          execution_log: Json | null
+          id: string
+          organization_id: string
+          started_at: string
+          status: string
+          trigger_data: Json | null
+          workflow_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          execution_log?: Json | null
+          id?: string
+          organization_id: string
+          started_at?: string
+          status?: string
+          trigger_data?: Json | null
+          workflow_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          execution_log?: Json | null
+          id?: string
+          organization_id?: string
+          started_at?: string
+          status?: string
+          trigger_data?: Json | null
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_runs_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflows: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          edges: Json
+          id: string
+          is_template: boolean | null
+          last_run_at: string | null
+          name: string
+          nodes: Json
+          organization_id: string
+          run_count: number | null
+          status: string
+          trigger_config: Json | null
+          trigger_type: string | null
+          updated_at: string
+          version: number
+          viewport: Json | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          edges?: Json
+          id?: string
+          is_template?: boolean | null
+          last_run_at?: string | null
+          name: string
+          nodes?: Json
+          organization_id: string
+          run_count?: number | null
+          status?: string
+          trigger_config?: Json | null
+          trigger_type?: string | null
+          updated_at?: string
+          version?: number
+          viewport?: Json | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          edges?: Json
+          id?: string
+          is_template?: boolean | null
+          last_run_at?: string | null
+          name?: string
+          nodes?: Json
+          organization_id?: string
+          run_count?: number | null
+          status?: string
+          trigger_config?: Json | null
+          trigger_type?: string | null
+          updated_at?: string
+          version?: number
+          viewport?: Json | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       latest_driver_scores: {
