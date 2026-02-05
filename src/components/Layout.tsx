@@ -20,7 +20,8 @@ import {
   Building2,
   CalendarClock,
   PanelLeftClose,
-  PanelLeft
+  PanelLeft,
+  Workflow
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -101,10 +102,10 @@ const navItems = [
       { label: "Dispatch Jobs", path: "/dispatch" },
       { label: "Pending Approvals", path: "/fleet-scheduling?tab=approvals" },
       { label: "Assignments", path: "/fleet-scheduling?tab=assignments" },
-      { label: "Workflow Builder", path: "/workflow-builder" },
     ]
   },
   { icon: BarChart3, label: "Reports", path: "/reports" },
+  { icon: Workflow, label: "Workflow Builder", path: "/workflow-builder", highlight: true },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
 
