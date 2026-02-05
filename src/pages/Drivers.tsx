@@ -2,7 +2,6 @@ import { useState } from "react";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -70,8 +69,6 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { DriverLeaderboard } from "@/components/drivers";
-import { DriverPanelWithSelector } from "@/components/drivers/DriverPanelWithSelector";
 
 const Drivers = () => {
   const { organizationId } = useOrganization();
@@ -265,21 +262,9 @@ const Drivers = () => {
           />
         )}
 
-        {/* Tabs */}
-        <Tabs defaultValue="roster" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="roster">Roster</TabsTrigger>
-            <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
-            <TabsTrigger value="achievements">Achievements</TabsTrigger>
-            <TabsTrigger value="training">Training</TabsTrigger>
-            <TabsTrigger value="fatigue">Fatigue & HOS</TabsTrigger>
-            <TabsTrigger value="insights">AI Insights</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="roster" className="space-y-6">
-            {/* Search and Filters */}
-            <Card className="border-primary/20">
-              <CardContent className="pt-6">
+        {/* Search and Filters */}
+        <Card className="border-primary/20">
+          <CardContent className="pt-6">
                 <div className="flex gap-4">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
@@ -517,29 +502,8 @@ const Drivers = () => {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="leaderboard">
-            <DriverLeaderboard />
-          </TabsContent>
-
-          <TabsContent value="achievements">
-            <DriverPanelWithSelector panel="achievements" />
-          </TabsContent>
-
-          <TabsContent value="training">
-            <DriverPanelWithSelector panel="training" />
-          </TabsContent>
-
-          <TabsContent value="fatigue">
-            <DriverPanelWithSelector panel="fatigue" />
-          </TabsContent>
-
-          <TabsContent value="insights">
-            <DriverPanelWithSelector panel="insights" />
-          </TabsContent>
-        </Tabs>
       </div>
+
 
       {/* Dialogs */}
       <CreateDriverDialog

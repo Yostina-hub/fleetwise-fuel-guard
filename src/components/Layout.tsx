@@ -61,6 +61,7 @@ const navItems = [
       { label: "Vehicle List", path: "/fleet" },
       { label: "Drivers", path: "/drivers" },
       { label: "Driver Scoring", path: "/driver-scoring" },
+      { label: "Driver Hub", path: "/driver-management" },
       { label: "Device Management", path: "/devices" },
     ]
   },

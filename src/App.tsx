@@ -14,6 +14,7 @@ import Fleet from "./pages/Fleet";
 import Vehicles from "./pages/Vehicles";
 import DriverScoring from "./pages/DriverScoring";
 import Drivers from "./pages/Drivers";
+import DriverManagement from "./pages/DriverManagement";
 import FuelMonitoring from "./pages/FuelMonitoring";
 import Alerts from "./pages/Alerts";
 import Maintenance from "./pages/Maintenance";
@@ -62,6 +63,7 @@ const App = () => {
                     <Route path="/fleet" element={<ProtectedRoute><Fleet /></ProtectedRoute>} />
                     <Route path="/driver-scoring" element={<ProtectedRoute><DriverScoring /></ProtectedRoute>} />
                     <Route path="/drivers" element={<ProtectedRoute><Drivers /></ProtectedRoute>} />
+                    <Route path="/driver-management" element={<ProtectedRoute><DriverManagement /></ProtectedRoute>} />
                     <Route path="/fuel" element={<ProtectedRoute><FuelMonitoring /></ProtectedRoute>} />
                     <Route path="/fuel-monitoring" element={<ProtectedRoute><FuelMonitoring /></ProtectedRoute>} />
                     <Route path="/incidents" element={<ProtectedRoute><Incidents /></ProtectedRoute>} />
