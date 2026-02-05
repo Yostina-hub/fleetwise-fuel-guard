@@ -172,9 +172,10 @@ export const openReportInNewWindow = (config: ReportWindowConfig) => {
         }
         
         :root {
-          --primary: #3b82f6;
-          --primary-dark: #1d4ed8;
-          --primary-light: #60a5fa;
+          --primary: #00bcd4;
+          --primary-dark: #00838f;
+          --primary-light: #4dd0e1;
+          --accent: #8DC63F;
           --success: #22c55e;
           --warning: #f59e0b;
           --danger: #ef4444;
@@ -207,7 +208,7 @@ export const openReportInNewWindow = (config: ReportWindowConfig) => {
         
         /* Header Section */
         .report-header {
-          background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+          background: linear-gradient(135deg, #001a33 0%, #1a2332 40%, #00838f 100%);
           color: white;
           padding: 40px;
           border-radius: var(--radius);
@@ -223,7 +224,7 @@ export const openReportInNewWindow = (config: ReportWindowConfig) => {
           right: -20%;
           width: 60%;
           height: 200%;
-          background: radial-gradient(ellipse, rgba(255,255,255,0.1) 0%, transparent 70%);
+          background: radial-gradient(ellipse, rgba(0, 188, 212, 0.15) 0%, transparent 70%);
           pointer-events: none;
         }
         
@@ -245,7 +246,7 @@ export const openReportInNewWindow = (config: ReportWindowConfig) => {
           text-transform: uppercase;
           letter-spacing: 1.5px;
           opacity: 0.9;
-          background: rgba(255,255,255,0.15);
+          background: rgba(141, 198, 63, 0.25);
           padding: 6px 14px;
           border-radius: 50px;
           margin-bottom: 12px;
