@@ -179,22 +179,26 @@ export const openReportInNewWindow = (config: ReportWindowConfig) => {
           --success: #22c55e;
           --warning: #f59e0b;
           --danger: #ef4444;
-          --text-primary: #0f172a;
-          --text-secondary: #475569;
-          --text-muted: #94a3b8;
-          --bg-primary: #ffffff;
-          --bg-secondary: #f8fafc;
-          --bg-tertiary: #f1f5f9;
-          --border: #e2e8f0;
-          --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-          --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-          --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+          --text-primary: #e2e8f0;
+          --text-secondary: #94a3b8;
+          --text-muted: #64748b;
+          --bg-primary: #0f1729;
+          --bg-secondary: #0a0f1e;
+          --bg-tertiary: #152036;
+          --border: rgba(0, 188, 212, 0.15);
+          --glow: 0 0 15px rgba(0, 188, 212, 0.2);
+          --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+          --shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+          --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.6);
           --radius: 12px;
         }
         
         body {
           font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
           background: var(--bg-secondary);
+          background-image: 
+            radial-gradient(ellipse at 20% 50%, rgba(0, 188, 212, 0.06) 0%, transparent 50%),
+            radial-gradient(ellipse at 80% 20%, rgba(141, 198, 63, 0.04) 0%, transparent 50%);
           color: var(--text-primary);
           line-height: 1.6;
           -webkit-font-smoothing: antialiased;
@@ -331,12 +335,13 @@ export const openReportInNewWindow = (config: ReportWindowConfig) => {
           display: flex;
           align-items: flex-start;
           gap: 16px;
-          transition: all 0.2s;
+          transition: all 0.3s;
         }
         
         .summary-card:hover {
-          box-shadow: var(--shadow);
+          box-shadow: var(--glow);
           transform: translateY(-2px);
+          border-color: rgba(0, 188, 212, 0.3);
         }
         
         .summary-icon {
@@ -441,6 +446,7 @@ export const openReportInNewWindow = (config: ReportWindowConfig) => {
         .action-btn:hover {
           background: var(--bg-tertiary);
           border-color: var(--primary);
+          box-shadow: var(--glow);
         }
         
         .action-btn.primary {
@@ -505,7 +511,7 @@ export const openReportInNewWindow = (config: ReportWindowConfig) => {
         }
         
         tr:hover td {
-          background: rgba(59, 130, 246, 0.05);
+          background: rgba(0, 188, 212, 0.05);
         }
         
         .no-data {
@@ -558,7 +564,7 @@ export const openReportInNewWindow = (config: ReportWindowConfig) => {
         /* Print Styles */
         @media print {
           body {
-            background: white;
+            background: #0a0f1e;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
@@ -573,10 +579,6 @@ export const openReportInNewWindow = (config: ReportWindowConfig) => {
           
           .table-actions {
             display: none !important;
-          }
-          
-          .report-header {
-            background: var(--primary) !important;
           }
           
           .summary-card:hover {
