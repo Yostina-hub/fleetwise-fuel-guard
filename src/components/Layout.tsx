@@ -130,7 +130,7 @@ const Layout = ({ children }: LayoutProps) => {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   
-  const isDark = theme === "dark";
+  const isDark = theme === "dark" || theme === "cyber";
 
   const handleSignOut = async () => {
     setMobileNavOpen(false);
