@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import {
   CommandDialog,
@@ -48,23 +49,15 @@ export function CommandPalette() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { toast } = useToast();
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const { theme, cycleTheme } = useTheme();
 
-  // Check for system theme preference
-  useEffect(() => {
-    const isDark = document.documentElement.classList.contains('dark');
-    setTheme(isDark ? 'dark' : 'light');
-  }, []);
-
-  const toggleTheme = useCallback(() => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    document.documentElement.classList.toggle('dark', newTheme === 'dark');
+  const handleCycleTheme = useCallback(() => {
+    cycleTheme();
     toast({
-      title: `${newTheme === 'dark' ? 'Dark' : 'Light'} mode activated`,
-      description: `Switched to ${newTheme} theme`,
+      title: "Theme changed",
+      description: `Switched to next theme`,
     });
-  }, [theme, toast]);
+  }, [cycleTheme, toast]);
 
   const handleLogout = useCallback(async () => {
     await signOut();
@@ -98,7 +91,7 @@ export function CommandPalette() {
     // Settings
     { id: 'settings', label: 'Settings', icon: Settings, action: () => navigate('/settings'), keywords: ['preferences', 'config', 'options'], group: 'settings' },
     { id: 'security', label: 'Security Dashboard', icon: Shield, action: () => navigate('/security-dashboard'), keywords: ['auth', 'mfa', 'password'], group: 'settings' },
-    { id: 'theme', label: `Toggle ${theme === 'light' ? 'Dark' : 'Light'} Mode`, icon: theme === 'light' ? Moon : Sun, action: toggleTheme, keywords: ['dark', 'light', 'appearance'], group: 'settings' },
+    { id: 'theme', label: `Cycle Theme (${theme})`, icon: theme === 'light' ? Sun : Moon, action: handleCycleTheme, keywords: ['dark', 'light', 'cyber', 'appearance', 'theme'], group: 'settings' },
     { id: 'logout', label: 'Sign Out', icon: LogOut, action: handleLogout, keywords: ['exit', 'leave', 'logout'], group: 'settings' },
   ];
 
