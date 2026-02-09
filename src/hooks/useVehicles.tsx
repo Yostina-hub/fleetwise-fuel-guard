@@ -64,10 +64,11 @@ export const useVehicles = (skip = false) => {
 
     let isMounted = true;
     let debounceTimer: NodeJS.Timeout;
+    let retryTimer: NodeJS.Timeout;
 
-    const fetchVehicles = async () => {
+    const fetchVehicles = async (attempt = 0) => {
       try {
-        setLoading(true);
+        if (isMounted) setLoading(true);
         const { data, error } = await supabase
           .from("vehicles")
           .select(`
@@ -82,15 +83,20 @@ export const useVehicles = (skip = false) => {
         if (error) throw error;
         if (isMounted) {
           setVehicles((data as any) || []);
+          setError(null);
+          setLoading(false);
         }
       } catch (err: any) {
-        console.error("Error fetching vehicles:", err);
+        console.error(`Error fetching vehicles (attempt ${attempt + 1}):`, err);
         if (isMounted) {
-          setError(err.message);
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
+          if (attempt < 4) {
+            const delay = Math.min(1000 * Math.pow(2, attempt), 10000);
+            console.log(`Retrying vehicles fetch in ${delay}ms...`);
+            retryTimer = setTimeout(() => fetchVehicles(attempt + 1), delay);
+          } else {
+            setError(err.message);
+            setLoading(false);
+          }
         }
       }
     };
@@ -122,6 +128,7 @@ export const useVehicles = (skip = false) => {
     return () => {
       isMounted = false;
       clearTimeout(debounceTimer);
+      clearTimeout(retryTimer);
       supabase.removeChannel(channel);
     };
   }, [organizationId, skip]);
