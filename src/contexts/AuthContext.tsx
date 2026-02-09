@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   const [organizationLoading, setOrganizationLoading] = useState(true);
 
-  // Fetch organization when user changes
+  // Fetch organization when user changes - with retry logic
   useEffect(() => {
     if (!user) {
       setOrganizationId(null);
@@ -30,7 +30,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    const fetchOrganization = async () => {
+    let isMounted = true;
+    let retryTimer: NodeJS.Timeout;
+
+    const fetchOrganization = async (attempt = 0) => {
+      if (!isMounted) return;
       setOrganizationLoading(true);
       try {
         const { data, error } = await supabase
@@ -40,16 +44,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .single();
 
         if (error) throw error;
-        setOrganizationId(data?.organization_id || null);
+        if (isMounted) {
+          setOrganizationId(data?.organization_id || null);
+          setOrganizationLoading(false);
+        }
       } catch (error) {
-        console.error("Error fetching organization:", error);
-        setOrganizationId(null);
-      } finally {
-        setOrganizationLoading(false);
+        console.error(`Error fetching organization (attempt ${attempt + 1}):`, error);
+        if (isMounted) {
+          if (attempt < 5) {
+            const delay = Math.min(1000 * Math.pow(2, attempt), 15000);
+            console.log(`Retrying organization fetch in ${delay}ms...`);
+            retryTimer = setTimeout(() => fetchOrganization(attempt + 1), delay);
+          } else {
+            setOrganizationId(null);
+            setOrganizationLoading(false);
+          }
+        }
       }
     };
 
     fetchOrganization();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(retryTimer);
+    };
   }, [user]);
 
   useEffect(() => {
