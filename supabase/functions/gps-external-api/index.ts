@@ -137,6 +137,13 @@ const corsHeaders = {
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 120;
 
+// In-memory cache for unknown IMEIs to prevent repeated DB lookups
+// that cause statement timeouts under load
+const unknownImeiCache = new Map<string, number>(); // IMEI -> timestamp when cached
+const UNKNOWN_IMEI_CACHE_TTL_MS = 5 * 60 * 1000; // Cache "not found" for 5 minutes
+const knownDeviceCache = new Map<string, { id: string; vehicle_id: string | null; organization_id: string; tracker_model: string | null; cachedAt: number }>();
+const KNOWN_DEVICE_CACHE_TTL_MS = 2 * 60 * 1000; // Cache known devices for 2 minutes
+
 interface TelemetryRecord {
   imei: string;
   timestamp?: string;
@@ -607,16 +614,39 @@ async function processRecord(supabase: any, record: TelemetryRecord): Promise<Pr
     return { success: false, error: 'Invalid coordinates', code: 'INVALID_COORDINATES' };
   }
 
-  // Find device by IMEI
-  const { data: device, error: deviceError } = await supabase
-    .from('devices')
-    .select('id, vehicle_id, organization_id, tracker_model')
-    .eq('imei', record.imei)
-    .single();
-
-  if (deviceError || !device) {
-    console.log('Device not found for IMEI:', record.imei);
+  // Check in-memory cache for unknown IMEIs to avoid DB hammering
+  const cachedUnknown = unknownImeiCache.get(record.imei);
+  if (cachedUnknown && (Date.now() - cachedUnknown) < UNKNOWN_IMEI_CACHE_TTL_MS) {
     return { success: false, error: `Device not found: ${record.imei}`, code: 'DEVICE_NOT_FOUND' };
+  }
+
+  // Check in-memory cache for known devices
+  let device = knownDeviceCache.get(record.imei);
+  if (device && (Date.now() - device.cachedAt) < KNOWN_DEVICE_CACHE_TTL_MS) {
+    // Use cached device
+  } else {
+    // Find device by IMEI
+    const { data: deviceData, error: deviceError } = await supabase
+      .from('devices')
+      .select('id, vehicle_id, organization_id, tracker_model')
+      .eq('imei', record.imei)
+      .maybeSingle();
+
+    if (deviceError || !deviceData) {
+      // Cache this IMEI as unknown to prevent repeated lookups
+      unknownImeiCache.set(record.imei, Date.now());
+      // Cleanup old entries periodically
+      if (unknownImeiCache.size > 500) {
+        const now = Date.now();
+        for (const [key, ts] of unknownImeiCache) {
+          if (now - ts > UNKNOWN_IMEI_CACHE_TTL_MS) unknownImeiCache.delete(key);
+        }
+      }
+      console.log('Device not found for IMEI:', record.imei);
+      return { success: false, error: `Device not found: ${record.imei}`, code: 'DEVICE_NOT_FOUND' };
+    }
+    device = { ...deviceData, cachedAt: Date.now() };
+    knownDeviceCache.set(record.imei, device);
   }
 
   // Check rate limit
