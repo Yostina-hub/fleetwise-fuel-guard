@@ -1576,6 +1576,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "driver_behavior_scores_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "driver_behavior_scores_vehicle_id_fkey"
             columns: ["vehicle_id"]
             isOneToOne: false
@@ -9920,6 +9927,13 @@ export type Database = {
           vehicle_id: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "driver_behavior_scores_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "driver_behavior_scores_vehicle_id_fkey"
             columns: ["vehicle_id"]
