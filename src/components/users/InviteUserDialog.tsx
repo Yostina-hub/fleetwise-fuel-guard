@@ -19,31 +19,38 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useOrganization } from "@/hooks/useOrganization";
 
-const roles = [
-  { value: "super_admin", label: "Super Admin" },
-  { value: "fleet_owner", label: "Fleet Owner" },
-  { value: "operations_manager", label: "Operations Manager" },
-  { value: "dispatcher", label: "Dispatcher" },
-  { value: "maintenance_lead", label: "Maintenance Lead" },
-  { value: "fuel_controller", label: "Fuel Controller" },
+const allRoles = [
+  { value: "super_admin", label: "Super Admin", adminOnly: true },
+  { value: "org_admin", label: "Org Admin", adminOnly: true },
+  { value: "operator", label: "Operator" },
+  { value: "fleet_manager", label: "Fleet Manager" },
   { value: "driver", label: "Driver" },
-  { value: "auditor", label: "Auditor" },
+  { value: "technician", label: "Technician" },
 ];
 
 interface InviteUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUserCreated: () => void;
+  organizationId?: string;
 }
 
-const InviteUserDialog = ({ open, onOpenChange, onUserCreated }: InviteUserDialogProps) => {
+const InviteUserDialog = ({ open, onOpenChange, onUserCreated, organizationId: propOrgId }: InviteUserDialogProps) => {
   const { toast } = useToast();
+  const { isSuperAdmin } = usePermissions();
+  const { organizationId: contextOrgId } = useOrganization();
+  const effectiveOrgId = propOrgId || contextOrgId;
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Filter roles: org_admin can only assign non-admin roles
+  const availableRoles = allRoles.filter((r) => isSuperAdmin || !r.adminOnly);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,6 +89,7 @@ const InviteUserDialog = ({ open, onOpenChange, onUserCreated }: InviteUserDialo
           password,
           fullName,
           role: selectedRole,
+          organizationId: effectiveOrgId,
         },
       });
 
@@ -173,7 +181,7 @@ const InviteUserDialog = ({ open, onOpenChange, onUserCreated }: InviteUserDialo
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>
               <SelectContent>
-                {roles.map((role) => (
+                {availableRoles.map((role) => (
                   <SelectItem key={role.value} value={role.value}>
                     {role.label}
                   </SelectItem>

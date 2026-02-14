@@ -125,7 +125,8 @@ const adminItems = [
 const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
   const { signOut, user } = useAuth();
-  const { isSuperAdmin } = usePermissions();
+  const { isSuperAdmin, hasRole: permHasRole } = usePermissions();
+  const isOrgAdmin = permHasRole("org_admin");
   const { theme } = useTheme();
   const { isCollapsed, toggleSidebar } = useSidebar();
   const isMobile = useIsMobile();
@@ -196,6 +197,7 @@ const Layout = ({ children }: LayoutProps) => {
           navItems={navItems} 
           adminItems={adminItems} 
           isSuperAdmin={isSuperAdmin} 
+          isOrgAdmin={isOrgAdmin}
           isDark={true} 
           isCollapsed={isCollapsed}
         />
@@ -247,6 +249,7 @@ const Layout = ({ children }: LayoutProps) => {
         navItems={navItems}
         adminItems={adminItems}
         isSuperAdmin={isSuperAdmin}
+        isOrgAdmin={isOrgAdmin}
         isOpen={mobileNavOpen}
         onOpenChange={setMobileNavOpen}
         onSignOut={handleSignOut}

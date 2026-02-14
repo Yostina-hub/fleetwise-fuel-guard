@@ -8,6 +8,7 @@ interface ProtectedRouteProps {
   requireAuth?: boolean;
   requiredPermission?: string;
   requiredRole?: string;
+  requiredRoles?: string[];
 }
 
 const ProtectedRoute = ({
@@ -15,6 +16,7 @@ const ProtectedRoute = ({
   requireAuth = true,
   requiredPermission,
   requiredRole,
+  requiredRoles,
 }: ProtectedRouteProps) => {
   const { user, loading: authLoading } = useAuth();
   const { hasPermission, hasRole, loading: permLoading } = usePermissions();
@@ -46,6 +48,19 @@ const ProtectedRoute = ({
   }
 
   if (requiredRole && !hasRole(requiredRole)) {
+    if (!requiredRoles) {
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-destructive mb-4">Access Denied</h1>
+            <p className="text-muted-foreground">You don't have the required role to access this page.</p>
+          </div>
+        </div>
+      );
+    }
+  }
+
+  if (requiredRoles && !requiredRoles.some((r) => hasRole(r))) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

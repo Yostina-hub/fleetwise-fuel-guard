@@ -7,14 +7,16 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Building2, Plus, Search, Users, MapPin, Mail, Phone } from "lucide-react";
+import { Building2, Plus, Search, Users, MapPin, Mail, Phone, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import InviteUserDialog from "@/components/users/InviteUserDialog";
 
 const Organizations = () => {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [inviteOrgId, setInviteOrgId] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
     slug: "",
@@ -179,11 +181,27 @@ const Organizations = () => {
                       <span className="truncate">{org.address}</span>
                     </div>
                   )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-2"
+                    onClick={() => setInviteOrgId(org.id)}
+                  >
+                    <UserPlus className="w-3.5 h-3.5 mr-1.5" />
+                    Create User
+                  </Button>
                 </CardContent>
               </Card>
             ))}
           </div>
         )}
+
+        <InviteUserDialog
+          open={!!inviteOrgId}
+          onOpenChange={(open) => { if (!open) setInviteOrgId(null); }}
+          onUserCreated={() => setInviteOrgId(null)}
+          organizationId={inviteOrgId || undefined}
+        />
       </div>
     </Layout>
   );

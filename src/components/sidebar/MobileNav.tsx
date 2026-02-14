@@ -10,6 +10,7 @@ interface MobileNavProps {
   navItems: NavItem[];
   adminItems: AdminItem[];
   isSuperAdmin: boolean;
+  isOrgAdmin?: boolean;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onSignOut: () => void;
@@ -20,6 +21,7 @@ export function MobileNav({
   navItems,
   adminItems,
   isSuperAdmin,
+  isOrgAdmin = false,
   isOpen,
   onOpenChange,
   onSignOut,
@@ -57,6 +59,7 @@ export function MobileNav({
               navItems={navItems}
               adminItems={adminItems}
               isSuperAdmin={isSuperAdmin}
+              isOrgAdmin={isOrgAdmin}
               isDark={true}
               isCollapsed={false}
             />

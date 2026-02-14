@@ -26,6 +26,7 @@ interface SidebarNavProps {
   navItems: NavItem[];
   adminItems: AdminItem[];
   isSuperAdmin: boolean;
+  isOrgAdmin?: boolean;
   isDark: boolean;
   isCollapsed?: boolean;
 }
@@ -60,7 +61,7 @@ const isPinnedItem = (item: NavItem): boolean => {
   return PINNED_PATHS.includes(normalized as typeof PINNED_PATHS[number]);
 };
 
-export function SidebarNav({ navItems, adminItems, isSuperAdmin, isDark, isCollapsed = false }: SidebarNavProps) {
+export function SidebarNav({ navItems, adminItems, isSuperAdmin, isOrgAdmin = false, isDark, isCollapsed = false }: SidebarNavProps) {
   const location = useLocation();
 
   // Separate pinned (quick) items from scrollable items
@@ -107,7 +108,7 @@ export function SidebarNav({ navItems, adminItems, isSuperAdmin, isDark, isColla
           />
         ))}
 
-        {isSuperAdmin && (
+        {(isSuperAdmin || isOrgAdmin) && (
           <>
             {!isCollapsed && (
               <div className="pt-3 pb-1.5">
@@ -120,7 +121,15 @@ export function SidebarNav({ navItems, adminItems, isSuperAdmin, isDark, isColla
               </div>
             )}
             {isCollapsed && <div className="border-t border-[#2a3a4d]/50 my-2" />}
-            {adminItems.map((item) => (
+            {adminItems
+              .filter((item) => {
+                // org_admin only sees Users
+                if (!isSuperAdmin && isOrgAdmin) {
+                  return item.path === "/users";
+                }
+                return true;
+              })
+              .map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
