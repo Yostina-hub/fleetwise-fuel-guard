@@ -31,6 +31,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { AIAssistant } from "@/components/AIAssistant";
+import { SuperAdminOrgSwitcher } from "@/components/dashboard/SuperAdminOrgSwitcher";
+import { SuperAdminImpersonation } from "@/components/dashboard/SuperAdminImpersonation";
 import { SidebarNav } from "@/components/sidebar/SidebarNav";
 import { MobileNav } from "@/components/sidebar/MobileNav";
 import { BottomNav } from "@/components/mobile/BottomNav";
@@ -259,6 +261,13 @@ const Layout = ({ children }: LayoutProps) => {
         <div className="hidden md:flex items-center justify-between gap-2 md:gap-3 px-3 md:px-6 py-2 border-b shrink-0 bg-[#1a2332] border-[#2a3a4d]">
           {/* Right side - Actions */}
           <div className="flex items-center gap-2 md:gap-3 ml-auto">
+            {isSuperAdmin && (
+              <>
+                <SuperAdminOrgSwitcher />
+                <SuperAdminImpersonation />
+                <div className="hidden sm:block h-5 w-px bg-[#2a3a4d]" />
+              </>
+            )}
             <div className="hidden sm:block">
               <LanguageSelector variant="compact" className="text-sm text-white/70" />
             </div>
