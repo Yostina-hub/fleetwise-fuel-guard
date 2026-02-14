@@ -39,18 +39,26 @@ serve(async (req) => {
       metadata,
     } = await req.json();
 
-    await supabase.from("impersonation_activity_logs").insert({
+    const { error: insertError } = await supabase.from("impersonation_activity_logs").insert({
       impersonation_session_id: sessionId,
       super_admin_id: user.id,
       impersonated_user_id: impersonatedUserId,
-      organization_id: organizationId,
+      organization_id: organizationId || null,
       activity_type: activityType,
-      resource_type: resourceType,
-      resource_id: resourceId,
+      resource_type: resourceType || null,
+      resource_id: resourceId || null,
       action,
-      details,
-      metadata,
+      details: details || {},
+      metadata: metadata || {},
     });
+
+    if (insertError) {
+      console.error("Insert error:", insertError);
+      return new Response(JSON.stringify({ error: insertError.message }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

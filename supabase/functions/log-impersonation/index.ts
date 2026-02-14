@@ -42,14 +42,22 @@ serve(async (req) => {
 
     const { impersonatedUserId, action, organizationId } = await req.json();
 
-    await supabase.from("impersonation_audit_logs").insert({
+    const { error: insertError } = await supabase.from("impersonation_audit_logs").insert({
       super_admin_id: user.id,
       impersonated_user_id: impersonatedUserId,
       action,
-      organization_id: organizationId,
+      organization_id: organizationId || null,
       ip_address: req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip"),
       user_agent: req.headers.get("user-agent"),
     });
+
+    if (insertError) {
+      console.error("Insert error:", insertError);
+      return new Response(JSON.stringify({ error: insertError.message }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
