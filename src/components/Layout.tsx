@@ -113,11 +113,12 @@ const navItems = [
 
 // Admin navigation items
 const adminItems = [
+  { label: "Organizations", path: "/organizations", icon: Building2 },
   { label: "Users", path: "/users", icon: Users },
   { label: "Security", path: "/security", icon: Shield },
   { label: "Security Dashboard", path: "/security-dashboard", icon: ShieldCheck },
   { label: "Integrations", path: "/integrations", icon: Plug },
-  { label: "Administration", path: "/administration", icon: Building2 },
+  { label: "Administration", path: "/administration", icon: Settings },
   { label: "System Config", path: "/config", icon: Settings2 },
 ];
 
