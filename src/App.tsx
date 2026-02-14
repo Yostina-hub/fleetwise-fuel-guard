@@ -39,6 +39,7 @@ import FleetScheduling from "./pages/FleetScheduling";
 import Dispatch from "./pages/Dispatch";
 import DriverApp from "./pages/DriverApp";
 import WorkflowBuilder from "./pages/WorkflowBuilder";
+import Organizations from "./pages/Organizations";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { CommandPalette } from "./components/CommandPalette";
@@ -81,6 +82,7 @@ const App = () => {
                       <Route path="/security-dashboard" element={<ProtectedRoute requiredRole="super_admin"><SecurityDashboard /></ProtectedRoute>} />
                       <Route path="/integrations" element={<ProtectedRoute requiredRole="super_admin"><Integrations /></ProtectedRoute>} />
                       <Route path="/administration" element={<ProtectedRoute requiredRole="super_admin"><Administration /></ProtectedRoute>} />
+                      <Route path="/organizations" element={<ProtectedRoute requiredRole="super_admin"><Organizations /></ProtectedRoute>} />
                       <Route path="/routes" element={<ProtectedRoute><RoutesPage /></ProtectedRoute>} />
                       <Route path="/route-history" element={<ProtectedRoute><RouteHistory /></ProtectedRoute>} />
                       <Route path="/geofencing" element={<ProtectedRoute><Geofencing /></ProtectedRoute>} />
