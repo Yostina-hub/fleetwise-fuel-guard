@@ -161,7 +161,7 @@ export const useExecutiveMetrics = (): ExecutiveMetricsResult => {
         // Fetch latest telemetry for real-time vehicle status
         supabase.from('vehicle_telemetry').select('*')
           .eq('organization_id', organizationId)
-          .order('timestamp', { ascending: false }),
+          .order('last_communication_at', { ascending: false }),
         // Fetch driver events for violation data
         supabase.from('driver_events').select('*, driver:drivers(first_name, last_name), vehicle:vehicles(plate_number)')
           .eq('organization_id', organizationId)

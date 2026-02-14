@@ -1,16 +1,17 @@
-import { UAParser } from "ua-parser-js";
+// @ts-ignore - ua-parser-js v2 has CJS export style
+import UAParser from "ua-parser-js";
 import { supabase } from "@/integrations/supabase/client";
 
 export async function trackSession(userId: string) {
   try {
-    const parser = new UAParser();
-    const result = parser.getResult();
+    // ua-parser-js v2: UAParser can be called as a function
+    const result = (UAParser as any)(navigator.userAgent);
 
     const sessionData = {
       user_id: userId,
-      device_type: result.device.type || "desktop",
-      browser: `${result.browser.name || "Unknown"} ${result.browser.version || ""}`.trim(),
-      os: `${result.os.name || "Unknown"} ${result.os.version || ""}`.trim(),
+      device_type: result.device?.type || "desktop",
+      browser: `${result.browser?.name || "Unknown"} ${result.browser?.version || ""}`.trim(),
+      os: `${result.os?.name || "Unknown"} ${result.os?.version || ""}`.trim(),
       ip_address: null as string | null,
       is_active: true,
       last_active_at: new Date().toISOString(),
