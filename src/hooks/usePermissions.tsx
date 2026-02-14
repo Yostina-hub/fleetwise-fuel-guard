@@ -3,51 +3,37 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
 export const usePermissions = () => {
-  const { user } = useAuth();
-  const [roles, setRoles] = useState<string[]>([]);
+  const { user, roles: userRoles } = useAuth();
   const [permissions, setPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const roles = userRoles.map(r => r.role);
+
   useEffect(() => {
-    if (!user) {
-      setRoles([]);
+    if (!user || roles.length === 0) {
       setPermissions([]);
       setLoading(false);
       return;
     }
 
-    const fetchRolesAndPermissions = async () => {
+    const fetchPermissions = async () => {
       try {
-        // Fetch user roles
-        const { data: userRoles, error: rolesError } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", user.id);
+        const { data: rolePermissions, error: permsError } = await supabase
+          .from("role_permissions")
+          .select(`
+            permissions (
+              name
+            )
+          `)
+          .in("role", roles as any);
 
-        if (rolesError) throw rolesError;
+        if (permsError) throw permsError;
 
-        const rolesList = userRoles?.map(r => r.role) || [];
-        setRoles(rolesList);
-
-        // Fetch permissions based on roles
-        if (rolesList.length > 0) {
-          const { data: rolePermissions, error: permsError } = await supabase
-            .from("role_permissions")
-            .select(`
-              permissions (
-                name
-              )
-            `)
-            .in("role", rolesList);
-
-          if (permsError) throw permsError;
-
-          const permsList = rolePermissions
-            ?.map(rp => (rp as any).permissions?.name)
-            .filter(Boolean) || [];
-          
-          setPermissions([...new Set(permsList)]);
-        }
+        const permsList = rolePermissions
+          ?.map(rp => (rp as any).permissions?.name)
+          .filter(Boolean) || [];
+        
+        setPermissions([...new Set(permsList)]);
       } catch (error) {
         console.error("Error fetching permissions:", error);
       } finally {
@@ -55,8 +41,8 @@ export const usePermissions = () => {
       }
     };
 
-    fetchRolesAndPermissions();
-  }, [user]);
+    fetchPermissions();
+  }, [user, userRoles]);
 
   const hasRole = (role: string) => roles.includes(role);
   

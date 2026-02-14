@@ -134,15 +134,18 @@ const Layout = ({ children }: LayoutProps) => {
 
   const handleSignOut = async () => {
     setMobileNavOpen(false);
-    const { error } = await signOut();
-    if (error) {
+    try {
+      await signOut();
+    } catch (error: any) {
       console.error("Sign out error:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error?.message || "Failed to sign out",
         variant: "destructive",
       });
-    } else {
+      return;
+    }
+    {
       toast({
         title: "Success",
         description: "Signed out successfully",

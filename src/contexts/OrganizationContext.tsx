@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useAuthContext } from "./AuthContext";
-import { usePermissions } from "@/hooks/usePermissions";
 
 interface OrganizationContextType {
   viewingAsOrganizationId: string | null;
@@ -12,10 +11,10 @@ interface OrganizationContextType {
 const OrganizationContext = createContext<OrganizationContextType | undefined>(undefined);
 
 export const OrganizationProvider = ({ children }: { children: ReactNode }) => {
-  const { organizationId } = useAuthContext();
-  const { isSuperAdmin } = usePermissions();
+  const { hasRole, organizationId } = useAuthContext();
   const [viewingAsOrganizationId, setViewingAsOrganizationId] = useState<string | null>(null);
 
+  const isSuperAdmin = hasRole("super_admin");
   const isSuperAdminViewingAsOrg = isSuperAdmin && viewingAsOrganizationId !== null;
   const effectiveOrganizationId = isSuperAdmin && viewingAsOrganizationId
     ? viewingAsOrganizationId

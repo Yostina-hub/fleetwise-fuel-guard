@@ -4507,6 +4507,84 @@ export type Database = {
           },
         ]
       }
+      impersonation_activity_logs: {
+        Row: {
+          action: string
+          activity_type: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          impersonated_user_id: string
+          impersonation_session_id: string
+          metadata: Json | null
+          organization_id: string | null
+          resource_id: string | null
+          resource_type: string | null
+          super_admin_id: string
+        }
+        Insert: {
+          action: string
+          activity_type: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          impersonated_user_id: string
+          impersonation_session_id: string
+          metadata?: Json | null
+          organization_id?: string | null
+          resource_id?: string | null
+          resource_type?: string | null
+          super_admin_id: string
+        }
+        Update: {
+          action?: string
+          activity_type?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          impersonated_user_id?: string
+          impersonation_session_id?: string
+          metadata?: Json | null
+          organization_id?: string | null
+          resource_id?: string | null
+          resource_type?: string | null
+          super_admin_id?: string
+        }
+        Relationships: []
+      }
+      impersonation_audit_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          id: string
+          impersonated_user_id: string
+          ip_address: string | null
+          organization_id: string | null
+          super_admin_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          id?: string
+          impersonated_user_id: string
+          ip_address?: string | null
+          organization_id?: string | null
+          super_admin_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          id?: string
+          impersonated_user_id?: string
+          ip_address?: string | null
+          organization_id?: string | null
+          super_admin_id?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       incidents: {
         Row: {
           actual_cost: number | null
@@ -5870,6 +5948,10 @@ export type Database = {
           id: string
           name: string
           slug: string | null
+          suspended: boolean | null
+          suspended_at: string | null
+          suspended_by: string | null
+          suspended_reason: string | null
           type: string | null
           updated_at: string
         }
@@ -5882,6 +5964,10 @@ export type Database = {
           id?: string
           name: string
           slug?: string | null
+          suspended?: boolean | null
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspended_reason?: string | null
           type?: string | null
           updated_at?: string
         }
@@ -5894,6 +5980,10 @@ export type Database = {
           id?: string
           name?: string
           slug?: string | null
+          suspended?: boolean | null
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspended_reason?: string | null
           type?: string | null
           updated_at?: string
         }
@@ -8153,6 +8243,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_sessions: {
+        Row: {
+          browser: string | null
+          created_at: string | null
+          device_type: string | null
+          id: string
+          ip_address: string | null
+          is_active: boolean | null
+          last_active_at: string | null
+          os: string | null
+          user_id: string
+        }
+        Insert: {
+          browser?: string | null
+          created_at?: string | null
+          device_type?: string | null
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean | null
+          last_active_at?: string | null
+          os?: string | null
+          user_id: string
+        }
+        Update: {
+          browser?: string | null
+          created_at?: string | null
+          device_type?: string | null
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean | null
+          last_active_at?: string | null
+          os?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       vehicle_calendar: {
         Row: {
