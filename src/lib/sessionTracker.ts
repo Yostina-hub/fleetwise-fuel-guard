@@ -1,5 +1,5 @@
-// @ts-ignore - ua-parser-js v2 has CJS export style
-import UAParser from "ua-parser-js";
+import * as UAParserModule from "ua-parser-js";
+const UAParser = (UAParserModule as any).default || UAParserModule;
 import { supabase } from "@/integrations/supabase/client";
 
 export async function trackSession(userId: string) {
