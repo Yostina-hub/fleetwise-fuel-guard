@@ -42,6 +42,7 @@ import WorkflowBuilder from "./pages/WorkflowBuilder";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { CommandPalette } from "./components/CommandPalette";
+import { ImpersonationProvider } from "./hooks/useImpersonation";
 
 const App = () => {
   const [queryClient] = useState(() => new QueryClient());
@@ -57,6 +58,7 @@ const App = () => {
                 <Sonner />
                 <BrowserRouter>
                   <CommandPalette />
+                  <ImpersonationProvider>
                   <ErrorBoundary>
                     <Routes>
                       <Route path="/auth" element={<Auth />} />
@@ -94,6 +96,7 @@ const App = () => {
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </ErrorBoundary>
+                  </ImpersonationProvider>
                 </BrowserRouter>
               </TooltipProvider>
             </SidebarProvider>
