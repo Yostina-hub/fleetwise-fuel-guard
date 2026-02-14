@@ -1,9 +1,15 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import {
+  corsHeaders,
+  createAdminClient,
+  verifyAuth,
+  isSuperAdmin,
+  isOrgAdmin,
+  getUserOrganization,
+  logSecurityEvent,
+  getClientInfo,
+  errorResponse,
+  successResponse,
+} from "../_shared/security.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -11,59 +17,52 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    
-    // Create admin client with service role
-    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { autoRefreshToken: false, persistSession: false }
-    });
+    const supabaseAdmin = createAdminClient();
+    const { user: requestingUser, error: authError } = await verifyAuth(
+      supabaseAdmin,
+      req.headers.get("Authorization")
+    );
 
-    // Verify the requesting user is a super_admin
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "No authorization header" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user: requestingUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    
     if (authError || !requestingUser) {
-      return new Response(JSON.stringify({ error: "Invalid token" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return errorResponse(authError || "Unauthorized", 401);
     }
 
-    // Check if requesting user is super_admin
-    const { data: roleData, error: roleError } = await supabaseAdmin
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", requestingUser.id)
-      .eq("role", "super_admin")
-      .single();
-
-    if (roleError || !roleData) {
-      return new Response(JSON.stringify({ error: "Unauthorized - super_admin required" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Parse request body
-    const { email, password, fullName, role } = await req.json();
+    const { email, password, fullName, role, organizationId } = await req.json();
 
     if (!email || !password || !role) {
-      return new Response(JSON.stringify({ error: "Missing required fields" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return errorResponse("Missing required fields: email, password, role");
     }
 
-    // Create user using admin API
+    // Determine target organization
+    const targetOrgId = organizationId || await getUserOrganization(supabaseAdmin, requestingUser.id);
+    if (!targetOrgId) {
+      return errorResponse("No target organization specified or found", 400);
+    }
+
+    // Authorization: super_admin can create in any org, org_admin only in their own
+    const isSA = await isSuperAdmin(supabaseAdmin, requestingUser.id);
+    const isOA = await isOrgAdmin(supabaseAdmin, requestingUser.id, targetOrgId);
+
+    if (!isSA && !isOA) {
+      const { ipAddress, userAgent } = getClientInfo(req);
+      await logSecurityEvent(supabaseAdmin, {
+        eventType: "unauthorized_user_creation",
+        userId: requestingUser.id,
+        organizationId: targetOrgId,
+        severity: "warning",
+        description: `Unauthorized attempt to create user by ${requestingUser.email}`,
+        ipAddress,
+        userAgent,
+      });
+      return errorResponse("Unauthorized - admin role required", 403);
+    }
+
+    // org_admin cannot create super_admin or org_admin roles
+    if (!isSA && (role === "super_admin" || role === "org_admin")) {
+      return errorResponse("Only super_admin can assign admin roles", 403);
+    }
+
+    // Create user
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -72,44 +71,49 @@ Deno.serve(async (req) => {
     });
 
     if (createError) {
-      return new Response(JSON.stringify({ error: createError.message }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return errorResponse(createError.message, 400);
     }
 
-    // Assign role to new user
+    // Update profile with target organization
+    await supabaseAdmin
+      .from("profiles")
+      .update({ organization_id: targetOrgId })
+      .eq("id", newUser.user.id);
+
+    // Assign role
     const { error: roleAssignError } = await supabaseAdmin
       .from("user_roles")
       .insert({
         user_id: newUser.user.id,
         role: role,
-        organization_id: "00000000-0000-0000-0000-000000000001",
+        organization_id: targetOrgId,
       });
 
     if (roleAssignError) {
       console.error("Role assignment error:", roleAssignError);
-      // User created but role failed - return partial success
-      return new Response(JSON.stringify({ 
-        user: newUser.user,
-        warning: "User created but role assignment failed"
-      }), {
-        status: 201,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return successResponse(
+        { user: newUser.user, warning: "User created but role assignment failed" },
+        201
+      );
     }
 
-    return new Response(JSON.stringify({ user: newUser.user }), {
-      status: 201,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    // Audit log
+    const { ipAddress, userAgent } = getClientInfo(req);
+    await logSecurityEvent(supabaseAdmin, {
+      eventType: "user_created",
+      userId: requestingUser.id,
+      organizationId: targetOrgId,
+      severity: "info",
+      description: `User ${email} created with role ${role} in org ${targetOrgId}`,
+      metadata: { newUserId: newUser.user.id, role, email },
+      ipAddress,
+      userAgent,
     });
 
+    return successResponse({ user: newUser.user }, 201);
   } catch (error: unknown) {
     console.error("Error:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return errorResponse(message, 500);
   }
 });

@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_lockouts: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          failed_attempts: number | null
+          id: string
+          ip_address: string | null
+          lockout_reason: string | null
+          lockout_until: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          failed_attempts?: number | null
+          id?: string
+          ip_address?: string | null
+          lockout_reason?: string | null
+          lockout_until?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          failed_attempts?: number | null
+          id?: string
+          ip_address?: string | null
+          lockout_reason?: string | null
+          lockout_until?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       alert_rules: {
         Row: {
           conditions: Json
@@ -5826,21 +5862,39 @@ export type Database = {
       }
       organizations: {
         Row: {
+          active: boolean | null
+          address: string | null
+          contact_email: string | null
+          contact_phone: string | null
           created_at: string
           id: string
           name: string
+          slug: string | null
+          type: string | null
           updated_at: string
         }
         Insert: {
+          active?: boolean | null
+          address?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           id?: string
           name: string
+          slug?: string | null
+          type?: string | null
           updated_at?: string
         }
         Update: {
+          active?: boolean | null
+          address?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           id?: string
           name?: string
+          slug?: string | null
+          type?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -6183,6 +6237,96 @@ export type Database = {
           },
         ]
       }
+      rate_limit_configs: {
+        Row: {
+          block_duration_minutes: number | null
+          created_at: string | null
+          id: string
+          is_enabled: boolean | null
+          max_inserts_per_minute: number | null
+          table_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          block_duration_minutes?: number | null
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          max_inserts_per_minute?: number | null
+          table_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          block_duration_minutes?: number | null
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          max_inserts_per_minute?: number | null
+          table_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      rate_limit_logs: {
+        Row: {
+          action_type: string
+          blocked: boolean | null
+          created_at: string | null
+          id: string
+          ip_address: string | null
+          request_count: number | null
+          window_start: string | null
+        }
+        Insert: {
+          action_type: string
+          blocked?: boolean | null
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          request_count?: number | null
+          window_start?: string | null
+        }
+        Update: {
+          action_type?: string
+          blocked?: boolean | null
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          request_count?: number | null
+          window_start?: string | null
+        }
+        Relationships: []
+      }
+      rate_limit_violations: {
+        Row: {
+          blocked_until: string | null
+          created_at: string | null
+          endpoint: string | null
+          id: string
+          request_count: number | null
+          user_id: string | null
+          window_start: string | null
+        }
+        Insert: {
+          blocked_until?: string | null
+          created_at?: string | null
+          endpoint?: string | null
+          id?: string
+          request_count?: number | null
+          user_id?: string | null
+          window_start?: string | null
+        }
+        Update: {
+          blocked_until?: string | null
+          created_at?: string | null
+          endpoint?: string | null
+          id?: string
+          request_count?: number | null
+          user_id?: string | null
+          window_start?: string | null
+        }
+        Relationships: []
+      }
       restricted_hours_violations: {
         Row: {
           acknowledged_at: string | null
@@ -6477,6 +6621,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      security_audit_logs: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          event_category: string | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          organization_id: string | null
+          severity: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          event_category?: string | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          severity?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          event_category?: string | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          severity?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       sensors: {
         Row: {
@@ -9619,6 +9805,20 @@ export type Database = {
       }
     }
     Functions: {
+      check_rate_limit: {
+        Args: {
+          p_action_type: string
+          p_ip_address: string
+          p_max_requests?: number
+          p_window_seconds?: number
+        }
+        Returns: {
+          allowed: boolean
+          remaining: number
+          reset_at: string
+        }[]
+      }
+      clear_failed_login: { Args: { p_email: string }; Returns: undefined }
       get_user_organization: { Args: { _user_id: string }; Returns: string }
       get_vehicle_fuel_status: {
         Args: { p_vehicle_ids: string[] }
@@ -9640,6 +9840,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       is_vehicle_online: { Args: { vehicle_uuid: string }; Returns: boolean }
       log_audit_event: {
         Args: {
@@ -9657,6 +9858,19 @@ export type Database = {
         Args: { p_organization_id?: string }
         Returns: undefined
       }
+      record_failed_login: {
+        Args: {
+          p_email: string
+          p_ip_address: string
+          p_lockout_minutes?: number
+          p_max_attempts?: number
+        }
+        Returns: {
+          failed_attempts: number
+          is_locked: boolean
+          lockout_until: string
+        }[]
+      }
       send_notification: {
         Args: {
           _link?: string
@@ -9672,6 +9886,10 @@ export type Database = {
         Args: { _event_data: Json; _event_type: string }
         Returns: undefined
       }
+      user_in_organization: {
+        Args: { _organization_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role:
@@ -9683,6 +9901,10 @@ export type Database = {
         | "fuel_controller"
         | "driver"
         | "auditor"
+        | "org_admin"
+        | "operator"
+        | "fleet_manager"
+        | "technician"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -9819,6 +10041,10 @@ export const Constants = {
         "fuel_controller",
         "driver",
         "auditor",
+        "org_admin",
+        "operator",
+        "fleet_manager",
+        "technician",
       ],
     },
   },
