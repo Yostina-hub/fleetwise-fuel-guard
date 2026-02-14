@@ -38,13 +38,11 @@ import InviteUserDialog from "@/components/users/InviteUserDialog";
 
 const roles = [
   { value: "super_admin", label: "Super Admin", color: "destructive" },
-  { value: "fleet_owner", label: "Fleet Owner", color: "default" },
-  { value: "operations_manager", label: "Operations Manager", color: "default" },
-  { value: "dispatcher", label: "Dispatcher", color: "default" },
-  { value: "maintenance_lead", label: "Maintenance Lead", color: "default" },
-  { value: "fuel_controller", label: "Fuel Controller", color: "default" },
+  { value: "org_admin", label: "Org Admin", color: "default" },
+  { value: "operator", label: "Operator", color: "default" },
+  { value: "fleet_manager", label: "Fleet Manager", color: "default" },
   { value: "driver", label: "Driver", color: "default" },
-  { value: "auditor", label: "Auditor", color: "default" },
+  { value: "technician", label: "Technician", color: "default" },
 ];
 
 interface UserProfile {
