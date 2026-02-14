@@ -5739,7 +5739,7 @@ export type Database = {
           email_enabled: boolean | null
           id: string
           notification_types: Json | null
-          organization_id: string
+          organization_id: string | null
           push_enabled: boolean | null
           updated_at: string
           user_id: string
@@ -5749,7 +5749,7 @@ export type Database = {
           email_enabled?: boolean | null
           id?: string
           notification_types?: Json | null
-          organization_id: string
+          organization_id?: string | null
           push_enabled?: boolean | null
           updated_at?: string
           user_id: string
@@ -5759,7 +5759,7 @@ export type Database = {
           email_enabled?: boolean | null
           id?: string
           notification_types?: Json | null
-          organization_id?: string
+          organization_id?: string | null
           push_enabled?: boolean | null
           updated_at?: string
           user_id?: string
