@@ -71,7 +71,12 @@ Deno.serve(async (req) => {
     });
 
     if (createError) {
-      return errorResponse(createError.message, 400);
+      console.error("Create user error:", createError);
+      return errorResponse(createError.message || "Failed to create user", 400);
+    }
+
+    if (!newUser?.user) {
+      return errorResponse("User creation returned no user data", 400);
     }
 
     // Update profile with target organization
