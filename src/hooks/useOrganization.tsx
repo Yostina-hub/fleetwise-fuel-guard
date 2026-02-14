@@ -1,15 +1,17 @@
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useOrganizationContext } from "@/contexts/OrganizationContext";
 
 /**
- * Hook to access organization data from the centralized AuthContext.
- * This hook no longer makes database calls - the organizationId is fetched
- * once when the user logs in and cached in AuthContext.
+ * Hook to access organization data.
+ * Uses OrganizationContext's effectiveOrganizationId which supports
+ * super_admin org switching for multi-tenant management.
  */
 export const useOrganization = () => {
-  const { organizationId, organizationLoading } = useAuthContext();
+  const { organizationLoading } = useAuthContext();
+  const { effectiveOrganizationId } = useOrganizationContext();
 
   return {
-    organizationId,
+    organizationId: effectiveOrganizationId,
     loading: organizationLoading,
   };
 };
