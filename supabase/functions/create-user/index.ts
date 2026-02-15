@@ -1,5 +1,4 @@
 import {
-  corsHeaders,
   createAdminClient,
   verifyAuth,
   isSuperAdmin,
@@ -7,15 +6,16 @@ import {
   getUserOrganization,
   logSecurityEvent,
   getClientInfo,
-  errorResponse,
-  successResponse,
 } from "../_shared/security.ts";
 import { checkRateLimit, rateLimitResponse, getClientId } from "../_shared/rate-limiter.ts";
+import { buildCorsHeaders, handleCorsPreflightRequest, secureJsonResponse } from "../_shared/cors.ts";
+import { validateEmail, validateString, validateEnum, validateOptionalUUID, validateAll } from "../_shared/validation.ts";
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const preflight = handleCorsPreflightRequest(req);
+  if (preflight) return preflight;
+
+  const corsHeaders = buildCorsHeaders(req);
 
   try {
     const rl = checkRateLimit(getClientId(req), { maxRequests: 5, windowMs: 60_000 });
@@ -28,25 +28,31 @@ Deno.serve(async (req) => {
     );
 
     if (authError || !requestingUser) {
-      return errorResponse(authError || "Unauthorized", 401);
+      return secureJsonResponse({ success: false, error: authError || "Unauthorized" }, req, 401);
     }
 
     let body;
     try {
       body = await req.json();
     } catch {
-      return errorResponse('Invalid or missing request body', 400);
+      return secureJsonResponse({ success: false, error: 'Invalid or missing request body' }, req, 400);
     }
     const { email, password, fullName, role, organizationId } = body;
 
-    if (!email || !password || !role) {
-      return errorResponse("Missing required fields: email, password, role");
-    }
+    // Input validation
+    const validationError = validateAll(
+      () => validateEmail(email),
+      () => validateString(password, "password", { minLength: 8, maxLength: 128 }),
+      () => validateString(fullName, "fullName", { required: false, maxLength: 200 }),
+      () => validateEnum(role, "role", ["super_admin", "org_admin", "fleet_manager", "driver", "viewer", "mechanic"]),
+      () => validateOptionalUUID(organizationId, "organizationId"),
+    );
+    if (validationError) return secureJsonResponse({ success: false, error: validationError }, req, 400);
 
     // Determine target organization
     const targetOrgId = organizationId || await getUserOrganization(supabaseAdmin, requestingUser.id);
     if (!targetOrgId) {
-      return errorResponse("No target organization specified or found", 400);
+      return secureJsonResponse({ success: false, error: "No target organization specified or found" }, req, 400);
     }
 
     // Authorization: super_admin can create in any org, org_admin only in their own
@@ -64,12 +70,12 @@ Deno.serve(async (req) => {
         ipAddress,
         userAgent,
       });
-      return errorResponse("Unauthorized - admin role required", 403);
+      return secureJsonResponse({ success: false, error: "Unauthorized - admin role required" }, req, 403);
     }
 
     // org_admin cannot create super_admin or org_admin roles
     if (!isSA && (role === "super_admin" || role === "org_admin")) {
-      return errorResponse("Only super_admin can assign admin roles", 403);
+      return secureJsonResponse({ success: false, error: "Only super_admin can assign admin roles" }, req, 403);
     }
 
     // Create user
@@ -82,11 +88,11 @@ Deno.serve(async (req) => {
 
     if (createError) {
       console.error("Create user error:", createError);
-      return errorResponse(createError.message || "Failed to create user", 400);
+      return secureJsonResponse({ success: false, error: createError.message || "Failed to create user" }, req, 400);
     }
 
     if (!newUser?.user) {
-      return errorResponse("User creation returned no user data", 400);
+      return secureJsonResponse({ success: false, error: "User creation returned no user data" }, req, 400);
     }
 
     // Update profile with target organization
@@ -106,9 +112,9 @@ Deno.serve(async (req) => {
 
     if (roleAssignError) {
       console.error("Role assignment error:", roleAssignError);
-      return successResponse(
-        { user: newUser.user, warning: "User created but role assignment failed" },
-        201
+      return secureJsonResponse(
+        { success: true, user: newUser.user, warning: "User created but role assignment failed" },
+        req, 201
       );
     }
 
@@ -125,9 +131,9 @@ Deno.serve(async (req) => {
       userAgent,
     });
 
-    return successResponse({ user: newUser.user }, 201);
+    return secureJsonResponse({ success: true, user: newUser.user }, req, 201);
   } catch (error: unknown) {
     console.error("Error:", error);
-    return errorResponse("Internal server error", 500);
+    return secureJsonResponse({ success: false, error: "Internal server error" }, req, 500);
   }
 });

@@ -1,16 +1,14 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { checkRateLimit, rateLimitResponse, getClientId } from "../_shared/rate-limiter.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { buildCorsHeaders, handleCorsPreflightRequest, secureJsonResponse, secureStreamResponse } from "../_shared/cors.ts";
+import { validateArray, validateString, validateAll } from "../_shared/validation.ts";
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const preflight = handleCorsPreflightRequest(req);
+  if (preflight) return preflight;
+
+  const corsHeaders = buildCorsHeaders(req);
 
   try {
     const rl = checkRateLimit(getClientId(req), { maxRequests: 20, windowMs: 60_000 });
@@ -19,12 +17,17 @@ serve(async (req) => {
     try {
       body = await req.json();
     } catch {
-      return new Response(
-        JSON.stringify({ error: 'Invalid or missing request body' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return secureJsonResponse({ error: 'Invalid or missing request body' }, req, 400);
     }
     const { messages, context } = body;
+
+    // Input validation
+    const validationError = validateAll(
+      () => validateArray(messages, "messages", { minLength: 1, maxLength: 50 }),
+      () => validateString(context?.page, "context.page", { required: false, maxLength: 200 }),
+    );
+    if (validationError) return secureJsonResponse({ error: validationError }, req, 400);
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     
     if (!LOVABLE_API_KEY) {
@@ -63,28 +66,17 @@ Be concise, helpful, and focus on fleet management tasks. When discussing data, 
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return secureJsonResponse({ error: 'Rate limit exceeded. Please try again later.' }, req, 429);
       }
       if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'AI credits exhausted. Please add credits to continue.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return secureJsonResponse({ error: 'AI credits exhausted. Please add credits to continue.' }, req, 402);
       }
       throw new Error(`AI gateway error: ${response.status}`);
     }
 
-    return new Response(response.body, {
-      headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
-    });
+    return secureStreamResponse(response.body, req);
   } catch (error) {
     console.error('AI chat error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return secureJsonResponse({ error: 'Internal server error' }, req, 500);
   }
 });

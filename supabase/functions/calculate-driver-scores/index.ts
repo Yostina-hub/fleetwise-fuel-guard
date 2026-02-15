@@ -1,11 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.1";
 import { checkRateLimit, rateLimitResponse, getClientId } from "../_shared/rate-limiter.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { buildCorsHeaders, handleCorsPreflightRequest, secureJsonResponse } from "../_shared/cors.ts";
+import { validateUUID, validateDateString, validateAll } from "../_shared/validation.ts";
 
 interface TelemetryData {
   speed_kmh: number | null;
@@ -17,9 +14,10 @@ interface TelemetryData {
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const preflight = handleCorsPreflightRequest(req);
+  if (preflight) return preflight;
+
+  const corsHeaders = buildCorsHeaders(req);
 
   try {
     const rl = checkRateLimit(getClientId(req), { maxRequests: 30, windowMs: 60_000 });
@@ -34,16 +32,18 @@ serve(async (req) => {
     try {
       body = await req.json();
     } catch {
-      return new Response(
-        JSON.stringify({ error: 'Invalid or missing request body' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return secureJsonResponse({ error: 'Invalid or missing request body' }, req, 400);
     }
     const { driverId, vehicleId, startDate, endDate } = body;
 
-    if (!driverId || !vehicleId || !startDate || !endDate) {
-      throw new Error("Missing required parameters");
-    }
+    // Input validation
+    const validationError = validateAll(
+      () => validateUUID(driverId, "driverId"),
+      () => validateUUID(vehicleId, "vehicleId"),
+      () => validateDateString(startDate, "startDate"),
+      () => validateDateString(endDate, "endDate"),
+    );
+    if (validationError) return secureJsonResponse({ error: validationError }, req, 400);
 
     // Fetch telemetry data for the period
     const { data: telemetryData, error: telemetryError } = await supabase

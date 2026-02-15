@@ -1,5 +1,7 @@
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+export { buildCorsHeaders, handleCorsPreflightRequest, secureJsonResponse } from "./cors.ts";
 
+// Legacy corsHeaders kept for backward compatibility with functions not yet migrated
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
