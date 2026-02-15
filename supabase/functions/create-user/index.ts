@@ -27,7 +27,13 @@ Deno.serve(async (req) => {
       return errorResponse(authError || "Unauthorized", 401);
     }
 
-    const { email, password, fullName, role, organizationId } = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return errorResponse('Invalid or missing request body', 400);
+    }
+    const { email, password, fullName, role, organizationId } = body;
 
     if (!email || !password || !role) {
       return errorResponse("Missing required fields: email, password, role");
@@ -118,7 +124,6 @@ Deno.serve(async (req) => {
     return successResponse({ user: newUser.user }, 201);
   } catch (error: unknown) {
     console.error("Error:", error);
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return errorResponse(message, 500);
+    return errorResponse("Internal server error", 500);
   }
 });

@@ -90,7 +90,16 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { user_ids, organization_id, payload }: RequestBody = await req.json();
+    let reqBody: RequestBody;
+    try {
+      reqBody = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Invalid or missing request body' }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const { user_ids, organization_id, payload } = reqBody;
 
     if (!payload?.title || !payload?.body) {
       return new Response(
@@ -191,9 +200,8 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error("Error in send-push-notification:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

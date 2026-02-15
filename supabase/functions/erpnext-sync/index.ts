@@ -391,7 +391,16 @@ Deno.serve(async (req) => {
       throw new Error('Organization not found');
     }
 
-    const { action, entityType } = await req.json();
+    let reqBody;
+    try {
+      reqBody = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Invalid or missing request body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const { action, entityType } = reqBody;
 
     // Get ERPNext configuration
     const { data: config, error: configError } = await supabaseClient
@@ -516,8 +525,8 @@ Deno.serve(async (req) => {
 
   } catch (error: any) {
     console.error('Error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 400,
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+      status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

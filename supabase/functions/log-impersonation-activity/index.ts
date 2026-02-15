@@ -27,6 +27,15 @@ serve(async (req) => {
       });
     }
 
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(JSON.stringify({ error: 'Invalid or missing request body' }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const {
       sessionId,
       impersonatedUserId,
@@ -37,7 +46,7 @@ serve(async (req) => {
       action,
       details,
       metadata,
-    } = await req.json();
+    } = body;
 
     const { error: insertError } = await supabase.from("impersonation_activity_logs").insert({
       impersonation_session_id: sessionId,
@@ -64,7 +73,8 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('Log impersonation activity error:', error);
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

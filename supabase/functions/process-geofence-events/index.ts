@@ -111,7 +111,15 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const body = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(JSON.stringify({ error: 'Invalid or missing request body' }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const { vehicle_id, lat, lng, speed_kmh, organization_id } = body as VehicleTelemetry;
     
     console.log(`Processing geofence for vehicle ${vehicle_id}: lat=${lat}, lng=${lng}, speed=${speed_kmh}`);
@@ -435,9 +443,8 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error("Error processing geofence events:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
