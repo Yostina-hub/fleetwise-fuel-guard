@@ -2,11 +2,9 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { checkRateLimit, rateLimitResponse, getClientId } from "../_shared/rate-limiter.ts";
+import { buildCorsHeaders, handleCorsPreflightRequest, secureJsonResponse } from "../_shared/cors.ts";
+import { validateUUID, validateEnum, validateAll } from "../_shared/validation.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
 interface AnomalyCheckResult {
   type: 'fuel_theft' | 'route_deviation' | 'speed_anomaly' | 'gps_tampering' | 'idle_excessive' | 'offline_extended';
   severity: 'low' | 'medium' | 'high' | 'critical';
@@ -20,9 +18,10 @@ interface AnomalyCheckResult {
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const preflight = handleCorsPreflightRequest(req);
+  if (preflight) return preflight;
+
+  const corsHeaders = buildCorsHeaders(req);
 
   try {
     const rl = checkRateLimit(getClientId(req), { maxRequests: 20, windowMs: 60_000 });
@@ -32,12 +31,16 @@ serve(async (req) => {
     try {
       body = await req.json();
     } catch {
-      return new Response(
-        JSON.stringify({ error: 'Invalid or missing request body' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return secureJsonResponse({ error: 'Invalid or missing request body' }, req, 400);
     }
     const { organizationId, checkType } = body;
+
+    // Input validation
+    const validationError = validateAll(
+      () => validateUUID(organizationId, "organizationId"),
+      () => validateEnum(checkType || 'all', "checkType", ['all', 'fuel', 'speed', 'gps', 'offline', 'idle']),
+    );
+    if (validationError) return secureJsonResponse({ error: validationError }, req, 400);
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
