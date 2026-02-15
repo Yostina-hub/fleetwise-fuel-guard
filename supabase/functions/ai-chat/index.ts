@@ -12,7 +12,16 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, context } = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Invalid or missing request body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const { messages, context } = body;
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     
     if (!LOVABLE_API_KEY) {
@@ -70,9 +79,8 @@ Be concise, helpful, and focus on fleet management tasks. When discussing data, 
     });
   } catch (error) {
     console.error('AI chat error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'An error occurred';
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

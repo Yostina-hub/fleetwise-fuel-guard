@@ -26,7 +26,16 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const { driverId, vehicleId, startDate, endDate } = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Invalid or missing request body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const { driverId, vehicleId, startDate, endDate } = body;
 
     if (!driverId || !vehicleId || !startDate || !endDate) {
       throw new Error("Missing required parameters");
@@ -122,7 +131,7 @@ serve(async (req) => {
   } catch (error: any) {
     console.error("Error calculating driver score:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

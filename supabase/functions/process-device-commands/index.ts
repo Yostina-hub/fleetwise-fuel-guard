@@ -42,7 +42,16 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { command_id, organization_id } = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Invalid or missing request body' }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const { command_id, organization_id } = body;
 
     console.log("Processing device command:", { command_id, organization_id });
 
@@ -147,7 +156,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("Error in process-device-commands:", error);
     return new Response(
-      JSON.stringify({ error: String(error) }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

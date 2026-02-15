@@ -72,7 +72,16 @@ serve(async (req) => {
       );
     }
 
-    const { to, message, type }: SmsRequest = await req.json();
+    let smsBody: SmsRequest;
+    try {
+      smsBody = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Invalid or missing request body' }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const { to, message, type } = smsBody;
 
     if (!to || !message) {
       return new Response(
@@ -127,10 +136,9 @@ serve(async (req) => {
     );
 
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("SMS function error:", error);
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
