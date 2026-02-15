@@ -10,6 +10,7 @@ import {
   errorResponse,
   successResponse,
 } from "../_shared/security.ts";
+import { checkRateLimit, rateLimitResponse, getClientId } from "../_shared/rate-limiter.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -17,6 +18,9 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const rl = checkRateLimit(getClientId(req), { maxRequests: 5, windowMs: 60_000 });
+    if (!rl.allowed) return rateLimitResponse(rl, corsHeaders);
+
     const supabaseAdmin = createAdminClient();
     const { user: requestingUser, error: authError } = await verifyAuth(
       supabaseAdmin,
