@@ -4,9 +4,10 @@ import { checkRateLimit, rateLimitResponse, getClientId } from "../_shared/rate-
 import { buildCorsHeaders, handleCorsPreflightRequest, secureJsonResponse } from "../_shared/cors.ts";
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const preflight = handleCorsPreflightRequest(req);
+  if (preflight) return preflight;
+
+  const corsHeaders = buildCorsHeaders(req);
 
   try {
     const rl = checkRateLimit(getClientId(req), { maxRequests: 10, windowMs: 60_000 });
@@ -21,10 +22,7 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return secureJsonResponse({ error: "Unauthorized" }, req, 401);
     }
 
     const { data: roles } = await supabase
@@ -34,20 +32,14 @@ serve(async (req) => {
       .eq("role", "super_admin");
 
     if (!roles || roles.length === 0) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return secureJsonResponse({ error: "Forbidden" }, req, 403);
     }
 
     let body;
     try {
       body = await req.json();
     } catch {
-      return new Response(JSON.stringify({ error: 'Invalid or missing request body' }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return secureJsonResponse({ error: 'Invalid or missing request body' }, req, 400);
     }
     const { impersonatedUserId, action, organizationId } = body;
 
@@ -62,20 +54,12 @@ serve(async (req) => {
 
     if (insertError) {
       console.error("Insert error:", insertError);
-      return new Response(JSON.stringify({ error: insertError.message }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return secureJsonResponse({ error: insertError.message }, req, 500);
     }
 
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return secureJsonResponse({ success: true }, req);
   } catch (error: any) {
     console.error('Log impersonation error:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return secureJsonResponse({ error: 'Internal server error' }, req, 500);
   }
 });
