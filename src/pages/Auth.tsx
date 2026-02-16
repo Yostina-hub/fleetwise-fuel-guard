@@ -46,15 +46,38 @@ const Auth = () => {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
+    // Check if account is locked before attempting login
+    const clientIp = "0.0.0.0"; // IP is captured server-side; placeholder for the RPC call
+    const { data: lockCheck } = await supabase.rpc("record_failed_login", {
+      p_email: email,
+      p_ip_address: clientIp,
+      p_max_attempts: 5,
+      p_lockout_minutes: 15,
+    });
+
+    const lockRow = lockCheck?.[0];
+    if (lockRow?.is_locked) {
+      const until = new Date(lockRow.lockout_until).toLocaleTimeString();
+      toast({
+        title: "Account Locked",
+        description: `Too many failed attempts. Try again after ${until}.`,
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
+
     const { error } = await signIn(email, password);
 
     if (error) {
       toast({
         title: "Authentication Failed",
-        description: "Invalid email or password. Please try again.",
+        description: `Invalid email or password. ${lockRow ? `Attempt ${lockRow.failed_attempts} of 5.` : "Please try again."}`,
         variant: "destructive",
       });
     } else {
+      // Clear failed login record on success
+      await supabase.rpc("clear_failed_login", { p_email: email });
       toast({
         title: "Welcome back!",
         description: "You've been signed in successfully.",

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSubmitThrottle } from "@/hooks/useSubmitThrottle";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -63,6 +64,7 @@ const VEHICLE_TYPES = [
 export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicleDialogProps) {
   const { organizationId } = useOrganization();
   const { drivers } = useDrivers();
+  const canSubmit = useSubmitThrottle();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -85,6 +87,7 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
+      if (!canSubmit()) throw new Error("Please wait before submitting again");
       // Server-side duplicate plate number check
       const { data: existingPlate } = await supabase
         .from("vehicles")

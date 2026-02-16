@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSubmitThrottle } from "@/hooks/useSubmitThrottle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,6 +44,7 @@ const InviteUserDialog = ({ open, onOpenChange, onUserCreated, organizationId: p
   const { isSuperAdmin } = usePermissions();
   const { organizationId: contextOrgId } = useOrganization();
   const effectiveOrgId = propOrgId || contextOrgId;
+  const canSubmit = useSubmitThrottle();
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
@@ -68,6 +70,15 @@ const InviteUserDialog = ({ open, onOpenChange, onUserCreated, organizationId: p
       toast({
         title: "Validation Error",
         description: "Password must be at least 6 characters",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!canSubmit()) {
+      toast({
+        title: "Please wait",
+        description: "Please wait before submitting again",
         variant: "destructive",
       });
       return;

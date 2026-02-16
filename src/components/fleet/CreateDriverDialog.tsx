@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSubmitThrottle } from "@/hooks/useSubmitThrottle";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -63,6 +64,7 @@ const LICENSE_CLASSES = [
 
 export default function CreateDriverDialog({ open, onOpenChange }: CreateDriverDialogProps) {
   const { organizationId } = useOrganization();
+  const canSubmit = useSubmitThrottle();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -90,6 +92,7 @@ export default function CreateDriverDialog({ open, onOpenChange }: CreateDriverD
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
+      if (!canSubmit()) throw new Error("Please wait before submitting again");
       const { error } = await supabase.from("drivers").insert({
         ...data,
         organization_id: organizationId,
