@@ -360,9 +360,10 @@ async function syncDriverEvents(supabase: any, config: ERPNextConfig, organizati
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  const preflight = handleCorsPreflightRequest(req);
+  if (preflight) return preflight;
+
+  const corsHeaders = buildCorsHeaders(req);
 
   try {
     const rl = checkRateLimit(getClientId(req), { maxRequests: 10, windowMs: 60_000 });
