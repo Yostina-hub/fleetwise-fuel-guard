@@ -27,6 +27,10 @@ serve(async (req) => {
     const rl = checkRateLimit(getClientId(req), { maxRequests: 20, windowMs: 60_000 });
     if (!rl.allowed) return rateLimitResponse(rl, corsHeaders);
 
+    // Auth check
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) return secureJsonResponse({ error: "Authorization required" }, req, 401);
+
     let body;
     try {
       body = await req.json();

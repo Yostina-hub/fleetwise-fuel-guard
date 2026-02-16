@@ -51,7 +51,7 @@ serve(async (req) => {
 
     if (insertError) {
       console.error("Insert error:", insertError);
-      return secureJsonResponse({ error: insertError.message }, req, 500);
+      return secureJsonResponse({ error: "Failed to log activity" }, req, 500);
     }
 
     return secureJsonResponse({ success: true }, req);
