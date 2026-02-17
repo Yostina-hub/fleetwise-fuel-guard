@@ -9947,8 +9947,8 @@ export type Database = {
     Functions: {
       check_rate_limit: {
         Args: {
-          p_action_type: string
-          p_ip_address: string
+          p_client_id: string
+          p_function_name: string
           p_max_requests?: number
           p_window_seconds?: number
         }
