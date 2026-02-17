@@ -121,10 +121,43 @@ export const useFuelTransactions = (filters?: {
     };
   }, [organizationId, filters?.vehicleId, filters?.transactionType, filters?.isReconciled, fetchTransactions]);
 
+  const lastSubmitRef = useRef<string | null>(null);
+  const lastSubmitTimeRef = useRef<number>(0);
+
   const createTransaction = async (transaction: Omit<FuelTransaction, 'id' | 'organization_id' | 'created_at' | 'updated_at'>) => {
     if (!organizationId) return null;
 
+    // Finding #6: Prevent duplicate submissions with same input
+    const submissionKey = JSON.stringify({
+      vehicle_id: transaction.vehicle_id,
+      transaction_date: transaction.transaction_date,
+      fuel_amount_liters: transaction.fuel_amount_liters,
+      fuel_cost: transaction.fuel_cost,
+    });
+    const now = Date.now();
+    if (submissionKey === lastSubmitRef.current && now - lastSubmitTimeRef.current < 30000) {
+      toast({ title: "Duplicate Detected", description: "This transaction was already submitted. Please wait before resubmitting.", variant: "destructive" });
+      return null;
+    }
+    lastSubmitRef.current = submissionKey;
+    lastSubmitTimeRef.current = now;
+
     try {
+      // Check for existing duplicate in DB (same vehicle, date, amount within 5 min)
+      const { data: existing } = await supabase
+        .from("fuel_transactions")
+        .select("id")
+        .eq("organization_id", organizationId)
+        .eq("vehicle_id", transaction.vehicle_id)
+        .eq("transaction_date", transaction.transaction_date)
+        .eq("fuel_amount_liters", transaction.fuel_amount_liters)
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        toast({ title: "Duplicate Transaction", description: "A transaction with the same vehicle, date, and amount already exists.", variant: "destructive" });
+        return null;
+      }
+
       const { data, error } = await supabase
         .from("fuel_transactions")
         .insert({

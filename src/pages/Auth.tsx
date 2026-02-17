@@ -46,21 +46,22 @@ const Auth = () => {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
-    // Check if account is locked before attempting login
-    const clientIp = "0.0.0.0"; // IP is captured server-side; placeholder for the RPC call
-    const { data: lockCheck } = await supabase.rpc("record_failed_login", {
-      p_email: email,
-      p_ip_address: clientIp,
-      p_max_attempts: 5,
-      p_lockout_minutes: 15,
-    });
+    // Client-side login rate limiting (defense-in-depth)
+    const loginKey = `login_attempts_${email}`;
+    const loginData = JSON.parse(sessionStorage.getItem(loginKey) || '{"count":0,"firstAt":0}');
+    const now = Date.now();
+    if (now - loginData.firstAt > 300000) { // Reset window after 5 minutes
+      loginData.count = 0;
+      loginData.firstAt = now;
+    }
+    loginData.count++;
+    sessionStorage.setItem(loginKey, JSON.stringify(loginData));
 
-    const lockRow = lockCheck?.[0];
-    if (lockRow?.is_locked) {
-      const until = new Date(lockRow.lockout_until).toLocaleTimeString();
+    if (loginData.count > 5) {
+      const waitUntil = new Date(loginData.firstAt + 300000).toLocaleTimeString();
       toast({
-        title: "Account Locked",
-        description: `Too many failed attempts. Try again after ${until}.`,
+        title: "Too Many Attempts",
+        description: `Please try again after ${waitUntil}.`,
         variant: "destructive",
       });
       setLoading(false);
@@ -70,14 +71,35 @@ const Auth = () => {
     const { error } = await signIn(email, password);
 
     if (error) {
-      toast({
-        title: "Authentication Failed",
-        description: `Invalid email or password. ${lockRow ? `Attempt ${lockRow.failed_attempts} of 5.` : "Please try again."}`,
-        variant: "destructive",
+      // Record failed login ONLY on actual failure (server-side lockout)
+      const clientIp = "0.0.0.0";
+      const { data: lockCheck } = await supabase.rpc("record_failed_login", {
+        p_email: email,
+        p_ip_address: clientIp,
+        p_max_attempts: 5,
+        p_lockout_minutes: 15,
       });
+
+      const lockRow = lockCheck?.[0];
+      if (lockRow?.is_locked) {
+        const until = new Date(lockRow.lockout_until).toLocaleTimeString();
+        toast({
+          title: "Account Locked",
+          description: `Too many failed attempts. Try again after ${until}.`,
+          variant: "destructive",
+        });
+      } else {
+        // Generic message - don't reveal whether email exists
+        toast({
+          title: "Authentication Failed",
+          description: `Invalid credentials. ${lockRow ? `${5 - lockRow.failed_attempts} attempts remaining.` : "Please try again."}`,
+          variant: "destructive",
+        });
+      }
     } else {
       // Clear failed login record on success
       await supabase.rpc("clear_failed_login", { p_email: email });
+      sessionStorage.removeItem(loginKey);
       toast({
         title: "Welcome back!",
         description: "You've been signed in successfully.",
@@ -91,6 +113,18 @@ const Auth = () => {
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
+
+    // Rate limit signup attempts (Finding #1: batch user registration prevention)
+    const lastSignup = sessionStorage.getItem('last_signup_attempt');
+    if (lastSignup && Date.now() - parseInt(lastSignup) < 10000) {
+      toast({
+        title: "Please Wait",
+        description: "You can only register once every 10 seconds.",
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
 
     const formData = new FormData(e.currentTarget);
     const email = formData.get("email") as string;
@@ -118,6 +152,7 @@ const Auth = () => {
       return;
     }
 
+    sessionStorage.setItem('last_signup_attempt', Date.now().toString());
     const { error } = await signUp(email, password, fullName);
 
     if (error) {
@@ -129,9 +164,8 @@ const Auth = () => {
     } else {
       toast({
         title: "Account Created!",
-        description: "Welcome to FleetTrack FMS. You're now signed in.",
+        description: "Please check your email to verify your account before signing in.",
       });
-      navigate("/");
     }
 
     setLoading(false);
@@ -324,32 +358,25 @@ const Auth = () => {
                                 });
                                 return;
                               }
-                              // Rate limit: prevent rapid password reset requests
+                              // Rate limit: prevent rapid password reset requests (Finding #2: enumeration prevention)
                               const lastReset = sessionStorage.getItem('last_password_reset');
-                              if (lastReset && Date.now() - parseInt(lastReset) < 30000) {
+                              if (lastReset && Date.now() - parseInt(lastReset) < 60000) {
                                 toast({
                                   title: "Please Wait",
-                                  description: "You can request a password reset every 30 seconds.",
+                                  description: "You can request a password reset every 60 seconds.",
                                   variant: "destructive",
                                 });
                                 return;
                               }
-                              const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                                redirectTo: `${window.location.origin}/auth`,
-                              });
                               sessionStorage.setItem('last_password_reset', Date.now().toString());
-                              if (error) {
-                                toast({
-                                  title: "Error",
-                                  description: error.message,
-                                  variant: "destructive",
-                                });
-                              } else {
-                                toast({
-                                  title: "Password Reset Email Sent",
-                                  description: "Check your email for a password reset link.",
-                                });
-                              }
+                              // Fire-and-forget: always show success to prevent user enumeration
+                              supabase.auth.resetPasswordForEmail(email, {
+                                redirectTo: `${window.location.origin}/auth`,
+                              }).catch(() => {});
+                              toast({
+                                title: "Password Reset Email Sent",
+                                description: "If an account exists with this email, you will receive a reset link.",
+                              });
                             }}
                             className="text-xs text-[#8DC63F] hover:text-[#8DC63F]/80 hover:underline transition-colors"
                           >
