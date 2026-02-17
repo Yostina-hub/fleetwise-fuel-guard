@@ -62,7 +62,10 @@ export const useDevices = () => {
       const { data, error } = await supabase
         .from("devices")
         .select(`
-          *,
+          id, organization_id, vehicle_id, imei, tracker_model, serial_number,
+          sim_msisdn, sim_iccid, apn, status, protocol_id, firmware_version,
+          last_firmware_update, install_date, installed_by, last_heartbeat,
+          notes, auth_token_created_at, created_at, updated_at,
           vehicles(plate_number, make, model),
           device_protocols(id, vendor, protocol_name, version, is_active)
         `)
