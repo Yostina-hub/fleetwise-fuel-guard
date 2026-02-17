@@ -171,8 +171,24 @@ export const useFuelDepots = () => {
     };
   }, [organizationId, fetchDepots, fetchDispensingLogs]);
 
+  const lastDepotCreateRef = useRef<number>(0);
+
   const createDepot = async (depot: Omit<FuelDepot, 'id' | 'organization_id' | 'created_at' | 'updated_at'>) => {
     if (!organizationId) return null;
+
+    // Finding #7: Prevent batch fuel depot creation
+    const now = Date.now();
+    if (now - lastDepotCreateRef.current < 5000) {
+      toast({ title: "Please Wait", description: "You can add a depot every 5 seconds.", variant: "destructive" });
+      return null;
+    }
+    lastDepotCreateRef.current = now;
+
+    // Reject null/empty payload
+    if (!depot.name?.trim()) {
+      toast({ title: "Validation Error", description: "Depot name is required.", variant: "destructive" });
+      return null;
+    }
 
     try {
       const { data, error } = await supabase

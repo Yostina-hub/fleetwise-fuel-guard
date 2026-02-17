@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
 import { toast } from "@/hooks/use-toast";
@@ -134,8 +134,18 @@ export const useDispatchJobs = (filters?: {
     };
   }, [organizationId, filters?.status, filters?.vehicleId, filters?.driverId]);
 
+  const lastJobCreateRef = useRef<number>(0);
+
   const createJob = async (job: Omit<DispatchJob, 'id' | 'organization_id' | 'job_number' | 'created_at' | 'updated_at'>) => {
     if (!organizationId) return null;
+
+    // Finding #9: Prevent batch dispatch job creation
+    const now = Date.now();
+    if (now - lastJobCreateRef.current < 5000) {
+      toast({ title: "Please Wait", description: "You can create a dispatch job every 5 seconds.", variant: "destructive" });
+      return null;
+    }
+    lastJobCreateRef.current = now;
 
     try {
       // Generate a job number

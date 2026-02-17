@@ -104,6 +104,13 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
 
       const importResult: ImportResult = { success: 0, failed: 0, errors: [] };
 
+      // Finding #4: Limit bulk import batch size to prevent abuse
+      if (rows.length > 100) {
+        toast({ title: "Batch Too Large", description: "Maximum 100 vehicles per import. Please split your file.", variant: "destructive" });
+        setImporting(false);
+        return;
+      }
+
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
         const validation = validateRow(row, i);

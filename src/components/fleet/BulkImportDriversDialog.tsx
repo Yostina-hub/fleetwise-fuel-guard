@@ -113,6 +113,11 @@ export default function BulkImportDriversDialog({ open, onOpenChange }: BulkImpo
 
   const importMutation = useMutation({
     mutationFn: async (drivers: ParsedDriver[]) => {
+      // Finding #5: Limit bulk import batch size to prevent abuse
+      if (drivers.length > 100) {
+        throw new Error("Maximum 100 drivers per import. Please split your file.");
+      }
+
       const results: ImportResult = { success: 0, failed: 0, errors: [] };
       
       for (let i = 0; i < drivers.length; i++) {
