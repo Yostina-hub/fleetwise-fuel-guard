@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useSubmitThrottle } from "@/hooks/useSubmitThrottle";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +30,7 @@ interface ApprovedStation {
 export default function ApprovedFuelStationsTab() {
   const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
+  const canSubmit = useSubmitThrottle();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingStation, setEditingStation] = useState<ApprovedStation | null>(null);
   const [formData, setFormData] = useState({
@@ -63,6 +65,7 @@ export default function ApprovedFuelStationsTab() {
 
   const createMutation = useMutation({
     mutationFn: async (data: Omit<ApprovedStation, 'id'>) => {
+      if (!canSubmit()) throw new Error("Please wait before submitting again");
       const { error } = await supabase
         .from("approved_fuel_stations")
         .insert({ ...data, organization_id: organizationId });
