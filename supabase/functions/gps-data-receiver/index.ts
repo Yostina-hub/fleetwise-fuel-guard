@@ -986,6 +986,31 @@ async function processGPSData(
     return { error: 'Missing required fields: imei, lat, lng', status: 400 };
   }
 
+  // Validate telemetry data bounds
+  {
+    const parsedLat = parseFloat(lat);
+    const parsedLng = parseFloat(lng);
+    if (isNaN(parsedLat) || isNaN(parsedLng) || parsedLat < -90 || parsedLat > 90 || parsedLng < -180 || parsedLng > 180) {
+      return { error: 'Invalid coordinates: lat must be -90 to 90, lng must be -180 to 180', status: 400 };
+    }
+    const parsedSpeed = speed ? parseFloat(speed) : undefined;
+    if (parsedSpeed !== undefined && (isNaN(parsedSpeed) || parsedSpeed < 0 || parsedSpeed > 500)) {
+      return { error: 'Invalid speed: must be 0-500', status: 400 };
+    }
+    const parsedHeading = heading ? parseFloat(heading) : undefined;
+    if (parsedHeading !== undefined && (isNaN(parsedHeading) || parsedHeading < 0 || parsedHeading > 360)) {
+      return { error: 'Invalid heading: must be 0-360', status: 400 };
+    }
+    const parsedFuel = fuel ? parseFloat(fuel) : undefined;
+    if (parsedFuel !== undefined && (isNaN(parsedFuel) || parsedFuel < 0 || parsedFuel > 100)) {
+      return { error: 'Invalid fuel level: must be 0-100', status: 400 };
+    }
+    const parsedAlt = altitude ? parseFloat(altitude) : undefined;
+    if (parsedAlt !== undefined && (isNaN(parsedAlt) || parsedAlt < -500 || parsedAlt > 9000)) {
+      return { error: 'Invalid altitude: must be -500 to 9000', status: 400 };
+    }
+  }
+
   // Find device by IMEI (optionally verify auth token)
   let deviceQuery = supabase
     .from('devices')
