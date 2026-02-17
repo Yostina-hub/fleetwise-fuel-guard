@@ -316,27 +316,38 @@ const Auth = () => {
                             type="button"
                             onClick={async () => {
                               const email = (document.getElementById('signin-email') as HTMLInputElement)?.value;
-                              if (email) {
-                                const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                                  redirectTo: `${window.location.origin}/auth`,
-                                });
-                                if (error) {
-                                  toast({
-                                    title: "Error",
-                                    description: error.message,
-                                    variant: "destructive",
-                                  });
-                                } else {
-                                  toast({
-                                    title: "Password Reset Email Sent",
-                                    description: "Check your email for a password reset link.",
-                                  });
-                                }
-                              } else {
+                              if (!email) {
                                 toast({
                                   title: "Email Required",
                                   description: "Please enter your email address first.",
                                   variant: "destructive",
+                                });
+                                return;
+                              }
+                              // Rate limit: prevent rapid password reset requests
+                              const lastReset = sessionStorage.getItem('last_password_reset');
+                              if (lastReset && Date.now() - parseInt(lastReset) < 30000) {
+                                toast({
+                                  title: "Please Wait",
+                                  description: "You can request a password reset every 30 seconds.",
+                                  variant: "destructive",
+                                });
+                                return;
+                              }
+                              const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                                redirectTo: `${window.location.origin}/auth`,
+                              });
+                              sessionStorage.setItem('last_password_reset', Date.now().toString());
+                              if (error) {
+                                toast({
+                                  title: "Error",
+                                  description: error.message,
+                                  variant: "destructive",
+                                });
+                              } else {
+                                toast({
+                                  title: "Password Reset Email Sent",
+                                  description: "Check your email for a password reset link.",
                                 });
                               }
                             }}
