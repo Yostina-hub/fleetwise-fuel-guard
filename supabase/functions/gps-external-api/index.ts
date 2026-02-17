@@ -224,6 +224,48 @@ function validateCoordinates(lat?: number, lng?: number): boolean {
   return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
 }
 
+// Validate telemetry data bounds to prevent data corruption from malformed device payloads
+function validateTelemetryData(record: TelemetryRecord): string | null {
+  if (record.speed_kmh !== undefined && (typeof record.speed_kmh !== 'number' || record.speed_kmh < 0 || record.speed_kmh > 300)) {
+    return 'Invalid speed: must be 0-300 km/h';
+  }
+  if (record.speed_knots !== undefined && (typeof record.speed_knots !== 'number' || record.speed_knots < 0 || record.speed_knots > 162)) {
+    return 'Invalid speed_knots: must be 0-162 knots';
+  }
+  if (record.heading !== undefined && (typeof record.heading !== 'number' || record.heading < 0 || record.heading > 360)) {
+    return 'Invalid heading: must be 0-360 degrees';
+  }
+  if (record.altitude_m !== undefined && (typeof record.altitude_m !== 'number' || record.altitude_m < -500 || record.altitude_m > 9000)) {
+    return 'Invalid altitude: must be -500 to 9000 meters';
+  }
+  if (record.fuel_level_percent !== undefined && (typeof record.fuel_level_percent !== 'number' || record.fuel_level_percent < 0 || record.fuel_level_percent > 100)) {
+    return 'Invalid fuel level: must be 0-100%';
+  }
+  if (record.odometer_km !== undefined && (typeof record.odometer_km !== 'number' || record.odometer_km < 0 || record.odometer_km > 2000000)) {
+    return 'Invalid odometer: must be 0-2000000 km';
+  }
+  if (record.timestamp) {
+    const ts = new Date(record.timestamp);
+    if (isNaN(ts.getTime())) return 'Invalid timestamp format';
+    const now = Date.now();
+    const oneYearAgo = now - 365 * 24 * 60 * 60 * 1000;
+    const oneHourFuture = now + 60 * 60 * 1000;
+    if (ts.getTime() < oneYearAgo || ts.getTime() > oneHourFuture) {
+      return 'Invalid timestamp: must be within last year and not more than 1 hour in future';
+    }
+  }
+  if (record.driver_id && (typeof record.driver_id !== 'string' || record.driver_id.length > 100)) {
+    return 'Invalid driver_id: must be string, max 100 chars';
+  }
+  if (record.raw_data) {
+    try {
+      const rawStr = JSON.stringify(record.raw_data);
+      if (rawStr.length > 10000) return 'Raw data too large: max 10KB';
+    } catch { return 'Invalid raw_data'; }
+  }
+  return null;
+}
+
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 function shouldAssumeSpeedIsKnots(trackerModel?: string | null): boolean {
@@ -612,6 +654,12 @@ async function processRecord(supabase: any, record: TelemetryRecord): Promise<Pr
   // Validate coordinates if provided
   if (!validateCoordinates(record.latitude, record.longitude)) {
     return { success: false, error: 'Invalid coordinates', code: 'INVALID_COORDINATES' };
+  }
+
+  // Validate telemetry data bounds
+  const telemetryError = validateTelemetryData(record);
+  if (telemetryError) {
+    return { success: false, error: telemetryError, code: 'INVALID_DATA' };
   }
 
   // Check in-memory cache for unknown IMEIs to avoid DB hammering
