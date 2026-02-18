@@ -147,6 +147,23 @@ export const useDispatchJobs = (filters?: {
     }
     lastJobCreateRef.current = now;
 
+    // Validate required fields
+    const pickupName = job.pickup_location_name?.trim();
+    const dropoffName = job.dropoff_location_name?.trim();
+    if (!pickupName && !dropoffName) {
+      toast({ title: "Validation Error", description: "At least one location is required.", variant: "destructive" });
+      return null;
+    }
+    if ((job.customer_name && job.customer_name.length > 200) ||
+        (job.customer_phone && job.customer_phone.length > 30) ||
+        (pickupName && pickupName.length > 500) ||
+        (dropoffName && dropoffName.length > 500) ||
+        (job.cargo_description && job.cargo_description.length > 500) ||
+        (job.special_instructions && job.special_instructions.length > 1000)) {
+      toast({ title: "Validation Error", description: "One or more fields exceed maximum length.", variant: "destructive" });
+      return null;
+    }
+
     try {
       // Generate a job number
       const jobNumber = `JOB-${Date.now().toString(36).toUpperCase()}`;

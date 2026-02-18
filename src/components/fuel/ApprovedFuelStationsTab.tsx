@@ -117,20 +117,35 @@ export default function ApprovedFuelStationsTab() {
   };
 
   const handleSubmit = () => {
+    const name = formData.name.trim();
+    const brand = formData.brand.trim();
     const lat = parseFloat(formData.lat);
     const lng = parseFloat(formData.lng);
+    const radius = parseInt(formData.radius_meters) || 100;
     
-    if (!formData.name || isNaN(lat) || isNaN(lng)) {
+    if (!name || isNaN(lat) || isNaN(lng)) {
       toast.error("Name and valid coordinates required");
+      return;
+    }
+    if (name.length > 200 || brand.length > 100) {
+      toast.error("Name or brand exceeds maximum length");
+      return;
+    }
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      toast.error("Invalid coordinates: lat must be -90 to 90, lng -180 to 180");
+      return;
+    }
+    if (radius < 1 || radius > 10000) {
+      toast.error("Radius must be between 1 and 10,000 meters");
       return;
     }
 
     const data = {
-      name: formData.name,
-      brand: formData.brand || undefined,
+      name,
+      brand: brand || undefined,
       lat,
       lng,
-      radius_meters: parseInt(formData.radius_meters) || 100,
+      radius_meters: radius,
       is_active: formData.is_active,
     };
 
