@@ -117,11 +117,26 @@ const AssignRouteDialog = ({ vehicleId, vehiclePlate, trigger }: AssignRouteDial
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.pickup_location_name && !formData.dropoff_location_name) {
+    const trimmed = {
+      ...formData,
+      pickup_location_name: formData.pickup_location_name.trim(),
+      dropoff_location_name: formData.dropoff_location_name.trim(),
+      customer_name: formData.customer_name.trim(),
+      customer_phone: formData.customer_phone.trim(),
+      cargo_description: formData.cargo_description.trim(),
+      special_instructions: formData.special_instructions.trim(),
+    };
+    if (!trimmed.pickup_location_name && !trimmed.dropoff_location_name) {
       toast.error("Please enter at least one location");
       return;
     }
-    createMutation.mutate(formData);
+    if (trimmed.customer_name.length > 200 || trimmed.customer_phone.length > 30 ||
+        trimmed.pickup_location_name.length > 500 || trimmed.dropoff_location_name.length > 500 ||
+        trimmed.cargo_description.length > 500 || trimmed.special_instructions.length > 1000) {
+      toast.error("One or more fields exceed maximum length");
+      return;
+    }
+    createMutation.mutate(trimmed);
   };
 
   const availableDrivers = drivers.filter(d => d.status === "active");

@@ -184,9 +184,30 @@ export const useFuelDepots = () => {
     }
     lastDepotCreateRef.current = now;
 
-    // Reject null/empty payload
-    if (!depot.name?.trim()) {
+    // Reject null/empty payload and enforce limits
+    const depotName = depot.name?.trim();
+    if (!depotName) {
       toast({ title: "Validation Error", description: "Depot name is required.", variant: "destructive" });
+      return null;
+    }
+    if (depotName.length > 200) {
+      toast({ title: "Validation Error", description: "Depot name is too long (max 200 chars).", variant: "destructive" });
+      return null;
+    }
+    if (depot.capacity_liters != null && (depot.capacity_liters < 0 || depot.capacity_liters > 10000000)) {
+      toast({ title: "Validation Error", description: "Capacity must be between 0 and 10,000,000 liters.", variant: "destructive" });
+      return null;
+    }
+    if (depot.current_stock_liters != null && depot.current_stock_liters < 0) {
+      toast({ title: "Validation Error", description: "Stock cannot be negative.", variant: "destructive" });
+      return null;
+    }
+    if (depot.lat != null && (depot.lat < -90 || depot.lat > 90)) {
+      toast({ title: "Validation Error", description: "Invalid latitude.", variant: "destructive" });
+      return null;
+    }
+    if (depot.lng != null && (depot.lng < -180 || depot.lng > 180)) {
+      toast({ title: "Validation Error", description: "Invalid longitude.", variant: "destructive" });
       return null;
     }
 
