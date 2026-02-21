@@ -74,10 +74,33 @@ serve(async (req) => {
     const rl = checkRateLimit(getClientId(req), { maxRequests: 10, windowMs: 60_000 });
     if (!rl.allowed) return rateLimitResponse(rl, corsHeaders);
 
+    // Auth check - verify user identity and role
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return secureJsonResponse({ error: "Authorization required" }, req, 401);
+    }
+    const token = authHeader.replace("Bearer ", "");
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return secureJsonResponse({ error: "Invalid or expired token" }, req, 401);
+    }
+
+    // Verify user has appropriate role (super_admin, org_admin, fleet_manager, or operator)
+    const { data: userRoles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id);
+    const roles = (userRoles || []).map((r: any) => r.role);
+    const allowedRoles = ["super_admin", "org_admin", "fleet_manager", "operator"];
+    if (!roles.some((r: string) => allowedRoles.includes(r))) {
+      return secureJsonResponse({ error: "Insufficient permissions to send governor commands" }, req, 403);
+    }
 
     let command: GovernorCommand;
     try {

@@ -125,9 +125,17 @@ serve(async (req) => {
     const rl = checkRateLimit(getClientId(req), { maxRequests: 20, windowMs: 60_000 });
     if (!rl.allowed) return rateLimitResponse(rl, corsHeaders);
 
-    // Auth check
+    // Auth check - validate user token and org access
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return secureJsonResponse({ error: "Authorization required" }, req, 401);
+    const token = authHeader.replace("Bearer ", "");
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) return secureJsonResponse({ error: "Invalid or expired token" }, req, 401);
 
     let body;
     try {
@@ -139,15 +147,19 @@ serve(async (req) => {
       );
     }
     const { organizationId, insightType, context } = body;
+
+    // Verify user belongs to the requested organization
+    const { data: profile } = await supabase.from("profiles").select("organization_id").eq("id", user.id).single();
+    const isSuperAdmin = await supabase.from("user_roles").select("id").eq("user_id", user.id).eq("role", "super_admin").limit(1);
+    if (profile?.organization_id !== organizationId && !(isSuperAdmin.data && isSuperAdmin.data.length > 0)) {
+      return secureJsonResponse({ error: "Organization access denied" }, req, 403);
+    }
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Fetch relevant fleet data based on insight type
     const fleetData = await fetchFleetData(supabase, organizationId, insightType);

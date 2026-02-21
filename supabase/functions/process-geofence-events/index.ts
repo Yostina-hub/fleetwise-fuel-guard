@@ -108,9 +108,29 @@ Deno.serve(async (req) => {
     const rl = checkRateLimit(getClientId(req), { maxRequests: 60, windowMs: 60_000 });
     if (!rl.allowed) return rateLimitResponse(rl, corsHeaders);
 
+    // Validate caller authorization (service-role or authenticated user)
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Authorization required" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Verify the token is valid (either service_role or user token)
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    // For internal calls via supabase.functions.invoke, the service_role key is used
+    // which won't resolve to a user - that's acceptable for system functions
+    const isServiceRole = token === supabaseKey;
+    if (!isServiceRole && (authError || !user)) {
+      return new Response(JSON.stringify({ error: "Invalid authorization" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     let body;
     try {

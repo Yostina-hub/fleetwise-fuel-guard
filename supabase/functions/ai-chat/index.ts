@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkRateLimit, rateLimitResponse, getClientId } from "../_shared/rate-limiter.ts";
 import { buildCorsHeaders, handleCorsPreflightRequest, secureJsonResponse, secureStreamResponse } from "../_shared/cors.ts";
 import { validateArray, validateString, validateAll } from "../_shared/validation.ts";
@@ -13,6 +14,15 @@ serve(async (req) => {
   try {
     const rl = checkRateLimit(getClientId(req), { maxRequests: 20, windowMs: 60_000 });
     if (!rl.allowed) return rateLimitResponse(rl, corsHeaders);
+
+    // Auth check
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) return secureJsonResponse({ error: "Authorization required" }, req, 401);
+    const token = authHeader.replace("Bearer ", "");
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) return secureJsonResponse({ error: "Invalid or expired token" }, req, 401);
+
     let body;
     try {
       body = await req.json();
