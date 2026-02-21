@@ -39,9 +39,25 @@ Deno.serve(async (req) => {
     const rl = checkRateLimit(getClientId(req), { maxRequests: 30, windowMs: 60_000 });
     if (!rl.allowed) return rateLimitResponse(rl, corsHeaders);
 
+    // Validate caller authorization (service-role or authenticated user)
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return secureJsonResponse({ error: "Authorization required" }, req, 401);
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Verify the token is valid
+    const token = authHeader.replace("Bearer ", "");
+    const isServiceRole = token === supabaseServiceKey;
+    if (!isServiceRole) {
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      if (authError || !user) {
+        return secureJsonResponse({ error: "Invalid authorization" }, req, 401);
+      }
+    }
 
     let body;
     try {
