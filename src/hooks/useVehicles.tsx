@@ -50,13 +50,13 @@ export interface Vehicle {
 }
 
 export const useVehicles = (skip = false) => {
-  const { organizationId } = useOrganization();
+  const { organizationId, isViewingAllOrgs } = useOrganization();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (skip || !organizationId) {
+    if (skip || (!organizationId && !isViewingAllOrgs)) {
       setVehicles([]);
       setLoading(false);
       return;
@@ -69,16 +69,22 @@ export const useVehicles = (skip = false) => {
     const fetchVehicles = async (attempt = 0) => {
       try {
         if (isMounted) setLoading(true);
-        const { data, error } = await supabase
+        let query = supabase
           .from("vehicles")
           .select(`
             *,
             assigned_driver:drivers!vehicles_assigned_driver_id_fkey(id, first_name, last_name, phone, avatar_url),
             depot:depots!vehicles_depot_id_fkey(id, name, address)
           `)
-          .eq("organization_id", organizationId)
           .order("created_at", { ascending: false })
           .limit(5000);
+
+        // Only filter by org if not a super_admin viewing all orgs
+        if (!isViewingAllOrgs && organizationId) {
+          query = query.eq("organization_id", organizationId);
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
         if (isMounted) {
@@ -104,15 +110,16 @@ export const useVehicles = (skip = false) => {
     fetchVehicles();
 
     // Subscribe to realtime changes with debouncing
+    const channelName = isViewingAllOrgs ? 'vehicles-changes-all' : `vehicles-changes-${organizationId?.slice(0, 8)}`;
     const channel = supabase
-      .channel(`vehicles-changes-${organizationId.slice(0, 8)}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'vehicles',
-          filter: `organization_id=eq.${organizationId}`
+          ...(isViewingAllOrgs ? {} : { filter: `organization_id=eq.${organizationId}` })
         },
         () => {
           clearTimeout(debounceTimer);
@@ -131,24 +138,26 @@ export const useVehicles = (skip = false) => {
       clearTimeout(retryTimer);
       supabase.removeChannel(channel);
     };
-  }, [organizationId, skip]);
+  }, [organizationId, skip, isViewingAllOrgs]);
 
   return {
     vehicles,
     loading,
     error,
     refetch: () => {
-      if (organizationId) {
+      if (organizationId || isViewingAllOrgs) {
         setLoading(true);
-        supabase
+        let query = supabase
           .from("vehicles")
           .select(`
             *,
             assigned_driver:drivers!vehicles_assigned_driver_id_fkey(id, first_name, last_name, phone, avatar_url),
             depot:depots!vehicles_depot_id_fkey(id, name, address)
-          `)
-          .eq("organization_id", organizationId)
-          .then(({ data }) => {
+          `);
+        if (!isViewingAllOrgs && organizationId) {
+          query = query.eq("organization_id", organizationId);
+        }
+        query.then(({ data }) => {
             setVehicles((data as any) || []);
             setLoading(false);
           });
