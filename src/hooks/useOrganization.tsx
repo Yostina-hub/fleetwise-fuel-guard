@@ -7,11 +7,17 @@ import { useOrganizationContext } from "@/contexts/OrganizationContext";
  * super_admin org switching for multi-tenant management.
  */
 export const useOrganization = () => {
-  const { organizationLoading } = useAuthContext();
-  const { effectiveOrganizationId } = useOrganizationContext();
+  const { organizationLoading, hasRole } = useAuthContext();
+  const { effectiveOrganizationId, viewingAsOrganizationId } = useOrganizationContext();
+
+  const isSuperAdmin = hasRole("super_admin");
+  // Super admin viewing platform-wide (no specific org selected)
+  const isViewingAllOrgs = isSuperAdmin && viewingAsOrganizationId === null;
 
   return {
     organizationId: effectiveOrganizationId,
     loading: organizationLoading,
+    isSuperAdmin,
+    isViewingAllOrgs,
   };
 };

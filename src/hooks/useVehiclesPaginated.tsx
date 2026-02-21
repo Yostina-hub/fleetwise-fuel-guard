@@ -76,7 +76,7 @@ export const useVehiclesPaginated = (
     sortDirection = "desc",
     vehicleIdFilter = null
   } = options;
-  const { organizationId } = useOrganization();
+  const { organizationId, isViewingAllOrgs } = useOrganization();
   
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(false); // Start with false for instant feel
@@ -89,7 +89,7 @@ export const useVehiclesPaginated = (
   const totalPages = Math.ceil(totalCount / pageSize);
 
   const loadPage = useCallback(async (page: number) => {
-    if (!organizationId) {
+    if (!organizationId && !isViewingAllOrgs) {
       setVehicles([]);
       setLoading(false);
       setIsFirstLoad(false);
@@ -110,9 +110,12 @@ export const useVehiclesPaginated = (
       let query = supabase
         .from("vehicles")
         .select("*, assigned_driver:drivers!vehicles_assigned_driver_id_fkey(id, first_name, last_name, phone, avatar_url)", { count: "exact" })
-        .eq("organization_id", organizationId)
         .order(sortField, { ascending: sortDirection === "asc" })
         .range(offset, offset + pageSize - 1);
+
+      if (!isViewingAllOrgs && organizationId) {
+        query = query.eq("organization_id", organizationId);
+      }
 
       // If filtering to specific vehicle, bypass other filters
       if (vehicleIdFilter) {
@@ -157,7 +160,7 @@ export const useVehiclesPaginated = (
       setLoading(false);
       setIsFirstLoad(false);
     }
-  }, [organizationId, pageSize, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, searchQuery, sortField, sortDirection, isFirstLoad, vehicleIdFilter]);
+  }, [organizationId, pageSize, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, searchQuery, sortField, sortDirection, isFirstLoad, vehicleIdFilter, isViewingAllOrgs]);
 
   const loadMore = useCallback(async () => {
     if (!hasMore || loading || vehicleIdFilter) return; // Skip loadMore if filtering to single vehicle
@@ -171,9 +174,12 @@ export const useVehiclesPaginated = (
       let query = supabase
         .from("vehicles")
         .select("*, assigned_driver:drivers!vehicles_assigned_driver_id_fkey(id, first_name, last_name, phone, avatar_url)")
-        .eq("organization_id", organizationId)
         .order(sortField, { ascending: sortDirection === "asc" })
         .range(offset, offset + pageSize - 1);
+
+      if (!isViewingAllOrgs && organizationId) {
+        query = query.eq("organization_id", organizationId);
+      }
 
       if (statusFilter !== "all") {
         query = query.eq("status", statusFilter);
@@ -210,7 +216,7 @@ export const useVehiclesPaginated = (
     } finally {
       setLoading(false);
     }
-  }, [organizationId, hasMore, loading, currentPage, pageSize, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, searchQuery, sortField, sortDirection, totalCount, vehicleIdFilter]);
+  }, [organizationId, hasMore, loading, currentPage, pageSize, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, searchQuery, sortField, sortDirection, totalCount, vehicleIdFilter, isViewingAllOrgs]);
 
   const refetch = useCallback(async () => {
     await loadPage(1);
@@ -224,26 +230,26 @@ export const useVehiclesPaginated = (
 
   // Subscribe to realtime changes with throttling
   useEffect(() => {
-    if (!organizationId) return;
+    if (!organizationId && !isViewingAllOrgs) return;
 
     let debounceTimer: NodeJS.Timeout;
 
+    const channelName = isViewingAllOrgs ? 'vehicles-paginated-all' : `vehicles-paginated-${organizationId?.slice(0, 8)}`;
     const channel = supabase
-      .channel(`vehicles-paginated-${organizationId.slice(0, 8)}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'vehicles',
-          filter: `organization_id=eq.${organizationId}`
+          ...(isViewingAllOrgs ? {} : { filter: `organization_id=eq.${organizationId}` })
         },
         () => {
-          // Debounce refetch to prevent too many queries
           clearTimeout(debounceTimer);
           debounceTimer = setTimeout(() => {
             refetch();
-          }, 500); // 500ms debounce for responsive updates
+          }, 500);
         }
       )
       .subscribe();
@@ -252,7 +258,7 @@ export const useVehiclesPaginated = (
       clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
-  }, [organizationId, refetch]);
+  }, [organizationId, refetch, isViewingAllOrgs]);
 
   return {
     vehicles,
