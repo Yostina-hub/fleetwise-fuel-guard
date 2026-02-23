@@ -137,6 +137,34 @@ const corsHeaders = {
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 120;
 
+// Circuit breaker: stop hammering DB when connection pool is exhausted
+let dbFailureCount = 0;
+let circuitOpenUntil = 0;
+const CIRCUIT_BREAKER_THRESHOLD = 3; // Open after 3 consecutive DB failures
+const CIRCUIT_BREAKER_COOLDOWN_MS = 30 * 1000; // Stay open for 30 seconds
+
+function checkCircuitBreaker(): boolean {
+  if (dbFailureCount >= CIRCUIT_BREAKER_THRESHOLD && Date.now() < circuitOpenUntil) {
+    return false; // Circuit is open — reject immediately
+  }
+  if (Date.now() >= circuitOpenUntil) {
+    dbFailureCount = 0; // Reset after cooldown
+  }
+  return true;
+}
+
+function recordDbFailure() {
+  dbFailureCount++;
+  if (dbFailureCount >= CIRCUIT_BREAKER_THRESHOLD) {
+    circuitOpenUntil = Date.now() + CIRCUIT_BREAKER_COOLDOWN_MS;
+    console.warn(`Circuit breaker OPEN: pausing DB calls for ${CIRCUIT_BREAKER_COOLDOWN_MS / 1000}s after ${dbFailureCount} failures`);
+  }
+}
+
+function recordDbSuccess() {
+  dbFailureCount = 0;
+}
+
 // In-memory cache for unknown IMEIs to prevent repeated DB lookups
 // that cause statement timeouts under load
 const unknownImeiCache = new Map<string, number>(); // IMEI -> timestamp when cached
@@ -662,6 +690,11 @@ async function processRecord(supabase: any, record: TelemetryRecord): Promise<Pr
     return { success: false, error: telemetryError, code: 'INVALID_DATA' };
   }
 
+  // Circuit breaker: if DB is down, reject immediately instead of queueing more connections
+  if (!checkCircuitBreaker()) {
+    return { success: false, error: 'Database temporarily unavailable (circuit breaker open)', code: 'CIRCUIT_OPEN' };
+  }
+
   // Check in-memory cache for unknown IMEIs to avoid DB hammering
   const cachedUnknown = unknownImeiCache.get(record.imei);
   if (cachedUnknown && (Date.now() - cachedUnknown) < UNKNOWN_IMEI_CACHE_TTL_MS) {
@@ -681,14 +714,13 @@ async function processRecord(supabase: any, record: TelemetryRecord): Promise<Pr
       .maybeSingle();
 
     // CRITICAL FIX: Distinguish between "device genuinely not found" vs "DB error"
-    // Only cache as unknown when there's NO error and NO data (confirmed not found).
-    // DB errors (timeouts, 503s, connection resets) should NOT cache the IMEI,
-    // so the next request retries the lookup instead of being silently rejected.
     if (deviceError) {
       console.error(`DB error looking up IMEI ${record.imei}:`, deviceError.message || deviceError);
-      // Do NOT cache — this is a transient error, not a confirmed "not found"
+      recordDbFailure();
       return { success: false, error: `Temporary lookup failure for ${record.imei}`, code: 'INTERNAL_ERROR' };
     }
+
+    recordDbSuccess();
 
     if (!deviceData) {
       // Confirmed not found — safe to cache
