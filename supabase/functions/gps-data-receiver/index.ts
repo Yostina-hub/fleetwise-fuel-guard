@@ -895,7 +895,11 @@ async function processStatusUpdate(
     .eq('imei', imei)
     .maybeSingle();
 
-  if (deviceError || !device) {
+  if (deviceError) {
+    console.error('DB error looking up device for status update:', imei, deviceError.message || deviceError);
+    return { error: 'Temporary lookup failure', status: 503 };
+  }
+  if (!device) {
     console.log('Device not found for status update:', imei);
     return { error: 'Device not found with IMEI: ' + imei, status: 404 };
   }
@@ -1019,8 +1023,12 @@ async function processGPSData(
 
   const { data: device, error: deviceError } = await deviceQuery.single();
 
-  if (deviceError || !device) {
-    console.error('Device not found:', imei, deviceError);
+  if (deviceError) {
+    console.error('DB error looking up device:', imei, deviceError.message || deviceError);
+    return { error: 'Temporary lookup failure', status: 503 };
+  }
+  if (!device) {
+    console.error('Device not found:', imei);
     return { error: 'Device not found with IMEI: ' + imei, status: 404 };
   }
 

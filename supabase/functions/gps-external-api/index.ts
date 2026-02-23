@@ -680,8 +680,18 @@ async function processRecord(supabase: any, record: TelemetryRecord): Promise<Pr
       .eq('imei', record.imei)
       .maybeSingle();
 
-    if (deviceError || !deviceData) {
-      // Cache this IMEI as unknown to prevent repeated lookups
+    // CRITICAL FIX: Distinguish between "device genuinely not found" vs "DB error"
+    // Only cache as unknown when there's NO error and NO data (confirmed not found).
+    // DB errors (timeouts, 503s, connection resets) should NOT cache the IMEI,
+    // so the next request retries the lookup instead of being silently rejected.
+    if (deviceError) {
+      console.error(`DB error looking up IMEI ${record.imei}:`, deviceError.message || deviceError);
+      // Do NOT cache — this is a transient error, not a confirmed "not found"
+      return { success: false, error: `Temporary lookup failure for ${record.imei}`, code: 'INTERNAL_ERROR' };
+    }
+
+    if (!deviceData) {
+      // Confirmed not found — safe to cache
       unknownImeiCache.set(record.imei, Date.now());
       // Cleanup old entries periodically
       if (unknownImeiCache.size > 500) {
@@ -693,6 +703,7 @@ async function processRecord(supabase: any, record: TelemetryRecord): Promise<Pr
       console.log('Device not found for IMEI:', record.imei);
       return { success: false, error: `Device not found: ${record.imei}`, code: 'DEVICE_NOT_FOUND' };
     }
+
     device = { ...deviceData, cachedAt: Date.now() };
     knownDeviceCache.set(record.imei, device);
   }
