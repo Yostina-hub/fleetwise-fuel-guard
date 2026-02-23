@@ -19,6 +19,34 @@ const PROTOCOL_PATTERNS = {
   YTWL: /^\*[0-9]+,/,       // YTWL format *IMEI,CMD,...#
 };
 
+// Circuit breaker: stop hammering DB when connection pool is exhausted
+let dbFailureCount = 0;
+let circuitOpenUntil = 0;
+const CIRCUIT_BREAKER_THRESHOLD = 3;
+const CIRCUIT_BREAKER_COOLDOWN_MS = 30 * 1000;
+
+function checkCircuitBreaker(): boolean {
+  if (dbFailureCount >= CIRCUIT_BREAKER_THRESHOLD && Date.now() < circuitOpenUntil) {
+    return false;
+  }
+  if (Date.now() >= circuitOpenUntil) {
+    dbFailureCount = 0;
+  }
+  return true;
+}
+
+function recordDbFailure() {
+  dbFailureCount++;
+  if (dbFailureCount >= CIRCUIT_BREAKER_THRESHOLD) {
+    circuitOpenUntil = Date.now() + CIRCUIT_BREAKER_COOLDOWN_MS;
+    console.warn(`Circuit breaker OPEN: pausing DB calls for ${CIRCUIT_BREAKER_COOLDOWN_MS / 1000}s after ${dbFailureCount} failures`);
+  }
+}
+
+function recordDbSuccess() {
+  dbFailureCount = 0;
+}
+
 // ==================== CRC/Checksum Validation Functions ====================
 
 // CRC-16 X.25 (used by GT06 protocol)
@@ -889,6 +917,10 @@ async function processStatusUpdate(
   }
 
   // Find device by IMEI
+  if (!checkCircuitBreaker()) {
+    return { error: 'Database temporarily unavailable (circuit breaker open)', status: 503 };
+  }
+
   const { data: device, error: deviceError } = await supabase
     .from('devices')
     .select('id, vehicle_id, organization_id')
@@ -897,8 +929,10 @@ async function processStatusUpdate(
 
   if (deviceError) {
     console.error('DB error looking up device for status update:', imei, deviceError.message || deviceError);
+    recordDbFailure();
     return { error: 'Temporary lookup failure', status: 503 };
   }
+  recordDbSuccess();
   if (!device) {
     console.log('Device not found for status update:', imei);
     return { error: 'Device not found with IMEI: ' + imei, status: 404 };
@@ -1015,6 +1049,11 @@ async function processGPSData(
     }
   }
 
+  // Circuit breaker check
+  if (!checkCircuitBreaker()) {
+    return { error: 'Database temporarily unavailable (circuit breaker open)', status: 503 };
+  }
+
   // Find device by IMEI (optionally verify auth token)
   let deviceQuery = supabase
     .from('devices')
@@ -1025,8 +1064,10 @@ async function processGPSData(
 
   if (deviceError) {
     console.error('DB error looking up device:', imei, deviceError.message || deviceError);
+    recordDbFailure();
     return { error: 'Temporary lookup failure', status: 503 };
   }
+  recordDbSuccess();
   if (!device) {
     console.error('Device not found:', imei);
     return { error: 'Device not found with IMEI: ' + imei, status: 404 };
