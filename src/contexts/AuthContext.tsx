@@ -1,13 +1,13 @@
 import { createContext, useContext, ReactNode } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthRaw } from "@/hooks/useAuthRaw";
 
-// Re-export the useAuth hook's return type as context for backward compatibility
-type AuthContextType = ReturnType<typeof useAuth>;
+// Use the raw hook's return type as context type
+type AuthContextType = ReturnType<typeof useAuthRaw>;
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const auth = useAuth();
+  const auth = useAuthRaw();
 
   return (
     <AuthContext.Provider value={auth}>
