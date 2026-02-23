@@ -22,6 +22,7 @@ export function useAuth() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [roles, setRoles] = useState<UserRole[]>([]);
   const [loading, setLoading] = useState(true);
+  const initialLoadDone = useRef(false);
   const sessionTrackedRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -29,7 +30,9 @@ export function useAuth() {
 
     const fetchUserData = async (userId: string) => {
       try {
-        setLoading(true);
+        if (!initialLoadDone.current) {
+          setLoading(true);
+        }
 
         const [profileRes, rolesRes] = await Promise.all([
           supabase
@@ -61,7 +64,10 @@ export function useAuth() {
         setProfile(null);
         setRoles([]);
       } finally {
-        if (isMounted) setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+          initialLoadDone.current = true;
+        }
       }
     };
 
@@ -77,11 +83,7 @@ export function useAuth() {
           trackSession(nextUser.id).catch(console.error);
         }
 
-        setTimeout(() => {
-          if (isMounted) {
-            fetchUserData(nextUser.id);
-          }
-        }, 0);
+        fetchUserData(nextUser.id);
       } else {
         sessionTrackedRef.current = null;
         setProfile(null);
