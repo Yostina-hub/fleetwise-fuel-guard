@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 
 interface ProtectedRouteProps {
@@ -18,7 +18,7 @@ const ProtectedRoute = ({
   requiredRole,
   requiredRoles,
 }: ProtectedRouteProps) => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuthContext();
   const { hasPermission, hasRole, loading: permLoading } = usePermissions();
 
   if (authLoading || permLoading) {
