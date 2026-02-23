@@ -50,16 +50,16 @@ export interface TestEndpointResult {
 }
 
 export const useDevices = () => {
-  const { organizationId } = useOrganization();
+  const { organizationId, isViewingAllOrgs } = useOrganization();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: devices, isLoading, refetch } = useQuery({
-    queryKey: ["devices", organizationId],
+    queryKey: ["devices", organizationId, isViewingAllOrgs],
     queryFn: async () => {
-      if (!organizationId) return [];
-      
-      const { data, error } = await supabase
+      if (!organizationId && !isViewingAllOrgs) return [];
+
+      let query = supabase
         .from("devices")
         .select(`
           id, organization_id, vehicle_id, imei, tracker_model, serial_number,
@@ -69,20 +69,28 @@ export const useDevices = () => {
           vehicles(plate_number, make, model),
           device_protocols(id, vendor, protocol_name, version, is_active)
         `)
-        .eq("organization_id", organizationId)
         .order("created_at", { ascending: false });
+
+      // Only filter by org when not in platform-wide super admin mode
+      if (!isViewingAllOrgs && organizationId) {
+        query = query.eq("organization_id", organizationId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data as any[];
     },
-    enabled: !!organizationId,
+    enabled: isViewingAllOrgs || !!organizationId,
   });
 
   // Real-time subscription for device updates
   useEffect(() => {
-    if (!organizationId) return;
+    if (!organizationId && !isViewingAllOrgs) return;
 
-    const channelName = `devices-hook-${organizationId.slice(0, 8)}`;
+    const channelName = isViewingAllOrgs
+      ? "devices-hook-all"
+      : `devices-hook-${organizationId?.slice(0, 8)}`;
     let debounceTimeout: NodeJS.Timeout;
 
     const channel = supabase
@@ -93,7 +101,7 @@ export const useDevices = () => {
           event: '*',
           schema: 'public',
           table: 'devices',
-          filter: `organization_id=eq.${organizationId}`
+          ...(isViewingAllOrgs ? {} : { filter: `organization_id=eq.${organizationId}` })
         },
         () => {
           clearTimeout(debounceTimeout);
@@ -108,7 +116,7 @@ export const useDevices = () => {
       clearTimeout(debounceTimeout);
       supabase.removeChannel(channel);
     };
-  }, [organizationId, refetch]);
+  }, [organizationId, isViewingAllOrgs, refetch]);
 
   const createDevice = useMutation({
     mutationFn: async (device: Partial<Device>) => {
