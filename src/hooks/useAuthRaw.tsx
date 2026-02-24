@@ -28,7 +28,7 @@ export function useAuthRaw() {
   useEffect(() => {
     let isMounted = true;
 
-    const fetchUserData = async (userId: string) => {
+    const fetchUserData = async (userId: string, attempt = 0) => {
       try {
         if (!initialLoadDone.current) {
           setLoading(true);
@@ -48,6 +48,22 @@ export function useAuthRaw() {
 
         if (!isMounted) return;
 
+        // Retry on transient server errors (503, 502, etc.)
+        const hasTransientError = 
+          (profileRes.error && profileRes.error.message?.includes('upstream')) ||
+          (rolesRes.error && rolesRes.error.message?.includes('upstream')) ||
+          (profileRes.error && profileRes.error.message?.includes('503')) ||
+          (rolesRes.error && rolesRes.error.message?.includes('503'));
+
+        if (hasTransientError && attempt < 4) {
+          const delay = Math.min(1000 * Math.pow(2, attempt), 8000);
+          console.log(`[Auth] Transient error, retrying in ${delay}ms (attempt ${attempt + 1}/4)...`);
+          setTimeout(() => {
+            if (isMounted) fetchUserData(userId, attempt + 1);
+          }, delay);
+          return;
+        }
+
         if (profileRes.error) {
           console.error("Error fetching profile:", profileRes.error);
         }
@@ -61,6 +77,17 @@ export function useAuthRaw() {
       } catch (error) {
         if (!isMounted) return;
         console.error("Error fetching user data:", error);
+        
+        // Retry on network errors
+        if (attempt < 4) {
+          const delay = Math.min(1000 * Math.pow(2, attempt), 8000);
+          console.log(`[Auth] Network error, retrying in ${delay}ms (attempt ${attempt + 1}/4)...`);
+          setTimeout(() => {
+            if (isMounted) fetchUserData(userId, attempt + 1);
+          }, delay);
+          return;
+        }
+        
         setProfile(null);
         setRoles([]);
       } finally {
