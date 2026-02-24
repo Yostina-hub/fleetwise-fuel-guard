@@ -49,23 +49,25 @@ export const usePermissions = () => {
       setSuperAdminOverride(Boolean(data));
     };
 
-    if (!authLoading) {
+    if (user) {
       checkSuperAdmin();
+    } else {
+      setSuperAdminOverride(null);
     }
 
     return () => {
       cancelled = true;
       timeoutIds.forEach((id) => window.clearTimeout(id));
     };
-  }, [authLoading, user, roles]);
+  }, [user, roles]);
 
   useEffect(() => {
-    if (authLoading) {
+    const resolvedSuperAdmin = roles.includes("super_admin") || superAdminOverride === true;
+
+    if (authLoading && !resolvedSuperAdmin) {
       setLoading(true);
       return;
     }
-
-    const resolvedSuperAdmin = roles.includes("super_admin") || superAdminOverride === true;
 
     // Keep loading while we are still resolving fallback admin status
     if (user && roles.length === 0 && superAdminOverride === null) {
