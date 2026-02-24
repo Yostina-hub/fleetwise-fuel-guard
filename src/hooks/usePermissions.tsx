@@ -3,46 +3,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
 export const usePermissions = () => {
-  const { user, roles: userRoles } = useAuth();
-  const [fallbackRoles, setFallbackRoles] = useState<string[]>([]);
+  const { user, roles: userRoles, loading: authLoading } = useAuth();
   const [permissions, setPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const roles = useMemo(() => {
-    if (userRoles.length > 0) return userRoles.map((r) => r.role);
-    return fallbackRoles;
-  }, [userRoles, fallbackRoles]);
-
-  // Resilient fallback: if auth role hydration is temporarily empty, fetch direct roles
-  useEffect(() => {
-    const fetchFallbackRoles = async () => {
-      if (!user) {
-        setFallbackRoles([]);
-        return;
-      }
-
-      if (userRoles.length > 0) {
-        setFallbackRoles([]);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id);
-
-      if (error) {
-        console.error("Error fetching fallback roles:", error);
-        return;
-      }
-
-      setFallbackRoles((data || []).map((row) => row.role));
-    };
-
-    fetchFallbackRoles();
-  }, [user, userRoles]);
+  const roles = useMemo(() => userRoles.map((r) => r.role), [userRoles]);
 
   useEffect(() => {
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
+
     if (!user || roles.length === 0) {
       setPermissions([]);
       setLoading(false);
@@ -51,6 +23,8 @@ export const usePermissions = () => {
 
     const fetchPermissions = async () => {
       try {
+        setLoading(true);
+
         const { data: rolePermissions, error: permsError } = await supabase
           .from("role_permissions")
           .select(`
@@ -76,7 +50,7 @@ export const usePermissions = () => {
     };
 
     fetchPermissions();
-  }, [user, roles]);
+  }, [authLoading, user, roles]);
 
   const hasRole = (role: string) => roles.includes(role);
 
