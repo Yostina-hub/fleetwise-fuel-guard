@@ -226,7 +226,7 @@ export const useVehiclesPaginated = (
   useEffect(() => {
     loadPage(1);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organizationId, searchQuery, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, sortField, sortDirection, vehicleIdFilter]);
+  }, [organizationId, searchQuery, statusFilter, vehicleTypeFilter, fuelTypeFilter, ownershipFilter, sortField, sortDirection, vehicleIdFilter, isViewingAllOrgs]);
 
   // Subscribe to realtime changes with throttling
   useEffect(() => {
