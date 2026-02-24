@@ -39,6 +39,8 @@ export function useAuthRaw() {
       // Ignore stale retries from previous account sessions
       if (activeUserIdRef.current !== userId) return;
 
+      let isRetrying = false;
+
       try {
         if (!initialLoadDone.current) {
           setLoading(true);
@@ -66,6 +68,7 @@ export function useAuthRaw() {
           (rolesRes.error && rolesRes.error.message?.includes("503"));
 
         if (hasTransientError && attempt < 4) {
+          isRetrying = true;
           const delay = Math.min(1000 * Math.pow(2, attempt), 8000);
           console.log(`[Auth] Transient error, retrying in ${delay}ms (attempt ${attempt + 1}/4)...`);
           const timeoutId = window.setTimeout(() => {
@@ -93,6 +96,7 @@ export function useAuthRaw() {
 
         // Retry on network errors
         if (attempt < 4) {
+          isRetrying = true;
           const delay = Math.min(1000 * Math.pow(2, attempt), 8000);
           console.log(`[Auth] Network error, retrying in ${delay}ms (attempt ${attempt + 1}/4)...`);
           const timeoutId = window.setTimeout(() => {
@@ -107,7 +111,8 @@ export function useAuthRaw() {
         setProfile(null);
         setRoles([]);
       } finally {
-        if (isMounted && activeUserIdRef.current === userId) {
+        // Don't finalize loading if we're scheduling a retry
+        if (!isRetrying && isMounted && activeUserIdRef.current === userId) {
           setLoading(false);
           initialLoadDone.current = true;
         }
