@@ -24,11 +24,21 @@ export function useAuthRaw() {
   const [loading, setLoading] = useState(true);
   const initialLoadDone = useRef(false);
   const sessionTrackedRef = useRef<string | null>(null);
+  const retryTimeoutsRef = useRef<number[]>([]);
+  const activeUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
 
+    const clearRetryTimeouts = () => {
+      retryTimeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
+      retryTimeoutsRef.current = [];
+    };
+
     const fetchUserData = async (userId: string, attempt = 0) => {
+      // Ignore stale retries from previous account sessions
+      if (activeUserIdRef.current !== userId) return;
+
       try {
         if (!initialLoadDone.current) {
           setLoading(true);
@@ -46,21 +56,24 @@ export function useAuthRaw() {
             .eq("user_id", userId),
         ]);
 
-        if (!isMounted) return;
+        if (!isMounted || activeUserIdRef.current !== userId) return;
 
         // Retry on transient server errors (503, 502, etc.)
-        const hasTransientError = 
-          (profileRes.error && profileRes.error.message?.includes('upstream')) ||
-          (rolesRes.error && rolesRes.error.message?.includes('upstream')) ||
-          (profileRes.error && profileRes.error.message?.includes('503')) ||
-          (rolesRes.error && rolesRes.error.message?.includes('503'));
+        const hasTransientError =
+          (profileRes.error && profileRes.error.message?.includes("upstream")) ||
+          (rolesRes.error && rolesRes.error.message?.includes("upstream")) ||
+          (profileRes.error && profileRes.error.message?.includes("503")) ||
+          (rolesRes.error && rolesRes.error.message?.includes("503"));
 
         if (hasTransientError && attempt < 4) {
           const delay = Math.min(1000 * Math.pow(2, attempt), 8000);
           console.log(`[Auth] Transient error, retrying in ${delay}ms (attempt ${attempt + 1}/4)...`);
-          setTimeout(() => {
-            if (isMounted) fetchUserData(userId, attempt + 1);
+          const timeoutId = window.setTimeout(() => {
+            if (isMounted && activeUserIdRef.current === userId) {
+              fetchUserData(userId, attempt + 1);
+            }
           }, delay);
+          retryTimeoutsRef.current.push(timeoutId);
           return;
         }
 
@@ -75,23 +88,26 @@ export function useAuthRaw() {
         setProfile(profileRes.data ?? null);
         setRoles((rolesRes.data as UserRole[]) ?? []);
       } catch (error) {
-        if (!isMounted) return;
+        if (!isMounted || activeUserIdRef.current !== userId) return;
         console.error("Error fetching user data:", error);
-        
+
         // Retry on network errors
         if (attempt < 4) {
           const delay = Math.min(1000 * Math.pow(2, attempt), 8000);
           console.log(`[Auth] Network error, retrying in ${delay}ms (attempt ${attempt + 1}/4)...`);
-          setTimeout(() => {
-            if (isMounted) fetchUserData(userId, attempt + 1);
+          const timeoutId = window.setTimeout(() => {
+            if (isMounted && activeUserIdRef.current === userId) {
+              fetchUserData(userId, attempt + 1);
+            }
           }, delay);
+          retryTimeoutsRef.current.push(timeoutId);
           return;
         }
-        
+
         setProfile(null);
         setRoles([]);
       } finally {
-        if (isMounted) {
+        if (isMounted && activeUserIdRef.current === userId) {
           setLoading(false);
           initialLoadDone.current = true;
         }
@@ -101,11 +117,14 @@ export function useAuthRaw() {
     const handleSessionChange = async (nextSession: Session | null, event?: string) => {
       const nextUser = nextSession?.user ?? null;
 
+      clearRetryTimeouts();
+      activeUserIdRef.current = nextUser?.id ?? null;
+
       setSession(nextSession);
       setUser(nextUser);
 
       if (nextUser && nextSession) {
-        if (event === 'SIGNED_IN' && sessionTrackedRef.current !== nextUser.id) {
+        if (event === "SIGNED_IN" && sessionTrackedRef.current !== nextUser.id) {
           sessionTrackedRef.current = nextUser.id;
           trackSession(nextUser.id).catch(console.error);
         }
@@ -131,6 +150,7 @@ export function useAuthRaw() {
 
     return () => {
       isMounted = false;
+      clearRetryTimeouts();
       subscription.unsubscribe();
     };
   }, []);
