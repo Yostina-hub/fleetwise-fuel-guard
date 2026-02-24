@@ -40,6 +40,8 @@ export function useAuthRaw() {
       if (activeUserIdRef.current !== userId) return;
 
       let isRetrying = false;
+      // Max retries for initial load is higher to survive sustained 503s
+      const maxRetries = initialLoadDone.current ? 4 : 10;
 
       try {
         if (!initialLoadDone.current) {
@@ -67,10 +69,10 @@ export function useAuthRaw() {
           (profileRes.error && profileRes.error.message?.includes("503")) ||
           (rolesRes.error && rolesRes.error.message?.includes("503"));
 
-        if (hasTransientError && attempt < 4) {
+        if (hasTransientError && attempt < maxRetries) {
           isRetrying = true;
-          const delay = Math.min(1000 * Math.pow(2, attempt), 8000);
-          console.log(`[Auth] Transient error, retrying in ${delay}ms (attempt ${attempt + 1}/4)...`);
+          const delay = Math.min(1000 * Math.pow(2, attempt), 15000);
+          console.log(`[Auth] Transient error, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})...`);
           const timeoutId = window.setTimeout(() => {
             if (isMounted && activeUserIdRef.current === userId) {
               fetchUserData(userId, attempt + 1);
@@ -88,17 +90,30 @@ export function useAuthRaw() {
           console.error("Error fetching roles:", rolesRes.error);
         }
 
+        const fetchedRoles = (rolesRes.data as UserRole[]) ?? [];
         setProfile(profileRes.data ?? null);
-        setRoles((rolesRes.data as UserRole[]) ?? []);
+        setRoles(fetchedRoles);
+
+        // If we got a user but roles are empty due to errors AND we haven't exhausted background retries,
+        // schedule a background re-fetch to recover super admin UI
+        if (fetchedRoles.length === 0 && rolesRes.error && initialLoadDone.current) {
+          console.log("[Auth] Roles empty due to error, scheduling background re-fetch...");
+          const timeoutId = window.setTimeout(() => {
+            if (isMounted && activeUserIdRef.current === userId) {
+              fetchUserData(userId, 0);
+            }
+          }, 5000);
+          retryTimeoutsRef.current.push(timeoutId);
+        }
       } catch (error) {
         if (!isMounted || activeUserIdRef.current !== userId) return;
         console.error("Error fetching user data:", error);
 
         // Retry on network errors
-        if (attempt < 4) {
+        if (attempt < maxRetries) {
           isRetrying = true;
-          const delay = Math.min(1000 * Math.pow(2, attempt), 8000);
-          console.log(`[Auth] Network error, retrying in ${delay}ms (attempt ${attempt + 1}/4)...`);
+          const delay = Math.min(1000 * Math.pow(2, attempt), 15000);
+          console.log(`[Auth] Network error, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})...`);
           const timeoutId = window.setTimeout(() => {
             if (isMounted && activeUserIdRef.current === userId) {
               fetchUserData(userId, attempt + 1);
