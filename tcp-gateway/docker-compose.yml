@@ -10,9 +10,12 @@ services:
     
     # Environment variables
     environment:
-      - SUPABASE_URL=${SUPABASE_URL:-https://kkmjwmyqakprqdhrlsoz.supabase.co}
-      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtrbWp3bXlxYWtwcnFkaHJsc296Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTc5NDIsImV4cCI6MjA3NjczMzk0Mn0.hcyw7MEssoLz3e09IrJ-aZyepzMsDY98KLnXfjzvuF4}
+      # REQUIRED: PostgreSQL connection string (use Supabase pooler for best results)
+      # Format: postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
+      - DATABASE_URL=${DATABASE_URL}
       - LOG_LEVEL=${LOG_LEVEL:-info}
+      - BATCH_INTERVAL_MS=${BATCH_INTERVAL_MS:-5000}
+      - BATCH_SIZE=${BATCH_SIZE:-50}
       - GT06_PORT=5001
       - TK103_PORT=5013
       - H02_PORT=5023
@@ -32,7 +35,7 @@ services:
       - "5030:5030"   # Queclink
       - "5031:5031"   # Ruptela
       - "5032:5032"   # YTWL Speed Governor
-      # UDP Ports (same as TCP for supported protocols)
+      # UDP Ports
       - "5001:5001/udp"   # GT06 UDP
       - "5013:5013/udp"   # TK103 UDP
       - "5023:5023/udp"   # H02 UDP

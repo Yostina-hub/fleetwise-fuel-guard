@@ -1,4 +1,4 @@
-# GPS Device TCP/UDP Gateway
+# GPS Device TCP/UDP Gateway - Direct DB Write Mode
 # Multi-stage build for minimal image size
 
 FROM node:20-alpine AS base
@@ -6,11 +6,11 @@ FROM node:20-alpine AS base
 # Set working directory
 WORKDIR /app
 
-# Copy package files (if we add dependencies later)
+# Copy package files
 COPY package*.json ./
 
-# Install dependencies (currently none, but structure for future)
-RUN npm ci --only=production 2>/dev/null || echo "No dependencies to install"
+# Install dependencies (pg for PostgreSQL)
+RUN npm ci --only=production
 
 # Copy application code
 COPY gateway.js ./
@@ -39,7 +39,7 @@ EXPOSE 5023/udp
 EXPOSE 8080
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
 
 # Set default environment variables
@@ -52,6 +52,8 @@ ENV TELTONIKA_PORT=5027
 ENV QUECLINK_PORT=5030
 ENV RUPTELA_PORT=5031
 ENV YTWL_PORT=5032
+ENV BATCH_INTERVAL_MS=5000
+ENV BATCH_SIZE=50
 
 # Run the gateway
 CMD ["node", "gateway.js"]
