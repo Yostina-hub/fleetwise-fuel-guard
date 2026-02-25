@@ -124,9 +124,11 @@ const adminItems = [
 
 const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
-  const { signOut, user } = useAuth();
-  const { isSuperAdmin, hasRole: permHasRole } = usePermissions();
-  const isOrgAdmin = permHasRole("org_admin");
+  const { signOut, user, hasRole: authHasRole } = useAuth();
+  const { isSuperAdmin: permIsSuperAdmin, hasRole: permHasRole } = usePermissions();
+  // Use either usePermissions or direct auth role check as fallback for resilience against 503 retries
+  const isSuperAdmin = permIsSuperAdmin || authHasRole("super_admin");
+  const isOrgAdmin = permHasRole("org_admin") || authHasRole("org_admin");
   const { theme } = useTheme();
   const { isCollapsed, toggleSidebar } = useSidebar();
   const isMobile = useIsMobile();
