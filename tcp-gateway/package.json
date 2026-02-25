@@ -1,31 +1,23 @@
 {
   "name": "gps-tcp-gateway",
-  "version": "1.0.0",
-  "description": "TCP/UDP Gateway for GPS tracking devices - forwards to Supabase Edge Functions",
+  "version": "2.0.0",
+  "description": "TCP/UDP Gateway for GPS tracking devices - direct PostgreSQL writes with connection pooling",
   "main": "gateway.js",
   "scripts": {
     "start": "node gateway.js",
     "start:debug": "LOG_LEVEL=debug node gateway.js",
     "docker:build": "docker build -t gps-tcp-gateway .",
-    "docker:run": "docker run -d --name gps-gateway -p 5001:5001 -p 5013:5013 -p 5023:5023 -p 5027:5027 -p 6001:6001/udp -p 6013:6013/udp -p 6023:6023/udp -p 6027:6027/udp -p 8080:8080 gps-tcp-gateway",
+    "docker:run": "docker run -d --name gps-gateway -p 5001:5001 -p 5013:5013 -p 5023:5023 -p 5027:5027 -p 5030:5030 -p 5031:5031 -p 5032:5032 -p 8080:8080 gps-tcp-gateway",
     "docker:stop": "docker stop gps-gateway && docker rm gps-gateway",
     "docker:logs": "docker logs -f gps-gateway",
     "compose:up": "docker-compose up -d",
     "compose:down": "docker-compose down",
     "compose:logs": "docker-compose logs -f"
   },
-  "keywords": [
-    "gps",
-    "tracker",
-    "tcp",
-    "udp",
-    "gateway",
-    "fleet",
-    "telematics",
-    "gt06",
-    "tk103",
-    "h02"
-  ],
+  "dependencies": {
+    "pg": "^8.13.1"
+  },
+  "keywords": ["gps", "tracker", "tcp", "udp", "gateway", "fleet", "telematics", "postgresql"],
   "author": "Fleet Management System",
   "license": "MIT",
   "engines": {
