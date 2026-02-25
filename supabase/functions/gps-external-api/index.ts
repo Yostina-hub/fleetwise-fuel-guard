@@ -133,22 +133,42 @@ const corsHeaders = {
  * - BATCH_TOO_LARGE: Batch contains more than 100 records
  */
 
-// Rate limiting
+// In-memory rate limiter (eliminates 2 DB queries per packet)
+const deviceRateLimits = new Map<string, { count: number; windowStart: number }>();
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 120;
+
+function checkRateLimitInMemory(deviceId: string): { allowed: boolean; remaining: number } {
+  const now = Date.now();
+  const entry = deviceRateLimits.get(deviceId);
+  if (!entry || (now - entry.windowStart) > RATE_LIMIT_WINDOW_MS) {
+    deviceRateLimits.set(deviceId, { count: 1, windowStart: now });
+    if (deviceRateLimits.size > 500) {
+      for (const [key, val] of deviceRateLimits) {
+        if (now - val.windowStart > RATE_LIMIT_WINDOW_MS) deviceRateLimits.delete(key);
+      }
+    }
+    return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1 };
+  }
+  if (entry.count >= RATE_LIMIT_MAX_REQUESTS) {
+    return { allowed: false, remaining: 0 };
+  }
+  entry.count++;
+  return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - entry.count };
+}
 
 // Circuit breaker: stop hammering DB when connection pool is exhausted
 let dbFailureCount = 0;
 let circuitOpenUntil = 0;
-const CIRCUIT_BREAKER_THRESHOLD = 3; // Open after 3 consecutive DB failures
-const CIRCUIT_BREAKER_COOLDOWN_MS = 30 * 1000; // Stay open for 30 seconds
+const CIRCUIT_BREAKER_THRESHOLD = 3;
+const CIRCUIT_BREAKER_COOLDOWN_MS = 30 * 1000;
 
 function checkCircuitBreaker(): boolean {
   if (dbFailureCount >= CIRCUIT_BREAKER_THRESHOLD && Date.now() < circuitOpenUntil) {
-    return false; // Circuit is open — reject immediately
+    return false;
   }
   if (Date.now() >= circuitOpenUntil) {
-    dbFailureCount = 0; // Reset after cooldown
+    dbFailureCount = 0;
   }
   return true;
 }
@@ -165,12 +185,36 @@ function recordDbSuccess() {
   dbFailureCount = 0;
 }
 
-// In-memory cache for unknown IMEIs to prevent repeated DB lookups
-// that cause statement timeouts under load
-const unknownImeiCache = new Map<string, number>(); // IMEI -> timestamp when cached
-const UNKNOWN_IMEI_CACHE_TTL_MS = 5 * 60 * 1000; // Cache "not found" for 5 minutes
+// In-memory cache for unknown IMEIs
+const unknownImeiCache = new Map<string, number>();
+const UNKNOWN_IMEI_CACHE_TTL_MS = 5 * 60 * 1000;
 const knownDeviceCache = new Map<string, { id: string; vehicle_id: string | null; organization_id: string; tracker_model: string | null; cachedAt: number }>();
-const KNOWN_DEVICE_CACHE_TTL_MS = 2 * 60 * 1000; // Cache known devices for 2 minutes
+const KNOWN_DEVICE_CACHE_TTL_MS = 10 * 60 * 1000; // Increased from 2 to 10 minutes
+
+// Heartbeat debounce
+const lastHeartbeatUpdate = new Map<string, number>();
+const HEARTBEAT_DEBOUNCE_MS = 30 * 1000;
+
+// Governor config cache per vehicle
+const governorConfigCache = new Map<string, { config: any; cachedAt: number }>();
+const GOVERNOR_CACHE_TTL_MS = 5 * 60 * 1000;
+
+// Side-effect cooldown maps
+const lastSideEffectRun = new Map<string, number>();
+const SIDE_EFFECT_COOLDOWN_MS = 30 * 1000;
+
+function shouldRunSideEffect(key: string): boolean {
+  const now = Date.now();
+  const last = lastSideEffectRun.get(key);
+  if (last && (now - last) < SIDE_EFFECT_COOLDOWN_MS) return false;
+  lastSideEffectRun.set(key, now);
+  if (lastSideEffectRun.size > 1000) {
+    for (const [k, v] of lastSideEffectRun) {
+      if (now - v > SIDE_EFFECT_COOLDOWN_MS * 2) lastSideEffectRun.delete(k);
+    }
+  }
+  return true;
+}
 
 interface TelemetryRecord {
   imei: string;
@@ -209,42 +253,8 @@ interface ProcessResult {
   processed_at?: string;
 }
 
-// Check rate limit for a device
-async function checkRateLimit(supabase: any, deviceId: string): Promise<{ allowed: boolean; remaining: number }> {
-  const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
-  
-  const { data: rateLimit } = await supabase
-    .from('device_rate_limits')
-    .select('id, request_count, window_start')
-    .eq('device_id', deviceId)
-    .gte('window_start', windowStart)
-    .order('window_start', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (rateLimit) {
-    if (rateLimit.request_count >= RATE_LIMIT_MAX_REQUESTS) {
-      return { allowed: false, remaining: 0 };
-    }
-    
-    await supabase
-      .from('device_rate_limits')
-      .update({ request_count: rateLimit.request_count + 1 })
-      .eq('id', rateLimit.id);
-    
-    return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - rateLimit.request_count - 1 };
-  } else {
-    await supabase
-      .from('device_rate_limits')
-      .insert({
-        device_id: deviceId,
-        window_start: new Date().toISOString(),
-        request_count: 1,
-      });
-    
-    return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1 };
-  }
-}
+// Rate limiting now uses in-memory counters (defined at top of file)
+// DB-based rate limiting removed to eliminate 2 queries per packet
 
 // Validate coordinates
 function validateCoordinates(lat?: number, lng?: number): boolean {
@@ -740,17 +750,24 @@ async function processRecord(supabase: any, record: TelemetryRecord): Promise<Pr
     knownDeviceCache.set(record.imei, device);
   }
 
-  // Check rate limit
-  const rateCheck = await checkRateLimit(supabase, device.id);
+  // In-memory rate limit (no DB queries)
+  const rateCheck = checkRateLimitInMemory(device.id);
   if (!rateCheck.allowed) {
     return { success: false, error: 'Rate limit exceeded (120/min)', code: 'RATE_LIMITED' };
   }
 
-  // Update device heartbeat
-  await supabase.from('devices').update({ 
-    last_heartbeat: processedAt,
-    status: 'active'
-  }).eq('id', device.id);
+  // Debounced heartbeat update (every 30s per device)
+  const now = Date.now();
+  const lastHb = lastHeartbeatUpdate.get(device.id);
+  if (!lastHb || (now - lastHb) > HEARTBEAT_DEBOUNCE_MS) {
+    lastHeartbeatUpdate.set(device.id, now);
+    supabase.from('devices').update({ 
+      last_heartbeat: new Date().toISOString(),
+      status: 'active'
+    }).eq('id', device.id).then(({ error }: any) => {
+      if (error) console.warn('Heartbeat update error:', error);
+    });
+  }
 
   // Determine if this is a status-only update
   const isStatusUpdate = record.event_type && ['login', 'heartbeat', 'alarm'].includes(record.event_type);
@@ -828,15 +845,17 @@ async function processRecord(supabase: any, record: TelemetryRecord): Promise<Pr
   if (device.vehicle_id) {
     const ignitionState = record.ignition ?? record.engine_on ?? false;
     
-    // Detect trip transitions
-    await detectTripTransition(
-      supabase,
-      device.vehicle_id,
-      device.organization_id,
-      ignitionState,
-      record.latitude!,
-      record.longitude!
-    );
+    // Detect trip transitions (debounced)
+    if (shouldRunSideEffect(`trip:${device.vehicle_id}`)) {
+      detectTripTransition(
+        supabase,
+        device.vehicle_id,
+        device.organization_id,
+        ignitionState,
+        record.latitude!,
+        record.longitude!
+      ).catch((e: any) => console.warn('Trip detection error:', e));
+    }
 
     // Convert speed to km/h
     // - Prefer explicit speed_knots when provided
@@ -888,9 +907,9 @@ async function processRecord(supabase: any, record: TelemetryRecord): Promise<Pr
       return { success: false, error: 'Failed to store telemetry', code: 'DB_ERROR' };
     }
 
-    // Detect fuel events (refuel, theft, drain, leak) with GPS coordinates
-    if (record.fuel_level_percent != null) {
-      await detectFuelEvents(
+    // Detect fuel events (debounced, fire-and-forget)
+    if (record.fuel_level_percent != null && shouldRunSideEffect(`fuel:${device.vehicle_id}`)) {
+      detectFuelEvents(
         supabase,
         device.vehicle_id,
         device.organization_id,
@@ -899,32 +918,40 @@ async function processRecord(supabase: any, record: TelemetryRecord): Promise<Pr
         record.longitude!,
         ignitionState,
         speedKmh
-      );
+      ).catch((e: any) => console.warn('Fuel detection error:', e));
     }
 
-    // Check for overspeeding
+    // Check for overspeeding (governor config cached in-memory)
     if (speedKmh > 0) {
-      // Get or create governor config for this vehicle
-      let { data: governorConfig } = await supabase
-        .from('speed_governor_config')
-        .select('max_speed_limit, governor_active')
-        .eq('vehicle_id', device.vehicle_id)
-        .maybeSingle();
-
-      // Auto-create governor config if it doesn't exist
-      if (!governorConfig) {
-        const { data: newConfig } = await supabase
+      let governorConfig: any = null;
+      const cachedGov = governorConfigCache.get(device.vehicle_id!);
+      if (cachedGov && (Date.now() - cachedGov.cachedAt) < GOVERNOR_CACHE_TTL_MS) {
+        governorConfig = cachedGov.config;
+      } else {
+        const { data: govData } = await supabase
           .from('speed_governor_config')
-          .insert({
-            organization_id: device.organization_id,
-            vehicle_id: device.vehicle_id,
-            max_speed_limit: 80,
-            governor_active: true,
-          })
           .select('max_speed_limit, governor_active')
-          .single();
-        governorConfig = newConfig;
-        console.log(`Auto-created governor config for vehicle ${device.vehicle_id}`);
+          .eq('vehicle_id', device.vehicle_id)
+          .maybeSingle();
+
+        if (!govData) {
+          const { data: newConfig } = await supabase
+            .from('speed_governor_config')
+            .insert({
+              organization_id: device.organization_id,
+              vehicle_id: device.vehicle_id,
+              max_speed_limit: 80,
+              governor_active: true,
+            })
+            .select('max_speed_limit, governor_active')
+            .single();
+          governorConfig = newConfig;
+        } else {
+          governorConfig = govData;
+        }
+        if (governorConfig) {
+          governorConfigCache.set(device.vehicle_id!, { config: governorConfig, cachedAt: Date.now() });
+        }
       }
 
       let speedLimit = governorConfig?.max_speed_limit || 80;
@@ -1161,9 +1188,9 @@ async function processRecord(supabase: any, record: TelemetryRecord): Promise<Pr
       }
     }
 
-    // Trigger geofence processing
-    try {
-      await supabase.functions.invoke('process-geofence-events', {
+    // Fire-and-forget geofence processing (debounced)
+    if (shouldRunSideEffect(`geofence:${device.vehicle_id}`)) {
+      supabase.functions.invoke('process-geofence-events', {
         body: {
           vehicle_id: device.vehicle_id,
           lat: record.latitude,
@@ -1171,20 +1198,20 @@ async function processRecord(supabase: any, record: TelemetryRecord): Promise<Pr
           speed_kmh: speedKmh,
           organization_id: device.organization_id,
         },
-      });
-    } catch (e) {
-      console.warn('Geofence processing error:', e);
+      }).catch((e: any) => console.warn('Geofence processing error:', e));
     }
 
-    // Check restricted hours and enforce engine lock if enabled
-    await checkRestrictedHours(
-      supabase,
-      device.vehicle_id,
-      device.organization_id,
-      device.id,
-      record.latitude!,
-      record.longitude!
-    );
+    // Fire-and-forget restricted hours check (debounced)
+    if (shouldRunSideEffect(`restricted:${device.vehicle_id}`)) {
+      checkRestrictedHours(
+        supabase,
+        device.vehicle_id,
+        device.organization_id,
+        device.id,
+        record.latitude!,
+        record.longitude!
+      ).catch((e: any) => console.warn('Restricted hours error:', e));
+    }
   }
 
   console.log(`Telemetry processed for ${record.imei}: lat=${record.latitude}, lng=${record.longitude}`);

@@ -47,6 +47,64 @@ function recordDbSuccess() {
   dbFailureCount = 0;
 }
 
+// ==================== IN-MEMORY CACHES ====================
+// Device IMEI cache (same pattern as gps-external-api)
+const unknownImeiCache = new Map<string, number>();
+const UNKNOWN_IMEI_CACHE_TTL_MS = 5 * 60 * 1000;
+const knownDeviceCache = new Map<string, { id: string; vehicle_id: string | null; organization_id: string; auth_token: string | null; cachedAt: number }>();
+const KNOWN_DEVICE_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+// In-memory rate limiter (eliminates 2 DB queries per packet)
+const deviceRateLimits = new Map<string, { count: number; windowStart: number }>();
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 120;
+
+function checkRateLimitInMemory(deviceId: string): { allowed: boolean; remaining: number } {
+  const now = Date.now();
+  const entry = deviceRateLimits.get(deviceId);
+  if (!entry || (now - entry.windowStart) > RATE_LIMIT_WINDOW_MS) {
+    deviceRateLimits.set(deviceId, { count: 1, windowStart: now });
+    // Periodic cleanup
+    if (deviceRateLimits.size > 500) {
+      for (const [key, val] of deviceRateLimits) {
+        if (now - val.windowStart > RATE_LIMIT_WINDOW_MS) deviceRateLimits.delete(key);
+      }
+    }
+    return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1 };
+  }
+  if (entry.count >= RATE_LIMIT_MAX_REQUESTS) {
+    return { allowed: false, remaining: 0 };
+  }
+  entry.count++;
+  return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - entry.count };
+}
+
+// Heartbeat debounce (skip DB update if updated recently)
+const lastHeartbeatUpdate = new Map<string, number>();
+const HEARTBEAT_DEBOUNCE_MS = 30 * 1000; // Only update heartbeat every 30s per device
+
+// Governor config cache per vehicle
+const governorConfigCache = new Map<string, { config: any; cachedAt: number }>();
+const GOVERNOR_CACHE_TTL_MS = 5 * 60 * 1000;
+
+// Side-effect cooldown maps (avoid duplicate DB checks)
+const lastSideEffectRun = new Map<string, number>();
+const SIDE_EFFECT_COOLDOWN_MS = 30 * 1000; // Run side effects at most once per 30s per vehicle
+
+function shouldRunSideEffect(key: string): boolean {
+  const now = Date.now();
+  const last = lastSideEffectRun.get(key);
+  if (last && (now - last) < SIDE_EFFECT_COOLDOWN_MS) return false;
+  lastSideEffectRun.set(key, now);
+  // Periodic cleanup
+  if (lastSideEffectRun.size > 1000) {
+    for (const [k, v] of lastSideEffectRun) {
+      if (now - v > SIDE_EFFECT_COOLDOWN_MS * 2) lastSideEffectRun.delete(k);
+    }
+  }
+  return true;
+}
+
 // ==================== CRC/Checksum Validation Functions ====================
 
 // CRC-16 X.25 (used by GT06 protocol)
@@ -517,55 +575,8 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
   return Math.round(R * c * 100) / 100; // Round to 2 decimal places
 }
 
-// Rate limiting configuration
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
-const RATE_LIMIT_MAX_REQUESTS = 120; // Max 120 requests per minute per device
-
-// Check and update rate limit for a device
-async function checkRateLimit(supabase: any, deviceId: string): Promise<{ allowed: boolean; remaining: number }> {
-  const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
-  
-  // Get current request count for this device in the window
-  const { data: rateLimit, error: fetchError } = await supabase
-    .from('device_rate_limits')
-    .select('id, request_count, window_start')
-    .eq('device_id', deviceId)
-    .gte('window_start', windowStart)
-    .order('window_start', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (fetchError) {
-    console.warn('Error checking rate limit:', fetchError);
-    return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS }; // Allow on error
-  }
-
-  if (rateLimit) {
-    // Check if within limit
-    if (rateLimit.request_count >= RATE_LIMIT_MAX_REQUESTS) {
-      return { allowed: false, remaining: 0 };
-    }
-    
-    // Increment count
-    await supabase
-      .from('device_rate_limits')
-      .update({ request_count: rateLimit.request_count + 1 })
-      .eq('id', rateLimit.id);
-    
-    return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - rateLimit.request_count - 1 };
-  } else {
-    // Create new rate limit record
-    await supabase
-      .from('device_rate_limits')
-      .insert({
-        device_id: deviceId,
-        window_start: new Date().toISOString(),
-        request_count: 1,
-      });
-    
-    return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1 };
-  }
-}
+// Rate limiting now uses in-memory counters (defined at top of file)
+// DB-based rate limiting removed to eliminate 2 queries per packet
 
 // ==================== Fuel Event Detection ====================
 // Thresholds for fuel change detection
@@ -916,39 +927,50 @@ async function processStatusUpdate(
     return { error: 'Missing required field: imei', status: 400 };
   }
 
-  // Find device by IMEI
+  // Find device by IMEI (with in-memory cache)
   if (!checkCircuitBreaker()) {
     return { error: 'Database temporarily unavailable (circuit breaker open)', status: 503 };
   }
 
-  const { data: device, error: deviceError } = await supabase
-    .from('devices')
-    .select('id, vehicle_id, organization_id')
-    .eq('imei', imei)
-    .maybeSingle();
-
-  if (deviceError) {
-    console.error('DB error looking up device for status update:', imei, deviceError.message || deviceError);
-    recordDbFailure();
-    return { error: 'Temporary lookup failure', status: 503 };
-  }
-  recordDbSuccess();
-  if (!device) {
-    console.log('Device not found for status update:', imei);
+  // Check in-memory cache for unknown IMEIs
+  const cachedUnknown = unknownImeiCache.get(imei);
+  if (cachedUnknown && (Date.now() - cachedUnknown) < UNKNOWN_IMEI_CACHE_TTL_MS) {
     return { error: 'Device not found with IMEI: ' + imei, status: 404 };
   }
 
-  // Update device last_heartbeat and status
-  const { error: heartbeatError } = await supabase
-    .from('devices')
-    .update({ 
+  let device = knownDeviceCache.get(imei);
+  if (!device || (Date.now() - device.cachedAt) > KNOWN_DEVICE_CACHE_TTL_MS) {
+    const { data: deviceData, error: deviceError } = await supabase
+      .from('devices')
+      .select('id, vehicle_id, organization_id, auth_token')
+      .eq('imei', imei)
+      .maybeSingle();
+
+    if (deviceError) {
+      console.error('DB error looking up device for status update:', imei, deviceError.message || deviceError);
+      recordDbFailure();
+      return { error: 'Temporary lookup failure', status: 503 };
+    }
+    recordDbSuccess();
+    if (!deviceData) {
+      unknownImeiCache.set(imei, Date.now());
+      return { error: 'Device not found with IMEI: ' + imei, status: 404 };
+    }
+    device = { ...deviceData, cachedAt: Date.now() };
+    knownDeviceCache.set(imei, device);
+  }
+
+  // Debounced heartbeat update
+  const now = Date.now();
+  const lastHb = lastHeartbeatUpdate.get(device.id);
+  if (!lastHb || (now - lastHb) > HEARTBEAT_DEBOUNCE_MS) {
+    lastHeartbeatUpdate.set(device.id, now);
+    supabase.from('devices').update({ 
       last_heartbeat: new Date().toISOString(),
       status: 'active'
-    })
-    .eq('id', device.id);
-
-  if (heartbeatError) {
-    console.warn('Error updating device heartbeat:', heartbeatError);
+    }).eq('id', device.id).then(({ error }: any) => {
+      if (error) console.warn('Error updating device heartbeat:', error);
+    });
   }
 
   // Log raw telemetry for debugging
@@ -1054,28 +1076,48 @@ async function processGPSData(
     return { error: 'Database temporarily unavailable (circuit breaker open)', status: 503 };
   }
 
-  // Find device by IMEI (optionally verify auth token)
-  let deviceQuery = supabase
-    .from('devices')
-    .select('id, vehicle_id, organization_id, auth_token')
-    .eq('imei', imei);
-
-  const { data: device, error: deviceError } = await deviceQuery.single();
-
-  if (deviceError) {
-    console.error('DB error looking up device:', imei, deviceError.message || deviceError);
-    recordDbFailure();
-    return { error: 'Temporary lookup failure', status: 503 };
-  }
-  recordDbSuccess();
-  if (!device) {
-    console.error('Device not found:', imei);
+  // Check in-memory cache for unknown IMEIs
+  const cachedUnknown = unknownImeiCache.get(imei);
+  if (cachedUnknown && (Date.now() - cachedUnknown) < UNKNOWN_IMEI_CACHE_TTL_MS) {
     return { error: 'Device not found with IMEI: ' + imei, status: 404 };
+  }
+
+  // Check in-memory cache for known devices
+  let device = knownDeviceCache.get(imei);
+  if (!device || (Date.now() - device.cachedAt) > KNOWN_DEVICE_CACHE_TTL_MS) {
+    // Find device by IMEI from DB
+    const { data: deviceData, error: deviceError } = await supabase
+      .from('devices')
+      .select('id, vehicle_id, organization_id, auth_token')
+      .eq('imei', imei)
+      .maybeSingle();
+
+    if (deviceError) {
+      console.error('DB error looking up device:', imei, deviceError.message || deviceError);
+      recordDbFailure();
+      // Don't cache transient errors
+      return { error: 'Temporary lookup failure', status: 503 };
+    }
+    recordDbSuccess();
+
+    if (!deviceData) {
+      // Confirmed not found — safe to cache
+      unknownImeiCache.set(imei, Date.now());
+      if (unknownImeiCache.size > 500) {
+        const now = Date.now();
+        for (const [key, ts] of unknownImeiCache) {
+          if (now - ts > UNKNOWN_IMEI_CACHE_TTL_MS) unknownImeiCache.delete(key);
+        }
+      }
+      return { error: 'Device not found with IMEI: ' + imei, status: 404 };
+    }
+
+    device = { ...deviceData, cachedAt: Date.now() };
+    knownDeviceCache.set(imei, device);
   }
 
   // DRY RUN MODE - just validate and return without database writes
   if (dry_run) {
-    console.log('Dry run test for device:', imei);
     return {
       success: true,
       dry_run: true,
@@ -1088,14 +1130,12 @@ async function processGPSData(
 
   // Verify auth token if provided and device has one configured
   if (device.auth_token && deviceToken && device.auth_token !== deviceToken) {
-    console.error('Invalid device token for IMEI:', imei);
     return { error: 'Invalid device authentication token', status: 401 };
   }
 
-  // Check rate limit
-  const rateCheck = await checkRateLimit(supabase, device.id);
+  // In-memory rate limit (no DB queries)
+  const rateCheck = checkRateLimitInMemory(device.id);
   if (!rateCheck.allowed) {
-    console.warn('Rate limit exceeded for device:', imei);
     return { 
       error: 'Rate limit exceeded. Max 120 requests per minute.', 
       status: 429,
@@ -1103,34 +1143,31 @@ async function processGPSData(
     };
   }
 
-  // Update device last_heartbeat
-  const { error: heartbeatError } = await supabase
-    .from('devices')
-    .update({ 
+  // Debounced heartbeat update (every 30s per device instead of every packet)
+  const now = Date.now();
+  const lastHb = lastHeartbeatUpdate.get(device.id);
+  if (!lastHb || (now - lastHb) > HEARTBEAT_DEBOUNCE_MS) {
+    lastHeartbeatUpdate.set(device.id, now);
+    // Fire-and-forget heartbeat update
+    supabase.from('devices').update({ 
       last_heartbeat: new Date().toISOString(),
       status: 'active'
-    })
-    .eq('id', device.id);
-
-  if (heartbeatError) {
-    console.warn('Error updating device heartbeat:', heartbeatError);
-  }
-
-  // Log raw telemetry for debugging
-  const { error: rawLogError } = await supabase
-    .from('telemetry_raw')
-    .insert({
-      organization_id: device.organization_id,
-      device_id: device.id,
-      protocol: protocol,
-      raw_hex: rawData.substring(0, 1000), // Limit to 1000 chars
-      parsed_payload: data,
-      processing_status: 'processed',
+    }).eq('id', device.id).then(({ error }: any) => {
+      if (error) console.warn('Error updating device heartbeat:', error);
     });
-
-  if (rawLogError) {
-    console.warn('Error logging raw telemetry:', rawLogError);
   }
+
+  // Fire-and-forget raw telemetry logging (non-blocking)
+  supabase.from('telemetry_raw').insert({
+    organization_id: device.organization_id,
+    device_id: device.id,
+    protocol: protocol,
+    raw_hex: rawData.substring(0, 1000),
+    parsed_payload: data,
+    processing_status: 'processed',
+  }).then(({ error }: any) => {
+    if (error) console.warn('Error logging raw telemetry:', error);
+  });
 
   // Validate CRC if enabled for this protocol
   const crcType = getDefaultCRCType(protocol);
@@ -1154,15 +1191,17 @@ async function processGPSData(
     const latValue = parseFloat(lat);
     const lngValue = parseFloat(lng);
     
-    // Detect trip start/end based on ignition
-    await detectTripTransition(
-      supabase,
-      device.vehicle_id,
-      device.organization_id,
-      ignitionState,
-      latValue,
-      lngValue
-    );
+    // Detect trip start/end based on ignition (debounced)
+    if (shouldRunSideEffect(`trip:${device.vehicle_id}`)) {
+      detectTripTransition(
+        supabase,
+        device.vehicle_id,
+        device.organization_id,
+        ignitionState,
+        latValue,
+        lngValue
+      ).catch((e: any) => console.warn('Trip detection error:', e));
+    }
 
     // Extract extended telemetry fields
     const {
@@ -1225,10 +1264,10 @@ async function processGPSData(
       return { error: 'Failed to store telemetry data', details: telemetryError.message, status: 500 };
     }
 
-    // Detect fuel events (refuel, theft, drain, leak) with GPS coordinates
+    // Detect fuel events (debounced, fire-and-forget)
     const currentFuelLevel = fuel ? parseFloat(fuel) : null;
-    if (currentFuelLevel != null) {
-      await detectFuelEvents(
+    if (currentFuelLevel != null && shouldRunSideEffect(`fuel:${device.vehicle_id}`)) {
+      detectFuelEvents(
         supabase,
         device.vehicle_id,
         device.organization_id,
@@ -1237,30 +1276,39 @@ async function processGPSData(
         lngValue,
         ignitionState,
         speedValue
-      );
+      ).catch((e: any) => console.warn('Fuel detection error:', e));
     }
 
-    // Get or create speed governor config for this vehicle
-    let { data: governorConfig } = await supabase
-      .from('speed_governor_config')
-      .select('max_speed_limit, governor_active')
-      .eq('vehicle_id', device.vehicle_id)
-      .maybeSingle();
-
-    // Auto-create governor config if it doesn't exist
-    if (!governorConfig) {
-      const { data: newConfig } = await supabase
+    // Get governor config (cached in-memory)
+    let governorConfig: any = null;
+    const cachedGov = governorConfigCache.get(device.vehicle_id);
+    if (cachedGov && (Date.now() - cachedGov.cachedAt) < GOVERNOR_CACHE_TTL_MS) {
+      governorConfig = cachedGov.config;
+    } else {
+      const { data: govData } = await supabase
         .from('speed_governor_config')
-        .insert({
-          organization_id: device.organization_id,
-          vehicle_id: device.vehicle_id,
-          max_speed_limit: 80,
-          governor_active: true,
-        })
         .select('max_speed_limit, governor_active')
-        .single();
-      governorConfig = newConfig;
-      console.log(`Auto-created governor config for vehicle ${device.vehicle_id}`);
+        .eq('vehicle_id', device.vehicle_id)
+        .maybeSingle();
+
+      if (!govData) {
+        const { data: newConfig } = await supabase
+          .from('speed_governor_config')
+          .insert({
+            organization_id: device.organization_id,
+            vehicle_id: device.vehicle_id,
+            max_speed_limit: 80,
+            governor_active: true,
+          })
+          .select('max_speed_limit, governor_active')
+          .single();
+        governorConfig = newConfig;
+      } else {
+        governorConfig = govData;
+      }
+      if (governorConfig) {
+        governorConfigCache.set(device.vehicle_id, { config: governorConfig, cachedAt: Date.now() });
+      }
     }
 
     let speedLimit = governorConfig?.max_speed_limit || 80;
@@ -1498,9 +1546,9 @@ async function processGPSData(
       }
     }
 
-    // Trigger geofence processing
-    try {
-      await supabase.functions.invoke('process-geofence-events', {
+    // Fire-and-forget geofence processing (debounced)
+    if (shouldRunSideEffect(`geofence:${device.vehicle_id}`)) {
+      supabase.functions.invoke('process-geofence-events', {
         body: {
           vehicle_id: device.vehicle_id,
           lat: latValue,
@@ -1508,20 +1556,20 @@ async function processGPSData(
           speed_kmh: speedValue,
           organization_id: device.organization_id,
         },
-      });
-    } catch (geofenceError) {
-      console.error('Error processing geofence events:', geofenceError);
+      }).catch((e: any) => console.warn('Geofence processing error:', e));
     }
 
-    // Check restricted hours and enforce engine lock if enabled
-    await checkRestrictedHours(
-      supabase,
-      device.vehicle_id,
-      device.organization_id,
-      device.id,
-      latValue,
-      lngValue
-    );
+    // Fire-and-forget restricted hours check (debounced)
+    if (shouldRunSideEffect(`restricted:${device.vehicle_id}`)) {
+      checkRestrictedHours(
+        supabase,
+        device.vehicle_id,
+        device.organization_id,
+        device.id,
+        latValue,
+        lngValue
+      ).catch((e: any) => console.warn('Restricted hours error:', e));
+    }
   }
 
   return { 
