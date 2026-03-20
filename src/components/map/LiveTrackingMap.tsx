@@ -78,7 +78,7 @@ const map = useRef<mapboxgl.Map | null>(null);
 const markers = useRef<Map<string, mapboxgl.Marker>>(new Map());
 const previousPositions = useRef<Map<string, { lng: number; lat: number }>>(new Map());
 const resizeObserver = useRef<ResizeObserver | null>(null);
-const addressFetchTimeouts = useRef<Map<string, NodeJS.Timeout>>(new Map());
+const addressFetchTimeouts = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 const initialBoundsFitted = useRef(false);
 const trailSourcesAdded = useRef<Set<string>>(new Set());
 const trailAnimationMarkers = useRef<Map<string, mapboxgl.Marker>>(new Map());
@@ -1006,7 +1006,7 @@ return () => {
           anchor: 'bottom'
         });
 
-        let hideTimeout: NodeJS.Timeout | null = null;
+        let hideTimeout: ReturnType<typeof setTimeout> | null = null;
         let isHoveringPopup = false;
 
         const showPopup = () => {

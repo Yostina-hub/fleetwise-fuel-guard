@@ -75,7 +75,7 @@ export const useDrivers = () => {
     fetchDrivers();
 
     // Subscribe to realtime changes with debouncing
-    let debounceTimer: NodeJS.Timeout;
+    let debounceTimer: ReturnType<typeof setTimeout>;
 
     const channel = supabase
       .channel(`drivers-all-${organizationId.slice(0, 8)}`)

@@ -44,8 +44,8 @@ export const useFuelDepots = () => {
   const [dispensingLogs, setDispensingLogs] = useState<FuelDepotDispensing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const depotsDebounceRef = useRef<NodeJS.Timeout | null>(null);
-  const dispensingDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const depotsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dispensingDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef(true);
 
   const fetchDepots = useCallback(async () => {

@@ -207,7 +207,7 @@ export const useExecutiveMetrics = (): ExecutiveMetricsResult => {
   useEffect(() => {
     if (!organizationId) return;
 
-    let debounceTimer: NodeJS.Timeout;
+    let debounceTimer: ReturnType<typeof setTimeout>;
     const debouncedRefetch = () => {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {

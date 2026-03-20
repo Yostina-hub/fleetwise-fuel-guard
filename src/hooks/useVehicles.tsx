@@ -63,8 +63,8 @@ export const useVehicles = (skip = false) => {
     }
 
     let isMounted = true;
-    let debounceTimer: NodeJS.Timeout;
-    let retryTimer: NodeJS.Timeout;
+    let debounceTimer: ReturnType<typeof setTimeout>;
+    let retryTimer: ReturnType<typeof setTimeout>;
 
     const fetchVehicles = async (attempt = 0) => {
       try {

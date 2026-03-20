@@ -232,7 +232,7 @@ export const useVehiclesPaginated = (
   useEffect(() => {
     if (!organizationId && !isViewingAllOrgs) return;
 
-    let debounceTimer: NodeJS.Timeout;
+    let debounceTimer: ReturnType<typeof setTimeout>;
 
     const channelName = isViewingAllOrgs ? 'vehicles-paginated-all' : `vehicles-paginated-${organizationId?.slice(0, 8)}`;
     const channel = supabase

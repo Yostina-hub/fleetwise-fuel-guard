@@ -54,7 +54,7 @@ export const useTripMetrics = (dateRange?: DateRange) => {
   useEffect(() => {
     if (!organizationId) return;
 
-    let debounceTimer: NodeJS.Timeout;
+    let debounceTimer: ReturnType<typeof setTimeout>;
     const refetchDebounced = () => {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
