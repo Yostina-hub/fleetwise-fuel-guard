@@ -1,7 +1,8 @@
-import { ReactNode } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { PageLoader } from "@/components/PageLoader";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -10,6 +11,8 @@ interface ProtectedRouteProps {
   requiredRole?: string;
   requiredRoles?: string[];
 }
+
+const LOADING_TIMEOUT_MS = 10000; // 10 seconds max loading
 
 const ProtectedRoute = ({
   children,
@@ -20,12 +23,27 @@ const ProtectedRoute = ({
 }: ProtectedRouteProps) => {
   const { user, loading: authLoading } = useAuthContext();
   const { hasPermission, hasRole, loading: permLoading } = usePermissions();
+  const [timedOut, setTimedOut] = useState(false);
 
-  if (authLoading || permLoading) {
-    return null; // Suspense fallback handles the loading UI
+  const isLoading = authLoading || permLoading;
+
+  // Timeout fallback to prevent infinite blank screen
+  useEffect(() => {
+    if (!isLoading) {
+      setTimedOut(false);
+      return;
+    }
+
+    const timer = setTimeout(() => setTimedOut(true), LOADING_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [isLoading]);
+
+  if (isLoading && !timedOut) {
+    return <PageLoader />;
   }
 
-  if (requireAuth && !user) {
+  // If timed out and still no user, redirect to auth
+  if ((timedOut && !user) || (requireAuth && !user)) {
     return <Navigate to="/auth" replace />;
   }
 
