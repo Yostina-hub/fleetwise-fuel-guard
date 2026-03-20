@@ -126,7 +126,7 @@ export const useMaintenanceSchedules = (vehicleId?: string) => {
     fetchSchedules();
     fetchInspections();
 
-    let debounceTimer: NodeJS.Timeout;
+    let debounceTimer: ReturnType<typeof setTimeout>;
     let schedulesChannel: ReturnType<typeof supabase.channel> | null = null;
     let inspectionsChannel: ReturnType<typeof supabase.channel> | null = null;
 

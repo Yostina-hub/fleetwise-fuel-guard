@@ -132,7 +132,7 @@ export const useFleetStats = (options: UseFleetStatsOptions = {}) => {
   useEffect(() => {
     if (!organizationId) return;
 
-    let debounceTimer: NodeJS.Timeout;
+    let debounceTimer: ReturnType<typeof setTimeout>;
 
     const vehicleChannel = supabase
       .channel(`fleet-stats-vehicles-${organizationId.slice(0, 8)}`)

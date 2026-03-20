@@ -218,7 +218,7 @@ export const useDriversPaginated = (
   useEffect(() => {
     if (!organizationId) return;
 
-    let debounceTimer: NodeJS.Timeout;
+    let debounceTimer: ReturnType<typeof setTimeout>;
 
     const channel = supabase
       .channel(`drivers-paginated-${organizationId.slice(0, 8)}`)

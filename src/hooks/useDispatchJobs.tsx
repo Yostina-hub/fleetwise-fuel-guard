@@ -108,7 +108,7 @@ export const useDispatchJobs = (filters?: {
 
     fetchJobs();
 
-    let debounceTimer: NodeJS.Timeout;
+    let debounceTimer: ReturnType<typeof setTimeout>;
 
     // Subscribe to realtime changes
     const channel = supabase

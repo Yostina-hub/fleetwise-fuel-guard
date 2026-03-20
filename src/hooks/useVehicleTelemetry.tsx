@@ -43,7 +43,7 @@ export const useVehicleTelemetry = () => {
     }
 
     let isMounted = true;
-    let throttleTimer: NodeJS.Timeout;
+    let throttleTimer: ReturnType<typeof setTimeout>;
 
     const fetchTelemetry = async (showLoading = true) => {
       try {

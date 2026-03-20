@@ -99,7 +99,7 @@ const RouteHistory = () => {
   const [showEventMarkers, setShowEventMarkers] = useState(true);
   const [speedLimit, setSpeedLimit] = useState(100); // Configurable speed limit
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoplayTriggered = useRef(false);
 
   // Callback to capture map instance - triggers re-render

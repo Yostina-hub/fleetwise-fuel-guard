@@ -91,7 +91,7 @@ export const useDevices = () => {
     const channelName = isViewingAllOrgs
       ? "devices-hook-all"
       : `devices-hook-${organizationId?.slice(0, 8)}`;
-    let debounceTimeout: NodeJS.Timeout;
+    let debounceTimeout: ReturnType<typeof setTimeout>;
 
     const channel = supabase
       .channel(channelName)

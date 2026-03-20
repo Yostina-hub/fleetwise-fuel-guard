@@ -90,7 +90,7 @@ export const useDriverStats = () => {
     fetchStats();
 
     // Real-time subscription with debouncing
-    let debounceTimer: NodeJS.Timeout;
+    let debounceTimer: ReturnType<typeof setTimeout>;
 
     const channel = supabase
       .channel(`driver-stats-${organizationId.slice(0, 8)}`)

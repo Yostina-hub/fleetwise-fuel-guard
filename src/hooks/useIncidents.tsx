@@ -72,7 +72,7 @@ export const useIncidents = (filters?: {
 
     fetchIncidents();
 
-    let debounceTimer: NodeJS.Timeout;
+    let debounceTimer: ReturnType<typeof setTimeout>;
 
     // Subscribe to realtime changes
     const channel = supabase

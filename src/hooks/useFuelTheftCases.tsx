@@ -39,7 +39,7 @@ export const useFuelTheftCases = (filters?: {
   const [cases, setCases] = useState<FuelTheftCase[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef(true);
 
   const fetchCases = useCallback(async () => {

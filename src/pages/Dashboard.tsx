@@ -126,7 +126,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (!organizationId) return;
 
-    let debounceTimer: NodeJS.Timeout;
+    let debounceTimer: ReturnType<typeof setTimeout>;
     const refetchAll = () => {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
