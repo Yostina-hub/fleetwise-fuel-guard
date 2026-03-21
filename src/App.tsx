@@ -108,6 +108,7 @@ const App = () => {
                         <Route path="/config" element={<ProtectedRoute requiredRole="super_admin"><SystemConfig /></ProtectedRoute>} />
                         <Route path="/devices" element={<ProtectedRoute><DeviceIntegration /></ProtectedRoute>} />
                         <Route path="/workflow-builder" element={<ProtectedRoute><WorkflowBuilder /></ProtectedRoute>} />
+                        <Route path="/trip-management" element={<ProtectedRoute><TripManagement /></ProtectedRoute>} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />
                       </Routes>
