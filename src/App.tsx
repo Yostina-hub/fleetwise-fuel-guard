@@ -45,6 +45,7 @@ const FleetScheduling = lazy(() => import("./pages/FleetScheduling"));
 const Dispatch = lazy(() => import("./pages/Dispatch"));
 const DriverApp = lazy(() => import("./pages/DriverApp"));
 const WorkflowBuilder = lazy(() => import("./pages/WorkflowBuilder"));
+const TripManagement = lazy(() => import("./pages/TripManagement"));
 const Organizations = lazy(() => import("./pages/Organizations"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
