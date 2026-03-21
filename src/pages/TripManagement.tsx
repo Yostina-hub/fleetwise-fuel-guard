@@ -3,7 +3,8 @@ import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
-  Kanban, List, Download, Plus, LayoutGrid, Search, SlidersHorizontal 
+  Kanban, List, Download, Plus, LayoutGrid, Search, SlidersHorizontal,
+  CheckCircle, XCircle
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useTripRequests } from "@/hooks/useTripRequests";
