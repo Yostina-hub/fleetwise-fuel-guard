@@ -29,6 +29,7 @@ import { TablePagination } from "@/components/reports/TablePagination";
 import AlertsQuickStats from "@/components/alerts/AlertsQuickStats";
 import AlertsQuickActions from "@/components/alerts/AlertsQuickActions";
 import AlertsInsightsCard from "@/components/alerts/AlertsInsightsCard";
+import { WorkflowAutomationPanel } from "@/components/workflow/WorkflowAutomationPanel";
 import AlertsTrendChart from "@/components/alerts/AlertsTrendChart";
 import { 
   AlertTriangle, 
