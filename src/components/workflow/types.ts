@@ -8,7 +8,9 @@ export type NodeCategory =
   | "fleet"
   | "notifications"
   | "data"
-  | "timing";
+  | "timing"
+  | "sensors"
+  | "safety_hardware";
 
 // Custom node data types
 export interface WorkflowNodeData {
