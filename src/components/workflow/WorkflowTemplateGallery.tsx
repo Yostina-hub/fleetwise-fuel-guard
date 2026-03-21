@@ -16,6 +16,9 @@ import {
   CheckCircle,
   Truck,
   AlertTriangle,
+  Thermometer,
+  Zap,
+  Battery,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -34,6 +37,9 @@ const CATEGORY_CONFIG: Record<string, { icon: any; color: string; bg: string }> 
   compliance: { icon: CheckCircle, color: "text-purple-500", bg: "bg-purple-500/10" },
   operations: { icon: Truck, color: "text-emerald-500", bg: "bg-emerald-500/10" },
   alerts: { icon: AlertTriangle, color: "text-orange-500", bg: "bg-orange-500/10" },
+  cold_chain: { icon: Thermometer, color: "text-cyan-500", bg: "bg-cyan-500/10" },
+  sensors: { icon: Zap, color: "text-teal-500", bg: "bg-teal-500/10" },
+  ev_charging: { icon: Battery, color: "text-green-500", bg: "bg-green-500/10" },
 };
 
 const DIFFICULTY_CONFIG: Record<string, { color: string }> = {
