@@ -18,6 +18,7 @@ import ApprovedFuelStationsTab from "@/components/fuel/ApprovedFuelStationsTab";
 import FuelQuickStats from "@/components/fuel/FuelQuickStats";
 import FuelInsightsCard from "@/components/fuel/FuelInsightsCard";
 import FuelQuickActions from "@/components/fuel/FuelQuickActions";
+import { WorkflowAutomationPanel } from "@/components/workflow/WorkflowAutomationPanel";
 import FuelTrendChart from "@/components/fuel/FuelTrendChart";
 import IdleTimeImpactCard from "@/components/fuel/IdleTimeImpactCard";
 import { FuelPageContext } from "@/contexts/FuelPageContext";
