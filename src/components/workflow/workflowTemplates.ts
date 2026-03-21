@@ -4,7 +4,7 @@ export interface WorkflowTemplate {
   id: string;
   name: string;
   description: string;
-  category: "safety" | "maintenance" | "fuel" | "compliance" | "operations" | "alerts";
+  category: "safety" | "maintenance" | "fuel" | "compliance" | "operations" | "alerts" | "cold_chain" | "sensors" | "ev_charging";
   icon: string;
   difficulty: "beginner" | "intermediate" | "advanced";
   estimatedSavings: string;
@@ -14,7 +14,9 @@ export interface WorkflowTemplate {
 }
 
 const TEMPLATES: WorkflowTemplate[] = [
-  // 1. Overspeed Alert & Driver Coaching
+  // ═══════════════════════════════════════════════════════════════
+  // 1. OVERSPEED ALERT & DRIVER COACHING
+  // ═══════════════════════════════════════════════════════════════
   {
     id: "tpl_overspeed_coaching",
     name: "Overspeed Alert & Driver Coaching",
@@ -43,7 +45,602 @@ const TEMPLATES: WorkflowTemplate[] = [
     ],
   },
 
-  // 2. Predictive Maintenance Scheduler
+  // ═══════════════════════════════════════════════════════════════
+  // 2. DALASI PANIC BUTTON + DRIVER HANDOVER (1:1 & 1:Many Auth)
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "tpl_driver_handover_auth",
+    name: "Driver Handover & Panic Authorization",
+    description: "Complete driver shift handover with RFID/iButton 1:1 authentication, vehicle condition checklist, one-to-many fleet broadcast on panic, and authorized handoff logging.",
+    category: "operations",
+    icon: "🤝",
+    difficulty: "advanced",
+    estimatedSavings: "~90% unauthorized use prevention",
+    tags: ["handover", "RFID", "panic", "authentication", "authorization", "one-to-many", "shift-change"],
+    nodes: [
+      { id: "t1", type: "trigger", position: { x: 400, y: 50 }, data: { label: "RFID Tag Scanned", description: "Driver scans RFID/iButton to start shift", icon: "🪪", category: "triggers", nodeType: "trigger_sensor", config: { sensorType: "rfid_scan" }, status: "idle", isConfigured: true } },
+      { id: "a1", type: "action", position: { x: 400, y: 200 }, data: { label: "Verify Driver Identity", description: "1:1 match RFID tag to authorized driver database", icon: "🪪", category: "safety_hardware", nodeType: "hw_rfid", config: { mode: "one_to_one", table: "drivers" }, status: "idle", isConfigured: true } },
+      { id: "c1", type: "condition", position: { x: 400, y: 370 }, data: { label: "Driver Authorized?", description: "Is this driver authorized for this vehicle?", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "auth.match", operator: "equals", rightOperand: "true" }, status: "idle", isConfigured: true } },
+      { id: "a2", type: "action", position: { x: 150, y: 540 }, data: { label: "Log Previous Driver Out", description: "End shift for outgoing driver, record odometer/fuel", icon: "📋", category: "data", nodeType: "data_log_history", config: { table: "driver_handovers", action: "checkout" }, status: "idle", isConfigured: true } },
+      { id: "a3", type: "action", position: { x: 150, y: 700 }, data: { label: "Vehicle Condition Check", description: "Auto-capture: fuel level, odometer, damage photos", icon: "🚛", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "condition_snapshot" }, status: "idle", isConfigured: true } },
+      { id: "a4", type: "action", position: { x: 150, y: 860 }, data: { label: "Enable Engine Start", description: "Unlock immobilizer for authorized driver", icon: "🔓", category: "fleet", nodeType: "fleet_immobilize", config: { action: "unlock" }, status: "idle", isConfigured: true } },
+      { id: "a5", type: "action", position: { x: 150, y: 1020 }, data: { label: "Notify Fleet Manager", description: "Handover confirmed notification", icon: "🔔", category: "notifications", nodeType: "notify_push", config: { template: "✅ Handover: {{driver.name}} took {{vehicle.name}} from {{prev_driver.name}}" }, status: "idle", isConfigured: true } },
+      { id: "a6", type: "action", position: { x: 650, y: 540 }, data: { label: "Block Engine Start", description: "Keep immobilizer active - unauthorized", icon: "🔒", category: "fleet", nodeType: "fleet_immobilize", config: { action: "lock" }, status: "idle", isConfigured: true } },
+      { id: "a7", type: "action", position: { x: 650, y: 700 }, data: { label: "🚨 Broadcast Alert (1:Many)", description: "Alert ALL fleet managers + security team simultaneously", icon: "📢", category: "notifications", nodeType: "notify_escalation", config: { mode: "one_to_many", recipients: ["fleet_managers", "security", "operations"], template: "🚨 UNAUTHORIZED: Unknown RFID scanned on {{vehicle.name}} at {{location}}" }, status: "idle", isConfigured: true } },
+      { id: "a8", type: "action", position: { x: 650, y: 860 }, data: { label: "Trigger Dashcam Snapshot", description: "Capture photo of unauthorized person", icon: "📹", category: "safety_hardware", nodeType: "hw_dashcam", config: { action: "capture_snapshot", camera: "interior" }, status: "idle", isConfigured: true } },
+      { id: "a9", type: "action", position: { x: 650, y: 1020 }, data: { label: "Create Security Incident", description: "Open investigation case with evidence", icon: "📋", category: "data", nodeType: "data_log_history", config: { table: "security_incidents", severity: "critical" }, status: "idle", isConfigured: true } },
+    ],
+    edges: [
+      { id: "e1", source: "t1", target: "a1", type: "smoothstep", animated: true },
+      { id: "e2", source: "a1", target: "c1", type: "smoothstep", animated: true },
+      { id: "e3", source: "c1", target: "a2", sourceHandle: "true", type: "smoothstep", animated: true },
+      { id: "e4", source: "a2", target: "a3", type: "smoothstep", animated: true },
+      { id: "e5", source: "a3", target: "a4", type: "smoothstep", animated: true },
+      { id: "e6", source: "a4", target: "a5", type: "smoothstep", animated: true },
+      { id: "e7", source: "c1", target: "a6", sourceHandle: "false", type: "smoothstep", animated: true },
+      { id: "e8", source: "a6", target: "a7", type: "smoothstep", animated: true },
+      { id: "e9", source: "a7", target: "a8", type: "smoothstep", animated: true },
+      { id: "e10", source: "a8", target: "a9", type: "smoothstep", animated: true },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 3. COLD CHAIN MONITORING FOR SHIPMENTS
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "tpl_cold_chain_monitoring",
+    name: "Cold Chain Temperature Control",
+    description: "Monitors refrigerated vehicle temperature zones in real-time. Multi-zone support with breach alerts, door-open correlation, cargo spoilage prediction, and compliance logging for pharma/food shipments.",
+    category: "cold_chain",
+    icon: "❄️",
+    difficulty: "advanced",
+    estimatedSavings: "~$50K/yr spoilage prevention",
+    tags: ["cold-chain", "temperature", "refrigeration", "pharma", "food", "compliance", "door-sensor"],
+    nodes: [
+      { id: "t1", type: "trigger", position: { x: 400, y: 50 }, data: { label: "Temperature Reading", description: "Temp sensor reports every 30 seconds", icon: "🌡️", category: "triggers", nodeType: "trigger_sensor", config: { sensorType: "temperature", interval: 30 }, status: "idle", isConfigured: true } },
+      { id: "c1", type: "condition", position: { x: 400, y: 220 }, data: { label: "Temp in Safe Range?", description: "Check if temperature is between -25°C and +8°C", icon: "📊", category: "conditions", nodeType: "condition_threshold", config: { leftOperand: "sensor.temperature_c", operator: "between", rightOperand: "-25,8" }, status: "idle", isConfigured: true } },
+      { id: "c2", type: "condition", position: { x: 150, y: 400 }, data: { label: "Breach Duration > 5min?", description: "Has temp been out of range for 5+ minutes?", icon: "📊", category: "conditions", nodeType: "condition_threshold", config: { leftOperand: "breach.duration_minutes", operator: "greater_than", rightOperand: "5" }, status: "idle", isConfigured: true } },
+      { id: "a1", type: "action", position: { x: 50, y: 580 }, data: { label: "Check Door Sensor", description: "Was cargo door opened during breach?", icon: "🚪", category: "sensors", nodeType: "sensor_door", config: { action: "check_state" }, status: "idle", isConfigured: true } },
+      { id: "c3", type: "condition", position: { x: 50, y: 750 }, data: { label: "Door Open?", description: "Correlate temp breach with door state", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "door.state", operator: "equals", rightOperand: "open" }, status: "idle", isConfigured: true } },
+      { id: "a2", type: "action", position: { x: -100, y: 920 }, data: { label: "Alert: Close Door!", description: "Urgent push to driver to close cargo door", icon: "🔔", category: "notifications", nodeType: "notify_push", config: { template: "🚪❄️ DOOR OPEN! Temperature rising in {{vehicle.name}}. Close cargo door immediately!" }, status: "idle", isConfigured: true } },
+      { id: "a3", type: "action", position: { x: 200, y: 920 }, data: { label: "Compressor Malfunction Alert", description: "Notify maintenance - possible compressor failure", icon: "📧", category: "notifications", nodeType: "notify_email", config: { recipients: "maintenance_team", template: "🔧 Refrigeration unit issue: {{vehicle.name}} temp at {{temp}}°C" }, status: "idle", isConfigured: true } },
+      { id: "a4", type: "action", position: { x: 350, y: 580 }, data: { label: "Calculate Spoilage Risk", description: "AI prediction: time until cargo spoilage", icon: "🔄", category: "data", nodeType: "data_transform", config: { transform: "spoilage_prediction", model: "time_temp_integral" }, status: "idle", isConfigured: true } },
+      { id: "a5", type: "action", position: { x: 350, y: 750 }, data: { label: "Alert Dispatch: Reroute", description: "Notify dispatch to reroute to nearest cold storage", icon: "📱", category: "notifications", nodeType: "notify_sms", config: { recipients: "dispatch", template: "⚠️ COLD CHAIN BREACH: {{vehicle.name}} needs reroute. Spoilage in {{minutes_until_spoil}}min" }, status: "idle", isConfigured: true } },
+      { id: "a6", type: "action", position: { x: 650, y: 400 }, data: { label: "Log Compliance Record", description: "HACCP/GDP compliance temperature log", icon: "📋", category: "data", nodeType: "data_log_history", config: { table: "cold_chain_logs", compliance: "HACCP" }, status: "idle", isConfigured: true } },
+      { id: "a7", type: "action", position: { x: 650, y: 220 }, data: { label: "Update Live Dashboard", description: "Real-time temp update on fleet dashboard", icon: "📈", category: "data", nodeType: "data_aggregate", config: { operation: "update_live_temp" }, status: "idle", isConfigured: true } },
+    ],
+    edges: [
+      { id: "e1", source: "t1", target: "c1", type: "smoothstep", animated: true },
+      { id: "e2", source: "c1", target: "c2", sourceHandle: "false", type: "smoothstep", animated: true },
+      { id: "e3", source: "c2", target: "a1", sourceHandle: "true", type: "smoothstep", animated: true },
+      { id: "e4", source: "a1", target: "c3", type: "smoothstep", animated: true },
+      { id: "e5", source: "c3", target: "a2", sourceHandle: "true", type: "smoothstep", animated: true },
+      { id: "e6", source: "c3", target: "a3", sourceHandle: "false", type: "smoothstep", animated: true },
+      { id: "e7", source: "c2", target: "a4", sourceHandle: "false", type: "smoothstep", animated: true },
+      { id: "e8", source: "a4", target: "a5", type: "smoothstep", animated: true },
+      { id: "e9", source: "c1", target: "a6", sourceHandle: "true", type: "smoothstep", animated: true },
+      { id: "e10", source: "c1", target: "a7", sourceHandle: "true", type: "smoothstep", animated: true },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 4. LOAD SENSOR & WEIGHT COMPLIANCE
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "tpl_load_sensor",
+    name: "Load Sensor & Weight Compliance",
+    description: "Monitors axle load sensors to prevent overloading, auto-calculate weight distribution, enforce legal limits, and trigger weigh station bypass or alerts.",
+    category: "sensors",
+    icon: "⚖️",
+    difficulty: "intermediate",
+    estimatedSavings: "~$30K/yr in fines avoided",
+    tags: ["load", "weight", "axle", "overload", "compliance", "sensor"],
+    nodes: [
+      { id: "t1", type: "trigger", position: { x: 400, y: 50 }, data: { label: "Load Change Detected", description: "Axle load sensor detects weight change > 50kg", icon: "⚖️", category: "triggers", nodeType: "trigger_sensor", config: { sensorType: "load_weight", threshold_kg: 50 }, status: "idle", isConfigured: true } },
+      { id: "a1", type: "action", position: { x: 400, y: 210 }, data: { label: "Calculate Total Load", description: "Sum all axle readings for GVW", icon: "🔄", category: "data", nodeType: "data_transform", config: { transform: "calculate_gvw", fields: ["axle_1_kg", "axle_2_kg", "axle_3_kg"] }, status: "idle", isConfigured: true } },
+      { id: "c1", type: "condition", position: { x: 400, y: 380 }, data: { label: "Over Legal Limit?", description: "GVW exceeds vehicle's registered max weight", icon: "📊", category: "conditions", nodeType: "condition_threshold", config: { leftOperand: "vehicle.gvw_kg", operator: "greater_than", rightOperand: "vehicle.max_gvw_kg" }, status: "idle", isConfigured: true } },
+      { id: "a2", type: "action", position: { x: 150, y: 560 }, data: { label: "🚨 Block Departure", description: "Prevent vehicle from leaving depot", icon: "🔒", category: "fleet", nodeType: "fleet_immobilize", config: { action: "lock", reason: "overweight" }, status: "idle", isConfigured: true } },
+      { id: "a3", type: "action", position: { x: 150, y: 720 }, data: { label: "Alert Loading Team", description: "Notify warehouse to reduce load", icon: "📱", category: "notifications", nodeType: "notify_sms", config: { recipients: "warehouse_team", template: "⚖️ OVERLOAD: {{vehicle.name}} at {{gvw}}kg (limit: {{max_gvw}}kg). Remove {{excess}}kg" }, status: "idle", isConfigured: true } },
+      { id: "a4", type: "action", position: { x: 150, y: 880 }, data: { label: "Log Weight Violation", description: "Record for compliance audit trail", icon: "📋", category: "data", nodeType: "data_log_history", config: { table: "weight_violations" }, status: "idle", isConfigured: true } },
+      { id: "c2", type: "condition", position: { x: 650, y: 560 }, data: { label: "Weight Distribution OK?", description: "Check if load is evenly distributed across axles", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "axle.imbalance_percent", operator: "less_than", rightOperand: "15" }, status: "idle", isConfigured: true } },
+      { id: "a5", type: "action", position: { x: 650, y: 720 }, data: { label: "Approve Departure", description: "Weight OK - log and release vehicle", icon: "✅", category: "fleet", nodeType: "fleet_request_approval", config: { action: "auto_approve" }, status: "idle", isConfigured: true } },
+      { id: "a6", type: "action", position: { x: 500, y: 720 }, data: { label: "Warn: Uneven Load", description: "Alert driver about uneven weight distribution", icon: "🔔", category: "notifications", nodeType: "notify_push", config: { template: "⚠️ Uneven load detected. Front: {{front_kg}}kg, Rear: {{rear_kg}}kg. Please redistribute." }, status: "idle", isConfigured: true } },
+    ],
+    edges: [
+      { id: "e1", source: "t1", target: "a1", type: "smoothstep", animated: true },
+      { id: "e2", source: "a1", target: "c1", type: "smoothstep", animated: true },
+      { id: "e3", source: "c1", target: "a2", sourceHandle: "true", type: "smoothstep", animated: true },
+      { id: "e4", source: "a2", target: "a3", type: "smoothstep", animated: true },
+      { id: "e5", source: "a3", target: "a4", type: "smoothstep", animated: true },
+      { id: "e6", source: "c1", target: "c2", sourceHandle: "false", type: "smoothstep", animated: true },
+      { id: "e7", source: "c2", target: "a5", sourceHandle: "true", type: "smoothstep", animated: true },
+      { id: "e8", source: "c2", target: "a6", sourceHandle: "false", type: "smoothstep", animated: true },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 5. GPS/DEVICE TAMPERING DETECTION
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "tpl_tamper_detection",
+    name: "GPS Tampering & Anti-Theft",
+    description: "Detects GPS antenna disconnection, power line cutting, signal jamming, SIM card removal, and device relocation. Multi-layer evidence capture with instant immobilization.",
+    category: "safety",
+    icon: "⚠️",
+    difficulty: "advanced",
+    estimatedSavings: "~95% tamper detection rate",
+    tags: ["tampering", "anti-theft", "GPS", "jamming", "security"],
+    nodes: [
+      { id: "t1", type: "trigger", position: { x: 400, y: 50 }, data: { label: "Tamper Event", description: "Device detects tampering (power cut, antenna, vibration)", icon: "⚠️", category: "triggers", nodeType: "trigger_alert", config: { alertType: "tamper" }, status: "idle", isConfigured: true } },
+      { id: "c1", type: "condition", position: { x: 400, y: 220 }, data: { label: "Tamper Type?", description: "Identify type of tampering detected", icon: "🔃", category: "conditions", nodeType: "condition_switch", config: { field: "tamper.type", cases: ["power_cut", "antenna_disconnect", "signal_jam", "sim_removal"] }, status: "idle", isConfigured: true } },
+      { id: "a1", type: "action", position: { x: 100, y: 400 }, data: { label: "Backup Battery Mode", description: "Switch to internal battery, keep transmitting", icon: "🔋", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "enable_backup_battery" }, status: "idle", isConfigured: true } },
+      { id: "a2", type: "action", position: { x: 100, y: 560 }, data: { label: "High-Freq GPS Burst", description: "Send GPS coordinates every 3 seconds", icon: "📡", category: "sensors", nodeType: "sensor_shock", config: { tracking_interval: 3 }, status: "idle", isConfigured: true } },
+      { id: "a3", type: "action", position: { x: 400, y: 400 }, data: { label: "🚨 Immobilize Vehicle", description: "Cut engine immediately", icon: "🔒", category: "fleet", nodeType: "fleet_immobilize", config: { action: "lock", immediate: true }, status: "idle", isConfigured: true } },
+      { id: "a4", type: "action", position: { x: 400, y: 560 }, data: { label: "Alert: ALL Channels", description: "SMS + Push + Email + Slack simultaneously", icon: "📢", category: "notifications", nodeType: "notify_escalation", config: { mode: "all_channels", recipients: ["owner", "security", "police_liaison"], template: "🚨 TAMPER ALERT: {{vehicle.name}} - {{tamper.type}} at {{location}}" }, status: "idle", isConfigured: true } },
+      { id: "a5", type: "action", position: { x: 700, y: 400 }, data: { label: "Capture Dashcam Evidence", description: "Record 60s video from all cameras", icon: "📹", category: "safety_hardware", nodeType: "hw_dashcam", config: { action: "record_clip", duration: 60, cameras: "all" }, status: "idle", isConfigured: true } },
+      { id: "a6", type: "action", position: { x: 700, y: 560 }, data: { label: "Log Incident + Evidence", description: "Create tamper investigation with all evidence", icon: "📋", category: "data", nodeType: "data_log_history", config: { table: "tamper_incidents", attach: ["gps_trail", "dashcam_clip"] }, status: "idle", isConfigured: true } },
+      { id: "a7", type: "action", position: { x: 400, y: 720 }, data: { label: "Notify Nearest Patrol", description: "Dispatch security to last known location", icon: "🗺️", category: "fleet", nodeType: "fleet_create_trip", config: { type: "security_dispatch", target: "last_known_location" }, status: "idle", isConfigured: true } },
+    ],
+    edges: [
+      { id: "e1", source: "t1", target: "c1", type: "smoothstep", animated: true },
+      { id: "e2", source: "c1", target: "a1", type: "smoothstep", animated: true },
+      { id: "e3", source: "a1", target: "a2", type: "smoothstep", animated: true },
+      { id: "e4", source: "c1", target: "a3", type: "smoothstep", animated: true },
+      { id: "e5", source: "a3", target: "a4", type: "smoothstep", animated: true },
+      { id: "e6", source: "c1", target: "a5", type: "smoothstep", animated: true },
+      { id: "e7", source: "a5", target: "a6", type: "smoothstep", animated: true },
+      { id: "e8", source: "a4", target: "a7", type: "smoothstep", animated: true },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 6. ROUTE OPTIMIZATION ENGINE
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "tpl_route_optimization",
+    name: "AI Route Optimization Engine",
+    description: "Multi-stop route optimization with traffic prediction, fuel cost calculation, delivery time windows, and dynamic re-routing when conditions change.",
+    category: "operations",
+    icon: "🛤️",
+    difficulty: "advanced",
+    estimatedSavings: "~30% fuel savings, 25% time savings",
+    tags: ["route", "optimization", "traffic", "multi-stop", "AI", "fuel-savings"],
+    nodes: [
+      { id: "t1", type: "trigger", position: { x: 400, y: 50 }, data: { label: "New Dispatch Created", description: "Dispatch job with multiple stops is created", icon: "⚡", category: "triggers", nodeType: "trigger_event", config: { eventType: "dispatch_created" }, status: "idle", isConfigured: true } },
+      { id: "a1", type: "action", position: { x: 400, y: 210 }, data: { label: "Fetch All Stops", description: "Get pickup/dropoff locations with time windows", icon: "🗄️", category: "data", nodeType: "data_lookup", config: { table: "dispatch_jobs", fields: ["stops", "time_windows", "priorities"] }, status: "idle", isConfigured: true } },
+      { id: "a2", type: "action", position: { x: 400, y: 370 }, data: { label: "Get Live Traffic Data", description: "Fetch real-time traffic from routing API", icon: "🔗", category: "data", nodeType: "data_api_call", config: { method: "GET", url: "traffic_api/conditions" }, status: "idle", isConfigured: true } },
+      { id: "a3", type: "action", position: { x: 400, y: 530 }, data: { label: "AI Route Calculation", description: "TSP solver with traffic + time windows + vehicle capacity", icon: "🛤️", category: "fleet", nodeType: "fleet_route_optimize", config: { algorithm: "genetic_tsp", factors: ["traffic", "fuel", "time_windows", "vehicle_capacity"] }, status: "idle", isConfigured: true } },
+      { id: "a4", type: "action", position: { x: 400, y: 690 }, data: { label: "Calculate Fuel Cost", description: "Estimate fuel consumption for optimized route", icon: "⛽", category: "fleet", nodeType: "fleet_fuel_check", config: { calculation: "route_fuel_estimate" }, status: "idle", isConfigured: true } },
+      { id: "a5", type: "action", position: { x: 200, y: 850 }, data: { label: "Send Route to Driver", description: "Push optimized route with turn-by-turn", icon: "📱", category: "notifications", nodeType: "notify_push", config: { template: "🗺️ Optimized route ready: {{stops}} stops, {{distance_km}}km, ETA: {{eta}}" }, status: "idle", isConfigured: true } },
+      { id: "a6", type: "action", position: { x: 600, y: 850 }, data: { label: "Monitor Route Adherence", description: "Track deviation from planned route", icon: "📍", category: "triggers", nodeType: "trigger_geofence", config: { mode: "corridor", deviation_threshold_m: 500 }, status: "idle", isConfigured: true } },
+      { id: "c1", type: "condition", position: { x: 600, y: 1020 }, data: { label: "Deviated > 500m?", description: "Has driver deviated from optimized route?", icon: "📊", category: "conditions", nodeType: "condition_threshold", config: { leftOperand: "route.deviation_m", operator: "greater_than", rightOperand: "500" }, status: "idle", isConfigured: true } },
+      { id: "a7", type: "action", position: { x: 600, y: 1190 }, data: { label: "Re-Calculate Route", description: "Dynamic re-optimization from current position", icon: "🔄", category: "fleet", nodeType: "fleet_route_optimize", config: { mode: "recalculate", from: "current_position" }, status: "idle", isConfigured: true } },
+    ],
+    edges: [
+      { id: "e1", source: "t1", target: "a1", type: "smoothstep", animated: true },
+      { id: "e2", source: "a1", target: "a2", type: "smoothstep", animated: true },
+      { id: "e3", source: "a2", target: "a3", type: "smoothstep", animated: true },
+      { id: "e4", source: "a3", target: "a4", type: "smoothstep", animated: true },
+      { id: "e5", source: "a4", target: "a5", type: "smoothstep", animated: true },
+      { id: "e6", source: "a4", target: "a6", type: "smoothstep", animated: true },
+      { id: "e7", source: "a6", target: "c1", type: "smoothstep", animated: true },
+      { id: "e8", source: "c1", target: "a7", sourceHandle: "true", type: "smoothstep", animated: true },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 7. FUEL LEVEL LIVE CONTROL & ANALYTICS
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "tpl_fuel_live_control",
+    name: "Fuel Level Live Control & Analytics",
+    description: "Continuous fuel level monitoring with live dashboard updates, consumption rate analysis, refuel detection, drain alerts, and predictive range calculation.",
+    category: "fuel",
+    icon: "⛽",
+    difficulty: "intermediate",
+    estimatedSavings: "~20% fuel cost optimization",
+    tags: ["fuel", "live", "monitoring", "consumption", "analytics", "range"],
+    nodes: [
+      { id: "t1", type: "trigger", position: { x: 400, y: 50 }, data: { label: "Fuel Telemetry Update", description: "Fuel sensor reports level every 60 seconds", icon: "⛽", category: "triggers", nodeType: "trigger_sensor", config: { sensorType: "fuel_level", interval: 60 }, status: "idle", isConfigured: true } },
+      { id: "a1", type: "action", position: { x: 400, y: 210 }, data: { label: "Calculate Consumption Rate", description: "L/100km based on rolling 30-min window", icon: "🔄", category: "data", nodeType: "data_transform", config: { transform: "fuel_consumption_rate", window: "30min" }, status: "idle", isConfigured: true } },
+      { id: "a2", type: "action", position: { x: 400, y: 370 }, data: { label: "Update Live Dashboard", description: "Real-time fuel gauge on fleet map", icon: "📈", category: "data", nodeType: "data_aggregate", config: { operation: "update_realtime_gauge" }, status: "idle", isConfigured: true } },
+      { id: "c1", type: "condition", position: { x: 200, y: 530 }, data: { label: "Fuel < 15%?", description: "Low fuel warning threshold", icon: "📊", category: "conditions", nodeType: "condition_threshold", config: { leftOperand: "fuel.level_percent", operator: "less_than", rightOperand: "15" }, status: "idle", isConfigured: true } },
+      { id: "a3", type: "action", position: { x: 50, y: 700 }, data: { label: "Calculate Range", description: "Predict km remaining at current consumption", icon: "🔄", category: "data", nodeType: "data_transform", config: { transform: "predict_range_km" }, status: "idle", isConfigured: true } },
+      { id: "a4", type: "action", position: { x: 50, y: 860 }, data: { label: "Find Nearest Station", description: "Locate approved fuel stations within range", icon: "🎯", category: "conditions", nodeType: "condition_geo_proximity", config: { target: "approved_fuel_stations", radius_km: 20 }, status: "idle", isConfigured: true } },
+      { id: "a5", type: "action", position: { x: 50, y: 1020 }, data: { label: "Alert Driver: Refuel", description: "Push notification with station directions", icon: "🔔", category: "notifications", nodeType: "notify_push", config: { template: "⛽ Low fuel ({{level}}%). Nearest station: {{station.name}} - {{distance}}km away" }, status: "idle", isConfigured: true } },
+      { id: "c2", type: "condition", position: { x: 600, y: 530 }, data: { label: "Sudden Drop > 10%?", description: "Detect rapid fuel decrease (possible theft/leak)", icon: "📊", category: "conditions", nodeType: "condition_threshold", config: { leftOperand: "fuel.drop_rate_percent", operator: "greater_than", rightOperand: "10" }, status: "idle", isConfigured: true } },
+      { id: "a6", type: "action", position: { x: 600, y: 700 }, data: { label: "🚨 Theft/Leak Alert", description: "Immediate alert with GPS coordinates", icon: "📢", category: "notifications", nodeType: "notify_escalation", config: { mode: "all_channels", template: "🚨 FUEL ANOMALY: {{vehicle.name}} lost {{drop}}% in {{minutes}}min at {{location}}" }, status: "idle", isConfigured: true } },
+      { id: "a7", type: "action", position: { x: 600, y: 860 }, data: { label: "Log Fuel Event", description: "Record with GPS, timestamp, driver, amount", icon: "📋", category: "data", nodeType: "data_log_history", config: { table: "fuel_events" }, status: "idle", isConfigured: true } },
+    ],
+    edges: [
+      { id: "e1", source: "t1", target: "a1", type: "smoothstep", animated: true },
+      { id: "e2", source: "a1", target: "a2", type: "smoothstep", animated: true },
+      { id: "e3", source: "a2", target: "c1", type: "smoothstep", animated: true },
+      { id: "e4", source: "c1", target: "a3", sourceHandle: "true", type: "smoothstep", animated: true },
+      { id: "e5", source: "a3", target: "a4", type: "smoothstep", animated: true },
+      { id: "e6", source: "a4", target: "a5", type: "smoothstep", animated: true },
+      { id: "e7", source: "a2", target: "c2", type: "smoothstep", animated: true },
+      { id: "e8", source: "c2", target: "a6", sourceHandle: "true", type: "smoothstep", animated: true },
+      { id: "e9", source: "a6", target: "a7", type: "smoothstep", animated: true },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 8. ADVANCED FUEL THEFT - SIPHONING, DRAIN, CARD FRAUD
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "tpl_fuel_theft_advanced",
+    name: "Fuel Theft: Siphon, Drain & Card Fraud",
+    description: "Multi-layer fuel theft detection: siphoning (slow drain while parked), rapid drain, fuel card mismatch, phantom refuels, and overnight fuel disappearance with full evidence chain.",
+    category: "fuel",
+    icon: "🕵️",
+    difficulty: "advanced",
+    estimatedSavings: "~$15K/yr per 100 vehicles",
+    tags: ["fuel", "theft", "siphoning", "drain", "fraud", "card", "overnight"],
+    nodes: [
+      { id: "t1", type: "trigger", position: { x: 400, y: 50 }, data: { label: "Fuel Level Change", description: "Any fuel level change > 2% detected", icon: "⛽", category: "triggers", nodeType: "trigger_sensor", config: { sensorType: "fuel_level", threshold: 2 }, status: "idle", isConfigured: true } },
+      { id: "c1", type: "condition", position: { x: 400, y: 220 }, data: { label: "Increase or Decrease?", description: "Is fuel level going up or down?", icon: "🔃", category: "conditions", nodeType: "condition_switch", config: { field: "fuel.direction", cases: ["increase", "decrease"] }, status: "idle", isConfigured: true } },
+      { id: "c2", type: "condition", position: { x: 150, y: 400 }, data: { label: "Vehicle Moving?", description: "Is the vehicle in motion during fuel drop?", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "vehicle.speed_kmh", operator: "greater_than", rightOperand: "5" }, status: "idle", isConfigured: true } },
+      { id: "c3", type: "condition", position: { x: 50, y: 580 }, data: { label: "Drop Rate Normal?", description: "Is consumption rate within expected range?", icon: "📊", category: "conditions", nodeType: "condition_threshold", config: { leftOperand: "fuel.consumption_l_100km", operator: "less_than", rightOperand: "vehicle.expected_consumption * 1.5" }, status: "idle", isConfigured: true } },
+      { id: "a1", type: "action", position: { x: -50, y: 760 }, data: { label: "Flag Abnormal Consumption", description: "Possible leak or tampered fuel line", icon: "🚨", category: "fleet", nodeType: "fleet_update_vehicle", config: { flag: "abnormal_fuel_consumption" }, status: "idle", isConfigured: true } },
+      { id: "a2", type: "action", position: { x: 250, y: 580 }, data: { label: "🚨 Siphoning Alert", description: "Fuel dropping while parked - siphoning suspected", icon: "📢", category: "notifications", nodeType: "notify_escalation", config: { mode: "all_channels", template: "🕵️ SIPHONING: {{vehicle.name}} losing fuel while parked at {{location}}" }, status: "idle", isConfigured: true } },
+      { id: "a3", type: "action", position: { x: 250, y: 740 }, data: { label: "Capture Evidence", description: "GPS + Dashcam + Fuel chart snapshot", icon: "📹", category: "safety_hardware", nodeType: "hw_dashcam", config: { action: "record_clip", duration: 120 }, status: "idle", isConfigured: true } },
+      { id: "c4", type: "condition", position: { x: 650, y: 400 }, data: { label: "Fuel Card Used?", description: "Was a fuel card transaction recorded?", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "fuel_card.transaction", operator: "exists" }, status: "idle", isConfigured: true } },
+      { id: "a4", type: "action", position: { x: 500, y: 580 }, data: { label: "Cross-Match Receipt", description: "Compare fuel card liters vs sensor increase", icon: "🔄", category: "data", nodeType: "data_transform", config: { transform: "match_card_vs_sensor" }, status: "idle", isConfigured: true } },
+      { id: "c5", type: "condition", position: { x: 500, y: 740 }, data: { label: "Mismatch > 20%?", description: "Card says 50L but sensor shows only 30L", icon: "📊", category: "conditions", nodeType: "condition_threshold", config: { leftOperand: "fuel.card_vs_sensor_diff_percent", operator: "greater_than", rightOperand: "20" }, status: "idle", isConfigured: true } },
+      { id: "a5", type: "action", position: { x: 500, y: 900 }, data: { label: "🚨 Card Fraud Alert", description: "Possible fuel card skimming or phantom refuel", icon: "📧", category: "notifications", nodeType: "notify_email", config: { recipients: "finance,security", template: "💳 FUEL CARD FRAUD: {{vehicle.name}} - Card: {{card_liters}}L vs Sensor: {{sensor_liters}}L" }, status: "idle", isConfigured: true } },
+      { id: "a6", type: "action", position: { x: 750, y: 580 }, data: { label: "Log Normal Refuel", description: "Record legitimate refueling event", icon: "📋", category: "data", nodeType: "data_log_history", config: { table: "fuel_events", type: "refuel" }, status: "idle", isConfigured: true } },
+    ],
+    edges: [
+      { id: "e1", source: "t1", target: "c1", type: "smoothstep", animated: true },
+      { id: "e2", source: "c1", target: "c2", type: "smoothstep", animated: true },
+      { id: "e3", source: "c2", target: "c3", sourceHandle: "true", type: "smoothstep", animated: true },
+      { id: "e4", source: "c3", target: "a1", sourceHandle: "false", type: "smoothstep", animated: true },
+      { id: "e5", source: "c2", target: "a2", sourceHandle: "false", type: "smoothstep", animated: true },
+      { id: "e6", source: "a2", target: "a3", type: "smoothstep", animated: true },
+      { id: "e7", source: "c1", target: "c4", type: "smoothstep", animated: true },
+      { id: "e8", source: "c4", target: "a4", sourceHandle: "true", type: "smoothstep", animated: true },
+      { id: "e9", source: "a4", target: "c5", type: "smoothstep", animated: true },
+      { id: "e10", source: "c5", target: "a5", sourceHandle: "true", type: "smoothstep", animated: true },
+      { id: "e11", source: "c4", target: "a6", sourceHandle: "false", type: "smoothstep", animated: true },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 9. GEOFENCE START/STOP NOTIFICATIONS
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "tpl_geofence_notifications",
+    name: "Geofence Start/Stop Notifications",
+    description: "Automated notifications when vehicles enter or exit work zones, depots, customer sites, restricted areas. Track dwell time, working hours, and site attendance.",
+    category: "operations",
+    icon: "📍",
+    difficulty: "beginner",
+    estimatedSavings: "~100% site attendance visibility",
+    tags: ["geofence", "enter", "exit", "notification", "dwell-time", "attendance"],
+    nodes: [
+      { id: "t1", type: "trigger", position: { x: 300, y: 50 }, data: { label: "Enter Geofence", description: "Vehicle enters any defined zone", icon: "📍", category: "triggers", nodeType: "trigger_geofence", config: { eventType: "enter" }, status: "idle", isConfigured: true } },
+      { id: "t2", type: "trigger", position: { x: 600, y: 50 }, data: { label: "Exit Geofence", description: "Vehicle leaves any defined zone", icon: "📍", category: "triggers", nodeType: "trigger_geofence", config: { eventType: "exit" }, status: "idle", isConfigured: true } },
+      { id: "a1", type: "action", position: { x: 300, y: 220 }, data: { label: "Log Arrival Time", description: "Record entry timestamp + GPS", icon: "📋", category: "data", nodeType: "data_log_history", config: { table: "geofence_events", event: "arrival" }, status: "idle", isConfigured: true } },
+      { id: "a2", type: "action", position: { x: 300, y: 380 }, data: { label: "Notify: Work Started", description: "Alert manager that vehicle arrived at site", icon: "🔔", category: "notifications", nodeType: "notify_push", config: { recipients: "site_manager", template: "✅ {{vehicle.name}} arrived at {{zone.name}} ({{driver.name}})" }, status: "idle", isConfigured: true } },
+      { id: "a3", type: "action", position: { x: 300, y: 540 }, data: { label: "Start Dwell Timer", description: "Begin tracking time spent in zone", icon: "⏳", category: "timing", nodeType: "timing_delay", config: { mode: "start_timer" }, status: "idle", isConfigured: true } },
+      { id: "a4", type: "action", position: { x: 600, y: 220 }, data: { label: "Calculate Dwell Time", description: "Total time spent at this geofence", icon: "🔄", category: "data", nodeType: "data_transform", config: { transform: "calculate_dwell_time" }, status: "idle", isConfigured: true } },
+      { id: "a5", type: "action", position: { x: 600, y: 380 }, data: { label: "Notify: Work Stopped", description: "Alert manager that vehicle left site", icon: "📱", category: "notifications", nodeType: "notify_sms", config: { recipients: "site_manager", template: "🚗 {{vehicle.name}} left {{zone.name}} after {{dwell_time}}min ({{driver.name}})" }, status: "idle", isConfigured: true } },
+      { id: "a6", type: "action", position: { x: 600, y: 540 }, data: { label: "Log Departure + Report", description: "Record exit with dwell time summary", icon: "📋", category: "data", nodeType: "data_log_history", config: { table: "geofence_events", event: "departure" }, status: "idle", isConfigured: true } },
+    ],
+    edges: [
+      { id: "e1", source: "t1", target: "a1", type: "smoothstep", animated: true },
+      { id: "e2", source: "a1", target: "a2", type: "smoothstep", animated: true },
+      { id: "e3", source: "a2", target: "a3", type: "smoothstep", animated: true },
+      { id: "e4", source: "t2", target: "a4", type: "smoothstep", animated: true },
+      { id: "e5", source: "a4", target: "a5", type: "smoothstep", animated: true },
+      { id: "e6", source: "a5", target: "a6", type: "smoothstep", animated: true },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 10. DASHCAM AI EVENT TRIGGER & LIVE STREAM
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "tpl_dashcam_ai",
+    name: "Dashcam AI Event & Live Stream",
+    description: "AI-powered dashcam detects events (drowsiness, phone use, tailgating, collision). Auto-records clips, enables live streaming, and integrates with driver scoring.",
+    category: "safety",
+    icon: "📹",
+    difficulty: "advanced",
+    estimatedSavings: "~50% accident liability reduction",
+    tags: ["dashcam", "AI", "live-stream", "drowsiness", "phone", "collision", "recording"],
+    nodes: [
+      { id: "t1", type: "trigger", position: { x: 400, y: 50 }, data: { label: "Dashcam AI Event", description: "AI detects unsafe behavior via camera", icon: "📹", category: "triggers", nodeType: "trigger_sensor", config: { sensorType: "dashcam_ai" }, status: "idle", isConfigured: true } },
+      { id: "c1", type: "condition", position: { x: 400, y: 220 }, data: { label: "Event Severity?", description: "Classify event: drowsiness, phone, tailgating, crash", icon: "🔃", category: "conditions", nodeType: "condition_switch", config: { field: "dashcam.event_type", cases: ["drowsiness", "phone_use", "tailgating", "forward_collision"] }, status: "idle", isConfigured: true } },
+      { id: "a1", type: "action", position: { x: 100, y: 400 }, data: { label: "🚨 Collision Detected", description: "Immediate alert - possible crash", icon: "📢", category: "notifications", nodeType: "notify_escalation", config: { mode: "all_channels", template: "💥 COLLISION: {{vehicle.name}} at {{location}} - Live stream activated" }, status: "idle", isConfigured: true } },
+      { id: "a2", type: "action", position: { x: 100, y: 560 }, data: { label: "Start Live Stream", description: "Enable real-time video feed to control room", icon: "📹", category: "safety_hardware", nodeType: "hw_dashcam", config: { action: "start_live_stream", cameras: ["front", "interior"] }, status: "idle", isConfigured: true } },
+      { id: "a3", type: "action", position: { x: 350, y: 400 }, data: { label: "Audio Warning: Wake Up!", description: "Play loud in-cab alert for drowsiness", icon: "🔊", category: "notifications", nodeType: "notify_push", config: { type: "audio_alert", sound: "wake_up_alarm" }, status: "idle", isConfigured: true } },
+      { id: "a4", type: "action", position: { x: 600, y: 400 }, data: { label: "Record 30s Clip", description: "Save 15s before + 15s after event", icon: "📹", category: "safety_hardware", nodeType: "hw_dashcam", config: { action: "record_clip", pre_buffer: 15, post_buffer: 15 }, status: "idle", isConfigured: true } },
+      { id: "a5", type: "action", position: { x: 600, y: 560 }, data: { label: "Upload to Cloud", description: "Store clip with metadata for review", icon: "🗄️", category: "data", nodeType: "data_lookup", config: { action: "upload_clip", storage: "dashcam_clips" }, status: "idle", isConfigured: true } },
+      { id: "a6", type: "action", position: { x: 400, y: 720 }, data: { label: "Update Driver Score", description: "Deduct safety points based on event severity", icon: "📈", category: "data", nodeType: "data_aggregate", config: { table: "driver_behavior_scores", operation: "deduct_points" }, status: "idle", isConfigured: true } },
+      { id: "a7", type: "action", position: { x: 400, y: 880 }, data: { label: "Schedule Review", description: "Create review task for fleet safety officer", icon: "👤", category: "fleet", nodeType: "fleet_assign_driver", config: { action: "create_review_task" }, status: "idle", isConfigured: true } },
+    ],
+    edges: [
+      { id: "e1", source: "t1", target: "c1", type: "smoothstep", animated: true },
+      { id: "e2", source: "c1", target: "a1", type: "smoothstep", animated: true },
+      { id: "e3", source: "a1", target: "a2", type: "smoothstep", animated: true },
+      { id: "e4", source: "c1", target: "a3", type: "smoothstep", animated: true },
+      { id: "e5", source: "c1", target: "a4", type: "smoothstep", animated: true },
+      { id: "e6", source: "a4", target: "a5", type: "smoothstep", animated: true },
+      { id: "e7", source: "a5", target: "a6", type: "smoothstep", animated: true },
+      { id: "e8", source: "a6", target: "a7", type: "smoothstep", animated: true },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 11. ALCOHOL DETECTOR INTERLOCK
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "tpl_alcohol_detector",
+    name: "Alcohol Detector Interlock System",
+    description: "Breathalyzer interlock workflow: pre-trip testing, random re-tests, BAC threshold enforcement, engine lockout, photo evidence, and compliance reporting.",
+    category: "compliance",
+    icon: "🍺",
+    difficulty: "intermediate",
+    estimatedSavings: "~99% DUI prevention",
+    tags: ["alcohol", "breathalyzer", "interlock", "BAC", "compliance", "safety"],
+    nodes: [
+      { id: "t1", type: "trigger", position: { x: 400, y: 50 }, data: { label: "Ignition Start Attempt", description: "Driver turns key - breathalyzer test required", icon: "⚡", category: "triggers", nodeType: "trigger_event", config: { eventType: "ignition_attempt" }, status: "idle", isConfigured: true } },
+      { id: "a1", type: "action", position: { x: 400, y: 210 }, data: { label: "Request Breath Test", description: "Prompt driver to blow into breathalyzer", icon: "🍺", category: "safety_hardware", nodeType: "hw_alcohol", config: { action: "request_test", timeout_seconds: 60 }, status: "idle", isConfigured: true } },
+      { id: "c1", type: "condition", position: { x: 400, y: 380 }, data: { label: "Test Completed?", description: "Did driver provide breath sample?", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "test.completed", operator: "equals", rightOperand: "true" }, status: "idle", isConfigured: true } },
+      { id: "c2", type: "condition", position: { x: 200, y: 550 }, data: { label: "BAC < 0.02%?", description: "Below legal limit for commercial drivers", icon: "📊", category: "conditions", nodeType: "condition_threshold", config: { leftOperand: "test.bac_percent", operator: "less_than", rightOperand: "0.02" }, status: "idle", isConfigured: true } },
+      { id: "a2", type: "action", position: { x: 50, y: 720 }, data: { label: "✅ Allow Engine Start", description: "Unlock immobilizer - driver is sober", icon: "🔓", category: "fleet", nodeType: "fleet_immobilize", config: { action: "unlock" }, status: "idle", isConfigured: true } },
+      { id: "a3", type: "action", position: { x: 50, y: 880 }, data: { label: "Schedule Random Re-Test", description: "Random re-test during trip (30-90 min)", icon: "⏰", category: "timing", nodeType: "timing_delay", config: { duration: "random(30,90)", durationUnit: "minutes" }, status: "idle", isConfigured: true } },
+      { id: "a4", type: "action", position: { x: 350, y: 720 }, data: { label: "🚫 Block Engine", description: "Keep vehicle immobilized - DUI positive", icon: "🔒", category: "fleet", nodeType: "fleet_immobilize", config: { action: "lock", reason: "positive_bac" }, status: "idle", isConfigured: true } },
+      { id: "a5", type: "action", position: { x: 350, y: 880 }, data: { label: "Capture Driver Photo", description: "Camera photo for evidence chain", icon: "📹", category: "safety_hardware", nodeType: "hw_dashcam", config: { action: "capture_snapshot", camera: "interior" }, status: "idle", isConfigured: true } },
+      { id: "a6", type: "action", position: { x: 350, y: 1040 }, data: { label: "🚨 Alert Management", description: "Critical DUI alert to all stakeholders", icon: "📢", category: "notifications", nodeType: "notify_escalation", config: { mode: "all_channels", template: "🍺 DUI POSITIVE: {{driver.name}} in {{vehicle.name}} - BAC: {{bac}}% - Engine locked" }, status: "idle", isConfigured: true } },
+      { id: "a7", type: "action", position: { x: 600, y: 550 }, data: { label: "Test Refused - Lock", description: "Refusal treated as positive result", icon: "🔒", category: "fleet", nodeType: "fleet_immobilize", config: { action: "lock", reason: "test_refused" }, status: "idle", isConfigured: true } },
+      { id: "a8", type: "action", position: { x: 600, y: 720 }, data: { label: "Log Compliance Record", description: "Record all test results for audit", icon: "📋", category: "data", nodeType: "data_log_history", config: { table: "alcohol_test_logs" }, status: "idle", isConfigured: true } },
+    ],
+    edges: [
+      { id: "e1", source: "t1", target: "a1", type: "smoothstep", animated: true },
+      { id: "e2", source: "a1", target: "c1", type: "smoothstep", animated: true },
+      { id: "e3", source: "c1", target: "c2", sourceHandle: "true", type: "smoothstep", animated: true },
+      { id: "e4", source: "c2", target: "a2", sourceHandle: "true", type: "smoothstep", animated: true },
+      { id: "e5", source: "a2", target: "a3", type: "smoothstep", animated: true },
+      { id: "e6", source: "c2", target: "a4", sourceHandle: "false", type: "smoothstep", animated: true },
+      { id: "e7", source: "a4", target: "a5", type: "smoothstep", animated: true },
+      { id: "e8", source: "a5", target: "a6", type: "smoothstep", animated: true },
+      { id: "e9", source: "c1", target: "a7", sourceHandle: "false", type: "smoothstep", animated: true },
+      { id: "e10", source: "a6", target: "a8", type: "smoothstep", animated: true },
+      { id: "e11", source: "a7", target: "a8", type: "smoothstep", animated: true },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 12. MAINTENANCE WORKFLOWS (Multi-Type)
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "tpl_maintenance_lifecycle",
+    name: "Complete Maintenance Lifecycle",
+    description: "Full maintenance workflow: scheduled PM → inspection → work order → parts procurement → technician assignment → completion → quality check → vehicle release. Covers preventive, corrective, and emergency maintenance types.",
+    category: "maintenance",
+    icon: "🔧",
+    difficulty: "advanced",
+    estimatedSavings: "~40% downtime reduction",
+    tags: ["maintenance", "preventive", "corrective", "emergency", "work-order", "parts", "lifecycle"],
+    nodes: [
+      { id: "t1", type: "trigger", position: { x: 400, y: 50 }, data: { label: "Maintenance Due", description: "Schedule triggered by mileage, date, or condition", icon: "⏰", category: "triggers", nodeType: "trigger_schedule", config: { sources: ["mileage", "calendar", "condition_based"] }, status: "idle", isConfigured: true } },
+      { id: "c1", type: "condition", position: { x: 400, y: 220 }, data: { label: "Maintenance Type?", description: "Preventive, Corrective, or Emergency?", icon: "🔃", category: "conditions", nodeType: "condition_switch", config: { field: "maintenance.type", cases: ["preventive", "corrective", "emergency"] }, status: "idle", isConfigured: true } },
+      { id: "a1", type: "action", position: { x: 150, y: 400 }, data: { label: "Create Work Order", description: "Auto-generate WO with service checklist", icon: "🔧", category: "fleet", nodeType: "fleet_maintenance", config: { autoAssign: true }, status: "idle", isConfigured: true } },
+      { id: "a2", type: "action", position: { x: 150, y: 560 }, data: { label: "Check Parts Inventory", description: "Verify required parts availability", icon: "🗄️", category: "data", nodeType: "data_lookup", config: { table: "inventory_items" }, status: "idle", isConfigured: true } },
+      { id: "c2", type: "condition", position: { x: 150, y: 720 }, data: { label: "Parts Available?", description: "Are all required parts in stock?", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "parts.all_available", operator: "equals", rightOperand: "true" }, status: "idle", isConfigured: true } },
+      { id: "a3", type: "action", position: { x: 50, y: 900 }, data: { label: "Assign Technician", description: "Auto-assign based on skill + availability", icon: "👤", category: "fleet", nodeType: "fleet_assign_driver", config: { role: "technician", matchSkill: true }, status: "idle", isConfigured: true } },
+      { id: "a4", type: "action", position: { x: 300, y: 900 }, data: { label: "Order Parts", description: "Auto-generate purchase order for missing parts", icon: "🔗", category: "data", nodeType: "data_api_call", config: { method: "POST", url: "procurement/order" }, status: "idle", isConfigured: true } },
+      { id: "a5", type: "action", position: { x: 50, y: 1060 }, data: { label: "Notify Technician", description: "Push work order details to assigned tech", icon: "🔔", category: "notifications", nodeType: "notify_push", config: { template: "🔧 New WO: {{wo.number}} - {{vehicle.name}} - {{service.type}}" }, status: "idle", isConfigured: true } },
+      { id: "a6", type: "action", position: { x: 50, y: 1220 }, data: { label: "Quality Check", description: "Post-service inspection verification", icon: "✅", category: "fleet", nodeType: "fleet_request_approval", config: { approver: "quality_inspector" }, status: "idle", isConfigured: true } },
+      { id: "a7", type: "action", position: { x: 50, y: 1380 }, data: { label: "Release Vehicle", description: "Update status to 'active', reset schedule", icon: "🚛", category: "fleet", nodeType: "fleet_update_vehicle", config: { status: "active", action: "reset_maintenance_schedule" }, status: "idle", isConfigured: true } },
+      { id: "a8", type: "action", position: { x: 650, y: 400 }, data: { label: "🚨 Emergency: Immediate WO", description: "Skip scheduling, create critical priority WO", icon: "🔧", category: "fleet", nodeType: "fleet_maintenance", config: { priority: "critical", immediate: true }, status: "idle", isConfigured: true } },
+      { id: "a9", type: "action", position: { x: 650, y: 560 }, data: { label: "Pull Vehicle from Service", description: "Immediately deactivate vehicle from fleet", icon: "🚛", category: "fleet", nodeType: "fleet_update_vehicle", config: { status: "in_maintenance" }, status: "idle", isConfigured: true } },
+    ],
+    edges: [
+      { id: "e1", source: "t1", target: "c1", type: "smoothstep", animated: true },
+      { id: "e2", source: "c1", target: "a1", type: "smoothstep", animated: true },
+      { id: "e3", source: "a1", target: "a2", type: "smoothstep", animated: true },
+      { id: "e4", source: "a2", target: "c2", type: "smoothstep", animated: true },
+      { id: "e5", source: "c2", target: "a3", sourceHandle: "true", type: "smoothstep", animated: true },
+      { id: "e6", source: "c2", target: "a4", sourceHandle: "false", type: "smoothstep", animated: true },
+      { id: "e7", source: "a3", target: "a5", type: "smoothstep", animated: true },
+      { id: "e8", source: "a5", target: "a6", type: "smoothstep", animated: true },
+      { id: "e9", source: "a6", target: "a7", type: "smoothstep", animated: true },
+      { id: "e10", source: "c1", target: "a8", type: "smoothstep", animated: true },
+      { id: "e11", source: "a8", target: "a9", type: "smoothstep", animated: true },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 13. FLEET OPERATIONS COMPREHENSIVE WORKFLOW
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "tpl_fleet_operations",
+    name: "Fleet Operations Command Center",
+    description: "End-to-end fleet operations: daily vehicle checkout, trip assignment, real-time monitoring, incident handling, end-of-day checkout, and performance scoring.",
+    category: "operations",
+    icon: "🏢",
+    difficulty: "advanced",
+    estimatedSavings: "~50% operational efficiency gain",
+    tags: ["operations", "checkout", "monitoring", "incident", "performance", "command-center"],
+    nodes: [
+      { id: "t1", type: "trigger", position: { x: 400, y: 50 }, data: { label: "Shift Start (6 AM)", description: "Daily fleet operations kick-off", icon: "⏰", category: "triggers", nodeType: "trigger_schedule", config: { cron: "0 6 * * *" }, status: "idle", isConfigured: true } },
+      { id: "a1", type: "action", position: { x: 400, y: 210 }, data: { label: "Generate Vehicle Assignments", description: "Match drivers to vehicles based on schedule", icon: "👤", category: "fleet", nodeType: "fleet_assign_driver", config: { mode: "daily_assignment" }, status: "idle", isConfigured: true } },
+      { id: "a2", type: "action", position: { x: 400, y: 370 }, data: { label: "Pre-Trip Inspection Check", description: "Verify all assigned vehicles passed inspection", icon: "✅", category: "fleet", nodeType: "fleet_request_approval", config: { type: "pre_trip_inspection" }, status: "idle", isConfigured: true } },
+      { id: "a3", type: "action", position: { x: 400, y: 530 }, data: { label: "Dispatch All Trips", description: "Release trip assignments to drivers", icon: "🗺️", category: "fleet", nodeType: "fleet_create_trip", config: { mode: "batch_dispatch" }, status: "idle", isConfigured: true } },
+      { id: "a4", type: "action", position: { x: 200, y: 690 }, data: { label: "Monitor Fleet Live", description: "Real-time tracking, alerts, geofence triggers", icon: "📈", category: "data", nodeType: "data_aggregate", config: { operation: "live_fleet_dashboard" }, status: "idle", isConfigured: true } },
+      { id: "a5", type: "action", position: { x: 600, y: 690 }, data: { label: "Handle Incidents", description: "Auto-process incoming alerts and events", icon: "🚨", category: "triggers", nodeType: "trigger_alert", config: { alertType: "any" }, status: "idle", isConfigured: true } },
+      { id: "a6", type: "action", position: { x: 400, y: 850 }, data: { label: "End-of-Day Reports", description: "Compile daily fleet performance KPIs", icon: "📊", category: "data", nodeType: "data_transform", config: { transform: "daily_fleet_kpis" }, status: "idle", isConfigured: true } },
+      { id: "a7", type: "action", position: { x: 400, y: 1010 }, data: { label: "Email Daily Summary", description: "Send comprehensive report to management", icon: "📧", category: "notifications", nodeType: "notify_email", config: { recipients: "management", template: "daily_operations_report" }, status: "idle", isConfigured: true } },
+    ],
+    edges: [
+      { id: "e1", source: "t1", target: "a1", type: "smoothstep", animated: true },
+      { id: "e2", source: "a1", target: "a2", type: "smoothstep", animated: true },
+      { id: "e3", source: "a2", target: "a3", type: "smoothstep", animated: true },
+      { id: "e4", source: "a3", target: "a4", type: "smoothstep", animated: true },
+      { id: "e5", source: "a3", target: "a5", type: "smoothstep", animated: true },
+      { id: "e6", source: "a4", target: "a6", type: "smoothstep", animated: true },
+      { id: "e7", source: "a6", target: "a7", type: "smoothstep", animated: true },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 14. FUEL OPERATIONS (Procurement to Consumption)
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "tpl_fuel_operations",
+    name: "Fuel Operations & Procurement",
+    description: "Complete fuel lifecycle: procurement authorization, approved stations only, card reconciliation, consumption benchmarking, and monthly cost allocation per vehicle/department.",
+    category: "fuel",
+    icon: "🛢️",
+    difficulty: "advanced",
+    estimatedSavings: "~25% fuel cost control",
+    tags: ["fuel", "procurement", "authorization", "card", "reconciliation", "budget"],
+    nodes: [
+      { id: "t1", type: "trigger", position: { x: 400, y: 50 }, data: { label: "Fuel Request Submitted", description: "Driver or system requests fuel authorization", icon: "⚡", category: "triggers", nodeType: "trigger_event", config: { eventType: "fuel_request" }, status: "idle", isConfigured: true } },
+      { id: "c1", type: "condition", position: { x: 400, y: 220 }, data: { label: "Budget Available?", description: "Check department/vehicle fuel budget", icon: "📊", category: "conditions", nodeType: "condition_threshold", config: { leftOperand: "vehicle.fuel_budget_remaining", operator: "greater_than", rightOperand: "0" }, status: "idle", isConfigured: true } },
+      { id: "a1", type: "action", position: { x: 200, y: 400 }, data: { label: "Approve Fuel Request", description: "Generate fuel authorization code", icon: "✅", category: "fleet", nodeType: "fleet_request_approval", config: { action: "approve_fuel" }, status: "idle", isConfigured: true } },
+      { id: "c2", type: "condition", position: { x: 200, y: 560 }, data: { label: "At Approved Station?", description: "Is vehicle at an approved fuel station?", icon: "🎯", category: "conditions", nodeType: "condition_geo_proximity", config: { target: "approved_fuel_stations", radius_m: 200 }, status: "idle", isConfigured: true } },
+      { id: "a2", type: "action", position: { x: 50, y: 740 }, data: { label: "Enable Fuel Card", description: "Activate fuel card for this transaction", icon: "💳", category: "data", nodeType: "data_api_call", config: { method: "POST", url: "fuel_card/activate" }, status: "idle", isConfigured: true } },
+      { id: "a3", type: "action", position: { x: 350, y: 740 }, data: { label: "🚫 Reject: Wrong Station", description: "Block fuel card - not at approved station", icon: "🔒", category: "notifications", nodeType: "notify_push", config: { template: "⛽ Fuel denied: {{station.name}} is not approved. Nearest: {{nearest_approved.name}}" }, status: "idle", isConfigured: true } },
+      { id: "a4", type: "action", position: { x: 600, y: 400 }, data: { label: "🚫 Budget Exceeded", description: "Reject - monthly fuel budget depleted", icon: "📧", category: "notifications", nodeType: "notify_email", config: { recipients: "fleet_manager", template: "⛽ Budget exceeded: {{vehicle.name}} needs approval override" }, status: "idle", isConfigured: true } },
+      { id: "a5", type: "action", position: { x: 50, y: 900 }, data: { label: "Log Transaction", description: "Record fuel purchase with receipt verification", icon: "📋", category: "data", nodeType: "data_log_history", config: { table: "fuel_transactions" }, status: "idle", isConfigured: true } },
+      { id: "a6", type: "action", position: { x: 50, y: 1060 }, data: { label: "Update Budget Allocation", description: "Deduct from vehicle/department budget", icon: "📈", category: "data", nodeType: "data_aggregate", config: { operation: "deduct_fuel_budget" }, status: "idle", isConfigured: true } },
+    ],
+    edges: [
+      { id: "e1", source: "t1", target: "c1", type: "smoothstep", animated: true },
+      { id: "e2", source: "c1", target: "a1", sourceHandle: "true", type: "smoothstep", animated: true },
+      { id: "e3", source: "a1", target: "c2", type: "smoothstep", animated: true },
+      { id: "e4", source: "c2", target: "a2", sourceHandle: "true", type: "smoothstep", animated: true },
+      { id: "e5", source: "c2", target: "a3", sourceHandle: "false", type: "smoothstep", animated: true },
+      { id: "e6", source: "c1", target: "a4", sourceHandle: "false", type: "smoothstep", animated: true },
+      { id: "e7", source: "a2", target: "a5", type: "smoothstep", animated: true },
+      { id: "e8", source: "a5", target: "a6", type: "smoothstep", animated: true },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 15. ACCIDENT DETECTION VIA SHOCK SENSOR + HISTORY
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "tpl_accident_detection",
+    name: "Accident Detection & Response (Shock Sensor)",
+    description: "Multi-G accelerometer detects impacts, classifies severity (minor bump → major collision), auto-calls emergency, captures 360° dashcam, starts live tracking, creates accident history with full evidence chain.",
+    category: "safety",
+    icon: "💥",
+    difficulty: "advanced",
+    estimatedSavings: "Critical: lives saved, ~60% faster response",
+    tags: ["accident", "shock", "collision", "emergency", "accelerometer", "history", "evidence"],
+    nodes: [
+      { id: "t1", type: "trigger", position: { x: 400, y: 50 }, data: { label: "Shock Sensor Alert", description: "Accelerometer detects impact > 2G", icon: "💥", category: "triggers", nodeType: "trigger_sensor", config: { sensorType: "accelerometer", threshold_g: 2.0 }, status: "idle", isConfigured: true } },
+      { id: "c1", type: "condition", position: { x: 400, y: 220 }, data: { label: "Impact Severity?", description: "Classify: Minor (2-4G), Moderate (4-8G), Severe (8G+)", icon: "🔃", category: "conditions", nodeType: "condition_switch", config: { field: "impact.g_force", cases: ["minor_2_4g", "moderate_4_8g", "severe_8g_plus"] }, status: "idle", isConfigured: true } },
+      { id: "a1", type: "action", position: { x: 100, y: 420 }, data: { label: "🚨 Emergency Protocol", description: "Auto-call emergency services + send GPS", icon: "🔗", category: "data", nodeType: "data_api_call", config: { method: "POST", url: "emergency_services/crash_report", data: ["gps", "vehicle_info", "g_force"] }, status: "idle", isConfigured: true } },
+      { id: "a2", type: "action", position: { x: 100, y: 590 }, data: { label: "Record All Cameras", description: "30s pre-impact + continuous post-impact recording", icon: "📹", category: "safety_hardware", nodeType: "hw_dashcam", config: { action: "crash_record", pre_buffer: 30, cameras: "all_360" }, status: "idle", isConfigured: true } },
+      { id: "a3", type: "action", position: { x: 100, y: 760 }, data: { label: "Start Live Stream", description: "Open live video feed to control room", icon: "📹", category: "safety_hardware", nodeType: "hw_dashcam", config: { action: "start_live_stream" }, status: "idle", isConfigured: true } },
+      { id: "a4", type: "action", position: { x: 400, y: 420 }, data: { label: "High-Freq GPS Tracking", description: "GPS every 2 seconds for rescue teams", icon: "📡", category: "fleet", nodeType: "fleet_update_vehicle", config: { tracking_interval: 2, mode: "emergency" }, status: "idle", isConfigured: true } },
+      { id: "a5", type: "action", position: { x: 400, y: 590 }, data: { label: "Alert All Stakeholders", description: "SMS + Push + Email to managers, family contact", icon: "📢", category: "notifications", nodeType: "notify_escalation", config: { mode: "all_channels", recipients: ["emergency", "fleet_manager", "driver_family"], template: "💥 ACCIDENT: {{vehicle.name}} - Impact: {{g_force}}G at {{location}} - {{driver.name}}" }, status: "idle", isConfigured: true } },
+      { id: "a6", type: "action", position: { x: 700, y: 420 }, data: { label: "Log to Accident History", description: "Create detailed accident record with evidence", icon: "📋", category: "data", nodeType: "data_log_history", config: { table: "accident_history", fields: ["g_force", "gps", "speed", "dashcam_clips", "vehicle_damage_estimate"] }, status: "idle", isConfigured: true } },
+      { id: "a7", type: "action", position: { x: 700, y: 590 }, data: { label: "Pull Vehicle from Fleet", description: "Mark vehicle as 'accident - out of service'", icon: "🚛", category: "fleet", nodeType: "fleet_update_vehicle", config: { status: "accident", flags: ["out_of_service", "pending_inspection"] }, status: "idle", isConfigured: true } },
+      { id: "a8", type: "action", position: { x: 400, y: 760 }, data: { label: "Dispatch Nearest Vehicle", description: "Send closest fleet vehicle to crash site", icon: "🗺️", category: "fleet", nodeType: "fleet_create_trip", config: { type: "emergency_response", target: "accident_location" }, status: "idle", isConfigured: true } },
+      { id: "a9", type: "action", position: { x: 700, y: 760 }, data: { label: "Insurance Report Auto-Gen", description: "Generate preliminary insurance claim with evidence", icon: "🔄", category: "data", nodeType: "data_transform", config: { transform: "generate_insurance_report" }, status: "idle", isConfigured: true } },
+    ],
+    edges: [
+      { id: "e1", source: "t1", target: "c1", type: "smoothstep", animated: true },
+      { id: "e2", source: "c1", target: "a1", type: "smoothstep", animated: true },
+      { id: "e3", source: "a1", target: "a2", type: "smoothstep", animated: true },
+      { id: "e4", source: "a2", target: "a3", type: "smoothstep", animated: true },
+      { id: "e5", source: "c1", target: "a4", type: "smoothstep", animated: true },
+      { id: "e6", source: "a4", target: "a5", type: "smoothstep", animated: true },
+      { id: "e7", source: "c1", target: "a6", type: "smoothstep", animated: true },
+      { id: "e8", source: "a6", target: "a7", type: "smoothstep", animated: true },
+      { id: "e9", source: "a5", target: "a8", type: "smoothstep", animated: true },
+      { id: "e10", source: "a7", target: "a9", type: "smoothstep", animated: true },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 16. FLEET REQUEST WORKFLOW (Full Approval Chain)
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "tpl_fleet_request",
+    name: "Fleet Request & Approval Workflow",
+    description: "Complete fleet request lifecycle: vehicle request → manager approval → availability check → assignment → usage tracking → return inspection → damage assessment → billing.",
+    category: "operations",
+    icon: "📝",
+    difficulty: "advanced",
+    estimatedSavings: "~70% faster fleet request processing",
+    tags: ["request", "approval", "assignment", "return", "inspection", "billing", "workflow"],
+    nodes: [
+      { id: "t1", type: "trigger", position: { x: 400, y: 50 }, data: { label: "Fleet Request Submitted", description: "Employee/department requests a vehicle", icon: "⚡", category: "triggers", nodeType: "trigger_event", config: { eventType: "fleet_request" }, status: "idle", isConfigured: true } },
+      { id: "a1", type: "action", position: { x: 400, y: 210 }, data: { label: "Validate Request", description: "Check requestor permissions, license, training", icon: "🔄", category: "data", nodeType: "data_transform", config: { transform: "validate_fleet_request" }, status: "idle", isConfigured: true } },
+      { id: "c1", type: "condition", position: { x: 400, y: 380 }, data: { label: "Auto-Approvable?", description: "Within pre-approved limits? (< 3 days, local use)", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "request.auto_approve_eligible", operator: "equals", rightOperand: "true" }, status: "idle", isConfigured: true } },
+      { id: "a2", type: "action", position: { x: 200, y: 550 }, data: { label: "Auto-Approve", description: "Instant approval within pre-set limits", icon: "✅", category: "fleet", nodeType: "fleet_request_approval", config: { action: "auto_approve" }, status: "idle", isConfigured: true } },
+      { id: "a3", type: "action", position: { x: 600, y: 550 }, data: { label: "Route to Manager", description: "Send for manager approval with details", icon: "📧", category: "notifications", nodeType: "notify_email", config: { recipients: "department_manager", template: "📝 Fleet request: {{requestor.name}} needs {{vehicle_type}} for {{duration}} days" }, status: "idle", isConfigured: true } },
+      { id: "a4", type: "action", position: { x: 600, y: 710 }, data: { label: "Wait for Approval", description: "Pause until manager approves/rejects", icon: "⏳", category: "timing", nodeType: "timing_delay", config: { mode: "wait_for_event", event: "approval_decision" }, status: "idle", isConfigured: true } },
+      { id: "a5", type: "action", position: { x: 400, y: 710 }, data: { label: "Find Available Vehicle", description: "Match vehicle type, location, maintenance status", icon: "🗄️", category: "data", nodeType: "data_lookup", config: { table: "vehicles", filter: "available", match: ["type", "location", "capacity"] }, status: "idle", isConfigured: true } },
+      { id: "a6", type: "action", position: { x: 400, y: 870 }, data: { label: "Assign Vehicle + Keys", description: "Reserve vehicle, generate digital key/PIN", icon: "🚛", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "assign_to_requestor" }, status: "idle", isConfigured: true } },
+      { id: "a7", type: "action", position: { x: 400, y: 1030 }, data: { label: "Notify Requestor", description: "Send assignment details + pickup instructions", icon: "📱", category: "notifications", nodeType: "notify_sms", config: { template: "✅ Vehicle assigned: {{vehicle.name}} - Pickup at {{depot.name}} - PIN: {{access_pin}}" }, status: "idle", isConfigured: true } },
+      { id: "a8", type: "action", position: { x: 400, y: 1190 }, data: { label: "Track Usage", description: "Monitor distance, fuel, geofence compliance during use", icon: "📈", category: "data", nodeType: "data_aggregate", config: { operation: "track_request_usage" }, status: "idle", isConfigured: true } },
+      { id: "a9", type: "action", position: { x: 400, y: 1350 }, data: { label: "Return Inspection", description: "Compare pre/post condition, damage assessment", icon: "🔧", category: "fleet", nodeType: "fleet_maintenance", config: { type: "return_inspection" }, status: "idle", isConfigured: true } },
+    ],
+    edges: [
+      { id: "e1", source: "t1", target: "a1", type: "smoothstep", animated: true },
+      { id: "e2", source: "a1", target: "c1", type: "smoothstep", animated: true },
+      { id: "e3", source: "c1", target: "a2", sourceHandle: "true", type: "smoothstep", animated: true },
+      { id: "e4", source: "c1", target: "a3", sourceHandle: "false", type: "smoothstep", animated: true },
+      { id: "e5", source: "a3", target: "a4", type: "smoothstep", animated: true },
+      { id: "e6", source: "a2", target: "a5", type: "smoothstep", animated: true },
+      { id: "e7", source: "a4", target: "a5", type: "smoothstep", animated: true },
+      { id: "e8", source: "a5", target: "a6", type: "smoothstep", animated: true },
+      { id: "e9", source: "a6", target: "a7", type: "smoothstep", animated: true },
+      { id: "e10", source: "a7", target: "a8", type: "smoothstep", animated: true },
+      { id: "e11", source: "a8", target: "a9", type: "smoothstep", animated: true },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 17. EV CHARGING & FUEL STANDARD CLEARANCE
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "tpl_ev_charging",
+    name: "EV Charging & Energy Management",
+    description: "Electric vehicle fleet management: battery monitoring, smart charging scheduling (off-peak rates), range anxiety prevention, charging station routing, and energy cost optimization vs ICE fleet comparison.",
+    category: "ev_charging",
+    icon: "🔋",
+    difficulty: "advanced",
+    estimatedSavings: "~40% energy cost vs ICE fleet",
+    tags: ["EV", "electric", "charging", "battery", "range", "energy", "smart-charging"],
+    nodes: [
+      { id: "t1", type: "trigger", position: { x: 400, y: 50 }, data: { label: "Battery Level Update", description: "EV battery SOC reported via CAN bus", icon: "🔋", category: "triggers", nodeType: "trigger_sensor", config: { sensorType: "ev_battery_soc", interval: 120 }, status: "idle", isConfigured: true } },
+      { id: "c1", type: "condition", position: { x: 400, y: 220 }, data: { label: "SOC < 20%?", description: "Battery state of charge below 20%", icon: "📊", category: "conditions", nodeType: "condition_threshold", config: { leftOperand: "battery.soc_percent", operator: "less_than", rightOperand: "20" }, status: "idle", isConfigured: true } },
+      { id: "a1", type: "action", position: { x: 150, y: 400 }, data: { label: "Calculate Remaining Range", description: "Estimate km left based on driving pattern", icon: "🔄", category: "data", nodeType: "data_transform", config: { transform: "ev_range_prediction" }, status: "idle", isConfigured: true } },
+      { id: "a2", type: "action", position: { x: 150, y: 560 }, data: { label: "Find Nearest Charger", description: "Locate available charging stations in range", icon: "🎯", category: "conditions", nodeType: "condition_geo_proximity", config: { target: "ev_charging_stations", radius_km: 30 }, status: "idle", isConfigured: true } },
+      { id: "c2", type: "condition", position: { x: 150, y: 730 }, data: { label: "Fast Charger Available?", description: "Is DC fast charger within range?", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "charger.type", operator: "equals", rightOperand: "DC_fast" }, status: "idle", isConfigured: true } },
+      { id: "a3", type: "action", position: { x: 50, y: 900 }, data: { label: "Route to Fast Charger", description: "Navigate to DC fast charger", icon: "🛤️", category: "fleet", nodeType: "fleet_route_optimize", config: { destination: "nearest_dc_fast" }, status: "idle", isConfigured: true } },
+      { id: "a4", type: "action", position: { x: 300, y: 900 }, data: { label: "Alert: Charge at Next Stop", description: "No fast charger - plan charging at destination", icon: "🔔", category: "notifications", nodeType: "notify_push", config: { template: "🔋 Low battery ({{soc}}%). Plan charging at {{destination}}. Range: {{range_km}}km" }, status: "idle", isConfigured: true } },
+      { id: "a5", type: "action", position: { x: 650, y: 400 }, data: { label: "Smart Charge Scheduling", description: "Schedule charging during off-peak electricity rates", icon: "🔋", category: "safety_hardware", nodeType: "hw_ev_charger", config: { mode: "smart_schedule", prefer: "off_peak" }, status: "idle", isConfigured: true } },
+      { id: "a6", type: "action", position: { x: 650, y: 560 }, data: { label: "Log Energy Consumption", description: "Record kWh used, cost per km, CO2 saved", icon: "📋", category: "data", nodeType: "data_log_history", config: { table: "ev_energy_logs", fields: ["kwh", "cost", "co2_saved"] }, status: "idle", isConfigured: true } },
+      { id: "a7", type: "action", position: { x: 650, y: 720 }, data: { label: "Compare vs ICE Cost", description: "Generate EV vs diesel cost comparison", icon: "📈", category: "data", nodeType: "data_aggregate", config: { operation: "ev_vs_ice_cost_comparison" }, status: "idle", isConfigured: true } },
+    ],
+    edges: [
+      { id: "e1", source: "t1", target: "c1", type: "smoothstep", animated: true },
+      { id: "e2", source: "c1", target: "a1", sourceHandle: "true", type: "smoothstep", animated: true },
+      { id: "e3", source: "a1", target: "a2", type: "smoothstep", animated: true },
+      { id: "e4", source: "a2", target: "c2", type: "smoothstep", animated: true },
+      { id: "e5", source: "c2", target: "a3", sourceHandle: "true", type: "smoothstep", animated: true },
+      { id: "e6", source: "c2", target: "a4", sourceHandle: "false", type: "smoothstep", animated: true },
+      { id: "e7", source: "c1", target: "a5", sourceHandle: "false", type: "smoothstep", animated: true },
+      { id: "e8", source: "a5", target: "a6", type: "smoothstep", animated: true },
+      { id: "e9", source: "a6", target: "a7", type: "smoothstep", animated: true },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 18. PREDICTIVE MAINTENANCE (Enhanced)
+  // ═══════════════════════════════════════════════════════════════
   {
     id: "tpl_predictive_maintenance",
     name: "Predictive Maintenance Scheduler",
@@ -74,67 +671,40 @@ const TEMPLATES: WorkflowTemplate[] = [
     ],
   },
 
-  // 3. Fuel Theft Detection
+  // ═══════════════════════════════════════════════════════════════
+  // 19. SOS EMERGENCY RESPONSE CHAIN
+  // ═══════════════════════════════════════════════════════════════
   {
-    id: "tpl_fuel_theft",
-    name: "Fuel Theft Detection & Response",
-    description: "Monitors fuel level drops, cross-references with fuel station proximity, and triggers investigation if theft is suspected.",
-    category: "fuel",
-    icon: "⛽",
+    id: "tpl_sos_response",
+    name: "SOS Emergency Response Chain",
+    description: "Multi-tier emergency response: driver SOS → nearby vehicle dispatch → emergency services notification → management escalation.",
+    category: "safety",
+    icon: "🆘",
     difficulty: "advanced",
-    estimatedSavings: "~$12K/yr per 100 vehicles",
-    tags: ["fuel", "theft", "geofence", "investigation"],
+    estimatedSavings: "Critical safety compliance",
+    tags: ["SOS", "emergency", "safety", "escalation"],
     nodes: [
-      { id: "t1", type: "trigger", position: { x: 400, y: 50 }, data: { label: "Fuel Level Drop", description: "Triggered by sudden fuel drop > 10%", icon: "⚡", category: "triggers", nodeType: "trigger_event", config: { eventType: "fuel_drop", threshold: 10 }, status: "idle", isConfigured: true } },
-      { id: "c1", type: "condition", position: { x: 400, y: 200 }, data: { label: "Near Fuel Station?", description: "Is the vehicle near an approved fuel station?", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "vehicle.near_fuel_station", operator: "equals", rightOperand: "true" }, status: "idle", isConfigured: true } },
-      { id: "c2", type: "condition", position: { x: 200, y: 380 }, data: { label: "Engine Running?", description: "Was the engine running during fuel drop?", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "vehicle.ignition", operator: "equals", rightOperand: "off" }, status: "idle", isConfigured: true } },
-      { id: "a1", type: "action", position: { x: 100, y: 560 }, data: { label: "Flag Theft Suspected", description: "Create fuel theft investigation case", icon: "🚨", category: "fleet", nodeType: "fleet_update_vehicle", config: { flag: "fuel_theft_suspected" }, status: "idle", isConfigured: true } },
-      { id: "a2", type: "action", position: { x: 100, y: 710 }, data: { label: "Alert Security Team", description: "Immediate SMS + push to security", icon: "📱", category: "notifications", nodeType: "notify_sms", config: { recipients: "security_team", template: "🚨 FUEL THEFT SUSPECTED: {{vehicle.name}} at {{vehicle.location}}" }, status: "idle", isConfigured: true } },
-      { id: "a3", type: "action", position: { x: 100, y: 860 }, data: { label: "Lock Vehicle", description: "Send immobilizer command", icon: "🏎️", category: "fleet", nodeType: "fleet_speed_limit", config: { action: "immobilize" }, status: "idle", isConfigured: true } },
-      { id: "a4", type: "action", position: { x: 400, y: 560 }, data: { label: "Log Anomaly", description: "Record as anomalous fuel event", icon: "📈", category: "data", nodeType: "data_aggregate", config: { operation: "log_anomaly" }, status: "idle", isConfigured: true } },
-      { id: "a5", type: "action", position: { x: 600, y: 380 }, data: { label: "Match Fuel Receipt", description: "Cross-check with fuel card transaction", icon: "🔄", category: "data", nodeType: "data_transform", config: { transform: "match_fuel_receipt" }, status: "idle", isConfigured: true } },
-    ],
-    edges: [
-      { id: "e1", source: "t1", target: "c1", type: "smoothstep", animated: true },
-      { id: "e2", source: "c1", target: "c2", sourceHandle: "false", type: "smoothstep", animated: true },
-      { id: "e3", source: "c2", target: "a1", sourceHandle: "true", type: "smoothstep", animated: true },
-      { id: "e4", source: "a1", target: "a2", type: "smoothstep", animated: true },
-      { id: "e5", source: "a2", target: "a3", type: "smoothstep", animated: true },
-      { id: "e6", source: "c2", target: "a4", sourceHandle: "false", type: "smoothstep", animated: true },
-      { id: "e7", source: "c1", target: "a5", sourceHandle: "true", type: "smoothstep", animated: true },
-    ],
-  },
-
-  // 4. Geofence-Based Auto-Dispatch
-  {
-    id: "tpl_geofence_dispatch",
-    name: "Geofence Auto-Dispatch",
-    description: "When a vehicle enters a customer zone, automatically assigns the next delivery job and notifies the customer with ETA.",
-    category: "operations",
-    icon: "📍",
-    difficulty: "intermediate",
-    estimatedSavings: "~25% faster dispatching",
-    tags: ["geofence", "dispatch", "customer", "ETA"],
-    nodes: [
-      { id: "t1", type: "trigger", position: { x: 400, y: 50 }, data: { label: "Enter Customer Zone", description: "Vehicle enters customer geofence", icon: "📍", category: "triggers", nodeType: "trigger_geofence", config: { eventType: "enter" }, status: "idle", isConfigured: true } },
-      { id: "a1", type: "action", position: { x: 400, y: 200 }, data: { label: "Lookup Pending Jobs", description: "Find pending dispatch jobs for this zone", icon: "🗄️", category: "data", nodeType: "data_lookup", config: { table: "dispatch_jobs", filter: "pending" }, status: "idle", isConfigured: true } },
-      { id: "c1", type: "condition", position: { x: 400, y: 370 }, data: { label: "Jobs Available?", description: "Are there pending jobs in this zone?", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "jobs.count", operator: "greater_than", rightOperand: "0" }, status: "idle", isConfigured: true } },
-      { id: "a2", type: "action", position: { x: 200, y: 540 }, data: { label: "Auto-Assign Job", description: "Assign nearest job to this vehicle", icon: "🗺️", category: "fleet", nodeType: "fleet_create_trip", config: { autoAssign: true }, status: "idle", isConfigured: true } },
-      { id: "a3", type: "action", position: { x: 200, y: 690 }, data: { label: "Calculate ETA", description: "Get real-time ETA via routing API", icon: "🔗", category: "data", nodeType: "data_api_call", config: { method: "GET", url: "routing_api/eta" }, status: "idle", isConfigured: true } },
-      { id: "a4", type: "action", position: { x: 200, y: 840 }, data: { label: "Notify Customer", description: "SMS customer with driver ETA", icon: "📱", category: "notifications", nodeType: "notify_sms", config: { template: "Your delivery is arriving! Driver {{driver.name}} ETA: {{eta}} minutes" }, status: "idle", isConfigured: true } },
-      { id: "a5", type: "action", position: { x: 600, y: 540 }, data: { label: "Mark Zone Idle", description: "No pending jobs, log zone status", icon: "📈", category: "data", nodeType: "data_aggregate", config: { operation: "log_idle_zone" }, status: "idle", isConfigured: true } },
+      { id: "t1", type: "trigger", position: { x: 400, y: 50 }, data: { label: "SOS Button Pressed", description: "Driver activates emergency SOS", icon: "🚨", category: "triggers", nodeType: "trigger_alert", config: { alertType: "SOS" }, status: "idle", isConfigured: true } },
+      { id: "a1", type: "action", position: { x: 400, y: 200 }, data: { label: "Get GPS Location", description: "Capture exact GPS coordinates", icon: "🗄️", category: "data", nodeType: "data_lookup", config: { table: "vehicle_telemetry", fields: ["lat", "lng", "speed"] }, status: "idle", isConfigured: true } },
+      { id: "a2", type: "action", position: { x: 200, y: 370 }, data: { label: "Alert Nearest Vehicle", description: "Find and notify closest fleet vehicle", icon: "🔔", category: "notifications", nodeType: "notify_push", config: { recipients: "nearest_vehicle", template: "🆘 EMERGENCY: {{driver.name}} needs help at {{location}}" }, status: "idle", isConfigured: true } },
+      { id: "a3", type: "action", position: { x: 600, y: 370 }, data: { label: "Notify Emergency Services", description: "Auto-dial emergency services API", icon: "🔗", category: "data", nodeType: "data_api_call", config: { method: "POST", url: "emergency_services/dispatch" }, status: "idle", isConfigured: true } },
+      { id: "a4", type: "action", position: { x: 400, y: 540 }, data: { label: "Alert All Managers", description: "SMS + Email + Push to all fleet managers", icon: "📱", category: "notifications", nodeType: "notify_sms", config: { recipients: "all_managers", template: "🆘 SOS: {{driver.name}} - {{vehicle.name}} at {{location}}" }, status: "idle", isConfigured: true } },
+      { id: "a5", type: "action", position: { x: 400, y: 700 }, data: { label: "Start Live Tracking", description: "Enable 5-sec GPS interval for rescue tracking", icon: "🚛", category: "fleet", nodeType: "fleet_update_vehicle", config: { tracking_interval: 5 }, status: "idle", isConfigured: true } },
+      { id: "a6", type: "action", position: { x: 400, y: 860 }, data: { label: "Log Incident", description: "Create full incident report", icon: "📈", category: "data", nodeType: "data_aggregate", config: { operation: "create_incident_report" }, status: "idle", isConfigured: true } },
     ],
     edges: [
       { id: "e1", source: "t1", target: "a1", type: "smoothstep", animated: true },
-      { id: "e2", source: "a1", target: "c1", type: "smoothstep", animated: true },
-      { id: "e3", source: "c1", target: "a2", sourceHandle: "true", type: "smoothstep", animated: true },
-      { id: "e4", source: "a2", target: "a3", type: "smoothstep", animated: true },
-      { id: "e5", source: "a3", target: "a4", type: "smoothstep", animated: true },
-      { id: "e6", source: "c1", target: "a5", sourceHandle: "false", type: "smoothstep", animated: true },
+      { id: "e2", source: "a1", target: "a2", type: "smoothstep", animated: true },
+      { id: "e3", source: "a1", target: "a3", type: "smoothstep", animated: true },
+      { id: "e4", source: "a1", target: "a4", type: "smoothstep", animated: true },
+      { id: "e5", source: "a4", target: "a5", type: "smoothstep", animated: true },
+      { id: "e6", source: "a5", target: "a6", type: "smoothstep", animated: true },
     ],
   },
 
-  // 5. Driver Fatigue Prevention
+  // ═══════════════════════════════════════════════════════════════
+  // 20. DRIVER FATIGUE PREVENTION
+  // ═══════════════════════════════════════════════════════════════
   {
     id: "tpl_fatigue_prevention",
     name: "Driver Fatigue Prevention",
@@ -165,40 +735,13 @@ const TEMPLATES: WorkflowTemplate[] = [
     ],
   },
 
-  // 6. Vehicle Health Monitoring
-  {
-    id: "tpl_vehicle_health",
-    name: "Real-Time Vehicle Health Monitor",
-    description: "Monitors engine temperature, battery voltage, and OBD codes in real-time. Auto-generates alerts and schedules service.",
-    category: "maintenance",
-    icon: "❤️‍🩹",
-    difficulty: "advanced",
-    estimatedSavings: "~45% fewer breakdowns",
-    tags: ["OBD", "engine", "health", "real-time"],
-    nodes: [
-      { id: "t1", type: "trigger", position: { x: 400, y: 50 }, data: { label: "Telemetry Event", description: "Real-time vehicle telemetry data received", icon: "⚡", category: "triggers", nodeType: "trigger_event", config: { eventType: "telemetry_update" }, status: "idle", isConfigured: true } },
-      { id: "c1", type: "condition", position: { x: 400, y: 220 }, data: { label: "Engine Temp High?", description: "Is engine temperature above 105°C?", icon: "📊", category: "conditions", nodeType: "condition_threshold", config: { leftOperand: "telemetry.engine_temp", operator: "greater_than", rightOperand: "105" }, status: "idle", isConfigured: true } },
-      { id: "a1", type: "action", position: { x: 200, y: 400 }, data: { label: "Emergency Alert", description: "Immediate alert - potential engine failure", icon: "🚨", category: "notifications", nodeType: "notify_push", config: { recipients: "driver,fleet_manager", template: "🔥 ENGINE OVERHEATING: {{vehicle.name}} at {{temp}}°C" }, status: "idle", isConfigured: true } },
-      { id: "a2", type: "action", position: { x: 200, y: 560 }, data: { label: "Reduce Speed Limit", description: "Send speed governor to 60 km/h", icon: "🏎️", category: "fleet", nodeType: "fleet_speed_limit", config: { limit: 60 }, status: "idle", isConfigured: true } },
-      { id: "a3", type: "action", position: { x: 200, y: 720 }, data: { label: "Schedule Emergency Service", description: "Create urgent work order", icon: "🔧", category: "fleet", nodeType: "fleet_maintenance", config: { priority: "critical", autoAssign: true }, status: "idle", isConfigured: true } },
-      { id: "c2", type: "condition", position: { x: 600, y: 400 }, data: { label: "Battery Low?", description: "Is battery voltage below 11.5V?", icon: "📊", category: "conditions", nodeType: "condition_threshold", config: { leftOperand: "telemetry.battery_voltage", operator: "less_than", rightOperand: "11.5" }, status: "idle", isConfigured: true } },
-      { id: "a4", type: "action", position: { x: 600, y: 580 }, data: { label: "Battery Warning", description: "Notify driver of low battery", icon: "🔔", category: "notifications", nodeType: "notify_push", config: { template: "🔋 Low battery: {{vehicle.name}} at {{voltage}}V" }, status: "idle", isConfigured: true } },
-    ],
-    edges: [
-      { id: "e1", source: "t1", target: "c1", type: "smoothstep", animated: true },
-      { id: "e2", source: "c1", target: "a1", sourceHandle: "true", type: "smoothstep", animated: true },
-      { id: "e3", source: "a1", target: "a2", type: "smoothstep", animated: true },
-      { id: "e4", source: "a2", target: "a3", type: "smoothstep", animated: true },
-      { id: "e5", source: "c1", target: "c2", sourceHandle: "false", type: "smoothstep", animated: true },
-      { id: "e6", source: "c2", target: "a4", sourceHandle: "true", type: "smoothstep", animated: true },
-    ],
-  },
-
-  // 7. End-of-Day Fleet Summary
+  // ═══════════════════════════════════════════════════════════════
+  // 21. END-OF-DAY FLEET SUMMARY
+  // ═══════════════════════════════════════════════════════════════
   {
     id: "tpl_eod_summary",
     name: "End-of-Day Fleet Summary",
-    description: "Automatically compiles daily fleet KPIs - total distance, fuel used, incidents, idle time - and emails a beautiful report.",
+    description: "Automatically compiles daily fleet KPIs and emails a beautiful report.",
     category: "operations",
     icon: "📊",
     difficulty: "beginner",
@@ -210,80 +753,22 @@ const TEMPLATES: WorkflowTemplate[] = [
       { id: "a2", type: "action", position: { x: 400, y: 360 }, data: { label: "Aggregate Incidents", description: "Count all alerts and events today", icon: "🔄", category: "data", nodeType: "data_transform", config: { transform: "daily_incident_summary" }, status: "idle", isConfigured: true } },
       { id: "a3", type: "action", position: { x: 400, y: 520 }, data: { label: "Build Report", description: "Compile data into formatted report", icon: "🔄", category: "data", nodeType: "data_transform", config: { transform: "build_daily_report" }, status: "idle", isConfigured: true } },
       { id: "a4", type: "action", position: { x: 400, y: 680 }, data: { label: "Email to Management", description: "Send daily fleet report via email", icon: "📧", category: "notifications", nodeType: "notify_email", config: { recipients: "management", template: "daily_fleet_report" }, status: "idle", isConfigured: true } },
-      { id: "a5", type: "action", position: { x: 400, y: 840 }, data: { label: "Post to Slack", description: "Share summary in #fleet-ops channel", icon: "💬", category: "notifications", nodeType: "notify_slack", config: { channel: "#fleet-ops" }, status: "idle", isConfigured: true } },
     ],
     edges: [
       { id: "e1", source: "t1", target: "a1", type: "smoothstep", animated: true },
       { id: "e2", source: "a1", target: "a2", type: "smoothstep", animated: true },
       { id: "e3", source: "a2", target: "a3", type: "smoothstep", animated: true },
       { id: "e4", source: "a3", target: "a4", type: "smoothstep", animated: true },
-      { id: "e5", source: "a4", target: "a5", type: "smoothstep", animated: true },
     ],
   },
 
-  // 8. SOS Emergency Response
-  {
-    id: "tpl_sos_response",
-    name: "SOS Emergency Response Chain",
-    description: "Multi-tier emergency response: driver SOS → nearby vehicle dispatch → emergency services notification → management escalation.",
-    category: "safety",
-    icon: "🆘",
-    difficulty: "advanced",
-    estimatedSavings: "Critical safety compliance",
-    tags: ["SOS", "emergency", "safety", "escalation"],
-    nodes: [
-      { id: "t1", type: "trigger", position: { x: 400, y: 50 }, data: { label: "SOS Button Pressed", description: "Driver activates emergency SOS", icon: "🚨", category: "triggers", nodeType: "trigger_alert", config: { alertType: "SOS" }, status: "idle", isConfigured: true } },
-      { id: "a1", type: "action", position: { x: 400, y: 200 }, data: { label: "Get GPS Location", description: "Capture exact GPS coordinates", icon: "🗄️", category: "data", nodeType: "data_lookup", config: { table: "vehicle_telemetry", fields: ["lat", "lng", "speed"] }, status: "idle", isConfigured: true } },
-      { id: "a2", type: "action", position: { x: 200, y: 370 }, data: { label: "Alert Nearest Vehicle", description: "Find and notify closest fleet vehicle", icon: "🔔", category: "notifications", nodeType: "notify_push", config: { recipients: "nearest_vehicle", template: "🆘 EMERGENCY: {{driver.name}} needs help at {{location}}" }, status: "idle", isConfigured: true } },
-      { id: "a3", type: "action", position: { x: 600, y: 370 }, data: { label: "Notify Emergency Services", description: "Auto-dial emergency services API", icon: "🔗", category: "data", nodeType: "data_api_call", config: { method: "POST", url: "emergency_services/dispatch" }, status: "idle", isConfigured: true } },
-      { id: "a4", type: "action", position: { x: 400, y: 540 }, data: { label: "Alert All Managers", description: "SMS + Email + Push to all fleet managers", icon: "📱", category: "notifications", nodeType: "notify_sms", config: { recipients: "all_managers", template: "🆘 SOS: {{driver.name}} - {{vehicle.name}} at {{location}}" }, status: "idle", isConfigured: true } },
-      { id: "a5", type: "action", position: { x: 400, y: 700 }, data: { label: "Start Live Tracking", description: "Enable 5-sec GPS interval for rescue tracking", icon: "🚛", category: "fleet", nodeType: "fleet_update_vehicle", config: { tracking_interval: 5 }, status: "idle", isConfigured: true } },
-      { id: "a6", type: "action", position: { x: 400, y: 860 }, data: { label: "Log Incident", description: "Create full incident report", icon: "📈", category: "data", nodeType: "data_aggregate", config: { operation: "create_incident_report" }, status: "idle", isConfigured: true } },
-    ],
-    edges: [
-      { id: "e1", source: "t1", target: "a1", type: "smoothstep", animated: true },
-      { id: "e2", source: "a1", target: "a2", type: "smoothstep", animated: true },
-      { id: "e3", source: "a1", target: "a3", type: "smoothstep", animated: true },
-      { id: "e4", source: "a1", target: "a4", type: "smoothstep", animated: true },
-      { id: "e5", source: "a4", target: "a5", type: "smoothstep", animated: true },
-      { id: "e6", source: "a5", target: "a6", type: "smoothstep", animated: true },
-    ],
-  },
-
-  // 9. Unauthorized Use / After-Hours Detection
-  {
-    id: "tpl_unauthorized_use",
-    name: "After-Hours Vehicle Use Detection",
-    description: "Monitors vehicle movement outside of approved operating hours. Captures evidence and escalates unauthorized use.",
-    category: "compliance",
-    icon: "🌙",
-    difficulty: "intermediate",
-    estimatedSavings: "~$8K/yr unauthorized fuel costs",
-    tags: ["after-hours", "unauthorized", "compliance", "security"],
-    nodes: [
-      { id: "t1", type: "trigger", position: { x: 400, y: 50 }, data: { label: "Ignition On Event", description: "Any vehicle ignition turned on", icon: "⚡", category: "triggers", nodeType: "trigger_event", config: { eventType: "ignition_on" }, status: "idle", isConfigured: true } },
-      { id: "c1", type: "condition", position: { x: 400, y: 220 }, data: { label: "After Hours?", description: "Is current time outside 6AM-8PM?", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "current_time", operator: "not_in", rightOperand: "06:00-20:00" }, status: "idle", isConfigured: true } },
-      { id: "c2", type: "condition", position: { x: 200, y: 400 }, data: { label: "Authorized Trip?", description: "Is there a scheduled after-hours trip?", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "trip.authorized", operator: "equals", rightOperand: "true" }, status: "idle", isConfigured: true } },
-      { id: "a1", type: "action", position: { x: 100, y: 580 }, data: { label: "Start Evidence Capture", description: "Enable high-frequency GPS + dashcam", icon: "🚛", category: "fleet", nodeType: "fleet_update_vehicle", config: { tracking_interval: 3, dashcam: true }, status: "idle", isConfigured: true } },
-      { id: "a2", type: "action", position: { x: 100, y: 740 }, data: { label: "Alert Security", description: "Immediate notification to security team", icon: "🔔", category: "notifications", nodeType: "notify_push", config: { recipients: "security_team", template: "🌙 UNAUTHORIZED USE: {{vehicle.name}} started outside hours" }, status: "idle", isConfigured: true } },
-      { id: "a3", type: "action", position: { x: 100, y: 900 }, data: { label: "Create Investigation", description: "Open unauthorized use case", icon: "📈", category: "data", nodeType: "data_aggregate", config: { operation: "create_investigation" }, status: "idle", isConfigured: true } },
-      { id: "a4", type: "action", position: { x: 400, y: 580 }, data: { label: "Log Authorized Trip", description: "Record authorized after-hours activity", icon: "🗄️", category: "data", nodeType: "data_lookup", config: { operation: "log_authorized" }, status: "idle", isConfigured: true } },
-    ],
-    edges: [
-      { id: "e1", source: "t1", target: "c1", type: "smoothstep", animated: true },
-      { id: "e2", source: "c1", target: "c2", sourceHandle: "true", type: "smoothstep", animated: true },
-      { id: "e3", source: "c2", target: "a1", sourceHandle: "false", type: "smoothstep", animated: true },
-      { id: "e4", source: "a1", target: "a2", type: "smoothstep", animated: true },
-      { id: "e5", source: "a2", target: "a3", type: "smoothstep", animated: true },
-      { id: "e6", source: "c2", target: "a4", sourceHandle: "true", type: "smoothstep", animated: true },
-    ],
-  },
-
-  // 10. Idle Time Optimization
+  // ═══════════════════════════════════════════════════════════════
+  // 22. IDLE TIME COST OPTIMIZER
+  // ═══════════════════════════════════════════════════════════════
   {
     id: "tpl_idle_optimization",
     name: "Idle Time Cost Optimizer",
-    description: "Tracks excessive idling, calculates fuel waste in real-time, sends progressive warnings, and generates cost reports.",
+    description: "Tracks excessive idling, calculates fuel waste in real-time, sends progressive warnings.",
     category: "fuel",
     icon: "💰",
     difficulty: "beginner",
@@ -303,62 +788,6 @@ const TEMPLATES: WorkflowTemplate[] = [
       { id: "e3", source: "c1", target: "a2", sourceHandle: "true", type: "smoothstep", animated: true },
       { id: "e4", source: "a2", target: "a3", type: "smoothstep", animated: true },
       { id: "e5", source: "c1", target: "a4", sourceHandle: "false", type: "smoothstep", animated: true },
-    ],
-  },
-
-  // 11. Trip Completion & Invoice
-  {
-    id: "tpl_trip_invoice",
-    name: "Trip Completion & Auto-Invoice",
-    description: "When a trip is completed, auto-calculates cost, generates invoice, captures POD, and updates customer billing.",
-    category: "operations",
-    icon: "🧾",
-    difficulty: "intermediate",
-    estimatedSavings: "~60% faster billing cycle",
-    tags: ["billing", "invoice", "POD", "trip"],
-    nodes: [
-      { id: "t1", type: "trigger", position: { x: 400, y: 50 }, data: { label: "Trip Completed", description: "Vehicle arrives at final destination", icon: "📍", category: "triggers", nodeType: "trigger_geofence", config: { eventType: "enter", zone: "destination" }, status: "idle", isConfigured: true } },
-      { id: "a1", type: "action", position: { x: 400, y: 210 }, data: { label: "Capture POD", description: "Request proof of delivery from driver", icon: "🔔", category: "notifications", nodeType: "notify_push", config: { template: "📸 Please capture proof of delivery for {{job.number}}" }, status: "idle", isConfigured: true } },
-      { id: "a2", type: "action", position: { x: 400, y: 370 }, data: { label: "Calculate Trip Cost", description: "Distance × rate + fuel + tolls", icon: "🔄", category: "data", nodeType: "data_transform", config: { transform: "calculate_trip_cost" }, status: "idle", isConfigured: true } },
-      { id: "a3", type: "action", position: { x: 400, y: 530 }, data: { label: "Generate Invoice", description: "Create invoice with trip details", icon: "🔗", category: "data", nodeType: "data_api_call", config: { method: "POST", url: "billing/create_invoice" }, status: "idle", isConfigured: true } },
-      { id: "a4", type: "action", position: { x: 400, y: 690 }, data: { label: "Email Invoice", description: "Send invoice to customer", icon: "📧", category: "notifications", nodeType: "notify_email", config: { recipients: "customer", template: "invoice_email" }, status: "idle", isConfigured: true } },
-      { id: "a5", type: "action", position: { x: 400, y: 850 }, data: { label: "Update Trip Status", description: "Mark trip as invoiced in system", icon: "🚛", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "complete_trip" }, status: "idle", isConfigured: true } },
-    ],
-    edges: [
-      { id: "e1", source: "t1", target: "a1", type: "smoothstep", animated: true },
-      { id: "e2", source: "a1", target: "a2", type: "smoothstep", animated: true },
-      { id: "e3", source: "a2", target: "a3", type: "smoothstep", animated: true },
-      { id: "e4", source: "a3", target: "a4", type: "smoothstep", animated: true },
-      { id: "e5", source: "a4", target: "a5", type: "smoothstep", animated: true },
-    ],
-  },
-
-  // 12. Harsh Driving Pattern Analysis
-  {
-    id: "tpl_harsh_driving",
-    name: "Harsh Driving Pattern Analysis",
-    description: "Aggregates harsh events over a week, identifies repeat offenders, auto-generates risk scores and training plans.",
-    category: "safety",
-    icon: "📉",
-    difficulty: "advanced",
-    estimatedSavings: "~22% insurance premium reduction",
-    tags: ["harsh driving", "risk", "training", "insurance"],
-    nodes: [
-      { id: "t1", type: "trigger", position: { x: 400, y: 50 }, data: { label: "Weekly on Monday", description: "Run analysis every Monday at 7 AM", icon: "⏰", category: "triggers", nodeType: "trigger_schedule", config: { cron: "0 7 * * 1" }, status: "idle", isConfigured: true } },
-      { id: "a1", type: "action", position: { x: 400, y: 200 }, data: { label: "Fetch Weekly Events", description: "Get all harsh driving events from past 7 days", icon: "🗄️", category: "data", nodeType: "data_lookup", config: { table: "driver_events", period: "7d" }, status: "idle", isConfigured: true } },
-      { id: "a2", type: "action", position: { x: 400, y: 360 }, data: { label: "Calculate Risk Scores", description: "AI risk scoring per driver", icon: "🔄", category: "data", nodeType: "data_transform", config: { transform: "risk_score_calculation" }, status: "idle", isConfigured: true } },
-      { id: "c1", type: "condition", position: { x: 400, y: 530 }, data: { label: "High Risk Driver?", description: "Risk score above 70/100?", icon: "📊", category: "conditions", nodeType: "condition_threshold", config: { leftOperand: "driver.risk_score", operator: "greater_than", rightOperand: "70" }, status: "idle", isConfigured: true } },
-      { id: "a3", type: "action", position: { x: 200, y: 710 }, data: { label: "Create Training Plan", description: "Auto-generate personalized training module", icon: "👤", category: "fleet", nodeType: "fleet_assign_driver", config: { action: "create_training_plan" }, status: "idle", isConfigured: true } },
-      { id: "a4", type: "action", position: { x: 200, y: 870 }, data: { label: "Notify HR & Safety", description: "Email safety team with risk report", icon: "📧", category: "notifications", nodeType: "notify_email", config: { recipients: "safety_team,hr", template: "weekly_risk_report" }, status: "idle", isConfigured: true } },
-      { id: "a5", type: "action", position: { x: 600, y: 710 }, data: { label: "Update Leaderboard", description: "Refresh driver safety leaderboard", icon: "📈", category: "data", nodeType: "data_aggregate", config: { operation: "update_leaderboard" }, status: "idle", isConfigured: true } },
-    ],
-    edges: [
-      { id: "e1", source: "t1", target: "a1", type: "smoothstep", animated: true },
-      { id: "e2", source: "a1", target: "a2", type: "smoothstep", animated: true },
-      { id: "e3", source: "a2", target: "c1", type: "smoothstep", animated: true },
-      { id: "e4", source: "c1", target: "a3", sourceHandle: "true", type: "smoothstep", animated: true },
-      { id: "e5", source: "a3", target: "a4", type: "smoothstep", animated: true },
-      { id: "e6", source: "c1", target: "a5", sourceHandle: "false", type: "smoothstep", animated: true },
     ],
   },
 ];
