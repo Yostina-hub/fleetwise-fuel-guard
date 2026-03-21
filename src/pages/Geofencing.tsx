@@ -48,6 +48,7 @@ import GeofenceEventsTab from "@/components/geofencing/GeofenceEventsTab";
 import GeofenceQuickStats from "@/components/geofencing/GeofenceQuickStats";
 import { startOfDay } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { WorkflowAutomationPanel } from "@/components/workflow/WorkflowAutomationPanel";
 
 const Geofencing = () => {
   const { organizationId } = useOrganization();
