@@ -100,10 +100,11 @@ const navItems = [
     label: "Trip Management", 
     highlight: true,
     subItems: [
+      { label: "Trip Hub", path: "/trip-management" },
       { label: "Request Dashboard", path: "/fleet-scheduling" },
       { label: "Dispatch Jobs", path: "/dispatch" },
-      { label: "Pending Approvals", path: "/fleet-scheduling?tab=approvals" },
-      { label: "Assignments", path: "/fleet-scheduling?tab=assignments" },
+      { label: "Pending Approvals", path: "/trip-management?tab=approvals" },
+      { label: "Assignments", path: "/trip-management?tab=active" },
     ]
   },
   { icon: BarChart3, label: "Reports", path: "/reports" },
