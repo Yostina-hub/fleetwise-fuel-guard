@@ -22,6 +22,7 @@ import MaintenanceHistoryTab from "@/components/maintenance/MaintenanceHistoryTa
 import ServiceHistoryTab from "@/components/maintenance/ServiceHistoryTab";
 import MaintenanceQuickStats from "@/components/maintenance/MaintenanceQuickStats";
 import MaintenanceQuickActions from "@/components/maintenance/MaintenanceQuickActions";
+import { WorkflowAutomationPanel } from "@/components/workflow/WorkflowAutomationPanel";
 import MaintenanceInsightsCard from "@/components/maintenance/MaintenanceInsightsCard";
 import MaintenanceTrendChart from "@/components/maintenance/MaintenanceTrendChart";
 import LowStockAlert from "@/components/maintenance/LowStockAlert";
