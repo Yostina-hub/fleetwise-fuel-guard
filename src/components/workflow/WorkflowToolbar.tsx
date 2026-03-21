@@ -21,6 +21,8 @@ import {
   Download,
   Upload,
   Copy,
+  Sparkles,
+  Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -40,7 +42,9 @@ interface WorkflowToolbarProps {
   onExport: () => void;
   onImport: () => void;
   onDuplicate: () => void;
+  onOpenTemplates?: () => void;
   isSaving: boolean;
+  isSimulating?: boolean;
   canUndo: boolean;
   canRedo: boolean;
   nodeCount: number;
@@ -63,7 +67,9 @@ export const WorkflowToolbar = ({
   onExport,
   onImport,
   onDuplicate,
+  onOpenTemplates,
   isSaving,
+  isSimulating,
   canUndo,
   canRedo,
   nodeCount,
@@ -90,6 +96,21 @@ export const WorkflowToolbar = ({
           <SelectItem value="paused">Paused</SelectItem>
         </SelectContent>
       </Select>
+
+      <div className="h-5 w-px bg-border" />
+
+      {/* Templates */}
+      {onOpenTemplates && (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onOpenTemplates}
+          className="h-8 gap-1.5 text-xs border-primary/30 text-primary hover:bg-primary/10"
+        >
+          <Sparkles className="h-3.5 w-3.5" />
+          Templates
+        </Button>
+      )}
 
       <div className="h-5 w-px bg-border" />
 
@@ -143,17 +164,19 @@ export const WorkflowToolbar = ({
         </Badge>
       </div>
 
-      {/* Run & Save */}
+      {/* Simulate */}
       <Button
         size="sm"
-        variant="outline"
+        variant={isSimulating ? "default" : "outline"}
         onClick={onRun}
-        disabled={status !== "active"}
-        className="h-8 gap-1.5"
+        disabled={nodeCount === 0}
+        className={cn("h-8 gap-1.5 text-xs", isSimulating && "bg-emerald-600 hover:bg-emerald-700")}
       >
-        {status === "active" ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-        {status === "active" ? "Pause" : "Run"}
+        <Activity className="h-3.5 w-3.5" />
+        {isSimulating ? "Simulating" : "Simulate"}
       </Button>
+
+      {/* Save */}
       <Button size="sm" onClick={onSave} disabled={isSaving} className="h-8 gap-1.5">
         <Save className="h-3.5 w-3.5" />
         {isSaving ? "Saving..." : "Save"}

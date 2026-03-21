@@ -22,10 +22,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { WorkflowPalette } from "./WorkflowPalette";
 import { WorkflowToolbar } from "./WorkflowToolbar";
 import { WorkflowNodeConfig } from "./WorkflowNodeConfig";
+import { WorkflowSimulator } from "./WorkflowSimulator";
+import { WorkflowTemplateGallery } from "./WorkflowTemplateGallery";
 import TriggerNode from "./nodes/TriggerNode";
 import ConditionNode from "./nodes/ConditionNode";
 import ActionNode from "./nodes/ActionNode";
 import type { PaletteItem, WorkflowNode, WorkflowEdge } from "./types";
+import type { WorkflowTemplate } from "./workflowTemplates";
+import { AnimatePresence } from "framer-motion";
 
 const nodeTypes = {
   trigger: TriggerNode,
@@ -55,6 +59,8 @@ function WorkflowCanvasInner() {
   const [workflowStatus, setWorkflowStatus] = useState("draft");
   const [isSaving, setIsSaving] = useState(false);
   const [workflowId, setWorkflowId] = useState<string | null>(null);
+  const [showSimulator, setShowSimulator] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   // History for undo/redo
   const [history, setHistory] = useState<Array<{ nodes: any[]; edges: any[] }>>([]);
@@ -101,15 +107,11 @@ function WorkflowCanvasInner() {
   const onDrop = useCallback(
     (event: React.DragEvent) => {
       event.preventDefault();
-
       const data = event.dataTransfer.getData("application/reactflow");
       if (!data) return;
-
       const item: PaletteItem = JSON.parse(data);
       const position = screenToFlowPosition({ x: event.clientX, y: event.clientY });
-
       pushHistory();
-
       const newNode: WorkflowNode = {
         id: `node_${++nodeIdCounter}_${Date.now()}`,
         type: getNodeTypeForCategory(item.category),
@@ -125,23 +127,15 @@ function WorkflowCanvasInner() {
           isConfigured: false,
         },
       };
-
       setNodes((nds) => [...nds, newNode]);
-
-      toast({
-        title: "Node Added",
-        description: `${item.label} added to canvas`,
-      });
+      toast({ title: "Node Added", description: `${item.label} added to canvas` });
     },
     [screenToFlowPosition, setNodes, toast, pushHistory]
   );
 
-  const onNodeClick = useCallback(
-    (_: any, node: any) => {
-      setSelectedNode(node as WorkflowNode);
-    },
-    []
-  );
+  const onNodeClick = useCallback((_: any, node: any) => {
+    setSelectedNode(node as WorkflowNode);
+  }, []);
 
   const onPaneClick = useCallback(() => {
     setSelectedNode(null);
@@ -150,9 +144,7 @@ function WorkflowCanvasInner() {
   const updateNodeData = useCallback(
     (nodeId: string, newData: Partial<WorkflowNode["data"]>) => {
       setNodes((nds) =>
-        nds.map((n) =>
-          n.id === nodeId ? { ...n, data: { ...n.data, ...newData } } : n
-        )
+        nds.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, ...newData } } : n))
       );
       setSelectedNode((prev) =>
         prev && prev.id === nodeId ? { ...prev, data: { ...prev.data, ...newData } } : prev
@@ -176,7 +168,6 @@ function WorkflowCanvasInner() {
       toast({ title: "Error", description: "Organization not found", variant: "destructive" });
       return;
     }
-
     setIsSaving(true);
     try {
       const workflowData = {
@@ -187,23 +178,14 @@ function WorkflowCanvasInner() {
         status: workflowStatus,
         created_by: user?.id,
       };
-
       if (workflowId) {
-        const { error } = await supabase
-          .from("workflows")
-          .update(workflowData)
-          .eq("id", workflowId);
+        const { error } = await supabase.from("workflows").update(workflowData).eq("id", workflowId);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase
-          .from("workflows")
-          .insert(workflowData)
-          .select("id")
-          .single();
+        const { data, error } = await supabase.from("workflows").insert(workflowData).select("id").single();
         if (error) throw error;
         setWorkflowId(data.id);
       }
-
       toast({ title: "Saved!", description: "Workflow saved successfully" });
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -282,6 +264,35 @@ function WorkflowCanvasInner() {
     setNodes((nds) => [...nds, newNode]);
   }, [selectedNode, setNodes, pushHistory]);
 
+  // Template loading
+  const handleLoadTemplate = useCallback(
+    (template: WorkflowTemplate) => {
+      pushHistory();
+      setNodes(template.nodes as any);
+      setEdges(template.edges as any);
+      setWorkflowName(template.name);
+      setShowTemplates(false);
+      toast({
+        title: "Template Loaded",
+        description: `"${template.name}" loaded with ${template.nodes.length} nodes. You can now customize it!`,
+      });
+      setTimeout(() => fitView({ padding: 0.2 }), 100);
+    },
+    [pushHistory, setNodes, setEdges, toast, fitView]
+  );
+
+  // Simulation node status
+  const handleSimNodeStatus = useCallback(
+    (nodeId: string, status: string) => {
+      setNodes((nds) =>
+        nds.map((n) =>
+          n.id === nodeId ? { ...n, data: { ...n.data, status } } : n
+        )
+      );
+    },
+    [setNodes]
+  );
+
   return (
     <div className="flex flex-col h-full">
       <WorkflowToolbar
@@ -290,7 +301,7 @@ function WorkflowCanvasInner() {
         status={workflowStatus}
         onStatusChange={setWorkflowStatus}
         onSave={handleSave}
-        onRun={() => toast({ title: "Workflow Engine", description: "Execution engine coming soon!" })}
+        onRun={() => setShowSimulator(!showSimulator)}
         onUndo={handleUndo}
         onRedo={handleRedo}
         onZoomIn={() => zoomIn()}
@@ -300,7 +311,9 @@ function WorkflowCanvasInner() {
         onExport={handleExport}
         onImport={handleImport}
         onDuplicate={handleDuplicate}
+        onOpenTemplates={() => setShowTemplates(true)}
         isSaving={isSaving}
+        isSimulating={showSimulator}
         canUndo={historyIndex > 0}
         canRedo={historyIndex < history.length - 1}
         nodeCount={nodes.length}
@@ -344,6 +357,9 @@ function WorkflowCanvasInner() {
               className="!bg-card !border-border"
               nodeColor={(node) => {
                 const d = node.data as any;
+                if (d?.status === "running") return "#eab308";
+                if (d?.status === "success") return "#22c55e";
+                if (d?.status === "error") return "#ef4444";
                 if (d?.category === "triggers") return "#10b981";
                 if (d?.category === "conditions") return "#f59e0b";
                 if (d?.category === "fleet") return "#3b82f6";
@@ -357,16 +373,41 @@ function WorkflowCanvasInner() {
           </ReactFlow>
         </div>
 
-        {/* Right config panel */}
-        {selectedNode && (
-          <WorkflowNodeConfig
-            node={selectedNode}
-            onUpdate={updateNodeData}
-            onDelete={deleteNode}
-            onClose={() => setSelectedNode(null)}
+        {/* Right panel - Config or Simulator */}
+        <AnimatePresence mode="wait">
+          {showSimulator && (
+            <WorkflowSimulator
+              key="simulator"
+              nodes={nodes}
+              edges={edges}
+              onNodeStatusChange={handleSimNodeStatus}
+              onClose={() => {
+                setShowSimulator(false);
+                nodes.forEach((n) => handleSimNodeStatus(n.id, "idle"));
+              }}
+            />
+          )}
+          {selectedNode && !showSimulator && (
+            <WorkflowNodeConfig
+              key="config"
+              node={selectedNode}
+              onUpdate={updateNodeData}
+              onDelete={deleteNode}
+              onClose={() => setSelectedNode(null)}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Template Gallery Modal */}
+      <AnimatePresence>
+        {showTemplates && (
+          <WorkflowTemplateGallery
+            onSelectTemplate={handleLoadTemplate}
+            onClose={() => setShowTemplates(false)}
           />
         )}
-      </div>
+      </AnimatePresence>
     </div>
   );
 }
