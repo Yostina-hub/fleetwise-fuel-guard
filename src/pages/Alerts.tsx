@@ -293,6 +293,13 @@ const Alerts = () => {
           <AlertsInsightsCard stats={stats} alertTypes={alertTypes} />
         </div>
 
+        {/* Safety & Alert Workflow Automations */}
+        <WorkflowAutomationPanel
+          categories={["safety", "alerts", "sensors"]}
+          title="Safety & Alert Automations"
+          description="Accident response, dashcam, alcohol detector, tampering workflows"
+        />
+
         {/* SOS Alert Panel */}
         <SOSAlertPanel />
 

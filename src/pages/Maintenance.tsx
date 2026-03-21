@@ -133,6 +133,14 @@ const Maintenance = () => {
           <LowStockAlert />
         </div>
 
+        {/* Maintenance Workflow Automations */}
+        <WorkflowAutomationPanel
+          categories={["maintenance"]}
+          title="Maintenance Automations"
+          description="Preventive, predictive & inspection-based maintenance workflows"
+          compact
+        />
+
 
         {/* Tabbed Content */}
         <div ref={tabsRef}>

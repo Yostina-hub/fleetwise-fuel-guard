@@ -234,6 +234,13 @@ const FuelMonitoring = () => {
             onManageDepots={() => handleQuickAction('depots')}
           />
 
+          {/* Fuel Workflow Automations */}
+          <WorkflowAutomationPanel
+            categories={["fuel", "ev_charging"]}
+            title="Fuel & EV Automations"
+            description="Theft detection, live fuel control, EV charging workflows"
+          />
+
           {/* Insights & Trend Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <FuelTrendChart fuelEvents={dbFuelEvents} />

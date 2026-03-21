@@ -40,6 +40,14 @@ const Incidents = () => {
           <RecentIncidentsCard />
         </div>
 
+        {/* Incident & Safety Automations */}
+        <WorkflowAutomationPanel
+          categories={["safety", "sensors"]}
+          title="Incident Response Automations"
+          description="Accident detection via shock sensors, dashcam triggers, panic button workflows"
+          compact
+        />
+
         <Tabs defaultValue="incidents" className="space-y-6">
           <TabsList className="grid w-full max-w-lg grid-cols-3">
             <TabsTrigger value="incidents" className="gap-2">

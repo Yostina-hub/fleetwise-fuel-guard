@@ -450,6 +450,14 @@ const Fleet = () => {
           onScheduleMaintenance={() => navigate("/maintenance")}
         />
 
+        {/* Fleet Workflow Automations */}
+        <WorkflowAutomationPanel
+          categories={["operations", "safety", "sensors", "cold_chain"]}
+          title="Fleet Automations"
+          description="Driver handover, route optimization, cold chain & sensor workflows"
+          compact
+        />
+
         {/* Bulk Actions Toolbar */}
         {selectedIds.length > 0 && (
           <BulkActionsToolbar
