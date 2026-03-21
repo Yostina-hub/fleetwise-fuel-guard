@@ -6,6 +6,7 @@ import InsuranceClaimsTab from "@/components/incidents/InsuranceClaimsTab";
 import TrafficViolationsTab from "@/components/incidents/TrafficViolationsTab";
 import { IncidentQuickStats } from "@/components/incidents/IncidentQuickStats";
 import { IncidentQuickActions } from "@/components/incidents/IncidentQuickActions";
+import { WorkflowAutomationPanel } from "@/components/workflow/WorkflowAutomationPanel";
 import { IncidentInsightsCard } from "@/components/incidents/IncidentInsightsCard";
 import { IncidentTrendChart } from "@/components/incidents/IncidentTrendChart";
 import { RecentIncidentsCard } from "@/components/incidents/RecentIncidentsCard";
@@ -38,6 +39,14 @@ const Incidents = () => {
           <IncidentTrendChart />
           <RecentIncidentsCard />
         </div>
+
+        {/* Incident & Safety Automations */}
+        <WorkflowAutomationPanel
+          categories={["safety", "sensors"]}
+          title="Incident Response Automations"
+          description="Accident detection via shock sensors, dashcam triggers, panic button workflows"
+          compact
+        />
 
         <Tabs defaultValue="incidents" className="space-y-6">
           <TabsList className="grid w-full max-w-lg grid-cols-3">

@@ -28,6 +28,7 @@ import { VehicleTableView } from "@/components/fleet/VehicleTableView";
 import { useFleetExport } from "@/components/fleet/FleetExportUtils";
 import FleetQuickStats from "@/components/fleet/FleetQuickStats";
 import FleetQuickActions from "@/components/fleet/FleetQuickActions";
+import { WorkflowAutomationPanel } from "@/components/workflow/WorkflowAutomationPanel";
 import { VehicleGridSkeleton, StatsRowSkeleton } from "@/components/ui/skeletons";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -447,6 +448,14 @@ const Fleet = () => {
           onExport={handleExportAll}
           onViewMap={() => navigate("/map")}
           onScheduleMaintenance={() => navigate("/maintenance")}
+        />
+
+        {/* Fleet Workflow Automations */}
+        <WorkflowAutomationPanel
+          categories={["operations", "safety", "sensors", "cold_chain"]}
+          title="Fleet Automations"
+          description="Driver handover, route optimization, cold chain & sensor workflows"
+          compact
         />
 
         {/* Bulk Actions Toolbar */}

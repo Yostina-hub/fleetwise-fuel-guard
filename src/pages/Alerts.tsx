@@ -29,6 +29,7 @@ import { TablePagination } from "@/components/reports/TablePagination";
 import AlertsQuickStats from "@/components/alerts/AlertsQuickStats";
 import AlertsQuickActions from "@/components/alerts/AlertsQuickActions";
 import AlertsInsightsCard from "@/components/alerts/AlertsInsightsCard";
+import { WorkflowAutomationPanel } from "@/components/workflow/WorkflowAutomationPanel";
 import AlertsTrendChart from "@/components/alerts/AlertsTrendChart";
 import { 
   AlertTriangle, 
@@ -291,6 +292,13 @@ const Alerts = () => {
           <AlertsTrendChart />
           <AlertsInsightsCard stats={stats} alertTypes={alertTypes} />
         </div>
+
+        {/* Safety & Alert Workflow Automations */}
+        <WorkflowAutomationPanel
+          categories={["safety", "alerts", "sensors"]}
+          title="Safety & Alert Automations"
+          description="Accident response, dashcam, alcohol detector, tampering workflows"
+        />
 
         {/* SOS Alert Panel */}
         <SOSAlertPanel />

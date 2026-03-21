@@ -18,6 +18,7 @@ import ApprovedFuelStationsTab from "@/components/fuel/ApprovedFuelStationsTab";
 import FuelQuickStats from "@/components/fuel/FuelQuickStats";
 import FuelInsightsCard from "@/components/fuel/FuelInsightsCard";
 import FuelQuickActions from "@/components/fuel/FuelQuickActions";
+import { WorkflowAutomationPanel } from "@/components/workflow/WorkflowAutomationPanel";
 import FuelTrendChart from "@/components/fuel/FuelTrendChart";
 import IdleTimeImpactCard from "@/components/fuel/IdleTimeImpactCard";
 import { FuelPageContext } from "@/contexts/FuelPageContext";
@@ -231,6 +232,13 @@ const FuelMonitoring = () => {
             onAddTransaction={() => handleQuickAction('transactions')}
             onViewAnomalies={() => handleQuickAction('anomalies')}
             onManageDepots={() => handleQuickAction('depots')}
+          />
+
+          {/* Fuel Workflow Automations */}
+          <WorkflowAutomationPanel
+            categories={["fuel", "ev_charging"]}
+            title="Fuel & EV Automations"
+            description="Theft detection, live fuel control, EV charging workflows"
           />
 
           {/* Insights & Trend Grid */}

@@ -48,6 +48,7 @@ import GeofenceEventsTab from "@/components/geofencing/GeofenceEventsTab";
 import GeofenceQuickStats from "@/components/geofencing/GeofenceQuickStats";
 import { startOfDay } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { WorkflowAutomationPanel } from "@/components/workflow/WorkflowAutomationPanel";
 
 const Geofencing = () => {
   const { organizationId } = useOrganization();
@@ -528,6 +529,15 @@ const Geofencing = () => {
                 <div className="text-xs text-muted-foreground">Exits</div>
               </Card>
             </div>
+
+            {/* Geofence Workflow Automations */}
+            <WorkflowAutomationPanel
+              categories={["alerts", "operations"]}
+              title="Geofence Automations"
+              description="Entry/exit notifications, work start/stop detection"
+              compact
+              maxItems={4}
+            />
 
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">

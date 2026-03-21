@@ -1,4 +1,6 @@
-import { useCallback, useRef, useState, useMemo } from "react";
+import { useCallback, useRef, useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import TEMPLATES from "./workflowTemplates";
 import {
   ReactFlow,
   Controls,
@@ -280,6 +282,21 @@ function WorkflowCanvasInner() {
     },
     [pushHistory, setNodes, setEdges, toast, fitView]
   );
+
+  // Auto-load template from URL query param
+  const [searchParams, setSearchParams] = useSearchParams();
+  const templateLoadedRef = useRef(false);
+  useEffect(() => {
+    const templateId = searchParams.get("template");
+    if (templateId && !templateLoadedRef.current) {
+      const template = TEMPLATES.find((t) => t.id === templateId);
+      if (template) {
+        templateLoadedRef.current = true;
+        handleLoadTemplate(template);
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [searchParams, handleLoadTemplate, setSearchParams]);
 
   // Simulation node status
   const handleSimNodeStatus = useCallback(
