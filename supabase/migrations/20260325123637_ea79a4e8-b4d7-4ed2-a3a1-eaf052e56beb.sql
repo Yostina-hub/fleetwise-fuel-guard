@@ -1,0 +1,1 @@
+UPDATE public.workflows SET created_by = (SELECT id FROM public.profiles WHERE email = 'abel.birara@gmail.com' LIMIT 1) WHERE created_by = '5793e133-6236-479e-84fc-c52286da8025';
