@@ -16,6 +16,8 @@ interface UserRole {
   organization_id: string;
 }
 
+const ALLOWED_SUPER_ADMIN_EMAIL = "abel.birara@gmail.com";
+
 export function useAuthRaw() {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -140,6 +142,21 @@ export function useAuthRaw() {
       clearRetryTimeouts();
       activeUserIdRef.current = nextUser?.id ?? null;
 
+      if (nextUser && nextSession) {
+        const normalizedEmail = nextUser.email?.trim().toLowerCase();
+        if (normalizedEmail !== ALLOWED_SUPER_ADMIN_EMAIL) {
+          await supabase.auth.signOut();
+          sessionTrackedRef.current = null;
+          activeUserIdRef.current = null;
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          setRoles([]);
+          setLoading(false);
+          return;
+        }
+      }
+
       setSession(nextSession);
       setUser(nextUser);
 
@@ -194,6 +211,15 @@ export function useAuthRaw() {
   };
 
   const signIn = async (email: string, password: string) => {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (normalizedEmail !== ALLOWED_SUPER_ADMIN_EMAIL) {
+      return {
+        error: {
+          message: "Only abel.birara@gmail.com is allowed to sign in.",
+        } as any,
+      };
+    }
+
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error };
   };
