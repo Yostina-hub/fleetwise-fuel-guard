@@ -313,21 +313,7 @@ const Auth = () => {
               </CardHeader>
               
               <CardContent className="relative">
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 mb-6 p-1 bg-white/5 border border-white/10">
-                    <TabsTrigger 
-                      value="signin" 
-                      className="text-white/70 data-[state=active]:bg-[#8DC63F] data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
-                    >
-                      Sign In
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="signup" 
-                      className="text-white/70 data-[state=active]:bg-[#8DC63F] data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
-                    >
-                      Sign Up
-                    </TabsTrigger>
-                  </TabsList>
+                <Tabs value="signin" className="w-full">
                   
                   <TabsContent value="signin" className="space-y-4 animate-fade-in">
                     <form onSubmit={handleSignIn} className="space-y-4">
