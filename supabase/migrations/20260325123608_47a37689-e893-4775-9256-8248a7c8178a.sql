@@ -1,0 +1,14 @@
+DELETE FROM public.user_sessions WHERE user_id = '5793e133-6236-479e-84fc-c52286da8025';
+DELETE FROM public.user_roles WHERE user_id = '5793e133-6236-479e-84fc-c52286da8025';
+DELETE FROM public.notification_preferences WHERE user_id = '5793e133-6236-479e-84fc-c52286da8025';
+DELETE FROM public.notifications WHERE user_id = '5793e133-6236-479e-84fc-c52286da8025';
+DELETE FROM public.audit_logs WHERE user_id = '5793e133-6236-479e-84fc-c52286da8025';
+DELETE FROM public.security_audit_logs WHERE user_id = '5793e133-6236-479e-84fc-c52286da8025';
+DELETE FROM public.login_history WHERE user_id = '5793e133-6236-479e-84fc-c52286da8025';
+DELETE FROM public.account_lockouts WHERE user_id = '5793e133-6236-479e-84fc-c52286da8025';
+DELETE FROM public.saved_filters WHERE user_id = '5793e133-6236-479e-84fc-c52286da8025';
+DELETE FROM public.push_subscriptions WHERE user_id = '5793e133-6236-479e-84fc-c52286da8025';
+DELETE FROM public.user_2fa_settings WHERE user_id = '5793e133-6236-479e-84fc-c52286da8025';
+DELETE FROM public.rate_limit_violations WHERE user_id = '5793e133-6236-479e-84fc-c52286da8025';
+DELETE FROM public.gdpr_requests WHERE user_id = '5793e133-6236-479e-84fc-c52286da8025';
+DELETE FROM public.profiles WHERE id = '5793e133-6236-479e-84fc-c52286da8025';
