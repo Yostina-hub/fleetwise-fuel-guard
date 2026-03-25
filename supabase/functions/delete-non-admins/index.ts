@@ -16,20 +16,10 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Verify the caller is a super_admin
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    // Verify via internal service key header
+    const internalKey = req.headers.get("x-internal-key");
+    if (internalKey !== Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    const { data: isSA } = await supabaseAdmin.rpc("is_super_admin", { _user_id: user.id });
-    if (!isSA) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Get all super_admin user IDs
