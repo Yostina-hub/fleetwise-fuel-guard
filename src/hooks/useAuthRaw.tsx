@@ -212,10 +212,10 @@ export function useAuthRaw() {
 
   const signIn = async (email: string, password: string) => {
     const normalizedEmail = email.trim().toLowerCase();
-    if (normalizedEmail !== ALLOWED_SUPER_ADMIN_EMAIL) {
+    if (!ALLOWED_ADMIN_EMAILS.includes(normalizedEmail)) {
       return {
         error: {
-          message: "Only abel.birara@gmail.com is allowed to sign in.",
+          message: "Access restricted to authorized administrators only.",
         } as any,
       };
     }
