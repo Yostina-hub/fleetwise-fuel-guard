@@ -143,8 +143,8 @@ export function useAuthRaw() {
       activeUserIdRef.current = nextUser?.id ?? null;
 
       if (nextUser && nextSession) {
-        const normalizedEmail = nextUser.email?.trim().toLowerCase();
-        if (normalizedEmail !== ALLOWED_SUPER_ADMIN_EMAIL) {
+      const normalizedEmail = nextUser.email?.trim().toLowerCase();
+        if (!normalizedEmail || !ALLOWED_ADMIN_EMAILS.includes(normalizedEmail)) {
           await supabase.auth.signOut();
           sessionTrackedRef.current = null;
           activeUserIdRef.current = null;
