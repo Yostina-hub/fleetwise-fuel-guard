@@ -16,7 +16,7 @@ interface UserRole {
   organization_id: string;
 }
 
-const ALLOWED_SUPER_ADMIN_EMAIL = "abel.birara@gmail.com";
+const ALLOWED_ADMIN_EMAILS = ["abel.birara@gmail.com", "eshibel@gmail.com"];
 
 export function useAuthRaw() {
   const [user, setUser] = useState<User | null>(null);
@@ -143,8 +143,8 @@ export function useAuthRaw() {
       activeUserIdRef.current = nextUser?.id ?? null;
 
       if (nextUser && nextSession) {
-        const normalizedEmail = nextUser.email?.trim().toLowerCase();
-        if (normalizedEmail !== ALLOWED_SUPER_ADMIN_EMAIL) {
+      const normalizedEmail = nextUser.email?.trim().toLowerCase();
+        if (!normalizedEmail || !ALLOWED_ADMIN_EMAILS.includes(normalizedEmail)) {
           await supabase.auth.signOut();
           sessionTrackedRef.current = null;
           activeUserIdRef.current = null;
@@ -212,10 +212,10 @@ export function useAuthRaw() {
 
   const signIn = async (email: string, password: string) => {
     const normalizedEmail = email.trim().toLowerCase();
-    if (normalizedEmail !== ALLOWED_SUPER_ADMIN_EMAIL) {
+    if (!ALLOWED_ADMIN_EMAILS.includes(normalizedEmail)) {
       return {
         error: {
-          message: "Only abel.birara@gmail.com is allowed to sign in.",
+          message: "Access restricted to authorized administrators only.",
         } as any,
       };
     }
