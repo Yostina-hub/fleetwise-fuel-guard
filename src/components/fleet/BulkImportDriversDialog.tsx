@@ -113,7 +113,11 @@ export default function BulkImportDriversDialog({ open, onOpenChange }: BulkImpo
 
   const importMutation = useMutation({
     mutationFn: async (drivers: ParsedDriver[]) => {
-      // Finding #5: Limit bulk import batch size to prevent abuse
+      // Finding #5: Reject empty payload
+      if (drivers.length === 0) {
+        throw new Error("No valid drivers found in file. Each row must have first_name, last_name, and license_number.");
+      }
+      // Limit bulk import batch size to prevent abuse
       if (drivers.length > 100) {
         throw new Error("Maximum 100 drivers per import. Please split your file.");
       }
