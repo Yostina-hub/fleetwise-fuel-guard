@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
-import mapboxgl from 'mapbox-gl';
+import maplibregl from 'maplibre-gl';
 import {
   Table,
   TableBody,
@@ -60,7 +60,7 @@ const Geofencing = () => {
   const [drawingMode, setDrawingMode] = useState<'circle' | 'polygon' | null>(null);
   const [mapToken, setMapToken] = useState<string>("");
   const envToken = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
-  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
   const drawRef = useRef<MapboxDraw | null>(null);
   const geofenceLayersRef = useRef<string[]>([]);
   const [activeTab, setActiveTab] = useState<"geofences" | "events">("geofences");
@@ -125,7 +125,7 @@ const Geofencing = () => {
   };
 
   // Initialize Mapbox Draw when map is ready
-  const handleMapReady = (map: mapboxgl.Map) => {
+  const handleMapReady = (map: maplibregl.Map) => {
     mapRef.current = map;
     
     const draw = new MapboxDraw({

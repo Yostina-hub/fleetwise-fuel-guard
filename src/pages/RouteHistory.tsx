@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useSearchParams, useLocation } from "react-router-dom";
-import mapboxgl from "mapbox-gl";
+import maplibregl from "maplibre-gl";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import RouteHistoryQuickStats from "@/components/routehistory/RouteHistoryQuickStats";
@@ -98,12 +98,12 @@ const RouteHistory = () => {
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [showEventMarkers, setShowEventMarkers] = useState(true);
   const [speedLimit, setSpeedLimit] = useState(100); // Configurable speed limit
-  const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
+  const [mapInstance, setMapInstance] = useState<maplibregl.Map | null>(null);
   const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoplayTriggered = useRef(false);
 
   // Callback to capture map instance - triggers re-render
-  const handleMapReady = useCallback((map: mapboxgl.Map) => {
+  const handleMapReady = useCallback((map: maplibregl.Map) => {
     setMapInstance(map);
   }, []);
 

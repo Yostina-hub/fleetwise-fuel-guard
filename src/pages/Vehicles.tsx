@@ -64,7 +64,7 @@ import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { useVehicleCalculatedMetrics } from "@/hooks/useVehicleCalculatedMetrics";
 import { useDebounce } from "@/hooks/useDebounce";
 import { cn } from "@/lib/utils";
-import mapboxgl from "mapbox-gl";
+import maplibregl from "maplibre-gl";
 import { formatDistanceToNow } from "date-fns";
 
 const ITEMS_PER_PAGE = 20; // Updated to 20 items per page
@@ -131,7 +131,7 @@ const Vehicles = () => {
   const [mapExpanded, setMapExpanded] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mapStyle, setMapStyle] = useState<'streets' | 'satellite'>('streets');
-  const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
+  const [mapInstance, setMapInstance] = useState<maplibregl.Map | null>(null);
   const [viewMode, setViewMode] = useState<'table' | 'list'>('table'); // Default to table (list view in UI)
   const [showQuickInfo, setShowQuickInfo] = useState(false);
   

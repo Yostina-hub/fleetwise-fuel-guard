@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,7 +47,7 @@ interface LiveTrackingMapProps {
   selectedVehicleId?: string;
   token?: string;
   mapStyle?: 'streets' | 'satellite';
-  onMapReady?: (map: mapboxgl.Map) => void;
+  onMapReady?: (map: maplibregl.Map) => void;
   showTrails?: boolean;
   trails?: Map<string, TrailPoint[]>;
   openPopupVehicleId?: string | null;
@@ -74,14 +74,14 @@ const LiveTrackingMap = ({
 }: LiveTrackingMapProps) => {
 const { organizationId } = useOrganization();
 const mapContainer = useRef<HTMLDivElement>(null);
-const map = useRef<mapboxgl.Map | null>(null);
-const markers = useRef<Map<string, mapboxgl.Marker>>(new Map());
+const map = useRef<maplibregl.Map | null>(null);
+const markers = useRef<Map<string, maplibregl.Marker>>(new Map());
 const previousPositions = useRef<Map<string, { lng: number; lat: number }>>(new Map());
 const resizeObserver = useRef<ResizeObserver | null>(null);
 const addressFetchTimeouts = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 const initialBoundsFitted = useRef(false);
 const trailSourcesAdded = useRef<Set<string>>(new Set());
-const trailAnimationMarkers = useRef<Map<string, mapboxgl.Marker>>(new Map());
+const trailAnimationMarkers = useRef<Map<string, maplibregl.Marker>>(new Map());
 const trailAnimationFrames = useRef<Map<string, number>>(new Map());
 const [mapLoaded, setMapLoaded] = useState(false);
 const [tokenError, setTokenError] = useState<string | null>(null);
@@ -228,26 +228,25 @@ useEffect(() => {
       const mapboxToken = await fetchToken();
       if (!mapboxToken) return;
 
-      if (!mapboxgl.supported()) {
+      if (!maplibregl.supported()) {
         setTokenError('webgl');
         return;
       }
 
       try {
-        mapboxgl.accessToken = mapboxToken;
 
-        map.current = new mapboxgl.Map({
+        map.current = new maplibregl.Map({
           container: mapContainer.current,
           style:
             mapStyle === 'satellite'
-              ? 'mapbox://styles/mapbox/satellite-streets-v12'
-              : 'mapbox://styles/mapbox/streets-v12',
+              ? 'https://lemat.goffice.et/api/v1/tiles/style?theme=satellite'
+              : 'https://lemat.goffice.et/api/v1/tiles/style?theme=light',
           center: [38.75, 9.02], // Addis Ababa
           zoom: 12,
         });
 
-        map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-        map.current.addControl(new mapboxgl.FullscreenControl(), 'top-right');
+        map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
+        map.current.addControl(new maplibregl.FullscreenControl(), 'top-right');
 
         const setLoaded = () => setMapLoaded(true);
         map.current.on('load', () => {
@@ -340,7 +339,7 @@ return () => {
   // Update map style when setting changes
   useEffect(() => {
     if (!map.current) return;
-    const targetStyle = mapStyle === 'satellite' ? 'mapbox://styles/mapbox/satellite-streets-v12' : 'mapbox://styles/mapbox/streets-v12';
+    const targetStyle = mapStyle === 'satellite' ? 'https://lemat.goffice.et/api/v1/tiles/style?theme=satellite' : 'https://lemat.goffice.et/api/v1/tiles/style?theme=light';
     setMapLoaded(false);
     map.current.setStyle(targetStyle);
   }, [mapStyle]);
@@ -393,7 +392,6 @@ return () => {
         }
 
         // Get token from multiple sources
-        const mapboxToken = token || sessionStorage.getItem('mapbox_token') || import.meta.env.VITE_MAPBOX_TOKEN || mapboxgl.accessToken;
         if (!mapboxToken) {
           console.warn('No Mapbox token available for geocoding');
           setVehicleAddresses(prev => new Map(prev).set(vehicleId, `${lat.toFixed(6)}, ${lng.toFixed(6)}`));
@@ -782,7 +780,7 @@ return () => {
     });
   }, []);
 
-  const ensurePopupInView = useCallback((popup: mapboxgl.Popup) => {
+  const ensurePopupInView = useCallback((popup: maplibregl.Popup) => {
     if (!map.current) return;
 
     const popupEl = popup.getElement();
@@ -809,13 +807,13 @@ return () => {
   }, []);
 
   const enhancePopup = useCallback(
-    (popup: mapboxgl.Popup) => {
+    (popup: maplibregl.Popup) => {
       if (!map.current) return;
 
       const popupEl = popup.getElement();
       if (!popupEl) return;
 
-      const content = popupEl.querySelector('.mapboxgl-popup-content') as HTMLElement | null;
+      const content = popupEl.querySelector('.maplibregl-popup-content') as HTMLElement | null;
       if (content && content.dataset.scrollBound !== '1') {
         content.dataset.scrollBound = '1';
 
@@ -986,7 +984,7 @@ return () => {
         el.dataset.speed = vehicle.speed.toString();
         el.dataset.heading = (vehicle.heading || 0).toString();
 
-        const marker = new mapboxgl.Marker({
+        const marker = new maplibregl.Marker({
           element: el,
           anchor: 'center',
         })
@@ -997,7 +995,7 @@ return () => {
         (marker as any)._vehicleId = vehicle.id;
 
         // Create hover popup with vehicle info
-        const popup = new mapboxgl.Popup({
+        const popup = new maplibregl.Popup({
           closeButton: false,
           closeOnClick: false,
           offset: [0, -30],
@@ -1162,7 +1160,7 @@ return () => {
       }
     } else if (vehicles.length > 0 && !initialBoundsFitted.current) {
       // Auto-fit bounds only on initial load
-      const bounds = new mapboxgl.LngLatBounds();
+      const bounds = new maplibregl.LngLatBounds();
       vehicles.forEach(v => bounds.extend([v.lng, v.lat]));
       map.current!.fitBounds(bounds, { padding: 50, maxZoom: 15 });
       initialBoundsFitted.current = true;
@@ -1227,7 +1225,7 @@ return () => {
       };
 
       // Update or create source
-      const source = map.current!.getSource(sourceId) as mapboxgl.GeoJSONSource;
+      const source = map.current!.getSource(sourceId) as maplibregl.GeoJSONSource;
       if (source) {
         source.setData(geojsonData);
       } else {
@@ -1361,7 +1359,7 @@ return () => {
 
     let marker = trailAnimationMarkers.current.get(activeVehicleId);
     if (!marker) {
-      marker = new mapboxgl.Marker({ element: createCarElement(), anchor: 'center' })
+      marker = new maplibregl.Marker({ element: createCarElement(), anchor: 'center' })
         .setLngLat([points[0].lng, points[0].lat])
         .addTo(map.current!);
       trailAnimationMarkers.current.set(activeVehicleId, marker);

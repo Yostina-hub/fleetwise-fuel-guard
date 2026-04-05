@@ -1,9 +1,9 @@
 import { useEffect, useRef } from "react";
-import mapboxgl from "mapbox-gl";
+import maplibregl from "maplibre-gl";
 import { StopEvent, getEventColor, getEventIcon } from "./StopMarkers";
 
 interface RouteHistoryEventMarkersProps {
-  map: mapboxgl.Map | null;
+  map: maplibregl.Map | null;
   events: StopEvent[];
   visible: boolean;
 }
@@ -13,7 +13,7 @@ export const RouteHistoryEventMarkers = ({
   events, 
   visible 
 }: RouteHistoryEventMarkersProps) => {
-  const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const markersRef = useRef<maplibregl.Marker[]>([]);
 
   useEffect(() => {
     // Clear existing markers
@@ -56,10 +56,10 @@ export const RouteHistoryEventMarkers = ({
         el.style.transform = "scale(1)";
       });
 
-      const marker = new mapboxgl.Marker({ element: el, anchor: "center" })
+      const marker = new maplibregl.Marker({ element: el, anchor: "center" })
         .setLngLat([event.longitude, event.latitude])
         .setPopup(
-          new mapboxgl.Popup({ offset: 15, closeButton: false })
+          new maplibregl.Popup({ offset: 15, closeButton: false })
             .setHTML(`
               <div style="padding: 8px; min-width: 150px;">
                 <div style="font-weight: 600; margin-bottom: 4px; text-transform: capitalize;">${event.type} Event</div>

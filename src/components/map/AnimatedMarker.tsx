@@ -1,8 +1,8 @@
 import { useRef, useEffect } from 'react';
-import mapboxgl from 'mapbox-gl';
+import maplibregl from 'maplibre-gl';
 
 interface AnimatedMarkerProps {
-  map: mapboxgl.Map;
+  map: maplibregl.Map;
   lng: number;
   lat: number;
   status: 'moving' | 'idle' | 'stopped' | 'offline';
@@ -38,7 +38,7 @@ export function getSpeedColor(speed: number, maxSpeed: number = 120): string {
 
 // Animate position smoothly with improved easing for GPS updates
 export function animatePosition(
-  marker: mapboxgl.Marker,
+  marker: maplibregl.Marker,
   fromLng: number,
   fromLat: number,
   toLng: number,
@@ -337,7 +337,7 @@ export function injectMarkerAnimations() {
     }
 
     /* Modern popup styles */
-    .mapboxgl-popup-content {
+    .maplibregl-popup-content {
       padding: 0 !important;
       border-radius: 12px !important;
       box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
@@ -481,7 +481,7 @@ export function injectMarkerAnimations() {
       box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
     }
 
-    .vehicle-hover-popup .mapboxgl-popup-content {
+    .vehicle-hover-popup .maplibregl-popup-content {
       padding: 0 !important;
       border-radius: 12px !important;
       box-shadow: 0 8px 30px rgba(0,0,0,0.2) !important;

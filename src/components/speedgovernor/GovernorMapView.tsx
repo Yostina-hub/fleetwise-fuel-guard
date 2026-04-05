@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import { VehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,8 +29,8 @@ interface VehicleTrail {
 
 export const GovernorMapView = ({ vehicles, telemetry, isVehicleOnline }: GovernorMapViewProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const markers = useRef<Record<string, mapboxgl.Marker>>({});
+  const map = useRef<maplibregl.Map | null>(null);
+  const markers = useRef<Record<string, maplibregl.Marker>>({});
   const trails = useRef<Record<string, VehicleTrail>>({});
   const { token: mapboxToken } = useMapboxToken();
   const { organizationId } = useOrganization();
@@ -39,17 +39,16 @@ export const GovernorMapView = ({ vehicles, telemetry, isVehicleOnline }: Govern
   useEffect(() => {
     if (!mapContainer.current || !mapboxToken || map.current) return;
 
-    mapboxgl.accessToken = mapboxToken;
 
-    map.current = new mapboxgl.Map({
+    map.current = new maplibregl.Map({
       container: mapContainer.current,
-      style: "mapbox://styles/mapbox/streets-v12",
+      style: "https://lemat.goffice.et/api/v1/tiles/style?theme=light",
       center: [38.7578, 9.03], // Addis Ababa, Ethiopia
       zoom: 11,
     });
 
-    map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
-    map.current.addControl(new mapboxgl.FullscreenControl(), "top-right");
+    map.current.addControl(new maplibregl.NavigationControl(), "top-right");
+    map.current.addControl(new maplibregl.FullscreenControl(), "top-right");
 
     // Initialize map with trail source when loaded
     map.current.on('load', () => {
@@ -212,12 +211,12 @@ export const GovernorMapView = ({ vehicles, telemetry, isVehicleOnline }: Govern
           (isOverSpeed ? "pulse 1.5s infinite" : "pulse-subtle 2s infinite") : "";
       } else {
         // Create new marker
-        const marker = new mapboxgl.Marker(el)
+        const marker = new maplibregl.Marker(el)
           .setLngLat([vehicleTelemetry.longitude, vehicleTelemetry.latitude])
           .addTo(map.current!);
 
         // Create popup with vehicle info
-        const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(`
+        const popup = new maplibregl.Popup({ offset: 25 }).setHTML(`
           <div style="padding: 8px; font-family: system-ui;">
             <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold;">🚗 ${vehicle.plate}</h3>
             <div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px;">
@@ -296,7 +295,7 @@ export const GovernorMapView = ({ vehicles, telemetry, isVehicleOnline }: Govern
           };
         });
 
-      (map.current.getSource('vehicle-trails') as mapboxgl.GeoJSONSource).setData({
+      (map.current.getSource('vehicle-trails') as maplibregl.GeoJSONSource).setData({
         type: 'FeatureCollection',
         features: features as any
       });
@@ -304,7 +303,7 @@ export const GovernorMapView = ({ vehicles, telemetry, isVehicleOnline }: Govern
 
     // Fit map to show all markers
     if (vehicles.length > 0) {
-      const bounds = new mapboxgl.LngLatBounds();
+      const bounds = new maplibregl.LngLatBounds();
       vehicles.forEach((vehicle) => {
         const vehicleTelemetry = telemetry[vehicle.id];
         if (vehicleTelemetry?.latitude && vehicleTelemetry?.longitude) {
