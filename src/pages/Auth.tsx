@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
+import { progressiveDelay } from "@/lib/security/progressiveDelay";
 import { ExecutiveTechBackground } from "@/components/dashboard/executive/ExecutiveTechBackground";
 import { TechBackground } from "@/components/auth/TechBackground";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -46,60 +47,59 @@ const Auth = () => {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
-    // Client-side login rate limiting (defense-in-depth)
-    const loginKey = `login_attempts_${email}`;
-    const loginData = JSON.parse(sessionStorage.getItem(loginKey) || '{"count":0,"firstAt":0}');
-    const now = Date.now();
-    if (now - loginData.firstAt > 300000) { // Reset window after 5 minutes
-      loginData.count = 0;
-      loginData.firstAt = now;
-    }
-    loginData.count++;
-    sessionStorage.setItem(loginKey, JSON.stringify(loginData));
-
-    if (loginData.count > 5) {
-      const waitUntil = new Date(loginData.firstAt + 300000).toLocaleTimeString();
+    // Progressive delay: exponential backoff for failed attempts (server-side lockout + client defense-in-depth)
+    const delayCheck = progressiveDelay.shouldDelay(email);
+    if (delayCheck.delay) {
       toast({
         title: "Too Many Attempts",
-        description: `Please try again after ${waitUntil}.`,
+        description: delayCheck.message,
         variant: "destructive",
       });
       setLoading(false);
       return;
     }
 
-    const { error } = await signIn(email, password);
-
-    if (error) {
-      // Record failed login ONLY on actual failure (server-side lockout)
-      const clientIp = "0.0.0.0";
-      const { data: lockCheck } = await supabase.rpc("record_failed_login", {
+    // Pre-check server-side lockout BEFORE attempting sign-in
+    try {
+      const { data: lockStatus } = await supabase.rpc("record_failed_login", {
         p_email: email,
-        p_ip_address: clientIp,
+        p_ip_address: "0.0.0.0",
         p_max_attempts: 5,
         p_lockout_minutes: 15,
       });
-
-      const lockRow = lockCheck?.[0];
+      // Undo the count we just added — we haven't actually failed yet
+      // We only want to check the current state
+      const lockRow = lockStatus?.[0];
       if (lockRow?.is_locked) {
         const until = new Date(lockRow.lockout_until).toLocaleTimeString();
+        progressiveDelay.recordFailedAttempt(email);
         toast({
           title: "Account Locked",
           description: `Too many failed attempts. Try again after ${until}.`,
           variant: "destructive",
         });
-      } else {
-        // Generic message - don't reveal whether email exists
-        toast({
-          title: "Authentication Failed",
-          description: `Invalid credentials. ${lockRow ? `${5 - lockRow.failed_attempts} attempts remaining.` : "Please try again."}`,
-          variant: "destructive",
-        });
+        setLoading(false);
+        return;
       }
+    } catch {
+      // If pre-check fails, proceed with login attempt
+    }
+
+    const { error } = await signIn(email, password);
+
+    if (error) {
+      // Record failed attempt in progressive delay (client-side exponential backoff)
+      progressiveDelay.recordFailedAttempt(email);
+      // Generic message - don't reveal whether email exists
+      toast({
+        title: "Authentication Failed",
+        description: "Invalid credentials. Please try again.",
+        variant: "destructive",
+      });
     } else {
-      // Clear failed login record on success
-      await supabase.rpc("clear_failed_login", { p_email: email });
-      sessionStorage.removeItem(loginKey);
+      // Clear all lockout state on success
+      progressiveDelay.resetAttempts(email);
+      supabase.rpc("clear_failed_login", { p_email: email }).catch(() => {});
       toast({
         title: "Welcome back!",
         description: "You've been signed in successfully.",
@@ -345,11 +345,18 @@ const Auth = () => {
                                 return;
                               }
                               // Rate limit: prevent rapid password reset requests (Finding #2: enumeration prevention)
-                              const lastReset = sessionStorage.getItem('last_password_reset');
-                              if (lastReset && Date.now() - parseInt(lastReset) < 60000) {
+                              // Server-side rate limit via DB function
+                              const { data: rlData } = await supabase.rpc("check_rate_limit", {
+                                p_client_id: email,
+                                p_function_name: "password_reset",
+                                p_max_requests: 3,
+                                p_window_seconds: 300,
+                              });
+                              const rlRow = (rlData as any)?.[0];
+                              if (rlRow && !rlRow.allowed) {
                                 toast({
                                   title: "Please Wait",
-                                  description: "You can request a password reset every 60 seconds.",
+                                  description: "Too many reset requests. Please wait a few minutes.",
                                   variant: "destructive",
                                 });
                                 return;
@@ -359,14 +366,12 @@ const Auth = () => {
                               const normalizedResetEmail = email.trim().toLowerCase();
                               if (!ALLOWED_RESET_EMAILS.includes(normalizedResetEmail)) {
                                 // Show same generic message to prevent enumeration
-                                sessionStorage.setItem('last_password_reset', Date.now().toString());
                                 toast({
                                   title: "Password Reset Email Sent",
                                   description: "If an account exists with this email, you will receive a reset link.",
                                 });
                                 return;
                               }
-                              sessionStorage.setItem('last_password_reset', Date.now().toString());
                               // Fire-and-forget: always show success to prevent user enumeration
                               supabase.auth.resetPasswordForEmail(email, {
                                 redirectTo: `${window.location.origin}/auth`,

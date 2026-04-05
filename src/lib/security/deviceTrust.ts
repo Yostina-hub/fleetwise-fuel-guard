@@ -41,7 +41,7 @@ class DeviceTrustManager {
 
   private loadFromStorage(): void {
     try {
-      const stored = localStorage.getItem(this.STORAGE_KEY);
+      const stored = sessionStorage.getItem(this.STORAGE_KEY);
       if (stored) {
         const data = JSON.parse(stored);
         for (const [userId, devices] of Object.entries(data)) {
@@ -59,7 +59,7 @@ class DeviceTrustManager {
       for (const [userId, devices] of this.devices.entries()) {
         data[userId] = devices;
       }
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+      sessionStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
     } catch {
       // Ignore storage errors
     }
