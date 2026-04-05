@@ -241,8 +241,12 @@ const ClusteredMap = ({
   useEffect(() => {
     if (!mapContainer.current || !lematKeyReady || !lematApiKey || map.current) return;
 
-    // Pre-check if Lemat style endpoint is reachable
+    setMapLoaded(false);
+    setStyleError(false);
+
     const initMap = async () => {
+      if (!mapContainer.current) return;
+
       let styleToUse: string | maplibregl.StyleSpecification = getLematMapStyle(mapStyle);
       try {
         const probe = await fetch(styleToUse as string, { method: 'HEAD', signal: AbortSignal.timeout(3000) });
@@ -251,65 +255,67 @@ const ClusteredMap = ({
         styleToUse = getOsmFallbackStyle();
       }
 
+      if (!mapContainer.current || map.current) return;
+
       map.current = new maplibregl.Map({
-        container: mapContainer.current!,
+        container: mapContainer.current,
         style: styleToUse,
         center: [38.75, 9.02],
         zoom: 10,
         transformRequest: createLematTransformRequest(lematApiKey),
       });
 
-    map.current.addControl(new maplibregl.NavigationControl(), "top-right");
-    map.current.addControl(new maplibregl.FullscreenControl(), "top-right");
+      map.current.addControl(new maplibregl.NavigationControl(), "top-right");
+      map.current.addControl(new maplibregl.FullscreenControl(), "top-right");
 
-    map.current.on("load", () => {
-      fallbackTriedRef.current = false;
-      setStyleError(false);
-      setMapLoaded(true);
-      try {
-        onMapReady?.(map.current!);
-      } catch {}
-    });
-    map.current.on("style.load", () => {
-      setStyleError(false);
-      setMapLoaded(true);
-    });
-    map.current.on("zoom", () => updateClusters());
-    map.current.on("move", () => updateClusters());
-    map.current.on("error", (event) => {
-      const failedUrl = (event?.error as { url?: string } | undefined)?.url || '';
-      const isStyleFailure = failedUrl.includes('/tiles/style') || failedUrl.includes('/tiles/');
-
-      if (isStyleFailure && !fallbackTriedRef.current) {
-        fallbackTriedRef.current = true;
-        setMapLoaded(false);
+      map.current.on("load", () => {
+        fallbackTriedRef.current = false;
+        setStyleError(false);
+        setMapLoaded(true);
         try {
-          map.current?.setStyle(getLematFallbackMapStyle());
-          return;
+          onMapReady?.(map.current!);
         } catch {}
-      }
+      });
+      map.current.on("style.load", () => {
+        setStyleError(false);
+        setMapLoaded(true);
+      });
+      map.current.on("zoom", () => updateClusters());
+      map.current.on("move", () => updateClusters());
+      map.current.on("error", (event) => {
+        const failedUrl = (event?.error as { url?: string } | undefined)?.url || '';
+        const isStyleFailure = failedUrl.includes('/tiles/style') || failedUrl.includes('/tiles/');
 
-      // If Lemat fallback also failed, try OSM raster tiles
-      if (isStyleFailure && fallbackTriedRef.current) {
-        setMapLoaded(false);
-        try {
-          map.current?.setStyle(getOsmFallbackStyle());
-          return;
-        } catch {}
-      }
+        if (isStyleFailure && !fallbackTriedRef.current) {
+          fallbackTriedRef.current = true;
+          setMapLoaded(false);
+          try {
+            map.current?.setStyle(getLematFallbackMapStyle());
+            return;
+          } catch {}
+        }
 
-      if (isStyleFailure) {
-        setStyleError(true);
-      }
-    });
+        if (isStyleFailure && fallbackTriedRef.current) {
+          setMapLoaded(false);
+          try {
+            map.current?.setStyle(getOsmFallbackStyle());
+            return;
+          } catch {}
+        }
+
+        if (isStyleFailure) {
+          setStyleError(true);
+        }
+      });
+    };
+
+    initMap();
 
     return () => {
       setMapLoaded(false);
-
       clusterMarkers.current.forEach((m) => m.remove());
       clusterMarkers.current.clear();
       trailSourcesAdded.current.clear();
-
       map.current?.remove();
       map.current = null;
     };
