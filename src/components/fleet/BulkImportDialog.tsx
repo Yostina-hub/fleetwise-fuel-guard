@@ -68,15 +68,33 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
     if (!row.plate_number?.trim()) {
       return { valid: false, error: `Row ${index + 2}: Plate number is required` };
     }
+    if (row.plate_number.trim().length > 20) {
+      return { valid: false, error: `Row ${index + 2}: Plate number too long (max 20 chars)` };
+    }
     if (!row.make?.trim()) {
       return { valid: false, error: `Row ${index + 2}: Make is required` };
+    }
+    if (row.make.trim().length > 100) {
+      return { valid: false, error: `Row ${index + 2}: Make too long (max 100 chars)` };
     }
     if (!row.model?.trim()) {
       return { valid: false, error: `Row ${index + 2}: Model is required` };
     }
+    if (row.model.trim().length > 100) {
+      return { valid: false, error: `Row ${index + 2}: Model too long (max 100 chars)` };
+    }
     const year = parseInt(row.year);
     if (!year || year < 1900 || year > new Date().getFullYear() + 1) {
       return { valid: false, error: `Row ${index + 2}: Invalid year` };
+    }
+    if (row.vin?.trim() && row.vin.trim().length > 20) {
+      return { valid: false, error: `Row ${index + 2}: VIN too long (max 20 chars)` };
+    }
+    if (row.tank_capacity_liters && (parseFloat(row.tank_capacity_liters) < 0 || parseFloat(row.tank_capacity_liters) > 10000000)) {
+      return { valid: false, error: `Row ${index + 2}: Invalid tank capacity` };
+    }
+    if (row.odometer_km && (parseFloat(row.odometer_km) < 0 || parseFloat(row.odometer_km) > 10000000)) {
+      return { valid: false, error: `Row ${index + 2}: Invalid odometer reading` };
     }
     return { valid: true };
   };
