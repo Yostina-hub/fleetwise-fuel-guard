@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useLematApiKey } from "@/hooks/useLematApiKey";
+import { createLematTransformRequest, getLematFallbackMapStyle, getLematMapStyle } from "@/lib/lemat";
 import { 
   createAnimatedMarkerElement, 
   animatePosition, 
@@ -73,6 +75,7 @@ const LiveTrackingMap = ({
   disablePopups = false
 }: LiveTrackingMapProps) => {
 const { organizationId } = useOrganization();
+const { apiKey: lematApiKey, ready: lematKeyReady } = useLematApiKey();
 const mapContainer = useRef<HTMLDivElement>(null);
 const map = useRef<maplibregl.Map | null>(null);
 const markers = useRef<Map<string, maplibregl.Marker>>(new Map());
@@ -85,8 +88,7 @@ const trailAnimationMarkers = useRef<Map<string, maplibregl.Marker>>(new Map());
 const trailAnimationFrames = useRef<Map<string, number>>(new Map());
 const [mapLoaded, setMapLoaded] = useState(false);
 const [tokenError, setTokenError] = useState<string | null>(null);
-const [tempToken, setTempToken] = useState('');
-const [initNonce, setInitNonce] = useState(0);
+const fallbackTriedRef = useRef(false);
 const retriedInvalidRef = useRef(false);
 const [vehicleAddresses, setVehicleAddresses] = useState<Map<string, string>>(new Map());
 const [vehicleRoadInfo, setVehicleRoadInfo] = useState<Map<string, { road: string; distance: number; direction: string }>>(new Map());
@@ -138,53 +140,71 @@ useEffect(() => {
 
   // Fetch token from backend (organization settings or edge function)
   useEffect(() => {
-    const initMap = () => {
-      if (!mapContainer.current || map.current) return;
+    if (!mapContainer.current || map.current || !lematKeyReady || !lematApiKey) return;
 
-      try {
-        map.current = new maplibregl.Map({
-          container: mapContainer.current,
-          style:
-            mapStyle === 'satellite'
-              ? 'https://lemat.goffice.et/api/v1/tiles/style?theme=satellite'
-              : 'https://lemat.goffice.et/api/v1/tiles/style?theme=light',
-          center: [38.75, 9.02],
-          zoom: 12,
-        });
+    try {
+      const initialStyle = getLematMapStyle(mapStyle);
 
-        map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
-        map.current.addControl(new maplibregl.FullscreenControl(), 'top-right');
+      map.current = new maplibregl.Map({
+        container: mapContainer.current,
+        style: initialStyle,
+        center: [38.75, 9.02],
+        zoom: 12,
+        transformRequest: createLematTransformRequest(lematApiKey),
+      });
 
-        const setLoaded = () => setMapLoaded(true);
-        map.current.on('load', () => {
-          setLoaded();
-          try {
-            onMapReady?.(map.current!);
-          } catch {}
-          try {
-            if (mapContainer.current) {
-              resizeObserver.current = new ResizeObserver(() => {
-                try {
-                  map.current?.resize();
-                } catch {}
-              });
-              resizeObserver.current.observe(mapContainer.current);
-            }
-          } catch {}
-        });
+      map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
+      map.current.addControl(new maplibregl.FullscreenControl(), 'top-right');
 
-        map.current.on('style.load', setLoaded);
-      } catch (e) {
-        console.error('Map initialization failed:', e);
-        setTokenError('webgl');
+      map.current.on('load', () => {
+        fallbackTriedRef.current = false;
+        setTokenError(null);
+        setMapLoaded(true);
         try {
-          map.current?.remove();
+          onMapReady?.(map.current!);
         } catch {}
-        map.current = null;
-      }
-    };
+        try {
+          if (mapContainer.current) {
+            resizeObserver.current = new ResizeObserver(() => {
+              try {
+                map.current?.resize();
+              } catch {}
+            });
+            resizeObserver.current.observe(mapContainer.current);
+          }
+        } catch {}
+      });
 
-    initMap();
+      map.current.on('style.load', () => {
+        setTokenError(null);
+        setMapLoaded(true);
+      });
+
+      map.current.on('error', (event) => {
+        const failedUrl = (event?.error as { url?: string } | undefined)?.url || '';
+        const isStyleFailure = failedUrl.includes('/tiles/style') || failedUrl.includes('/tiles/');
+
+        if (isStyleFailure && !fallbackTriedRef.current) {
+          fallbackTriedRef.current = true;
+          setMapLoaded(false);
+          try {
+            map.current?.setStyle(getLematFallbackMapStyle());
+            return;
+          } catch {}
+        }
+
+        if (isStyleFailure) {
+          setTokenError('style');
+        }
+      });
+    } catch (e) {
+      console.error('Map initialization failed:', e);
+      setTokenError('webgl');
+      try {
+        map.current?.remove();
+      } catch {}
+      map.current = null;
+    }
 
     return () => {
       try {
@@ -198,24 +218,22 @@ useEffect(() => {
 
         markers.current.forEach(marker => marker.remove());
         markers.current.clear();
-        if (map.current) {
-          map.current.remove();
-          map.current = null;
-        }
+        map.current?.remove();
+        map.current = null;
       } catch (e) {
         console.warn('Map cleanup error (ignored):', e);
         map.current = null;
       }
     };
-  }, [mapStyle, initNonce, onMapReady]);
+  }, [lematApiKey, lematKeyReady, mapStyle, onMapReady]);
 
-  // Update map style when setting changes
   useEffect(() => {
-    if (!map.current) return;
-    const targetStyle = mapStyle === 'satellite' ? 'https://lemat.goffice.et/api/v1/tiles/style?theme=satellite' : 'https://lemat.goffice.et/api/v1/tiles/style?theme=light';
+    if (!map.current || !lematApiKey) return;
+    const targetStyle = getLematMapStyle(mapStyle);
     setMapLoaded(false);
+    setTokenError(null);
     map.current.setStyle(targetStyle);
-  }, [mapStyle]);
+  }, [lematApiKey, mapStyle]);
 
   // Debounced address fetching to avoid API spam - gets detailed street-level address
   const fetchAddressDebounced = (lng: number, lat: number, vehicleId: string) => {
@@ -1233,6 +1251,30 @@ useEffect(() => {
               Enable hardware acceleration in your browser settings.
             </p>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!lematKeyReady) {
+    return (
+      <div className="h-full w-full flex items-center justify-center bg-muted">
+        <div className="text-center space-y-2">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm text-muted-foreground">Loading map…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (tokenError === 'style') {
+    return (
+      <div className="h-full w-full flex items-center justify-center bg-muted/50">
+        <div className="max-w-sm w-full bg-background border rounded-xl p-6 text-center space-y-3 shadow-lg">
+          <h3 className="font-semibold text-lg">Map style unavailable</h3>
+          <p className="text-sm text-muted-foreground">
+            The map tiles could not be loaded from Lemat right now.
+          </p>
         </div>
       </div>
     );
