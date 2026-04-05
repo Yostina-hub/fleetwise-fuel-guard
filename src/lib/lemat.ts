@@ -18,7 +18,7 @@ export const getLematStyleUrl = (theme: LematTheme = 'light'): string =>
 export const getLematMapStyle = (style: LematMapStyle = 'streets'): string =>
   style === 'satellite' ? getLematStyleUrl('satellite') : getLematStyleUrl('light');
 
-export const getLematFallbackMapStyle = (): string => getLematStyleUrl('light');
+export const getLematFallbackMapStyle = (): string => getLematStyleUrl('dark');
 
 /**
  * OpenStreetMap raster tile style for use when the Lemat tile server is completely unreachable.
