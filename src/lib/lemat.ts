@@ -20,6 +20,39 @@ export const getLematMapStyle = (style: LematMapStyle = 'streets'): string =>
 
 export const getLematFallbackMapStyle = (): string => getLematStyleUrl('light');
 
+/**
+ * OpenStreetMap raster tile style for use when the Lemat tile server is completely unreachable.
+ * This is a self-contained MapLibre style spec – no external style JSON needs to be fetched.
+ */
+export const getOsmFallbackStyle = (): maplibregl.StyleSpecification => ({
+  version: 8,
+  name: 'OSM Fallback',
+  sources: {
+    'osm-tiles': {
+      type: 'raster',
+      tiles: [
+        'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      ],
+      tileSize: 256,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    },
+  },
+  layers: [
+    {
+      id: 'osm-tiles-layer',
+      type: 'raster',
+      source: 'osm-tiles',
+      minzoom: 0,
+      maxzoom: 19,
+    },
+  ],
+});
+
+// Type import for the style spec
+import type maplibregl from 'maplibre-gl';
+
 export const isLematResourceUrl = (url: string): boolean =>
   url.startsWith(LEMAT_API_BASE);
 

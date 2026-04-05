@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { useMapboxToken } from "@/hooks/useMapboxToken";
+import { useLematApiKey } from "@/hooks/useLematApiKey";
+import { createLematTransformRequest, getLematMapStyle, getOsmFallbackStyle } from "@/lib/lemat";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Loader2, Droplet, AlertTriangle, Fuel } from "lucide-react";
 import { format } from "date-fns";
@@ -65,7 +66,7 @@ const FuelEventsMapView = ({
   selectedEventId,
   onEventSelect,
 }: FuelEventsMapViewProps) => {
-  const { token: mapboxToken, loading: tokenLoading } = useMapboxToken();
+  const { apiKey: lematApiKey, ready: lematKeyReady } = useLematApiKey();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
@@ -86,21 +87,37 @@ const FuelEventsMapView = ({
 
   // Initialize map
   useEffect(() => {
-    if (!mapContainer.current || !mapboxToken || map.current) return;
+    if (!mapContainer.current || !lematKeyReady || map.current) return;
 
+    const initMap = async () => {
+      if (!mapContainer.current || map.current) return;
 
-    map.current = new maplibregl.Map({
-      container: mapContainer.current,
-      style: "https://lemat.goffice.et/api/v1/tiles/style?theme=light",
-      center: [38.7578, 9.0054], // Default to Addis Ababa
-      zoom: 10,
-    });
+      let styleToUse: string | maplibregl.StyleSpecification = getLematMapStyle('streets');
+      try {
+        const probe = await fetch(styleToUse as string, { method: 'HEAD', signal: AbortSignal.timeout(3000) });
+        if (!probe.ok) styleToUse = getOsmFallbackStyle();
+      } catch {
+        styleToUse = getOsmFallbackStyle();
+      }
 
-    map.current.addControl(new maplibregl.NavigationControl(), "top-right");
+      if (!mapContainer.current || map.current) return;
 
-    map.current.on("load", () => {
-      setMapLoaded(true);
-    });
+      map.current = new maplibregl.Map({
+        container: mapContainer.current,
+        style: styleToUse,
+        center: [38.7578, 9.0054],
+        zoom: 10,
+        transformRequest: createLematTransformRequest(lematApiKey),
+      });
+
+      map.current.addControl(new maplibregl.NavigationControl(), "top-right");
+
+      map.current.on("load", () => {
+        setMapLoaded(true);
+      });
+    };
+
+    initMap();
 
     return () => {
       markersRef.current.forEach((marker) => marker.remove());
@@ -108,7 +125,7 @@ const FuelEventsMapView = ({
       map.current?.remove();
       map.current = null;
     };
-  }, [mapboxToken]);
+  }, [lematApiKey, lematKeyReady]);
 
   // Update markers when events change
   useEffect(() => {
@@ -233,21 +250,10 @@ const FuelEventsMapView = ({
     }
   }, [selectedEventId, eventsWithCoords]);
 
-  if (tokenLoading) {
+  if (!lematKeyReady) {
     return (
       <Card className="h-[500px] flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </Card>
-    );
-  }
-
-  if (!mapboxToken) {
-    return (
-      <Card className="h-[500px] flex items-center justify-center">
-        <CardContent className="text-center text-muted-foreground">
-          <MapPin className="w-12 h-12 mx-auto mb-4 opacity-50" />
-          <p>Map token not available</p>
-        </CardContent>
       </Card>
     );
   }

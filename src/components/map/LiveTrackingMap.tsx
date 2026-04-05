@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useLematApiKey } from "@/hooks/useLematApiKey";
-import { createLematTransformRequest, getLematFallbackMapStyle, getLematMapStyle } from "@/lib/lemat";
+import { createLematTransformRequest, getLematFallbackMapStyle, getLematMapStyle, getOsmFallbackStyle } from "@/lib/lemat";
 import { 
   createAnimatedMarkerElement, 
   animatePosition, 
@@ -142,69 +142,94 @@ useEffect(() => {
   useEffect(() => {
     if (!mapContainer.current || map.current || !lematKeyReady || !lematApiKey) return;
 
-    try {
-      const initialStyle = getLematMapStyle(mapStyle);
+    const initMap = async () => {
+      if (!mapContainer.current || map.current) return;
 
-      map.current = new maplibregl.Map({
-        container: mapContainer.current,
-        style: initialStyle,
-        center: [38.75, 9.02],
-        zoom: 12,
-        transformRequest: createLematTransformRequest(lematApiKey),
-      });
-
-      map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
-      map.current.addControl(new maplibregl.FullscreenControl(), 'top-right');
-
-      map.current.on('load', () => {
-        fallbackTriedRef.current = false;
-        setTokenError(null);
-        setMapLoaded(true);
-        try {
-          onMapReady?.(map.current!);
-        } catch {}
-        try {
-          if (mapContainer.current) {
-            resizeObserver.current = new ResizeObserver(() => {
-              try {
-                map.current?.resize();
-              } catch {}
-            });
-            resizeObserver.current.observe(mapContainer.current);
-          }
-        } catch {}
-      });
-
-      map.current.on('style.load', () => {
-        setTokenError(null);
-        setMapLoaded(true);
-      });
-
-      map.current.on('error', (event) => {
-        const failedUrl = (event?.error as { url?: string } | undefined)?.url || '';
-        const isStyleFailure = failedUrl.includes('/tiles/style') || failedUrl.includes('/tiles/');
-
-        if (isStyleFailure && !fallbackTriedRef.current) {
-          fallbackTriedRef.current = true;
-          setMapLoaded(false);
-          try {
-            map.current?.setStyle(getLematFallbackMapStyle());
-            return;
-          } catch {}
-        }
-
-        if (isStyleFailure) {
-          setTokenError('style');
-        }
-      });
-    } catch (e) {
-      console.error('Map initialization failed:', e);
-      setTokenError('webgl');
       try {
-        map.current?.remove();
-      } catch {}
-      map.current = null;
-    }
+        const initialStyle = getLematMapStyle(mapStyle);
+
+        let styleToUse: string | maplibregl.StyleSpecification = initialStyle;
+        try {
+          const probe = await fetch(initialStyle, { method: 'HEAD', signal: AbortSignal.timeout(3000) });
+          if (!probe.ok) styleToUse = getOsmFallbackStyle();
+        } catch {
+          styleToUse = getOsmFallbackStyle();
+        }
+
+        if (!mapContainer.current || map.current) return;
+
+        map.current = new maplibregl.Map({
+          container: mapContainer.current,
+          style: styleToUse,
+          center: [38.75, 9.02],
+          zoom: 12,
+          transformRequest: createLematTransformRequest(lematApiKey),
+        });
+
+        map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
+        map.current.addControl(new maplibregl.FullscreenControl(), 'top-right');
+
+        map.current.on('load', () => {
+          fallbackTriedRef.current = false;
+          setTokenError(null);
+          setMapLoaded(true);
+          try {
+            onMapReady?.(map.current!);
+          } catch {}
+          try {
+            if (mapContainer.current) {
+              resizeObserver.current = new ResizeObserver(() => {
+                try {
+                  map.current?.resize();
+                } catch {}
+              });
+              resizeObserver.current.observe(mapContainer.current);
+            }
+          } catch {}
+        });
+
+        map.current.on('style.load', () => {
+          setTokenError(null);
+          setMapLoaded(true);
+        });
+
+        map.current.on('error', (event) => {
+          const failedUrl = (event?.error as { url?: string } | undefined)?.url || '';
+          const isStyleFailure = failedUrl.includes('/tiles/style') || failedUrl.includes('/tiles/');
+
+          if (isStyleFailure && !fallbackTriedRef.current) {
+            fallbackTriedRef.current = true;
+            setMapLoaded(false);
+            try {
+              map.current?.setStyle(getLematFallbackMapStyle());
+              return;
+            } catch {}
+          }
+
+          if (isStyleFailure && fallbackTriedRef.current && !retriedInvalidRef.current) {
+            retriedInvalidRef.current = true;
+            setMapLoaded(false);
+            try {
+              map.current?.setStyle(getOsmFallbackStyle());
+              return;
+            } catch {}
+          }
+
+          if (isStyleFailure) {
+            setTokenError('style');
+          }
+        });
+      } catch (e) {
+        console.error('Map initialization failed:', e);
+        setTokenError('webgl');
+        try {
+          map.current?.remove();
+        } catch {}
+        map.current = null;
+      }
+    };
+
+    initMap();
 
     return () => {
       try {

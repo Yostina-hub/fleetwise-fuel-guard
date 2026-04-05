@@ -12,7 +12,7 @@ import {
 } from "./AnimatedMarker";
 import { useMapMatching } from "@/hooks/useMapMatching";
 import { useLematApiKey } from "@/hooks/useLematApiKey";
-import { createLematTransformRequest, getLematFallbackMapStyle, getLematMapStyle } from "@/lib/lemat";
+import { createLematTransformRequest, getLematFallbackMapStyle, getLematMapStyle, getOsmFallbackStyle } from "@/lib/lemat";
 
 interface VehiclePoint {
   id: string;
@@ -244,56 +244,78 @@ const ClusteredMap = ({
     setMapLoaded(false);
     setStyleError(false);
 
-    map.current = new maplibregl.Map({
-      container: mapContainer.current,
-      style: getLematMapStyle(mapStyle),
-      center: [38.75, 9.02],
-      zoom: 10,
-      transformRequest: createLematTransformRequest(lematApiKey),
-    });
+    const initMap = async () => {
+      if (!mapContainer.current) return;
 
-    map.current.addControl(new maplibregl.NavigationControl(), "top-right");
-    map.current.addControl(new maplibregl.FullscreenControl(), "top-right");
-
-    map.current.on("load", () => {
-      fallbackTriedRef.current = false;
-      setStyleError(false);
-      setMapLoaded(true);
+      let styleToUse: string | maplibregl.StyleSpecification = getLematMapStyle(mapStyle);
       try {
-        onMapReady?.(map.current!);
-      } catch {}
-    });
-    map.current.on("style.load", () => {
-      setStyleError(false);
-      setMapLoaded(true);
-    });
-    map.current.on("zoom", () => updateClusters());
-    map.current.on("move", () => updateClusters());
-    map.current.on("error", (event) => {
-      const failedUrl = (event?.error as { url?: string } | undefined)?.url || '';
-      const isStyleFailure = failedUrl.includes('/tiles/style') || failedUrl.includes('/tiles/');
+        const probe = await fetch(styleToUse as string, { method: 'HEAD', signal: AbortSignal.timeout(3000) });
+        if (!probe.ok) styleToUse = getOsmFallbackStyle();
+      } catch {
+        styleToUse = getOsmFallbackStyle();
+      }
 
-      if (isStyleFailure && !fallbackTriedRef.current) {
-        fallbackTriedRef.current = true;
-        setMapLoaded(false);
+      if (!mapContainer.current || map.current) return;
+
+      map.current = new maplibregl.Map({
+        container: mapContainer.current,
+        style: styleToUse,
+        center: [38.75, 9.02],
+        zoom: 10,
+        transformRequest: createLematTransformRequest(lematApiKey),
+      });
+
+      map.current.addControl(new maplibregl.NavigationControl(), "top-right");
+      map.current.addControl(new maplibregl.FullscreenControl(), "top-right");
+
+      map.current.on("load", () => {
+        fallbackTriedRef.current = false;
+        setStyleError(false);
+        setMapLoaded(true);
         try {
-          map.current?.setStyle(getLematFallbackMapStyle());
-          return;
+          onMapReady?.(map.current!);
         } catch {}
-      }
+      });
+      map.current.on("style.load", () => {
+        setStyleError(false);
+        setMapLoaded(true);
+      });
+      map.current.on("zoom", () => updateClusters());
+      map.current.on("move", () => updateClusters());
+      map.current.on("error", (event) => {
+        const failedUrl = (event?.error as { url?: string } | undefined)?.url || '';
+        const isStyleFailure = failedUrl.includes('/tiles/style') || failedUrl.includes('/tiles/');
 
-      if (isStyleFailure) {
-        setStyleError(true);
-      }
-    });
+        if (isStyleFailure && !fallbackTriedRef.current) {
+          fallbackTriedRef.current = true;
+          setMapLoaded(false);
+          try {
+            map.current?.setStyle(getLematFallbackMapStyle());
+            return;
+          } catch {}
+        }
+
+        if (isStyleFailure && fallbackTriedRef.current) {
+          setMapLoaded(false);
+          try {
+            map.current?.setStyle(getOsmFallbackStyle());
+            return;
+          } catch {}
+        }
+
+        if (isStyleFailure) {
+          setStyleError(true);
+        }
+      });
+    };
+
+    initMap();
 
     return () => {
       setMapLoaded(false);
-
       clusterMarkers.current.forEach((m) => m.remove());
       clusterMarkers.current.clear();
       trailSourcesAdded.current.clear();
-
       map.current?.remove();
       map.current = null;
     };
