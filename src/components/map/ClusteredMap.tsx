@@ -12,7 +12,7 @@ import {
 } from "./AnimatedMarker";
 import { useMapMatching } from "@/hooks/useMapMatching";
 import { useLematApiKey } from "@/hooks/useLematApiKey";
-import { createLematTransformRequest, getLematFallbackMapStyle, getLematMapStyle } from "@/lib/lemat";
+import { createLematTransformRequest, getLematFallbackMapStyle, getLematMapStyle, getOsmFallbackStyle } from "@/lib/lemat";
 
 interface VehiclePoint {
   id: string;
