@@ -299,20 +299,15 @@ useEffect(() => {
           return;
         }
 
-        // Use Lemat reverse geocoding via backend proxy (avoids CORS)
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
+        // Use Lemat reverse geocoding API directly (CORS supported)
+        const lematApiKey = sessionStorage.getItem('lemat_api_key') || '';
+        if (!lematApiKey) {
           setVehicleAddresses(prev => new Map(prev).set(vehicleId, `${lat.toFixed(6)}, ${lng.toFixed(6)}`));
           return;
         }
 
-        const proxyUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/lemat-reverse-geocode?lat=${lat.toFixed(6)}&lon=${lng.toFixed(6)}`;
-        const res = await fetch(proxyUrl, {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          }
-        });
+        const url = `https://lemat.goffice.et/api/v1/reverse-geocode?lat=${lat.toFixed(6)}&lon=${lng.toFixed(6)}`;
+        const res = await fetch(url, { headers: { 'X-Api-Key': lematApiKey } });
         if (!res.ok) {
           console.warn('Geocoding API error:', res.status);
           setVehicleAddresses(prev => new Map(prev).set(vehicleId, `${lat.toFixed(6)}, ${lng.toFixed(6)}`));
