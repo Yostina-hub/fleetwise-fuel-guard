@@ -36,6 +36,7 @@ import { useVehicles } from "@/hooks/useVehicles";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { useSpeedGovernor } from "@/hooks/useSpeedGovernor";
 import { useVehicleTrail } from "@/hooks/useVehicleTrail";
+import { useLematApiKey } from "@/hooks/useLematApiKey";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -62,6 +63,7 @@ const MapView = () => {
   const { vehicles: dbVehicles, loading, refetch } = useVehicles();
   const { telemetry, isVehicleOnline } = useVehicleTelemetry();
   const { governorConfigs } = useSpeedGovernor();
+  useLematApiKey(); // Fetch & cache Lemat API key for geocoding/routing
   
   // Support both location.state and URL query params for vehicle selection
   const urlVehicleId = searchParams.get("vehicle");
