@@ -10,6 +10,7 @@
 // Allowed origins for CORS (preview, published, localhost dev)
 const ALLOWED_ORIGINS: string[] = [
   "https://fleetwise-fuel-guard.lovable.app",
+  "https://fleet.goffice.et",
   "https://id-preview--c2373776-be5b-46e0-8765-5dba59351e26.lovable.app",
   "http://localhost:5173",
   "http://localhost:8080",
