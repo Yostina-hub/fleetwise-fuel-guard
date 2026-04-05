@@ -154,6 +154,17 @@ export const useDispatchJobs = (filters?: {
       toast({ title: "Validation Error", description: "At least one location is required.", variant: "destructive" });
       return null;
     }
+    // GAP FIX: Validate job_type enum
+    const validJobTypes = ['delivery', 'pickup', 'transfer', 'maintenance', 'inspection', 'other'];
+    if (job.job_type && !validJobTypes.includes(job.job_type.toLowerCase())) {
+      toast({ title: "Validation Error", description: `Invalid job type. Allowed: ${validJobTypes.join(', ')}`, variant: "destructive" });
+      return null;
+    }
+    // GAP FIX: Validate cargo_weight_kg bounds
+    if (job.cargo_weight_kg != null && (job.cargo_weight_kg < 0 || job.cargo_weight_kg > 100000)) {
+      toast({ title: "Validation Error", description: "Cargo weight must be between 0 and 100,000 kg.", variant: "destructive" });
+      return null;
+    }
     if ((job.customer_name && job.customer_name.length > 200) ||
         (job.customer_phone && job.customer_phone.length > 30) ||
         (pickupName && pickupName.length > 500) ||

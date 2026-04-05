@@ -96,6 +96,26 @@ export default function BulkImportDialog({ open, onOpenChange }: BulkImportDialo
     if (row.odometer_km && (parseFloat(row.odometer_km) < 0 || parseFloat(row.odometer_km) > 10000000)) {
       return { valid: false, error: `Row ${index + 2}: Invalid odometer reading` };
     }
+    // GAP FIX: Validate enum fields and string lengths for remaining fields
+    const validFuelTypes = ['diesel', 'petrol', 'gasoline', 'electric', 'hybrid', 'cng', 'lpg'];
+    if (row.fuel_type?.trim() && !validFuelTypes.includes(row.fuel_type.trim().toLowerCase())) {
+      return { valid: false, error: `Row ${index + 2}: Invalid fuel type. Allowed: ${validFuelTypes.join(', ')}` };
+    }
+    const validStatuses = ['active', 'maintenance', 'inactive'];
+    if (row.status?.trim() && !validStatuses.includes(row.status.trim().toLowerCase())) {
+      return { valid: false, error: `Row ${index + 2}: Invalid status. Allowed: ${validStatuses.join(', ')}` };
+    }
+    const validVehicleTypes = ['sedan', 'suv', 'pickup', 'truck', 'van', 'bus', 'motorcycle', 'trailer', 'tanker', 'other'];
+    if (row.vehicle_type?.trim() && row.vehicle_type.trim().length > 50) {
+      return { valid: false, error: `Row ${index + 2}: Vehicle type too long (max 50 chars)` };
+    }
+    if (row.color?.trim() && row.color.trim().length > 30) {
+      return { valid: false, error: `Row ${index + 2}: Color too long (max 30 chars)` };
+    }
+    const validOwnership = ['owned', 'leased', 'rented'];
+    if (row.ownership_type?.trim() && !validOwnership.includes(row.ownership_type.trim().toLowerCase())) {
+      return { valid: false, error: `Row ${index + 2}: Invalid ownership type. Allowed: ${validOwnership.join(', ')}` };
+    }
     return { valid: true };
   };
 

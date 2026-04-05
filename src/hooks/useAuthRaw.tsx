@@ -225,16 +225,12 @@ export function useAuthRaw() {
   };
 
   const signUp = async (email: string, password: string, fullName?: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: { full_name: fullName },
-      },
-    });
-    return { error };
+    // GAP FIX: Block all signups - admin-only system, users are created via create-user edge function
+    return {
+      error: {
+        message: "Self-registration is disabled. Contact your administrator.",
+      } as any,
+    };
   };
 
   const hasRole = (role: string, organizationId?: string) => {

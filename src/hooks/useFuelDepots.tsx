@@ -194,12 +194,13 @@ export const useFuelDepots = () => {
       toast({ title: "Validation Error", description: "Depot name is too long (max 200 chars).", variant: "destructive" });
       return null;
     }
-    if (depot.capacity_liters != null && (depot.capacity_liters < 0 || depot.capacity_liters > 10000000)) {
-      toast({ title: "Validation Error", description: "Capacity must be between 0 and 10,000,000 liters.", variant: "destructive" });
+    // GAP FIX: capacity_liters is required for a fuel depot
+    if (depot.capacity_liters == null || depot.capacity_liters <= 0 || depot.capacity_liters > 10000000) {
+      toast({ title: "Validation Error", description: "Capacity is required and must be between 1 and 10,000,000 liters.", variant: "destructive" });
       return null;
     }
-    if (depot.current_stock_liters != null && depot.current_stock_liters < 0) {
-      toast({ title: "Validation Error", description: "Stock cannot be negative.", variant: "destructive" });
+    if (depot.current_stock_liters != null && (depot.current_stock_liters < 0 || depot.current_stock_liters > depot.capacity_liters)) {
+      toast({ title: "Validation Error", description: "Stock cannot be negative or exceed capacity.", variant: "destructive" });
       return null;
     }
     if (depot.lat != null && (depot.lat < -90 || depot.lat > 90)) {
