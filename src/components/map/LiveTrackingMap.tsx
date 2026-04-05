@@ -999,7 +999,7 @@ useEffect(() => {
 
   // Draw vehicle trails on the map with speed-based coloring
   useEffect(() => {
-    if (!map.current || !mapLoaded) return;
+    if (!map.current || !mapLoaded || !map.current.isStyleLoaded()) return;
 
     // If trails are disabled, remove all existing trail layers
     if (!showTrails) {
