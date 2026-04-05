@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { useMapboxToken } from "@/hooks/useMapboxToken";
+import { useLematApiKey } from "@/hooks/useLematApiKey";
+import { createLematTransformRequest, getLematMapStyle, getOsmFallbackStyle } from "@/lib/lemat";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Loader2, Droplet, AlertTriangle, Fuel } from "lucide-react";
 import { format } from "date-fns";
