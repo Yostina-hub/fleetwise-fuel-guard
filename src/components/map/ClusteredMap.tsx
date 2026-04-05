@@ -55,7 +55,7 @@ const ClusteredMap = ({
   vehicles,
   onVehicleClick,
   selectedVehicleId,
-  mapStyle = "satellite",
+  mapStyle = "streets",
   onMapReady,
   showTrails = true,
   trails = new Map(),
