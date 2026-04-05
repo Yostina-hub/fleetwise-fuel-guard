@@ -1228,6 +1228,9 @@ async function processRecord(supabase: any, record: TelemetryRecord): Promise<Pr
 }
 
 serve(async (req) => {
+  // Build dynamic CORS headers per-request
+  const corsHeaders = extendedCorsHeaders(req);
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
