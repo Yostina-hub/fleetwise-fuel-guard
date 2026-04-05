@@ -26,7 +26,7 @@ class PasswordHistoryManager {
 
   private loadFromStorage(): void {
     try {
-      const stored = localStorage.getItem(this.STORAGE_KEY);
+      const stored = sessionStorage.getItem(this.STORAGE_KEY);
       if (stored) {
         const data = JSON.parse(stored);
         for (const [userId, entries] of Object.entries(data)) {
@@ -44,7 +44,7 @@ class PasswordHistoryManager {
       for (const [userId, entries] of this.history.entries()) {
         data[userId] = entries;
       }
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+      sessionStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
     } catch {
       // Ignore storage errors
     }

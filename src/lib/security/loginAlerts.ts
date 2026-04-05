@@ -59,7 +59,7 @@ class LoginAlertManager {
 
   private loadFromStorage(): void {
     try {
-      const stored = localStorage.getItem(this.storageKey);
+      const stored = sessionStorage.getItem(this.storageKey);
       if (stored) {
         const data = JSON.parse(stored);
         
@@ -113,7 +113,7 @@ class LoginAlertManager {
         ),
         pendingAlerts: this.pendingAlerts.slice(-20), // Keep last 20
       };
-      localStorage.setItem(this.storageKey, JSON.stringify(data));
+      sessionStorage.setItem(this.storageKey, JSON.stringify(data));
     } catch {
       // Ignore storage errors
     }

@@ -35,7 +35,7 @@ class ProgressiveDelayManager {
 
   private loadFromStorage(): void {
     try {
-      const stored = localStorage.getItem(this.storageKey);
+      const stored = sessionStorage.getItem(this.storageKey);
       if (stored) {
         const data = JSON.parse(stored);
         this.attempts = new Map(Object.entries(data));
@@ -48,7 +48,7 @@ class ProgressiveDelayManager {
   private saveToStorage(): void {
     try {
       const data = Object.fromEntries(this.attempts);
-      localStorage.setItem(this.storageKey, JSON.stringify(data));
+      sessionStorage.setItem(this.storageKey, JSON.stringify(data));
     } catch {
       // Ignore storage errors
     }

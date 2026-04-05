@@ -44,7 +44,7 @@ class SessionManager {
 
   private loadFromStorage(): void {
     try {
-      const stored = localStorage.getItem(this.storageKey);
+      const stored = sessionStorage.getItem(this.storageKey);
       if (stored) {
         const data = JSON.parse(stored);
         Object.entries(data).forEach(([userId, sessions]) => {
@@ -69,7 +69,7 @@ class SessionManager {
       this.sessions.forEach((sessions, userId) => {
         data[userId] = sessions;
       });
-      localStorage.setItem(this.storageKey, JSON.stringify(data));
+      sessionStorage.setItem(this.storageKey, JSON.stringify(data));
     } catch {
       // Ignore storage errors
     }
