@@ -4,7 +4,7 @@ import { useOrganization } from '@/hooks/useOrganization';
 
 /**
  * Hook to fetch the Mapbox token from organization settings or backend
- * Priority: org settings > localStorage cache > env variable > edge function
+ * Priority: org settings > sessionStorage cache > env variable > edge function
  */
 export const useMapboxToken = () => {
   const [token, setToken] = useState<string>('');
