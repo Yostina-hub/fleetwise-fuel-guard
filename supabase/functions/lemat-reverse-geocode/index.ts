@@ -3,6 +3,30 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import { buildCorsHeaders, handleCorsPreflightRequest, secureJsonResponse } from "../_shared/cors.ts";
 import { checkRateLimit, rateLimitResponse, getClientId } from "../_shared/rate-limiter.ts";
 
+const fetchWithHttp1Fallback = async (url: string, apiKey: string) => {
+  try {
+    return await fetch(url, {
+      headers: { "X-Api-Key": apiKey },
+    });
+  } catch (primaryError) {
+    console.warn("Primary fetch failed, retrying reverse-geocode over HTTP/1:", primaryError);
+
+    const client = Deno.createHttpClient({
+      http1: true,
+      http2: false,
+    });
+
+    try {
+      return await fetch(url, {
+        client,
+        headers: { "X-Api-Key": apiKey },
+      });
+    } finally {
+      client.close();
+    }
+  }
+};
+
 serve(async (req) => {
   const preflight = handleCorsPreflightRequest(req);
   if (preflight) return preflight;
@@ -13,15 +37,28 @@ serve(async (req) => {
     const rl = checkRateLimit(getClientId(req), { maxRequests: 60, windowMs: 60_000 });
     if (!rl.allowed) return rateLimitResponse(rl, corsHeaders);
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("Missing backend credentials", {
+        hasSupabaseUrl: Boolean(supabaseUrl),
+        hasServiceRoleKey: Boolean(supabaseServiceKey),
+      });
+      return secureJsonResponse({ error: "Server configuration error" }, req, 500);
+    }
+
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return secureJsonResponse({ error: "Missing authorization header" }, req, 401);
     }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
+
     if (authError || !user) {
       return secureJsonResponse({ error: "Unauthorized" }, req, 401);
     }
@@ -46,9 +83,7 @@ serve(async (req) => {
     }
 
     const lematUrl = `https://lemat.goffice.et/api/v1/reverse-geocode?lat=${latNum.toFixed(6)}&lon=${lonNum.toFixed(6)}`;
-    const lematRes = await fetch(lematUrl, {
-      headers: { "X-Api-Key": lematApiKey },
-    });
+    const lematRes = await fetchWithHttp1Fallback(lematUrl, lematApiKey);
 
     if (!lematRes.ok) {
       const body = await lematRes.text();
