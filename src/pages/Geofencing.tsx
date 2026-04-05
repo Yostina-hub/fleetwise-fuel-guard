@@ -66,7 +66,7 @@ const Geofencing = () => {
   const [activeTab, setActiveTab] = useState<"geofences" | "events">("geofences");
   
   useEffect(() => {
-    const token = localStorage.getItem('mapbox_token') || envToken || '';
+    const token = sessionStorage.getItem('mapbox_token') || envToken || '';
     setMapToken(token);
   }, [envToken]);
 
@@ -461,7 +461,7 @@ const Geofencing = () => {
                   value={mapToken}
                   onChange={(e) => setMapToken(e.target.value)}
                 />
-                <Button size="sm" onClick={() => { localStorage.setItem('mapbox_token', mapToken); window.location.reload(); }}>
+                <Button size="sm" onClick={() => { sessionStorage.setItem('mapbox_token', mapToken); window.location.reload(); }}>
                   Save
                 </Button>
               </Card>

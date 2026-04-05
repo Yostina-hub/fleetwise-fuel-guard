@@ -35,7 +35,7 @@ export const useMapboxToken = () => {
               console.log('Using mapbox token from organization settings');
               setToken(orgSettings.mapbox_token);
               // Cache it locally for faster subsequent loads
-              try { localStorage.setItem('mapbox_token', orgSettings.mapbox_token); } catch {}
+              try { sessionStorage.setItem('mapbox_token', orgSettings.mapbox_token); } catch {}
               setLoading(false);
               return;
             }
@@ -44,8 +44,8 @@ export const useMapboxToken = () => {
           }
         }
 
-        // 2) Try localStorage cache
-        const lsToken = localStorage.getItem('mapbox_token');
+        // 2) Try sessionStorage cache
+        const lsToken = sessionStorage.getItem('mapbox_token');
         if (lsToken && isValidPublicToken(lsToken)) {
           setToken(lsToken);
           setLoading(false);
@@ -53,7 +53,7 @@ export const useMapboxToken = () => {
         }
         // Clear invalid cached token
         if (lsToken) {
-          try { localStorage.removeItem('mapbox_token'); } catch {}
+          try { sessionStorage.removeItem('mapbox_token'); } catch {}
         }
 
         // 3) Try env variable
@@ -83,7 +83,7 @@ export const useMapboxToken = () => {
           return;
         }
 
-        try { localStorage.setItem('mapbox_token', fetched); } catch {}
+        try { sessionStorage.setItem('mapbox_token', fetched); } catch {}
         setToken(fetched);
         setLoading(false);
       } catch (err) {

@@ -169,7 +169,7 @@ useEffect(() => {
               console.log('Using mapbox token from organization settings');
               setTokenError(null);
               // Cache it locally for faster subsequent loads
-              try { localStorage.setItem('mapbox_token', orgSettings.mapbox_token); } catch {}
+              try { sessionStorage.setItem('mapbox_token', orgSettings.mapbox_token); } catch {}
               return orgSettings.mapbox_token;
             }
           } catch (e) {
@@ -177,15 +177,15 @@ useEffect(() => {
           }
         }
 
-        // 3) Try localStorage cache
-        const lsToken = localStorage.getItem('mapbox_token');
+        // 3) Try sessionStorage cache
+        const lsToken = sessionStorage.getItem('mapbox_token');
         if (lsToken && isValid(lsToken)) {
           setTokenError(null);
           return lsToken;
         }
         // Clear invalid cached token
         if (lsToken) {
-          try { localStorage.removeItem('mapbox_token'); } catch {}
+          try { sessionStorage.removeItem('mapbox_token'); } catch {}
         }
 
         // 4) Try env variable
@@ -211,7 +211,7 @@ useEffect(() => {
           return null;
         }
 
-        try { localStorage.setItem('mapbox_token', fetched); } catch {}
+        try { sessionStorage.setItem('mapbox_token', fetched); } catch {}
 
         setTokenError(null);
         return fetched;
@@ -282,7 +282,7 @@ useEffect(() => {
           if (!retriedInvalidRef.current) {
             retriedInvalidRef.current = true;
             try {
-              localStorage.removeItem('mapbox_token');
+              sessionStorage.removeItem('mapbox_token');
             } catch {}
 
             try {
@@ -393,7 +393,7 @@ return () => {
         }
 
         // Get token from multiple sources
-        const mapboxToken = token || localStorage.getItem('mapbox_token') || import.meta.env.VITE_MAPBOX_TOKEN || mapboxgl.accessToken;
+        const mapboxToken = token || sessionStorage.getItem('mapbox_token') || import.meta.env.VITE_MAPBOX_TOKEN || mapboxgl.accessToken;
         if (!mapboxToken) {
           console.warn('No Mapbox token available for geocoding');
           setVehicleAddresses(prev => new Map(prev).set(vehicleId, `${lat.toFixed(6)}, ${lng.toFixed(6)}`));
@@ -1464,7 +1464,7 @@ return () => {
                 disabled={!tempToken.startsWith('pk.')}
                 onClick={() => { 
                   if (tempToken) { 
-                    localStorage.setItem('mapbox_token', tempToken); 
+                    sessionStorage.setItem('mapbox_token', tempToken); 
                     window.location.reload(); 
                   } 
                 }}
