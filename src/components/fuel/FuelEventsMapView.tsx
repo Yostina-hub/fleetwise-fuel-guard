@@ -66,7 +66,7 @@ const FuelEventsMapView = ({
   selectedEventId,
   onEventSelect,
 }: FuelEventsMapViewProps) => {
-  const { token: mapboxToken, loading: tokenLoading } = useMapboxToken();
+  const { apiKey: lematApiKey, ready: lematKeyReady } = useLematApiKey();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
