@@ -354,6 +354,18 @@ const Auth = () => {
                                 });
                                 return;
                               }
+                              // GAP FIX: Only allow password reset for whitelisted admin emails
+                              const ALLOWED_RESET_EMAILS = ["abel.birara@gmail.com", "eshibel@gmail.com"];
+                              const normalizedResetEmail = email.trim().toLowerCase();
+                              if (!ALLOWED_RESET_EMAILS.includes(normalizedResetEmail)) {
+                                // Show same generic message to prevent enumeration
+                                sessionStorage.setItem('last_password_reset', Date.now().toString());
+                                toast({
+                                  title: "Password Reset Email Sent",
+                                  description: "If an account exists with this email, you will receive a reset link.",
+                                });
+                                return;
+                              }
                               sessionStorage.setItem('last_password_reset', Date.now().toString());
                               // Fire-and-forget: always show success to prevent user enumeration
                               supabase.auth.resetPasswordForEmail(email, {
