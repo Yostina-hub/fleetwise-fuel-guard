@@ -193,6 +193,16 @@ useEffect(() => {
           } catch {}
         }
 
+        // If Lemat fallback also failed, try OSM raster tiles
+        if (isStyleFailure && fallbackTriedRef.current && !retriedInvalidRef.current) {
+          retriedInvalidRef.current = true;
+          setMapLoaded(false);
+          try {
+            map.current?.setStyle(getOsmFallbackStyle());
+            return;
+          } catch {}
+        }
+
         if (isStyleFailure) {
           setTokenError('style');
         }

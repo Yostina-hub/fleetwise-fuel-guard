@@ -282,6 +282,15 @@ const ClusteredMap = ({
         } catch {}
       }
 
+      // If Lemat fallback also failed, try OSM raster tiles
+      if (isStyleFailure && fallbackTriedRef.current) {
+        setMapLoaded(false);
+        try {
+          map.current?.setStyle(getOsmFallbackStyle());
+          return;
+        } catch {}
+      }
+
       if (isStyleFailure) {
         setStyleError(true);
       }
