@@ -46,7 +46,7 @@ export const useAddressGeocoding = (
       
       try {
         // Try to get Mapbox token
-        let mapboxToken = localStorage.getItem("mapbox_token") || import.meta.env.VITE_MAPBOX_TOKEN;
+        let mapboxToken = sessionStorage.getItem("mapbox_token") || import.meta.env.VITE_MAPBOX_TOKEN;
         
         if (!mapboxToken) {
           // Fetch from backend

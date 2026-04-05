@@ -84,7 +84,7 @@ export const VehicleInfoPanel = ({
 
       setIsLoadingAddress(true);
       try {
-        const token = localStorage.getItem('mapbox_token') || import.meta.env.VITE_MAPBOX_TOKEN;
+        const token = sessionStorage.getItem('mapbox_token') || import.meta.env.VITE_MAPBOX_TOKEN;
         if (!token) {
           setAddress(`${vehicle.lat!.toFixed(6)}, ${vehicle.lng!.toFixed(6)}`);
           return;
