@@ -138,110 +138,17 @@ useEffect(() => {
 
   // Fetch token from backend (organization settings or edge function)
   useEffect(() => {
-    const isValidPublicToken = (value: unknown): value is string => {
-      return typeof value === 'string' && value.trim().startsWith('pk.');
-    };
-
-    const fetchToken = async () => {
-      try {
-        const isValid = (value: unknown): value is string => isValidPublicToken(value);
-
-        // 1) If a token prop is provided, it must be valid.
-        if (token) {
-          if (!isValid(token)) {
-            setTokenError('invalid');
-            return null;
-          }
-          setTokenError(null);
-          return token;
-        }
-
-        // 2) Try to fetch from organization_settings first (the "map settings" source)
-        if (organizationId) {
-          try {
-            const { data: orgSettings } = await supabase
-              .from('organization_settings')
-              .select('mapbox_token')
-              .eq('organization_id', organizationId)
-              .maybeSingle();
-
-            if (orgSettings?.mapbox_token && isValid(orgSettings.mapbox_token)) {
-              console.log('Using mapbox token from organization settings');
-              setTokenError(null);
-              // Cache it locally for faster subsequent loads
-              try { sessionStorage.setItem('mapbox_token', orgSettings.mapbox_token); } catch {}
-              return orgSettings.mapbox_token;
-            }
-          } catch (e) {
-            console.warn('Failed to fetch token from org settings:', e);
-          }
-        }
-
-        // 3) Try sessionStorage cache
-        const lsToken = sessionStorage.getItem('mapbox_token');
-        if (lsToken && isValid(lsToken)) {
-          setTokenError(null);
-          return lsToken;
-        }
-        // Clear invalid cached token
-        if (lsToken) {
-          try { sessionStorage.removeItem('mapbox_token'); } catch {}
-        }
-
-        // 4) Try env variable
-        const envToken = import.meta.env.VITE_MAPBOX_TOKEN;
-        if (envToken && isValid(envToken)) {
-          setTokenError(null);
-          return envToken;
-        }
-
-        // 5) Fetch from backend edge function (handles CORS/auth, checks org settings + env)
-        const { data, error } = await supabase.functions.invoke('get-mapbox-token', {
-          body: { organization_id: organizationId }
-        });
-        if (error) {
-          console.error('get-mapbox-token error:', error);
-          setTokenError('missing');
-          return null;
-        }
-
-        const fetched = (data as any)?.token as string | undefined;
-        if (!isValid(fetched)) {
-          setTokenError('missing');
-          return null;
-        }
-
-        try { sessionStorage.setItem('mapbox_token', fetched); } catch {}
-
-        setTokenError(null);
-        return fetched;
-      } catch (err) {
-        console.error('Failed to fetch Mapbox token:', err);
-        setTokenError('missing');
-        return null;
-      }
-    };
-
-    const initMap = async () => {
+    const initMap = () => {
       if (!mapContainer.current || map.current) return;
 
-      const mapboxToken = await fetchToken();
-      if (!mapboxToken) return;
-
-      if (!maplibregl.supported()) {
-        setTokenError('webgl');
-        return;
-      }
-
       try {
-
         map.current = new maplibregl.Map({
           container: mapContainer.current,
           style:
             mapStyle === 'satellite'
               ? 'https://lemat.goffice.et/api/v1/tiles/style?theme=satellite'
               : 'https://lemat.goffice.et/api/v1/tiles/style?theme=light',
-          center: [38.75, 9.02], // Addis Ababa
+          center: [38.75, 9.02],
           zoom: 12,
         });
 
@@ -267,41 +174,9 @@ useEffect(() => {
         });
 
         map.current.on('style.load', setLoaded);
-        map.current.on('error', (e: any) => {
-          const msg = e?.error?.message || '';
-          const status = e?.error?.status || e?.error?.statusCode;
-          const isAuthError =
-            status === 401 ||
-            status === 403 ||
-            /unauthorized|forbidden|access token|token/i.test(String(msg));
-
-          if (!isAuthError) return;
-
-          // If a bad token was saved previously, clear it once and retry via backend token fetch.
-          if (!retriedInvalidRef.current) {
-            retriedInvalidRef.current = true;
-            try {
-              sessionStorage.removeItem('mapbox_token');
-            } catch {}
-
-            try {
-              markers.current.forEach((m) => m.remove());
-              markers.current.clear();
-              map.current?.remove();
-            } catch {}
-
-            map.current = null;
-            setMapLoaded(false);
-            setTokenError(null);
-            setInitNonce((n) => n + 1);
-            return;
-          }
-
-          setTokenError('invalid');
-        });
       } catch (e) {
-        console.error('Mapbox map initialization failed:', e);
-        setTokenError('invalid');
+        console.error('Map initialization failed:', e);
+        setTokenError('webgl');
         try {
           map.current?.remove();
         } catch {}
@@ -311,30 +186,28 @@ useEffect(() => {
 
     initMap();
 
-return () => {
-  try {
-    // Disconnect resize observer
-    try { resizeObserver.current?.disconnect(); } catch {}
-    resizeObserver.current = null;
+    return () => {
+      try {
+        try { resizeObserver.current?.disconnect(); } catch {}
+        resizeObserver.current = null;
 
-    // Cleanup trail animation markers
-    trailAnimationFrames.current.forEach((frameId) => cancelAnimationFrame(frameId));
-    trailAnimationFrames.current.clear();
-    trailAnimationMarkers.current.forEach((marker) => marker.remove());
-    trailAnimationMarkers.current.clear();
+        trailAnimationFrames.current.forEach((frameId) => cancelAnimationFrame(frameId));
+        trailAnimationFrames.current.clear();
+        trailAnimationMarkers.current.forEach((marker) => marker.remove());
+        trailAnimationMarkers.current.clear();
 
-    markers.current.forEach(marker => marker.remove());
-    markers.current.clear();
-    if (map.current) {
-      map.current.remove();
-      map.current = null;
-    }
-  } catch (e) {
-    console.warn('Map cleanup error (ignored):', e);
-    map.current = null;
-  }
-};
-  }, [token, mapStyle, initNonce, onMapReady, organizationId]);
+        markers.current.forEach(marker => marker.remove());
+        markers.current.clear();
+        if (map.current) {
+          map.current.remove();
+          map.current = null;
+        }
+      } catch (e) {
+        console.warn('Map cleanup error (ignored):', e);
+        map.current = null;
+      }
+    };
+  }, [mapStyle, initNonce, onMapReady]);
 
   // Update map style when setting changes
   useEffect(() => {
@@ -391,17 +264,15 @@ return () => {
           return;
         }
 
-        // Get token from multiple sources
-        if (!mapboxToken) {
-          console.warn('No Mapbox token available for geocoding');
+        // Use Lemat reverse geocoding API
+        const lematApiKey = sessionStorage.getItem('lemat_api_key') || '';
+        if (!lematApiKey) {
           setVehicleAddresses(prev => new Map(prev).set(vehicleId, `${lat.toFixed(6)}, ${lng.toFixed(6)}`));
           return;
         }
 
-        // Reverse geocoding: Mapbox requires `limit` to be used with a single `type`
-        // Use address for the most stable/consistent results.
-        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng.toFixed(6)},${lat.toFixed(6)}.json?access_token=${mapboxToken}&types=address&limit=1&language=en`;
-        const res = await fetch(url);
+        const url = `https://lemat.goffice.et/api/v1/reverse-geocode?lat=${lat.toFixed(6)}&lon=${lng.toFixed(6)}`;
+        const res = await fetch(url, { headers: { 'X-Api-Key': lematApiKey } });
         if (!res.ok) {
           console.warn('Geocoding API error:', res.status);
           setVehicleAddresses(prev => new Map(prev).set(vehicleId, `${lat.toFixed(6)}, ${lng.toFixed(6)}`));
@@ -409,7 +280,7 @@ return () => {
         }
         
         const json = await res.json();
-        const features = json?.features || [];
+        const features = json?.display_name ? [json] : [];
 
         if (features.length === 0) {
           // No features found - use place_name from first result if available
