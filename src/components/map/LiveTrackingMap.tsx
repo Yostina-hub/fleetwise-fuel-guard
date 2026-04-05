@@ -145,9 +145,18 @@ useEffect(() => {
     try {
       const initialStyle = getLematMapStyle(mapStyle);
 
+      // Pre-check if Lemat style endpoint is reachable
+      let styleToUse: string | maplibregl.StyleSpecification = initialStyle;
+      try {
+        const probe = await fetch(initialStyle, { method: 'HEAD', signal: AbortSignal.timeout(3000) });
+        if (!probe.ok) styleToUse = getOsmFallbackStyle();
+      } catch {
+        styleToUse = getOsmFallbackStyle();
+      }
+
       map.current = new maplibregl.Map({
         container: mapContainer.current,
-        style: initialStyle,
+        style: styleToUse,
         center: [38.75, 9.02],
         zoom: 12,
         transformRequest: createLematTransformRequest(lematApiKey),

@@ -241,16 +241,23 @@ const ClusteredMap = ({
   useEffect(() => {
     if (!mapContainer.current || !lematKeyReady || !lematApiKey || map.current) return;
 
-    setMapLoaded(false);
-    setStyleError(false);
+    // Pre-check if Lemat style endpoint is reachable
+    const initMap = async () => {
+      let styleToUse: string | maplibregl.StyleSpecification = getLematMapStyle(mapStyle);
+      try {
+        const probe = await fetch(styleToUse as string, { method: 'HEAD', signal: AbortSignal.timeout(3000) });
+        if (!probe.ok) styleToUse = getOsmFallbackStyle();
+      } catch {
+        styleToUse = getOsmFallbackStyle();
+      }
 
-    map.current = new maplibregl.Map({
-      container: mapContainer.current,
-      style: getLematMapStyle(mapStyle),
-      center: [38.75, 9.02],
-      zoom: 10,
-      transformRequest: createLematTransformRequest(lematApiKey),
-    });
+      map.current = new maplibregl.Map({
+        container: mapContainer.current!,
+        style: styleToUse,
+        center: [38.75, 9.02],
+        zoom: 10,
+        transformRequest: createLematTransformRequest(lematApiKey),
+      });
 
     map.current.addControl(new maplibregl.NavigationControl(), "top-right");
     map.current.addControl(new maplibregl.FullscreenControl(), "top-right");
