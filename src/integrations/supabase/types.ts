@@ -9945,6 +9945,14 @@ export type Database = {
       }
     }
     Functions: {
+      check_account_lockout: {
+        Args: { p_email: string }
+        Returns: {
+          failed_attempts: number
+          is_locked: boolean
+          lockout_until: string
+        }[]
+      }
       check_rate_limit: {
         Args: {
           p_client_id: string
