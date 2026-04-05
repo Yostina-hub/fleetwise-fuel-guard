@@ -69,18 +69,7 @@ serve(async (req) => {
       }
     }
 
-    if (!organizationId) {
-      const { data: anyOrgSettings } = await supabase
-        .from('organization_settings')
-        .select('mapbox_token')
-        .not('mapbox_token', 'is', null)
-        .limit(1)
-        .maybeSingle();
-
-      if (anyOrgSettings?.mapbox_token) {
-        return secureJsonResponse({ token: anyOrgSettings.mapbox_token, source: 'organization_settings' }, req);
-      }
-    }
+    // Removed: fallback that leaked tokens from ANY organization to the caller
 
     const mapboxToken = Deno.env.get('MAPBOX_PUBLIC_TOKEN');
     if (!mapboxToken) {
