@@ -288,94 +288,18 @@ useEffect(() => {
           return;
         }
 
-        // Find the most specific feature (prefer address/poi over neighborhood/place)
-        const typePriority: Record<string, number> = { 
-          'address': 1, 
-          'poi': 2, 
-          'neighborhood': 3, 
-          'locality': 4, 
-          'place': 5 
-        };
-        
-        const sortedFeatures = features.sort((a: any, b: any) => {
-          const aType = a.place_type?.[0] || 'place';
-          const bType = b.place_type?.[0] || 'place';
-          return (typePriority[aType] || 99) - (typePriority[bType] || 99);
-        });
-
-        const bestFeature = sortedFeatures[0];
-        const featureType = bestFeature.place_type?.[0] || '';
-        const context = bestFeature.context || [];
-        
-        // Extract context parts
-        const street = context.find((c: any) => c.id?.startsWith('address'))?.text || '';
-        const neighborhood = context.find((c: any) => c.id?.startsWith('neighborhood'))?.text || '';
-        const locality = context.find((c: any) => c.id?.startsWith('locality'))?.text || '';
-        const place = context.find((c: any) => c.id?.startsWith('place'))?.text || '';
-        const district = context.find((c: any) => c.id?.startsWith('district'))?.text || '';
-
-        // Build a detailed, human-readable address
-        let addressParts: string[] = [];
-        
-        // Main feature name (POI name, street address, etc.)
-        if (featureType === 'address') {
-          const houseNumber = bestFeature.address || '';
-          const streetName = bestFeature.text || '';
-          if (houseNumber && streetName) {
-            addressParts.push(`${houseNumber} ${streetName}`);
-          } else if (streetName) {
-            addressParts.push(streetName);
-          }
-        } else if (featureType === 'poi') {
-          // POI: show the POI name prominently
-          addressParts.push(bestFeature.text || '');
-          if (street) {
-            addressParts.push(street);
-          }
-        } else {
-          addressParts.push(bestFeature.text || '');
-        }
-
-        // Add neighborhood/sub-locality for more precision
-        if (neighborhood && !addressParts.includes(neighborhood)) {
-          addressParts.push(neighborhood);
-        }
-        
-        // Add locality or district
-        if (locality && !addressParts.includes(locality)) {
-          addressParts.push(locality);
-        } else if (district && !addressParts.includes(district)) {
-          addressParts.push(district);
-        }
-        
-        // Add city/place
-        if (place && !addressParts.includes(place)) {
-          addressParts.push(place);
-        }
-
-        // Filter empty and dedupe
-        addressParts = addressParts.filter((p, i, arr) => p && p.trim() && arr.indexOf(p) === i);
-        
-        const finalAddress = addressParts.length > 0 
-          ? addressParts.join(', ') 
-          : bestFeature.place_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-
+        // Lemat returns Nominatim-style: { display_name, address: { road, city, ... } }
+        const result = features[0];
+        const finalAddress = result.display_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
         setVehicleAddresses(prev => new Map(prev).set(vehicleId, finalAddress));
 
-        // Calculate distance and direction from nearest road/POI
-        if (bestFeature.center && bestFeature.center.length === 2) {
-          const [featureLng, featureLat] = bestFeature.center;
-          const distance = calculateDistance(lat, lng, featureLat, featureLng);
-          const bearing = calculateBearing(lat, lng, featureLat, featureLng);
-          const direction = getDirectionFromBearing(bearing);
-          const roadName = bestFeature.text || (featureType === 'address' ? street : '') || 'Main Road';
-          
-          setVehicleRoadInfo(prev => new Map(prev).set(vehicleId, {
-            road: roadName,
-            distance: Math.round(distance),
-            direction: direction
-          }));
-        }
+        const addr = result.address || {};
+        const roadName = addr.road || addr.pedestrian || addr.neighbourhood || 'Unknown Road';
+        setVehicleRoadInfo(prev => new Map(prev).set(vehicleId, {
+          road: roadName,
+          distance: 0,
+          direction: 'North'
+        }));
       } catch (error) {
         console.error('Error fetching address:', error);
         setVehicleAddresses(prev => new Map(prev).set(vehicleId, `${lat.toFixed(6)}, ${lng.toFixed(6)}`));
