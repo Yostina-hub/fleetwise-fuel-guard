@@ -17,13 +17,43 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    let organizationId: string | null = null;
+    // AUTH: Verify caller identity
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return secureJsonResponse({ error: "Missing authorization header" }, req, 401);
+    }
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return secureJsonResponse({ error: "Unauthorized" }, req, 401);
+    }
+
+    // Get user's organization to scope token retrieval
+    const { data: callerProfile } = await supabase
+      .from("profiles")
+      .select("organization_id")
+      .eq("id", user.id)
+      .single();
+
+    let organizationId: string | null = callerProfile?.organization_id || null;
     try {
       const url = new URL(req.url);
-      organizationId = url.searchParams.get('organization_id');
-      if (!organizationId && req.method === 'POST') {
-        const body = await req.json().catch(() => ({}));
-        organizationId = body.organization_id || null;
+      const queryOrgId = url.searchParams.get('organization_id');
+      if (queryOrgId) {
+        // Only super_admin can request tokens for other orgs
+        if (queryOrgId !== organizationId) {
+          const { data: saRole } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", user.id)
+            .eq("role", "super_admin");
+          if (saRole && saRole.length > 0) {
+            organizationId = queryOrgId;
+          }
+          // Otherwise stick with user's own org
+        } else {
+          organizationId = queryOrgId;
+        }
       }
     } catch {}
 

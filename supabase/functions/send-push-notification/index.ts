@@ -92,6 +92,36 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // AUTH: Verify caller identity
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Missing authorization header" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Verify user belongs to an organization
+    const { data: callerProfile } = await supabase
+      .from("profiles")
+      .select("organization_id")
+      .eq("id", user.id)
+      .single();
+    if (!callerProfile?.organization_id) {
+      return new Response(
+        JSON.stringify({ error: "User has no organization" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     let reqBody: RequestBody;
     try {
       reqBody = await req.json();
@@ -102,6 +132,22 @@ serve(async (req) => {
       );
     }
     const { user_ids, organization_id, payload } = reqBody;
+
+    // Ensure caller can only send to their own organization
+    if (organization_id && organization_id !== callerProfile.organization_id) {
+      // Check if super_admin
+      const { data: saRole } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "super_admin");
+      if (!saRole || saRole.length === 0) {
+        return new Response(
+          JSON.stringify({ error: "Cannot send notifications to another organization" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
 
     if (!payload?.title || !payload?.body) {
       return new Response(
