@@ -24,19 +24,19 @@ import { MaintenanceAlertSettings } from "@/components/alerts/MaintenanceAlertSe
 
 const Settings = () => {
   const [apiKeys, setApiKeys] = useState({
-    mapbox: localStorage.getItem('mapbox_token') || '',
-    googleMaps: localStorage.getItem('google_maps_token') || '',
-    openWeather: localStorage.getItem('openweather_token') || '',
-    twilio: localStorage.getItem('twilio_token') || '',
-    sendgrid: localStorage.getItem('sendgrid_token') || '',
-    openai: localStorage.getItem('openai_token') || '',
-    gemini: localStorage.getItem('gemini_token') || '',
-    anthropic: localStorage.getItem('anthropic_token') || '',
+    mapbox: sessionStorage.getItem('mapbox_token') || '',
+    googleMaps: sessionStorage.getItem('google_maps_token') || '',
+    openWeather: sessionStorage.getItem('openweather_token') || '',
+    twilio: sessionStorage.getItem('twilio_token') || '',
+    sendgrid: sessionStorage.getItem('sendgrid_token') || '',
+    openai: sessionStorage.getItem('openai_token') || '',
+    gemini: sessionStorage.getItem('gemini_token') || '',
+    anthropic: sessionStorage.getItem('anthropic_token') || '',
   });
   const [savedKeys, setSavedKeys] = useState<Record<string, boolean>>({});
 
   const handleSaveApiKey = (key: string, value: string) => {
-    localStorage.setItem(`${key}_token`, value);
+    sessionStorage.setItem(`${key}_token`, value);
     setSavedKeys({ ...savedKeys, [key]: true });
     setTimeout(() => {
       setSavedKeys(prev => ({ ...prev, [key]: false }));
