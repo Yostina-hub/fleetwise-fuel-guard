@@ -247,19 +247,11 @@ const ClusteredMap = ({
     const initMap = async () => {
       if (!mapContainer.current) return;
 
-      let styleToUse: string | maplibregl.StyleSpecification = getLematMapStyle(mapStyle);
-      try {
-        const probe = await fetch(styleToUse as string, { method: 'HEAD', signal: AbortSignal.timeout(3000) });
-        if (!probe.ok) styleToUse = getOsmFallbackStyle();
-      } catch {
-        styleToUse = getOsmFallbackStyle();
-      }
-
       if (!mapContainer.current || map.current) return;
 
       map.current = new maplibregl.Map({
         container: mapContainer.current,
-        style: styleToUse,
+        style: getLematMapStyle(mapStyle),
         center: [38.75, 9.02],
         zoom: 10,
         transformRequest: createLematTransformRequest(lematApiKey),
