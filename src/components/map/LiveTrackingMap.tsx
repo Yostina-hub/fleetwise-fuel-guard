@@ -1220,7 +1220,7 @@ useEffect(() => {
     };
   }, [trails, mapLoaded, showTrails, selectedVehicleId]);
 
-  if (tokenError) {
+  if (tokenError === 'webgl') {
     return (
       <div className="h-full w-full flex items-center justify-center bg-muted/50">
         <div className="max-w-sm w-full bg-background border rounded-xl p-6 text-center space-y-4 shadow-lg">
@@ -1228,44 +1228,11 @@ useEffect(() => {
             <span className="text-2xl">🗺️</span>
           </div>
           <div>
-            <h3 className="font-semibold text-lg">
-              {tokenError === 'webgl'
-                ? 'WebGL Required'
-                : tokenError === 'invalid'
-                  ? 'Invalid Map Token'
-                  : 'Map Token Needed'}
-            </h3>
+            <h3 className="font-semibold text-lg">WebGL Required</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              {tokenError === 'webgl'
-                ? 'Enable hardware acceleration in your browser settings.'
-                : tokenError === 'invalid'
-                  ? 'The saved token was rejected. Please enter a valid Mapbox public token (starts with pk.).'
-                  : 'Add your Mapbox public token to display the map.'}
+              Enable hardware acceleration in your browser settings.
             </p>
           </div>
-          {tokenError !== 'webgl' && (
-            <div className="space-y-2">
-              <Input 
-                placeholder="pk.eyJ1..." 
-                value={tempToken} 
-                onChange={(e) => setTempToken(e.target.value)}
-                className="text-sm"
-              />
-              <Button 
-                className="w-full" 
-                size="sm"
-                disabled={!tempToken.startsWith('pk.')}
-                onClick={() => { 
-                  if (tempToken) { 
-                    sessionStorage.setItem('mapbox_token', tempToken); 
-                    window.location.reload(); 
-                  } 
-                }}
-              >
-                Save & Reload
-              </Button>
-            </div>
-          )}
         </div>
       </div>
     );
