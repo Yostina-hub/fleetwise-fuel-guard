@@ -250,21 +250,10 @@ const FuelEventsMapView = ({
     }
   }, [selectedEventId, eventsWithCoords]);
 
-  if (tokenLoading) {
+  if (!lematKeyReady) {
     return (
       <Card className="h-[500px] flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </Card>
-    );
-  }
-
-  if (!mapboxToken) {
-    return (
-      <Card className="h-[500px] flex items-center justify-center">
-        <CardContent className="text-center text-muted-foreground">
-          <MapPin className="w-12 h-12 mx-auto mb-4 opacity-50" />
-          <p>Map token not available</p>
-        </CardContent>
       </Card>
     );
   }
