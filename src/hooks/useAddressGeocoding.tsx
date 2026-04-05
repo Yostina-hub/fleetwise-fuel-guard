@@ -45,23 +45,19 @@ export const useAddressGeocoding = (
       setIsLoading(true);
       
       try {
-        // Try to get Mapbox token
-        let mapboxToken = sessionStorage.getItem("mapbox_token") || import.meta.env.VITE_MAPBOX_TOKEN;
+        // Use Lemat reverse geocoding API
+        const lematApiKey = sessionStorage.getItem('lemat_api_key') || '';
         
-        if (!mapboxToken) {
-          // Fetch from backend
-          const { data } = await supabase.functions.invoke("get-mapbox-token");
-          mapboxToken = data?.token;
-        }
-
-        if (!mapboxToken) {
+        if (!lematApiKey) {
           setAddress(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
           setIsLoading(false);
           return;
         }
 
-        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng.toFixed(6)},${lat.toFixed(6)}.json?access_token=${mapboxToken}&types=address,poi,neighborhood&limit=1&language=en`;
-        const res = await fetch(url);
+        const url = `https://lemat.goffice.et/api/v1/reverse-geocode?lat=${lat.toFixed(6)}&lon=${lng.toFixed(6)}`;
+        const res = await fetch(url, {
+          headers: { 'X-Api-Key': lematApiKey }
+        });
         
         if (!res.ok) {
           setAddress(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
@@ -70,35 +66,25 @@ export const useAddressGeocoding = (
         }
 
         const json = await res.json();
-        const features = json?.features || [];
 
-        if (features.length === 0) {
+        if (!json?.display_name) {
           setAddress(`Near ${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E`);
           setIsLoading(false);
           return;
         }
 
-        const bestFeature = features[0];
-        const context = bestFeature.context || [];
-        
-        // Build address from parts
+        // Lemat returns Nominatim-style response with display_name and address object
+        const addr = json.address || {};
         const parts: string[] = [];
         
-        if (bestFeature.text) {
-          parts.push(bestFeature.text);
-        }
-        
-        const neighborhood = context.find((c: any) => c.id?.startsWith("neighborhood"))?.text;
-        const locality = context.find((c: any) => c.id?.startsWith("locality"))?.text;
-        const place = context.find((c: any) => c.id?.startsWith("place"))?.text;
-        
-        if (neighborhood && !parts.includes(neighborhood)) parts.push(neighborhood);
-        if (locality && !parts.includes(locality)) parts.push(locality);
-        if (place && !parts.includes(place)) parts.push(place);
+        if (addr.road || addr.pedestrian) parts.push(addr.road || addr.pedestrian);
+        if (addr.neighbourhood) parts.push(addr.neighbourhood);
+        if (addr.suburb) parts.push(addr.suburb);
+        if (addr.city || addr.town || addr.village) parts.push(addr.city || addr.town || addr.village);
 
         const finalAddress = parts.length > 0 
           ? parts.slice(0, 3).join(", ") 
-          : bestFeature.place_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+          : json.display_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
 
         setAddress(finalAddress);
       } catch (error) {
