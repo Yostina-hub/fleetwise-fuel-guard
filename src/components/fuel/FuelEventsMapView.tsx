@@ -92,19 +92,11 @@ const FuelEventsMapView = ({
     const initMap = async () => {
       if (!mapContainer.current || map.current) return;
 
-      let styleToUse: string | maplibregl.StyleSpecification = getLematMapStyle('streets');
-      try {
-        const probe = await fetch(styleToUse as string, { method: 'HEAD', signal: AbortSignal.timeout(3000) });
-        if (!probe.ok) styleToUse = getOsmFallbackStyle();
-      } catch {
-        styleToUse = getOsmFallbackStyle();
-      }
-
       if (!mapContainer.current || map.current) return;
 
       map.current = new maplibregl.Map({
         container: mapContainer.current,
-        style: styleToUse,
+        style: getLematMapStyle('streets'),
         center: [38.7578, 9.0054],
         zoom: 10,
         transformRequest: createLematTransformRequest(lematApiKey),
