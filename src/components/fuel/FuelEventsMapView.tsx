@@ -110,11 +110,14 @@ const FuelEventsMapView = ({
         transformRequest: createLematTransformRequest(lematApiKey),
       });
 
-    map.current.addControl(new maplibregl.NavigationControl(), "top-right");
+      map.current.addControl(new maplibregl.NavigationControl(), "top-right");
 
-    map.current.on("load", () => {
-      setMapLoaded(true);
-    });
+      map.current.on("load", () => {
+        setMapLoaded(true);
+      });
+    };
+
+    initMap();
 
     return () => {
       markersRef.current.forEach((marker) => marker.remove());
@@ -122,7 +125,7 @@ const FuelEventsMapView = ({
       map.current?.remove();
       map.current = null;
     };
-  }, [mapboxToken]);
+  }, [lematApiKey, lematKeyReady]);
 
   // Update markers when events change
   useEffect(() => {
