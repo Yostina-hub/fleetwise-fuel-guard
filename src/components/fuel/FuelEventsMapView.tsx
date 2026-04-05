@@ -87,15 +87,28 @@ const FuelEventsMapView = ({
 
   // Initialize map
   useEffect(() => {
-    if (!mapContainer.current || !mapboxToken || map.current) return;
+    if (!mapContainer.current || !lematKeyReady || map.current) return;
 
+    const initMap = async () => {
+      if (!mapContainer.current || map.current) return;
 
-    map.current = new maplibregl.Map({
-      container: mapContainer.current,
-      style: "https://lemat.goffice.et/api/v1/tiles/style?theme=light",
-      center: [38.7578, 9.0054], // Default to Addis Ababa
-      zoom: 10,
-    });
+      let styleToUse: string | maplibregl.StyleSpecification = getLematMapStyle('streets');
+      try {
+        const probe = await fetch(styleToUse as string, { method: 'HEAD', signal: AbortSignal.timeout(3000) });
+        if (!probe.ok) styleToUse = getOsmFallbackStyle();
+      } catch {
+        styleToUse = getOsmFallbackStyle();
+      }
+
+      if (!mapContainer.current || map.current) return;
+
+      map.current = new maplibregl.Map({
+        container: mapContainer.current,
+        style: styleToUse,
+        center: [38.7578, 9.0054],
+        zoom: 10,
+        transformRequest: createLematTransformRequest(lematApiKey),
+      });
 
     map.current.addControl(new maplibregl.NavigationControl(), "top-right");
 
