@@ -193,21 +193,13 @@ useEffect(() => {
             fallbackTriedRef.current = true;
             setMapLoaded(false);
             try {
-              map.current?.setStyle(getLematFallbackMapStyle());
-              return;
-            } catch {}
-          }
-
-          if (isStyleFailure && fallbackTriedRef.current && !retriedInvalidRef.current) {
-            retriedInvalidRef.current = true;
-            setMapLoaded(false);
-            try {
+              // Use inline OSM raster style directly (no external style JSON fetch needed)
               map.current?.setStyle(getOsmFallbackStyle());
               return;
             } catch {}
           }
 
-          if (isStyleFailure) {
+          if (isStyleFailure && fallbackTriedRef.current) {
             setTokenError('style');
           }
         });
