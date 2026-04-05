@@ -3,10 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 
 const SESSION_KEY = "lemat_api_key";
 
-/**
- * Fetches the Lemat API key from the backend edge function
- * and caches it in sessionStorage for the current session.
- */
 export const useLematApiKey = () => {
   const [ready, setReady] = useState(() => !!sessionStorage.getItem(SESSION_KEY));
 
@@ -20,23 +16,17 @@ export const useLematApiKey = () => {
 
     const fetchKey = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.access_token) return;
+        const { data, error } = await supabase.functions.invoke("get-lemat-token", {
+          method: "GET",
+        });
 
-        const res = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-lemat-token`,
-          {
-            headers: {
-              Authorization: `Bearer ${session.access_token}`,
-              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            },
-          }
-        );
+        if (error) {
+          console.error("Failed to fetch Lemat API key:", error);
+          return;
+        }
 
-        if (!res.ok) return;
-        const json = await res.json();
-        if (json.token && !cancelled) {
-          sessionStorage.setItem(SESSION_KEY, json.token);
+        if (data?.token && !cancelled) {
+          sessionStorage.setItem(SESSION_KEY, data.token);
           setReady(true);
         }
       } catch (e) {
@@ -45,8 +35,13 @@ export const useLematApiKey = () => {
     };
 
     fetchKey();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  return ready;
+  return {
+    apiKey: typeof window !== "undefined" ? sessionStorage.getItem(SESSION_KEY) || "" : "",
+    ready,
+  };
 };

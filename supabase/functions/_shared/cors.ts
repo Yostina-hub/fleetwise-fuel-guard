@@ -18,6 +18,7 @@ const ALLOWED_ORIGINS: string[] = [
 
 // Pattern for Lovable preview URLs (dynamic subdomains)
 const LOVABLE_PREVIEW_PATTERN = /^https:\/\/[a-z0-9-]+--[a-f0-9-]+\.lovable\.app$/;
+const LOVABLE_PROJECT_PREVIEW_PATTERN = /^https:\/\/[a-z0-9-]+\.lovableproject\.com$/;
 
 /**
  * Check if an origin is allowed for CORS.
@@ -26,6 +27,7 @@ export function isAllowedOrigin(origin: string | null): boolean {
   if (!origin) return false;
   if (ALLOWED_ORIGINS.includes(origin)) return true;
   if (LOVABLE_PREVIEW_PATTERN.test(origin)) return true;
+  if (LOVABLE_PROJECT_PREVIEW_PATTERN.test(origin)) return true;
   return false;
 }
 
