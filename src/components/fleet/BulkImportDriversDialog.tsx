@@ -73,21 +73,27 @@ export default function BulkImportDriversDialog({ open, onOpenChange }: BulkImpo
       });
       
       if (driver.first_name && driver.last_name && driver.license_number) {
+        // Validate string lengths
+        if (driver.first_name.length > 100 || driver.last_name.length > 100) continue;
+        if (driver.license_number.length > 50) continue;
+        if (driver.email && driver.email.length > 255) continue;
+        if (driver.phone && driver.phone.length > 30) continue;
+        
         drivers.push({
-          first_name: driver.first_name,
-          last_name: driver.last_name,
-          license_number: driver.license_number,
-          license_class: driver.license_class || null,
-          license_expiry: driver.license_expiry || null,
-          email: driver.email || null,
-          phone: driver.phone || null,
-          employee_id: driver.employee_id || null,
-          hire_date: driver.hire_date || null,
-          status: driver.status || "active",
-          rfid_tag: driver.rfid_tag || null,
-          ibutton_id: driver.ibutton_id || null,
-          bluetooth_id: driver.bluetooth_id || null,
-          notes: driver.notes || null,
+          first_name: driver.first_name.trim(),
+          last_name: driver.last_name.trim(),
+          license_number: driver.license_number.trim(),
+          license_class: driver.license_class?.trim() || null,
+          license_expiry: driver.license_expiry?.trim() || null,
+          email: driver.email?.trim() || null,
+          phone: driver.phone?.trim() || null,
+          employee_id: driver.employee_id?.trim() || null,
+          hire_date: driver.hire_date?.trim() || null,
+          status: ["active", "inactive", "suspended"].includes(driver.status?.trim()) ? driver.status.trim() : "active",
+          rfid_tag: driver.rfid_tag?.trim() || null,
+          ibutton_id: driver.ibutton_id?.trim() || null,
+          bluetooth_id: driver.bluetooth_id?.trim() || null,
+          notes: driver.notes?.trim()?.substring(0, 1000) || null,
         });
       }
     }

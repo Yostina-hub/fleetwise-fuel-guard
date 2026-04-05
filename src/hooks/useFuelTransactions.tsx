@@ -127,6 +127,24 @@ export const useFuelTransactions = (filters?: {
   const createTransaction = async (transaction: Omit<FuelTransaction, 'id' | 'organization_id' | 'created_at' | 'updated_at'>) => {
     if (!organizationId) return null;
 
+    // GAP FIX: Null-payload validation for required fields
+    if (!transaction.vehicle_id) {
+      toast({ title: "Validation Error", description: "Vehicle is required.", variant: "destructive" });
+      return null;
+    }
+    if (!transaction.transaction_date) {
+      toast({ title: "Validation Error", description: "Transaction date is required.", variant: "destructive" });
+      return null;
+    }
+    if (transaction.fuel_amount_liters == null || transaction.fuel_amount_liters <= 0 || transaction.fuel_amount_liters > 100000) {
+      toast({ title: "Validation Error", description: "Fuel amount must be between 0 and 100,000 liters.", variant: "destructive" });
+      return null;
+    }
+    if (transaction.fuel_cost != null && (transaction.fuel_cost < 0 || transaction.fuel_cost > 100000000)) {
+      toast({ title: "Validation Error", description: "Invalid fuel cost.", variant: "destructive" });
+      return null;
+    }
+
     // Finding #6: Prevent duplicate submissions with same input
     const submissionKey = JSON.stringify({
       vehicle_id: transaction.vehicle_id,
