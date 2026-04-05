@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -36,6 +36,7 @@ const AssignRouteDialog = ({ vehicleId, vehiclePlate, trigger }: AssignRouteDial
   const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
   const { drivers } = useDrivers();
+  const lastSubmitRef = useRef<number>(0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     job_type: "delivery" as string,
@@ -67,6 +68,13 @@ const AssignRouteDialog = ({ vehicleId, vehiclePlate, trigger }: AssignRouteDial
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
+      // Finding #9: Throttle dispatch job creation
+      const now = Date.now();
+      if (now - lastSubmitRef.current < 5000) {
+        throw new Error("Please wait before creating another job");
+      }
+      lastSubmitRef.current = now;
+
       const jobNumber = `JOB-${Date.now().toString().slice(-8)}`;
       
       const { error } = await supabase
