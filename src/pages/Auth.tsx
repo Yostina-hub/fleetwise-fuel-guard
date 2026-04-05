@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
 import { progressiveDelay } from "@/lib/security/progressiveDelay";
+import { loginAlerts } from "@/lib/security/loginAlerts";
+import { sessionManager } from "@/lib/security/sessionManagement";
 import { ExecutiveTechBackground } from "@/components/dashboard/executive/ExecutiveTechBackground";
 import { TechBackground } from "@/components/auth/TechBackground";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -61,14 +63,9 @@ const Auth = () => {
 
     // Pre-check server-side lockout BEFORE attempting sign-in
     try {
-      const { data: lockStatus } = await supabase.rpc("record_failed_login", {
+      const { data: lockStatus } = await supabase.rpc("check_account_lockout", {
         p_email: email,
-        p_ip_address: "0.0.0.0",
-        p_max_attempts: 5,
-        p_lockout_minutes: 15,
       });
-      // Undo the count we just added — we haven't actually failed yet
-      // We only want to check the current state
       const lockRow = lockStatus?.[0];
       if (lockRow?.is_locked) {
         const until = new Date(lockRow.lockout_until).toLocaleTimeString();
@@ -90,6 +87,15 @@ const Auth = () => {
     if (error) {
       // Record failed attempt in progressive delay (client-side exponential backoff)
       progressiveDelay.recordFailedAttempt(email);
+      // Record in server-side lockout table
+      void (async () => { try { await supabase.rpc("record_failed_login", {
+        p_email: email,
+        p_ip_address: "0.0.0.0",
+        p_max_attempts: 5,
+        p_lockout_minutes: 15,
+      }); } catch {} })();
+      // Record in login alerts (security dashboard)
+      loginAlerts.recordLogin("unknown", false);
       // Generic message - don't reveal whether email exists
       toast({
         title: "Authentication Failed",
@@ -100,6 +106,12 @@ const Auth = () => {
       // Clear all lockout state on success
       progressiveDelay.resetAttempts(email);
       void (async () => { try { await supabase.rpc("clear_failed_login", { p_email: email }); } catch {} })();
+      // Record successful login in security modules
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      if (userId) {
+        loginAlerts.recordLogin(userId, true);
+        sessionManager.registerSession(userId);
+      }
       toast({
         title: "Welcome back!",
         description: "You've been signed in successfully.",
