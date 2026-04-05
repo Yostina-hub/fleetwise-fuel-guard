@@ -18,8 +18,13 @@ Deno.serve(async (req) => {
   const corsHeaders = buildCorsHeaders(req);
 
   try {
+    // Per-minute rate limit
     const rl = checkRateLimit(getClientId(req), { maxRequests: 5, windowMs: 60_000 });
     if (!rl.allowed) return rateLimitResponse(rl, corsHeaders);
+
+    // GAP FIX: Hourly cap - max 10 user creations per hour per client
+    const rlHourly = checkRateLimit(`hourly_${getClientId(req)}`, { maxRequests: 10, windowMs: 3_600_000 });
+    if (!rlHourly.allowed) return rateLimitResponse(rlHourly, corsHeaders);
 
     const supabaseAdmin = createAdminClient();
     const { user: requestingUser, error: authError } = await verifyAuth(
