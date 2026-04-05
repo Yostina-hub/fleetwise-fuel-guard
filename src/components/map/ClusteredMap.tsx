@@ -11,7 +11,8 @@ import {
   getSpeedColor,
 } from "./AnimatedMarker";
 import { useMapMatching } from "@/hooks/useMapMatching";
-import { useMapboxToken } from "@/hooks/useMapboxToken";
+import { useLematApiKey } from "@/hooks/useLematApiKey";
+import { createLematTransformRequest, getLematFallbackMapStyle, getLematMapStyle } from "@/lib/lemat";
 
 interface VehiclePoint {
   id: string;
@@ -74,9 +75,11 @@ const ClusteredMap = ({
   const trailAnimationFrames = useRef<Map<string, number>>(new Map());
   const matchedTrailsCache = useRef<Map<string, [number, number][] | string>>(new Map());
   const [mapLoaded, setMapLoaded] = useState(false);
-  const { token: mapboxToken } = useMapboxToken();
+  const [styleError, setStyleError] = useState(false);
+  const fallbackTriedRef = useRef(false);
+  const { apiKey: lematApiKey, ready: lematKeyReady } = useLematApiKey();
 
-  const { matchTrailToRoads } = useMapMatching(mapboxToken);
+  const { matchTrailToRoads } = useMapMatching(lematApiKey);
 
   // Keep popup "up / centered" by moving the marker slightly below center before opening.
   const focusMapForPopup = useCallback((vehicleLngLat: [number, number], zoom?: number) => {
@@ -236,48 +239,65 @@ const ClusteredMap = ({
 
   // Initialize map
   useEffect(() => {
-    if (!mapContainer.current || !mapboxToken || map.current) return;
+    if (!mapContainer.current || !lematKeyReady || !lematApiKey || map.current) return;
 
-    // Ensure dependent effects (like trails) wait for the new style to load
     setMapLoaded(false);
-
+    setStyleError(false);
 
     map.current = new maplibregl.Map({
       container: mapContainer.current,
-      style:
-        mapStyle === "satellite"
-          ? "https://lemat.goffice.et/api/v1/tiles/style?theme=satellite"
-          : "https://lemat.goffice.et/api/v1/tiles/style?theme=light",
+      style: getLematMapStyle(mapStyle),
       center: [38.75, 9.02],
       zoom: 10,
+      transformRequest: createLematTransformRequest(lematApiKey),
     });
 
     map.current.addControl(new maplibregl.NavigationControl(), "top-right");
     map.current.addControl(new maplibregl.FullscreenControl(), "top-right");
 
     map.current.on("load", () => {
+      fallbackTriedRef.current = false;
+      setStyleError(false);
       setMapLoaded(true);
       try {
         onMapReady?.(map.current!);
       } catch {}
     });
+    map.current.on("style.load", () => {
+      setStyleError(false);
+      setMapLoaded(true);
+    });
     map.current.on("zoom", () => updateClusters());
     map.current.on("move", () => updateClusters());
+    map.current.on("error", (event) => {
+      const failedUrl = (event?.error as { url?: string } | undefined)?.url || '';
+      const isStyleFailure = failedUrl.includes('/tiles/style') || failedUrl.includes('/tiles/');
+
+      if (isStyleFailure && !fallbackTriedRef.current) {
+        fallbackTriedRef.current = true;
+        setMapLoaded(false);
+        try {
+          map.current?.setStyle(getLematFallbackMapStyle());
+          return;
+        } catch {}
+      }
+
+      if (isStyleFailure) {
+        setStyleError(true);
+      }
+    });
 
     return () => {
       setMapLoaded(false);
 
-      // Cleanup clusters
       clusterMarkers.current.forEach((m) => m.remove());
       clusterMarkers.current.clear();
-
-      // Cleanup trails (optional; map.remove() will also clear)
       trailSourcesAdded.current.clear();
 
       map.current?.remove();
       map.current = null;
     };
-  }, [mapboxToken, mapStyle]);
+  }, [lematApiKey, lematKeyReady, mapStyle, onMapReady, updateClusters]);
   // Draw vehicle trails with map matching (snap to roads)
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
@@ -770,12 +790,23 @@ const ClusteredMap = ({
     hasFitBounds.current = true;
   }, [vehicles, mapLoaded]);
 
-  if (!mapboxToken) {
+  if (!lematKeyReady) {
     return (
       <div className="h-full w-full flex items-center justify-center bg-muted">
         <div className="text-center space-y-2">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-sm text-muted-foreground">Loading map...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (styleError) {
+    return (
+      <div className="h-full w-full flex items-center justify-center bg-muted/50">
+        <div className="max-w-sm w-full bg-background border rounded-xl p-6 text-center space-y-3 shadow-lg">
+          <h3 className="font-semibold text-lg">Map style unavailable</h3>
+          <p className="text-sm text-muted-foreground">The map tiles could not be loaded from Lemat right now.</p>
         </div>
       </div>
     );
