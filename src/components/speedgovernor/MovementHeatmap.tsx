@@ -7,10 +7,10 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Activity, Clock, MapPin } from "lucide-react";
-import mapboxgl from "mapbox-gl";
+import maplibregl from "maplibre-gl";
 
 interface MovementHeatmapProps {
-  map: mapboxgl.Map | null;
+  map: maplibregl.Map | null;
   organizationId: string;
 }
 
@@ -188,7 +188,7 @@ export const MovementHeatmap = ({ map, organizationId }: MovementHeatmapProps) =
             }
           }, 'waterway-label');
         } else {
-          (map.getSource('movement-data') as mapboxgl.GeoJSONSource).setData(geojsonData);
+          (map.getSource('movement-data') as maplibregl.GeoJSONSource).setData(geojsonData);
         }
       } catch (error) {
         console.error("Error fetching movement data:", error);

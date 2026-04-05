@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import { useMapboxToken } from "@/hooks/useMapboxToken";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Loader2, Droplet, AlertTriangle, Fuel } from "lucide-react";
@@ -67,8 +67,8 @@ const FuelEventsMapView = ({
 }: FuelEventsMapViewProps) => {
   const { token: mapboxToken, loading: tokenLoading } = useMapboxToken();
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
+  const map = useRef<maplibregl.Map | null>(null);
+  const markersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
   const [mapLoaded, setMapLoaded] = useState(false);
 
   // Filter events with valid coordinates
@@ -88,16 +88,15 @@ const FuelEventsMapView = ({
   useEffect(() => {
     if (!mapContainer.current || !mapboxToken || map.current) return;
 
-    mapboxgl.accessToken = mapboxToken;
 
-    map.current = new mapboxgl.Map({
+    map.current = new maplibregl.Map({
       container: mapContainer.current,
-      style: "mapbox://styles/mapbox/streets-v12",
+      style: "https://lemat.goffice.et/api/v1/tiles/style?theme=light",
       center: [38.7578, 9.0054], // Default to Addis Ababa
       zoom: 10,
     });
 
-    map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
+    map.current.addControl(new maplibregl.NavigationControl(), "top-right");
 
     map.current.on("load", () => {
       setMapLoaded(true);
@@ -183,13 +182,13 @@ const FuelEventsMapView = ({
         </div>
       `;
 
-      const popup = new mapboxgl.Popup({
+      const popup = new maplibregl.Popup({
         offset: 20,
         closeButton: false,
         closeOnClick: false,
       }).setHTML(popupContent);
 
-      const marker = new mapboxgl.Marker({ element: el, anchor: "center" })
+      const marker = new maplibregl.Marker({ element: el, anchor: "center" })
         .setLngLat([event.lng!, event.lat!])
         .setPopup(popup)
         .addTo(map.current!);
@@ -203,7 +202,7 @@ const FuelEventsMapView = ({
 
     // Fit bounds to show all markers
     if (eventsWithCoords.length > 0) {
-      const bounds = new mapboxgl.LngLatBounds();
+      const bounds = new maplibregl.LngLatBounds();
       eventsWithCoords.forEach((event) => {
         bounds.extend([event.lng!, event.lat!]);
       });

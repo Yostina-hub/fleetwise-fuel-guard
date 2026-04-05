@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -58,9 +58,9 @@ export const RouteComparisonMap = ({ availableVehicles }: RouteComparisonMapProp
   const { organizationId } = useOrganization();
   const { token: mapboxToken } = useMapboxToken();
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
+  const map = useRef<maplibregl.Map | null>(null);
   const animationRef = useRef<number | null>(null);
-  const vehicleMarkers = useRef<Map<string, mapboxgl.Marker>>(new Map());
+  const vehicleMarkers = useRef<Map<string, maplibregl.Marker>>(new Map());
   
   const [selectedVehicleIds, setSelectedVehicleIds] = useState<string[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -131,17 +131,16 @@ export const RouteComparisonMap = ({ availableVehicles }: RouteComparisonMapProp
   useEffect(() => {
     if (!mapContainer.current || !mapboxToken || map.current) return;
 
-    mapboxgl.accessToken = mapboxToken;
 
-    map.current = new mapboxgl.Map({
+    map.current = new maplibregl.Map({
       container: mapContainer.current,
-      style: "mapbox://styles/mapbox/streets-v12",
+      style: "https://lemat.goffice.et/api/v1/tiles/style?theme=light",
       center: [38.7578, 9.03],
       zoom: 12,
     });
 
-    map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
-    map.current.addControl(new mapboxgl.FullscreenControl(), "top-right");
+    map.current.addControl(new maplibregl.NavigationControl(), "top-right");
+    map.current.addControl(new maplibregl.FullscreenControl(), "top-right");
 
     return () => {
       if (animationRef.current) {
@@ -186,7 +185,7 @@ export const RouteComparisonMap = ({ availableVehicles }: RouteComparisonMapProp
         if (map.current!.getSource(violationLayerId)) map.current!.removeSource(violationLayerId);
       });
 
-      const bounds = new mapboxgl.LngLatBounds();
+      const bounds = new maplibregl.LngLatBounds();
 
       vehicleRoutes.forEach((route, index) => {
         if (route.data.length === 0) return;
@@ -363,7 +362,7 @@ export const RouteComparisonMap = ({ availableVehicles }: RouteComparisonMapProp
         el.innerHTML = "▲";
         el.title = route.vehiclePlate;
 
-        marker = new mapboxgl.Marker(el)
+        marker = new maplibregl.Marker(el)
           .setLngLat([point.longitude, point.latitude])
           .addTo(map.current!);
         

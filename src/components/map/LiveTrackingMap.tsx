@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,7 +47,7 @@ interface LiveTrackingMapProps {
   selectedVehicleId?: string;
   token?: string;
   mapStyle?: 'streets' | 'satellite';
-  onMapReady?: (map: mapboxgl.Map) => void;
+  onMapReady?: (map: maplibregl.Map) => void;
   showTrails?: boolean;
   trails?: Map<string, TrailPoint[]>;
   openPopupVehicleId?: string | null;
@@ -74,14 +74,14 @@ const LiveTrackingMap = ({
 }: LiveTrackingMapProps) => {
 const { organizationId } = useOrganization();
 const mapContainer = useRef<HTMLDivElement>(null);
-const map = useRef<mapboxgl.Map | null>(null);
-const markers = useRef<Map<string, mapboxgl.Marker>>(new Map());
+const map = useRef<maplibregl.Map | null>(null);
+const markers = useRef<Map<string, maplibregl.Marker>>(new Map());
 const previousPositions = useRef<Map<string, { lng: number; lat: number }>>(new Map());
 const resizeObserver = useRef<ResizeObserver | null>(null);
 const addressFetchTimeouts = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 const initialBoundsFitted = useRef(false);
 const trailSourcesAdded = useRef<Set<string>>(new Set());
-const trailAnimationMarkers = useRef<Map<string, mapboxgl.Marker>>(new Map());
+const trailAnimationMarkers = useRef<Map<string, maplibregl.Marker>>(new Map());
 const trailAnimationFrames = useRef<Map<string, number>>(new Map());
 const [mapLoaded, setMapLoaded] = useState(false);
 const [tokenError, setTokenError] = useState<string | null>(null);
@@ -138,116 +138,22 @@ useEffect(() => {
 
   // Fetch token from backend (organization settings or edge function)
   useEffect(() => {
-    const isValidPublicToken = (value: unknown): value is string => {
-      return typeof value === 'string' && value.trim().startsWith('pk.');
-    };
-
-    const fetchToken = async () => {
-      try {
-        const isValid = (value: unknown): value is string => isValidPublicToken(value);
-
-        // 1) If a token prop is provided, it must be valid.
-        if (token) {
-          if (!isValid(token)) {
-            setTokenError('invalid');
-            return null;
-          }
-          setTokenError(null);
-          return token;
-        }
-
-        // 2) Try to fetch from organization_settings first (the "map settings" source)
-        if (organizationId) {
-          try {
-            const { data: orgSettings } = await supabase
-              .from('organization_settings')
-              .select('mapbox_token')
-              .eq('organization_id', organizationId)
-              .maybeSingle();
-
-            if (orgSettings?.mapbox_token && isValid(orgSettings.mapbox_token)) {
-              console.log('Using mapbox token from organization settings');
-              setTokenError(null);
-              // Cache it locally for faster subsequent loads
-              try { sessionStorage.setItem('mapbox_token', orgSettings.mapbox_token); } catch {}
-              return orgSettings.mapbox_token;
-            }
-          } catch (e) {
-            console.warn('Failed to fetch token from org settings:', e);
-          }
-        }
-
-        // 3) Try sessionStorage cache
-        const lsToken = sessionStorage.getItem('mapbox_token');
-        if (lsToken && isValid(lsToken)) {
-          setTokenError(null);
-          return lsToken;
-        }
-        // Clear invalid cached token
-        if (lsToken) {
-          try { sessionStorage.removeItem('mapbox_token'); } catch {}
-        }
-
-        // 4) Try env variable
-        const envToken = import.meta.env.VITE_MAPBOX_TOKEN;
-        if (envToken && isValid(envToken)) {
-          setTokenError(null);
-          return envToken;
-        }
-
-        // 5) Fetch from backend edge function (handles CORS/auth, checks org settings + env)
-        const { data, error } = await supabase.functions.invoke('get-mapbox-token', {
-          body: { organization_id: organizationId }
-        });
-        if (error) {
-          console.error('get-mapbox-token error:', error);
-          setTokenError('missing');
-          return null;
-        }
-
-        const fetched = (data as any)?.token as string | undefined;
-        if (!isValid(fetched)) {
-          setTokenError('missing');
-          return null;
-        }
-
-        try { sessionStorage.setItem('mapbox_token', fetched); } catch {}
-
-        setTokenError(null);
-        return fetched;
-      } catch (err) {
-        console.error('Failed to fetch Mapbox token:', err);
-        setTokenError('missing');
-        return null;
-      }
-    };
-
-    const initMap = async () => {
+    const initMap = () => {
       if (!mapContainer.current || map.current) return;
 
-      const mapboxToken = await fetchToken();
-      if (!mapboxToken) return;
-
-      if (!mapboxgl.supported()) {
-        setTokenError('webgl');
-        return;
-      }
-
       try {
-        mapboxgl.accessToken = mapboxToken;
-
-        map.current = new mapboxgl.Map({
+        map.current = new maplibregl.Map({
           container: mapContainer.current,
           style:
             mapStyle === 'satellite'
-              ? 'mapbox://styles/mapbox/satellite-streets-v12'
-              : 'mapbox://styles/mapbox/streets-v12',
-          center: [38.75, 9.02], // Addis Ababa
+              ? 'https://lemat.goffice.et/api/v1/tiles/style?theme=satellite'
+              : 'https://lemat.goffice.et/api/v1/tiles/style?theme=light',
+          center: [38.75, 9.02],
           zoom: 12,
         });
 
-        map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-        map.current.addControl(new mapboxgl.FullscreenControl(), 'top-right');
+        map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
+        map.current.addControl(new maplibregl.FullscreenControl(), 'top-right');
 
         const setLoaded = () => setMapLoaded(true);
         map.current.on('load', () => {
@@ -268,41 +174,9 @@ useEffect(() => {
         });
 
         map.current.on('style.load', setLoaded);
-        map.current.on('error', (e: any) => {
-          const msg = e?.error?.message || '';
-          const status = e?.error?.status || e?.error?.statusCode;
-          const isAuthError =
-            status === 401 ||
-            status === 403 ||
-            /unauthorized|forbidden|access token|token/i.test(String(msg));
-
-          if (!isAuthError) return;
-
-          // If a bad token was saved previously, clear it once and retry via backend token fetch.
-          if (!retriedInvalidRef.current) {
-            retriedInvalidRef.current = true;
-            try {
-              sessionStorage.removeItem('mapbox_token');
-            } catch {}
-
-            try {
-              markers.current.forEach((m) => m.remove());
-              markers.current.clear();
-              map.current?.remove();
-            } catch {}
-
-            map.current = null;
-            setMapLoaded(false);
-            setTokenError(null);
-            setInitNonce((n) => n + 1);
-            return;
-          }
-
-          setTokenError('invalid');
-        });
       } catch (e) {
-        console.error('Mapbox map initialization failed:', e);
-        setTokenError('invalid');
+        console.error('Map initialization failed:', e);
+        setTokenError('webgl');
         try {
           map.current?.remove();
         } catch {}
@@ -312,35 +186,33 @@ useEffect(() => {
 
     initMap();
 
-return () => {
-  try {
-    // Disconnect resize observer
-    try { resizeObserver.current?.disconnect(); } catch {}
-    resizeObserver.current = null;
+    return () => {
+      try {
+        try { resizeObserver.current?.disconnect(); } catch {}
+        resizeObserver.current = null;
 
-    // Cleanup trail animation markers
-    trailAnimationFrames.current.forEach((frameId) => cancelAnimationFrame(frameId));
-    trailAnimationFrames.current.clear();
-    trailAnimationMarkers.current.forEach((marker) => marker.remove());
-    trailAnimationMarkers.current.clear();
+        trailAnimationFrames.current.forEach((frameId) => cancelAnimationFrame(frameId));
+        trailAnimationFrames.current.clear();
+        trailAnimationMarkers.current.forEach((marker) => marker.remove());
+        trailAnimationMarkers.current.clear();
 
-    markers.current.forEach(marker => marker.remove());
-    markers.current.clear();
-    if (map.current) {
-      map.current.remove();
-      map.current = null;
-    }
-  } catch (e) {
-    console.warn('Map cleanup error (ignored):', e);
-    map.current = null;
-  }
-};
-  }, [token, mapStyle, initNonce, onMapReady, organizationId]);
+        markers.current.forEach(marker => marker.remove());
+        markers.current.clear();
+        if (map.current) {
+          map.current.remove();
+          map.current = null;
+        }
+      } catch (e) {
+        console.warn('Map cleanup error (ignored):', e);
+        map.current = null;
+      }
+    };
+  }, [mapStyle, initNonce, onMapReady]);
 
   // Update map style when setting changes
   useEffect(() => {
     if (!map.current) return;
-    const targetStyle = mapStyle === 'satellite' ? 'mapbox://styles/mapbox/satellite-streets-v12' : 'mapbox://styles/mapbox/streets-v12';
+    const targetStyle = mapStyle === 'satellite' ? 'https://lemat.goffice.et/api/v1/tiles/style?theme=satellite' : 'https://lemat.goffice.et/api/v1/tiles/style?theme=light';
     setMapLoaded(false);
     map.current.setStyle(targetStyle);
   }, [mapStyle]);
@@ -392,18 +264,15 @@ return () => {
           return;
         }
 
-        // Get token from multiple sources
-        const mapboxToken = token || sessionStorage.getItem('mapbox_token') || import.meta.env.VITE_MAPBOX_TOKEN || mapboxgl.accessToken;
-        if (!mapboxToken) {
-          console.warn('No Mapbox token available for geocoding');
+        // Use Lemat reverse geocoding API
+        const lematApiKey = sessionStorage.getItem('lemat_api_key') || '';
+        if (!lematApiKey) {
           setVehicleAddresses(prev => new Map(prev).set(vehicleId, `${lat.toFixed(6)}, ${lng.toFixed(6)}`));
           return;
         }
 
-        // Reverse geocoding: Mapbox requires `limit` to be used with a single `type`
-        // Use address for the most stable/consistent results.
-        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng.toFixed(6)},${lat.toFixed(6)}.json?access_token=${mapboxToken}&types=address&limit=1&language=en`;
-        const res = await fetch(url);
+        const url = `https://lemat.goffice.et/api/v1/reverse-geocode?lat=${lat.toFixed(6)}&lon=${lng.toFixed(6)}`;
+        const res = await fetch(url, { headers: { 'X-Api-Key': lematApiKey } });
         if (!res.ok) {
           console.warn('Geocoding API error:', res.status);
           setVehicleAddresses(prev => new Map(prev).set(vehicleId, `${lat.toFixed(6)}, ${lng.toFixed(6)}`));
@@ -411,7 +280,7 @@ return () => {
         }
         
         const json = await res.json();
-        const features = json?.features || [];
+        const features = json?.display_name ? [json] : [];
 
         if (features.length === 0) {
           // No features found - use place_name from first result if available
@@ -419,94 +288,18 @@ return () => {
           return;
         }
 
-        // Find the most specific feature (prefer address/poi over neighborhood/place)
-        const typePriority: Record<string, number> = { 
-          'address': 1, 
-          'poi': 2, 
-          'neighborhood': 3, 
-          'locality': 4, 
-          'place': 5 
-        };
-        
-        const sortedFeatures = features.sort((a: any, b: any) => {
-          const aType = a.place_type?.[0] || 'place';
-          const bType = b.place_type?.[0] || 'place';
-          return (typePriority[aType] || 99) - (typePriority[bType] || 99);
-        });
-
-        const bestFeature = sortedFeatures[0];
-        const featureType = bestFeature.place_type?.[0] || '';
-        const context = bestFeature.context || [];
-        
-        // Extract context parts
-        const street = context.find((c: any) => c.id?.startsWith('address'))?.text || '';
-        const neighborhood = context.find((c: any) => c.id?.startsWith('neighborhood'))?.text || '';
-        const locality = context.find((c: any) => c.id?.startsWith('locality'))?.text || '';
-        const place = context.find((c: any) => c.id?.startsWith('place'))?.text || '';
-        const district = context.find((c: any) => c.id?.startsWith('district'))?.text || '';
-
-        // Build a detailed, human-readable address
-        let addressParts: string[] = [];
-        
-        // Main feature name (POI name, street address, etc.)
-        if (featureType === 'address') {
-          const houseNumber = bestFeature.address || '';
-          const streetName = bestFeature.text || '';
-          if (houseNumber && streetName) {
-            addressParts.push(`${houseNumber} ${streetName}`);
-          } else if (streetName) {
-            addressParts.push(streetName);
-          }
-        } else if (featureType === 'poi') {
-          // POI: show the POI name prominently
-          addressParts.push(bestFeature.text || '');
-          if (street) {
-            addressParts.push(street);
-          }
-        } else {
-          addressParts.push(bestFeature.text || '');
-        }
-
-        // Add neighborhood/sub-locality for more precision
-        if (neighborhood && !addressParts.includes(neighborhood)) {
-          addressParts.push(neighborhood);
-        }
-        
-        // Add locality or district
-        if (locality && !addressParts.includes(locality)) {
-          addressParts.push(locality);
-        } else if (district && !addressParts.includes(district)) {
-          addressParts.push(district);
-        }
-        
-        // Add city/place
-        if (place && !addressParts.includes(place)) {
-          addressParts.push(place);
-        }
-
-        // Filter empty and dedupe
-        addressParts = addressParts.filter((p, i, arr) => p && p.trim() && arr.indexOf(p) === i);
-        
-        const finalAddress = addressParts.length > 0 
-          ? addressParts.join(', ') 
-          : bestFeature.place_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-
+        // Lemat returns Nominatim-style: { display_name, address: { road, city, ... } }
+        const result = features[0];
+        const finalAddress = result.display_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
         setVehicleAddresses(prev => new Map(prev).set(vehicleId, finalAddress));
 
-        // Calculate distance and direction from nearest road/POI
-        if (bestFeature.center && bestFeature.center.length === 2) {
-          const [featureLng, featureLat] = bestFeature.center;
-          const distance = calculateDistance(lat, lng, featureLat, featureLng);
-          const bearing = calculateBearing(lat, lng, featureLat, featureLng);
-          const direction = getDirectionFromBearing(bearing);
-          const roadName = bestFeature.text || (featureType === 'address' ? street : '') || 'Main Road';
-          
-          setVehicleRoadInfo(prev => new Map(prev).set(vehicleId, {
-            road: roadName,
-            distance: Math.round(distance),
-            direction: direction
-          }));
-        }
+        const addr = result.address || {};
+        const roadName = addr.road || addr.pedestrian || addr.neighbourhood || 'Unknown Road';
+        setVehicleRoadInfo(prev => new Map(prev).set(vehicleId, {
+          road: roadName,
+          distance: 0,
+          direction: 'North'
+        }));
       } catch (error) {
         console.error('Error fetching address:', error);
         setVehicleAddresses(prev => new Map(prev).set(vehicleId, `${lat.toFixed(6)}, ${lng.toFixed(6)}`));
@@ -782,7 +575,7 @@ return () => {
     });
   }, []);
 
-  const ensurePopupInView = useCallback((popup: mapboxgl.Popup) => {
+  const ensurePopupInView = useCallback((popup: maplibregl.Popup) => {
     if (!map.current) return;
 
     const popupEl = popup.getElement();
@@ -809,13 +602,13 @@ return () => {
   }, []);
 
   const enhancePopup = useCallback(
-    (popup: mapboxgl.Popup) => {
+    (popup: maplibregl.Popup) => {
       if (!map.current) return;
 
       const popupEl = popup.getElement();
       if (!popupEl) return;
 
-      const content = popupEl.querySelector('.mapboxgl-popup-content') as HTMLElement | null;
+      const content = popupEl.querySelector('.maplibregl-popup-content') as HTMLElement | null;
       if (content && content.dataset.scrollBound !== '1') {
         content.dataset.scrollBound = '1';
 
@@ -986,7 +779,7 @@ return () => {
         el.dataset.speed = vehicle.speed.toString();
         el.dataset.heading = (vehicle.heading || 0).toString();
 
-        const marker = new mapboxgl.Marker({
+        const marker = new maplibregl.Marker({
           element: el,
           anchor: 'center',
         })
@@ -997,7 +790,7 @@ return () => {
         (marker as any)._vehicleId = vehicle.id;
 
         // Create hover popup with vehicle info
-        const popup = new mapboxgl.Popup({
+        const popup = new maplibregl.Popup({
           closeButton: false,
           closeOnClick: false,
           offset: [0, -30],
@@ -1162,7 +955,7 @@ return () => {
       }
     } else if (vehicles.length > 0 && !initialBoundsFitted.current) {
       // Auto-fit bounds only on initial load
-      const bounds = new mapboxgl.LngLatBounds();
+      const bounds = new maplibregl.LngLatBounds();
       vehicles.forEach(v => bounds.extend([v.lng, v.lat]));
       map.current!.fitBounds(bounds, { padding: 50, maxZoom: 15 });
       initialBoundsFitted.current = true;
@@ -1227,7 +1020,7 @@ return () => {
       };
 
       // Update or create source
-      const source = map.current!.getSource(sourceId) as mapboxgl.GeoJSONSource;
+      const source = map.current!.getSource(sourceId) as maplibregl.GeoJSONSource;
       if (source) {
         source.setData(geojsonData);
       } else {
@@ -1361,7 +1154,7 @@ return () => {
 
     let marker = trailAnimationMarkers.current.get(activeVehicleId);
     if (!marker) {
-      marker = new mapboxgl.Marker({ element: createCarElement(), anchor: 'center' })
+      marker = new maplibregl.Marker({ element: createCarElement(), anchor: 'center' })
         .setLngLat([points[0].lng, points[0].lat])
         .addTo(map.current!);
       trailAnimationMarkers.current.set(activeVehicleId, marker);
@@ -1427,7 +1220,7 @@ return () => {
     };
   }, [trails, mapLoaded, showTrails, selectedVehicleId]);
 
-  if (tokenError) {
+  if (tokenError === 'webgl') {
     return (
       <div className="h-full w-full flex items-center justify-center bg-muted/50">
         <div className="max-w-sm w-full bg-background border rounded-xl p-6 text-center space-y-4 shadow-lg">
@@ -1435,44 +1228,11 @@ return () => {
             <span className="text-2xl">🗺️</span>
           </div>
           <div>
-            <h3 className="font-semibold text-lg">
-              {tokenError === 'webgl'
-                ? 'WebGL Required'
-                : tokenError === 'invalid'
-                  ? 'Invalid Map Token'
-                  : 'Map Token Needed'}
-            </h3>
+            <h3 className="font-semibold text-lg">WebGL Required</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              {tokenError === 'webgl'
-                ? 'Enable hardware acceleration in your browser settings.'
-                : tokenError === 'invalid'
-                  ? 'The saved token was rejected. Please enter a valid Mapbox public token (starts with pk.).'
-                  : 'Add your Mapbox public token to display the map.'}
+              Enable hardware acceleration in your browser settings.
             </p>
           </div>
-          {tokenError !== 'webgl' && (
-            <div className="space-y-2">
-              <Input 
-                placeholder="pk.eyJ1..." 
-                value={tempToken} 
-                onChange={(e) => setTempToken(e.target.value)}
-                className="text-sm"
-              />
-              <Button 
-                className="w-full" 
-                size="sm"
-                disabled={!tempToken.startsWith('pk.')}
-                onClick={() => { 
-                  if (tempToken) { 
-                    sessionStorage.setItem('mapbox_token', tempToken); 
-                    window.location.reload(); 
-                  } 
-                }}
-              >
-                Save & Reload
-              </Button>
-            </div>
-          )}
         </div>
       </div>
     );

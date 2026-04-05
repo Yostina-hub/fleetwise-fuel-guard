@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import Supercluster from "supercluster";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -40,7 +40,7 @@ interface ClusteredMapProps {
   onVehicleClick?: (vehicle: VehiclePoint) => void;
   selectedVehicleId?: string;
   mapStyle?: "streets" | "satellite";
-  onMapReady?: (map: mapboxgl.Map) => void;
+  onMapReady?: (map: maplibregl.Map) => void;
   showTrails?: boolean;
   trails?: Map<string, TrailPoint[]>;
   onTripReplay?: (vehicleId: string, plate: string) => void;
@@ -65,12 +65,12 @@ const ClusteredMap = ({
 }: ClusteredMapProps) => {
 
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const clusterMarkers = useRef<Map<string, mapboxgl.Marker>>(new Map());
+  const map = useRef<maplibregl.Map | null>(null);
+  const clusterMarkers = useRef<Map<string, maplibregl.Marker>>(new Map());
   const previousPositions = useRef<Map<string, { lng: number; lat: number }>>(new Map());
   const hasFitBounds = useRef(false);
   const trailSourcesAdded = useRef<Set<string>>(new Set());
-  const trailAnimationMarkers = useRef<Map<string, mapboxgl.Marker>>(new Map());
+  const trailAnimationMarkers = useRef<Map<string, maplibregl.Marker>>(new Map());
   const trailAnimationFrames = useRef<Map<string, number>>(new Map());
   const matchedTrailsCache = useRef<Map<string, [number, number][] | string>>(new Map());
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -93,7 +93,7 @@ const ClusteredMap = ({
     });
   }, []);
 
-  const ensurePopupInView = useCallback((popup: mapboxgl.Popup) => {
+  const ensurePopupInView = useCallback((popup: maplibregl.Popup) => {
     if (!map.current) return;
 
     const popupEl = popup.getElement();
@@ -120,13 +120,13 @@ const ClusteredMap = ({
   }, []);
 
   const enhancePopup = useCallback(
-    (popup: mapboxgl.Popup) => {
+    (popup: maplibregl.Popup) => {
       if (!map.current) return;
 
       const popupEl = popup.getElement();
       if (!popupEl) return;
 
-      const content = popupEl.querySelector('.mapboxgl-popup-content') as HTMLElement | null;
+      const content = popupEl.querySelector('.maplibregl-popup-content') as HTMLElement | null;
       if (content && content.dataset.scrollBound !== '1') {
         content.dataset.scrollBound = '1';
         content.addEventListener('wheel', (e) => e.stopPropagation(), { capture: true });
@@ -241,20 +241,19 @@ const ClusteredMap = ({
     // Ensure dependent effects (like trails) wait for the new style to load
     setMapLoaded(false);
 
-    mapboxgl.accessToken = mapboxToken;
 
-    map.current = new mapboxgl.Map({
+    map.current = new maplibregl.Map({
       container: mapContainer.current,
       style:
         mapStyle === "satellite"
-          ? "mapbox://styles/mapbox/satellite-streets-v12"
-          : "mapbox://styles/mapbox/streets-v12",
+          ? "https://lemat.goffice.et/api/v1/tiles/style?theme=satellite"
+          : "https://lemat.goffice.et/api/v1/tiles/style?theme=light",
       center: [38.75, 9.02],
       zoom: 10,
     });
 
-    map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
-    map.current.addControl(new mapboxgl.FullscreenControl(), "top-right");
+    map.current.addControl(new maplibregl.NavigationControl(), "top-right");
+    map.current.addControl(new maplibregl.FullscreenControl(), "top-right");
 
     map.current.on("load", () => {
       setMapLoaded(true);
@@ -381,7 +380,7 @@ const ClusteredMap = ({
 
       if (!map.current) return;
 
-      const existingSource = map.current.getSource(sourceId) as mapboxgl.GeoJSONSource;
+      const existingSource = map.current.getSource(sourceId) as maplibregl.GeoJSONSource;
       if (existingSource) {
         existingSource.setData(geojsonData);
       } else {
@@ -551,7 +550,7 @@ const ClusteredMap = ({
       // Get or create marker
       let marker = trailAnimationMarkers.current.get(vehicleId);
       if (!marker) {
-        marker = new mapboxgl.Marker({
+        marker = new maplibregl.Marker({
           element: createCarElement(),
           anchor: "center",
         })
@@ -696,7 +695,7 @@ const ClusteredMap = ({
 
       // Create or update marker with smooth position animation
       if (!clusterMarkers.current.has(markerId)) {
-        const marker = new mapboxgl.Marker({
+        const marker = new maplibregl.Marker({
           element: markerElement,
           anchor: "center",
         })
@@ -759,7 +758,7 @@ const ClusteredMap = ({
     const validVehicles = vehicles.filter((v) => v.lat && v.lng);
     if (validVehicles.length === 0) return;
 
-    const bounds = new mapboxgl.LngLatBounds();
+    const bounds = new maplibregl.LngLatBounds();
     validVehicles.forEach((v) => bounds.extend([v.lng, v.lat]));
 
     map.current.fitBounds(bounds, {

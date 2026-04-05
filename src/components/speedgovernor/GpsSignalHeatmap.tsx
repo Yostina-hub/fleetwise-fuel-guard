@@ -6,10 +6,10 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MapPin, TrendingDown, TrendingUp } from "lucide-react";
-import mapboxgl from "mapbox-gl";
+import maplibregl from "maplibre-gl";
 
 interface GpsSignalHeatmapProps {
-  map: mapboxgl.Map | null;
+  map: maplibregl.Map | null;
   organizationId: string;
 }
 
