@@ -62,7 +62,7 @@ const LiveTrackingMap = ({
   onVehicleClick, 
   selectedVehicleId, 
   token, 
-  mapStyle = 'satellite', 
+  mapStyle = 'streets', 
   onMapReady,
   showTrails = true,
   trails = new Map(),
