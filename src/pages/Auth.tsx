@@ -99,7 +99,7 @@ const Auth = () => {
     } else {
       // Clear all lockout state on success
       progressiveDelay.resetAttempts(email);
-      supabase.rpc("clear_failed_login", { p_email: email }).catch(() => {});
+      supabase.rpc("clear_failed_login", { p_email: email }).then(() => {}).catch(() => {});
       toast({
         title: "Welcome back!",
         description: "You've been signed in successfully.",
