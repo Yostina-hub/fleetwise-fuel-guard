@@ -66,10 +66,10 @@ const InviteUserDialog = ({ open, onOpenChange, onUserCreated, organizationId: p
       return;
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       toast({
         title: "Validation Error",
-        description: "Password must be at least 6 characters",
+        description: "Password must be at least 8 characters",
         variant: "destructive",
       });
       return;
@@ -178,11 +178,11 @@ const InviteUserDialog = ({ open, onOpenChange, onUserCreated, organizationId: p
             <Input
               id="password"
               type="password"
-              placeholder="Minimum 6 characters"
+              placeholder="Minimum 8 characters"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              minLength={6}
+              minLength={8}
             />
           </div>
           <div className="space-y-2">
