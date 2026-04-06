@@ -26,10 +26,13 @@ export function validateGatewayKey(req: Request): Response | null {
   const gatewayKey = req.headers.get("x-gateway-key");
   const expectedKey = Deno.env.get("GATEWAY_SHARED_KEY");
 
-  // If GATEWAY_SHARED_KEY is not configured, skip validation (backward compat)
+  // GATEWAY_SHARED_KEY must be configured — reject if missing
   if (!expectedKey) {
-    console.warn("[gateway-auth] GATEWAY_SHARED_KEY not configured — skipping gateway auth");
-    return null;
+    console.error("[gateway-auth] GATEWAY_SHARED_KEY not configured — rejecting request");
+    return new Response(
+      JSON.stringify({ success: false, error: "Gateway authentication not configured" }),
+      { status: 500, headers: GATEWAY_RESPONSE_HEADERS }
+    );
   }
 
   // If no key provided, check if this is a browser/API-key request (not gateway)
