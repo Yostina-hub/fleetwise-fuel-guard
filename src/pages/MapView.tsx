@@ -500,6 +500,13 @@ const MapView = () => {
                 <span className="hidden sm:inline">Nearby</span>
               </Button>
 
+              {/* Measure Distance Tool */}
+              <MeasureDistanceTool
+                map={mapInstance}
+                mapLoaded={!!mapInstance}
+                initialPoint={measureFromPoint}
+                onClearInitialPoint={() => setMeasureFromPoint(null)}
+              />
               {/* Follow Mode Toggle - Only show when vehicle selected */}
               {selectedVehicleId && (
                 <Button
