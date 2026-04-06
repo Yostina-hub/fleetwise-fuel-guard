@@ -100,7 +100,19 @@ const MapView = () => {
     originLng?: number;
   }>({ open: false, lat: 0, lng: 0, plate: '', type: 'streetview' });
   
-  const [mapStyle, setMapStyle] = useState<'streets' | 'satellite'>('streets');
+  const [mapStyle, setMapStyle] = useState<'streets' | 'satellite' | 'dark'>('streets');
+  const [measureFromPoint, setMeasureFromPoint] = useState<[number, number] | null>(null);
+  const { theme } = useTheme();
+
+  // Sync dark mode map theme with app theme
+  useEffect(() => {
+    if (mapStyle === 'satellite') return; // Don't override satellite
+    if (theme === 'dark' || theme === 'cyber') {
+      setMapStyle('dark');
+    } else {
+      setMapStyle('streets');
+    }
+  }, [theme]);
   const envToken = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
   const [mapInstance, setMapInstance] = useState<any>(null);
   
