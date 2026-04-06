@@ -16,7 +16,7 @@ export const getLematStyleUrl = (theme: LematTheme = 'light'): string =>
   `${LEMAT_API_BASE}/tiles/style?theme=${theme}`;
 
 export const getLematMapStyle = (style: LematMapStyle = 'streets'): string | maplibregl.StyleSpecification =>
-  style === 'satellite' ? getLematStyleUrl('satellite') : getOsmFallbackStyle();
+  style === 'satellite' ? getSatelliteRasterStyle() : getOsmFallbackStyle();
 
 export const getLematFallbackMapStyle = (): string | maplibregl.StyleSpecification => getOsmFallbackStyle();
 
@@ -44,6 +44,35 @@ export const getOsmFallbackStyle = (): maplibregl.StyleSpecification => ({
       id: 'osm-tiles-layer',
       type: 'raster',
       source: 'osm-tiles',
+      minzoom: 0,
+      maxzoom: 19,
+    },
+  ],
+});
+
+/**
+ * Lightweight satellite raster style for fast switching.
+ * Using a direct inline style avoids the slower external style JSON + glyph/vector dependency chain.
+ */
+export const getSatelliteRasterStyle = (): maplibregl.StyleSpecification => ({
+  version: 8,
+  name: 'Satellite Raster',
+  sources: {
+    satellite: {
+      type: 'raster',
+      tiles: [
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      ],
+      tileSize: 256,
+      maxzoom: 19,
+      attribution: 'Tiles &copy; Esri',
+    },
+  },
+  layers: [
+    {
+      id: 'satellite-raster-layer',
+      type: 'raster',
+      source: 'satellite',
       minzoom: 0,
       maxzoom: 19,
     },
