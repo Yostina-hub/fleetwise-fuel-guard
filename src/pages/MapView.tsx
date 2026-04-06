@@ -429,6 +429,11 @@ const MapView = () => {
             />
           )}
 
+          {/* Right-click context menu */}
+          <MapContextMenu
+            map={mapInstance}
+            onMeasureFrom={(pt) => setMeasureFromPoint(pt)}
+          />
           {/* Minimal Map Controls */}
           <div className="absolute top-4 left-4 z-10">
             <div className="flex flex-col gap-2">
