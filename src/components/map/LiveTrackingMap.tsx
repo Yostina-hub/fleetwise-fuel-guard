@@ -236,19 +236,29 @@ useEffect(() => {
     };
   }, [lematApiKey, lematKeyReady, mapStyle, onMapReady]);
 
-  // Track previous style to only react to actual changes (skip initial mount)
+  // Track previous style to only react to actual user-driven changes
   const prevMapStyleRef = useRef(mapStyle);
   useEffect(() => {
     if (!map.current || !lematApiKey) return;
-    // Skip if mapStyle hasn't actually changed (i.e. initial mount)
-    if (prevMapStyleRef.current === mapStyle && mapLoaded) return;
-    if (prevMapStyleRef.current === mapStyle) return; // still initial mount, not loaded yet
+    // Skip if mapStyle hasn't changed from last applied value
+    if (prevMapStyleRef.current === mapStyle) return;
     prevMapStyleRef.current = mapStyle;
-    const targetStyle = getLematMapStyle(mapStyle);
-    setMapLoaded(false);
-    setTokenError(null);
-    map.current.setStyle(targetStyle);
-  }, [lematApiKey, mapStyle, mapLoaded]);
+
+    const applyStyle = () => {
+      if (!map.current) return;
+      const targetStyle = getLematMapStyle(mapStyle);
+      setMapLoaded(false);
+      setTokenError(null);
+      map.current.setStyle(targetStyle);
+    };
+
+    // Wait for current style to finish loading before switching
+    if (map.current.isStyleLoaded()) {
+      applyStyle();
+    } else {
+      map.current.once('style.load', applyStyle);
+    }
+  }, [lematApiKey, mapStyle]);
 
   // Debounced address fetching to avoid API spam - gets detailed street-level address
   const fetchAddressDebounced = (lng: number, lat: number, vehicleId: string) => {
