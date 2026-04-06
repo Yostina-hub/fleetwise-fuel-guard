@@ -92,8 +92,6 @@ const FuelEventsMapView = ({
     const initMap = async () => {
       if (!mapContainer.current || map.current) return;
 
-      if (!mapContainer.current || map.current) return;
-
       map.current = new maplibregl.Map({
         container: mapContainer.current,
         style: getLematMapStyle('streets'),
