@@ -13,6 +13,9 @@ import ClusteredMap from "@/components/map/ClusteredMap";
 import { NearbyVehiclesSearch } from "@/components/map/NearbyVehiclesSearch";
 import { StreetViewModal } from "@/components/map/StreetViewModal";
 import { VehicleInfoPanel } from "@/components/map/VehicleInfoPanel";
+import { MapContextMenu } from "@/components/map/MapContextMenu";
+import { MeasureDistanceTool } from "@/components/map/MeasureDistanceTool";
+import { useTheme } from "@/contexts/ThemeContext";
 import { 
   Navigation, 
   Fuel, 
