@@ -48,7 +48,7 @@ interface LiveTrackingMapProps {
   onVehicleClick?: (vehicle: Vehicle) => void;
   selectedVehicleId?: string;
   token?: string;
-  mapStyle?: 'streets' | 'satellite';
+  mapStyle?: 'streets' | 'satellite' | 'dark';
   onMapReady?: (map: maplibregl.Map) => void;
   showTrails?: boolean;
   trails?: Map<string, TrailPoint[]>;
