@@ -13,6 +13,9 @@ import ClusteredMap from "@/components/map/ClusteredMap";
 import { NearbyVehiclesSearch } from "@/components/map/NearbyVehiclesSearch";
 import { StreetViewModal } from "@/components/map/StreetViewModal";
 import { VehicleInfoPanel } from "@/components/map/VehicleInfoPanel";
+import { MapContextMenu } from "@/components/map/MapContextMenu";
+import { MeasureDistanceTool } from "@/components/map/MeasureDistanceTool";
+import { useTheme } from "@/contexts/ThemeContext";
 import { 
   Navigation, 
   Fuel, 
@@ -97,7 +100,19 @@ const MapView = () => {
     originLng?: number;
   }>({ open: false, lat: 0, lng: 0, plate: '', type: 'streetview' });
   
-  const [mapStyle, setMapStyle] = useState<'streets' | 'satellite'>('streets');
+  const [mapStyle, setMapStyle] = useState<'streets' | 'satellite' | 'dark'>('streets');
+  const [measureFromPoint, setMeasureFromPoint] = useState<[number, number] | null>(null);
+  const { theme } = useTheme();
+
+  // Sync dark mode map theme with app theme
+  useEffect(() => {
+    if (mapStyle === 'satellite') return; // Don't override satellite
+    if (theme === 'dark' || theme === 'cyber') {
+      setMapStyle('dark');
+    } else {
+      setMapStyle('streets');
+    }
+  }, [theme]);
   const envToken = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
   const [mapInstance, setMapInstance] = useState<any>(null);
   
@@ -414,6 +429,11 @@ const MapView = () => {
             />
           )}
 
+          {/* Right-click context menu */}
+          <MapContextMenu
+            map={mapInstance}
+            onMeasureFrom={(pt) => setMeasureFromPoint(pt)}
+          />
           {/* Minimal Map Controls */}
           <div className="absolute top-4 left-4 z-10">
             <div className="flex flex-col gap-2">
@@ -440,6 +460,17 @@ const MapView = () => {
                 >
                   <Map className="w-4 h-4" aria-hidden="true" />
                   <span className="hidden sm:inline">Streets</span>
+                </Button>
+                <Button
+                  variant={mapStyle === 'dark' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="h-8 px-3 gap-2"
+                  onClick={() => setMapStyle('dark')}
+                  aria-label="Dark map view"
+                  aria-pressed={mapStyle === 'dark'}
+                >
+                  <Map className="w-4 h-4" aria-hidden="true" />
+                  <span className="hidden sm:inline">Dark</span>
                 </Button>
               </div>
 
@@ -480,6 +511,13 @@ const MapView = () => {
                 <span className="hidden sm:inline">Nearby</span>
               </Button>
 
+              {/* Measure Distance Tool */}
+              <MeasureDistanceTool
+                map={mapInstance}
+                mapLoaded={!!mapInstance}
+                initialPoint={measureFromPoint}
+                onClearInitialPoint={() => setMeasureFromPoint(null)}
+              />
               {/* Follow Mode Toggle - Only show when vehicle selected */}
               {selectedVehicleId && (
                 <Button
