@@ -15,10 +15,10 @@ export const LEMAT_DEFAULT_ZOOM = 12;
 export const getLematStyleUrl = (theme: LematTheme = 'light'): string =>
   `${LEMAT_API_BASE}/tiles/style?theme=${theme}`;
 
-export const getLematMapStyle = (style: LematMapStyle = 'streets'): string =>
-  style === 'satellite' ? getLematStyleUrl('satellite') : getLematStyleUrl('light');
+export const getLematMapStyle = (style: LematMapStyle = 'streets'): string | maplibregl.StyleSpecification =>
+  style === 'satellite' ? getLematStyleUrl('satellite') : getOsmFallbackStyle();
 
-export const getLematFallbackMapStyle = (): string => getLematStyleUrl('dark');
+export const getLematFallbackMapStyle = (): string | maplibregl.StyleSpecification => getOsmFallbackStyle();
 
 /**
  * OpenStreetMap raster tile style for use when the Lemat tile server is completely unreachable.
