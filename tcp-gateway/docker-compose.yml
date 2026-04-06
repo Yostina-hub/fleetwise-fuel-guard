@@ -13,6 +13,7 @@ services:
       # REQUIRED: PostgreSQL connection string (use Supabase pooler for best results)
       # Format: postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
       - DATABASE_URL=${DATABASE_URL}
+      - GATEWAY_SHARED_KEY=${GATEWAY_SHARED_KEY}
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - BATCH_INTERVAL_MS=${BATCH_INTERVAL_MS:-5000}
       - BATCH_SIZE=${BATCH_SIZE:-50}

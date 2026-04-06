@@ -44,6 +44,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
 
 # Set default environment variables
 ENV NODE_ENV=production
+ENV GATEWAY_SHARED_KEY=
 ENV LOG_LEVEL=info
 ENV GT06_PORT=5001
 ENV TK103_PORT=5013
