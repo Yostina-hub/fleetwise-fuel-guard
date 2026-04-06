@@ -7,7 +7,7 @@
 export const LEMAT_API_BASE = 'https://lemat.goffice.et/api/v1';
 
 export type LematTheme = 'light' | 'dark' | 'satellite' | 'terrain' | 'neon' | 'artistic';
-export type LematMapStyle = 'streets' | 'satellite';
+export type LematMapStyle = 'streets' | 'satellite' | 'dark';
 
 export const LEMAT_DEFAULT_CENTER: [number, number] = [38.7578, 9.0192];
 export const LEMAT_DEFAULT_ZOOM = 12;
@@ -15,8 +15,11 @@ export const LEMAT_DEFAULT_ZOOM = 12;
 export const getLematStyleUrl = (theme: LematTheme = 'light'): string =>
   `${LEMAT_API_BASE}/tiles/style?theme=${theme}`;
 
-export const getLematMapStyle = (style: LematMapStyle = 'streets'): string | maplibregl.StyleSpecification =>
-  style === 'satellite' ? getSatelliteRasterStyle() : getLematStyleUrl('light');
+export const getLematMapStyle = (style: LematMapStyle = 'streets'): string | maplibregl.StyleSpecification => {
+  if (style === 'satellite') return getSatelliteRasterStyle();
+  if (style === 'dark') return getLematStyleUrl('dark');
+  return getLematStyleUrl('light');
+};
 
 export const getLematFallbackMapStyle = (): string | maplibregl.StyleSpecification => getOsmFallbackStyle();
 
