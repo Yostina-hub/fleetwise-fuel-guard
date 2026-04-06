@@ -15,7 +15,7 @@ import { StreetViewModal } from "@/components/map/StreetViewModal";
 import { VehicleInfoPanel } from "@/components/map/VehicleInfoPanel";
 import { MapContextMenu } from "@/components/map/MapContextMenu";
 import { MeasureDistanceTool } from "@/components/map/MeasureDistanceTool";
-import { useTheme } from "@/contexts/ThemeContext";
+
 import { 
   Navigation, 
   Fuel, 
@@ -102,17 +102,10 @@ const MapView = () => {
   
   const [mapStyle, setMapStyle] = useState<'streets' | 'satellite' | 'dark'>('streets');
   const [measureFromPoint, setMeasureFromPoint] = useState<[number, number] | null>(null);
-  const { theme } = useTheme();
+  
 
-  // Sync dark mode map theme with app theme
-  useEffect(() => {
-    if (mapStyle === 'satellite') return; // Don't override satellite
-    if (theme === 'dark' || theme === 'cyber') {
-      setMapStyle('dark');
-    } else {
-      setMapStyle('streets');
-    }
-  }, [theme]);
+  // No automatic theme-to-mapStyle sync — user controls map style manually.
+  // Default is 'streets' (set in useState initializer above).
   const envToken = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
   const [mapInstance, setMapInstance] = useState<any>(null);
   
