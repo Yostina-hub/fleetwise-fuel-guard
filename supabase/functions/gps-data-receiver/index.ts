@@ -1588,6 +1588,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Validate gateway shared key for server-to-server requests
+  const gatewayAuthError = validateGatewayKey(req);
+  if (gatewayAuthError) return gatewayAuthError;
+
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
