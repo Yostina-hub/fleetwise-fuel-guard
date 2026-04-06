@@ -16,7 +16,7 @@ export const getLematStyleUrl = (theme: LematTheme = 'light'): string =>
   `${LEMAT_API_BASE}/tiles/style?theme=${theme}`;
 
 export const getLematMapStyle = (style: LematMapStyle = 'streets'): string | maplibregl.StyleSpecification =>
-  style === 'satellite' ? getSatelliteRasterStyle() : getOsmFallbackStyle();
+  style === 'satellite' ? getSatelliteRasterStyle() : getLematStyleUrl('light');
 
 export const getLematFallbackMapStyle = (): string | maplibregl.StyleSpecification => getOsmFallbackStyle();
 
