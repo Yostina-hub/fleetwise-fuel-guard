@@ -3,10 +3,25 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import { buildCorsHeaders, handleCorsPreflightRequest, secureJsonResponse } from "../_shared/cors.ts";
 import { checkRateLimit, rateLimitResponse, getClientId } from "../_shared/rate-limiter.ts";
 
+const UPSTREAM_TIMEOUT_MS = 8000;
+
+const createFallbackResponse = (lat: number, lng: number, reason: string) => ({
+  display_name: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+  name: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+  lat,
+  lng,
+  address: {},
+  fallback: true,
+  fallback_reason: reason,
+});
+
 const fetchWithHttp1Fallback = async (url: string, apiKey: string) => {
+  const headers = { "X-Api-Key": apiKey };
+
   try {
     return await fetch(url, {
-      headers: { "X-Api-Key": apiKey },
+      headers,
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     });
   } catch (primaryError) {
     console.warn("Primary fetch failed, retrying reverse-geocode over HTTP/1:", primaryError);
@@ -19,7 +34,8 @@ const fetchWithHttp1Fallback = async (url: string, apiKey: string) => {
     try {
       return await fetch(url, {
         client,
-        headers: { "X-Api-Key": apiKey },
+        headers,
+        signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
       });
     } finally {
       client.close();
@@ -82,17 +98,43 @@ serve(async (req) => {
       return secureJsonResponse({ error: "Invalid coordinates" }, req, 400);
     }
 
+    const fallbackResponse = createFallbackResponse(latNum, lonNum, "upstream_unavailable");
     const lematUrl = `https://lemat.goffice.et/api/v1/reverse-geocode?lat=${latNum.toFixed(6)}&lon=${lonNum.toFixed(6)}`;
-    const lematRes = await fetchWithHttp1Fallback(lematUrl, lematApiKey);
 
-    if (!lematRes.ok) {
-      const body = await lematRes.text();
-      console.error("Lemat reverse-geocode error:", lematRes.status, body);
-      return secureJsonResponse({ error: "Geocoding failed" }, req, lematRes.status);
+    try {
+      const lematRes = await fetchWithHttp1Fallback(lematUrl, lematApiKey);
+
+      if (!lematRes.ok) {
+        const body = await lematRes.text();
+        console.error("Lemat reverse-geocode error:", lematRes.status, body);
+        return secureJsonResponse(
+          {
+            ...fallbackResponse,
+            fallback_reason: `upstream_http_${lematRes.status}`,
+          },
+          req,
+        );
+      }
+
+      const data = await lematRes.json();
+      const resolvedLat = Number(data?.lat);
+      const resolvedLng = Number(data?.lng ?? data?.lon);
+
+      return secureJsonResponse(
+        {
+          ...fallbackResponse,
+          ...data,
+          lat: Number.isFinite(resolvedLat) ? resolvedLat : latNum,
+          lng: Number.isFinite(resolvedLng) ? resolvedLng : lonNum,
+          fallback: false,
+          fallback_reason: null,
+        },
+        req,
+      );
+    } catch (error) {
+      console.error("Lemat reverse-geocode upstream unavailable:", error);
+      return secureJsonResponse(fallbackResponse, req);
     }
-
-    const data = await lematRes.json();
-    return secureJsonResponse(data, req);
   } catch (error) {
     console.error("Error in lemat-reverse-geocode:", error);
     return secureJsonResponse({ error: "Internal server error" }, req, 500);
