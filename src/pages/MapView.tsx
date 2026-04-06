@@ -461,6 +461,17 @@ const MapView = () => {
                   <Map className="w-4 h-4" aria-hidden="true" />
                   <span className="hidden sm:inline">Streets</span>
                 </Button>
+                <Button
+                  variant={mapStyle === 'dark' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="h-8 px-3 gap-2"
+                  onClick={() => setMapStyle('dark')}
+                  aria-label="Dark map view"
+                  aria-pressed={mapStyle === 'dark'}
+                >
+                  <Map className="w-4 h-4" aria-hidden="true" />
+                  <span className="hidden sm:inline">Dark</span>
+                </Button>
               </div>
 
 
