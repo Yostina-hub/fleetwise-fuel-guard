@@ -102,7 +102,7 @@ const MapView = () => {
   
   const [mapStyle, setMapStyle] = useState<'streets' | 'satellite' | 'dark'>('streets');
   const [measureFromPoint, setMeasureFromPoint] = useState<[number, number] | null>(null);
-  const { theme } = useTheme();
+  
 
   // No automatic theme-to-mapStyle sync — user controls map style manually.
   // Default is 'streets' (set in useState initializer above).
