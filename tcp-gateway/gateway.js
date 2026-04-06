@@ -30,6 +30,7 @@ const { Pool } = require('pg');
 // Configuration from environment
 const config = {
   databaseUrl: process.env.DATABASE_URL || '',
+  gatewaySharedKey: process.env.GATEWAY_SHARED_KEY || '',
   logLevel: process.env.LOG_LEVEL || 'info',
   batchIntervalMs: parseInt(process.env.BATCH_INTERVAL_MS) || 5000,
   batchSize: parseInt(process.env.BATCH_SIZE) || 50,

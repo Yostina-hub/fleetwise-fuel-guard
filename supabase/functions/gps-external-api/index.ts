@@ -1,12 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { buildCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { validateGatewayKey } from "../_shared/gateway-auth.ts";
 
 // CORS headers for external API — allows device-token header on top of shared CORS
 // Origin validation is handled by the shared cors module
 const extendedCorsHeaders = (req: Request) => ({
   ...buildCorsHeaders(req),
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-api-key, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-api-key, x-gateway-key, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 });
 
 /**
@@ -1243,6 +1244,10 @@ serve(async (req) => {
       { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
+
+  // Validate gateway shared key for server-to-server requests
+  const gatewayAuthError = validateGatewayKey(req);
+  if (gatewayAuthError) return gatewayAuthError;
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
