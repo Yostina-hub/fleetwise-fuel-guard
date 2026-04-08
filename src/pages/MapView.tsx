@@ -15,6 +15,10 @@ import { StreetViewModal } from "@/components/map/StreetViewModal";
 import { VehicleInfoPanel } from "@/components/map/VehicleInfoPanel";
 import { MapContextMenu } from "@/components/map/MapContextMenu";
 import { MeasureDistanceTool } from "@/components/map/MeasureDistanceTool";
+import { HeatmapOverlay } from "@/components/map/HeatmapOverlay";
+import { TimeWarpPlayback } from "@/components/map/TimeWarpPlayback";
+import { ConvoyMode } from "@/components/map/ConvoyMode";
+import { PredictiveETA } from "@/components/map/PredictiveETA";
 
 import { 
   Navigation, 
@@ -32,7 +36,11 @@ import {
   Clock,
   Route,
   Crosshair,
-  Focus
+  Focus,
+  Flame,
+  Users,
+  Zap,
+  History
 } from "lucide-react";
 import { GpsJammingIndicator } from "@/components/map/GpsJammingIndicator";
 import { useVehicles } from "@/hooks/useVehicles";
