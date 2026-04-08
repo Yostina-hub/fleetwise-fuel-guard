@@ -598,7 +598,6 @@ const MapView = () => {
                 />
               </div>
             )}
-          </div>
 
           {/* Advanced Feature Overlays */}
           <HeatmapOverlay map={mapInstance} vehicles={filteredMapVehicles} visible={showHeatmap} onClose={() => setShowHeatmap(false)} />
