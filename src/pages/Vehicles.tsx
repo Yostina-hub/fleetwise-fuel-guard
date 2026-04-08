@@ -692,6 +692,10 @@ const Vehicles = () => {
                         </TableHead>
                         <TableHead className="text-foreground font-semibold">Last Seen</TableHead>
                         <TableHead className="text-foreground font-semibold w-[100px]">24h Activity</TableHead>
+                        <TableHead className="text-foreground font-semibold w-10">
+                          <ShieldAlert className="w-3.5 h-3.5 mx-auto" />
+                        </TableHead>
+                        <TableHead className="text-foreground font-semibold w-[70px]">Fuel Trend</TableHead>
                         <TableHead className="text-foreground font-semibold w-20">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
