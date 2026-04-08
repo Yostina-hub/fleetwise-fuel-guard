@@ -1052,7 +1052,7 @@ const Vehicles = () => {
                   itemsPerPage={ITEMS_PER_PAGE}
                   onPageChange={setCurrentPage}
                 />
-              </ScrollArea>
+              </div>
             )}
           </div>
           
