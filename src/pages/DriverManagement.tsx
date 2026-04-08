@@ -55,6 +55,9 @@ import {
   Calendar,
   BarChart3,
   Zap,
+  Gift,
+  Briefcase,
+  ShieldAlert,
 } from "lucide-react";
 
 const DriverManagement = () => {
@@ -68,7 +71,7 @@ const DriverManagement = () => {
     : "";
 
   // Tabs that require a driver to be selected
-  const driverRequiredTabs = ["achievements", "training", "fatigue", "insights", "onboarding", "documents", "vehicle-history", "cost-allocation", "reviews"];
+  const driverRequiredTabs = ["achievements", "training", "fatigue", "insights", "onboarding", "documents", "vehicle-history", "cost-allocation", "reviews", "contracts"];
   const needsDriver = driverRequiredTabs.includes(activeTab);
 
   return (
@@ -162,6 +165,13 @@ const DriverManagement = () => {
               <TabsTrigger value="auto-coaching" className="gap-1.5 text-xs px-3 py-1.5">
                 <Zap className="w-3.5 h-3.5" /> Coaching
               </TabsTrigger>
+              {/* P3 Fleet-wide tabs */}
+              <TabsTrigger value="rewards" className="gap-1.5 text-xs px-3 py-1.5">
+                <Gift className="w-3.5 h-3.5" /> Rewards
+              </TabsTrigger>
+              <TabsTrigger value="risk-scoring" className="gap-1.5 text-xs px-3 py-1.5">
+                <ShieldAlert className="w-3.5 h-3.5" /> Risk
+              </TabsTrigger>
               {/* Driver-specific tabs */}
               <TabsTrigger value="onboarding" className="gap-1.5 text-xs px-3 py-1.5">
                 <ClipboardCheck className="w-3.5 h-3.5" /> Onboarding
@@ -177,6 +187,9 @@ const DriverManagement = () => {
               </TabsTrigger>
               <TabsTrigger value="reviews" className="gap-1.5 text-xs px-3 py-1.5">
                 <Star className="w-3.5 h-3.5" /> Reviews
+              </TabsTrigger>
+              <TabsTrigger value="contracts" className="gap-1.5 text-xs px-3 py-1.5">
+                <Briefcase className="w-3.5 h-3.5" /> Contracts
               </TabsTrigger>
               <TabsTrigger value="achievements" className="gap-1.5 text-xs px-3 py-1.5">
                 <Award className="w-3.5 h-3.5" /> Achievements
