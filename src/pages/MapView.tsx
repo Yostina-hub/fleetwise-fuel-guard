@@ -592,6 +592,7 @@ const MapView = () => {
                   { key: 'events', icon: Zap, label: 'Events', active: showDriverEvents, toggle: () => setShowDriverEvents(!showDriverEvents), color: 'text-purple-500' },
                   { key: 'dispatch', icon: Truck, label: 'Dispatch', active: showDispatch, toggle: () => setShowDispatch(!showDispatch), color: 'text-sky-500' },
                   { key: 'pulse', icon: Activity, label: 'Pulse', active: showFleetPulse, toggle: () => setShowFleetPulse(!showFleetPulse), color: 'text-emerald-500' },
+                  { key: 'command', icon: Eye, label: 'Command Center', active: showCommandCenter, toggle: () => setShowCommandCenter(!showCommandCenter), color: 'text-rose-500' },
                 ].map(tool => (
                   <button
                     key={tool.key}
