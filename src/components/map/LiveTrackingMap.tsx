@@ -260,6 +260,8 @@ useEffect(() => {
       const targetStyle = getLematMapStyle(mapStyle);
       setMapLoaded(false);
       setTokenError(null);
+      // Clear trail source tracking so they get re-added after style loads
+      trailSourcesAdded.current.clear();
       map.current.setStyle(targetStyle);
     };
 
