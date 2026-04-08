@@ -464,6 +464,7 @@ const Vehicles = () => {
           <div className="flex-1 overflow-hidden">
             <FleetVitalsDashboard vehicles={vehicles} />
           </div>
+          <FleetRefreshTimer intervalSeconds={30} />
         </div>
 
         {/* Header with Search and Filters */}
