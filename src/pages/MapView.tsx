@@ -146,6 +146,7 @@ const MapView = () => {
   const [showToolStrip, setShowToolStrip] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showCommandCenter, setShowCommandCenter] = useState(false);
+  const [showAnomalies, setShowAnomalies] = useState(false);
   const mapAreaRef = useRef<HTMLDivElement>(null);
 
   const toggleFullscreen = useCallback(() => {
@@ -594,6 +595,7 @@ const MapView = () => {
                   { key: 'dispatch', icon: Truck, label: 'Dispatch', active: showDispatch, toggle: () => setShowDispatch(!showDispatch), color: 'text-sky-500' },
                   { key: 'pulse', icon: Activity, label: 'Pulse', active: showFleetPulse, toggle: () => setShowFleetPulse(!showFleetPulse), color: 'text-emerald-500' },
                   { key: 'command', icon: Eye, label: 'Command Center', active: showCommandCenter, toggle: () => setShowCommandCenter(!showCommandCenter), color: 'text-rose-500' },
+                  { key: 'anomalies', icon: ShieldAlert, label: 'Anomalies', active: showAnomalies, toggle: () => setShowAnomalies(!showAnomalies), color: 'text-red-600' },
                 ].map(tool => (
                   <button
                     key={tool.key}
