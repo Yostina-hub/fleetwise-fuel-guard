@@ -62,10 +62,16 @@ const navItems = [
     label: "Fleet Management", 
     subItems: [
       { label: "Vehicle List", path: "/fleet" },
+      { label: "Device Management", path: "/devices" },
+    ]
+  },
+  { 
+    icon: Users, 
+    label: "Driver Management", 
+    subItems: [
+      { label: "Driver Hub", path: "/driver-management" },
       { label: "Drivers", path: "/drivers" },
       { label: "Driver Scoring", path: "/driver-scoring" },
-      { label: "Driver Hub", path: "/driver-management" },
-      { label: "Device Management", path: "/devices" },
     ]
   },
   { icon: Fuel, label: "Fuel Monitoring", path: "/fuel" },
