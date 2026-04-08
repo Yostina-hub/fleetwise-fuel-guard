@@ -447,9 +447,18 @@ const Vehicles = () => {
   return (
     <Layout>
       <div className="h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
-        {/* Fleet Vitals Dashboard */}
-        <div className="px-4 pt-3 pb-1 border-b bg-background/80 backdrop-blur">
-          <FleetVitalsDashboard vehicles={vehicles} />
+        {/* Fleet Vitals Dashboard + Health Ring */}
+        <div className="px-4 pt-3 pb-1 border-b bg-background/80 backdrop-blur flex items-center gap-4">
+          <FleetHealthRing
+            moving={statusCounts.running}
+            idle={statusCounts.idle}
+            stopped={vehicles.filter(v => v.status === 'stopped').length}
+            offline={vehicles.filter(v => v.status === 'offline').length}
+            total={vehicles.length}
+          />
+          <div className="flex-1 overflow-hidden">
+            <FleetVitalsDashboard vehicles={vehicles} />
+          </div>
         </div>
 
         {/* Header with Search and Filters */}
