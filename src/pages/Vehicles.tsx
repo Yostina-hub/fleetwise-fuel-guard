@@ -75,6 +75,8 @@ import {
   Route,
   Radio,
   LocateFixed,
+  ShieldAlert,
+  TrendingDown,
 } from "lucide-react";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
