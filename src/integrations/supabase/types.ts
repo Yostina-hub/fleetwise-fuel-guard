@@ -1987,6 +1987,102 @@ export type Database = {
           },
         ]
       }
+      driver_contracts: {
+        Row: {
+          benefits: Json | null
+          contract_number: string | null
+          created_at: string
+          department: string | null
+          document_url: string | null
+          driver_id: string
+          employment_type: string | null
+          end_date: string | null
+          id: string
+          organization_id: string
+          pay_currency: string | null
+          pay_frequency: string | null
+          pay_rate: number | null
+          position_title: string | null
+          probation_end_date: string | null
+          renewal_alert_days: number | null
+          start_date: string
+          status: string | null
+          supervisor_name: string | null
+          termination_date: string | null
+          termination_reason: string | null
+          terms_summary: string | null
+          updated_at: string
+          work_location: string | null
+        }
+        Insert: {
+          benefits?: Json | null
+          contract_number?: string | null
+          created_at?: string
+          department?: string | null
+          document_url?: string | null
+          driver_id: string
+          employment_type?: string | null
+          end_date?: string | null
+          id?: string
+          organization_id: string
+          pay_currency?: string | null
+          pay_frequency?: string | null
+          pay_rate?: number | null
+          position_title?: string | null
+          probation_end_date?: string | null
+          renewal_alert_days?: number | null
+          start_date: string
+          status?: string | null
+          supervisor_name?: string | null
+          termination_date?: string | null
+          termination_reason?: string | null
+          terms_summary?: string | null
+          updated_at?: string
+          work_location?: string | null
+        }
+        Update: {
+          benefits?: Json | null
+          contract_number?: string | null
+          created_at?: string
+          department?: string | null
+          document_url?: string | null
+          driver_id?: string
+          employment_type?: string | null
+          end_date?: string | null
+          id?: string
+          organization_id?: string
+          pay_currency?: string | null
+          pay_frequency?: string | null
+          pay_rate?: number | null
+          position_title?: string | null
+          probation_end_date?: string | null
+          renewal_alert_days?: number | null
+          start_date?: string
+          status?: string | null
+          supervisor_name?: string | null
+          termination_date?: string | null
+          termination_reason?: string | null
+          terms_summary?: string | null
+          updated_at?: string
+          work_location?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_contracts_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_contracts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_cost_allocations: {
         Row: {
           cost_per_km: number | null
@@ -3528,6 +3624,90 @@ export type Database = {
           },
           {
             foreignKeyName: "driver_rewards_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_risk_scores: {
+        Row: {
+          accident_probability: number | null
+          behavior_component: number | null
+          compliance_component: number | null
+          composite_score: number
+          created_at: string
+          driver_id: string
+          fatigue_component: number | null
+          id: string
+          incident_component: number | null
+          mvr_component: number | null
+          on_watchlist: boolean | null
+          organization_id: string
+          previous_score: number | null
+          recommended_interventions: Json | null
+          risk_factors: Json | null
+          risk_tier: string | null
+          score_date: string
+          trend: string | null
+          updated_at: string
+          watchlist_reason: string | null
+        }
+        Insert: {
+          accident_probability?: number | null
+          behavior_component?: number | null
+          compliance_component?: number | null
+          composite_score: number
+          created_at?: string
+          driver_id: string
+          fatigue_component?: number | null
+          id?: string
+          incident_component?: number | null
+          mvr_component?: number | null
+          on_watchlist?: boolean | null
+          organization_id: string
+          previous_score?: number | null
+          recommended_interventions?: Json | null
+          risk_factors?: Json | null
+          risk_tier?: string | null
+          score_date?: string
+          trend?: string | null
+          updated_at?: string
+          watchlist_reason?: string | null
+        }
+        Update: {
+          accident_probability?: number | null
+          behavior_component?: number | null
+          compliance_component?: number | null
+          composite_score?: number
+          created_at?: string
+          driver_id?: string
+          fatigue_component?: number | null
+          id?: string
+          incident_component?: number | null
+          mvr_component?: number | null
+          on_watchlist?: boolean | null
+          organization_id?: string
+          previous_score?: number | null
+          recommended_interventions?: Json | null
+          risk_factors?: Json | null
+          risk_tier?: string | null
+          score_date?: string
+          trend?: string | null
+          updated_at?: string
+          watchlist_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_risk_scores_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_risk_scores_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
