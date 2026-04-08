@@ -167,8 +167,8 @@ const Vehicles = () => {
     return dbVehicles.map((v) => {
       const vehicleTelemetry = telemetry[v.id];
       const online = isVehicleOnline(v.id);
+      const calculatedMetrics = getMetrics(v.id);
       
-      // Determine status
       let status: 'moving' | 'idle' | 'stopped' | 'offline' = 'offline';
       let speed = 0;
       let lat: number | undefined;
@@ -192,6 +192,9 @@ const Vehicles = () => {
         ? `${v.assigned_driver.first_name} ${v.assigned_driver.last_name}`
         : null;
       
+      const lastComm = vehicleTelemetry?.last_communication_at;
+      const lastSeen = lastComm ? formatDistanceToNow(new Date(lastComm), { addSuffix: true }) : null;
+      
       return {
         id: v.id,
         plate: v.plate_number,
@@ -208,12 +211,15 @@ const Vehicles = () => {
         fuel: vehicleTelemetry?.fuel_level_percent ?? 0,
         heading: vehicleTelemetry?.heading ?? 0,
         lastUpdate: vehicleTelemetry?.last_communication_at,
+        lastSeen,
         deviceConnected: online,
-        ignitionOn: vehicleTelemetry?.ignition_on || vehicleTelemetry?.engine_on,
+        ignitionOn: vehicleTelemetry?.ignition_on || vehicleTelemetry?.engine_on || false,
         isOverspeed: speed > 80,
+        todayDistance: calculatedMetrics.todayDistance || 0,
+        odometer: vehicleTelemetry?.odometer_km ?? 0,
       };
     });
-  }, [dbVehicles, telemetry, isVehicleOnline]);
+  }, [dbVehicles, telemetry, isVehicleOnline, getMetrics]);
   
   // Compute status counts
   const statusCounts = useMemo(() => {
@@ -224,7 +230,7 @@ const Vehicles = () => {
       overspeed: vehicles.filter(v => v.isOverspeed).length,
       idle: vehicles.filter(v => v.status === 'idle').length,
       unreachable: vehicles.filter(v => !v.deviceConnected && v.status === 'offline').length,
-      new: 0, // Vehicles added recently
+      new: 0,
     };
     return counts;
   }, [vehicles]);
