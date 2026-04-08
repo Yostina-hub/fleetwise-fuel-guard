@@ -141,7 +141,7 @@ export function CommandCenterHUD({ vehicles, visible, onClose }: CommandCenterHU
 
     geofenceEvents?.slice(0, 3).forEach(e => {
       const action = e.event_type === 'enter' ? 'entered' : 'exited';
-      msgs.push(`📍 Vehicle ${action} ${e.geofence_name || 'zone'}`);
+      msgs.push(`📍 Vehicle ${action} geofence zone`);
     });
 
     if (kpis.jamming > 0) msgs.unshift(`🔴 GPS JAMMING DETECTED — ${kpis.jamming} vehicle(s) affected`);
