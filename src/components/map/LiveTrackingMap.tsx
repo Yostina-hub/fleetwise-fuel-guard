@@ -98,6 +98,13 @@ const vehiclesByIdRef = useRef<Map<string, Vehicle>>(new Map());
 const vehicleAddressesRef = useRef<Map<string, string>>(new Map());
 const vehicleRoadInfoRef = useRef<Map<string, { road: string; distance: number; direction: string }>>(new Map());
 
+// HTML-escape helper to prevent XSS injection in popup templates
+const escapeHtml = useCallback((str: string): string => {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}, []);
+
 useEffect(() => {
   vehiclesByIdRef.current = new Map(vehicles.map(v => [v.id, v]));
 }, [vehicles]);
