@@ -175,6 +175,10 @@ const Vehicles = () => {
         }
       }
       
+      const driverName = v.assigned_driver
+        ? `${v.assigned_driver.first_name} ${v.assigned_driver.last_name}`
+        : null;
+      
       return {
         id: v.id,
         plate: v.plate_number,
@@ -183,6 +187,7 @@ const Vehicles = () => {
         year: v.year,
         vehicleType: v.vehicle_type || "Vehicle",
         branch: v.depot?.name || "Head Office",
+        driverName,
         status,
         speed,
         lat,
@@ -192,7 +197,7 @@ const Vehicles = () => {
         lastUpdate: vehicleTelemetry?.last_communication_at,
         deviceConnected: online,
         ignitionOn: vehicleTelemetry?.ignition_on || vehicleTelemetry?.engine_on,
-        isOverspeed: speed > 80, // Configurable threshold
+        isOverspeed: speed > 80,
       };
     });
   }, [dbVehicles, telemetry, isVehicleOnline]);
