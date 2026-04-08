@@ -294,8 +294,25 @@ const Vehicles = () => {
       }
     }
     
+    // Sort
+    filtered = [...filtered].sort((a, b) => {
+      let aVal: any, bVal: any;
+      switch (sortColumn) {
+        case 'plate': aVal = a.plate; bVal = b.plate; break;
+        case 'speed': aVal = a.speed; bVal = b.speed; break;
+        case 'fuel': aVal = a.fuel; bVal = b.fuel; break;
+        case 'status': aVal = a.status; bVal = b.status; break;
+        case 'driver': aVal = a.driverName || ''; bVal = b.driverName || ''; break;
+        case 'distance': aVal = a.todayDistance; bVal = b.todayDistance; break;
+        default: aVal = a.plate; bVal = b.plate;
+      }
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+    
     return filtered;
-  }, [vehicles, debouncedSearch, statusFilter]);
+  }, [vehicles, debouncedSearch, statusFilter, sortColumn, sortDirection]);
   
   // Pagination
   const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(
