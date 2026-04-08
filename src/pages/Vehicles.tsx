@@ -153,6 +153,8 @@ const Vehicles = () => {
   // Get all vehicle IDs for calculated metrics
   const allVehicleIds = useMemo(() => dbVehicles.map(v => v.id), [dbVehicles]);
   const { getMetrics } = useVehicleCalculatedMetrics(allVehicleIds);
+  const activityMap = useVehicle24hActivity(allVehicleIds);
+  
   
   const [searchInput, setSearchInput] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
