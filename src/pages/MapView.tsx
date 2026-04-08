@@ -441,7 +441,7 @@ const MapView = () => {
     <Layout>
       <div className="flex h-[calc(100vh-1px)] overflow-hidden">
         {/* Map Area */}
-        <div className="flex-1 relative">
+        <div ref={mapAreaRef} className="flex-1 relative bg-background">
           {useClusteredMap ? (
             <ClusteredMap
               vehicles={filteredMapVehicles.map(v => ({
