@@ -594,11 +594,26 @@ const Vehicles = () => {
                   <Table>
                     <TableHeader className="sticky top-0 z-10">
                       <TableRow className="bg-primary/10 hover:bg-primary/10">
+                        <TableHead className="w-10">
+                          <Checkbox
+                            checked={selectedIds.size === paginatedVehicles.length && paginatedVehicles.length > 0}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedIds(new Set(filteredVehicles.map(v => v.id)));
+                              } else {
+                                setSelectedIds(new Set());
+                              }
+                            }}
+                          />
+                        </TableHead>
                         <TableHead className="text-foreground font-semibold w-12">SN</TableHead>
                         <TableHead className="text-foreground font-semibold w-20">State</TableHead>
                         <TableHead className="text-foreground font-semibold">Branch</TableHead>
                         <TableHead className="text-foreground font-semibold">Vehicle</TableHead>
+                        <TableHead className="text-foreground font-semibold">Driver</TableHead>
                         <TableHead className="text-foreground font-semibold">Status</TableHead>
+                        <TableHead className="text-foreground font-semibold w-24">Fuel</TableHead>
+                        <TableHead className="text-foreground font-semibold">Speed</TableHead>
                         <TableHead className="text-foreground font-semibold">Address</TableHead>
                         <TableHead className="text-foreground font-semibold w-10"></TableHead>
                       </TableRow>
@@ -607,14 +622,14 @@ const Vehicles = () => {
                       {loading ? (
                         Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
                           <TableRow key={i}>
-                            <TableCell colSpan={7}>
+                            <TableCell colSpan={11}>
                               <Skeleton className="h-12 w-full" />
                             </TableCell>
                           </TableRow>
                         ))
                       ) : paginatedVehicles.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                          <TableCell colSpan={11} className="text-center py-12 text-muted-foreground">
                             {filteredVehicles.length === 0 && searchInput 
                               ? `No vehicles match "${searchInput}"`
                               : "No vehicles found"
@@ -623,21 +638,29 @@ const Vehicles = () => {
                         </TableRow>
                       ) : (
                         paginatedVehicles.map((vehicle, index) => (
-                          <TableRow
+                          <motion.tr
                             key={vehicle.id}
-                            className={cn(
-                              "cursor-pointer transition-colors",
-                              selectedVehicleId === vehicle.id 
-                                ? "bg-primary/10" 
-                                : index % 2 === 0 
-                                  ? "bg-background" 
-                                  : "bg-muted/30",
-                              "hover:bg-primary/5"
-                            )}
+                            initial={false}
+                            animate={{ 
+                              backgroundColor: selectedVehicleId === vehicle.id 
+                                ? "hsl(var(--primary) / 0.1)" 
+                                : selectedIds.has(vehicle.id)
+                                  ? "hsl(var(--primary) / 0.05)"
+                                  : index % 2 === 0 
+                                    ? "transparent" 
+                                    : "hsl(var(--muted) / 0.3)"
+                            }}
+                            className="cursor-pointer hover:bg-primary/5 border-b transition-colors"
                             onClick={() => handleVehicleRowClick(vehicle)}
                             onDoubleClick={() => handleVehicleClick(vehicle)}
                           >
-                            <TableCell className="font-medium">
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <Checkbox
+                                checked={selectedIds.has(vehicle.id)}
+                                onCheckedChange={() => toggleSelection(vehicle.id)}
+                              />
+                            </TableCell>
+                            <TableCell className="font-medium text-xs">
                               {startIndex + index + 1}
                             </TableCell>
                             <TableCell>
@@ -650,7 +673,6 @@ const Vehicles = () => {
                               <span className="text-xs text-muted-foreground">{vehicle.vehicleType}</span>
                             </TableCell>
                             <TableCell>
-                              {/* Hover card on plate number */}
                               <HoverCard openDelay={300} closeDelay={100}>
                                 <HoverCardTrigger asChild>
                                   <span className="font-mono font-medium cursor-pointer hover:text-primary hover:underline">
@@ -667,22 +689,76 @@ const Vehicles = () => {
                                 </HoverCardContent>
                               </HoverCard>
                             </TableCell>
+                            {/* Driver Column */}
                             <TableCell>
-                              <Badge 
-                                variant="outline" 
-                                className={cn(
-                                  "text-xs capitalize",
-                                  vehicle.status === 'moving' && "border-success text-success bg-success/10",
-                                  vehicle.status === 'idle' && "border-warning text-warning bg-warning/10",
-                                  vehicle.status === 'stopped' && "border-destructive text-destructive bg-destructive/10",
-                                  vehicle.status === 'offline' && "border-muted text-muted-foreground"
-                                )}
-                              >
-                                {vehicle.status}
-                              </Badge>
+                              {vehicle.driverName ? (
+                                <div className="flex items-center gap-1.5">
+                                  <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                    <User className="w-3 h-3 text-primary" />
+                                  </div>
+                                  <span className="text-xs font-medium truncate max-w-[100px]">{vehicle.driverName}</span>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-muted-foreground italic">Unassigned</span>
+                              )}
+                            </TableCell>
+                            {/* Status with animated indicator */}
+                            <TableCell>
+                              <div className="flex items-center gap-1.5">
+                                <motion.div
+                                  animate={vehicle.status === 'moving' ? { scale: [1, 1.2, 1] } : {}}
+                                  transition={{ duration: 2, repeat: Infinity }}
+                                  className={cn(
+                                    "w-2 h-2 rounded-full shrink-0",
+                                    vehicle.status === 'moving' && "bg-green-500",
+                                    vehicle.status === 'idle' && "bg-yellow-500",
+                                    vehicle.status === 'stopped' && "bg-red-500",
+                                    vehicle.status === 'offline' && "bg-gray-400"
+                                  )}
+                                />
+                                <Badge 
+                                  variant="outline" 
+                                  className={cn(
+                                    "text-[10px] capitalize px-1.5 py-0",
+                                    vehicle.status === 'moving' && "border-success text-success bg-success/10",
+                                    vehicle.status === 'idle' && "border-warning text-warning bg-warning/10",
+                                    vehicle.status === 'stopped' && "border-destructive text-destructive bg-destructive/10",
+                                    vehicle.status === 'offline' && "border-muted text-muted-foreground"
+                                  )}
+                                >
+                                  {vehicle.status}
+                                </Badge>
+                              </div>
+                            </TableCell>
+                            {/* Fuel Gauge */}
+                            <TableCell>
+                              <div className="flex items-center gap-1.5 min-w-[80px]">
+                                <Fuel className={cn(
+                                  "w-3 h-3 shrink-0",
+                                  vehicle.fuel > 50 ? "text-green-500" : vehicle.fuel > 20 ? "text-yellow-500" : "text-red-500"
+                                )} />
+                                <div className="flex-1">
+                                  <Progress 
+                                    value={vehicle.fuel} 
+                                    className="h-1.5"
+                                  />
+                                </div>
+                                <span className="text-[10px] font-mono font-medium w-8 text-right">
+                                  {vehicle.fuel}%
+                                </span>
+                              </div>
+                            </TableCell>
+                            {/* Speed */}
+                            <TableCell>
+                              <span className={cn(
+                                "text-xs font-mono font-medium",
+                                vehicle.isOverspeed && "text-destructive font-bold"
+                              )}>
+                                {vehicle.speed} <span className="text-muted-foreground text-[10px]">km/h</span>
+                              </span>
                             </TableCell>
                             <TableCell className="text-sm max-w-[200px]">
-                              <p className="truncate text-muted-foreground">
+                              <p className="truncate text-muted-foreground text-xs">
                                 {vehicle.lat && vehicle.lng 
                                   ? `${vehicle.lat.toFixed(4)}, ${vehicle.lng.toFixed(4)}`
                                   : "No location"}
@@ -691,7 +767,7 @@ const Vehicles = () => {
                             <TableCell>
                               <div className="flex items-center gap-1">
                                 {vehicle.isOverspeed && (
-                                  <AlertTriangle className="w-4 h-4 text-destructive" />
+                                  <AlertTriangle className="w-4 h-4 text-destructive animate-pulse" />
                                 )}
                                 <Button
                                   variant="ghost"
@@ -706,7 +782,7 @@ const Vehicles = () => {
                                 </Button>
                               </div>
                             </TableCell>
-                          </TableRow>
+                          </motion.tr>
                         ))
                       )}
                     </TableBody>
