@@ -107,65 +107,51 @@ const DriverManagement = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <div className="overflow-x-auto -mx-2 px-2">
-            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-7 lg:grid-cols-14 gap-1">
+          <div className="overflow-x-auto -mx-2 px-2 pb-2">
+            <TabsList className="inline-flex w-max gap-1 h-auto flex-wrap sm:flex-nowrap p-1">
               {/* Fleet-wide tabs */}
-              <TabsTrigger value="availability" className="gap-1.5 text-xs">
-                <Radio className="w-3.5 h-3.5" />
-                <span className="hidden lg:inline">Availability</span>
+              <TabsTrigger value="availability" className="gap-1.5 text-xs px-3 py-1.5">
+                <Radio className="w-3.5 h-3.5" /> Availability
               </TabsTrigger>
-              <TabsTrigger value="leaderboard" className="gap-1.5 text-xs">
-                <Trophy className="w-3.5 h-3.5" />
-                <span className="hidden lg:inline">Leaderboard</span>
+              <TabsTrigger value="leaderboard" className="gap-1.5 text-xs px-3 py-1.5">
+                <Trophy className="w-3.5 h-3.5" /> Leaderboard
               </TabsTrigger>
-              <TabsTrigger value="licenses" className="gap-1.5 text-xs">
-                <CreditCard className="w-3.5 h-3.5" />
-                <span className="hidden lg:inline">Licenses</span>
+              <TabsTrigger value="licenses" className="gap-1.5 text-xs px-3 py-1.5">
+                <CreditCard className="w-3.5 h-3.5" /> Licenses
               </TabsTrigger>
-              <TabsTrigger value="hierarchy" className="gap-1.5 text-xs">
-                <FolderTree className="w-3.5 h-3.5" />
-                <span className="hidden lg:inline">Groups</span>
+              <TabsTrigger value="hierarchy" className="gap-1.5 text-xs px-3 py-1.5">
+                <FolderTree className="w-3.5 h-3.5" /> Groups
               </TabsTrigger>
-              <TabsTrigger value="incidents" className="gap-1.5 text-xs">
-                <AlertTriangle className="w-3.5 h-3.5" />
-                <span className="hidden lg:inline">Incidents</span>
+              <TabsTrigger value="incidents" className="gap-1.5 text-xs px-3 py-1.5">
+                <AlertTriangle className="w-3.5 h-3.5" /> Incidents
               </TabsTrigger>
-              <TabsTrigger value="dvir" className="gap-1.5 text-xs">
-                <ClipboardList className="w-3.5 h-3.5" />
-                <span className="hidden lg:inline">DVIR</span>
+              <TabsTrigger value="dvir" className="gap-1.5 text-xs px-3 py-1.5">
+                <ClipboardList className="w-3.5 h-3.5" /> DVIR
               </TabsTrigger>
-              <TabsTrigger value="communications" className="gap-1.5 text-xs">
-                <MessageSquare className="w-3.5 h-3.5" />
-                <span className="hidden lg:inline">Messages</span>
+              <TabsTrigger value="communications" className="gap-1.5 text-xs px-3 py-1.5">
+                <MessageSquare className="w-3.5 h-3.5" /> Messages
               </TabsTrigger>
               {/* Driver-specific tabs */}
-              <TabsTrigger value="onboarding" className="gap-1.5 text-xs">
-                <ClipboardCheck className="w-3.5 h-3.5" />
-                <span className="hidden lg:inline">Onboarding</span>
+              <TabsTrigger value="onboarding" className="gap-1.5 text-xs px-3 py-1.5">
+                <ClipboardCheck className="w-3.5 h-3.5" /> Onboarding
               </TabsTrigger>
-              <TabsTrigger value="documents" className="gap-1.5 text-xs">
-                <FolderOpen className="w-3.5 h-3.5" />
-                <span className="hidden lg:inline">Documents</span>
+              <TabsTrigger value="documents" className="gap-1.5 text-xs px-3 py-1.5">
+                <FolderOpen className="w-3.5 h-3.5" /> Documents
               </TabsTrigger>
-              <TabsTrigger value="vehicle-history" className="gap-1.5 text-xs">
-                <Car className="w-3.5 h-3.5" />
-                <span className="hidden lg:inline">Vehicles</span>
+              <TabsTrigger value="vehicle-history" className="gap-1.5 text-xs px-3 py-1.5">
+                <Car className="w-3.5 h-3.5" /> Vehicles
               </TabsTrigger>
-              <TabsTrigger value="achievements" className="gap-1.5 text-xs">
-                <Award className="w-3.5 h-3.5" />
-                <span className="hidden lg:inline">Achievements</span>
+              <TabsTrigger value="achievements" className="gap-1.5 text-xs px-3 py-1.5">
+                <Award className="w-3.5 h-3.5" /> Achievements
               </TabsTrigger>
-              <TabsTrigger value="training" className="gap-1.5 text-xs">
-                <BookOpen className="w-3.5 h-3.5" />
-                <span className="hidden lg:inline">Training</span>
+              <TabsTrigger value="training" className="gap-1.5 text-xs px-3 py-1.5">
+                <BookOpen className="w-3.5 h-3.5" /> Training
               </TabsTrigger>
-              <TabsTrigger value="fatigue" className="gap-1.5 text-xs">
-                <Clock className="w-3.5 h-3.5" />
-                <span className="hidden lg:inline">Fatigue</span>
+              <TabsTrigger value="fatigue" className="gap-1.5 text-xs px-3 py-1.5">
+                <Clock className="w-3.5 h-3.5" /> Fatigue
               </TabsTrigger>
-              <TabsTrigger value="insights" className="gap-1.5 text-xs">
-                <Brain className="w-3.5 h-3.5" />
-                <span className="hidden lg:inline">AI Insights</span>
+              <TabsTrigger value="insights" className="gap-1.5 text-xs px-3 py-1.5">
+                <Brain className="w-3.5 h-3.5" /> AI Insights
               </TabsTrigger>
             </TabsList>
           </div>
