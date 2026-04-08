@@ -78,6 +78,9 @@ import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { useVehicleCalculatedMetrics } from "@/hooks/useVehicleCalculatedMetrics";
 import { useDebounce } from "@/hooks/useDebounce";
 import { cn } from "@/lib/utils";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import FleetHealthRing from "@/components/vehicles/FleetHealthRing";
+import VehicleActivityMinibar from "@/components/vehicles/VehicleActivityMinibar";
 import maplibregl from "maplibre-gl";
 import { formatDistanceToNow } from "date-fns";
 
