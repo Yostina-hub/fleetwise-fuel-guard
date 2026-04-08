@@ -465,7 +465,7 @@ const MapView = () => {
             onMeasureFrom={(pt) => setMeasureFromPoint(pt)}
           />
           {/* Minimal Map Controls */}
-          <div className="absolute top-4 left-4 z-10">
+          <div className="absolute top-4 left-4 z-10 max-h-[calc(100vh-8rem)] overflow-y-auto scrollbar-thin">
             <div className="flex flex-col gap-2">
               {/* Map Style Toggle */}
               <div className="bg-background/90 backdrop-blur-sm rounded-lg border shadow-lg p-1 flex" role="group" aria-label="Map style selection">
