@@ -4,7 +4,7 @@ import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -639,7 +639,7 @@ const Vehicles = () => {
             )}
             
             {!sidebarCollapsed && (
-              <ScrollArea className="flex-1">
+              <div className="flex-1 overflow-auto">
                 {viewMode === 'list' ? (
                   /* Card List View */
                   <div className="p-3 space-y-3">
@@ -686,7 +686,6 @@ const Vehicles = () => {
                 ) : (
                   /* Table View (List in UI terminology) */
                   <TooltipProvider>
-                  <div className="overflow-x-auto w-full">
                   <Table className="min-w-[1200px]">
                     <TableHeader className="sticky top-0 z-10">
                       <TableRow className="bg-primary/10 hover:bg-primary/10">
@@ -1041,7 +1040,6 @@ const Vehicles = () => {
                       )}
                     </TableBody>
                   </Table>
-                  </div>
                   </TooltipProvider>
                 )}
                 
@@ -1052,7 +1050,7 @@ const Vehicles = () => {
                   itemsPerPage={ITEMS_PER_PAGE}
                   onPageChange={setCurrentPage}
                 />
-              </ScrollArea>
+              </div>
             )}
           </div>
           
