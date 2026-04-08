@@ -98,6 +98,13 @@ const vehiclesByIdRef = useRef<Map<string, Vehicle>>(new Map());
 const vehicleAddressesRef = useRef<Map<string, string>>(new Map());
 const vehicleRoadInfoRef = useRef<Map<string, { road: string; distance: number; direction: string }>>(new Map());
 
+// HTML-escape helper to prevent XSS injection in popup templates
+const escapeHtml = useCallback((str: string): string => {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}, []);
+
 useEffect(() => {
   vehiclesByIdRef.current = new Map(vehicles.map(v => [v.id, v]));
 }, [vehicles]);
@@ -220,6 +227,10 @@ useEffect(() => {
         try { resizeObserver.current?.disconnect(); } catch {}
         resizeObserver.current = null;
 
+        // Clear all pending address fetch timeouts to prevent memory leaks
+        addressFetchTimeouts.current.forEach((timeout) => clearTimeout(timeout));
+        addressFetchTimeouts.current.clear();
+
         trailAnimationFrames.current.forEach((frameId) => cancelAnimationFrame(frameId));
         trailAnimationFrames.current.clear();
         trailAnimationMarkers.current.forEach((marker) => marker.remove());
@@ -249,6 +260,8 @@ useEffect(() => {
       const targetStyle = getLematMapStyle(mapStyle);
       setMapLoaded(false);
       setTokenError(null);
+      // Clear trail source tracking so they get re-added after style loads
+      trailSourcesAdded.current.clear();
       map.current.setStyle(targetStyle);
     };
 
@@ -395,6 +408,10 @@ useEffect(() => {
 
   // Helper to generate popup HTML
   const generatePopupHTML = useCallback((addr: string, v: Vehicle, roadInfo?: { road: string; distance: number; direction: string }) => {
+    const safePlate = escapeHtml(v.plate);
+    const safeAddr = escapeHtml(addr);
+    const safeDriverName = v.driverName ? escapeHtml(v.driverName) : '';
+    const safeDriverPhone = v.driverPhone ? escapeHtml(v.driverPhone) : '';
     const gpsStrength = v.gps_signal_strength ?? 0;
     const gpsSignalLabel = gpsStrength >= 80 ? 'Strong' : gpsStrength >= 50 ? 'Moderate' : gpsStrength > 0 ? 'Weak' : 'No signal';
     const gpsColor = gpsStrength >= 80 ? '#22c55e' : gpsStrength >= 50 ? '#f59e0b' : gpsStrength > 0 ? '#ef4444' : '#6b7280';
@@ -418,7 +435,7 @@ useEffect(() => {
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #e5e7eb;">
           <div>
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-              <span style="font-weight:700;font-size:18px;color:#111827;">${v.plate}</span>
+              <span style="font-weight:700;font-size:18px;color:#111827;">${safePlate}</span>
               <span style="font-size:11px;padding:4px 12px;border-radius:9999px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;background:${v.status === 'moving' ? '#dcfce7' : v.status === 'idle' ? '#fef3c7' : v.status === 'stopped' ? '#f3f4f6' : '#fee2e2'};color:${v.status === 'moving' ? '#166534' : v.status === 'idle' ? '#92400e' : v.status === 'stopped' ? '#4b5563' : '#991b1b'};">${v.status}</span>
             </div>
             ${v.status === 'moving' && v.heading !== undefined ? `
@@ -480,15 +497,15 @@ useEffect(() => {
         <!-- Driver info -->
         <div style="background:#f9fafb;border-radius:10px;padding:12px;margin-bottom:12px;border:1px solid #e5e7eb;">
           <div style="font-size:10px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Driver</div>
-          ${v.driverName ? `
+          ${safeDriverName ? `
             <div style="display:flex;align-items:center;justify-content:space-between;">
               <div style="display:flex;align-items:center;gap:8px;">
                 <div style="width:32px;height:32px;background:linear-gradient(135deg, #8DC63F 0%, #6ba02f 100%);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:600;font-size:13px;">
-                  ${v.driverName.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
+                  ${safeDriverName.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase()}
                 </div>
                 <div>
-                  <div style="font-weight:600;font-size:14px;color:#111827;">${v.driverName}</div>
-                  ${v.driverPhone ? `<div style="color:#6b7280;font-size:12px;">📞 ${v.driverPhone}</div>` : ''}
+                  <div style="font-weight:600;font-size:14px;color:#111827;">${safeDriverName}</div>
+                  ${safeDriverPhone ? `<div style="color:#6b7280;font-size:12px;">📞 ${safeDriverPhone}</div>` : ''}
                 </div>
               </div>
             </div>
@@ -522,7 +539,7 @@ useEffect(() => {
             <span style="font-size:16px;">📍</span>
             <div style="flex:1;">
               <div style="font-size:10px;color:#166534;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Current Location</div>
-              <div style="font-size:13px;color:#166534;line-height:1.5;font-weight:500;">${addr}</div>
+              <div style="font-size:13px;color:#166534;line-height:1.5;font-weight:500;">${safeAddr}</div>
             </div>
           </div>
         </div>
@@ -552,7 +569,7 @@ useEffect(() => {
         <!-- Quick Actions Toolbar -->
         <div style="display:flex;justify-content:center;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid #e5e7eb;">
           <button 
-            onclick="window.dispatchEvent(new CustomEvent('openStreetView', { detail: { lat: ${v.lat}, lng: ${v.lng}, plate: '${v.plate}' } }))"
+            onclick="window.dispatchEvent(new CustomEvent('openStreetView', { detail: { lat: ${v.lat}, lng: ${v.lng}, plate: '${safePlate}' } }))"
             style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 14px;background:linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);border:1px solid #e5e7eb;border-radius:10px;cursor:pointer;transition:all 0.2s;"
             onmouseover="this.style.background='linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)';this.style.borderColor='#93c5fd'"
             onmouseout="this.style.background='linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)';this.style.borderColor='#e5e7eb'"
@@ -565,7 +582,7 @@ useEffect(() => {
             <span style="font-size:10px;color:#374151;font-weight:500;">Street View</span>
           </button>
           <button 
-            onclick="window.dispatchEvent(new CustomEvent('openDirections', { detail: { lat: ${v.lat}, lng: ${v.lng}, plate: '${v.plate}' } }))"
+            onclick="window.dispatchEvent(new CustomEvent('openDirections', { detail: { lat: ${v.lat}, lng: ${v.lng}, plate: '${safePlate}' } }))"
             style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 14px;background:linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);border:1px solid #e5e7eb;border-radius:10px;cursor:pointer;transition:all 0.2s;"
             onmouseover="this.style.background='linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)';this.style.borderColor='#86efac'"
             onmouseout="this.style.background='linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)';this.style.borderColor='#e5e7eb'"
@@ -578,7 +595,7 @@ useEffect(() => {
             <span style="font-size:10px;color:#374151;font-weight:500;">Directions</span>
           </button>
           <button 
-            onclick="window.dispatchEvent(new CustomEvent('openTripReplay', { detail: { vehicleId: '${v.id}', plate: '${v.plate}' } }))"
+            onclick="window.dispatchEvent(new CustomEvent('openTripReplay', { detail: { vehicleId: '${v.id}', plate: '${safePlate}' } }))"
             style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 14px;background:linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);border:1px solid #e5e7eb;border-radius:10px;cursor:pointer;transition:all 0.2s;"
             onmouseover="this.style.background='linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%)';this.style.borderColor='#d8b4fe'"
             onmouseout="this.style.background='linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)';this.style.borderColor='#e5e7eb'"
@@ -590,7 +607,7 @@ useEffect(() => {
             <span style="font-size:10px;color:#374151;font-weight:500;">Trip Replay</span>
           </button>
           <button 
-            onclick="window.dispatchEvent(new CustomEvent('manageAsset', { detail: { vehicleId: '${v.id}', plate: '${v.plate}' } }))"
+            onclick="window.dispatchEvent(new CustomEvent('manageAsset', { detail: { vehicleId: '${v.id}', plate: '${safePlate}' } }))"
             style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 14px;background:linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);border:1px solid #e5e7eb;border-radius:10px;cursor:pointer;transition:all 0.2s;"
             onmouseover="this.style.background='linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)';this.style.borderColor='#fdba74'"
             onmouseout="this.style.background='linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)';this.style.borderColor='#e5e7eb'"
@@ -605,7 +622,7 @@ useEffect(() => {
         </div>
       </div>
     `;
-  }, []);
+  }, [escapeHtml]);
 
   // Keep popup "up / centered" by moving the marker slightly below center before opening.
   const focusMapForPopup = useCallback((vehicleLngLat: [number, number]) => {
@@ -736,11 +753,11 @@ useEffect(() => {
       );
       
       // Fetch address if not already cached OR if position changed significantly
-      if (!vehicleAddresses.has(vehicle.id) || positionChanged) {
+      if (!vehicleAddressesRef.current.has(vehicle.id) || positionChanged) {
         fetchAddressDebounced(vehicle.lng, vehicle.lat, vehicle.id);
       }
       
-      const address = vehicleAddresses.get(vehicle.id) || `Locating... (${vehicle.lat.toFixed(4)}, ${vehicle.lng.toFixed(4)})`;
+      const address = vehicleAddressesRef.current.get(vehicle.id) || `Locating... (${vehicle.lat.toFixed(4)}, ${vehicle.lng.toFixed(4)})`;
       const existingMarker = markers.current.get(vehicle.id);
       const previousPos = previousPositions.current.get(vehicle.id);
       
@@ -869,7 +886,7 @@ useEffect(() => {
 
           const statusLabel = vNow.status.charAt(0).toUpperCase() + vNow.status.slice(1);
           const statusClass = `popup-status-${vNow.status}`;
-          const currentAddress = vehicleAddresses.get(vNow.id) || 'Locating...';
+          const currentAddress = vehicleAddressesRef.current.get(vNow.id) || 'Locating...';
           const driverName = vNow.driverName || 'No driver assigned';
           const speedInfo = vNow.speed > 0 ? `${Math.round(vNow.speed)} km/h` : 'Stationary';
           const isOverspeed = vNow.speed > (vNow.speed_limit || 80);
@@ -1008,7 +1025,7 @@ useEffect(() => {
       map.current!.fitBounds(bounds, { padding: 50, maxZoom: 15 });
       initialBoundsFitted.current = true;
     }
-  }, [vehicles, mapLoaded, selectedVehicleId, onVehicleClick, vehicleAddresses, vehicleRoadInfo, generatePopupHTML]);
+  }, [vehicles, mapLoaded, selectedVehicleId, onVehicleClick, generatePopupHTML]);
 
   // Draw vehicle trails on the map with speed-based coloring
   useEffect(() => {
@@ -1226,6 +1243,13 @@ useEffect(() => {
     let startTime: number | null = null;
 
     const animate = (t: number) => {
+      // Skip animation when tab is hidden to save CPU
+      if (document.hidden) {
+        const frameId = requestAnimationFrame(animate);
+        trailAnimationFrames.current.set(activeVehicleId, frameId);
+        return;
+      }
+
       if (!startTime) startTime = t;
       const elapsed = t - startTime;
       const progress = (elapsed % duration) / duration;
