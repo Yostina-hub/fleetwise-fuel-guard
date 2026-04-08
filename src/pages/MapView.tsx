@@ -660,6 +660,7 @@ const MapView = () => {
           <SmartDispatchSuggester visible={showDispatch} onClose={() => setShowDispatch(false)} vehicles={filteredMapVehicles} onVehicleSelect={(id) => handleVehicleClick(filteredMapVehicles.find(v => v.id === id) || filteredMapVehicles[0])} />
           <FleetPulseDashboard visible={showFleetPulse} onClose={() => setShowFleetPulse(false)} vehicles={vehicles} />
           <CommandCenterHUD visible={showCommandCenter} onClose={() => setShowCommandCenter(false)} vehicles={vehicles} />
+          <AnomalyMapLayer map={mapInstance} visible={showAnomalies} onClose={() => setShowAnomalies(false)} />
 
           {/* Fullscreen Toggle */}
           <Button
