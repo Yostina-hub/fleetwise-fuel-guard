@@ -115,8 +115,6 @@ const MapView = () => {
   const [showConvoy, setShowConvoy] = useState(false);
   const [showETA, setShowETA] = useState(false);
   const [timeWarpActive, setTimeWarpActive] = useState(false);
-  const timeWarpPositionsRef = useRef(new (globalThis.Map as MapConstructor)<string, { lat: number; lng: number; speed: number; heading: number; engine_on: boolean }>());
-  const [timeWarpTick, setTimeWarpTick] = useState(0);
 
 
   // No automatic theme-to-mapStyle sync — user controls map style manually.
