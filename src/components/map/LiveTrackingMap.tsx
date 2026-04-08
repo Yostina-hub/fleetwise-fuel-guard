@@ -1243,6 +1243,13 @@ useEffect(() => {
     let startTime: number | null = null;
 
     const animate = (t: number) => {
+      // Skip animation when tab is hidden to save CPU
+      if (document.hidden) {
+        const frameId = requestAnimationFrame(animate);
+        trailAnimationFrames.current.set(activeVehicleId, frameId);
+        return;
+      }
+
       if (!startTime) startTime = t;
       const elapsed = t - startTime;
       const progress = (elapsed % duration) / duration;
