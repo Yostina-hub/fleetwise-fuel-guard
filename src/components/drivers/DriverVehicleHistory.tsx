@@ -41,7 +41,7 @@ export const DriverVehicleHistory = ({ driverId, driverName }: DriverVehicleHist
       setAssignments(items);
 
       // Fetch vehicle details
-      const vehicleIds = [...new Set(items.map((a: any) => a.vehicle_id))];
+      const vehicleIds = [...new Set(items.map((a: any) => a.vehicle_id))] as string[];
       if (vehicleIds.length > 0) {
         const { data: vData } = await supabase
           .from("vehicles")
