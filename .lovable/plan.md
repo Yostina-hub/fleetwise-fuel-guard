@@ -1,20 +1,36 @@
 
-## 8 Next-Gen Map Features
+## Enterprise Driver Management - P0 Implementation
 
-Already built: Predictive ETA, Time-Warp Playback, Geospatial Heatmap, Convoy Mode
+Based on the gap analysis, here are the priority features to implement:
 
-### Remaining 8 features:
+### Phase 1: Database Schema (Migration)
+Add tables for:
+1. **Driver Onboarding Checklists** - Track onboarding/offboarding workflow steps per driver
+2. **Driver Documents Vault (DQF)** - Already have `documents` table, but need driver-specific views
+3. **Driver Availability** - On-duty/off-duty/on-leave status board
+4. **Driver Groups/Hierarchy** - Region, depot, supervisor assignments
+5. **Driver License Tracking** - Automated expiry alerts (enhance existing `drivers` table)
+6. **Driver Vehicle Assignment History** - Track which driver drove which vehicle and when
 
-1. **Geofence Live Visualizer** — Render all geofence boundaries on the map with real-time entry/exit pulse animations and violation alerts
-2. **Route Replay & Comparison** — Side-by-side or overlay comparison of actual driven route vs planned/optimal route for a trip
-3. **Fuel Anomaly Detector** — Pinpoint suspicious fuel drops on the map with theft probability scoring and location markers
-4. **Speed Corridor Overlay** — Visualize speed limit zones and highlight vehicles exceeding limits with color-coded corridors
-5. **Vehicle Proximity Radar** — Real-time proximity detection between fleet vehicles with collision-risk warnings
-6. **Driver Event Mapper** — Plot harsh braking, acceleration, and cornering events as interactive markers on the map
-7. **Smart Dispatch Suggester** — AI-powered nearest-vehicle recommendations for new dispatch jobs based on real-time positions
-8. **Fleet Pulse Dashboard** — Floating mini-dashboard overlay showing live fleet KPIs (online %, avg speed, total distance, idle count)
+### Phase 2: UI Components
+1. **Enhanced Driver Profile Page** - Comprehensive single-driver view with all data
+2. **Driver Onboarding Wizard** - Step-by-step onboarding flow
+3. **Availability Board** - Visual duty status dashboard
+4. **Document Vault Tab** - Upload/manage driver qualification files
+5. **License Expiry Dashboard** - Alerts for expiring licenses/certs
+6. **Driver Hierarchy View** - Group drivers by region/depot/supervisor
 
-### Implementation approach:
-- Each feature as a standalone component in `src/components/map/`
-- Toggle buttons added to MapView toolbar
-- Consistent UI pattern: floating panels with backdrop blur
+### Phase 3: Navigation Updates
+- Add new sub-pages under Driver Management module
+- Update Driver Hub tabs to include new panels
+
+### Files to create/modify:
+- New migration for schema changes
+- `src/components/drivers/DriverOnboardingChecklist.tsx`
+- `src/components/drivers/DriverAvailabilityBoard.tsx`
+- `src/components/drivers/DriverDocumentVault.tsx`
+- `src/components/drivers/DriverLicenseTracker.tsx`
+- `src/components/drivers/DriverHierarchyView.tsx`
+- `src/components/drivers/DriverVehicleHistory.tsx`
+- Update `src/pages/DriverManagement.tsx` with new tabs
+- Update `src/components/Layout.tsx` navigation

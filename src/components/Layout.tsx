@@ -72,6 +72,9 @@ const navItems = [
       { label: "Driver Hub", path: "/driver-management" },
       { label: "Drivers", path: "/drivers" },
       { label: "Driver Scoring", path: "/driver-scoring" },
+      { label: "License Tracker", path: "/driver-management?tab=licenses" },
+      { label: "Availability", path: "/driver-management?tab=availability" },
+      { label: "Groups", path: "/driver-management?tab=hierarchy" },
     ]
   },
   { icon: Fuel, label: "Fuel Monitoring", path: "/fuel" },
