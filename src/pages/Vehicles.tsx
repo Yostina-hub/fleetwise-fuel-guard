@@ -639,7 +639,7 @@ const Vehicles = () => {
             )}
             
             {!sidebarCollapsed && (
-              <ScrollArea className="flex-1">
+              <div className="flex-1 overflow-auto">
                 {viewMode === 'list' ? (
                   /* Card List View */
                   <div className="p-3 space-y-3">
