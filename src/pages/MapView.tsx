@@ -28,6 +28,7 @@ import { DriverEventMapper } from "@/components/map/DriverEventMapper";
 import { SmartDispatchSuggester } from "@/components/map/SmartDispatchSuggester";
 import { FleetPulseDashboard } from "@/components/map/FleetPulseDashboard";
 import { CommandCenterHUD } from "@/components/map/CommandCenterHUD";
+import { AnomalyMapLayer } from "@/components/map/AnomalyMapLayer";
 
 import { 
   Navigation, 
@@ -48,6 +49,7 @@ import {
   Focus,
   Flame,
   Eye,
+  ShieldAlert,
   Users,
   Zap,
   History,
@@ -145,6 +147,7 @@ const MapView = () => {
   const [showToolStrip, setShowToolStrip] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showCommandCenter, setShowCommandCenter] = useState(false);
+  const [showAnomalies, setShowAnomalies] = useState(false);
   const mapAreaRef = useRef<HTMLDivElement>(null);
 
   const toggleFullscreen = useCallback(() => {
@@ -593,6 +596,7 @@ const MapView = () => {
                   { key: 'dispatch', icon: Truck, label: 'Dispatch', active: showDispatch, toggle: () => setShowDispatch(!showDispatch), color: 'text-sky-500' },
                   { key: 'pulse', icon: Activity, label: 'Pulse', active: showFleetPulse, toggle: () => setShowFleetPulse(!showFleetPulse), color: 'text-emerald-500' },
                   { key: 'command', icon: Eye, label: 'Command Center', active: showCommandCenter, toggle: () => setShowCommandCenter(!showCommandCenter), color: 'text-rose-500' },
+                  { key: 'anomalies', icon: ShieldAlert, label: 'Anomalies', active: showAnomalies, toggle: () => setShowAnomalies(!showAnomalies), color: 'text-red-600' },
                 ].map(tool => (
                   <button
                     key={tool.key}
@@ -656,6 +660,7 @@ const MapView = () => {
           <SmartDispatchSuggester visible={showDispatch} onClose={() => setShowDispatch(false)} vehicles={filteredMapVehicles} onVehicleSelect={(id) => handleVehicleClick(filteredMapVehicles.find(v => v.id === id) || filteredMapVehicles[0])} />
           <FleetPulseDashboard visible={showFleetPulse} onClose={() => setShowFleetPulse(false)} vehicles={vehicles} />
           <CommandCenterHUD visible={showCommandCenter} onClose={() => setShowCommandCenter(false)} vehicles={vehicles} />
+          <AnomalyMapLayer map={mapInstance} visible={showAnomalies} onClose={() => setShowAnomalies(false)} />
 
           {/* Fullscreen Toggle */}
           <Button
