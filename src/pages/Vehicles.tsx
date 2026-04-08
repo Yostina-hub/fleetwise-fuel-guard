@@ -686,7 +686,8 @@ const Vehicles = () => {
                 ) : (
                   /* Table View (List in UI terminology) */
                   <TooltipProvider>
-                  <Table>
+                  <div className="overflow-x-auto w-full">
+                  <Table className="min-w-[1200px]">
                     <TableHeader className="sticky top-0 z-10">
                       <TableRow className="bg-primary/10 hover:bg-primary/10">
                         <TableHead className="w-10">
@@ -1040,6 +1041,7 @@ const Vehicles = () => {
                       )}
                     </TableBody>
                   </Table>
+                  </div>
                   </TooltipProvider>
                 )}
                 
