@@ -17,6 +17,9 @@ import { DriverDocumentVault } from "@/components/drivers/DriverDocumentVault";
 import { DriverLicenseTracker } from "@/components/drivers/DriverLicenseTracker";
 import { DriverHierarchyView } from "@/components/drivers/DriverHierarchyView";
 import { DriverVehicleHistory } from "@/components/drivers/DriverVehicleHistory";
+import { DriverIncidentReporting } from "@/components/drivers/DriverIncidentReporting";
+import { DriverDVIRPanel } from "@/components/drivers/DriverDVIRPanel";
+import { DriverCommunicationHub } from "@/components/drivers/DriverCommunicationHub";
 import {
   Trophy,
   Award,
@@ -31,6 +34,9 @@ import {
   CreditCard,
   FolderTree,
   Car,
+  AlertTriangle,
+  ClipboardList,
+  MessageSquare,
 } from "lucide-react";
 
 const DriverManagement = () => {
@@ -48,7 +54,7 @@ const DriverManagement = () => {
   const needsDriver = driverRequiredTabs.includes(activeTab);
 
   // Fleet-wide tabs (no driver selection needed)
-  const fleetWideTabs = ["availability", "leaderboard", "licenses", "hierarchy"];
+  const fleetWideTabs = ["availability", "leaderboard", "licenses", "hierarchy", "incidents", "dvir", "communications"];
 
   return (
     <Layout>
