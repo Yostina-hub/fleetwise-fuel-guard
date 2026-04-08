@@ -320,6 +320,21 @@ const Vehicles = () => {
     setSelectedVehicleId(vehicle.id);
     setDetailModalOpen(true);
   }, []);
+
+  // Bulk selection handlers
+  const toggleSelection = useCallback((id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+  
+  const selectAll = useCallback(() => {
+    setSelectedIds(new Set(filteredVehicles.map(v => v.id)));
+  }, [filteredVehicles]);
+  
+  const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
   
   const handleVehicleRowClick = useCallback((vehicle: any) => {
     setSelectedVehicleId(vehicle.id);
