@@ -567,6 +567,9 @@ const Vehicles = () => {
               </Button>
             </div>
             
+            {/* Column Visibility */}
+            <ColumnVisibilityToggle columns={columnConfig} onChange={setColumnConfig} />
+            
             {/* Spacer */}
             <div className="flex-1" />
             
