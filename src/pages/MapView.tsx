@@ -55,7 +55,9 @@ import {
   Gauge,
   Radio,
   Activity,
-  Truck
+  Truck,
+  Maximize,
+  Minimize
 } from "lucide-react";
 import { GpsJammingIndicator } from "@/components/map/GpsJammingIndicator";
 import { useVehicles } from "@/hooks/useVehicles";
@@ -139,7 +141,23 @@ const MapView = () => {
   const [showDispatch, setShowDispatch] = useState(false);
   const [showFleetPulse, setShowFleetPulse] = useState(false);
   const [showToolStrip, setShowToolStrip] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const mapAreaRef = useRef<HTMLDivElement>(null);
 
+  const toggleFullscreen = useCallback(() => {
+    if (!mapAreaRef.current) return;
+    if (!document.fullscreenElement) {
+      mapAreaRef.current.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {});
+    } else {
+      document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
+  }, []);
 
   // No automatic theme-to-mapStyle sync — user controls map style manually.
   // Default is 'streets' (set in useState initializer above).
@@ -423,7 +441,7 @@ const MapView = () => {
     <Layout>
       <div className="flex h-[calc(100vh-1px)] overflow-hidden">
         {/* Map Area */}
-        <div className="flex-1 relative">
+        <div ref={mapAreaRef} className="flex-1 relative bg-background">
           {useClusteredMap ? (
             <ClusteredMap
               vehicles={filteredMapVehicles.map(v => ({
@@ -634,7 +652,17 @@ const MapView = () => {
           <SmartDispatchSuggester visible={showDispatch} onClose={() => setShowDispatch(false)} vehicles={filteredMapVehicles} onVehicleSelect={(id) => handleVehicleClick(filteredMapVehicles.find(v => v.id === id) || filteredMapVehicles[0])} />
           <FleetPulseDashboard visible={showFleetPulse} onClose={() => setShowFleetPulse(false)} vehicles={vehicles} />
 
-          {/* Sidebar Toggle Button */}
+          {/* Fullscreen Toggle */}
+          <Button
+            variant="secondary"
+            size="icon"
+            className="absolute top-3 right-3 z-20 h-8 w-8 shadow-lg bg-background/90 backdrop-blur-sm"
+            onClick={toggleFullscreen}
+            title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+          >
+            {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+          </Button>
+
           <Button
             variant="secondary"
             size="icon"
