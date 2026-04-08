@@ -15,6 +15,10 @@ import { StreetViewModal } from "@/components/map/StreetViewModal";
 import { VehicleInfoPanel } from "@/components/map/VehicleInfoPanel";
 import { MapContextMenu } from "@/components/map/MapContextMenu";
 import { MeasureDistanceTool } from "@/components/map/MeasureDistanceTool";
+import { HeatmapOverlay } from "@/components/map/HeatmapOverlay";
+import { TimeWarpPlayback } from "@/components/map/TimeWarpPlayback";
+import { ConvoyMode } from "@/components/map/ConvoyMode";
+import { PredictiveETA } from "@/components/map/PredictiveETA";
 
 import { 
   Navigation, 
@@ -32,7 +36,11 @@ import {
   Clock,
   Route,
   Crosshair,
-  Focus
+  Focus,
+  Flame,
+  Users,
+  Zap,
+  History
 } from "lucide-react";
 import { GpsJammingIndicator } from "@/components/map/GpsJammingIndicator";
 import { useVehicles } from "@/hooks/useVehicles";
@@ -102,7 +110,12 @@ const MapView = () => {
   
   const [mapStyle, setMapStyle] = useState<'streets' | 'satellite' | 'dark'>('streets');
   const [measureFromPoint, setMeasureFromPoint] = useState<[number, number] | null>(null);
-  
+  const [showHeatmap, setShowHeatmap] = useState(false);
+  const [showTimeWarp, setShowTimeWarp] = useState(false);
+  const [showConvoy, setShowConvoy] = useState(false);
+  const [showETA, setShowETA] = useState(false);
+  const [timeWarpActive, setTimeWarpActive] = useState(false);
+
 
   // No automatic theme-to-mapStyle sync — user controls map style manually.
   // Default is 'streets' (set in useState initializer above).
@@ -530,6 +543,46 @@ const MapView = () => {
                   <span className="hidden sm:inline">{followMode ? 'Following' : 'Follow'}</span>
                 </Button>
               )}
+
+              {/* Advanced Features */}
+              <div className="flex flex-col gap-1.5 mt-2 pt-2 border-t border-border/50">
+                <Button
+                  variant={showHeatmap ? "default" : "outline"}
+                  size="sm"
+                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
+                  onClick={() => setShowHeatmap(!showHeatmap)}
+                >
+                  <Flame className="w-4 h-4" />
+                  <span className="hidden sm:inline">Heatmap</span>
+                </Button>
+                <Button
+                  variant={showTimeWarp ? "default" : "outline"}
+                  size="sm"
+                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
+                  onClick={() => setShowTimeWarp(!showTimeWarp)}
+                >
+                  <History className="w-4 h-4" />
+                  <span className="hidden sm:inline">Time-Warp</span>
+                </Button>
+                <Button
+                  variant={showConvoy ? "default" : "outline"}
+                  size="sm"
+                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
+                  onClick={() => setShowConvoy(!showConvoy)}
+                >
+                  <Users className="w-4 h-4" />
+                  <span className="hidden sm:inline">Convoy</span>
+                </Button>
+                <Button
+                  variant={showETA ? "default" : "outline"}
+                  size="sm"
+                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
+                  onClick={() => setShowETA(!showETA)}
+                >
+                  <Zap className="w-4 h-4" />
+                  <span className="hidden sm:inline">ETA</span>
+                </Button>
+              </div>
             </div>
 
             {/* Nearby Vehicles Search Panel */}
@@ -551,6 +604,17 @@ const MapView = () => {
               </div>
             )}
           </div>
+
+          {/* Advanced Feature Overlays */}
+          <HeatmapOverlay map={mapInstance} vehicles={filteredMapVehicles} visible={showHeatmap} onClose={() => setShowHeatmap(false)} />
+          <TimeWarpPlayback
+            visible={showTimeWarp}
+            onClose={() => setShowTimeWarp(false)}
+            onPositionsUpdate={() => {}}
+            vehicleIds={vehicleIds}
+          />
+          <ConvoyMode map={mapInstance} vehicles={filteredMapVehicles} visible={showConvoy} onClose={() => setShowConvoy(false)} />
+          <PredictiveETA visible={showETA} onClose={() => setShowETA(false)} vehicles={filteredMapVehicles} />
 
           {/* Sidebar Toggle Button */}
           <Button
