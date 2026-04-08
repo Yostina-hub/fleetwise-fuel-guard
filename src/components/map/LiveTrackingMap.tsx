@@ -605,7 +605,7 @@ useEffect(() => {
             <span style="font-size:10px;color:#374151;font-weight:500;">Trip Replay</span>
           </button>
           <button 
-            onclick="window.dispatchEvent(new CustomEvent('manageAsset', { detail: { vehicleId: '${v.id}', plate: '${v.plate}' } }))"
+            onclick="window.dispatchEvent(new CustomEvent('manageAsset', { detail: { vehicleId: '${v.id}', plate: '${safePlate}' } }))"
             style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 14px;background:linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);border:1px solid #e5e7eb;border-radius:10px;cursor:pointer;transition:all 0.2s;"
             onmouseover="this.style.background='linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)';this.style.borderColor='#fdba74'"
             onmouseout="this.style.background='linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)';this.style.borderColor='#e5e7eb'"
