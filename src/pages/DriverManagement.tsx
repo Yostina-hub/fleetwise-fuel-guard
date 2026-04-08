@@ -28,6 +28,10 @@ import { DriverFuelCards } from "@/components/drivers/DriverFuelCards";
 import { DriverComplianceCalendar } from "@/components/drivers/DriverComplianceCalendar";
 import { DriverAnalyticsDashboard } from "@/components/drivers/DriverAnalyticsDashboard";
 import { DriverAutoCoaching } from "@/components/drivers/DriverAutoCoaching";
+// P3 components
+import { DriverRewardsRecognition } from "@/components/drivers/DriverRewardsRecognition";
+import { DriverContractManagement } from "@/components/drivers/DriverContractManagement";
+import { DriverPredictiveRiskScoring } from "@/components/drivers/DriverPredictiveRiskScoring";
 import {
   Trophy,
   Award,
