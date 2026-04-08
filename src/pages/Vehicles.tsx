@@ -64,6 +64,14 @@ import {
   LayoutList,
   LayoutGrid,
   User,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Zap,
+  Power,
+  Route,
+  Radio,
+  LocateFixed,
 } from "lucide-react";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
