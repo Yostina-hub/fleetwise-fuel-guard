@@ -93,16 +93,13 @@ export const GeofenceLiveVisualizer = ({ map, vehicles, visible, onClose }: Geof
       const currentInside = new Set<string>();
 
       geofences.forEach(gf => {
-        if (!gf.geometry) return;
         let inside = false;
         try {
-          const geo = typeof gf.geometry === 'string' ? JSON.parse(gf.geometry) : gf.geometry;
-          if (geo.type === 'Polygon' && geo.coordinates?.[0]) {
-            inside = isPointInPolygon(v.lat, v.lng, geo.coordinates[0]);
-          } else if (geo.type === 'Circle' || (geo.center && geo.radius)) {
-            const center = geo.center || geo.coordinates;
-            const radiusKm = (geo.radius || geo.radiusMeters || 500) / 1000;
-            inside = isPointInCircle(v.lat, v.lng, center[1], center[0], radiusKm);
+          if (gf.geometry_type === 'polygon' && gf.polygon_points) {
+            const points = typeof gf.polygon_points === 'string' ? JSON.parse(gf.polygon_points) : gf.polygon_points;
+            if (Array.isArray(points)) inside = isPointInPolygon(v.lat, v.lng, points);
+          } else if (gf.geometry_type === 'circle' && gf.center_lat && gf.center_lng) {
+            inside = isPointInCircle(v.lat, v.lng, gf.center_lat, gf.center_lng, (gf.radius_meters || 500) / 1000);
           }
         } catch {}
 
@@ -132,7 +129,6 @@ export const GeofenceLiveVisualizer = ({ map, vehicles, visible, onClose }: Geof
       if (!map.isStyleLoaded()) return;
 
       geofences.forEach(gf => {
-        if (!gf.geometry) return;
         const sourceId = SOURCE_PREFIX + gf.id;
         const fillId = FILL_LAYER_PREFIX + gf.id;
         const lineId = LINE_LAYER_PREFIX + gf.id;
@@ -145,25 +141,28 @@ export const GeofenceLiveVisualizer = ({ map, vehicles, visible, onClose }: Geof
         } catch {}
 
         try {
-          const geo = typeof gf.geometry === 'string' ? JSON.parse(gf.geometry) : gf.geometry;
-          let geojson: GeoJSON.Feature;
+          let geojson: GeoJSON.Feature | null = null;
 
-          if (geo.type === 'Polygon') {
-            geojson = { type: 'Feature', properties: { name: gf.name }, geometry: geo };
-          } else if (geo.type === 'Circle' || geo.center) {
-            // Approximate circle as polygon
-            const center = geo.center || geo.coordinates;
-            const radius = (geo.radius || geo.radiusMeters || 500) / 1000;
-            const points = 64;
+          if (gf.geometry_type === 'polygon' && gf.polygon_points) {
+            const points = typeof gf.polygon_points === 'string' ? JSON.parse(gf.polygon_points) : gf.polygon_points;
+            if (Array.isArray(points)) {
+              const coords = points.map((p: any) => [p[0] || p.lng, p[1] || p.lat]);
+              geojson = { type: 'Feature', properties: { name: gf.name }, geometry: { type: 'Polygon', coordinates: [coords] } };
+            }
+          } else if (gf.geometry_type === 'circle' && gf.center_lat && gf.center_lng) {
+            const radius = (gf.radius_meters || 500) / 1000;
+            const pts = 64;
             const coords: number[][] = [];
-            for (let i = 0; i <= points; i++) {
-              const angle = (i / points) * 2 * Math.PI;
+            for (let i = 0; i <= pts; i++) {
+              const angle = (i / pts) * 2 * Math.PI;
               const dx = (radius / 111.32) * Math.cos(angle);
-              const dy = (radius / (111.32 * Math.cos((center[1] * Math.PI) / 180))) * Math.sin(angle);
-              coords.push([center[0] + dy, center[1] + dx]);
+              const dy = (radius / (111.32 * Math.cos((gf.center_lat * Math.PI) / 180))) * Math.sin(angle);
+              coords.push([gf.center_lng + dy, gf.center_lat + dx]);
             }
             geojson = { type: 'Feature', properties: { name: gf.name }, geometry: { type: 'Polygon', coordinates: [coords] } };
-          } else return;
+          }
+
+          if (!geojson) return;
 
           map.addSource(sourceId, { type: 'geojson', data: { type: 'FeatureCollection', features: [geojson] } });
           map.addLayer({ id: fillId, type: 'fill', source: sourceId, paint: { 'fill-color': color, 'fill-opacity': 0.15 } });

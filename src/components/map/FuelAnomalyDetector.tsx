@@ -34,28 +34,26 @@ export const FuelAnomalyDetector = ({ visible, onClose, vehicles }: FuelAnomalyD
     setLoading(true);
 
     try {
-      // Get recent telemetry with fuel data for all vehicles
+      // Get recent telemetry with fuel data using RPC or direct query
       const { data, error } = await supabase
-        .from('vehicle_telemetry_history')
-        .select('vehicle_id, telemetry_data, recorded_at')
+        .from('vehicle_telemetry')
+        .select('vehicle_id, fuel_level_percent, latitude, longitude, last_communication_at')
         .eq('organization_id', organizationId)
-        .gte('recorded_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-        .order('recorded_at', { ascending: true })
+        .not('fuel_level_percent', 'is', null)
+        .order('last_communication_at', { ascending: true })
         .limit(5000);
 
       if (error) throw error;
 
-      // Group by vehicle
       const vehicleData: Record<string, Array<{ fuel: number; lat: number; lng: number; time: string }>> = {};
       (data || []).forEach((row: any) => {
-        const td = typeof row.telemetry_data === 'string' ? JSON.parse(row.telemetry_data) : row.telemetry_data;
-        if (td?.fuel_level_percent != null) {
+        if (row.fuel_level_percent != null) {
           if (!vehicleData[row.vehicle_id]) vehicleData[row.vehicle_id] = [];
           vehicleData[row.vehicle_id].push({
-            fuel: td.fuel_level_percent,
-            lat: td.latitude || 0,
-            lng: td.longitude || 0,
-            time: row.recorded_at,
+            fuel: row.fuel_level_percent,
+            lat: row.latitude || 0,
+            lng: row.longitude || 0,
+            time: row.last_communication_at,
           });
         }
       });

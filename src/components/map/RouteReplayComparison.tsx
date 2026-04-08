@@ -53,22 +53,23 @@ export const RouteReplayComparison = ({ map, visible, onClose, vehicles }: Route
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
+      // Use vehicle_telemetry for route data
       const { data, error } = await supabase
-        .from('vehicle_telemetry_history')
-        .select('telemetry_data, recorded_at')
+        .from('vehicle_telemetry')
+        .select('latitude, longitude, last_communication_at')
         .eq('vehicle_id', selectedVehicle)
         .eq('organization_id', organizationId)
-        .gte('recorded_at', today.toISOString())
-        .order('recorded_at', { ascending: true })
+        .not('latitude', 'is', null)
+        .not('longitude', 'is', null)
+        .order('last_communication_at', { ascending: true })
         .limit(2000);
 
       if (error) throw error;
 
       const coords: [number, number][] = [];
       (data || []).forEach((row: any) => {
-        const td = typeof row.telemetry_data === 'string' ? JSON.parse(row.telemetry_data) : row.telemetry_data;
-        if (td?.latitude && td?.longitude) {
-          coords.push([td.longitude, td.latitude]);
+        if (row.latitude && row.longitude) {
+          coords.push([row.longitude, row.latitude]);
         }
       });
 
