@@ -701,35 +701,54 @@ const Vehicles = () => {
                             }}
                           />
                         </TableHead>
-                        <TableHead className="text-foreground font-semibold w-12">SN</TableHead>
-                        <TableHead className="text-foreground font-semibold w-12">
-                          <Power className="w-3.5 h-3.5 mx-auto" />
-                        </TableHead>
-                        <TableHead className="text-foreground font-semibold cursor-pointer select-none" onClick={() => toggleSort('plate')}>
-                          <div className="flex items-center gap-1">Vehicle {sortColumn === 'plate' ? (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
-                        </TableHead>
-                        <TableHead className="text-foreground font-semibold cursor-pointer select-none" onClick={() => toggleSort('driver')}>
-                          <div className="flex items-center gap-1">Driver {sortColumn === 'driver' ? (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
-                        </TableHead>
-                        <TableHead className="text-foreground font-semibold cursor-pointer select-none" onClick={() => toggleSort('status')}>
-                          <div className="flex items-center gap-1">Status {sortColumn === 'status' ? (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
-                        </TableHead>
-                        <TableHead className="text-foreground font-semibold w-24 cursor-pointer select-none" onClick={() => toggleSort('fuel')}>
-                          <div className="flex items-center gap-1">Fuel {sortColumn === 'fuel' ? (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
-                        </TableHead>
-                        <TableHead className="text-foreground font-semibold cursor-pointer select-none" onClick={() => toggleSort('speed')}>
-                          <div className="flex items-center gap-1">Speed {sortColumn === 'speed' ? (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
-                        </TableHead>
-                        <TableHead className="text-foreground font-semibold cursor-pointer select-none" onClick={() => toggleSort('distance')}>
-                          <div className="flex items-center gap-1">Today <Route className="w-3 h-3" /> {sortColumn === 'distance' ? (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
-                        </TableHead>
-                        <TableHead className="text-foreground font-semibold">Last Seen</TableHead>
-                        <TableHead className="text-foreground font-semibold w-[100px]">24h Activity</TableHead>
-                        <TableHead className="text-foreground font-semibold w-10">
-                          <ShieldAlert className="w-3.5 h-3.5 mx-auto" />
-                        </TableHead>
-                        <TableHead className="text-foreground font-semibold w-[70px]">Fuel Trend</TableHead>
-                        <TableHead className="text-foreground font-semibold w-20">Actions</TableHead>
+                        {isColVisible('sn') && <TableHead className="text-foreground font-semibold w-12">SN</TableHead>}
+                        {isColVisible('ignition') && (
+                          <TableHead className="text-foreground font-semibold w-12">
+                            <Power className="w-3.5 h-3.5 mx-auto" />
+                          </TableHead>
+                        )}
+                        {isColVisible('vehicle') && (
+                          <TableHead className="text-foreground font-semibold cursor-pointer select-none" onClick={() => toggleSort('plate')}>
+                            <div className="flex items-center gap-1">Vehicle {sortColumn === 'plate' ? (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
+                          </TableHead>
+                        )}
+                        {isColVisible('driver') && (
+                          <TableHead className="text-foreground font-semibold cursor-pointer select-none" onClick={() => toggleSort('driver')}>
+                            <div className="flex items-center gap-1">Driver {sortColumn === 'driver' ? (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
+                          </TableHead>
+                        )}
+                        {isColVisible('status') && (
+                          <TableHead className="text-foreground font-semibold cursor-pointer select-none" onClick={() => toggleSort('status')}>
+                            <div className="flex items-center gap-1">Status {sortColumn === 'status' ? (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
+                          </TableHead>
+                        )}
+                        {isColVisible('fuel') && (
+                          <TableHead className="text-foreground font-semibold w-24 cursor-pointer select-none" onClick={() => toggleSort('fuel')}>
+                            <div className="flex items-center gap-1">Fuel {sortColumn === 'fuel' ? (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
+                          </TableHead>
+                        )}
+                        {isColVisible('speed') && (
+                          <TableHead className="text-foreground font-semibold cursor-pointer select-none" onClick={() => toggleSort('speed')}>
+                            <div className="flex items-center gap-1">Speed {sortColumn === 'speed' ? (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
+                          </TableHead>
+                        )}
+                        {isColVisible('heading') && (
+                          <TableHead className="text-foreground font-semibold w-14">Dir</TableHead>
+                        )}
+                        {isColVisible('distance') && (
+                          <TableHead className="text-foreground font-semibold cursor-pointer select-none" onClick={() => toggleSort('distance')}>
+                            <div className="flex items-center gap-1">Today <Route className="w-3 h-3" /> {sortColumn === 'distance' ? (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
+                          </TableHead>
+                        )}
+                        {isColVisible('lastSeen') && <TableHead className="text-foreground font-semibold">Last Seen</TableHead>}
+                        {isColVisible('activity') && <TableHead className="text-foreground font-semibold w-[100px]">24h Activity</TableHead>}
+                        {isColVisible('alerts') && (
+                          <TableHead className="text-foreground font-semibold w-10">
+                            <ShieldAlert className="w-3.5 h-3.5 mx-auto" />
+                          </TableHead>
+                        )}
+                        {isColVisible('fuelTrend') && <TableHead className="text-foreground font-semibold w-[70px]">Fuel Trend</TableHead>}
+                        {isColVisible('actions') && <TableHead className="text-foreground font-semibold w-20">Actions</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
