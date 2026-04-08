@@ -171,6 +171,24 @@ const Vehicles = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [sortColumn, setSortColumn] = useState<string>("plate");
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [columnConfig, setColumnConfig] = useState<ColumnConfig[]>([
+    { key: 'sn', label: '#', visible: true, locked: true },
+    { key: 'ignition', label: 'Ignition', visible: true },
+    { key: 'vehicle', label: 'Vehicle', visible: true, locked: true },
+    { key: 'driver', label: 'Driver', visible: true },
+    { key: 'status', label: 'Status', visible: true },
+    { key: 'fuel', label: 'Fuel', visible: true },
+    { key: 'speed', label: 'Speed', visible: true },
+    { key: 'heading', label: 'Heading', visible: true },
+    { key: 'distance', label: 'Today Dist.', visible: true },
+    { key: 'lastSeen', label: 'Last Seen', visible: true },
+    { key: 'activity', label: '24h Activity', visible: true },
+    { key: 'alerts', label: 'Alerts', visible: true },
+    { key: 'fuelTrend', label: 'Fuel Trend', visible: true },
+    { key: 'actions', label: 'Actions', visible: true, locked: true },
+  ]);
+  
+  const isColVisible = useCallback((key: string) => columnConfig.find(c => c.key === key)?.visible ?? true, [columnConfig]);
   
   const debouncedSearch = useDebounce(searchInput, 300);
   
