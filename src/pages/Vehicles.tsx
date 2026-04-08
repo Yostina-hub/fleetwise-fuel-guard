@@ -731,9 +731,26 @@ const Vehicles = () => {
                                     ? "transparent" 
                                     : "hsl(var(--muted) / 0.3)"
                             }}
-                            className="cursor-pointer hover:bg-primary/5 border-b transition-colors"
+                            className={cn(
+                              "cursor-pointer hover:bg-primary/5 border-b transition-colors",
+                              vehicle.isOverspeed && "border-l-2 border-l-destructive",
+                              vehicle.fuel > 0 && vehicle.fuel < 15 && !vehicle.isOverspeed && "border-l-2 border-l-warning",
+                              !vehicle.deviceConnected && vehicle.status === 'offline' && !vehicle.isOverspeed && vehicle.fuel >= 15 && "border-l-2 border-l-muted-foreground/40"
+                            )}
                             onClick={() => handleVehicleRowClick(vehicle)}
                             onDoubleClick={() => handleVehicleClick(vehicle)}
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleVehicleClick(vehicle);
+                              if (e.key === 'ArrowDown') {
+                                e.preventDefault();
+                                (e.currentTarget.nextElementSibling as HTMLElement)?.focus();
+                              }
+                              if (e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                (e.currentTarget.previousElementSibling as HTMLElement)?.focus();
+                              }
+                            }}
                           >
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               <Checkbox
