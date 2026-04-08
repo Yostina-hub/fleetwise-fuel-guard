@@ -55,7 +55,9 @@ import {
   Gauge,
   Radio,
   Activity,
-  Truck
+  Truck,
+  Maximize,
+  Minimize
 } from "lucide-react";
 import { GpsJammingIndicator } from "@/components/map/GpsJammingIndicator";
 import { useVehicles } from "@/hooks/useVehicles";
