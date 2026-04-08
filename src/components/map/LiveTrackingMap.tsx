@@ -753,11 +753,11 @@ useEffect(() => {
       );
       
       // Fetch address if not already cached OR if position changed significantly
-      if (!vehicleAddresses.has(vehicle.id) || positionChanged) {
+      if (!vehicleAddressesRef.current.has(vehicle.id) || positionChanged) {
         fetchAddressDebounced(vehicle.lng, vehicle.lat, vehicle.id);
       }
       
-      const address = vehicleAddresses.get(vehicle.id) || `Locating... (${vehicle.lat.toFixed(4)}, ${vehicle.lng.toFixed(4)})`;
+      const address = vehicleAddressesRef.current.get(vehicle.id) || `Locating... (${vehicle.lat.toFixed(4)}, ${vehicle.lng.toFixed(4)})`;
       const existingMarker = markers.current.get(vehicle.id);
       const previousPos = previousPositions.current.get(vehicle.id);
       
