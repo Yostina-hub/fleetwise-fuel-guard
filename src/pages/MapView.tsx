@@ -19,6 +19,14 @@ import { HeatmapOverlay } from "@/components/map/HeatmapOverlay";
 import { TimeWarpPlayback } from "@/components/map/TimeWarpPlayback";
 import { ConvoyMode } from "@/components/map/ConvoyMode";
 import { PredictiveETA } from "@/components/map/PredictiveETA";
+import { GeofenceLiveVisualizer } from "@/components/map/GeofenceLiveVisualizer";
+import { RouteReplayComparison } from "@/components/map/RouteReplayComparison";
+import { FuelAnomalyDetector } from "@/components/map/FuelAnomalyDetector";
+import { SpeedCorridorOverlay } from "@/components/map/SpeedCorridorOverlay";
+import { VehicleProximityRadar } from "@/components/map/VehicleProximityRadar";
+import { DriverEventMapper } from "@/components/map/DriverEventMapper";
+import { SmartDispatchSuggester } from "@/components/map/SmartDispatchSuggester";
+import { FleetPulseDashboard } from "@/components/map/FleetPulseDashboard";
 
 import { 
   Navigation, 
@@ -40,7 +48,14 @@ import {
   Flame,
   Users,
   Zap,
-  History
+  History,
+  Shield,
+  GitCompare,
+  Droplets,
+  Gauge,
+  Radio,
+  Activity,
+  Truck
 } from "lucide-react";
 import { GpsJammingIndicator } from "@/components/map/GpsJammingIndicator";
 import { useVehicles } from "@/hooks/useVehicles";
@@ -115,6 +130,14 @@ const MapView = () => {
   const [showConvoy, setShowConvoy] = useState(false);
   const [showETA, setShowETA] = useState(false);
   const [timeWarpActive, setTimeWarpActive] = useState(false);
+  const [showGeofenceViz, setShowGeofenceViz] = useState(false);
+  const [showRouteComparison, setShowRouteComparison] = useState(false);
+  const [showFuelAnomaly, setShowFuelAnomaly] = useState(false);
+  const [showSpeedCorridor, setShowSpeedCorridor] = useState(false);
+  const [showProximityRadar, setShowProximityRadar] = useState(false);
+  const [showDriverEvents, setShowDriverEvents] = useState(false);
+  const [showDispatch, setShowDispatch] = useState(false);
+  const [showFleetPulse, setShowFleetPulse] = useState(false);
 
 
   // No automatic theme-to-mapStyle sync — user controls map style manually.
@@ -582,6 +605,78 @@ const MapView = () => {
                   <Zap className="w-4 h-4" />
                   <span className="hidden sm:inline">ETA</span>
                 </Button>
+                <Button
+                  variant={showGeofenceViz ? "default" : "outline"}
+                  size="sm"
+                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
+                  onClick={() => setShowGeofenceViz(!showGeofenceViz)}
+                >
+                  <Shield className="w-4 h-4" />
+                  <span className="hidden sm:inline">Geofences</span>
+                </Button>
+                <Button
+                  variant={showRouteComparison ? "default" : "outline"}
+                  size="sm"
+                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
+                  onClick={() => setShowRouteComparison(!showRouteComparison)}
+                >
+                  <GitCompare className="w-4 h-4" />
+                  <span className="hidden sm:inline">Routes</span>
+                </Button>
+                <Button
+                  variant={showFuelAnomaly ? "default" : "outline"}
+                  size="sm"
+                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
+                  onClick={() => setShowFuelAnomaly(!showFuelAnomaly)}
+                >
+                  <Droplets className="w-4 h-4" />
+                  <span className="hidden sm:inline">Fuel</span>
+                </Button>
+                <Button
+                  variant={showSpeedCorridor ? "default" : "outline"}
+                  size="sm"
+                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
+                  onClick={() => setShowSpeedCorridor(!showSpeedCorridor)}
+                >
+                  <Gauge className="w-4 h-4" />
+                  <span className="hidden sm:inline">Speed</span>
+                </Button>
+                <Button
+                  variant={showProximityRadar ? "default" : "outline"}
+                  size="sm"
+                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
+                  onClick={() => setShowProximityRadar(!showProximityRadar)}
+                >
+                  <Radio className="w-4 h-4" />
+                  <span className="hidden sm:inline">Proximity</span>
+                </Button>
+                <Button
+                  variant={showDriverEvents ? "default" : "outline"}
+                  size="sm"
+                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
+                  onClick={() => setShowDriverEvents(!showDriverEvents)}
+                >
+                  <Zap className="w-4 h-4" />
+                  <span className="hidden sm:inline">Events</span>
+                </Button>
+                <Button
+                  variant={showDispatch ? "default" : "outline"}
+                  size="sm"
+                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
+                  onClick={() => setShowDispatch(!showDispatch)}
+                >
+                  <Truck className="w-4 h-4" />
+                  <span className="hidden sm:inline">Dispatch</span>
+                </Button>
+                <Button
+                  variant={showFleetPulse ? "default" : "outline"}
+                  size="sm"
+                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
+                  onClick={() => setShowFleetPulse(!showFleetPulse)}
+                >
+                  <Activity className="w-4 h-4" />
+                  <span className="hidden sm:inline">Pulse</span>
+                </Button>
               </div>
             </div>
 
@@ -615,6 +710,14 @@ const MapView = () => {
           />
           <ConvoyMode map={mapInstance} vehicles={filteredMapVehicles} visible={showConvoy} onClose={() => setShowConvoy(false)} />
           <PredictiveETA visible={showETA} onClose={() => setShowETA(false)} vehicles={filteredMapVehicles} />
+          <GeofenceLiveVisualizer map={mapInstance} vehicles={filteredMapVehicles} visible={showGeofenceViz} onClose={() => setShowGeofenceViz(false)} />
+          <RouteReplayComparison map={mapInstance} visible={showRouteComparison} onClose={() => setShowRouteComparison(false)} vehicles={filteredMapVehicles} />
+          <FuelAnomalyDetector visible={showFuelAnomaly} onClose={() => setShowFuelAnomaly(false)} vehicles={filteredMapVehicles} />
+          <SpeedCorridorOverlay map={mapInstance} vehicles={filteredMapVehicles} visible={showSpeedCorridor} onClose={() => setShowSpeedCorridor(false)} />
+          <VehicleProximityRadar visible={showProximityRadar} onClose={() => setShowProximityRadar(false)} vehicles={filteredMapVehicles} />
+          <DriverEventMapper map={mapInstance} visible={showDriverEvents} onClose={() => setShowDriverEvents(false)} />
+          <SmartDispatchSuggester visible={showDispatch} onClose={() => setShowDispatch(false)} vehicles={filteredMapVehicles} onVehicleSelect={(id) => handleVehicleClick(filteredMapVehicles.find(v => v.id === id) || filteredMapVehicles[0])} />
+          <FleetPulseDashboard visible={showFleetPulse} onClose={() => setShowFleetPulse(false)} vehicles={vehicles} />
 
           {/* Sidebar Toggle Button */}
           <Button
