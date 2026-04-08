@@ -138,6 +138,7 @@ const MapView = () => {
   const [showDriverEvents, setShowDriverEvents] = useState(false);
   const [showDispatch, setShowDispatch] = useState(false);
   const [showFleetPulse, setShowFleetPulse] = useState(false);
+  const [showAdvancedTools, setShowAdvancedTools] = useState(false);
 
 
   // No automatic theme-to-mapStyle sync — user controls map style manually.
@@ -567,116 +568,51 @@ const MapView = () => {
                 </Button>
               )}
 
-              {/* Advanced Features */}
-              <div className="flex flex-col gap-1.5 mt-2 pt-2 border-t border-border/50">
+              {/* Advanced Features Toggle */}
+              <div className="mt-2 pt-2 border-t border-border/50">
                 <Button
-                  variant={showHeatmap ? "default" : "outline"}
+                  variant="outline"
                   size="sm"
-                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
-                  onClick={() => setShowHeatmap(!showHeatmap)}
-                >
-                  <Flame className="w-4 h-4" />
-                  <span className="hidden sm:inline">Heatmap</span>
-                </Button>
-                <Button
-                  variant={showTimeWarp ? "default" : "outline"}
-                  size="sm"
-                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
-                  onClick={() => setShowTimeWarp(!showTimeWarp)}
-                >
-                  <History className="w-4 h-4" />
-                  <span className="hidden sm:inline">Time-Warp</span>
-                </Button>
-                <Button
-                  variant={showConvoy ? "default" : "outline"}
-                  size="sm"
-                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
-                  onClick={() => setShowConvoy(!showConvoy)}
-                >
-                  <Users className="w-4 h-4" />
-                  <span className="hidden sm:inline">Convoy</span>
-                </Button>
-                <Button
-                  variant={showETA ? "default" : "outline"}
-                  size="sm"
-                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
-                  onClick={() => setShowETA(!showETA)}
+                  className="h-9 w-full gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
+                  onClick={() => setShowAdvancedTools(!showAdvancedTools)}
                 >
                   <Zap className="w-4 h-4" />
-                  <span className="hidden sm:inline">ETA</span>
+                  <span className="text-xs">Tools</span>
+                  <ChevronRight className={cn("w-3 h-3 ml-auto transition-transform", showAdvancedTools && "rotate-90")} />
                 </Button>
-                <Button
-                  variant={showGeofenceViz ? "default" : "outline"}
-                  size="sm"
-                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
-                  onClick={() => setShowGeofenceViz(!showGeofenceViz)}
-                >
-                  <Shield className="w-4 h-4" />
-                  <span className="hidden sm:inline">Geofences</span>
-                </Button>
-                <Button
-                  variant={showRouteComparison ? "default" : "outline"}
-                  size="sm"
-                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
-                  onClick={() => setShowRouteComparison(!showRouteComparison)}
-                >
-                  <GitCompare className="w-4 h-4" />
-                  <span className="hidden sm:inline">Routes</span>
-                </Button>
-                <Button
-                  variant={showFuelAnomaly ? "default" : "outline"}
-                  size="sm"
-                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
-                  onClick={() => setShowFuelAnomaly(!showFuelAnomaly)}
-                >
-                  <Droplets className="w-4 h-4" />
-                  <span className="hidden sm:inline">Fuel</span>
-                </Button>
-                <Button
-                  variant={showSpeedCorridor ? "default" : "outline"}
-                  size="sm"
-                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
-                  onClick={() => setShowSpeedCorridor(!showSpeedCorridor)}
-                >
-                  <Gauge className="w-4 h-4" />
-                  <span className="hidden sm:inline">Speed</span>
-                </Button>
-                <Button
-                  variant={showProximityRadar ? "default" : "outline"}
-                  size="sm"
-                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
-                  onClick={() => setShowProximityRadar(!showProximityRadar)}
-                >
-                  <Radio className="w-4 h-4" />
-                  <span className="hidden sm:inline">Proximity</span>
-                </Button>
-                <Button
-                  variant={showDriverEvents ? "default" : "outline"}
-                  size="sm"
-                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
-                  onClick={() => setShowDriverEvents(!showDriverEvents)}
-                >
-                  <Zap className="w-4 h-4" />
-                  <span className="hidden sm:inline">Events</span>
-                </Button>
-                <Button
-                  variant={showDispatch ? "default" : "outline"}
-                  size="sm"
-                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
-                  onClick={() => setShowDispatch(!showDispatch)}
-                >
-                  <Truck className="w-4 h-4" />
-                  <span className="hidden sm:inline">Dispatch</span>
-                </Button>
-                <Button
-                  variant={showFleetPulse ? "default" : "outline"}
-                  size="sm"
-                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
-                  onClick={() => setShowFleetPulse(!showFleetPulse)}
-                >
-                  <Activity className="w-4 h-4" />
-                  <span className="hidden sm:inline">Pulse</span>
-                </Button>
+
+                {showAdvancedTools && (
+                  <div className="mt-1.5 grid grid-cols-2 gap-1 bg-background/95 backdrop-blur-sm rounded-lg border shadow-lg p-1.5">
+                    {[
+                      { key: 'heatmap', icon: Flame, label: 'Heatmap', active: showHeatmap, toggle: () => setShowHeatmap(!showHeatmap) },
+                      { key: 'timewarp', icon: History, label: 'Time-Warp', active: showTimeWarp, toggle: () => setShowTimeWarp(!showTimeWarp) },
+                      { key: 'convoy', icon: Users, label: 'Convoy', active: showConvoy, toggle: () => setShowConvoy(!showConvoy) },
+                      { key: 'eta', icon: Zap, label: 'ETA', active: showETA, toggle: () => setShowETA(!showETA) },
+                      { key: 'geofence', icon: Shield, label: 'Geofences', active: showGeofenceViz, toggle: () => setShowGeofenceViz(!showGeofenceViz) },
+                      { key: 'routes', icon: GitCompare, label: 'Routes', active: showRouteComparison, toggle: () => setShowRouteComparison(!showRouteComparison) },
+                      { key: 'fuel', icon: Droplets, label: 'Fuel', active: showFuelAnomaly, toggle: () => setShowFuelAnomaly(!showFuelAnomaly) },
+                      { key: 'speed', icon: Gauge, label: 'Speed', active: showSpeedCorridor, toggle: () => setShowSpeedCorridor(!showSpeedCorridor) },
+                      { key: 'proximity', icon: Radio, label: 'Proximity', active: showProximityRadar, toggle: () => setShowProximityRadar(!showProximityRadar) },
+                      { key: 'events', icon: Zap, label: 'Events', active: showDriverEvents, toggle: () => setShowDriverEvents(!showDriverEvents) },
+                      { key: 'dispatch', icon: Truck, label: 'Dispatch', active: showDispatch, toggle: () => setShowDispatch(!showDispatch) },
+                      { key: 'pulse', icon: Activity, label: 'Pulse', active: showFleetPulse, toggle: () => setShowFleetPulse(!showFleetPulse) },
+                    ].map(tool => (
+                      <Button
+                        key={tool.key}
+                        variant={tool.active ? "default" : "ghost"}
+                        size="sm"
+                        className={cn(
+                          "h-8 gap-1.5 text-[11px] justify-start px-2",
+                          tool.active && "bg-primary text-primary-foreground"
+                        )}
+                        onClick={tool.toggle}
+                      >
+                        <tool.icon className="w-3.5 h-3.5 shrink-0" />
+                        {tool.label}
+                      </Button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
