@@ -86,6 +86,16 @@ import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import FleetHealthRing from "@/components/vehicles/FleetHealthRing";
 import VehicleActivityMinibar from "@/components/vehicles/VehicleActivityMinibar";
+import VehicleHeadingArrow from "@/components/vehicles/VehicleHeadingArrow";
+import ColumnVisibilityToggle, { type ColumnConfig } from "@/components/vehicles/ColumnVisibilityToggle";
+import { useVehicle24hActivity } from "@/hooks/useVehicle24hActivity";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import maplibregl from "maplibre-gl";
 import { formatDistanceToNow } from "date-fns";
 
