@@ -10,8 +10,11 @@ import { useOrganization } from '@/hooks/useOrganization';
 interface Geofence {
   id: string;
   name: string;
-  fence_type: string;
-  geometry: any;
+  geometry_type: string;
+  polygon_points: any;
+  center_lat: number | null;
+  center_lng: number | null;
+  radius_meters: number | null;
   color: string | null;
   is_active: boolean;
 }
@@ -48,10 +51,10 @@ export const GeofenceLiveVisualizer = ({ map, vehicles, visible, onClose }: Geof
     const fetch = async () => {
       const { data } = await supabase
         .from('geofences')
-        .select('id, name, fence_type, geometry, color, is_active')
+        .select('id, name, geometry_type, polygon_points, center_lat, center_lng, radius_meters, color, is_active')
         .eq('organization_id', organizationId)
         .eq('is_active', true);
-      if (data) setGeofences(data);
+      if (data) setGeofences(data as unknown as Geofence[]);
     };
     fetch();
   }, [organizationId, visible]);
