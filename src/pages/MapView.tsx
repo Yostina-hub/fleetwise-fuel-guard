@@ -655,6 +655,7 @@ const MapView = () => {
           <DriverEventMapper map={mapInstance} visible={showDriverEvents} onClose={() => setShowDriverEvents(false)} />
           <SmartDispatchSuggester visible={showDispatch} onClose={() => setShowDispatch(false)} vehicles={filteredMapVehicles} onVehicleSelect={(id) => handleVehicleClick(filteredMapVehicles.find(v => v.id === id) || filteredMapVehicles[0])} />
           <FleetPulseDashboard visible={showFleetPulse} onClose={() => setShowFleetPulse(false)} vehicles={vehicles} />
+          <CommandCenterHUD visible={showCommandCenter} onClose={() => setShowCommandCenter(false)} vehicles={vehicles} />
 
           {/* Fullscreen Toggle */}
           <Button
