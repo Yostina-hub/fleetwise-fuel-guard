@@ -1834,6 +1834,100 @@ export type Database = {
           },
         ]
       }
+      driver_dvir_reports: {
+        Row: {
+          certified_safe: boolean
+          created_at: string
+          defect_count: number
+          defects_found: Json | null
+          driver_id: string
+          driver_signature: string | null
+          id: string
+          inspection_date: string
+          inspection_type: string
+          items_inspected: Json
+          mechanic_notes: string | null
+          mechanic_review_status: string | null
+          notes: string | null
+          odometer_reading: number | null
+          organization_id: string
+          overall_status: string
+          photos: string[] | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          certified_safe?: boolean
+          created_at?: string
+          defect_count?: number
+          defects_found?: Json | null
+          driver_id: string
+          driver_signature?: string | null
+          id?: string
+          inspection_date?: string
+          inspection_type?: string
+          items_inspected?: Json
+          mechanic_notes?: string | null
+          mechanic_review_status?: string | null
+          notes?: string | null
+          odometer_reading?: number | null
+          organization_id: string
+          overall_status?: string
+          photos?: string[] | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          certified_safe?: boolean
+          created_at?: string
+          defect_count?: number
+          defects_found?: Json | null
+          driver_id?: string
+          driver_signature?: string | null
+          id?: string
+          inspection_date?: string
+          inspection_type?: string
+          items_inspected?: Json
+          mechanic_notes?: string | null
+          mechanic_review_status?: string | null
+          notes?: string | null
+          odometer_reading?: number | null
+          organization_id?: string
+          overall_status?: string
+          photos?: string[] | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_dvir_reports_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_dvir_reports_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_dvir_reports_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_earned_achievements: {
         Row: {
           achievement_id: string
@@ -2386,6 +2480,118 @@ export type Database = {
           },
         ]
       }
+      driver_incidents: {
+        Row: {
+          created_at: string
+          damage_estimate_cost: number | null
+          description: string
+          driver_id: string
+          evidence_urls: string[] | null
+          fault_determination: string | null
+          id: string
+          incident_date: string
+          incident_type: string
+          injuries: boolean
+          injury_details: string | null
+          insurance_claim_number: string | null
+          lat: number | null
+          lng: number | null
+          location_name: string | null
+          organization_id: string
+          police_report_number: string | null
+          property_damage: boolean
+          reported_by: string | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          status: string
+          updated_at: string
+          vehicle_id: string | null
+          witnesses: Json | null
+        }
+        Insert: {
+          created_at?: string
+          damage_estimate_cost?: number | null
+          description: string
+          driver_id: string
+          evidence_urls?: string[] | null
+          fault_determination?: string | null
+          id?: string
+          incident_date?: string
+          incident_type?: string
+          injuries?: boolean
+          injury_details?: string | null
+          insurance_claim_number?: string | null
+          lat?: number | null
+          lng?: number | null
+          location_name?: string | null
+          organization_id: string
+          police_report_number?: string | null
+          property_damage?: boolean
+          reported_by?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+          updated_at?: string
+          vehicle_id?: string | null
+          witnesses?: Json | null
+        }
+        Update: {
+          created_at?: string
+          damage_estimate_cost?: number | null
+          description?: string
+          driver_id?: string
+          evidence_urls?: string[] | null
+          fault_determination?: string | null
+          id?: string
+          incident_date?: string
+          incident_type?: string
+          injuries?: boolean
+          injury_details?: string | null
+          insurance_claim_number?: string | null
+          lat?: number | null
+          lng?: number | null
+          location_name?: string | null
+          organization_id?: string
+          police_report_number?: string | null
+          property_damage?: boolean
+          reported_by?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+          updated_at?: string
+          vehicle_id?: string | null
+          witnesses?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_incidents_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_incidents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_incidents_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_license_alerts: {
         Row: {
           alert_type: string
@@ -2448,6 +2654,79 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_messages: {
+        Row: {
+          attachments: Json | null
+          body: string
+          created_at: string
+          id: string
+          is_read: boolean
+          message_type: string
+          organization_id: string
+          parent_message_id: string | null
+          priority: string
+          read_at: string | null
+          recipient_driver_id: string | null
+          sender_id: string | null
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          attachments?: Json | null
+          body: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message_type?: string
+          organization_id: string
+          parent_message_id?: string | null
+          priority?: string
+          read_at?: string | null
+          recipient_driver_id?: string | null
+          sender_id?: string | null
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          attachments?: Json | null
+          body?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message_type?: string
+          organization_id?: string
+          parent_message_id?: string | null
+          priority?: string
+          read_at?: string | null
+          recipient_driver_id?: string | null
+          sender_id?: string | null
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_messages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_messages_parent_message_id_fkey"
+            columns: ["parent_message_id"]
+            isOneToOne: false
+            referencedRelation: "driver_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_messages_recipient_driver_id_fkey"
+            columns: ["recipient_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
             referencedColumns: ["id"]
           },
         ]
