@@ -140,6 +140,7 @@ const Vehicles = () => {
   const [mapInstance, setMapInstance] = useState<maplibregl.Map | null>(null);
   const [viewMode, setViewMode] = useState<'table' | 'list'>('table'); // Default to table (list view in UI)
   const [showQuickInfo, setShowQuickInfo] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   
   const debouncedSearch = useDebounce(searchInput, 300);
   
