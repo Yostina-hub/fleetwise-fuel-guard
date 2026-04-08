@@ -580,7 +580,7 @@ useEffect(() => {
             <span style="font-size:10px;color:#374151;font-weight:500;">Street View</span>
           </button>
           <button 
-            onclick="window.dispatchEvent(new CustomEvent('openDirections', { detail: { lat: ${v.lat}, lng: ${v.lng}, plate: '${v.plate}' } }))"
+            onclick="window.dispatchEvent(new CustomEvent('openDirections', { detail: { lat: ${v.lat}, lng: ${v.lng}, plate: '${safePlate}' } }))"
             style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 14px;background:linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);border:1px solid #e5e7eb;border-radius:10px;cursor:pointer;transition:all 0.2s;"
             onmouseover="this.style.background='linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)';this.style.borderColor='#86efac'"
             onmouseout="this.style.background='linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)';this.style.borderColor='#e5e7eb'"
@@ -593,7 +593,7 @@ useEffect(() => {
             <span style="font-size:10px;color:#374151;font-weight:500;">Directions</span>
           </button>
           <button 
-            onclick="window.dispatchEvent(new CustomEvent('openTripReplay', { detail: { vehicleId: '${v.id}', plate: '${v.plate}' } }))"
+            onclick="window.dispatchEvent(new CustomEvent('openTripReplay', { detail: { vehicleId: '${v.id}', plate: '${safePlate}' } }))"
             style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 14px;background:linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);border:1px solid #e5e7eb;border-radius:10px;cursor:pointer;transition:all 0.2s;"
             onmouseover="this.style.background='linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%)';this.style.borderColor='#d8b4fe'"
             onmouseout="this.style.background='linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)';this.style.borderColor='#e5e7eb'"
