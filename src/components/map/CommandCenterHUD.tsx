@@ -92,7 +92,7 @@ export function CommandCenterHUD({ vehicles, visible, onClose }: CommandCenterHU
       if (!organizationId) return [];
       const { data } = await supabase
         .from('geofence_events')
-        .select('id, event_type, geofence_name, vehicle_id, created_at')
+        .select('id, event_type, geofence_id, vehicle_id, created_at')
         .eq('organization_id', organizationId)
         .order('created_at', { ascending: false })
         .limit(10);
