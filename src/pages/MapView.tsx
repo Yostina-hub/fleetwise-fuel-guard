@@ -652,7 +652,17 @@ const MapView = () => {
           <SmartDispatchSuggester visible={showDispatch} onClose={() => setShowDispatch(false)} vehicles={filteredMapVehicles} onVehicleSelect={(id) => handleVehicleClick(filteredMapVehicles.find(v => v.id === id) || filteredMapVehicles[0])} />
           <FleetPulseDashboard visible={showFleetPulse} onClose={() => setShowFleetPulse(false)} vehicles={vehicles} />
 
-          {/* Sidebar Toggle Button */}
+          {/* Fullscreen Toggle */}
+          <Button
+            variant="secondary"
+            size="icon"
+            className="absolute top-3 right-3 z-20 h-8 w-8 shadow-lg bg-background/90 backdrop-blur-sm"
+            onClick={toggleFullscreen}
+            title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+          >
+            {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+          </Button>
+
           <Button
             variant="secondary"
             size="icon"
