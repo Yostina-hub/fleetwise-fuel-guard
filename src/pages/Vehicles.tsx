@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 import {
   Popover,
   PopoverContent,
@@ -32,8 +34,11 @@ import { VehicleHoverCard } from "@/components/vehicles/VehicleHoverCard";
 import { VehicleListItem } from "@/components/vehicles/VehicleListItem";
 import { VehicleQuickInfoPopup } from "@/components/vehicles/VehicleQuickInfoPopup";
 import { MobileVehiclesList } from "@/components/mobile/MobileVehiclesList";
+import FleetVitalsDashboard from "@/components/vehicles/FleetVitalsDashboard";
+import FleetBulkActions from "@/components/vehicles/FleetBulkActions";
 import { TablePagination, usePagination } from "@/components/reports/TablePagination";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
   SlidersHorizontal,
@@ -58,6 +63,7 @@ import {
   X,
   LayoutList,
   LayoutGrid,
+  User,
 } from "lucide-react";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
