@@ -166,7 +166,6 @@ useEffect(() => {
         });
 
         map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
-        map.current.addControl(new maplibregl.FullscreenControl(), 'top-right');
 
         map.current.on('load', () => {
           fallbackTriedRef.current = false;
