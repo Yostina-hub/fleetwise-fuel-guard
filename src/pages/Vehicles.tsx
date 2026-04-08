@@ -401,9 +401,14 @@ const Vehicles = () => {
   return (
     <Layout>
       <div className="h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
+        {/* Fleet Vitals Dashboard */}
+        <div className="px-4 pt-3 pb-1 border-b bg-background/80 backdrop-blur">
+          <FleetVitalsDashboard vehicles={vehicles} />
+        </div>
+
         {/* Header with Search and Filters */}
         <div className="p-4 border-b bg-background space-y-3">
-          {/* Row 1: Search, Count Badge, Filter, View Toggle, Settings, Status Badges */}
+          {/* Row 1: Search, Count Badge, Filter, View Toggle, Bulk Actions, Status Badges */}
           <div className="flex items-center gap-3 flex-wrap">
             {/* Search */}
             <div className="relative min-w-[200px] max-w-sm flex-1">
@@ -434,21 +439,14 @@ const Vehicles = () => {
               {filteredVehicles.length} / {vehicles.length} vehicles
             </Badge>
             
-            {/* Filter Button */}
-            <Button variant="outline" size="sm" className="gap-2">
-              <SlidersHorizontal className="w-4 h-4" />
-              FILTER
-            </Button>
-            
-            {/* Settings Button */}
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="gap-2 bg-primary/10 border-primary/30 text-primary hover:bg-primary/20"
-            >
-              <Settings className="w-4 h-4" />
-              SETTING
-            </Button>
+            {/* Bulk Actions + Export */}
+            <FleetBulkActions
+              selectedIds={selectedIds}
+              vehicles={filteredVehicles}
+              onClearSelection={clearSelection}
+              onSelectAll={selectAll}
+              allSelected={selectedIds.size === filteredVehicles.length && filteredVehicles.length > 0}
+            />
             
             {/* View Mode Toggle */}
             <div className="flex items-center border rounded-md overflow-hidden">
