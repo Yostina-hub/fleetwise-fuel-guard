@@ -220,6 +220,10 @@ useEffect(() => {
         try { resizeObserver.current?.disconnect(); } catch {}
         resizeObserver.current = null;
 
+        // Clear all pending address fetch timeouts to prevent memory leaks
+        addressFetchTimeouts.current.forEach((timeout) => clearTimeout(timeout));
+        addressFetchTimeouts.current.clear();
+
         trailAnimationFrames.current.forEach((frameId) => cancelAnimationFrame(frameId));
         trailAnimationFrames.current.clear();
         trailAnimationMarkers.current.forEach((marker) => marker.remove());
@@ -869,7 +873,7 @@ useEffect(() => {
 
           const statusLabel = vNow.status.charAt(0).toUpperCase() + vNow.status.slice(1);
           const statusClass = `popup-status-${vNow.status}`;
-          const currentAddress = vehicleAddresses.get(vNow.id) || 'Locating...';
+          const currentAddress = vehicleAddressesRef.current.get(vNow.id) || 'Locating...';
           const driverName = vNow.driverName || 'No driver assigned';
           const speedInfo = vNow.speed > 0 ? `${Math.round(vNow.speed)} km/h` : 'Stationary';
           const isOverspeed = vNow.speed > (vNow.speed_limit || 80);
@@ -1008,7 +1012,7 @@ useEffect(() => {
       map.current!.fitBounds(bounds, { padding: 50, maxZoom: 15 });
       initialBoundsFitted.current = true;
     }
-  }, [vehicles, mapLoaded, selectedVehicleId, onVehicleClick, vehicleAddresses, vehicleRoadInfo, generatePopupHTML]);
+  }, [vehicles, mapLoaded, selectedVehicleId, onVehicleClick, generatePopupHTML]);
 
   // Draw vehicle trails on the map with speed-based coloring
   useEffect(() => {
