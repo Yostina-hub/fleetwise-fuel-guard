@@ -49,6 +49,7 @@ import {
   Focus,
   Flame,
   Eye,
+  ShieldAlert,
   Users,
   Zap,
   History,
