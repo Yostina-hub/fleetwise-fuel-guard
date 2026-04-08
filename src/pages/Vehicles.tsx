@@ -149,9 +149,11 @@ const Vehicles = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mapStyle, setMapStyle] = useState<'streets' | 'satellite'>('streets');
   const [mapInstance, setMapInstance] = useState<maplibregl.Map | null>(null);
-  const [viewMode, setViewMode] = useState<'table' | 'list'>('table'); // Default to table (list view in UI)
+  const [viewMode, setViewMode] = useState<'table' | 'list'>('table');
   const [showQuickInfo, setShowQuickInfo] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [sortColumn, setSortColumn] = useState<string>("plate");
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   
   const debouncedSearch = useDebounce(searchInput, 300);
   
