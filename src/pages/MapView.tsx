@@ -19,6 +19,14 @@ import { HeatmapOverlay } from "@/components/map/HeatmapOverlay";
 import { TimeWarpPlayback } from "@/components/map/TimeWarpPlayback";
 import { ConvoyMode } from "@/components/map/ConvoyMode";
 import { PredictiveETA } from "@/components/map/PredictiveETA";
+import { GeofenceLiveVisualizer } from "@/components/map/GeofenceLiveVisualizer";
+import { RouteReplayComparison } from "@/components/map/RouteReplayComparison";
+import { FuelAnomalyDetector } from "@/components/map/FuelAnomalyDetector";
+import { SpeedCorridorOverlay } from "@/components/map/SpeedCorridorOverlay";
+import { VehicleProximityRadar } from "@/components/map/VehicleProximityRadar";
+import { DriverEventMapper } from "@/components/map/DriverEventMapper";
+import { SmartDispatchSuggester } from "@/components/map/SmartDispatchSuggester";
+import { FleetPulseDashboard } from "@/components/map/FleetPulseDashboard";
 
 import { 
   Navigation, 
