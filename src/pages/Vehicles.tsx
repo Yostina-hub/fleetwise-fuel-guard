@@ -1040,7 +1040,6 @@ const Vehicles = () => {
                       )}
                     </TableBody>
                   </Table>
-                  </div>
                   </TooltipProvider>
                 )}
                 
