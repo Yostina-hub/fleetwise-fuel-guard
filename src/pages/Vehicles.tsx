@@ -865,6 +865,14 @@ const Vehicles = () => {
                             <TableCell>
                               <VehicleActivityMinibar className="w-[90px]" />
                             </TableCell>
+                            {/* Alert indicator */}
+                            <TableCell>
+                              <VehicleAlertBadge vehicleId={vehicle.id} />
+                            </TableCell>
+                            {/* Fuel Trend Sparkline */}
+                            <TableCell>
+                              <VehicleFuelSparkline vehicleId={vehicle.id} currentFuel={vehicle.fuel} />
+                            </TableCell>
                             {/* Actions */}
                             <TableCell>
                               <div className="flex items-center gap-0.5">
