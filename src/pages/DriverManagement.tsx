@@ -20,6 +20,14 @@ import { DriverVehicleHistory } from "@/components/drivers/DriverVehicleHistory"
 import { DriverIncidentReporting } from "@/components/drivers/DriverIncidentReporting";
 import { DriverDVIRPanel } from "@/components/drivers/DriverDVIRPanel";
 import { DriverCommunicationHub } from "@/components/drivers/DriverCommunicationHub";
+// P2 components
+import { DriverMVRPanel } from "@/components/drivers/DriverMVRPanel";
+import { DriverCostAllocation } from "@/components/drivers/DriverCostAllocation";
+import { DriverPerformanceReviews } from "@/components/drivers/DriverPerformanceReviews";
+import { DriverFuelCards } from "@/components/drivers/DriverFuelCards";
+import { DriverComplianceCalendar } from "@/components/drivers/DriverComplianceCalendar";
+import { DriverAnalyticsDashboard } from "@/components/drivers/DriverAnalyticsDashboard";
+import { DriverAutoCoaching } from "@/components/drivers/DriverAutoCoaching";
 import {
   Trophy,
   Award,
@@ -37,6 +45,12 @@ import {
   AlertTriangle,
   ClipboardList,
   MessageSquare,
+  FileSearch,
+  DollarSign,
+  Star,
+  Calendar,
+  BarChart3,
+  Zap,
 } from "lucide-react";
 
 const DriverManagement = () => {
@@ -50,11 +64,8 @@ const DriverManagement = () => {
     : "";
 
   // Tabs that require a driver to be selected
-  const driverRequiredTabs = ["achievements", "training", "fatigue", "insights", "onboarding", "documents", "vehicle-history"];
+  const driverRequiredTabs = ["achievements", "training", "fatigue", "insights", "onboarding", "documents", "vehicle-history", "cost-allocation", "reviews"];
   const needsDriver = driverRequiredTabs.includes(activeTab);
-
-  // Fleet-wide tabs (no driver selection needed)
-  const fleetWideTabs = ["availability", "leaderboard", "licenses", "hierarchy", "incidents", "dvir", "communications"];
 
   return (
     <Layout>
@@ -131,6 +142,22 @@ const DriverManagement = () => {
               <TabsTrigger value="communications" className="gap-1.5 text-xs px-3 py-1.5">
                 <MessageSquare className="w-3.5 h-3.5" /> Messages
               </TabsTrigger>
+              {/* P2 Fleet-wide tabs */}
+              <TabsTrigger value="mvr" className="gap-1.5 text-xs px-3 py-1.5">
+                <FileSearch className="w-3.5 h-3.5" /> MVR
+              </TabsTrigger>
+              <TabsTrigger value="fuel-cards" className="gap-1.5 text-xs px-3 py-1.5">
+                <CreditCard className="w-3.5 h-3.5" /> Fuel Cards
+              </TabsTrigger>
+              <TabsTrigger value="compliance" className="gap-1.5 text-xs px-3 py-1.5">
+                <Calendar className="w-3.5 h-3.5" /> Compliance
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="gap-1.5 text-xs px-3 py-1.5">
+                <BarChart3 className="w-3.5 h-3.5" /> Analytics
+              </TabsTrigger>
+              <TabsTrigger value="auto-coaching" className="gap-1.5 text-xs px-3 py-1.5">
+                <Zap className="w-3.5 h-3.5" /> Coaching
+              </TabsTrigger>
               {/* Driver-specific tabs */}
               <TabsTrigger value="onboarding" className="gap-1.5 text-xs px-3 py-1.5">
                 <ClipboardCheck className="w-3.5 h-3.5" /> Onboarding
@@ -140,6 +167,12 @@ const DriverManagement = () => {
               </TabsTrigger>
               <TabsTrigger value="vehicle-history" className="gap-1.5 text-xs px-3 py-1.5">
                 <Car className="w-3.5 h-3.5" /> Vehicles
+              </TabsTrigger>
+              <TabsTrigger value="cost-allocation" className="gap-1.5 text-xs px-3 py-1.5">
+                <DollarSign className="w-3.5 h-3.5" /> Costs
+              </TabsTrigger>
+              <TabsTrigger value="reviews" className="gap-1.5 text-xs px-3 py-1.5">
+                <Star className="w-3.5 h-3.5" /> Reviews
               </TabsTrigger>
               <TabsTrigger value="achievements" className="gap-1.5 text-xs px-3 py-1.5">
                 <Award className="w-3.5 h-3.5" /> Achievements
@@ -157,27 +190,19 @@ const DriverManagement = () => {
           </div>
 
           {/* Fleet-wide tabs */}
-          <TabsContent value="availability">
-            <DriverAvailabilityBoard />
-          </TabsContent>
-          <TabsContent value="leaderboard">
-            <DriverLeaderboard />
-          </TabsContent>
-          <TabsContent value="licenses">
-            <DriverLicenseTracker />
-          </TabsContent>
-          <TabsContent value="hierarchy">
-            <DriverHierarchyView />
-          </TabsContent>
-          <TabsContent value="incidents">
-            <DriverIncidentReporting />
-          </TabsContent>
-          <TabsContent value="dvir">
-            <DriverDVIRPanel />
-          </TabsContent>
-          <TabsContent value="communications">
-            <DriverCommunicationHub />
-          </TabsContent>
+          <TabsContent value="availability"><DriverAvailabilityBoard /></TabsContent>
+          <TabsContent value="leaderboard"><DriverLeaderboard /></TabsContent>
+          <TabsContent value="licenses"><DriverLicenseTracker /></TabsContent>
+          <TabsContent value="hierarchy"><DriverHierarchyView /></TabsContent>
+          <TabsContent value="incidents"><DriverIncidentReporting /></TabsContent>
+          <TabsContent value="dvir"><DriverDVIRPanel /></TabsContent>
+          <TabsContent value="communications"><DriverCommunicationHub /></TabsContent>
+          {/* P2 Fleet-wide tabs */}
+          <TabsContent value="mvr"><DriverMVRPanel /></TabsContent>
+          <TabsContent value="fuel-cards"><DriverFuelCards /></TabsContent>
+          <TabsContent value="compliance"><DriverComplianceCalendar /></TabsContent>
+          <TabsContent value="analytics"><DriverAnalyticsDashboard /></TabsContent>
+          <TabsContent value="auto-coaching"><DriverAutoCoaching /></TabsContent>
 
           {/* Driver-specific tabs */}
           {needsDriver && !selectedDriverId ? (
@@ -187,21 +212,7 @@ const DriverManagement = () => {
                   <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
                   <h3 className="text-lg font-semibold mb-2">Select a Driver</h3>
                   <p className="text-muted-foreground text-sm max-w-md mx-auto">
-                    Use the driver selector above to view their{" "}
-                    {activeTab === "onboarding"
-                      ? "onboarding/offboarding checklist"
-                      : activeTab === "documents"
-                        ? "document qualification file (DQF)"
-                        : activeTab === "vehicle-history"
-                          ? "vehicle assignment history"
-                          : activeTab === "achievements"
-                            ? "achievements and XP progress"
-                            : activeTab === "training"
-                              ? "training courses and certifications"
-                              : activeTab === "fatigue"
-                                ? "fatigue indicators and HOS compliance"
-                                : "AI-powered insights and coaching tips"}
-                    .
+                    Use the driver selector above to view driver-specific data for this tab.
                   </p>
                 </CardContent>
               </Card>
@@ -217,11 +228,14 @@ const DriverManagement = () => {
               <TabsContent value="vehicle-history">
                 <DriverVehicleHistory driverId={selectedDriverId} driverName={driverName} />
               </TabsContent>
+              <TabsContent value="cost-allocation">
+                <DriverCostAllocation driverId={selectedDriverId} driverName={driverName} />
+              </TabsContent>
+              <TabsContent value="reviews">
+                <DriverPerformanceReviews driverId={selectedDriverId} driverName={driverName} />
+              </TabsContent>
               <TabsContent value="achievements">
-                <DriverAchievementsPanel
-                  driverId={selectedDriverId}
-                  driverName={driverName}
-                />
+                <DriverAchievementsPanel driverId={selectedDriverId} driverName={driverName} />
               </TabsContent>
               <TabsContent value="training">
                 <DriverTrainingPanel driverId={selectedDriverId} />

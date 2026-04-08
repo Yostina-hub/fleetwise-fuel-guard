@@ -1771,6 +1771,90 @@ export type Database = {
           },
         ]
       }
+      driver_coaching_workflows: {
+        Row: {
+          action_items: Json | null
+          assigned_coach_id: string | null
+          assigned_coach_name: string | null
+          coaching_type: string | null
+          completed_date: string | null
+          created_at: string
+          driver_id: string
+          effectiveness_rating: number | null
+          follow_up_date: string | null
+          id: string
+          improvement_pct: number | null
+          organization_id: string
+          scheduled_date: string | null
+          score_after: number | null
+          score_before: number | null
+          session_notes: string | null
+          status: string | null
+          trigger_details: Json | null
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          action_items?: Json | null
+          assigned_coach_id?: string | null
+          assigned_coach_name?: string | null
+          coaching_type?: string | null
+          completed_date?: string | null
+          created_at?: string
+          driver_id: string
+          effectiveness_rating?: number | null
+          follow_up_date?: string | null
+          id?: string
+          improvement_pct?: number | null
+          organization_id: string
+          scheduled_date?: string | null
+          score_after?: number | null
+          score_before?: number | null
+          session_notes?: string | null
+          status?: string | null
+          trigger_details?: Json | null
+          trigger_type: string
+          updated_at?: string
+        }
+        Update: {
+          action_items?: Json | null
+          assigned_coach_id?: string | null
+          assigned_coach_name?: string | null
+          coaching_type?: string | null
+          completed_date?: string | null
+          created_at?: string
+          driver_id?: string
+          effectiveness_rating?: number | null
+          follow_up_date?: string | null
+          id?: string
+          improvement_pct?: number | null
+          organization_id?: string
+          scheduled_date?: string | null
+          score_after?: number | null
+          score_before?: number | null
+          session_notes?: string | null
+          status?: string | null
+          trigger_details?: Json | null
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_coaching_workflows_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_coaching_workflows_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_communications: {
         Row: {
           acknowledged_at: string | null
@@ -1827,6 +1911,147 @@ export type Database = {
           },
           {
             foreignKeyName: "driver_communications_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_compliance_events: {
+        Row: {
+          assigned_to: string | null
+          completed_date: string | null
+          created_at: string
+          description: string | null
+          driver_id: string
+          due_date: string
+          event_type: string
+          id: string
+          last_reminder_sent: string | null
+          organization_id: string
+          priority: string | null
+          reminder_days: number[] | null
+          status: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          completed_date?: string | null
+          created_at?: string
+          description?: string | null
+          driver_id: string
+          due_date: string
+          event_type: string
+          id?: string
+          last_reminder_sent?: string | null
+          organization_id: string
+          priority?: string | null
+          reminder_days?: number[] | null
+          status?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          completed_date?: string | null
+          created_at?: string
+          description?: string | null
+          driver_id?: string
+          due_date?: string
+          event_type?: string
+          id?: string
+          last_reminder_sent?: string | null
+          organization_id?: string
+          priority?: string | null
+          reminder_days?: number[] | null
+          status?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_compliance_events_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_compliance_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_cost_allocations: {
+        Row: {
+          cost_per_km: number | null
+          created_at: string
+          driver_id: string
+          fine_cost: number | null
+          fuel_cost: number | null
+          id: string
+          insurance_cost: number | null
+          maintenance_cost: number | null
+          notes: string | null
+          organization_id: string
+          other_cost: number | null
+          period_end: string
+          period_start: string
+          toll_cost: number | null
+          total_cost: number | null
+          updated_at: string
+        }
+        Insert: {
+          cost_per_km?: number | null
+          created_at?: string
+          driver_id: string
+          fine_cost?: number | null
+          fuel_cost?: number | null
+          id?: string
+          insurance_cost?: number | null
+          maintenance_cost?: number | null
+          notes?: string | null
+          organization_id: string
+          other_cost?: number | null
+          period_end: string
+          period_start: string
+          toll_cost?: number | null
+          total_cost?: number | null
+          updated_at?: string
+        }
+        Update: {
+          cost_per_km?: number | null
+          created_at?: string
+          driver_id?: string
+          fine_cost?: number | null
+          fuel_cost?: number | null
+          id?: string
+          insurance_cost?: number | null
+          maintenance_cost?: number | null
+          notes?: string | null
+          organization_id?: string
+          other_cost?: number | null
+          period_end?: string
+          period_start?: string
+          toll_cost?: number | null
+          total_cost?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_cost_allocations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_cost_allocations_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -2134,6 +2359,84 @@ export type Database = {
           },
           {
             foreignKeyName: "driver_fatigue_indicators_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_fuel_cards: {
+        Row: {
+          card_number: string
+          card_provider: string | null
+          card_type: string | null
+          created_at: string
+          current_month_spent: number | null
+          daily_limit: number | null
+          driver_id: string
+          expiry_date: string | null
+          id: string
+          issued_date: string | null
+          last_transaction_at: string | null
+          monthly_limit: number | null
+          organization_id: string
+          pin_last_changed: string | null
+          status: string | null
+          suspicious_activity_flag: boolean | null
+          suspicious_activity_notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          card_number: string
+          card_provider?: string | null
+          card_type?: string | null
+          created_at?: string
+          current_month_spent?: number | null
+          daily_limit?: number | null
+          driver_id: string
+          expiry_date?: string | null
+          id?: string
+          issued_date?: string | null
+          last_transaction_at?: string | null
+          monthly_limit?: number | null
+          organization_id: string
+          pin_last_changed?: string | null
+          status?: string | null
+          suspicious_activity_flag?: boolean | null
+          suspicious_activity_notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          card_number?: string
+          card_provider?: string | null
+          card_type?: string | null
+          created_at?: string
+          current_month_spent?: number | null
+          daily_limit?: number | null
+          driver_id?: string
+          expiry_date?: string | null
+          id?: string
+          issued_date?: string | null
+          last_transaction_at?: string | null
+          monthly_limit?: number | null
+          organization_id?: string
+          pin_last_changed?: string | null
+          status?: string | null
+          suspicious_activity_flag?: boolean | null
+          suspicious_activity_notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_fuel_cards_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_fuel_cards_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -2731,6 +3034,84 @@ export type Database = {
           },
         ]
       }
+      driver_mvr_records: {
+        Row: {
+          created_at: string
+          driver_id: string
+          dui_found: boolean | null
+          id: string
+          next_pull_date: string | null
+          notes: string | null
+          organization_id: string
+          points_total: number | null
+          pull_date: string
+          report_source: string | null
+          review_status: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          risk_level: string | null
+          suspensions_found: boolean | null
+          updated_at: string
+          violation_count: number | null
+          violations: Json | null
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          dui_found?: boolean | null
+          id?: string
+          next_pull_date?: string | null
+          notes?: string | null
+          organization_id: string
+          points_total?: number | null
+          pull_date?: string
+          report_source?: string | null
+          review_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          risk_level?: string | null
+          suspensions_found?: boolean | null
+          updated_at?: string
+          violation_count?: number | null
+          violations?: Json | null
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          dui_found?: boolean | null
+          id?: string
+          next_pull_date?: string | null
+          notes?: string | null
+          organization_id?: string
+          points_total?: number | null
+          pull_date?: string
+          report_source?: string | null
+          review_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          risk_level?: string | null
+          suspensions_found?: boolean | null
+          updated_at?: string
+          violation_count?: number | null
+          violations?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_mvr_records_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_mvr_records_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_onboarding_checklists: {
         Row: {
           checklist_type: string
@@ -2985,6 +3366,105 @@ export type Database = {
           },
           {
             foreignKeyName: "driver_penalty_summary_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_performance_reviews: {
+        Row: {
+          acknowledged_at: string | null
+          completed_at: string | null
+          compliance_score: number | null
+          created_at: string
+          customer_score: number | null
+          driver_comments: string | null
+          driver_id: string
+          efficiency_score: number | null
+          goals: Json | null
+          id: string
+          improvement_areas: string[] | null
+          improvement_plan: string | null
+          manager_comments: string | null
+          next_review_date: string | null
+          organization_id: string
+          overall_score: number | null
+          review_period_end: string
+          review_period_start: string
+          review_type: string | null
+          reviewer_id: string | null
+          reviewer_name: string | null
+          safety_score: number | null
+          status: string | null
+          strengths: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          completed_at?: string | null
+          compliance_score?: number | null
+          created_at?: string
+          customer_score?: number | null
+          driver_comments?: string | null
+          driver_id: string
+          efficiency_score?: number | null
+          goals?: Json | null
+          id?: string
+          improvement_areas?: string[] | null
+          improvement_plan?: string | null
+          manager_comments?: string | null
+          next_review_date?: string | null
+          organization_id: string
+          overall_score?: number | null
+          review_period_end: string
+          review_period_start: string
+          review_type?: string | null
+          reviewer_id?: string | null
+          reviewer_name?: string | null
+          safety_score?: number | null
+          status?: string | null
+          strengths?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          completed_at?: string | null
+          compliance_score?: number | null
+          created_at?: string
+          customer_score?: number | null
+          driver_comments?: string | null
+          driver_id?: string
+          efficiency_score?: number | null
+          goals?: Json | null
+          id?: string
+          improvement_areas?: string[] | null
+          improvement_plan?: string | null
+          manager_comments?: string | null
+          next_review_date?: string | null
+          organization_id?: string
+          overall_score?: number | null
+          review_period_end?: string
+          review_period_start?: string
+          review_type?: string | null
+          reviewer_id?: string | null
+          reviewer_name?: string | null
+          safety_score?: number | null
+          status?: string | null
+          strengths?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_performance_reviews_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_performance_reviews_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
