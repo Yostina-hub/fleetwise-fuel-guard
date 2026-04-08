@@ -513,7 +513,7 @@ const MapView = () => {
                   "h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium",
                   showTrails 
                     ? "bg-primary text-primary-foreground" 
-                    : "bg-white/95 text-foreground border-border"
+                    : "bg-white/95 text-slate-800 border-border"
                 )}
                 onClick={() => setShowTrails(!showTrails)}
                 aria-label="Toggle vehicle trails"
@@ -531,7 +531,7 @@ const MapView = () => {
                   "h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium",
                   showNearbySearch 
                     ? "bg-primary text-primary-foreground" 
-                    : "bg-white/95 text-foreground border-border"
+                    : "bg-white/95 text-slate-800 border-border"
                 )}
                 onClick={() => setShowNearbySearch(!showNearbySearch)}
                 aria-label="Search for nearby vehicles"
@@ -557,7 +557,7 @@ const MapView = () => {
                     "h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium",
                     followMode 
                       ? "bg-blue-600 text-white hover:bg-blue-700" 
-                      : "bg-white/95 text-foreground border-border"
+                      : "bg-white/95 text-slate-800 border-border"
                   )}
                   onClick={() => setFollowMode(!followMode)}
                   aria-label="Toggle follow vehicle mode"
@@ -573,7 +573,7 @@ const MapView = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-9 w-full gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
+                  className="h-9 w-full gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-slate-800 border-border"
                   onClick={() => setShowAdvancedTools(!showAdvancedTools)}
                 >
                   <Zap className="w-4 h-4" />
