@@ -357,6 +357,16 @@ const Vehicles = () => {
     setDetailModalOpen(true);
   }, []);
 
+  // Sort toggle handler
+  const toggleSort = useCallback((col: string) => {
+    if (sortColumn === col) {
+      setSortDirection(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(col);
+      setSortDirection('asc');
+    }
+  }, [sortColumn]);
+
   // Bulk selection handlers
   const toggleSelection = useCallback((id: string) => {
     setSelectedIds(prev => {
