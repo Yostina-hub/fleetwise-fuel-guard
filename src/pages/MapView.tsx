@@ -597,6 +597,78 @@ const MapView = () => {
                   <Zap className="w-4 h-4" />
                   <span className="hidden sm:inline">ETA</span>
                 </Button>
+                <Button
+                  variant={showGeofenceViz ? "default" : "outline"}
+                  size="sm"
+                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
+                  onClick={() => setShowGeofenceViz(!showGeofenceViz)}
+                >
+                  <Shield className="w-4 h-4" />
+                  <span className="hidden sm:inline">Geofences</span>
+                </Button>
+                <Button
+                  variant={showRouteComparison ? "default" : "outline"}
+                  size="sm"
+                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
+                  onClick={() => setShowRouteComparison(!showRouteComparison)}
+                >
+                  <GitCompare className="w-4 h-4" />
+                  <span className="hidden sm:inline">Routes</span>
+                </Button>
+                <Button
+                  variant={showFuelAnomaly ? "default" : "outline"}
+                  size="sm"
+                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
+                  onClick={() => setShowFuelAnomaly(!showFuelAnomaly)}
+                >
+                  <Droplets className="w-4 h-4" />
+                  <span className="hidden sm:inline">Fuel</span>
+                </Button>
+                <Button
+                  variant={showSpeedCorridor ? "default" : "outline"}
+                  size="sm"
+                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
+                  onClick={() => setShowSpeedCorridor(!showSpeedCorridor)}
+                >
+                  <Gauge className="w-4 h-4" />
+                  <span className="hidden sm:inline">Speed</span>
+                </Button>
+                <Button
+                  variant={showProximityRadar ? "default" : "outline"}
+                  size="sm"
+                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
+                  onClick={() => setShowProximityRadar(!showProximityRadar)}
+                >
+                  <Radio className="w-4 h-4" />
+                  <span className="hidden sm:inline">Proximity</span>
+                </Button>
+                <Button
+                  variant={showDriverEvents ? "default" : "outline"}
+                  size="sm"
+                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
+                  onClick={() => setShowDriverEvents(!showDriverEvents)}
+                >
+                  <Zap className="w-4 h-4" />
+                  <span className="hidden sm:inline">Events</span>
+                </Button>
+                <Button
+                  variant={showDispatch ? "default" : "outline"}
+                  size="sm"
+                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
+                  onClick={() => setShowDispatch(!showDispatch)}
+                >
+                  <Truck className="w-4 h-4" />
+                  <span className="hidden sm:inline">Dispatch</span>
+                </Button>
+                <Button
+                  variant={showFleetPulse ? "default" : "outline"}
+                  size="sm"
+                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
+                  onClick={() => setShowFleetPulse(!showFleetPulse)}
+                >
+                  <Activity className="w-4 h-4" />
+                  <span className="hidden sm:inline">Pulse</span>
+                </Button>
               </div>
             </div>
 
