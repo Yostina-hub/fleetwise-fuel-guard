@@ -47,6 +47,7 @@ import {
   Crosshair,
   Focus,
   Flame,
+  Eye,
   Users,
   Zap,
   History,
@@ -143,6 +144,7 @@ const MapView = () => {
   const [showFleetPulse, setShowFleetPulse] = useState(false);
   const [showToolStrip, setShowToolStrip] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showCommandCenter, setShowCommandCenter] = useState(false);
   const mapAreaRef = useRef<HTMLDivElement>(null);
 
   const toggleFullscreen = useCallback(() => {
