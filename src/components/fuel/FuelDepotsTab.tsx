@@ -30,6 +30,8 @@ const FuelDepotsTab = () => {
   const [newDepot, setNewDepot] = useState({
     name: "",
     location_name: "",
+    lat: 0,
+    lng: 0,
     fuel_type: "diesel",
     capacity_liters: 10000,
     current_stock_liters: 0,
@@ -60,6 +62,8 @@ const FuelDepotsTab = () => {
     setNewDepot({
       name: "",
       location_name: "",
+      lat: 0,
+      lng: 0,
       fuel_type: "diesel",
       capacity_liters: 10000,
       current_stock_liters: 0,

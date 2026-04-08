@@ -8,8 +8,8 @@ export interface FuelDepot {
   organization_id: string;
   name: string;
   location_name?: string;
-  lat?: number;
-  lng?: number;
+  lat: number;
+  lng: number;
   fuel_type: string;
   capacity_liters: number;
   current_stock_liters: number;
@@ -218,7 +218,9 @@ export const useFuelDepots = () => {
         .insert({
           ...depot,
           organization_id: organizationId,
-        })
+          lat: depot.lat ?? 0,
+          lng: depot.lng ?? 0,
+        } as any)
         .select()
         .single();
 
