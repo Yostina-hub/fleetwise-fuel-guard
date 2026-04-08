@@ -543,6 +543,46 @@ const MapView = () => {
                   <span className="hidden sm:inline">{followMode ? 'Following' : 'Follow'}</span>
                 </Button>
               )}
+
+              {/* Advanced Features */}
+              <div className="flex flex-col gap-1.5 mt-2 pt-2 border-t border-border/50">
+                <Button
+                  variant={showHeatmap ? "default" : "outline"}
+                  size="sm"
+                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
+                  onClick={() => setShowHeatmap(!showHeatmap)}
+                >
+                  <Flame className="w-4 h-4" />
+                  <span className="hidden sm:inline">Heatmap</span>
+                </Button>
+                <Button
+                  variant={showTimeWarp ? "default" : "outline"}
+                  size="sm"
+                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
+                  onClick={() => setShowTimeWarp(!showTimeWarp)}
+                >
+                  <History className="w-4 h-4" />
+                  <span className="hidden sm:inline">Time-Warp</span>
+                </Button>
+                <Button
+                  variant={showConvoy ? "default" : "outline"}
+                  size="sm"
+                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
+                  onClick={() => setShowConvoy(!showConvoy)}
+                >
+                  <Users className="w-4 h-4" />
+                  <span className="hidden sm:inline">Convoy</span>
+                </Button>
+                <Button
+                  variant={showETA ? "default" : "outline"}
+                  size="sm"
+                  className="h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-foreground border-border"
+                  onClick={() => setShowETA(!showETA)}
+                >
+                  <Zap className="w-4 h-4" />
+                  <span className="hidden sm:inline">ETA</span>
+                </Button>
+              </div>
             </div>
 
             {/* Nearby Vehicles Search Panel */}
@@ -564,6 +604,17 @@ const MapView = () => {
               </div>
             )}
           </div>
+
+          {/* Advanced Feature Overlays */}
+          <HeatmapOverlay map={mapInstance} vehicles={filteredMapVehicles} visible={showHeatmap} onClose={() => setShowHeatmap(false)} />
+          <TimeWarpPlayback
+            visible={showTimeWarp}
+            onClose={() => setShowTimeWarp(false)}
+            onPositionsUpdate={() => {}}
+            vehicleIds={vehicleIds}
+          />
+          <ConvoyMode map={mapInstance} vehicles={filteredMapVehicles} visible={showConvoy} onClose={() => setShowConvoy(false)} />
+          <PredictiveETA visible={showETA} onClose={() => setShowETA(false)} vehicles={filteredMapVehicles} />
 
           {/* Sidebar Toggle Button */}
           <Button
