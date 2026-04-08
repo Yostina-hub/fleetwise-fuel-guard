@@ -22,6 +22,7 @@ export type Database = {
           id: string
           ip_address: string | null
           lockout_reason: string | null
+          lockout_type: string | null
           lockout_until: string | null
           updated_at: string | null
           user_id: string | null
@@ -33,6 +34,7 @@ export type Database = {
           id?: string
           ip_address?: string | null
           lockout_reason?: string | null
+          lockout_type?: string | null
           lockout_until?: string | null
           updated_at?: string | null
           user_id?: string | null
@@ -44,6 +46,7 @@ export type Database = {
           id?: string
           ip_address?: string | null
           lockout_reason?: string | null
+          lockout_type?: string | null
           lockout_until?: string | null
           updated_at?: string | null
           user_id?: string | null
@@ -6154,6 +6157,30 @@ export type Database = {
           },
         ]
       }
+      password_reset_attempts: {
+        Row: {
+          attempted_at: string
+          created_at: string
+          email: string
+          id: string
+          ip_address: string | null
+        }
+        Insert: {
+          attempted_at?: string
+          created_at?: string
+          email: string
+          id?: string
+          ip_address?: string | null
+        }
+        Update: {
+          attempted_at?: string
+          created_at?: string
+          email?: string
+          id?: string
+          ip_address?: string | null
+        }
+        Relationships: []
+      }
       penalty_configurations: {
         Row: {
           auto_apply: boolean | null
@@ -9953,6 +9980,31 @@ export type Database = {
           lockout_until: string
         }[]
       }
+      check_ip_lockout: {
+        Args: {
+          p_ip_address: string
+          p_lockout_minutes?: number
+          p_max_attempts?: number
+        }
+        Returns: {
+          attempt_count: number
+          is_locked: boolean
+          locked_until: string
+        }[]
+      }
+      check_password_reset_rate_limit: {
+        Args: {
+          p_email: string
+          p_ip_address?: string
+          p_max_per_email?: number
+          p_max_per_ip?: number
+          p_window_minutes?: number
+        }
+        Returns: {
+          allowed: boolean
+          retry_after_seconds: number
+        }[]
+      }
       check_rate_limit: {
         Args: {
           p_client_id: string
@@ -10017,6 +10069,18 @@ export type Database = {
           failed_attempts: number
           is_locked: boolean
           lockout_until: string
+        }[]
+      }
+      record_ip_failed_login: {
+        Args: {
+          p_ip_address: string
+          p_lockout_minutes?: number
+          p_max_attempts?: number
+        }
+        Returns: {
+          attempt_count: number
+          is_locked: boolean
+          locked_until: string
         }[]
       }
       send_notification: {
