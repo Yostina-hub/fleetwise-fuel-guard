@@ -36,6 +36,9 @@ import { VehicleQuickInfoPopup } from "@/components/vehicles/VehicleQuickInfoPop
 import { MobileVehiclesList } from "@/components/mobile/MobileVehiclesList";
 import FleetVitalsDashboard from "@/components/vehicles/FleetVitalsDashboard";
 import FleetBulkActions from "@/components/vehicles/FleetBulkActions";
+import VehicleFuelSparkline from "@/components/vehicles/VehicleFuelSparkline";
+import VehicleAlertBadge from "@/components/vehicles/VehicleAlertBadge";
+import FleetRefreshTimer from "@/components/vehicles/FleetRefreshTimer";
 import { TablePagination, usePagination } from "@/components/reports/TablePagination";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { motion, AnimatePresence } from "framer-motion";
