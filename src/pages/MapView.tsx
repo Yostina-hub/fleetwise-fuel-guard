@@ -702,6 +702,14 @@ const MapView = () => {
           />
           <ConvoyMode map={mapInstance} vehicles={filteredMapVehicles} visible={showConvoy} onClose={() => setShowConvoy(false)} />
           <PredictiveETA visible={showETA} onClose={() => setShowETA(false)} vehicles={filteredMapVehicles} />
+          <GeofenceLiveVisualizer map={mapInstance} vehicles={filteredMapVehicles} visible={showGeofenceViz} onClose={() => setShowGeofenceViz(false)} />
+          <RouteReplayComparison map={mapInstance} visible={showRouteComparison} onClose={() => setShowRouteComparison(false)} vehicles={filteredMapVehicles} />
+          <FuelAnomalyDetector visible={showFuelAnomaly} onClose={() => setShowFuelAnomaly(false)} vehicles={filteredMapVehicles} />
+          <SpeedCorridorOverlay map={mapInstance} vehicles={filteredMapVehicles} visible={showSpeedCorridor} onClose={() => setShowSpeedCorridor(false)} />
+          <VehicleProximityRadar visible={showProximityRadar} onClose={() => setShowProximityRadar(false)} vehicles={filteredMapVehicles} />
+          <DriverEventMapper map={mapInstance} visible={showDriverEvents} onClose={() => setShowDriverEvents(false)} />
+          <SmartDispatchSuggester visible={showDispatch} onClose={() => setShowDispatch(false)} vehicles={filteredMapVehicles} onVehicleSelect={(id) => handleVehicleClick(filteredMapVehicles.find(v => v.id === id) || filteredMapVehicles[0])} />
+          <FleetPulseDashboard visible={showFleetPulse} onClose={() => setShowFleetPulse(false)} vehicles={vehicles} />
 
           {/* Sidebar Toggle Button */}
           <Button
