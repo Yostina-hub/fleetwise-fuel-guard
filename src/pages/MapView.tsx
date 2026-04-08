@@ -557,7 +557,7 @@ const MapView = () => {
                     "h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium",
                     followMode 
                       ? "bg-blue-600 text-white hover:bg-blue-700" 
-                      : "bg-white/95 text-foreground border-border"
+                      : "bg-white/95 text-slate-800 border-border"
                   )}
                   onClick={() => setFollowMode(!followMode)}
                   aria-label="Toggle follow vehicle mode"
