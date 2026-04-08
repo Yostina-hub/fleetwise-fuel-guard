@@ -541,43 +541,59 @@ const MapView = () => {
           </div>
 
           {/* Left Vertical Tool Strip - 12 Advanced Features */}
-          <div className="absolute top-16 left-3 z-10 flex flex-col gap-1 bg-background/90 backdrop-blur-sm rounded-xl border shadow-xl p-1.5">
-            {[
-              { key: 'heatmap', icon: Flame, label: 'Heatmap', active: showHeatmap, toggle: () => setShowHeatmap(!showHeatmap), color: 'text-orange-500' },
-              { key: 'timewarp', icon: History, label: 'Time-Warp', active: showTimeWarp, toggle: () => setShowTimeWarp(!showTimeWarp), color: 'text-blue-500' },
-              { key: 'convoy', icon: Users, label: 'Convoy', active: showConvoy, toggle: () => setShowConvoy(!showConvoy), color: 'text-emerald-500' },
-              { key: 'eta', icon: Zap, label: 'ETA', active: showETA, toggle: () => setShowETA(!showETA), color: 'text-yellow-500' },
-              { key: 'geofence', icon: Shield, label: 'Geofences', active: showGeofenceViz, toggle: () => setShowGeofenceViz(!showGeofenceViz), color: 'text-indigo-500' },
-              { key: 'routes', icon: GitCompare, label: 'Routes', active: showRouteComparison, toggle: () => setShowRouteComparison(!showRouteComparison), color: 'text-cyan-500' },
-              { key: 'fuel', icon: Droplets, label: 'Fuel', active: showFuelAnomaly, toggle: () => setShowFuelAnomaly(!showFuelAnomaly), color: 'text-teal-500' },
-              { key: 'speed', icon: Gauge, label: 'Speed', active: showSpeedCorridor, toggle: () => setShowSpeedCorridor(!showSpeedCorridor), color: 'text-amber-500' },
-              { key: 'proximity', icon: Radio, label: 'Proximity', active: showProximityRadar, toggle: () => setShowProximityRadar(!showProximityRadar), color: 'text-red-500' },
-              { key: 'events', icon: Zap, label: 'Events', active: showDriverEvents, toggle: () => setShowDriverEvents(!showDriverEvents), color: 'text-purple-500' },
-              { key: 'dispatch', icon: Truck, label: 'Dispatch', active: showDispatch, toggle: () => setShowDispatch(!showDispatch), color: 'text-sky-500' },
-              { key: 'pulse', icon: Activity, label: 'Pulse', active: showFleetPulse, toggle: () => setShowFleetPulse(!showFleetPulse), color: 'text-emerald-500' },
-            ].map(tool => (
-              <button
-                key={tool.key}
-                onClick={tool.toggle}
-                title={tool.label}
-                className={cn(
-                  "relative group flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-150",
-                  tool.active
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "hover:bg-muted/80 text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <tool.icon className={cn("w-4 h-4", !tool.active && tool.color)} />
-                {/* Tooltip */}
-                <span className="absolute left-full ml-2 px-2 py-1 text-[11px] font-medium bg-foreground text-background rounded-md whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity shadow-lg">
-                  {tool.label}
-                </span>
-                {/* Active indicator dot */}
-                {tool.active && (
-                  <span className="absolute -right-0.5 -top-0.5 w-2 h-2 rounded-full bg-emerald-400 border border-background animate-pulse" />
-                )}
-              </button>
-            ))}
+          <div className={cn(
+            "absolute left-3 top-1/2 -translate-y-1/2 z-10 flex items-center transition-all duration-200",
+          )}>
+            {/* Toggle Button */}
+            <button
+              onClick={() => setShowToolStrip(!showToolStrip)}
+              className={cn(
+                "flex items-center justify-center w-6 h-12 rounded-r-lg bg-background/90 backdrop-blur-sm border border-l-0 shadow-lg transition-all hover:bg-muted/80",
+                showToolStrip ? "rounded-r-lg" : "rounded-lg border-l"
+              )}
+              title={showToolStrip ? "Hide tools" : "Show tools"}
+            >
+              <ChevronRight className={cn("w-3.5 h-3.5 text-muted-foreground transition-transform", showToolStrip && "rotate-180")} />
+            </button>
+
+            {showToolStrip && (
+              <div className="ml-0 flex flex-col gap-1 bg-background/90 backdrop-blur-sm rounded-xl border shadow-xl p-1.5 max-h-[80vh] overflow-y-auto">
+                {[
+                  { key: 'heatmap', icon: Flame, label: 'Heatmap', active: showHeatmap, toggle: () => setShowHeatmap(!showHeatmap), color: 'text-orange-500' },
+                  { key: 'timewarp', icon: History, label: 'Time-Warp', active: showTimeWarp, toggle: () => setShowTimeWarp(!showTimeWarp), color: 'text-blue-500' },
+                  { key: 'convoy', icon: Users, label: 'Convoy', active: showConvoy, toggle: () => setShowConvoy(!showConvoy), color: 'text-emerald-500' },
+                  { key: 'eta', icon: Zap, label: 'ETA', active: showETA, toggle: () => setShowETA(!showETA), color: 'text-yellow-500' },
+                  { key: 'geofence', icon: Shield, label: 'Geofences', active: showGeofenceViz, toggle: () => setShowGeofenceViz(!showGeofenceViz), color: 'text-indigo-500' },
+                  { key: 'routes', icon: GitCompare, label: 'Routes', active: showRouteComparison, toggle: () => setShowRouteComparison(!showRouteComparison), color: 'text-cyan-500' },
+                  { key: 'fuel', icon: Droplets, label: 'Fuel', active: showFuelAnomaly, toggle: () => setShowFuelAnomaly(!showFuelAnomaly), color: 'text-teal-500' },
+                  { key: 'speed', icon: Gauge, label: 'Speed', active: showSpeedCorridor, toggle: () => setShowSpeedCorridor(!showSpeedCorridor), color: 'text-amber-500' },
+                  { key: 'proximity', icon: Radio, label: 'Proximity', active: showProximityRadar, toggle: () => setShowProximityRadar(!showProximityRadar), color: 'text-red-500' },
+                  { key: 'events', icon: Zap, label: 'Events', active: showDriverEvents, toggle: () => setShowDriverEvents(!showDriverEvents), color: 'text-purple-500' },
+                  { key: 'dispatch', icon: Truck, label: 'Dispatch', active: showDispatch, toggle: () => setShowDispatch(!showDispatch), color: 'text-sky-500' },
+                  { key: 'pulse', icon: Activity, label: 'Pulse', active: showFleetPulse, toggle: () => setShowFleetPulse(!showFleetPulse), color: 'text-emerald-500' },
+                ].map(tool => (
+                  <button
+                    key={tool.key}
+                    onClick={tool.toggle}
+                    title={tool.label}
+                    className={cn(
+                      "relative group flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-150",
+                      tool.active
+                        ? "bg-primary text-primary-foreground shadow-md"
+                        : "hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <tool.icon className={cn("w-4 h-4", !tool.active && tool.color)} />
+                    <span className="absolute left-full ml-2 px-2 py-1 text-[11px] font-medium bg-foreground text-background rounded-md whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity shadow-lg z-50">
+                      {tool.label}
+                    </span>
+                    {tool.active && (
+                      <span className="absolute -right-0.5 -top-0.5 w-2 h-2 rounded-full bg-emerald-400 border border-background animate-pulse" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
             {/* Nearby Vehicles Search Panel */}
