@@ -495,11 +495,11 @@ useEffect(() => {
         <!-- Driver info -->
         <div style="background:#f9fafb;border-radius:10px;padding:12px;margin-bottom:12px;border:1px solid #e5e7eb;">
           <div style="font-size:10px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Driver</div>
-          ${v.driverName ? `
+          ${safeDriverName ? `
             <div style="display:flex;align-items:center;justify-content:space-between;">
               <div style="display:flex;align-items:center;gap:8px;">
                 <div style="width:32px;height:32px;background:linear-gradient(135deg, #8DC63F 0%, #6ba02f 100%);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:600;font-size:13px;">
-                  ${v.driverName.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
+                  ${safeDriverName.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase()}
                 </div>
                 <div>
                   <div style="font-weight:600;font-size:14px;color:#111827;">${safeDriverName}</div>
@@ -567,7 +567,7 @@ useEffect(() => {
         <!-- Quick Actions Toolbar -->
         <div style="display:flex;justify-content:center;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid #e5e7eb;">
           <button 
-            onclick="window.dispatchEvent(new CustomEvent('openStreetView', { detail: { lat: ${v.lat}, lng: ${v.lng}, plate: '${v.plate}' } }))"
+            onclick="window.dispatchEvent(new CustomEvent('openStreetView', { detail: { lat: ${v.lat}, lng: ${v.lng}, plate: '${safePlate}' } }))"
             style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 14px;background:linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);border:1px solid #e5e7eb;border-radius:10px;cursor:pointer;transition:all 0.2s;"
             onmouseover="this.style.background='linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)';this.style.borderColor='#93c5fd'"
             onmouseout="this.style.background='linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)';this.style.borderColor='#e5e7eb'"
@@ -620,7 +620,7 @@ useEffect(() => {
         </div>
       </div>
     `;
-  }, []);
+  }, [escapeHtml]);
 
   // Keep popup "up / centered" by moving the marker slightly below center before opening.
   const focusMapForPopup = useCallback((vehicleLngLat: [number, number]) => {
