@@ -266,6 +266,16 @@ const Layout = ({ children }: LayoutProps) => {
 
         {/* Desktop Content Header */}
         <div className="hidden md:flex items-center justify-between gap-2 md:gap-3 px-3 md:px-6 py-2 border-b shrink-0 bg-[#1a2332] border-[#2a3a4d]">
+          {/* Left side - Sidebar toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleSidebar}
+            className="h-8 w-8 text-white/60 hover:text-white hover:bg-[#2a3a4d]"
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {isCollapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+          </Button>
           {/* Right side - Actions */}
           <div className="flex items-center gap-2 md:gap-3 ml-auto">
             {isSuperAdmin && (
