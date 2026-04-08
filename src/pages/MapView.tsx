@@ -141,7 +141,23 @@ const MapView = () => {
   const [showDispatch, setShowDispatch] = useState(false);
   const [showFleetPulse, setShowFleetPulse] = useState(false);
   const [showToolStrip, setShowToolStrip] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const mapAreaRef = useRef<HTMLDivElement>(null);
 
+  const toggleFullscreen = useCallback(() => {
+    if (!mapAreaRef.current) return;
+    if (!document.fullscreenElement) {
+      mapAreaRef.current.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {});
+    } else {
+      document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
+  }, []);
 
   // No automatic theme-to-mapStyle sync — user controls map style manually.
   // Default is 'streets' (set in useState initializer above).
