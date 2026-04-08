@@ -464,157 +464,121 @@ const MapView = () => {
             map={mapInstance}
             onMeasureFrom={(pt) => setMeasureFromPoint(pt)}
           />
-          {/* Minimal Map Controls */}
-          <div className="absolute top-4 left-4 z-10 max-h-[calc(100vh-8rem)] overflow-y-auto scrollbar-thin">
-            <div className="flex flex-col gap-2">
-              {/* Map Style Toggle */}
-              <div className="bg-background/90 backdrop-blur-sm rounded-lg border shadow-lg p-1 flex" role="group" aria-label="Map style selection">
-                <Button
-                  variant={mapStyle === 'satellite' ? 'default' : 'ghost'}
-                  size="sm"
-                  className="h-8 px-3 gap-2"
-                  onClick={() => setMapStyle('satellite')}
-                  aria-label="Satellite map view"
-                  aria-pressed={mapStyle === 'satellite'}
-                >
-                  <Satellite className="w-4 h-4" aria-hidden="true" />
-                  <span className="hidden sm:inline">Satellite</span>
-                </Button>
-                <Button
-                  variant={mapStyle === 'streets' ? 'default' : 'ghost'}
-                  size="sm"
-                  className="h-8 px-3 gap-2"
-                  onClick={() => setMapStyle('streets')}
-                  aria-label="Streets map view"
-                  aria-pressed={mapStyle === 'streets'}
-                >
-                  <Map className="w-4 h-4" aria-hidden="true" />
-                  <span className="hidden sm:inline">Streets</span>
-                </Button>
-                <Button
-                  variant={mapStyle === 'dark' ? 'default' : 'ghost'}
-                  size="sm"
-                  className="h-8 px-3 gap-2"
-                  onClick={() => setMapStyle('dark')}
-                  aria-label="Dark map view"
-                  aria-pressed={mapStyle === 'dark'}
-                >
-                  <Map className="w-4 h-4" aria-hidden="true" />
-                  <span className="hidden sm:inline">Dark</span>
-                </Button>
-              </div>
-
-
-              {/* Trail Toggle Button */}
+          {/* Top Map Controls Bar */}
+          <div className="absolute top-3 left-3 right-[22rem] z-10 flex items-center gap-2 flex-wrap">
+            {/* Map Style Toggle */}
+            <div className="bg-background/90 backdrop-blur-sm rounded-lg border shadow-lg p-0.5 flex" role="group" aria-label="Map style selection">
               <Button
-                variant={showTrails ? "default" : "outline"}
+                variant={mapStyle === 'satellite' ? 'default' : 'ghost'}
                 size="sm"
-                className={cn(
-                  "h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium",
-                  showTrails 
-                    ? "bg-primary text-primary-foreground" 
-                    : "bg-white/95 text-slate-800 border-border"
-                )}
+                className="h-7 px-2.5 gap-1.5 text-xs"
+                onClick={() => setMapStyle('satellite')}
+              >
+                <Satellite className="w-3.5 h-3.5" />
+                Satellite
+              </Button>
+              <Button
+                variant={mapStyle === 'streets' ? 'default' : 'ghost'}
+                size="sm"
+                className="h-7 px-2.5 gap-1.5 text-xs"
+                onClick={() => setMapStyle('streets')}
+              >
+                <Map className="w-3.5 h-3.5" />
+                Streets
+              </Button>
+              <Button
+                variant={mapStyle === 'dark' ? 'default' : 'ghost'}
+                size="sm"
+                className="h-7 px-2.5 gap-1.5 text-xs"
+                onClick={() => setMapStyle('dark')}
+              >
+                <Map className="w-3.5 h-3.5" />
+                Dark
+              </Button>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-background/90 backdrop-blur-sm rounded-lg border shadow-lg p-0.5 flex gap-0.5">
+              <Button
+                variant={showTrails ? "default" : "ghost"}
+                size="sm"
+                className="h-7 px-2.5 gap-1.5 text-xs"
                 onClick={() => setShowTrails(!showTrails)}
-                aria-label="Toggle vehicle trails"
-                aria-pressed={showTrails}
               >
-                <Route className="w-4 h-4" aria-hidden="true" />
-                <span className="hidden sm:inline">Trails</span>
+                <Route className="w-3.5 h-3.5" />
+                Trails
               </Button>
-
-              {/* Nearby Vehicles Search Button */}
               <Button
-                variant={showNearbySearch ? "default" : "outline"}
+                variant={showNearbySearch ? "default" : "ghost"}
                 size="sm"
-                className={cn(
-                  "h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium",
-                  showNearbySearch 
-                    ? "bg-primary text-primary-foreground" 
-                    : "bg-white/95 text-slate-800 border-border"
-                )}
+                className="h-7 px-2.5 gap-1.5 text-xs"
                 onClick={() => setShowNearbySearch(!showNearbySearch)}
-                aria-label="Search for nearby vehicles"
-                aria-pressed={showNearbySearch}
               >
-                <Radar className="w-4 h-4" aria-hidden="true" />
-                <span className="hidden sm:inline">Nearby</span>
+                <Radar className="w-3.5 h-3.5" />
+                Nearby
               </Button>
-
-              {/* Measure Distance Tool */}
               <MeasureDistanceTool
                 map={mapInstance}
                 mapLoaded={!!mapInstance}
                 initialPoint={measureFromPoint}
                 onClearInitialPoint={() => setMeasureFromPoint(null)}
               />
-              {/* Follow Mode Toggle - Only show when vehicle selected */}
               {selectedVehicleId && (
                 <Button
-                  variant={followMode ? "default" : "outline"}
+                  variant={followMode ? "default" : "ghost"}
                   size="sm"
                   className={cn(
-                    "h-9 gap-2 backdrop-blur-sm border shadow-lg font-medium",
-                    followMode 
-                      ? "bg-blue-600 text-white hover:bg-blue-700" 
-                      : "bg-white/95 text-slate-800 border-border"
+                    "h-7 px-2.5 gap-1.5 text-xs",
+                    followMode && "bg-blue-600 text-white hover:bg-blue-700"
                   )}
                   onClick={() => setFollowMode(!followMode)}
-                  aria-label="Toggle follow vehicle mode"
-                  aria-pressed={followMode}
                 >
-                  <Focus className={cn("w-4 h-4", followMode && "animate-pulse")} aria-hidden="true" />
-                  <span className="hidden sm:inline">{followMode ? 'Following' : 'Follow'}</span>
+                  <Focus className={cn("w-3.5 h-3.5", followMode && "animate-pulse")} />
+                  {followMode ? 'Following' : 'Follow'}
                 </Button>
               )}
-
-              {/* Advanced Features Toggle */}
-              <div className="mt-2 pt-2 border-t border-border/50">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-9 w-full gap-2 backdrop-blur-sm border shadow-lg font-medium bg-white/95 text-slate-800 border-border"
-                  onClick={() => setShowAdvancedTools(!showAdvancedTools)}
-                >
-                  <Zap className="w-4 h-4" />
-                  <span className="text-xs">Tools</span>
-                  <ChevronRight className={cn("w-3 h-3 ml-auto transition-transform", showAdvancedTools && "rotate-90")} />
-                </Button>
-
-                {showAdvancedTools && (
-                  <div className="mt-1.5 grid grid-cols-2 gap-1 bg-background/95 backdrop-blur-sm rounded-lg border shadow-lg p-1.5">
-                    {[
-                      { key: 'heatmap', icon: Flame, label: 'Heatmap', active: showHeatmap, toggle: () => setShowHeatmap(!showHeatmap) },
-                      { key: 'timewarp', icon: History, label: 'Time-Warp', active: showTimeWarp, toggle: () => setShowTimeWarp(!showTimeWarp) },
-                      { key: 'convoy', icon: Users, label: 'Convoy', active: showConvoy, toggle: () => setShowConvoy(!showConvoy) },
-                      { key: 'eta', icon: Zap, label: 'ETA', active: showETA, toggle: () => setShowETA(!showETA) },
-                      { key: 'geofence', icon: Shield, label: 'Geofences', active: showGeofenceViz, toggle: () => setShowGeofenceViz(!showGeofenceViz) },
-                      { key: 'routes', icon: GitCompare, label: 'Routes', active: showRouteComparison, toggle: () => setShowRouteComparison(!showRouteComparison) },
-                      { key: 'fuel', icon: Droplets, label: 'Fuel', active: showFuelAnomaly, toggle: () => setShowFuelAnomaly(!showFuelAnomaly) },
-                      { key: 'speed', icon: Gauge, label: 'Speed', active: showSpeedCorridor, toggle: () => setShowSpeedCorridor(!showSpeedCorridor) },
-                      { key: 'proximity', icon: Radio, label: 'Proximity', active: showProximityRadar, toggle: () => setShowProximityRadar(!showProximityRadar) },
-                      { key: 'events', icon: Zap, label: 'Events', active: showDriverEvents, toggle: () => setShowDriverEvents(!showDriverEvents) },
-                      { key: 'dispatch', icon: Truck, label: 'Dispatch', active: showDispatch, toggle: () => setShowDispatch(!showDispatch) },
-                      { key: 'pulse', icon: Activity, label: 'Pulse', active: showFleetPulse, toggle: () => setShowFleetPulse(!showFleetPulse) },
-                    ].map(tool => (
-                      <Button
-                        key={tool.key}
-                        variant={tool.active ? "default" : "ghost"}
-                        size="sm"
-                        className={cn(
-                          "h-8 gap-1.5 text-[11px] justify-start px-2",
-                          tool.active && "bg-primary text-primary-foreground"
-                        )}
-                        onClick={tool.toggle}
-                      >
-                        <tool.icon className="w-3.5 h-3.5 shrink-0" />
-                        {tool.label}
-                      </Button>
-                    ))}
-                  </div>
-                )}
-              </div>
             </div>
+          </div>
+
+          {/* Left Vertical Tool Strip - 12 Advanced Features */}
+          <div className="absolute top-16 left-3 z-10 flex flex-col gap-1 bg-background/90 backdrop-blur-sm rounded-xl border shadow-xl p-1.5">
+            {[
+              { key: 'heatmap', icon: Flame, label: 'Heatmap', active: showHeatmap, toggle: () => setShowHeatmap(!showHeatmap), color: 'text-orange-500' },
+              { key: 'timewarp', icon: History, label: 'Time-Warp', active: showTimeWarp, toggle: () => setShowTimeWarp(!showTimeWarp), color: 'text-blue-500' },
+              { key: 'convoy', icon: Users, label: 'Convoy', active: showConvoy, toggle: () => setShowConvoy(!showConvoy), color: 'text-emerald-500' },
+              { key: 'eta', icon: Zap, label: 'ETA', active: showETA, toggle: () => setShowETA(!showETA), color: 'text-yellow-500' },
+              { key: 'geofence', icon: Shield, label: 'Geofences', active: showGeofenceViz, toggle: () => setShowGeofenceViz(!showGeofenceViz), color: 'text-indigo-500' },
+              { key: 'routes', icon: GitCompare, label: 'Routes', active: showRouteComparison, toggle: () => setShowRouteComparison(!showRouteComparison), color: 'text-cyan-500' },
+              { key: 'fuel', icon: Droplets, label: 'Fuel', active: showFuelAnomaly, toggle: () => setShowFuelAnomaly(!showFuelAnomaly), color: 'text-teal-500' },
+              { key: 'speed', icon: Gauge, label: 'Speed', active: showSpeedCorridor, toggle: () => setShowSpeedCorridor(!showSpeedCorridor), color: 'text-amber-500' },
+              { key: 'proximity', icon: Radio, label: 'Proximity', active: showProximityRadar, toggle: () => setShowProximityRadar(!showProximityRadar), color: 'text-red-500' },
+              { key: 'events', icon: Zap, label: 'Events', active: showDriverEvents, toggle: () => setShowDriverEvents(!showDriverEvents), color: 'text-purple-500' },
+              { key: 'dispatch', icon: Truck, label: 'Dispatch', active: showDispatch, toggle: () => setShowDispatch(!showDispatch), color: 'text-sky-500' },
+              { key: 'pulse', icon: Activity, label: 'Pulse', active: showFleetPulse, toggle: () => setShowFleetPulse(!showFleetPulse), color: 'text-emerald-500' },
+            ].map(tool => (
+              <button
+                key={tool.key}
+                onClick={tool.toggle}
+                title={tool.label}
+                className={cn(
+                  "relative group flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-150",
+                  tool.active
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <tool.icon className={cn("w-4 h-4", !tool.active && tool.color)} />
+                {/* Tooltip */}
+                <span className="absolute left-full ml-2 px-2 py-1 text-[11px] font-medium bg-foreground text-background rounded-md whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity shadow-lg">
+                  {tool.label}
+                </span>
+                {/* Active indicator dot */}
+                {tool.active && (
+                  <span className="absolute -right-0.5 -top-0.5 w-2 h-2 rounded-full bg-emerald-400 border border-background animate-pulse" />
+                )}
+              </button>
+            ))}
+          </div>
 
             {/* Nearby Vehicles Search Panel */}
             {showNearbySearch && (
