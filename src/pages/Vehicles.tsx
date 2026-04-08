@@ -703,14 +703,14 @@ const Vehicles = () => {
                       {loading ? (
                         Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
                           <TableRow key={i}>
-                            <TableCell colSpan={13}>
+                            <TableCell colSpan={15}>
                               <Skeleton className="h-12 w-full" />
                             </TableCell>
                           </TableRow>
                         ))
                       ) : paginatedVehicles.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={13} className="text-center py-12 text-muted-foreground">
+                          <TableCell colSpan={15} className="text-center py-12 text-muted-foreground">
                             {filteredVehicles.length === 0 && searchInput 
                               ? `No vehicles match "${searchInput}"`
                               : "No vehicles found"
