@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 interface NewDepotData {
   name: string;
   location_name: string;
+  lat: number;
+  lng: number;
   fuel_type: string;
   capacity_liters: number;
   current_stock_liters: number;
