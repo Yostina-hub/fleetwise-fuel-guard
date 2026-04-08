@@ -108,7 +108,7 @@ const DriverManagement = () => {
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="overflow-x-auto -mx-2 px-2">
-            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-5 lg:grid-cols-11 gap-1">
+            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-7 lg:grid-cols-14 gap-1">
               {/* Fleet-wide tabs */}
               <TabsTrigger value="availability" className="gap-1.5 text-xs">
                 <Radio className="w-3.5 h-3.5" />
@@ -125,6 +125,18 @@ const DriverManagement = () => {
               <TabsTrigger value="hierarchy" className="gap-1.5 text-xs">
                 <FolderTree className="w-3.5 h-3.5" />
                 <span className="hidden lg:inline">Groups</span>
+              </TabsTrigger>
+              <TabsTrigger value="incidents" className="gap-1.5 text-xs">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                <span className="hidden lg:inline">Incidents</span>
+              </TabsTrigger>
+              <TabsTrigger value="dvir" className="gap-1.5 text-xs">
+                <ClipboardList className="w-3.5 h-3.5" />
+                <span className="hidden lg:inline">DVIR</span>
+              </TabsTrigger>
+              <TabsTrigger value="communications" className="gap-1.5 text-xs">
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span className="hidden lg:inline">Messages</span>
               </TabsTrigger>
               {/* Driver-specific tabs */}
               <TabsTrigger value="onboarding" className="gap-1.5 text-xs">
@@ -170,6 +182,15 @@ const DriverManagement = () => {
           </TabsContent>
           <TabsContent value="hierarchy">
             <DriverHierarchyView />
+          </TabsContent>
+          <TabsContent value="incidents">
+            <DriverIncidentReporting />
+          </TabsContent>
+          <TabsContent value="dvir">
+            <DriverDVIRPanel />
+          </TabsContent>
+          <TabsContent value="communications">
+            <DriverCommunicationHub />
           </TabsContent>
 
           {/* Driver-specific tabs */}
