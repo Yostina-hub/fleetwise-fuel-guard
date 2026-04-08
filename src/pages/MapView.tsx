@@ -110,7 +110,13 @@ const MapView = () => {
   
   const [mapStyle, setMapStyle] = useState<'streets' | 'satellite' | 'dark'>('streets');
   const [measureFromPoint, setMeasureFromPoint] = useState<[number, number] | null>(null);
-  
+  const [showHeatmap, setShowHeatmap] = useState(false);
+  const [showTimeWarp, setShowTimeWarp] = useState(false);
+  const [showConvoy, setShowConvoy] = useState(false);
+  const [showETA, setShowETA] = useState(false);
+  const [timeWarpActive, setTimeWarpActive] = useState(false);
+  const [timeWarpPositions, setTimeWarpPositions] = useState<Map<string, { lat: number; lng: number; speed: number; heading: number; engine_on: boolean }>>(new Map());
+
 
   // No automatic theme-to-mapStyle sync — user controls map style manually.
   // Default is 'streets' (set in useState initializer above).
