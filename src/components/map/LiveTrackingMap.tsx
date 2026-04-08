@@ -406,6 +406,10 @@ useEffect(() => {
 
   // Helper to generate popup HTML
   const generatePopupHTML = useCallback((addr: string, v: Vehicle, roadInfo?: { road: string; distance: number; direction: string }) => {
+    const safePlate = escapeHtml(v.plate);
+    const safeAddr = escapeHtml(addr);
+    const safeDriverName = v.driverName ? escapeHtml(v.driverName) : '';
+    const safeDriverPhone = v.driverPhone ? escapeHtml(v.driverPhone) : '';
     const gpsStrength = v.gps_signal_strength ?? 0;
     const gpsSignalLabel = gpsStrength >= 80 ? 'Strong' : gpsStrength >= 50 ? 'Moderate' : gpsStrength > 0 ? 'Weak' : 'No signal';
     const gpsColor = gpsStrength >= 80 ? '#22c55e' : gpsStrength >= 50 ? '#f59e0b' : gpsStrength > 0 ? '#ef4444' : '#6b7280';
@@ -429,7 +433,7 @@ useEffect(() => {
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #e5e7eb;">
           <div>
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-              <span style="font-weight:700;font-size:18px;color:#111827;">${v.plate}</span>
+              <span style="font-weight:700;font-size:18px;color:#111827;">${safePlate}</span>
               <span style="font-size:11px;padding:4px 12px;border-radius:9999px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;background:${v.status === 'moving' ? '#dcfce7' : v.status === 'idle' ? '#fef3c7' : v.status === 'stopped' ? '#f3f4f6' : '#fee2e2'};color:${v.status === 'moving' ? '#166534' : v.status === 'idle' ? '#92400e' : v.status === 'stopped' ? '#4b5563' : '#991b1b'};">${v.status}</span>
             </div>
             ${v.status === 'moving' && v.heading !== undefined ? `
@@ -498,8 +502,8 @@ useEffect(() => {
                   ${v.driverName.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
                 </div>
                 <div>
-                  <div style="font-weight:600;font-size:14px;color:#111827;">${v.driverName}</div>
-                  ${v.driverPhone ? `<div style="color:#6b7280;font-size:12px;">📞 ${v.driverPhone}</div>` : ''}
+                  <div style="font-weight:600;font-size:14px;color:#111827;">${safeDriverName}</div>
+                  ${safeDriverPhone ? `<div style="color:#6b7280;font-size:12px;">📞 ${safeDriverPhone}</div>` : ''}
                 </div>
               </div>
             </div>
@@ -533,7 +537,7 @@ useEffect(() => {
             <span style="font-size:16px;">📍</span>
             <div style="flex:1;">
               <div style="font-size:10px;color:#166534;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Current Location</div>
-              <div style="font-size:13px;color:#166534;line-height:1.5;font-weight:500;">${addr}</div>
+              <div style="font-size:13px;color:#166534;line-height:1.5;font-weight:500;">${safeAddr}</div>
             </div>
           </div>
         </div>
