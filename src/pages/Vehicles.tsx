@@ -36,6 +36,9 @@ import { VehicleQuickInfoPopup } from "@/components/vehicles/VehicleQuickInfoPop
 import { MobileVehiclesList } from "@/components/mobile/MobileVehiclesList";
 import FleetVitalsDashboard from "@/components/vehicles/FleetVitalsDashboard";
 import FleetBulkActions from "@/components/vehicles/FleetBulkActions";
+import VehicleFuelSparkline from "@/components/vehicles/VehicleFuelSparkline";
+import VehicleAlertBadge from "@/components/vehicles/VehicleAlertBadge";
+import FleetRefreshTimer from "@/components/vehicles/FleetRefreshTimer";
 import { TablePagination, usePagination } from "@/components/reports/TablePagination";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { motion, AnimatePresence } from "framer-motion";
@@ -72,6 +75,8 @@ import {
   Route,
   Radio,
   LocateFixed,
+  ShieldAlert,
+  
 } from "lucide-react";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
@@ -459,6 +464,7 @@ const Vehicles = () => {
           <div className="flex-1 overflow-hidden">
             <FleetVitalsDashboard vehicles={vehicles} />
           </div>
+          <FleetRefreshTimer intervalSeconds={30} />
         </div>
 
         {/* Header with Search and Filters */}
@@ -686,6 +692,10 @@ const Vehicles = () => {
                         </TableHead>
                         <TableHead className="text-foreground font-semibold">Last Seen</TableHead>
                         <TableHead className="text-foreground font-semibold w-[100px]">24h Activity</TableHead>
+                        <TableHead className="text-foreground font-semibold w-10">
+                          <ShieldAlert className="w-3.5 h-3.5 mx-auto" />
+                        </TableHead>
+                        <TableHead className="text-foreground font-semibold w-[70px]">Fuel Trend</TableHead>
                         <TableHead className="text-foreground font-semibold w-20">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -693,14 +703,14 @@ const Vehicles = () => {
                       {loading ? (
                         Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
                           <TableRow key={i}>
-                            <TableCell colSpan={13}>
+                            <TableCell colSpan={15}>
                               <Skeleton className="h-12 w-full" />
                             </TableCell>
                           </TableRow>
                         ))
                       ) : paginatedVehicles.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={13} className="text-center py-12 text-muted-foreground">
+                          <TableCell colSpan={15} className="text-center py-12 text-muted-foreground">
                             {filteredVehicles.length === 0 && searchInput 
                               ? `No vehicles match "${searchInput}"`
                               : "No vehicles found"
@@ -721,9 +731,26 @@ const Vehicles = () => {
                                     ? "transparent" 
                                     : "hsl(var(--muted) / 0.3)"
                             }}
-                            className="cursor-pointer hover:bg-primary/5 border-b transition-colors"
+                            className={cn(
+                              "cursor-pointer hover:bg-primary/5 border-b transition-colors",
+                              vehicle.isOverspeed && "border-l-2 border-l-destructive",
+                              vehicle.fuel > 0 && vehicle.fuel < 15 && !vehicle.isOverspeed && "border-l-2 border-l-warning",
+                              !vehicle.deviceConnected && vehicle.status === 'offline' && !vehicle.isOverspeed && vehicle.fuel >= 15 && "border-l-2 border-l-muted-foreground/40"
+                            )}
                             onClick={() => handleVehicleRowClick(vehicle)}
                             onDoubleClick={() => handleVehicleClick(vehicle)}
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleVehicleClick(vehicle);
+                              if (e.key === 'ArrowDown') {
+                                e.preventDefault();
+                                (e.currentTarget.nextElementSibling as HTMLElement)?.focus();
+                              }
+                              if (e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                (e.currentTarget.previousElementSibling as HTMLElement)?.focus();
+                              }
+                            }}
                           >
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               <Checkbox
@@ -854,6 +881,14 @@ const Vehicles = () => {
                             {/* 24h Activity Minibar */}
                             <TableCell>
                               <VehicleActivityMinibar className="w-[90px]" />
+                            </TableCell>
+                            {/* Alert indicator */}
+                            <TableCell>
+                              <VehicleAlertBadge vehicleId={vehicle.id} />
+                            </TableCell>
+                            {/* Fuel Trend Sparkline */}
+                            <TableCell>
+                              <VehicleFuelSparkline vehicleId={vehicle.id} currentFuel={vehicle.fuel} />
                             </TableCell>
                             {/* Actions */}
                             <TableCell>
