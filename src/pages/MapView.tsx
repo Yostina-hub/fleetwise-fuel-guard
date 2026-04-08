@@ -138,7 +138,7 @@ const MapView = () => {
   const [showDriverEvents, setShowDriverEvents] = useState(false);
   const [showDispatch, setShowDispatch] = useState(false);
   const [showFleetPulse, setShowFleetPulse] = useState(false);
-  
+  const [showToolStrip, setShowToolStrip] = useState(true);
 
 
   // No automatic theme-to-mapStyle sync — user controls map style manually.
