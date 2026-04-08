@@ -40,7 +40,14 @@ import {
   Flame,
   Users,
   Zap,
-  History
+  History,
+  Shield,
+  GitCompare,
+  Droplets,
+  Gauge,
+  Radio,
+  Activity,
+  Truck
 } from "lucide-react";
 import { GpsJammingIndicator } from "@/components/map/GpsJammingIndicator";
 import { useVehicles } from "@/hooks/useVehicles";
@@ -115,6 +122,14 @@ const MapView = () => {
   const [showConvoy, setShowConvoy] = useState(false);
   const [showETA, setShowETA] = useState(false);
   const [timeWarpActive, setTimeWarpActive] = useState(false);
+  const [showGeofenceViz, setShowGeofenceViz] = useState(false);
+  const [showRouteComparison, setShowRouteComparison] = useState(false);
+  const [showFuelAnomaly, setShowFuelAnomaly] = useState(false);
+  const [showSpeedCorridor, setShowSpeedCorridor] = useState(false);
+  const [showProximityRadar, setShowProximityRadar] = useState(false);
+  const [showDriverEvents, setShowDriverEvents] = useState(false);
+  const [showDispatch, setShowDispatch] = useState(false);
+  const [showFleetPulse, setShowFleetPulse] = useState(false);
 
 
   // No automatic theme-to-mapStyle sync — user controls map style manually.
