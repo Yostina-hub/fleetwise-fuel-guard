@@ -220,6 +220,9 @@ const DriverManagement = () => {
           <TabsContent value="compliance"><DriverComplianceCalendar /></TabsContent>
           <TabsContent value="analytics"><DriverAnalyticsDashboard /></TabsContent>
           <TabsContent value="auto-coaching"><DriverAutoCoaching /></TabsContent>
+          {/* P3 Fleet-wide tabs */}
+          <TabsContent value="rewards"><DriverRewardsRecognition /></TabsContent>
+          <TabsContent value="risk-scoring"><DriverPredictiveRiskScoring /></TabsContent>
 
           {/* Driver-specific tabs */}
           {needsDriver && !selectedDriverId ? (
@@ -250,6 +253,9 @@ const DriverManagement = () => {
               </TabsContent>
               <TabsContent value="reviews">
                 <DriverPerformanceReviews driverId={selectedDriverId} driverName={driverName} />
+              </TabsContent>
+              <TabsContent value="contracts">
+                <DriverContractManagement driverId={selectedDriverId} driverName={driverName} />
               </TabsContent>
               <TabsContent value="achievements">
                 <DriverAchievementsPanel driverId={selectedDriverId} driverName={driverName} />
