@@ -28,6 +28,7 @@ import { DriverEventMapper } from "@/components/map/DriverEventMapper";
 import { SmartDispatchSuggester } from "@/components/map/SmartDispatchSuggester";
 import { FleetPulseDashboard } from "@/components/map/FleetPulseDashboard";
 import { CommandCenterHUD } from "@/components/map/CommandCenterHUD";
+import { AnomalyMapLayer } from "@/components/map/AnomalyMapLayer";
 
 import { 
   Navigation, 
