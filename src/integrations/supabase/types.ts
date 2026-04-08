@@ -3555,8 +3555,8 @@ export type Database = {
           geofence_id: string | null
           id: string
           is_active: boolean | null
-          lat: number | null
-          lng: number | null
+          lat: number
+          lng: number
           location_name: string | null
           min_stock_threshold: number | null
           name: string
@@ -3571,8 +3571,8 @@ export type Database = {
           geofence_id?: string | null
           id?: string
           is_active?: boolean | null
-          lat?: number | null
-          lng?: number | null
+          lat: number
+          lng: number
           location_name?: string | null
           min_stock_threshold?: number | null
           name: string
@@ -3587,8 +3587,8 @@ export type Database = {
           geofence_id?: string | null
           id?: string
           is_active?: boolean | null
-          lat?: number | null
-          lng?: number | null
+          lat?: number
+          lng?: number
           location_name?: string | null
           min_stock_threshold?: number | null
           name?: string
@@ -4132,8 +4132,8 @@ export type Database = {
           card_number: string | null
           created_at: string
           fuel_amount_liters: number
-          fuel_cost: number | null
-          fuel_price_per_liter: number | null
+          fuel_cost: number
+          fuel_price_per_liter: number
           id: string
           is_reconciled: boolean | null
           lat: number | null
@@ -4156,8 +4156,8 @@ export type Database = {
           card_number?: string | null
           created_at?: string
           fuel_amount_liters: number
-          fuel_cost?: number | null
-          fuel_price_per_liter?: number | null
+          fuel_cost?: number
+          fuel_price_per_liter?: number
           id?: string
           is_reconciled?: boolean | null
           lat?: number | null
@@ -4180,8 +4180,8 @@ export type Database = {
           card_number?: string | null
           created_at?: string
           fuel_amount_liters?: number
-          fuel_cost?: number | null
-          fuel_price_per_liter?: number | null
+          fuel_cost?: number
+          fuel_price_per_liter?: number
           id?: string
           is_reconciled?: boolean | null
           lat?: number | null
