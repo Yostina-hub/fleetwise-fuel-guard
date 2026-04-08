@@ -86,6 +86,16 @@ import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import FleetHealthRing from "@/components/vehicles/FleetHealthRing";
 import VehicleActivityMinibar from "@/components/vehicles/VehicleActivityMinibar";
+import VehicleHeadingArrow from "@/components/vehicles/VehicleHeadingArrow";
+import ColumnVisibilityToggle, { type ColumnConfig } from "@/components/vehicles/ColumnVisibilityToggle";
+import { useVehicle24hActivity } from "@/hooks/useVehicle24hActivity";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import maplibregl from "maplibre-gl";
 import { formatDistanceToNow } from "date-fns";
 
@@ -143,6 +153,8 @@ const Vehicles = () => {
   // Get all vehicle IDs for calculated metrics
   const allVehicleIds = useMemo(() => dbVehicles.map(v => v.id), [dbVehicles]);
   const { getMetrics } = useVehicleCalculatedMetrics(allVehicleIds);
+  const activityMap = useVehicle24hActivity(allVehicleIds);
+  
   
   const [searchInput, setSearchInput] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -159,6 +171,24 @@ const Vehicles = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [sortColumn, setSortColumn] = useState<string>("plate");
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [columnConfig, setColumnConfig] = useState<ColumnConfig[]>([
+    { key: 'sn', label: '#', visible: true, locked: true },
+    { key: 'ignition', label: 'Ignition', visible: true },
+    { key: 'vehicle', label: 'Vehicle', visible: true, locked: true },
+    { key: 'driver', label: 'Driver', visible: true },
+    { key: 'status', label: 'Status', visible: true },
+    { key: 'fuel', label: 'Fuel', visible: true },
+    { key: 'speed', label: 'Speed', visible: true },
+    { key: 'heading', label: 'Heading', visible: true },
+    { key: 'distance', label: 'Today Dist.', visible: true },
+    { key: 'lastSeen', label: 'Last Seen', visible: true },
+    { key: 'activity', label: '24h Activity', visible: true },
+    { key: 'alerts', label: 'Alerts', visible: true },
+    { key: 'fuelTrend', label: 'Fuel Trend', visible: true },
+    { key: 'actions', label: 'Actions', visible: true, locked: true },
+  ]);
+  
+  const isColVisible = useCallback((key: string) => columnConfig.find(c => c.key === key)?.visible ?? true, [columnConfig]);
   
   const debouncedSearch = useDebounce(searchInput, 300);
   
@@ -537,6 +567,9 @@ const Vehicles = () => {
               </Button>
             </div>
             
+            {/* Column Visibility */}
+            <ColumnVisibilityToggle columns={columnConfig} onChange={setColumnConfig} />
+            
             {/* Spacer */}
             <div className="flex-1" />
             
@@ -668,35 +701,54 @@ const Vehicles = () => {
                             }}
                           />
                         </TableHead>
-                        <TableHead className="text-foreground font-semibold w-12">SN</TableHead>
-                        <TableHead className="text-foreground font-semibold w-12">
-                          <Power className="w-3.5 h-3.5 mx-auto" />
-                        </TableHead>
-                        <TableHead className="text-foreground font-semibold cursor-pointer select-none" onClick={() => toggleSort('plate')}>
-                          <div className="flex items-center gap-1">Vehicle {sortColumn === 'plate' ? (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
-                        </TableHead>
-                        <TableHead className="text-foreground font-semibold cursor-pointer select-none" onClick={() => toggleSort('driver')}>
-                          <div className="flex items-center gap-1">Driver {sortColumn === 'driver' ? (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
-                        </TableHead>
-                        <TableHead className="text-foreground font-semibold cursor-pointer select-none" onClick={() => toggleSort('status')}>
-                          <div className="flex items-center gap-1">Status {sortColumn === 'status' ? (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
-                        </TableHead>
-                        <TableHead className="text-foreground font-semibold w-24 cursor-pointer select-none" onClick={() => toggleSort('fuel')}>
-                          <div className="flex items-center gap-1">Fuel {sortColumn === 'fuel' ? (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
-                        </TableHead>
-                        <TableHead className="text-foreground font-semibold cursor-pointer select-none" onClick={() => toggleSort('speed')}>
-                          <div className="flex items-center gap-1">Speed {sortColumn === 'speed' ? (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
-                        </TableHead>
-                        <TableHead className="text-foreground font-semibold cursor-pointer select-none" onClick={() => toggleSort('distance')}>
-                          <div className="flex items-center gap-1">Today <Route className="w-3 h-3" /> {sortColumn === 'distance' ? (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
-                        </TableHead>
-                        <TableHead className="text-foreground font-semibold">Last Seen</TableHead>
-                        <TableHead className="text-foreground font-semibold w-[100px]">24h Activity</TableHead>
-                        <TableHead className="text-foreground font-semibold w-10">
-                          <ShieldAlert className="w-3.5 h-3.5 mx-auto" />
-                        </TableHead>
-                        <TableHead className="text-foreground font-semibold w-[70px]">Fuel Trend</TableHead>
-                        <TableHead className="text-foreground font-semibold w-20">Actions</TableHead>
+                        {isColVisible('sn') && <TableHead className="text-foreground font-semibold w-12">SN</TableHead>}
+                        {isColVisible('ignition') && (
+                          <TableHead className="text-foreground font-semibold w-12">
+                            <Power className="w-3.5 h-3.5 mx-auto" />
+                          </TableHead>
+                        )}
+                        {isColVisible('vehicle') && (
+                          <TableHead className="text-foreground font-semibold cursor-pointer select-none" onClick={() => toggleSort('plate')}>
+                            <div className="flex items-center gap-1">Vehicle {sortColumn === 'plate' ? (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
+                          </TableHead>
+                        )}
+                        {isColVisible('driver') && (
+                          <TableHead className="text-foreground font-semibold cursor-pointer select-none" onClick={() => toggleSort('driver')}>
+                            <div className="flex items-center gap-1">Driver {sortColumn === 'driver' ? (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
+                          </TableHead>
+                        )}
+                        {isColVisible('status') && (
+                          <TableHead className="text-foreground font-semibold cursor-pointer select-none" onClick={() => toggleSort('status')}>
+                            <div className="flex items-center gap-1">Status {sortColumn === 'status' ? (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
+                          </TableHead>
+                        )}
+                        {isColVisible('fuel') && (
+                          <TableHead className="text-foreground font-semibold w-24 cursor-pointer select-none" onClick={() => toggleSort('fuel')}>
+                            <div className="flex items-center gap-1">Fuel {sortColumn === 'fuel' ? (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
+                          </TableHead>
+                        )}
+                        {isColVisible('speed') && (
+                          <TableHead className="text-foreground font-semibold cursor-pointer select-none" onClick={() => toggleSort('speed')}>
+                            <div className="flex items-center gap-1">Speed {sortColumn === 'speed' ? (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
+                          </TableHead>
+                        )}
+                        {isColVisible('heading') && (
+                          <TableHead className="text-foreground font-semibold w-14">Dir</TableHead>
+                        )}
+                        {isColVisible('distance') && (
+                          <TableHead className="text-foreground font-semibold cursor-pointer select-none" onClick={() => toggleSort('distance')}>
+                            <div className="flex items-center gap-1">Today <Route className="w-3 h-3" /> {sortColumn === 'distance' ? (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}</div>
+                          </TableHead>
+                        )}
+                        {isColVisible('lastSeen') && <TableHead className="text-foreground font-semibold">Last Seen</TableHead>}
+                        {isColVisible('activity') && <TableHead className="text-foreground font-semibold w-[100px]">24h Activity</TableHead>}
+                        {isColVisible('alerts') && (
+                          <TableHead className="text-foreground font-semibold w-10">
+                            <ShieldAlert className="w-3.5 h-3.5 mx-auto" />
+                          </TableHead>
+                        )}
+                        {isColVisible('fuelTrend') && <TableHead className="text-foreground font-semibold w-[70px]">Fuel Trend</TableHead>}
+                        {isColVisible('actions') && <TableHead className="text-foreground font-semibold w-20">Actions</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -719,6 +771,8 @@ const Vehicles = () => {
                         </TableRow>
                       ) : (
                         paginatedVehicles.map((vehicle, index) => (
+                          <ContextMenu>
+                            <ContextMenuTrigger asChild>
                           <motion.tr
                             key={vehicle.id}
                             initial={false}
@@ -758,180 +812,230 @@ const Vehicles = () => {
                                 onCheckedChange={() => toggleSelection(vehicle.id)}
                               />
                             </TableCell>
-                            <TableCell className="font-medium text-xs">
-                              {startIndex + index + 1}
-                            </TableCell>
-                            {/* Ignition status */}
-                            <TableCell>
-                              <div className="flex items-center justify-center">
-                                {vehicle.ignitionOn ? (
-                                  <motion.div
-                                    animate={{ opacity: [1, 0.5, 1] }}
-                                    transition={{ duration: 2, repeat: Infinity }}
+                            {isColVisible('sn') && (
+                              <TableCell className="font-medium text-xs">
+                                {startIndex + index + 1}
+                              </TableCell>
+                            )}
+                            {isColVisible('ignition') && (
+                              <TableCell>
+                                <div className="flex items-center justify-center">
+                                  {vehicle.ignitionOn ? (
+                                    <motion.div
+                                      animate={{ opacity: [1, 0.5, 1] }}
+                                      transition={{ duration: 2, repeat: Infinity }}
+                                    >
+                                      <Zap className="w-4 h-4 text-success" />
+                                    </motion.div>
+                                  ) : (
+                                    <Power className="w-4 h-4 text-muted-foreground/40" />
+                                  )}
+                                </div>
+                              </TableCell>
+                            )}
+                            {isColVisible('vehicle') && (
+                              <TableCell>
+                                <HoverCard openDelay={300} closeDelay={100}>
+                                  <HoverCardTrigger asChild>
+                                    <div className="cursor-pointer hover:text-primary">
+                                      <span className="font-mono font-semibold text-sm">{vehicle.plate}</span>
+                                      <div className="text-[10px] text-muted-foreground">{vehicle.make} {vehicle.model}</div>
+                                    </div>
+                                  </HoverCardTrigger>
+                                  <HoverCardContent 
+                                    side="right" 
+                                    align="start" 
+                                    className="w-[450px] p-4 shadow-xl border-border/50"
+                                    sideOffset={12}
                                   >
-                                    <Zap className="w-4 h-4 text-green-500" />
-                                  </motion.div>
+                                    <VehicleHoverCard vehicle={vehicle} />
+                                  </HoverCardContent>
+                                </HoverCard>
+                              </TableCell>
+                            )}
+                            {isColVisible('driver') && (
+                              <TableCell>
+                                {vehicle.driverName ? (
+                                  <div className="flex items-center gap-1.5">
+                                    <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                      <User className="w-2.5 h-2.5 text-primary" />
+                                    </div>
+                                    <span className="text-xs font-medium truncate max-w-[90px]">{vehicle.driverName}</span>
+                                  </div>
                                 ) : (
-                                  <Power className="w-4 h-4 text-muted-foreground/40" />
+                                  <span className="text-[10px] text-muted-foreground italic">—</span>
                                 )}
-                              </div>
-                            </TableCell>
-                            {/* Vehicle plate + make */}
-                            <TableCell>
-                              <HoverCard openDelay={300} closeDelay={100}>
-                                <HoverCardTrigger asChild>
-                                  <div className="cursor-pointer hover:text-primary">
-                                    <span className="font-mono font-semibold text-sm">{vehicle.plate}</span>
-                                    <div className="text-[10px] text-muted-foreground">{vehicle.make} {vehicle.model}</div>
-                                  </div>
-                                </HoverCardTrigger>
-                                <HoverCardContent 
-                                  side="right" 
-                                  align="start" 
-                                  className="w-[450px] p-4 shadow-xl border-border/50"
-                                  sideOffset={12}
-                                >
-                                  <VehicleHoverCard vehicle={vehicle} />
-                                </HoverCardContent>
-                              </HoverCard>
-                            </TableCell>
-                            {/* Driver */}
-                            <TableCell>
-                              {vehicle.driverName ? (
+                              </TableCell>
+                            )}
+                            {isColVisible('status') && (
+                              <TableCell>
                                 <div className="flex items-center gap-1.5">
-                                  <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                                    <User className="w-2.5 h-2.5 text-primary" />
+                                  <motion.div
+                                    animate={vehicle.status === 'moving' ? { scale: [1, 1.2, 1] } : {}}
+                                    transition={{ duration: 2, repeat: Infinity }}
+                                    className={cn(
+                                      "w-2 h-2 rounded-full shrink-0",
+                                      vehicle.status === 'moving' && "bg-success",
+                                      vehicle.status === 'idle' && "bg-warning",
+                                      vehicle.status === 'stopped' && "bg-destructive",
+                                      vehicle.status === 'offline' && "bg-muted-foreground/50"
+                                    )}
+                                  />
+                                  <Badge 
+                                    variant="outline" 
+                                    className={cn(
+                                      "text-[10px] capitalize px-1.5 py-0",
+                                      vehicle.status === 'moving' && "border-success text-success bg-success/10",
+                                      vehicle.status === 'idle' && "border-warning text-warning bg-warning/10",
+                                      vehicle.status === 'stopped' && "border-destructive text-destructive bg-destructive/10",
+                                      vehicle.status === 'offline' && "border-muted text-muted-foreground"
+                                    )}
+                                  >
+                                    {vehicle.status}
+                                  </Badge>
+                                </div>
+                              </TableCell>
+                            )}
+                            {isColVisible('fuel') && (
+                              <TableCell>
+                                <div className="flex items-center gap-1.5 min-w-[80px]">
+                                  <Fuel className={cn(
+                                    "w-3 h-3 shrink-0",
+                                    vehicle.fuel > 50 ? "text-success" : vehicle.fuel > 20 ? "text-warning" : "text-destructive"
+                                  )} />
+                                  <div className="flex-1">
+                                    <Progress value={vehicle.fuel} className="h-1.5" />
                                   </div>
-                                  <span className="text-xs font-medium truncate max-w-[90px]">{vehicle.driverName}</span>
+                                  <span className="text-[10px] font-mono font-medium w-8 text-right">
+                                    {vehicle.fuel}%
+                                  </span>
                                 </div>
-                              ) : (
-                                <span className="text-[10px] text-muted-foreground italic">—</span>
-                              )}
-                            </TableCell>
-                            {/* Status */}
-                            <TableCell>
-                              <div className="flex items-center gap-1.5">
-                                <motion.div
-                                  animate={vehicle.status === 'moving' ? { scale: [1, 1.2, 1] } : {}}
-                                  transition={{ duration: 2, repeat: Infinity }}
-                                  className={cn(
-                                    "w-2 h-2 rounded-full shrink-0",
-                                    vehicle.status === 'moving' && "bg-green-500",
-                                    vehicle.status === 'idle' && "bg-yellow-500",
-                                    vehicle.status === 'stopped' && "bg-red-500",
-                                    vehicle.status === 'offline' && "bg-gray-400"
-                                  )}
+                              </TableCell>
+                            )}
+                            {isColVisible('speed') && (
+                              <TableCell>
+                                <span className={cn(
+                                  "text-xs font-mono font-medium",
+                                  vehicle.isOverspeed && "text-destructive font-bold"
+                                )}>
+                                  {vehicle.speed} <span className="text-muted-foreground text-[10px]">km/h</span>
+                                </span>
+                                {vehicle.isOverspeed && (
+                                  <AlertTriangle className="w-3 h-3 text-destructive inline-block ml-1 animate-pulse" />
+                                )}
+                              </TableCell>
+                            )}
+                            {isColVisible('heading') && (
+                              <TableCell>
+                                <VehicleHeadingArrow heading={vehicle.heading} speed={vehicle.speed} />
+                              </TableCell>
+                            )}
+                            {isColVisible('distance') && (
+                              <TableCell>
+                                <span className="text-xs font-mono text-muted-foreground">
+                                  {vehicle.todayDistance > 0 ? `${vehicle.todayDistance.toFixed(1)} km` : "—"}
+                                </span>
+                              </TableCell>
+                            )}
+                            {isColVisible('lastSeen') && (
+                              <TableCell>
+                                <div className="flex items-center gap-1">
+                                  <Radio className={cn("w-3 h-3", vehicle.deviceConnected ? "text-success" : "text-muted-foreground/40")} />
+                                  <span className="text-[10px] text-muted-foreground truncate max-w-[80px]">
+                                    {vehicle.lastSeen || "Never"}
+                                  </span>
+                                </div>
+                              </TableCell>
+                            )}
+                            {isColVisible('activity') && (
+                              <TableCell>
+                                <VehicleActivityMinibar 
+                                  hourlyStatus={activityMap[vehicle.id]} 
+                                  className="w-[90px]" 
                                 />
-                                <Badge 
-                                  variant="outline" 
-                                  className={cn(
-                                    "text-[10px] capitalize px-1.5 py-0",
-                                    vehicle.status === 'moving' && "border-success text-success bg-success/10",
-                                    vehicle.status === 'idle' && "border-warning text-warning bg-warning/10",
-                                    vehicle.status === 'stopped' && "border-destructive text-destructive bg-destructive/10",
-                                    vehicle.status === 'offline' && "border-muted text-muted-foreground"
-                                  )}
-                                >
-                                  {vehicle.status}
-                                </Badge>
-                              </div>
-                            </TableCell>
-                            {/* Fuel Gauge */}
-                            <TableCell>
-                              <div className="flex items-center gap-1.5 min-w-[80px]">
-                                <Fuel className={cn(
-                                  "w-3 h-3 shrink-0",
-                                  vehicle.fuel > 50 ? "text-green-500" : vehicle.fuel > 20 ? "text-yellow-500" : "text-red-500"
-                                )} />
-                                <div className="flex-1">
-                                  <Progress value={vehicle.fuel} className="h-1.5" />
+                              </TableCell>
+                            )}
+                            {isColVisible('alerts') && (
+                              <TableCell>
+                                <VehicleAlertBadge vehicleId={vehicle.id} />
+                              </TableCell>
+                            )}
+                            {isColVisible('fuelTrend') && (
+                              <TableCell>
+                                <VehicleFuelSparkline vehicleId={vehicle.id} currentFuel={vehicle.fuel} />
+                              </TableCell>
+                            )}
+                            {isColVisible('actions') && (
+                              <TableCell>
+                                <div className="flex items-center gap-0.5">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    title="Track on Map"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigate(`/map?vehicle=${vehicle.id}&track=true`);
+                                    }}
+                                  >
+                                    <LocateFixed className="w-3.5 h-3.5" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    title="View Details"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleVehicleClick(vehicle);
+                                    }}
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    title="Route History"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigate(`/route-history?vehicle=${vehicle.id}`);
+                                    }}
+                                  >
+                                    <Route className="w-3.5 h-3.5" />
+                                  </Button>
                                 </div>
-                                <span className="text-[10px] font-mono font-medium w-8 text-right">
-                                  {vehicle.fuel}%
-                                </span>
-                              </div>
-                            </TableCell>
-                            {/* Speed */}
-                            <TableCell>
-                              <span className={cn(
-                                "text-xs font-mono font-medium",
-                                vehicle.isOverspeed && "text-destructive font-bold"
-                              )}>
-                                {vehicle.speed} <span className="text-muted-foreground text-[10px]">km/h</span>
-                              </span>
-                              {vehicle.isOverspeed && (
-                                <AlertTriangle className="w-3 h-3 text-destructive inline-block ml-1 animate-pulse" />
-                              )}
-                            </TableCell>
-                            {/* Today's Distance */}
-                            <TableCell>
-                              <span className="text-xs font-mono text-muted-foreground">
-                                {vehicle.todayDistance > 0 ? `${vehicle.todayDistance.toFixed(1)} km` : "—"}
-                              </span>
-                            </TableCell>
-                            {/* Last Seen */}
-                            <TableCell>
-                              <div className="flex items-center gap-1">
-                                <Radio className={cn("w-3 h-3", vehicle.deviceConnected ? "text-green-500" : "text-muted-foreground/40")} />
-                                <span className="text-[10px] text-muted-foreground truncate max-w-[80px]">
-                                  {vehicle.lastSeen || "Never"}
-                                </span>
-                              </div>
-                            </TableCell>
-                            {/* 24h Activity Minibar */}
-                            <TableCell>
-                              <VehicleActivityMinibar className="w-[90px]" />
-                            </TableCell>
-                            {/* Alert indicator */}
-                            <TableCell>
-                              <VehicleAlertBadge vehicleId={vehicle.id} />
-                            </TableCell>
-                            {/* Fuel Trend Sparkline */}
-                            <TableCell>
-                              <VehicleFuelSparkline vehicleId={vehicle.id} currentFuel={vehicle.fuel} />
-                            </TableCell>
-                            {/* Actions */}
-                            <TableCell>
-                              <div className="flex items-center gap-0.5">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  title="Track on Map"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate(`/map?vehicle=${vehicle.id}&track=true`);
-                                  }}
-                                >
-                                  <LocateFixed className="w-3.5 h-3.5" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  title="View Details"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleVehicleClick(vehicle);
-                                  }}
-                                >
-                                  <Eye className="w-3.5 h-3.5" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  title="Route History"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate(`/route-history?vehicle=${vehicle.id}`);
-                                  }}
-                                >
-                                  <Route className="w-3.5 h-3.5" />
-                                </Button>
-                              </div>
-                            </TableCell>
+                              </TableCell>
+                            )}
                           </motion.tr>
+                            </ContextMenuTrigger>
+                            <ContextMenuContent className="w-52">
+                              <ContextMenuItem onClick={() => handleVehicleClick(vehicle)}>
+                                <Eye className="w-4 h-4 mr-2" /> View Details
+                              </ContextMenuItem>
+                              <ContextMenuItem onClick={() => navigate(`/map?vehicle=${vehicle.id}&track=true`)}>
+                                <LocateFixed className="w-4 h-4 mr-2" /> Track on Map
+                              </ContextMenuItem>
+                              <ContextMenuItem onClick={() => navigate(`/route-history?vehicle=${vehicle.id}`)}>
+                                <Route className="w-4 h-4 mr-2" /> Route History
+                              </ContextMenuItem>
+                              <ContextMenuSeparator />
+                              <ContextMenuItem onClick={() => navigate(`/drivers?vehicle=${vehicle.id}`)}>
+                                <User className="w-4 h-4 mr-2" /> Assign Driver
+                              </ContextMenuItem>
+                              <ContextMenuItem onClick={() => navigate("/maintenance")}>
+                                <Gauge className="w-4 h-4 mr-2" /> Maintenance
+                              </ContextMenuItem>
+                              <ContextMenuSeparator />
+                              <ContextMenuItem onClick={() => {
+                                if (vehicle.lat && vehicle.lng) {
+                                  navigator.clipboard.writeText(`${vehicle.lat},${vehicle.lng}`);
+                                }
+                              }}>
+                                <MapPin className="w-4 h-4 mr-2" /> Copy Coordinates
+                              </ContextMenuItem>
+                            </ContextMenuContent>
+                          </ContextMenu>
                         ))
                       )}
                     </TableBody>
