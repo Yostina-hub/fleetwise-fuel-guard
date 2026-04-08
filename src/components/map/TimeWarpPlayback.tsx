@@ -58,29 +58,30 @@ export const TimeWarpPlayback = ({ visible, onClose, onPositionsUpdate, vehicleI
     endTimeRef.current = endTime;
 
     try {
+      // Use vehicle_telemetry table with time-based filtering
+      // This gets the most recent positions within the time range
       const { data, error } = await supabase
-        .from('vehicle_telemetry_history')
-        .select('vehicle_id, latitude, longitude, speed_kmh, heading, engine_on, recorded_at')
+        .from('vehicle_telemetry')
+        .select('vehicle_id, latitude, longitude, speed_kmh, heading, engine_on, last_communication_at')
         .eq('organization_id', organizationId)
-        .in('vehicle_id', vehicleIds.slice(0, 50)) // limit to 50 vehicles
-        .gte('recorded_at', startTime.toISOString())
-        .lte('recorded_at', endTime.toISOString())
-        .order('recorded_at', { ascending: true })
+        .in('vehicle_id', vehicleIds.slice(0, 50))
+        .gte('last_communication_at', startTime.toISOString())
+        .lte('last_communication_at', endTime.toISOString())
+        .order('last_communication_at', { ascending: true })
         .limit(5000);
 
       if (error) {
         console.error('TimeWarp fetch error:', error);
         setDataPoints([]);
       } else {
-        // Extract from telemetry_data JSONB if needed, or use direct columns
         const points: HistoricalPosition[] = (data || []).map((d: any) => ({
           vehicle_id: d.vehicle_id,
-          latitude: d.latitude ?? d.telemetry_data?.latitude,
-          longitude: d.longitude ?? d.telemetry_data?.longitude,
-          speed_kmh: d.speed_kmh ?? d.telemetry_data?.speed_kmh ?? 0,
-          heading: d.heading ?? d.telemetry_data?.heading ?? 0,
-          engine_on: d.engine_on ?? d.telemetry_data?.engine_on ?? false,
-          recorded_at: d.recorded_at,
+          latitude: d.latitude,
+          longitude: d.longitude,
+          speed_kmh: d.speed_kmh ?? 0,
+          heading: d.heading ?? 0,
+          engine_on: d.engine_on ?? false,
+          recorded_at: d.last_communication_at,
         })).filter((p: HistoricalPosition) => 
           Number.isFinite(p.latitude) && Number.isFinite(p.longitude)
         );
