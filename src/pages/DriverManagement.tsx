@@ -283,26 +283,18 @@ const DriverManagement = () => {
               whileTap={{ scale: 0.95 }}
               onClick={() => handleNavigate(cat.key)}
               className={cn(
-                "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all",
+                "relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all overflow-hidden",
                 "border",
                 activeCategory === cat.key
-                  ? "bg-gradient-to-r text-white border-transparent shadow-lg"
+                  ? "text-primary-foreground border-transparent shadow-lg"
                   : "bg-card text-muted-foreground border-border hover:text-foreground hover:border-primary/30 hover:shadow-sm"
               )}
-              style={activeCategory === cat.key ? {
-                backgroundImage: `linear-gradient(to right, var(--tw-gradient-stops))`,
-              } : undefined}
             >
               {activeCategory === cat.key && (
-                <div className={cn("absolute inset-0 rounded-xl bg-gradient-to-r opacity-100", cat.gradient)} style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', zIndex: -1 }} />
+                <div className={cn("absolute inset-0 bg-gradient-to-r -z-10", cat.gradient)} />
               )}
-              <span className={cn(
-                "relative z-10 flex items-center gap-2",
-                activeCategory === cat.key && "text-white"
-              )}>
-                <cat.icon className="w-4 h-4" />
-                <span className="hidden sm:inline">{cat.label}</span>
-              </span>
+              <cat.icon className="w-4 h-4" />
+              <span className="hidden sm:inline">{cat.label}</span>
             </motion.button>
           ))}
         </div>
