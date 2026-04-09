@@ -176,10 +176,16 @@ const DriverManagement = () => {
   const handleNavigate = (category: string, tab?: string) => {
     setActiveCategory(category);
     const cat = categories.find(c => c.key === category);
-    if (tab) {
-      setActiveSubTab(tab);
-    } else if (cat && cat.tabs.length > 0) {
-      setActiveSubTab(cat.tabs[0].key);
+    let resolvedTab = tab;
+    if (!resolvedTab && cat && cat.tabs.length > 0) {
+      resolvedTab = cat.tabs[0].key;
+    }
+    if (resolvedTab) {
+      setActiveSubTab(resolvedTab);
+      setSearchParams({ tab: resolvedTab }, { replace: true });
+    } else {
+      setActiveSubTab("");
+      setSearchParams({}, { replace: true });
     }
   };
 
