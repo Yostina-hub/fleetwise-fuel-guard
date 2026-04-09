@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -26,6 +27,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 
 const TripManagement = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { requests, loading, submitRequest } = useTripRequests();
   const { pendingApprovals, approveRequest, rejectRequest } = useApprovals();
   const { isSuperAdmin, hasRole } = usePermissions();
@@ -38,7 +40,15 @@ const TripManagement = () => {
   const [detailOpen, setDetailOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("trips");
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "trips");
+
+  // Sync from URL changes (sidebar deep links)
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   const filteredTrips = useMemo(() => {
     let trips = requests || [];
