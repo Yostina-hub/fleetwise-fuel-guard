@@ -25,7 +25,7 @@ const container = {
 };
 const item = {
   hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { type: "spring", damping: 20, stiffness: 300 } },
+  show: { opacity: 1, y: 0, transition: { type: "spring" as const, damping: 20, stiffness: 300 } },
 };
 
 export const DriverHubOverview = ({ onNavigate }: DriverHubOverviewProps) => {
