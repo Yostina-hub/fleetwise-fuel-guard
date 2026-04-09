@@ -136,11 +136,33 @@ const categories = [
   },
 ];
 
+// Map URL ?tab= values to category+subtab
+const resolveTabFromUrl = (tab: string | null): { category: string; subTab: string } => {
+  if (!tab) return { category: "overview", subTab: "" };
+  for (const cat of categories) {
+    const found = cat.tabs.find(t => t.key === tab);
+    if (found) return { category: cat.key, subTab: found.key };
+  }
+  return { category: "overview", subTab: "" };
+};
+
 const DriverManagement = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { drivers, loading } = useDrivers();
   const [selectedDriverId, setSelectedDriverId] = useState<string>("");
-  const [activeCategory, setActiveCategory] = useState("overview");
-  const [activeSubTab, setActiveSubTab] = useState("");
+
+  const urlTab = searchParams.get("tab");
+  const initialResolved = resolveTabFromUrl(urlTab);
+  const [activeCategory, setActiveCategory] = useState(initialResolved.category);
+  const [activeSubTab, setActiveSubTab] = useState(initialResolved.subTab);
+
+  // Sync from URL changes (e.g. sidebar clicks)
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    const resolved = resolveTabFromUrl(tab);
+    setActiveCategory(resolved.category);
+    setActiveSubTab(resolved.subTab);
+  }, [searchParams]);
 
   const selectedDriver = drivers.find((d) => d.id === selectedDriverId);
   const driverName = selectedDriver
