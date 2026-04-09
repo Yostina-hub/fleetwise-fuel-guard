@@ -61,6 +61,11 @@ const isPinnedItem = (item: NavItem): boolean => {
   return PINNED_PATHS.includes(normalized as typeof PINNED_PATHS[number]);
 };
 
+const getNavItemKey = (item: NavItem): string => {
+  if (item.path) return item.path;
+  return item.label;
+};
+
 export function SidebarNav({ navItems, adminItems, isSuperAdmin, isOrgAdmin = false, isDark, isCollapsed = false }: SidebarNavProps) {
   const location = useLocation();
 
@@ -76,7 +81,7 @@ export function SidebarNav({ navItems, adminItems, isSuperAdmin, isOrgAdmin = fa
         <div className={cn("py-3 space-y-0.5 shrink-0 flex-none", isCollapsed ? "px-1.5" : "px-2")}>
           {pinnedItems.map((item, index) => (
             <SidebarMenuItem
-              key={`pinned-${item.path || index}`}
+              key={`pinned-${getNavItemKey(item)}`}
               icon={item.icon}
               label={item.label}
               path={item.path}
@@ -97,7 +102,7 @@ export function SidebarNav({ navItems, adminItems, isSuperAdmin, isOrgAdmin = fa
       <nav className={cn("flex-1 py-3 space-y-0.5 overflow-y-auto custom-scrollbar min-h-0", isCollapsed ? "px-1.5" : "px-2")}>
         {scrollableItems.map((item, index) => (
           <SidebarMenuItem
-            key={`scroll-${item.path || `menu-${index}`}`}
+            key={`scroll-${getNavItemKey(item)}`}
             icon={item.icon}
             label={item.label}
             path={item.path}
