@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { ChevronDown, LucideIcon } from "lucide-react";
@@ -64,6 +64,10 @@ export const SidebarMenuItem = ({
     isPathActive(location.pathname, location.search, item.path)
   );
   const [isOpen, setIsOpen] = useState(isChildActive);
+
+  useEffect(() => {
+    setIsOpen(Boolean(isChildActive));
+  }, [isChildActive, label, subItems]);
 
   // If no sub-items, render a simple link
   if (!subItems || subItems.length === 0) {
