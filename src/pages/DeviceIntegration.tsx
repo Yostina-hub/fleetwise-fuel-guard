@@ -20,6 +20,7 @@ import DeviceQuickActions from "@/components/devices/DeviceQuickActions";
 import { DeviceCommandsTab } from "@/components/devices/DeviceCommandsTab";
 import { RawTelemetryTab } from "@/components/devices/RawTelemetryTab";
 import { deviceTemplates, DeviceTemplate } from "@/data/deviceTemplates";
+import { DeviceSetupGuide } from "@/components/devices/DeviceSetupGuide";
 
 const DeviceIntegration = () => {
   const { toast } = useToast();
@@ -27,6 +28,7 @@ const DeviceIntegration = () => {
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("devices");
+  const [gatewayIp, setGatewayIp] = useState("");
 
   const { data: vehicles } = useQuery({
     queryKey: ["vehicles", organizationId],
@@ -330,165 +332,7 @@ const DeviceIntegration = () => {
           </TabsContent>
 
           <TabsContent value="guide" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>3-Step Setup Guide</CardTitle>
-                <CardDescription>Add any device in minutes - no technical knowledge required</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
-                    1
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg mb-2">Choose Your Device Model</h3>
-                    <p className="text-muted-foreground">
-                      Select from our library of pre-configured device templates. We support all major GPS tracker and
-                      fuel sensor brands including Teltonika, Queclink, Ruptela, and more.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
-                    2
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg mb-2">Enter Device Information</h3>
-                    <p className="text-muted-foreground mb-2">
-                      Simply enter your device IMEI (found on the device label) and optionally assign it to a vehicle.
-                      That's it!
-                    </p>
-                    <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                      <li>IMEI/Serial Number (required)</li>
-                      <li>Vehicle assignment (optional)</li>
-                      <li>SIM card details (optional)</li>
-                    </ul>
-                  </div>
-                </div>
-
-                <div className="flex gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center font-bold text-emerald-600">
-                    3
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg mb-2">Start Tracking Immediately</h3>
-                    <p className="text-muted-foreground mb-2">
-                      The system automatically configures everything for you:
-                    </p>
-                    <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                      <li>Communication protocol configured</li>
-                      <li>Server connection established</li>
-                      <li>Data parsing rules loaded</li>
-                      <li>Real-time tracking activated</li>
-                    </ul>
-                  </div>
-                </div>
-
-                <Card className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
-                  <CardContent className="pt-6">
-                    <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                      💡 Pro Tip: Device Configuration
-                    </h4>
-                    <p className="text-sm text-blue-700 dark:text-blue-200">
-                      After adding your device, configure it to send data to our server. Use the server address and port
-                      shown in your device settings page. Most devices can be configured via SMS commands - check your
-                      device manual or contact support for help.
-                    </p>
-                  </CardContent>
-                </Card>
-
-                {/* Comprehensive GPS Parameters Section */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>📊 Comprehensive GPS Parameters Available</CardTitle>
-                    <CardDescription>
-                      All devices automatically track these parameters - perfect for Ethiopian fleet management
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <h4 className="font-semibold mb-3 flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-primary" aria-hidden="true" />
-                          Location & Movement
-                        </h4>
-                        <ul className="space-y-1.5 text-sm text-muted-foreground">
-                          <li>• GPS Coordinates (Latitude/Longitude)</li>
-                          <li>• Speed (km/h)</li>
-                          <li>• Heading/Direction</li>
-                          <li>• Altitude</li>
-                          <li>• GPS Accuracy (HDOP, Satellites)</li>
-                          <li>• Odometer Reading</li>
-                          <li>• Trip Distance</li>
-                        </ul>
-                      </div>
-
-                      <div>
-                        <h4 className="font-semibold mb-3 flex items-center gap-2">
-                          <Fuel className="h-4 w-4 text-orange-600" aria-hidden="true" />
-                          Fuel Management
-                        </h4>
-                        <ul className="space-y-1.5 text-sm text-muted-foreground">
-                          <li>• Real-time Fuel Level (%)</li>
-                          <li>• Fuel Volume (Liters)</li>
-                          <li>• Fuel Consumption Rate</li>
-                          <li>• Refueling Detection & Volume</li>
-                          <li>• Fuel Theft Detection & Volume</li>
-                          <li>• Temperature Compensation</li>
-                          <li>• Multiple Tank Support (up to 5 tanks)</li>
-                        </ul>
-                      </div>
-
-                      <div>
-                        <h4 className="font-semibold mb-3 flex items-center gap-2">
-                          <Zap className="h-4 w-4 text-yellow-600" aria-hidden="true" />
-                          Engine & Vehicle Status
-                        </h4>
-                        <ul className="space-y-1.5 text-sm text-muted-foreground">
-                          <li>• Ignition On/Off</li>
-                          <li>• Engine RPM</li>
-                          <li>• Engine Hours</li>
-                          <li>• Coolant Temperature</li>
-                          <li>• Engine Load (%)</li>
-                          <li>• Throttle Position</li>
-                          <li>• Battery Voltage</li>
-                          <li>• MIL/Check Engine Status</li>
-                        </ul>
-                      </div>
-
-                      <div>
-                        <h4 className="font-semibold mb-3 flex items-center gap-2">
-                          <Smartphone className="h-4 w-4 text-emerald-600" aria-hidden="true" />
-                          Driver & Safety
-                        </h4>
-                        <ul className="space-y-1.5 text-sm text-muted-foreground">
-                          <li>• Driver Identification (RFID/iButton/BLE)</li>
-                          <li>• Harsh Acceleration Events</li>
-                          <li>• Harsh Braking Events</li>
-                          <li>• Harsh Cornering</li>
-                          <li>• Overspeed Alerts</li>
-                          <li>• Idling Time & Detection</li>
-                          <li>• Collision/Accident Detection</li>
-                          <li>• Speed Governor/Limiter (Compliance)</li>
-                        </ul>
-                      </div>
-                    </div>
-
-                    <div className="mt-6 p-4 bg-gradient-to-r from-emerald-50 to-blue-50 dark:from-emerald-950 dark:to-blue-950 rounded-lg border">
-                      <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-100 mb-2">
-                        ✅ Optimized for Ethiopian Market
-                      </p>
-                      <p className="text-sm text-emerald-700 dark:text-emerald-200">
-                        Our system is specifically configured for Ethiopian fleet operations with focus on fuel theft prevention, 
-                        temperature monitoring for cold chain logistics, harsh road condition tracking, and driver safety. 
-                        All parameters are automatically captured and stored - no additional configuration needed!
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </CardContent>
-            </Card>
+            <DeviceSetupGuide serverIp={gatewayIp} onServerIpChange={setGatewayIp} />
           </TabsContent>
         </Tabs>
 
