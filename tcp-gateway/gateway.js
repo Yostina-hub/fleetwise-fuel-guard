@@ -25,6 +25,7 @@
 const net = require('net');
 const dgram = require('dgram');
 const http = require('http');
+const https = require('https');
 const { Pool } = require('pg');
 
 // Configuration from environment
@@ -34,6 +35,9 @@ const config = {
   logLevel: process.env.LOG_LEVEL || 'info',
   batchIntervalMs: parseInt(process.env.BATCH_INTERVAL_MS) || 5000,
   batchSize: parseInt(process.env.BATCH_SIZE) || 50,
+  // NestJS Telemetry Gateway forwarding
+  nestjsGatewayUrl: process.env.NESTJS_GATEWAY_URL || '',
+  forwardToNestjs: process.env.FORWARD_TO_NESTJS === 'true',
   ports: {
     gt06: parseInt(process.env.GT06_PORT) || 5001,
     tk103: parseInt(process.env.TK103_PORT) || 5013,
@@ -45,6 +49,175 @@ const config = {
     health: parseInt(process.env.HEALTH_PORT) || 8080
   }
 };
+
+// ==================== NESTJS GATEWAY FORWARDING ====================
+
+const nestjsForwardQueue = []; // Buffer for async forwarding
+let nestjsHealthy = true;
+let nestjsFailCount = 0;
+const NESTJS_CIRCUIT_BREAK_THRESHOLD = 5;
+const NESTJS_CIRCUIT_BREAK_RESET_MS = 30000;
+
+/**
+ * Forward parsed telemetry to NestJS gateway for advanced processing
+ * (fuel detection, geofence checks, event detection, analytics).
+ * Fire-and-forget: does NOT block the main ingestion pipeline.
+ */
+function forwardToNestjs(device, parsed, protocol) {
+  if (!config.forwardToNestjs || !config.nestjsGatewayUrl || !nestjsHealthy) return;
+
+  const payload = JSON.stringify({
+    imei: device.imei || '',
+    vehicle_id: device.vehicle_id,
+    organization_id: device.organization_id,
+    latitude: parsed.lat,
+    longitude: parsed.lng,
+    speed_kmh: parsed.speed || 0,
+    heading: parsed.course || 0,
+    fuel_level_percent: parsed.fuelLevel,
+    engine_on: parsed.ignition || (parsed.speed > 0),
+    ignition_on: parsed.ignition,
+    altitude_meters: parsed.altitude,
+    odometer_km: parsed.odometer,
+    gps_satellites_count: parsed.satellites,
+    gps_hdop: parsed.hdop,
+    gps_fix_type: parsed.gpsFix,
+    protocol: protocol,
+    timestamp: parsed.timestamp || new Date().toISOString(),
+  });
+
+  const url = new URL(`${config.nestjsGatewayUrl}/api/v1/gps/ingest`);
+  const isHttps = url.protocol === 'https:';
+  const reqModule = isHttps ? https : http;
+
+  const req = reqModule.request({
+    hostname: url.hostname,
+    port: url.port || (isHttps ? 443 : 80),
+    path: url.pathname,
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-gateway-key': config.gatewaySharedKey,
+      'Content-Length': Buffer.byteLength(payload),
+    },
+    timeout: 5000,
+  }, (res) => {
+    let body = '';
+    res.on('data', (chunk) => body += chunk);
+    res.on('end', () => {
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        nestjsFailCount = 0;
+        if (!nestjsHealthy) {
+          nestjsHealthy = true;
+          log('info', 'nestjs', 'NestJS gateway recovered');
+        }
+      } else {
+        log('warn', 'nestjs', `NestJS forward returned ${res.statusCode}`, { body: body.slice(0, 200) });
+        nestjsFailCount++;
+      }
+    });
+  });
+
+  req.on('error', (err) => {
+    nestjsFailCount++;
+    log('warn', 'nestjs', `NestJS forward error: ${err.message}`);
+    if (nestjsFailCount >= NESTJS_CIRCUIT_BREAK_THRESHOLD) {
+      nestjsHealthy = false;
+      log('error', 'nestjs', `Circuit breaker OPEN after ${nestjsFailCount} failures. Pausing for ${NESTJS_CIRCUIT_BREAK_RESET_MS}ms`);
+      setTimeout(() => {
+        nestjsHealthy = true;
+        nestjsFailCount = 0;
+        log('info', 'nestjs', 'Circuit breaker CLOSED, retrying NestJS forwarding');
+      }, NESTJS_CIRCUIT_BREAK_RESET_MS);
+    }
+  });
+
+  req.on('timeout', () => {
+    req.destroy();
+    nestjsFailCount++;
+  });
+
+  req.write(payload);
+  req.end();
+
+  // Also forward fuel readings if present
+  if (parsed.fuelLevel != null && device.vehicle_id) {
+    forwardFuelToNestjs(device, parsed, protocol);
+  }
+}
+
+function forwardFuelToNestjs(device, parsed, protocol) {
+  if (!config.forwardToNestjs || !config.nestjsGatewayUrl || !nestjsHealthy) return;
+
+  const payload = JSON.stringify({
+    imei: device.imei || '',
+    vehicle_id: device.vehicle_id,
+    organization_id: device.organization_id,
+    fuel_level_percent: parsed.fuelLevel,
+    latitude: parsed.lat,
+    longitude: parsed.lng,
+    speed_kmh: parsed.speed || 0,
+    engine_on: parsed.ignition || false,
+    ignition_on: parsed.ignition,
+    timestamp: parsed.timestamp || new Date().toISOString(),
+  });
+
+  const url = new URL(`${config.nestjsGatewayUrl}/api/v1/fuel/stream`);
+  const isHttps = url.protocol === 'https:';
+  const reqModule = isHttps ? https : http;
+
+  const req = reqModule.request({
+    hostname: url.hostname,
+    port: url.port || (isHttps ? 443 : 80),
+    path: url.pathname,
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-gateway-key': config.gatewaySharedKey,
+      'Content-Length': Buffer.byteLength(payload),
+    },
+    timeout: 5000,
+  }, () => {}); // fire-and-forget
+
+  req.on('error', () => {}); // silent
+  req.write(payload);
+  req.end();
+}
+
+function forwardGeofenceToNestjs(device, parsed) {
+  if (!config.forwardToNestjs || !config.nestjsGatewayUrl || !nestjsHealthy) return;
+  if (!parsed.lat || !parsed.lng || !device.vehicle_id) return;
+
+  const payload = JSON.stringify({
+    vehicle_id: device.vehicle_id,
+    organization_id: device.organization_id,
+    latitude: parsed.lat,
+    longitude: parsed.lng,
+    speed_kmh: parsed.speed || 0,
+    timestamp: parsed.timestamp || new Date().toISOString(),
+  });
+
+  const url = new URL(`${config.nestjsGatewayUrl}/api/v1/geofence/check`);
+  const isHttps = url.protocol === 'https:';
+  const reqModule = isHttps ? https : http;
+
+  const req = reqModule.request({
+    hostname: url.hostname,
+    port: url.port || (isHttps ? 443 : 80),
+    path: url.pathname,
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-gateway-key': config.gatewaySharedKey,
+      'Content-Length': Buffer.byteLength(payload),
+    },
+    timeout: 5000,
+  }, () => {});
+
+  req.on('error', () => {});
+  req.write(payload);
+  req.end();
+}
 
 // ==================== DATABASE CONNECTION POOL ====================
 
@@ -134,6 +307,9 @@ function enqueueTelemetry(device, parsed, rawHex, protocol) {
   if (telemetryBuffer.length >= config.batchSize) {
     flushBatch();
   }
+  // Forward to NestJS for advanced processing (fire-and-forget)
+  forwardToNestjs(device, parsed, protocol);
+  forwardGeofenceToNestjs(device, parsed);
 }
 
 function enqueueHeartbeat(deviceId) {
