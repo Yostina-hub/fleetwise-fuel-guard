@@ -848,9 +848,15 @@ function parseYTWL(data) {
 async function processParsedData(protocol, parsed, rawData) {
   if (!parsed || !parsed.imei) return;
 
-  const device = await resolveDevice(parsed.imei);
-  if (!device || !device.vehicle_id) {
-    log('debug', protocol, 'Skipping - no vehicle assignment', { imei: parsed.imei });
+  const device = await resolveDevice(parsed.imei, protocol);
+  if (!device) {
+    log('debug', protocol, 'Skipping - device not found/provisioned', { imei: parsed.imei });
+    return;
+  }
+  if (!device.vehicle_id) {
+    // Device exists but not assigned to vehicle - still update heartbeat
+    enqueueHeartbeat(device.device_id);
+    log('debug', protocol, 'Device exists but no vehicle assignment', { imei: parsed.imei });
     return;
   }
 
