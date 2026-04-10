@@ -240,7 +240,54 @@ const imeiCache = new Map(); // imei → { device_id, vehicle_id, organization_i
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const NEGATIVE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 min for "not found"
 
-async function resolveDevice(imei) {
+// Auto-provision: if enabled, create device record on first IMEI contact
+const AUTO_PROVISION = process.env.AUTO_PROVISION !== 'false'; // default: true
+const DEFAULT_ORG_ID = process.env.DEFAULT_ORGANIZATION_ID || '';
+
+// Map protocol ports to tracker model names for auto-provisioned devices
+function getTrackerModelFromProtocol(protocol) {
+  const models = {
+    gt06: 'GT06/Concox', tk103: 'Coban TK103', h02: 'Sinotrack/H02',
+    teltonika: 'Teltonika', queclink: 'Queclink', ruptela: 'Ruptela',
+    ytwl: 'YTWL Speed Governor'
+  };
+  return models[protocol] || protocol || 'Unknown';
+}
+
+async function autoProvisionDevice(imei, protocol) {
+  if (!AUTO_PROVISION || !DEFAULT_ORG_ID) {
+    log('warn', 'provision', 'Auto-provision skipped (disabled or no DEFAULT_ORGANIZATION_ID)', { imei });
+    return null;
+  }
+
+  try {
+    const res = await pool.query(
+      `INSERT INTO public.devices (imei, tracker_model, organization_id, status, notes)
+       VALUES ($1, $2, $3, 'active', 'Auto-provisioned by gateway on first connect')
+       ON CONFLICT (imei, organization_id) DO UPDATE SET status = 'active', last_heartbeat = now()
+       RETURNING id AS device_id, vehicle_id, organization_id`,
+      [imei, getTrackerModelFromProtocol(protocol), DEFAULT_ORG_ID]
+    );
+
+    if (res.rows.length > 0) {
+      const row = res.rows[0];
+      log('info', 'provision', `Auto-provisioned device: ${imei}`, { device_id: row.device_id, protocol });
+      const entry = {
+        device_id: row.device_id,
+        vehicle_id: row.vehicle_id,
+        organization_id: row.organization_id,
+        cachedAt: Date.now()
+      };
+      imeiCache.set(imei, entry);
+      return entry;
+    }
+  } catch (err) {
+    log('error', 'provision', 'Auto-provision failed', { imei, error: err.message });
+  }
+  return null;
+}
+
+async function resolveDevice(imei, protocol) {
   const cached = imeiCache.get(imei);
   if (cached) {
     if (Date.now() - cached.cachedAt < (cached.notFound ? NEGATIVE_CACHE_TTL_MS : CACHE_TTL_MS)) {
@@ -266,8 +313,12 @@ async function resolveDevice(imei) {
       imeiCache.set(imei, entry);
       return entry;
     } else {
+      // Auto-provision: register this new IMEI automatically
+      const provisioned = await autoProvisionDevice(imei, protocol);
+      if (provisioned) return provisioned;
+
       imeiCache.set(imei, { notFound: true, cachedAt: Date.now() });
-      log('warn', 'db', 'Device not found', { imei });
+      log('warn', 'db', 'Device not found and auto-provision unavailable', { imei });
       return null;
     }
   } catch (err) {
