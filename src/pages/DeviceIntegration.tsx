@@ -20,6 +20,7 @@ import DeviceQuickActions from "@/components/devices/DeviceQuickActions";
 import { DeviceCommandsTab } from "@/components/devices/DeviceCommandsTab";
 import { RawTelemetryTab } from "@/components/devices/RawTelemetryTab";
 import { deviceTemplates, DeviceTemplate } from "@/data/deviceTemplates";
+import { DeviceSetupGuide } from "@/components/devices/DeviceSetupGuide";
 
 const DeviceIntegration = () => {
   const { toast } = useToast();
@@ -27,6 +28,7 @@ const DeviceIntegration = () => {
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("devices");
+  const [gatewayIp, setGatewayIp] = useState("");
 
   const { data: vehicles } = useQuery({
     queryKey: ["vehicles", organizationId],
