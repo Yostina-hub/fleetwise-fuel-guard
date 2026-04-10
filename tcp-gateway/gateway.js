@@ -307,6 +307,9 @@ function enqueueTelemetry(device, parsed, rawHex, protocol) {
   if (telemetryBuffer.length >= config.batchSize) {
     flushBatch();
   }
+  // Forward to NestJS for advanced processing (fire-and-forget)
+  forwardToNestjs(device, parsed, protocol);
+  forwardGeofenceToNestjs(device, parsed);
 }
 
 function enqueueHeartbeat(deviceId) {
