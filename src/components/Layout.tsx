@@ -26,6 +26,11 @@ import {
   CircleDot,
   Thermometer,
   ClipboardList,
+  Camera,
+  BookOpen,
+  Phone,
+  Leaf,
+  GitBranch,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -81,15 +86,21 @@ const navItems = [
       { label: "Groups", path: "/driver-management?tab=hierarchy" },
     ]
   },
-  { icon: Fuel, label: "Fuel Monitoring", path: "/fuel" },
+  { icon: Fuel, label: "Fuel Monitoring", subItems: [
+    { label: "Consumption", path: "/fuel" },
+    { label: "Fuel Requests", path: "/fuel-requests" },
+  ]},
   { icon: Battery, label: "EV Management", path: "/ev-management" },
   { icon: Thermometer, label: "Cold Chain", path: "/cold-chain" },
+  { icon: Camera, label: "Dash Cam", path: "/dash-cam" },
   { 
     icon: ShieldCheck, 
     label: "Safety & Compliance", 
     subItems: [
       { label: "Speed Governor", path: "/speed-governor" },
       { label: "Incidents", path: "/incidents" },
+      { label: "Roadside Assistance", path: "/roadside-assistance" },
+      { label: "Driver Logbook", path: "/driver-logbook" },
     ]
   },
   { 
@@ -129,6 +140,8 @@ const navItems = [
     ]
   },
   { icon: BarChart3, label: "Reports", path: "/reports" },
+  { icon: Leaf, label: "Carbon Emissions", path: "/carbon-emissions" },
+  { icon: GitBranch, label: "Delegation Matrix", path: "/delegation-matrix" },
   { icon: Workflow, label: "Workflow Builder", path: "/workflow-builder", highlight: true },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
