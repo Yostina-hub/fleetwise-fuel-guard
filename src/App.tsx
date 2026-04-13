@@ -81,6 +81,9 @@ const ContractManagement = lazyWithRetry(() => import("./pages/ContractManagemen
 const KPIScorecard = lazyWithRetry(() => import("./pages/KPIScorecard"), "KPIScorecard");
 const NotificationCenterPage = lazyWithRetry(() => import("./pages/NotificationCenter"), "NotificationCenter");
 const BulkOperations = lazyWithRetry(() => import("./pages/BulkOperations"), "BulkOperations");
+const PassengerTracking = lazyWithRetry(() => import("./pages/PassengerTracking"), "PassengerTracking");
+const RFIDPairing = lazyWithRetry(() => import("./pages/RFIDPairing"), "RFIDPairing");
+const FuelCardProviders = lazyWithRetry(() => import("./pages/FuelCardProviders"), "FuelCardProviders");
 const NotFound = lazyWithRetry(() => import("./pages/NotFound"), "NotFound");
 
 const App = () => {
@@ -176,6 +179,9 @@ const App = () => {
                         <Route path="/kpi-scorecards" element={<ProtectedRoute><KPIScorecard /></ProtectedRoute>} />
                         <Route path="/notification-center" element={<ProtectedRoute><NotificationCenterPage /></ProtectedRoute>} />
                         <Route path="/bulk-operations" element={<ProtectedRoute><BulkOperations /></ProtectedRoute>} />
+                        <Route path="/passenger-tracking" element={<ProtectedRoute><PassengerTracking /></ProtectedRoute>} />
+                        <Route path="/rfid-pairing" element={<ProtectedRoute><RFIDPairing /></ProtectedRoute>} />
+                        <Route path="/fuel-card-providers" element={<ProtectedRoute><FuelCardProviders /></ProtectedRoute>} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />
                       </Routes>
