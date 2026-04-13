@@ -111,14 +111,52 @@ const DashCam = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="live">
-            <Card><CardHeader><CardTitle>Live Camera Feeds</CardTitle></CardHeader><CardContent>
+          <TabsContent value="live" className="space-y-4">
+            <Card><CardHeader><CardTitle>Live Camera Feeds (RTSP/WebRTC)</CardTitle></CardHeader><CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[1,2,3,4].map(i => (
-                  <div key={i} className="aspect-video bg-muted rounded-lg flex items-center justify-center border-2 border-dashed border-border">
-                    <div className="text-center text-muted-foreground"><Camera className="h-12 w-12 mx-auto mb-2" /><p>Camera Feed {i}</p><p className="text-xs">Connect camera to view live stream</p></div>
+                  <div key={i} className="relative aspect-video bg-black rounded-lg flex items-center justify-center border border-border overflow-hidden group">
+                    <div className="text-center text-muted-foreground"><Camera className="h-12 w-12 mx-auto mb-2 text-white/30" /><p className="text-white/50">Camera Feed {i}</p><p className="text-xs text-white/30">RTSP stream • Waiting for connection</p></div>
+                    <div className="absolute top-2 left-2 flex items-center gap-1"><Badge variant="outline" className="text-xs bg-black/50 text-white border-white/20">● LIVE</Badge></div>
+                    <div className="absolute bottom-2 right-2 flex gap-1">
+                      <Button size="sm" variant="ghost" className="h-7 text-white/70 hover:text-white bg-black/30"><Play className="h-3 w-3" /></Button>
+                    </div>
                   </div>
                 ))}
+              </div>
+              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800 text-sm">
+                <p className="font-medium">Streaming Protocol Support</p>
+                <p className="text-muted-foreground text-xs mt-1">Supports RTSP, WebRTC, and HLS protocols. Configure camera endpoints in Fleet → Device Management to enable live streaming.</p>
+              </div>
+            </CardContent></Card>
+
+            {/* Voice Communication Panel */}
+            <Card><CardHeader><CardTitle>Push-to-Talk (PTT) Voice Communication</CardTitle></CardHeader><CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 rounded-lg border text-center">
+                  <div className="h-16 w-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-2">
+                    <Video className="h-8 w-8 text-primary" />
+                  </div>
+                  <p className="font-medium text-sm">Two-Way Audio</p>
+                  <p className="text-xs text-muted-foreground mt-1">Talk to driver through dash cam speaker</p>
+                  <Button size="sm" className="mt-2" variant="outline">Connect</Button>
+                </div>
+                <div className="p-4 rounded-lg border text-center">
+                  <div className="h-16 w-16 mx-auto rounded-full bg-orange-500/10 flex items-center justify-center mb-2">
+                    <AlertTriangle className="h-8 w-8 text-orange-500" />
+                  </div>
+                  <p className="font-medium text-sm">Emergency Broadcast</p>
+                  <p className="text-xs text-muted-foreground mt-1">Send alert to all active drivers</p>
+                  <Button size="sm" className="mt-2" variant="destructive">Broadcast</Button>
+                </div>
+                <div className="p-4 rounded-lg border text-center">
+                  <div className="h-16 w-16 mx-auto rounded-full bg-green-500/10 flex items-center justify-center mb-2">
+                    <Eye className="h-8 w-8 text-green-500" />
+                  </div>
+                  <p className="font-medium text-sm">Group PTT Channel</p>
+                  <p className="text-xs text-muted-foreground mt-1">Fleet-wide push-to-talk channel</p>
+                  <Button size="sm" className="mt-2" variant="outline">Join Channel</Button>
+                </div>
               </div>
             </CardContent></Card>
           </TabsContent>
