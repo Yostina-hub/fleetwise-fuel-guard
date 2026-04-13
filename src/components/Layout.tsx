@@ -72,6 +72,7 @@ const navItems = [
     subItems: [
       { label: "Vehicle List", path: "/fleet" },
       { label: "Device Management", path: "/devices" },
+      { label: "Hardware Sensors", path: "/hardware-sensors" },
     ]
   },
   { 
@@ -101,6 +102,8 @@ const navItems = [
       { label: "Incidents", path: "/incidents" },
       { label: "Roadside Assistance", path: "/roadside-assistance" },
       { label: "Driver Logbook", path: "/driver-logbook" },
+      { label: "Alcohol & Fatigue", path: "/alcohol-fatigue" },
+      { label: "Vehicle Inspections", path: "/vehicle-inspections" },
     ]
   },
   { 

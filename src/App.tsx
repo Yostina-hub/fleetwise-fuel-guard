@@ -59,6 +59,9 @@ const DriverLogbook = lazyWithRetry(() => import("./pages/DriverLogbook"), "Driv
 const RoadsideAssistance = lazyWithRetry(() => import("./pages/RoadsideAssistance"), "RoadsideAssistance");
 const CarbonEmissions = lazyWithRetry(() => import("./pages/CarbonEmissions"), "CarbonEmissions");
 const DelegationMatrixPage = lazyWithRetry(() => import("./pages/DelegationMatrix"), "DelegationMatrix");
+const VehicleInspections = lazyWithRetry(() => import("./pages/VehicleInspections"), "VehicleInspections");
+const AlcoholFatigueDetection = lazyWithRetry(() => import("./pages/AlcoholFatigueDetection"), "AlcoholFatigueDetection");
+const HardwareSensors = lazyWithRetry(() => import("./pages/HardwareSensors"), "HardwareSensors");
 const NotFound = lazyWithRetry(() => import("./pages/NotFound"), "NotFound");
 
 const App = () => {
@@ -132,6 +135,9 @@ const App = () => {
                         <Route path="/roadside-assistance" element={<ProtectedRoute><RoadsideAssistance /></ProtectedRoute>} />
                         <Route path="/carbon-emissions" element={<ProtectedRoute><CarbonEmissions /></ProtectedRoute>} />
                         <Route path="/delegation-matrix" element={<ProtectedRoute><DelegationMatrixPage /></ProtectedRoute>} />
+                        <Route path="/vehicle-inspections" element={<ProtectedRoute><VehicleInspections /></ProtectedRoute>} />
+                        <Route path="/alcohol-fatigue" element={<ProtectedRoute><AlcoholFatigueDetection /></ProtectedRoute>} />
+                        <Route path="/hardware-sensors" element={<ProtectedRoute><HardwareSensors /></ProtectedRoute>} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />
                       </Routes>

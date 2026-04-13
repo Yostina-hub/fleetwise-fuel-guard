@@ -190,6 +190,94 @@ export type Database = {
         }
         Relationships: []
       }
+      alcohol_fatigue_tests: {
+        Row: {
+          action_taken: string | null
+          created_at: string
+          device_name: string | null
+          device_serial: string | null
+          driver_id: string
+          id: string
+          location: string | null
+          notes: string | null
+          organization_id: string
+          pass: boolean | null
+          reading_value: number | null
+          result: string
+          test_date: string
+          test_type: string
+          tested_by: string | null
+          threshold_value: number | null
+          unit: string | null
+          updated_at: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          action_taken?: string | null
+          created_at?: string
+          device_name?: string | null
+          device_serial?: string | null
+          driver_id: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          organization_id: string
+          pass?: boolean | null
+          reading_value?: number | null
+          result?: string
+          test_date?: string
+          test_type?: string
+          tested_by?: string | null
+          threshold_value?: number | null
+          unit?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          action_taken?: string | null
+          created_at?: string
+          device_name?: string | null
+          device_serial?: string | null
+          driver_id?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          organization_id?: string
+          pass?: boolean | null
+          reading_value?: number | null
+          result?: string
+          test_date?: string
+          test_type?: string
+          tested_by?: string | null
+          threshold_value?: number | null
+          unit?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alcohol_fatigue_tests_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alcohol_fatigue_tests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alcohol_fatigue_tests_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       alert_rules: {
         Row: {
           conditions: Json
@@ -6682,6 +6770,66 @@ export type Database = {
           },
           {
             foreignKeyName: "governor_command_logs_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hardware_sensor_data: {
+        Row: {
+          alert_message: string | null
+          alert_type: string | null
+          created_at: string
+          id: string
+          is_alert: boolean | null
+          organization_id: string
+          readings: Json
+          recorded_at: string
+          sensor_id: string | null
+          sensor_type: string
+          status: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          alert_message?: string | null
+          alert_type?: string | null
+          created_at?: string
+          id?: string
+          is_alert?: boolean | null
+          organization_id: string
+          readings?: Json
+          recorded_at?: string
+          sensor_id?: string | null
+          sensor_type: string
+          status?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          alert_message?: string | null
+          alert_type?: string | null
+          created_at?: string
+          id?: string
+          is_alert?: boolean | null
+          organization_id?: string
+          readings?: Json
+          recorded_at?: string
+          sensor_id?: string | null
+          sensor_type?: string
+          status?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hardware_sensor_data_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hardware_sensor_data_vehicle_id_fkey"
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
