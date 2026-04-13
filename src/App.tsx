@@ -50,6 +50,9 @@ const TripManagement = lazyWithRetry(() => import("./pages/TripManagement"), "Tr
 const Organizations = lazyWithRetry(() => import("./pages/Organizations"), "Organizations");
 const EVManagement = lazyWithRetry(() => import("./pages/EVManagement"), "EVManagement");
 const VehicleRequests = lazyWithRetry(() => import("./pages/VehicleRequests"), "VehicleRequests");
+const TireManagement = lazyWithRetry(() => import("./pages/TireManagement"), "TireManagement");
+const ColdChain = lazyWithRetry(() => import("./pages/ColdChain"), "ColdChain");
+const RentalVehicles = lazyWithRetry(() => import("./pages/RentalVehicles"), "RentalVehicles");
 const NotFound = lazyWithRetry(() => import("./pages/NotFound"), "NotFound");
 
 const App = () => {
@@ -114,6 +117,9 @@ const App = () => {
                         <Route path="/trip-management" element={<ProtectedRoute><TripManagement /></ProtectedRoute>} />
                         <Route path="/ev-management" element={<ProtectedRoute><EVManagement /></ProtectedRoute>} />
                         <Route path="/vehicle-requests" element={<ProtectedRoute><VehicleRequests /></ProtectedRoute>} />
+                        <Route path="/tire-management" element={<ProtectedRoute><TireManagement /></ProtectedRoute>} />
+                        <Route path="/cold-chain" element={<ProtectedRoute><ColdChain /></ProtectedRoute>} />
+                        <Route path="/rental-vehicles" element={<ProtectedRoute><RentalVehicles /></ProtectedRoute>} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />
                       </Routes>
