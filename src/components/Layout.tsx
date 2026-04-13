@@ -162,7 +162,7 @@ const navItems = [
       { label: "Assignments", path: "/trip-management?tab=active" },
     ]
   },
-  { icon: GraduationCap, label: "Driver Training", path: "/driver-training" },
+  
   { icon: BarChart3, label: "Reports & KPIs", subItems: [
     { label: "Reports", path: "/reports" },
     { label: "KPI Scorecards", path: "/kpi-scorecards" },

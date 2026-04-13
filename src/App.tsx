@@ -69,7 +69,7 @@ const HardwareSensors = lazyWithRetry(() => import("./pages/HardwareSensors"), "
 const AccidentInsurance = lazyWithRetry(() => import("./pages/AccidentInsurance"), "AccidentInsurance");
 const DocumentManagement = lazyWithRetry(() => import("./pages/DocumentManagement"), "DocumentManagement");
 const ComplianceCalendar = lazyWithRetry(() => import("./pages/ComplianceCalendar"), "ComplianceCalendar");
-const DriverTraining = lazyWithRetry(() => import("./pages/DriverTraining"), "DriverTraining");
+
 const PartsInventory = lazyWithRetry(() => import("./pages/PartsInventory"), "PartsInventory");
 const VendorManagement = lazyWithRetry(() => import("./pages/VendorManagement"), "VendorManagement");
 const PenaltiesFines = lazyWithRetry(() => import("./pages/PenaltiesFines"), "PenaltiesFines");
