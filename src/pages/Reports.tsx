@@ -1379,8 +1379,10 @@ const Reports = () => {
                 <ReportsDateFilter
                   searchQuery={searchQuery}
                   onSearchChange={setSearchQuery}
-                  onExportCSV={handleExportCSV}
-                  onExportPDF={handleExportPDF}
+                   onExportCSV={handleExportCSV}
+                   onExportPDF={handleExportPDF}
+                   onExportExcel={handleExportExcel}
+                   onExportWord={handleExportWord}
                   onRefresh={handleRefresh}
                   isLoading={loading}
                   timePeriod={timePeriod}
