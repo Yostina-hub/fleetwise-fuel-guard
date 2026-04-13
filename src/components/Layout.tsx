@@ -22,7 +22,10 @@ import {
   PanelLeftClose,
   PanelLeft,
   Workflow,
-  Battery
+  Battery,
+  CircleDot,
+  Thermometer,
+  ClipboardList,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -80,6 +83,7 @@ const navItems = [
   },
   { icon: Fuel, label: "Fuel Monitoring", path: "/fuel" },
   { icon: Battery, label: "EV Management", path: "/ev-management" },
+  { icon: Thermometer, label: "Cold Chain", path: "/cold-chain" },
   { 
     icon: ShieldCheck, 
     label: "Safety & Compliance", 
@@ -104,7 +108,13 @@ const navItems = [
     subItems: [
       { label: "Service History", path: "/maintenance" },
       { label: "Work Orders", path: "/work-orders" },
+      { label: "Tire Management", path: "/tire-management" },
     ]
+  },
+  { 
+    icon: Truck, 
+    label: "Rental Vehicles", 
+    path: "/rental-vehicles"
   },
   { 
     icon: CalendarClock, 
