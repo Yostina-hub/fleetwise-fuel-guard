@@ -84,6 +84,7 @@ const navItems = [
       { label: "Vehicle List", path: "/fleet" },
       { label: "Device Management", path: "/devices" },
       { label: "Hardware Sensors", path: "/hardware-sensors" },
+      { label: "RFID Pairing", path: "/rfid-pairing" },
     ]
   },
   { 
@@ -102,7 +103,9 @@ const navItems = [
   { icon: Fuel, label: "Fuel Monitoring", subItems: [
     { label: "Consumption", path: "/fuel" },
     { label: "Fuel Requests", path: "/fuel-requests" },
+    { label: "Fuel Card Providers", path: "/fuel-card-providers" },
   ]},
+  { icon: Users, label: "Passenger Tracking", path: "/passenger-tracking" },
   { icon: Battery, label: "EV Management", path: "/ev-management" },
   { icon: Thermometer, label: "Cold Chain", path: "/cold-chain" },
   { icon: Camera, label: "Dash Cam & ADAS", subItems: [
