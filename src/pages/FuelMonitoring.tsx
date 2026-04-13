@@ -21,6 +21,9 @@ import FuelQuickActions from "@/components/fuel/FuelQuickActions";
 import { WorkflowAutomationPanel } from "@/components/workflow/WorkflowAutomationPanel";
 import FuelTrendChart from "@/components/fuel/FuelTrendChart";
 import IdleTimeImpactCard from "@/components/fuel/IdleTimeImpactCard";
+import VehicleFuelRanking from "@/components/fuel/VehicleFuelRanking";
+import FuelCostBreakdown from "@/components/fuel/FuelCostBreakdown";
+import FuelBudgetTracker from "@/components/fuel/FuelBudgetTracker";
 import { FuelPageContext } from "@/contexts/FuelPageContext";
 
 const FuelMonitoring = () => {
@@ -66,16 +69,16 @@ const FuelMonitoring = () => {
   // Calculate average cost per liter from transactions
   const avgCostPerLiter = useMemo(() => {
     const transactionsWithCost = transactions.filter(t => t.fuel_price_per_liter && t.fuel_price_per_liter > 0);
-    if (transactionsWithCost.length === 0) return 1.50; // Fallback default
+    if (transactionsWithCost.length === 0) return 1.50;
     const total = transactionsWithCost.reduce((sum, t) => sum + (t.fuel_price_per_liter || 0), 0);
     return total / transactionsWithCost.length;
   }, [transactions]);
 
-  // Calculate consumption trend by comparing current period with previous
+  // Calculate consumption trend
   const consumptionTrend = useMemo(() => {
     const now = new Date();
-    const midPoint = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000); // 15 days ago
-    const startPoint = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
+    const midPoint = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000);
+    const startPoint = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     const recentEvents = dbFuelEvents.filter(e => new Date(e.event_time) >= midPoint && e.event_type === 'refuel');
     const previousEvents = dbFuelEvents.filter(e => new Date(e.event_time) >= startPoint && new Date(e.event_time) < midPoint && e.event_type === 'refuel');
@@ -94,12 +97,11 @@ const FuelMonitoring = () => {
     };
   }, [dbFuelEvents]);
 
-  // Calculate idle time stats from trips
+  // Calculate idle time stats
   const idleStats = useMemo(() => {
-    const IDLE_THRESHOLD_HOURS = 5; // Weekly threshold per vehicle
-    const FUEL_PER_IDLE_HOUR = 1.5; // Liters of fuel wasted per hour of idle
+    const IDLE_THRESHOLD_HOURS = 5;
+    const FUEL_PER_IDLE_HOUR = 1.5;
 
-    // Group by vehicle
     const vehicleIdleMap: Record<string, { totalMinutes: number; plate: string }> = {};
     tripsData.forEach((trip: any) => {
       if (!vehicleIdleMap[trip.vehicle_id]) {
@@ -113,7 +115,6 @@ const FuelMonitoring = () => {
     const fuelWasted = totalIdleHours * FUEL_PER_IDLE_HOUR;
     const costImpact = fuelWasted * avgCostPerLiter;
 
-    // Find top idlers
     const topIdlers = entries
       .map(([id, v]) => ({
         vehicle: v.plate,
@@ -123,7 +124,6 @@ const FuelMonitoring = () => {
       .sort((a, b) => b.hours - a.hours)
       .slice(0, 3);
 
-    // Calculate compliance (vehicles under threshold)
     const vehiclesOverThreshold = entries.filter(([_, v]) => (v.totalMinutes / 60) > IDLE_THRESHOLD_HOURS).length;
     const compliancePercent = entries.length > 0 
       ? Math.round(((entries.length - vehiclesOverThreshold) / entries.length) * 100)
@@ -139,7 +139,6 @@ const FuelMonitoring = () => {
     };
   }, [tripsData, avgCostPerLiter, vehicles]);
 
-  // Count vehicles with high idle (used for insights)
   const highIdleVehicleCount = useMemo(() => {
     return idleStats.topIdlers.filter(v => v.hours > idleStats.fleetTarget).length;
   }, [idleStats]);
@@ -149,7 +148,6 @@ const FuelMonitoring = () => {
       .filter(e => e.event_type === 'refuel')
       .reduce((sum, e) => sum + Math.abs(e.fuel_change_liters), 0);
     
-    // Count all anomalous events (theft, leak, drain) that are not marked as false_positive
     const anomalyCount = dbFuelEvents
       .filter(e => 
         (e.event_type === 'theft' || e.event_type === 'leak' || e.event_type === 'drain') && 
@@ -241,9 +239,18 @@ const FuelMonitoring = () => {
             description="Theft detection, live fuel control, EV charging workflows"
           />
 
-          {/* Insights & Trend Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <FuelTrendChart fuelEvents={dbFuelEvents} />
+          {/* Analytics Grid - Row 1: Trend + Budget */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <FuelTrendChart fuelEvents={dbFuelEvents} />
+            </div>
+            <FuelBudgetTracker transactions={transactions} />
+          </div>
+
+          {/* Analytics Grid - Row 2: Ranking + Cost Breakdown + Insights */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <VehicleFuelRanking transactions={transactions} getVehiclePlate={getVehiclePlate} />
+            <FuelCostBreakdown transactions={transactions} getVehiclePlate={getVehiclePlate} />
             <FuelInsightsCard 
               anomalyCount={stats.anomalyCount}
               totalConsumption={stats.totalConsumption}
