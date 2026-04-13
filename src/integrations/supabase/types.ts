@@ -5646,6 +5646,59 @@ export type Database = {
           },
         ]
       }
+      fuel_card_providers: {
+        Row: {
+          account_id: string | null
+          api_endpoint: string | null
+          api_key_encrypted: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          last_sync_at: string | null
+          organization_id: string
+          provider_name: string
+          settings: Json | null
+          sync_interval_minutes: number | null
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          api_endpoint?: string | null
+          api_key_encrypted?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          organization_id: string
+          provider_name: string
+          settings?: Json | null
+          sync_interval_minutes?: number | null
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          api_endpoint?: string | null
+          api_key_encrypted?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          organization_id?: string
+          provider_name?: string
+          settings?: Json | null
+          sync_interval_minutes?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_card_providers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fuel_consumption_alerts: {
         Row: {
           acknowledged_at: string | null
@@ -8833,6 +8886,152 @@ export type Database = {
           },
         ]
       }
+      passenger_boardings: {
+        Row: {
+          alighting_stop: string | null
+          alighting_time: string | null
+          boarding_stop: string | null
+          boarding_time: string
+          created_at: string
+          fare_amount: number | null
+          fare_paid: boolean | null
+          id: string
+          manifest_id: string
+          organization_id: string
+          passenger_name: string | null
+          passenger_phone: string | null
+          seat_number: string | null
+          ticket_number: string | null
+        }
+        Insert: {
+          alighting_stop?: string | null
+          alighting_time?: string | null
+          boarding_stop?: string | null
+          boarding_time?: string
+          created_at?: string
+          fare_amount?: number | null
+          fare_paid?: boolean | null
+          id?: string
+          manifest_id: string
+          organization_id: string
+          passenger_name?: string | null
+          passenger_phone?: string | null
+          seat_number?: string | null
+          ticket_number?: string | null
+        }
+        Update: {
+          alighting_stop?: string | null
+          alighting_time?: string | null
+          boarding_stop?: string | null
+          boarding_time?: string
+          created_at?: string
+          fare_amount?: number | null
+          fare_paid?: boolean | null
+          id?: string
+          manifest_id?: string
+          organization_id?: string
+          passenger_name?: string | null
+          passenger_phone?: string | null
+          seat_number?: string | null
+          ticket_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "passenger_boardings_manifest_id_fkey"
+            columns: ["manifest_id"]
+            isOneToOne: false
+            referencedRelation: "passenger_manifests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "passenger_boardings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      passenger_manifests: {
+        Row: {
+          arrival_time: string | null
+          created_at: string
+          departure_time: string
+          driver_id: string | null
+          id: string
+          max_capacity: number | null
+          notes: string | null
+          organization_id: string
+          route_name: string | null
+          status: string
+          total_passengers: number
+          trip_id: string | null
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          arrival_time?: string | null
+          created_at?: string
+          departure_time?: string
+          driver_id?: string | null
+          id?: string
+          max_capacity?: number | null
+          notes?: string | null
+          organization_id: string
+          route_name?: string | null
+          status?: string
+          total_passengers?: number
+          trip_id?: string | null
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          arrival_time?: string | null
+          created_at?: string
+          departure_time?: string
+          driver_id?: string | null
+          id?: string
+          max_capacity?: number | null
+          notes?: string | null
+          organization_id?: string
+          route_name?: string | null
+          status?: string
+          total_passengers?: number
+          trip_id?: string | null
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "passenger_manifests_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "passenger_manifests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "passenger_manifests_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "passenger_manifests_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       password_policies: {
         Row: {
           created_at: string
@@ -9369,6 +9568,73 @@ export type Database = {
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rfid_pairings: {
+        Row: {
+          created_at: string
+          device_id: string
+          driver_id: string
+          id: string
+          is_active: boolean
+          notes: string | null
+          organization_id: string
+          paired_at: string
+          paired_by: string | null
+          rfid_tag: string
+          unpaired_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          driver_id: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          organization_id: string
+          paired_at?: string
+          paired_by?: string | null
+          rfid_tag: string
+          unpaired_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          driver_id?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          organization_id?: string
+          paired_at?: string
+          paired_by?: string | null
+          rfid_tag?: string
+          unpaired_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rfid_pairings_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rfid_pairings_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rfid_pairings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
