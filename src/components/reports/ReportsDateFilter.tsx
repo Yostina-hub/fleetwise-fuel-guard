@@ -1,4 +1,4 @@
-import { Download, FileSpreadsheet, FileText, RefreshCw, Search } from "lucide-react";
+import { Download, FileSpreadsheet, FileText, RefreshCw, Search, FileType } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -21,6 +21,8 @@ interface ReportsDateFilterProps {
   onSearchChange: (query: string) => void;
   onExportCSV: () => void;
   onExportPDF: () => void;
+  onExportExcel?: () => void;
+  onExportWord?: () => void;
   onRefresh: () => void;
   isLoading?: boolean;
   timePeriod: TimePeriodOption;
@@ -34,6 +36,8 @@ export const ReportsDateFilter = ({
   onSearchChange,
   onExportCSV,
   onExportPDF,
+  onExportExcel,
+  onExportWord,
   onRefresh,
   isLoading,
   timePeriod,
@@ -94,11 +98,23 @@ export const ReportsDateFilter = ({
               <FileSpreadsheet className="w-4 h-4" aria-hidden="true" />
               Export as CSV
             </DropdownMenuItem>
+            {onExportExcel && (
+              <DropdownMenuItem onClick={onExportExcel} className="gap-2 cursor-pointer">
+                <FileSpreadsheet className="w-4 h-4" aria-hidden="true" />
+                Export as Excel (.xls)
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={onExportPDF} className="gap-2 cursor-pointer">
               <FileText className="w-4 h-4" aria-hidden="true" />
               Export as PDF
             </DropdownMenuItem>
+            {onExportWord && (
+              <DropdownMenuItem onClick={onExportWord} className="gap-2 cursor-pointer">
+                <FileType className="w-4 h-4" aria-hidden="true" />
+                Export as Word (.doc)
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
