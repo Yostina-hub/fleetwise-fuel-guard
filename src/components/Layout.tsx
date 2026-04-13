@@ -72,6 +72,7 @@ const navItems = [
     subItems: [
       { label: "Vehicle List", path: "/fleet" },
       { label: "Device Management", path: "/devices" },
+      { label: "Hardware Sensors", path: "/hardware-sensors" },
     ]
   },
   { 
