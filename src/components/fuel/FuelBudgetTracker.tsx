@@ -9,7 +9,7 @@ import { format, startOfMonth, endOfMonth, differenceInDays, startOfDay } from "
 interface FuelBudgetTrackerProps {
   transactions: Array<{
     transaction_date: string;
-    fuel_cost: number;
+    fuel_cost?: number | null;
     fuel_amount_liters: number;
   }>;
   monthlyBudget?: number;
