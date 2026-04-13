@@ -9,7 +9,7 @@ interface VehicleFuelRankingProps {
   transactions: Array<{
     vehicle_id: string;
     fuel_amount_liters: number;
-    fuel_cost: number;
+    fuel_cost?: number | null;
     odometer_km?: number | null;
   }>;
   getVehiclePlate: (id: string) => string;

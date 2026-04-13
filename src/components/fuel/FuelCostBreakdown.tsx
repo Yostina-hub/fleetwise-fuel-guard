@@ -7,7 +7,7 @@ import { useOrganizationSettings } from "@/hooks/useOrganizationSettings";
 interface FuelCostBreakdownProps {
   transactions: Array<{
     vehicle_id: string;
-    fuel_cost: number;
+    fuel_cost?: number | null;
     transaction_type?: string;
   }>;
   getVehiclePlate: (id: string) => string;
