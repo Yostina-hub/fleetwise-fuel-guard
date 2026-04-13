@@ -1,6 +1,66 @@
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 
+// Excel Export utility (HTML table format, opens in Excel/LibreOffice)
+export const exportToExcel = (
+  title: string,
+  data: Record<string, any>[],
+  columns: { key: string; label: string }[],
+  filename: string
+) => {
+  if (data.length === 0) return;
+
+  const header = columns.map(c => `<th style="background:#4472C4;color:white;padding:8px;border:1px solid #ddd;font-weight:bold">${c.label}</th>`).join("");
+  const rows = data.map((row, i) =>
+    columns.map(c => `<td style="padding:6px;border:1px solid #ddd;${i % 2 === 0 ? "background:#f8f9fa" : ""}">${row[c.key] ?? ""}</td>`).join("")
+  );
+  const html = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
+    <head><meta charset="utf-8"><style>table{border-collapse:collapse;font-family:Calibri,Arial,sans-serif;font-size:11pt}th,td{mso-number-format:"\\@"}</style></head>
+    <body>
+      <h2>${title}</h2>
+      <p>Generated: ${format(new Date(), "MMMM d, yyyy 'at' h:mm a")}</p>
+      <table><tr>${header}</tr>${rows.map(r => `<tr>${r}</tr>`).join("")}</table>
+    </body></html>
+  `;
+  const blob = new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `${filename}_${format(new Date(), "yyyy-MM-dd_HHmm")}.xls`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+};
+
+// Word Export utility (HTML format, opens in Word/LibreOffice Writer)
+export const exportToWord = (
+  title: string,
+  data: Record<string, any>[],
+  columns: { key: string; label: string }[],
+  filename: string
+) => {
+  if (data.length === 0) return;
+
+  const header = columns.map(c => `<th style="background:#4472C4;color:white;padding:8px;border:1px solid #ddd">${c.label}</th>`).join("");
+  const rows = data.map(row =>
+    columns.map(c => `<td style="padding:6px;border:1px solid #ddd">${row[c.key] ?? ""}</td>`).join("")
+  );
+  const html = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
+    <head><meta charset="utf-8"><style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt}table{border-collapse:collapse;width:100%}h1{color:#2B579A}</style></head>
+    <body>
+      <h1>${title}</h1>
+      <p>Generated: ${format(new Date(), "MMMM d, yyyy 'at' h:mm a")}</p>
+      <table><tr>${header}</tr>${rows.map(r => `<tr>${r}</tr>`).join("")}</table>
+    </body></html>
+  `;
+  const blob = new Blob([html], { type: "application/msword;charset=utf-8" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `${filename}_${format(new Date(), "yyyy-MM-dd_HHmm")}.doc`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+};
+
 // CSV Export utility
 export const exportToCSV = (data: Record<string, any>[], filename: string) => {
   if (data.length === 0) return;
