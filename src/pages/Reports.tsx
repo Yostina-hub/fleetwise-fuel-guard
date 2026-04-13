@@ -7,7 +7,7 @@ import { useDrivers } from "@/hooks/useDrivers";
 import { useReportData } from "@/hooks/useReportData";
 import { format, subDays, parseISO } from "date-fns";
 import { toast } from "sonner";
-import { exportToCSV, exportToPDF } from "@/lib/exportUtils";
+import { exportToCSV, exportToPDF, exportToExcel, exportToWord } from "@/lib/exportUtils";
 import { cn } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { TimePeriodOption, getDateRangeFromPeriod } from "@/components/reports/ReportTimePeriodSelect";
@@ -1101,6 +1101,26 @@ const Reports = () => {
     }
     exportToPDF(title, data, columns, filename);
     toast.success("Report exported to PDF");
+  };
+
+  const handleExportExcel = () => {
+    const { data, filename, columns, title } = getExportData();
+    if (data.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
+    exportToExcel(title, data, columns, filename);
+    toast.success("Report exported to Excel");
+  };
+
+  const handleExportWord = () => {
+    const { data, filename, columns, title } = getExportData();
+    if (data.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
+    exportToWord(title, data, columns, filename);
+    toast.success("Report exported to Word");
   };
 
   const handleRefresh = () => {
