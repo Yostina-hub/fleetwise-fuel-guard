@@ -53,6 +53,12 @@ const VehicleRequests = lazyWithRetry(() => import("./pages/VehicleRequests"), "
 const TireManagement = lazyWithRetry(() => import("./pages/TireManagement"), "TireManagement");
 const ColdChain = lazyWithRetry(() => import("./pages/ColdChain"), "ColdChain");
 const RentalVehicles = lazyWithRetry(() => import("./pages/RentalVehicles"), "RentalVehicles");
+const DashCam = lazyWithRetry(() => import("./pages/DashCam"), "DashCam");
+const FuelRequests = lazyWithRetry(() => import("./pages/FuelRequests"), "FuelRequests");
+const DriverLogbook = lazyWithRetry(() => import("./pages/DriverLogbook"), "DriverLogbook");
+const RoadsideAssistance = lazyWithRetry(() => import("./pages/RoadsideAssistance"), "RoadsideAssistance");
+const CarbonEmissions = lazyWithRetry(() => import("./pages/CarbonEmissions"), "CarbonEmissions");
+const DelegationMatrixPage = lazyWithRetry(() => import("./pages/DelegationMatrix"), "DelegationMatrix");
 const NotFound = lazyWithRetry(() => import("./pages/NotFound"), "NotFound");
 
 const App = () => {
@@ -120,6 +126,12 @@ const App = () => {
                         <Route path="/tire-management" element={<ProtectedRoute><TireManagement /></ProtectedRoute>} />
                         <Route path="/cold-chain" element={<ProtectedRoute><ColdChain /></ProtectedRoute>} />
                         <Route path="/rental-vehicles" element={<ProtectedRoute><RentalVehicles /></ProtectedRoute>} />
+                        <Route path="/dash-cam" element={<ProtectedRoute><DashCam /></ProtectedRoute>} />
+                        <Route path="/fuel-requests" element={<ProtectedRoute><FuelRequests /></ProtectedRoute>} />
+                        <Route path="/driver-logbook" element={<ProtectedRoute><DriverLogbook /></ProtectedRoute>} />
+                        <Route path="/roadside-assistance" element={<ProtectedRoute><RoadsideAssistance /></ProtectedRoute>} />
+                        <Route path="/carbon-emissions" element={<ProtectedRoute><CarbonEmissions /></ProtectedRoute>} />
+                        <Route path="/delegation-matrix" element={<ProtectedRoute><DelegationMatrixPage /></ProtectedRoute>} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />
                       </Routes>
