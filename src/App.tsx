@@ -54,6 +54,10 @@ const TireManagement = lazyWithRetry(() => import("./pages/TireManagement"), "Ti
 const ColdChain = lazyWithRetry(() => import("./pages/ColdChain"), "ColdChain");
 const RentalVehicles = lazyWithRetry(() => import("./pages/RentalVehicles"), "RentalVehicles");
 const DashCam = lazyWithRetry(() => import("./pages/DashCam"), "DashCam");
+const ADASReports = lazyWithRetry(() => import("./pages/ADASReports"), "ADASReports");
+const DashboardBuilder = lazyWithRetry(() => import("./pages/DashboardBuilder"), "DashboardBuilder");
+const PerformanceSimulation = lazyWithRetry(() => import("./pages/PerformanceSimulation"), "PerformanceSimulation");
+const PredictiveMaintenance = lazyWithRetry(() => import("./pages/PredictiveMaintenance"), "PredictiveMaintenance");
 const FuelRequests = lazyWithRetry(() => import("./pages/FuelRequests"), "FuelRequests");
 const DriverLogbook = lazyWithRetry(() => import("./pages/DriverLogbook"), "DriverLogbook");
 const RoadsideAssistance = lazyWithRetry(() => import("./pages/RoadsideAssistance"), "RoadsideAssistance");
@@ -141,6 +145,10 @@ const App = () => {
                         <Route path="/cold-chain" element={<ProtectedRoute><ColdChain /></ProtectedRoute>} />
                         <Route path="/rental-vehicles" element={<ProtectedRoute><RentalVehicles /></ProtectedRoute>} />
                         <Route path="/dash-cam" element={<ProtectedRoute><DashCam /></ProtectedRoute>} />
+                        <Route path="/adas-reports" element={<ProtectedRoute><ADASReports /></ProtectedRoute>} />
+                        <Route path="/dashboard-builder" element={<ProtectedRoute><DashboardBuilder /></ProtectedRoute>} />
+                        <Route path="/performance-simulation" element={<ProtectedRoute><PerformanceSimulation /></ProtectedRoute>} />
+                        <Route path="/predictive-maintenance" element={<ProtectedRoute><PredictiveMaintenance /></ProtectedRoute>} />
                         <Route path="/fuel-requests" element={<ProtectedRoute><FuelRequests /></ProtectedRoute>} />
                         <Route path="/driver-logbook" element={<ProtectedRoute><DriverLogbook /></ProtectedRoute>} />
                         <Route path="/roadside-assistance" element={<ProtectedRoute><RoadsideAssistance /></ProtectedRoute>} />
