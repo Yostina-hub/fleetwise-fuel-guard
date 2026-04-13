@@ -249,10 +249,7 @@ const SpeedGovernor = () => {
                           disabled={!controlVehicle}
                           onClick={() => {
                             if (controlVehicle) {
-                              toast({
-                                title: "Immobilization Command Sent",
-                                description: `Engine cut-off command queued for vehicle. Takes effect when vehicle speed drops below 20 km/h for safety.`,
-                              });
+                              toast.success("Immobilization command queued. Engine cut-off activates when speed drops below 20 km/h for safety.");
                             }
                           }}
                         >
