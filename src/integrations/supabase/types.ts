@@ -900,6 +900,130 @@ export type Database = {
           },
         ]
       }
+      compliance_calendar: {
+        Row: {
+          assigned_to: string | null
+          category: string | null
+          completed_at: string | null
+          created_at: string
+          deadline: string
+          description: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          organization_id: string
+          reminder_days_before: number | null
+          status: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          category?: string | null
+          completed_at?: string | null
+          created_at?: string
+          deadline: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          organization_id: string
+          reminder_days_before?: number | null
+          status?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          category?: string | null
+          completed_at?: string | null
+          created_at?: string
+          deadline?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          organization_id?: string
+          reminder_days_before?: number | null
+          status?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_calendar_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contracts: {
+        Row: {
+          auto_renew: boolean | null
+          contract_number: string
+          contract_type: string
+          created_at: string
+          currency: string | null
+          description: string | null
+          document_url: string | null
+          end_date: string | null
+          id: string
+          notes: string | null
+          organization_id: string
+          party_name: string
+          start_date: string
+          status: string | null
+          updated_at: string
+          value: number | null
+        }
+        Insert: {
+          auto_renew?: boolean | null
+          contract_number: string
+          contract_type?: string
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          document_url?: string | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          party_name: string
+          start_date: string
+          status?: string | null
+          updated_at?: string
+          value?: number | null
+        }
+        Update: {
+          auto_renew?: boolean | null
+          contract_number?: string
+          contract_type?: string
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          document_url?: string | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          party_name?: string
+          start_date?: string
+          status?: string | null
+          updated_at?: string
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cost_centers: {
         Row: {
           code: string
@@ -4388,6 +4512,72 @@ export type Database = {
           },
         ]
       }
+      driver_training: {
+        Row: {
+          certificate_url: string | null
+          certification_name: string
+          completion_date: string | null
+          created_at: string
+          driver_id: string
+          expiry_date: string | null
+          id: string
+          notes: string | null
+          organization_id: string
+          provider: string | null
+          score: number | null
+          status: string
+          training_type: string
+          updated_at: string
+        }
+        Insert: {
+          certificate_url?: string | null
+          certification_name: string
+          completion_date?: string | null
+          created_at?: string
+          driver_id: string
+          expiry_date?: string | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          provider?: string | null
+          score?: number | null
+          status?: string
+          training_type?: string
+          updated_at?: string
+        }
+        Update: {
+          certificate_url?: string | null
+          certification_name?: string
+          completion_date?: string | null
+          created_at?: string
+          driver_id?: string
+          expiry_date?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          provider?: string | null
+          score?: number | null
+          status?: string
+          training_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_training_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_training_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_training_courses: {
         Row: {
           category: string
@@ -7492,6 +7682,62 @@ export type Database = {
           },
         ]
       }
+      kpi_scorecards: {
+        Row: {
+          actual_value: number | null
+          category: string
+          created_at: string
+          id: string
+          kpi_name: string
+          notes: string | null
+          organization_id: string
+          period_end: string
+          period_start: string
+          target_value: number
+          trend: string | null
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          actual_value?: number | null
+          category?: string
+          created_at?: string
+          id?: string
+          kpi_name: string
+          notes?: string | null
+          organization_id: string
+          period_end: string
+          period_start: string
+          target_value?: number
+          trend?: string | null
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actual_value?: number | null
+          category?: string
+          created_at?: string
+          id?: string
+          kpi_name?: string
+          notes?: string | null
+          organization_id?: string
+          period_end?: string
+          period_start?: string
+          target_value?: number
+          trend?: string | null
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kpi_scorecards_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       legal_holds: {
         Row: {
           case_number: string | null
@@ -8056,6 +8302,62 @@ export type Database = {
           },
         ]
       }
+      notification_center: {
+        Row: {
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          is_read: boolean | null
+          link_url: string | null
+          message: string
+          organization_id: string
+          priority: string | null
+          read_at: string | null
+          recipient_id: string | null
+          title: string
+          type: string | null
+        }
+        Insert: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          is_read?: boolean | null
+          link_url?: string | null
+          message: string
+          organization_id: string
+          priority?: string | null
+          read_at?: string | null
+          recipient_id?: string | null
+          title: string
+          type?: string | null
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          is_read?: boolean | null
+          link_url?: string | null
+          message?: string
+          organization_id?: string
+          priority?: string | null
+          read_at?: string | null
+          recipient_id?: string | null
+          title?: string
+          type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_center_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_preferences: {
         Row: {
           created_at: string
@@ -8469,6 +8771,68 @@ export type Database = {
           },
         ]
       }
+      parts_inventory: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          last_restock_date: string | null
+          location: string | null
+          min_stock_level: number | null
+          organization_id: string
+          part_name: string
+          part_number: string
+          quantity: number
+          supplier: string | null
+          unit_cost: number | null
+          updated_at: string
+          vehicle_compatibility: string[] | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_restock_date?: string | null
+          location?: string | null
+          min_stock_level?: number | null
+          organization_id: string
+          part_name: string
+          part_number: string
+          quantity?: number
+          supplier?: string | null
+          unit_cost?: number | null
+          updated_at?: string
+          vehicle_compatibility?: string[] | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_restock_date?: string | null
+          location?: string | null
+          min_stock_level?: number | null
+          organization_id?: string
+          part_name?: string
+          part_number?: string
+          quantity?: number
+          supplier?: string | null
+          unit_cost?: number | null
+          updated_at?: string
+          vehicle_compatibility?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parts_inventory_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       password_policies: {
         Row: {
           created_at: string
@@ -8554,6 +8918,88 @@ export type Database = {
           ip_address?: string | null
         }
         Relationships: []
+      }
+      penalties_fines: {
+        Row: {
+          amount: number
+          created_at: string
+          driver_id: string | null
+          due_date: string | null
+          fine_number: string
+          id: string
+          location: string | null
+          notes: string | null
+          organization_id: string
+          paid_amount: number | null
+          paid_date: string | null
+          payment_status: string | null
+          receipt_url: string | null
+          updated_at: string
+          vehicle_id: string | null
+          violation_date: string
+          violation_type: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          driver_id?: string | null
+          due_date?: string | null
+          fine_number: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          organization_id: string
+          paid_amount?: number | null
+          paid_date?: string | null
+          payment_status?: string | null
+          receipt_url?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+          violation_date: string
+          violation_type: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          driver_id?: string | null
+          due_date?: string | null
+          fine_number?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          organization_id?: string
+          paid_amount?: number | null
+          paid_date?: string | null
+          payment_status?: string | null
+          receipt_url?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+          violation_date?: string
+          violation_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "penalties_fines_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "penalties_fines_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "penalties_fines_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       penalty_configurations: {
         Row: {

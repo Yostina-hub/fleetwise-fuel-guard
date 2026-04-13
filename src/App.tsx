@@ -62,6 +62,17 @@ const DelegationMatrixPage = lazyWithRetry(() => import("./pages/DelegationMatri
 const VehicleInspections = lazyWithRetry(() => import("./pages/VehicleInspections"), "VehicleInspections");
 const AlcoholFatigueDetection = lazyWithRetry(() => import("./pages/AlcoholFatigueDetection"), "AlcoholFatigueDetection");
 const HardwareSensors = lazyWithRetry(() => import("./pages/HardwareSensors"), "HardwareSensors");
+const AccidentInsurance = lazyWithRetry(() => import("./pages/AccidentInsurance"), "AccidentInsurance");
+const DocumentManagement = lazyWithRetry(() => import("./pages/DocumentManagement"), "DocumentManagement");
+const ComplianceCalendar = lazyWithRetry(() => import("./pages/ComplianceCalendar"), "ComplianceCalendar");
+const DriverTraining = lazyWithRetry(() => import("./pages/DriverTraining"), "DriverTraining");
+const PartsInventory = lazyWithRetry(() => import("./pages/PartsInventory"), "PartsInventory");
+const VendorManagement = lazyWithRetry(() => import("./pages/VendorManagement"), "VendorManagement");
+const PenaltiesFines = lazyWithRetry(() => import("./pages/PenaltiesFines"), "PenaltiesFines");
+const ContractManagement = lazyWithRetry(() => import("./pages/ContractManagement"), "ContractManagement");
+const KPIScorecard = lazyWithRetry(() => import("./pages/KPIScorecard"), "KPIScorecard");
+const NotificationCenterPage = lazyWithRetry(() => import("./pages/NotificationCenter"), "NotificationCenter");
+const BulkOperations = lazyWithRetry(() => import("./pages/BulkOperations"), "BulkOperations");
 const NotFound = lazyWithRetry(() => import("./pages/NotFound"), "NotFound");
 
 const App = () => {
@@ -138,6 +149,17 @@ const App = () => {
                         <Route path="/vehicle-inspections" element={<ProtectedRoute><VehicleInspections /></ProtectedRoute>} />
                         <Route path="/alcohol-fatigue" element={<ProtectedRoute><AlcoholFatigueDetection /></ProtectedRoute>} />
                         <Route path="/hardware-sensors" element={<ProtectedRoute><HardwareSensors /></ProtectedRoute>} />
+                        <Route path="/accident-insurance" element={<ProtectedRoute><AccidentInsurance /></ProtectedRoute>} />
+                        <Route path="/document-management" element={<ProtectedRoute><DocumentManagement /></ProtectedRoute>} />
+                        <Route path="/compliance-calendar" element={<ProtectedRoute><ComplianceCalendar /></ProtectedRoute>} />
+                        <Route path="/driver-training" element={<ProtectedRoute><DriverTraining /></ProtectedRoute>} />
+                        <Route path="/parts-inventory" element={<ProtectedRoute><PartsInventory /></ProtectedRoute>} />
+                        <Route path="/vendor-management" element={<ProtectedRoute><VendorManagement /></ProtectedRoute>} />
+                        <Route path="/penalties-fines" element={<ProtectedRoute><PenaltiesFines /></ProtectedRoute>} />
+                        <Route path="/contract-management" element={<ProtectedRoute><ContractManagement /></ProtectedRoute>} />
+                        <Route path="/kpi-scorecards" element={<ProtectedRoute><KPIScorecard /></ProtectedRoute>} />
+                        <Route path="/notification-center" element={<ProtectedRoute><NotificationCenterPage /></ProtectedRoute>} />
+                        <Route path="/bulk-operations" element={<ProtectedRoute><BulkOperations /></ProtectedRoute>} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />
                       </Routes>
