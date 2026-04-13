@@ -1,36 +1,41 @@
 
-## Enterprise Driver Management - P0 Implementation
-
-Based on the gap analysis, here are the priority features to implement:
+## RFP Gap Closure — Mandatory Features Implementation Plan
 
 ### Phase 1: Database Schema (Migration)
 Add tables for:
-1. **Driver Onboarding Checklists** - Track onboarding/offboarding workflow steps per driver
-2. **Driver Documents Vault (DQF)** - Already have `documents` table, but need driver-specific views
-3. **Driver Availability** - On-duty/off-duty/on-leave status board
-4. **Driver Groups/Hierarchy** - Region, depot, supervisor assignments
-5. **Driver License Tracking** - Automated expiry alerts (enhance existing `drivers` table)
-6. **Driver Vehicle Assignment History** - Track which driver drove which vehicle and when
+1. **ev_vehicles** — EV-specific data (battery capacity, charging type, SoC)
+2. **ev_charging_sessions** — Charging session logs with cost, kW, duration
+3. **ev_charging_stations** — Charging station locations and availability
+4. **vehicle_requests** — Full request/assignment workflow with approval states
+5. **vehicle_request_approvals** — Approval chain with delegation matrix
+6. **vehicle_insurance** — Insurance policies, claims, third-party details
+7. **accident_claims** — Claims history linked to incidents
+8. **tire_inventory** — Tire tracking with km, cost, change history per vehicle
+9. **tire_changes** — History of tire changes per vehicle
+10. **route_plans** — Route planning with waypoints and optimization params
+11. **cold_chain_readings** — Temperature sensor data for refrigerated vehicles
+12. **rental_vehicles** — Own vs rental vehicle classification + 3rd party driver tracking
 
-### Phase 2: UI Components
-1. **Enhanced Driver Profile Page** - Comprehensive single-driver view with all data
-2. **Driver Onboarding Wizard** - Step-by-step onboarding flow
-3. **Availability Board** - Visual duty status dashboard
-4. **Document Vault Tab** - Upload/manage driver qualification files
-5. **License Expiry Dashboard** - Alerts for expiring licenses/certs
-6. **Driver Hierarchy View** - Group drivers by region/depot/supervisor
+### Phase 2: UI Modules
+- EV Charging Management Module
+- Vehicle Request & Assignment Workflow
+- Accident & Insurance Management
+- Tire Management Module
+- Enhanced Report Export (Excel/CSV/Word)
+- Route Planning & Optimization
+- Speed Limiter / Remote Control UI
+- Cold Chain Monitoring
+- Rental/Outsource Vehicle Management
 
-### Phase 3: Navigation Updates
-- Add new sub-pages under Driver Management module
-- Update Driver Hub tabs to include new panels
-
-### Files to create/modify:
-- New migration for schema changes
-- `src/components/drivers/DriverOnboardingChecklist.tsx`
-- `src/components/drivers/DriverAvailabilityBoard.tsx`
-- `src/components/drivers/DriverDocumentVault.tsx`
-- `src/components/drivers/DriverLicenseTracker.tsx`
-- `src/components/drivers/DriverHierarchyView.tsx`
-- `src/components/drivers/DriverVehicleHistory.tsx`
-- Update `src/pages/DriverManagement.tsx` with new tabs
-- Update `src/components/Layout.tsx` navigation
+### Implementation Order:
+1. Database migration (all tables)
+2. EV Charging Module
+3. Vehicle Request & Assignment Workflow
+4. Accident/Insurance Management
+5. Tire Management
+6. Report Export
+7. Route Planning
+8. Speed Limiter/Remote Control
+9. Cold Chain Monitoring
+10. Rental Vehicle Management
+11. Navigation updates

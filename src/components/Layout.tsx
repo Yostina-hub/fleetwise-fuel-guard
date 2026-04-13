@@ -21,7 +21,8 @@ import {
   CalendarClock,
   PanelLeftClose,
   PanelLeft,
-  Workflow
+  Workflow,
+  Battery
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -78,6 +79,7 @@ const navItems = [
     ]
   },
   { icon: Fuel, label: "Fuel Monitoring", path: "/fuel" },
+  { icon: Battery, label: "EV Management", path: "/ev-management" },
   { 
     icon: ShieldCheck, 
     label: "Safety & Compliance", 

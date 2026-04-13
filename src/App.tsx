@@ -48,6 +48,8 @@ const DriverApp = lazyWithRetry(() => import("./pages/DriverApp"), "DriverApp");
 const WorkflowBuilder = lazyWithRetry(() => import("./pages/WorkflowBuilder"), "WorkflowBuilder");
 const TripManagement = lazyWithRetry(() => import("./pages/TripManagement"), "TripManagement");
 const Organizations = lazyWithRetry(() => import("./pages/Organizations"), "Organizations");
+const EVManagement = lazyWithRetry(() => import("./pages/EVManagement"), "EVManagement");
+const VehicleRequests = lazyWithRetry(() => import("./pages/VehicleRequests"), "VehicleRequests");
 const NotFound = lazyWithRetry(() => import("./pages/NotFound"), "NotFound");
 
 const App = () => {
@@ -110,6 +112,8 @@ const App = () => {
                         <Route path="/devices" element={<ProtectedRoute><DeviceIntegration /></ProtectedRoute>} />
                         <Route path="/workflow-builder" element={<ProtectedRoute><WorkflowBuilder /></ProtectedRoute>} />
                         <Route path="/trip-management" element={<ProtectedRoute><TripManagement /></ProtectedRoute>} />
+                        <Route path="/ev-management" element={<ProtectedRoute><EVManagement /></ProtectedRoute>} />
+                        <Route path="/vehicle-requests" element={<ProtectedRoute><VehicleRequests /></ProtectedRoute>} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />
                       </Routes>
