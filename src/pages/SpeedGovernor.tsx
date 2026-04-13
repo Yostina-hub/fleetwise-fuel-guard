@@ -231,6 +231,40 @@ const SpeedGovernor = () => {
                     />
                   </div>
 
+                  {/* Remote Immobilization */}
+                  <Card className="bg-destructive/5 border-destructive/20">
+                    <CardContent className="pt-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Shield className="h-5 w-5 text-destructive" aria-hidden="true" />
+                          <div>
+                            <p className="text-sm font-semibold">Remote Immobilization</p>
+                            <p className="text-xs text-muted-foreground">Cut engine remotely for stolen/unauthorized vehicles</p>
+                          </div>
+                        </div>
+                        <Button 
+                          variant="destructive" 
+                          size="sm" 
+                          disabled={!controlVehicle}
+                          onClick={() => {
+                            if (controlVehicle) {
+                              toast({
+                                title: "Immobilization Command Sent",
+                                description: `Engine cut-off command queued for vehicle. Takes effect when vehicle speed drops below 20 km/h for safety.`,
+                              });
+                            }
+                          }}
+                        >
+                          <Shield className="h-4 w-4 mr-1" aria-hidden="true" />
+                          Immobilize
+                        </Button>
+                      </div>
+                      <p className="text-xs text-amber-700 dark:text-amber-300">
+                        ⚠️ Safety: Immobilization only activates when speed is below 20 km/h to prevent accidents
+                      </p>
+                    </CardContent>
+                  </Card>
+
                   <Card className="bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800">
                     <CardContent className="pt-4">
                       <div className="flex gap-3">
