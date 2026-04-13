@@ -78,6 +78,7 @@ const navItems = [
     ]
   },
   { icon: Fuel, label: "Fuel Monitoring", path: "/fuel" },
+  { icon: Battery, label: "EV Management", path: "/ev-management" },
   { 
     icon: ShieldCheck, 
     label: "Safety & Compliance", 
