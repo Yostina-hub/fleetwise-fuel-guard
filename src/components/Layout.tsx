@@ -31,7 +31,7 @@ import {
   Phone,
   Leaf,
   GitBranch,
-  GraduationCap,
+  
   Package,
   Gavel,
   FileSignature,
@@ -91,10 +91,12 @@ const navItems = [
     label: "Driver Management", 
     subItems: [
       { label: "Driver Hub", path: "/driver-management" },
-      { label: "Drivers", path: "/drivers" },
-      { label: "Driver Scoring", path: "/driver-scoring" },
+      { label: "Drivers Directory", path: "/drivers" },
+      { label: "Scoring & Behavior", path: "/driver-scoring" },
+      { label: "Training", path: "/driver-management?tab=training" },
       { label: "License Tracker", path: "/driver-management?tab=licenses" },
       { label: "Availability", path: "/driver-management?tab=availability" },
+      { label: "Risk & Safety", path: "/driver-management?tab=risk-scoring" },
       { label: "Groups", path: "/driver-management?tab=hierarchy" },
     ]
   },
@@ -162,7 +164,7 @@ const navItems = [
       { label: "Assignments", path: "/trip-management?tab=active" },
     ]
   },
-  { icon: GraduationCap, label: "Driver Training", path: "/driver-training" },
+  
   { icon: BarChart3, label: "Reports & KPIs", subItems: [
     { label: "Reports", path: "/reports" },
     { label: "KPI Scorecards", path: "/kpi-scorecards" },
