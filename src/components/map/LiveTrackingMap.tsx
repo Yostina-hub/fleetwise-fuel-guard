@@ -167,6 +167,23 @@ useEffect(() => {
 
         map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
 
+        // Center on user's current location if available
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              if (map.current) {
+                map.current.flyTo({
+                  center: [position.coords.longitude, position.coords.latitude],
+                  zoom: 13,
+                  duration: 1500,
+                });
+              }
+            },
+            () => { /* geolocation denied or unavailable, keep default center */ },
+            { enableHighAccuracy: true, timeout: 5000 }
+          );
+        }
+
         map.current.on('load', () => {
           fallbackTriedRef.current = false;
           setTokenError(null);

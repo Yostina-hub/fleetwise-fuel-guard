@@ -155,7 +155,7 @@ const Geofencing = () => {
           description: `Polygon with ${coords.length} points captured.`
         });
       }
-      draw.deleteAll();
+      try { draw.deleteAll(); } catch {}
       setDrawingMode(null);
     });
   };
