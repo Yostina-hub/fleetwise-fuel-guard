@@ -93,6 +93,10 @@ const navItems = [
       { label: "Driver Hub", path: "/driver-management" },
       { label: "Drivers Directory", path: "/drivers" },
       { label: "Scoring & Behavior", path: "/driver-scoring" },
+      { label: "Compliance", path: "/driver-compliance" },
+      { label: "Safety & Risk", path: "/driver-safety" },
+      { label: "Performance", path: "/driver-performance" },
+      { label: "HR & Finance", path: "/driver-hr" },
     ]
   },
   { icon: Fuel, label: "Fuel Monitoring", subItems: [

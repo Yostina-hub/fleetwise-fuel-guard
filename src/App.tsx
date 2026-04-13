@@ -23,6 +23,10 @@ const Vehicles = lazyWithRetry(() => import("./pages/Vehicles"), "Vehicles");
 const DriverScoring = lazyWithRetry(() => import("./pages/DriverScoring"), "DriverScoring");
 const Drivers = lazyWithRetry(() => import("./pages/Drivers"), "Drivers");
 const DriverManagement = lazyWithRetry(() => import("./pages/DriverManagement"), "DriverManagement");
+const DriverCompliance = lazyWithRetry(() => import("./pages/DriverCompliance"), "DriverCompliance");
+const DriverSafety = lazyWithRetry(() => import("./pages/DriverSafety"), "DriverSafety");
+const DriverPerformance = lazyWithRetry(() => import("./pages/DriverPerformance"), "DriverPerformance");
+const DriverHR = lazyWithRetry(() => import("./pages/DriverHR"), "DriverHR");
 const FuelMonitoring = lazyWithRetry(() => import("./pages/FuelMonitoring"), "FuelMonitoring");
 const Alerts = lazyWithRetry(() => import("./pages/Alerts"), "Alerts");
 const Maintenance = lazyWithRetry(() => import("./pages/Maintenance"), "Maintenance");
@@ -114,6 +118,10 @@ const App = () => {
                         <Route path="/driver-scoring" element={<ProtectedRoute><DriverScoring /></ProtectedRoute>} />
                         <Route path="/drivers" element={<ProtectedRoute><Drivers /></ProtectedRoute>} />
                         <Route path="/driver-management" element={<ProtectedRoute><DriverManagement /></ProtectedRoute>} />
+                        <Route path="/driver-compliance" element={<ProtectedRoute><DriverCompliance /></ProtectedRoute>} />
+                        <Route path="/driver-safety" element={<ProtectedRoute><DriverSafety /></ProtectedRoute>} />
+                        <Route path="/driver-performance" element={<ProtectedRoute><DriverPerformance /></ProtectedRoute>} />
+                        <Route path="/driver-hr" element={<ProtectedRoute><DriverHR /></ProtectedRoute>} />
                         <Route path="/fuel" element={<ProtectedRoute><FuelMonitoring /></ProtectedRoute>} />
                         <Route path="/fuel-monitoring" element={<ProtectedRoute><FuelMonitoring /></ProtectedRoute>} />
                         <Route path="/incidents" element={<ProtectedRoute><Incidents /></ProtectedRoute>} />
