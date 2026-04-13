@@ -62,6 +62,17 @@ const DelegationMatrixPage = lazyWithRetry(() => import("./pages/DelegationMatri
 const VehicleInspections = lazyWithRetry(() => import("./pages/VehicleInspections"), "VehicleInspections");
 const AlcoholFatigueDetection = lazyWithRetry(() => import("./pages/AlcoholFatigueDetection"), "AlcoholFatigueDetection");
 const HardwareSensors = lazyWithRetry(() => import("./pages/HardwareSensors"), "HardwareSensors");
+const AccidentInsurance = lazyWithRetry(() => import("./pages/AccidentInsurance"), "AccidentInsurance");
+const DocumentManagement = lazyWithRetry(() => import("./pages/DocumentManagement"), "DocumentManagement");
+const ComplianceCalendar = lazyWithRetry(() => import("./pages/ComplianceCalendar"), "ComplianceCalendar");
+const DriverTraining = lazyWithRetry(() => import("./pages/DriverTraining"), "DriverTraining");
+const PartsInventory = lazyWithRetry(() => import("./pages/PartsInventory"), "PartsInventory");
+const VendorManagement = lazyWithRetry(() => import("./pages/VendorManagement"), "VendorManagement");
+const PenaltiesFines = lazyWithRetry(() => import("./pages/PenaltiesFines"), "PenaltiesFines");
+const ContractManagement = lazyWithRetry(() => import("./pages/ContractManagement"), "ContractManagement");
+const KPIScorecard = lazyWithRetry(() => import("./pages/KPIScorecard"), "KPIScorecard");
+const NotificationCenterPage = lazyWithRetry(() => import("./pages/NotificationCenter"), "NotificationCenter");
+const BulkOperations = lazyWithRetry(() => import("./pages/BulkOperations"), "BulkOperations");
 const NotFound = lazyWithRetry(() => import("./pages/NotFound"), "NotFound");
 
 const App = () => {
