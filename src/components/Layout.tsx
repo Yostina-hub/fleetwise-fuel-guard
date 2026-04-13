@@ -101,6 +101,8 @@ const navItems = [
       { label: "Incidents", path: "/incidents" },
       { label: "Roadside Assistance", path: "/roadside-assistance" },
       { label: "Driver Logbook", path: "/driver-logbook" },
+      { label: "Alcohol & Fatigue", path: "/alcohol-fatigue" },
+      { label: "Vehicle Inspections", path: "/vehicle-inspections" },
     ]
   },
   { 
