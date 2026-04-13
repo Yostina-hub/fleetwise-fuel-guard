@@ -21,11 +21,17 @@ const ProtectedRoute = ({
   requiredRole,
   requiredRoles,
 }: ProtectedRouteProps) => {
-  const { user, loading: authLoading } = useAuthContext();
+  const { user, loading: authLoading, hasRole: authHasRole } = useAuthContext();
   const { hasPermission, hasRole, loading: permLoading } = usePermissions();
   const [timedOut, setTimedOut] = useState(false);
 
-  const isLoading = authLoading || permLoading;
+  const requiresPermissionCheck = Boolean(requiredPermission);
+  const requiresRoleCheck = Boolean(requiredRole || requiredRoles?.length);
+  const isLoading = authLoading || ((requiresPermissionCheck || requiresRoleCheck) && permLoading);
+  const hasRequiredRole = requiredRole ? hasRole(requiredRole) || authHasRole(requiredRole) : true;
+  const hasAnyRequiredRole = requiredRoles
+    ? requiredRoles.some((role) => hasRole(role) || authHasRole(role))
+    : true;
 
   // Timeout fallback to prevent infinite blank screen
   useEffect(() => {
@@ -58,7 +64,7 @@ const ProtectedRoute = ({
     );
   }
 
-  if (requiredRole && !hasRole(requiredRole)) {
+  if (requiredRole && !hasRequiredRole) {
     if (!requiredRoles) {
       return (
         <div className="flex items-center justify-center min-h-screen">
@@ -71,7 +77,7 @@ const ProtectedRoute = ({
     }
   }
 
-  if (requiredRoles && !requiredRoles.some((r) => hasRole(r))) {
+  if (requiredRoles && !hasAnyRequiredRole) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
