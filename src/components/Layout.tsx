@@ -31,7 +31,7 @@ import {
   Phone,
   Leaf,
   GitBranch,
-  GraduationCap,
+  
   Package,
   Gavel,
   FileSignature,
