@@ -38,6 +38,10 @@ import {
   FileText,
   Calendar,
   Upload,
+  Gauge,
+  Cpu,
+  FlaskConical,
+  LayoutGrid,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -100,7 +104,10 @@ const navItems = [
   ]},
   { icon: Battery, label: "EV Management", path: "/ev-management" },
   { icon: Thermometer, label: "Cold Chain", path: "/cold-chain" },
-  { icon: Camera, label: "Dash Cam", path: "/dash-cam" },
+  { icon: Camera, label: "Dash Cam & ADAS", subItems: [
+    { label: "Dash Cam Events", path: "/dash-cam" },
+    { label: "ADAS & DMS Reports", path: "/adas-reports" },
+  ]},
   { 
     icon: ShieldCheck, 
     label: "Safety & Compliance", 
@@ -132,6 +139,7 @@ const navItems = [
     subItems: [
       { label: "Service History", path: "/maintenance" },
       { label: "Work Orders", path: "/work-orders" },
+      { label: "Predictive AI", path: "/predictive-maintenance" },
       { label: "Tire Management", path: "/tire-management" },
       { label: "Parts Inventory", path: "/parts-inventory" },
       { label: "Vendor Management", path: "/vendor-management" },
@@ -158,10 +166,12 @@ const navItems = [
   { icon: BarChart3, label: "Reports & KPIs", subItems: [
     { label: "Reports", path: "/reports" },
     { label: "KPI Scorecards", path: "/kpi-scorecards" },
+    { label: "Dashboard Builder", path: "/dashboard-builder" },
   ]},
   { icon: FileText, label: "Documents", path: "/document-management" },
   { icon: FileSignature, label: "Contracts", path: "/contract-management" },
   { icon: Leaf, label: "Carbon Emissions", path: "/carbon-emissions" },
+  { icon: FlaskConical, label: "Performance Simulation", path: "/performance-simulation" },
   { icon: GitBranch, label: "Delegation Matrix", path: "/delegation-matrix" },
   { icon: Upload, label: "Bulk Operations", path: "/bulk-operations" },
   { icon: Bell, label: "Notifications", path: "/notification-center" },
