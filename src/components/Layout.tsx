@@ -31,6 +31,13 @@ import {
   Phone,
   Leaf,
   GitBranch,
+  GraduationCap,
+  Package,
+  Gavel,
+  FileSignature,
+  FileText,
+  Calendar,
+  Upload,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -100,10 +107,13 @@ const navItems = [
     subItems: [
       { label: "Speed Governor", path: "/speed-governor" },
       { label: "Incidents", path: "/incidents" },
+      { label: "Accident & Insurance", path: "/accident-insurance" },
       { label: "Roadside Assistance", path: "/roadside-assistance" },
       { label: "Driver Logbook", path: "/driver-logbook" },
       { label: "Alcohol & Fatigue", path: "/alcohol-fatigue" },
       { label: "Vehicle Inspections", path: "/vehicle-inspections" },
+      { label: "Penalties & Fines", path: "/penalties-fines" },
+      { label: "Compliance Calendar", path: "/compliance-calendar" },
     ]
   },
   { 
@@ -123,6 +133,8 @@ const navItems = [
       { label: "Service History", path: "/maintenance" },
       { label: "Work Orders", path: "/work-orders" },
       { label: "Tire Management", path: "/tire-management" },
+      { label: "Parts Inventory", path: "/parts-inventory" },
+      { label: "Vendor Management", path: "/vendor-management" },
     ]
   },
   { 
@@ -142,9 +154,17 @@ const navItems = [
       { label: "Assignments", path: "/trip-management?tab=active" },
     ]
   },
-  { icon: BarChart3, label: "Reports", path: "/reports" },
+  { icon: GraduationCap, label: "Driver Training", path: "/driver-training" },
+  { icon: BarChart3, label: "Reports & KPIs", subItems: [
+    { label: "Reports", path: "/reports" },
+    { label: "KPI Scorecards", path: "/kpi-scorecards" },
+  ]},
+  { icon: FileText, label: "Documents", path: "/document-management" },
+  { icon: FileSignature, label: "Contracts", path: "/contract-management" },
   { icon: Leaf, label: "Carbon Emissions", path: "/carbon-emissions" },
   { icon: GitBranch, label: "Delegation Matrix", path: "/delegation-matrix" },
+  { icon: Upload, label: "Bulk Operations", path: "/bulk-operations" },
+  { icon: Bell, label: "Notifications", path: "/notification-center" },
   { icon: Workflow, label: "Workflow Builder", path: "/workflow-builder", highlight: true },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
