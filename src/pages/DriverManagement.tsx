@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useDrivers } from "@/hooks/useDrivers";
 import { motion, AnimatePresence } from "framer-motion";
@@ -52,25 +53,21 @@ import {
   AlertTriangle, ShieldAlert, Clock, Zap,
   BarChart3, Star, Award, BookOpen, Brain,
   Briefcase, DollarSign, Gift, Car,
-  Users, UserCircle,
+  Users, UserCircle, Search, ChevronRight,
 } from "lucide-react";
 
-// Category definitions
-const categories = [
+// Flat tab structure grouped into sections — cleaner than nested categories
+const sections = [
   {
-    key: "overview",
+    id: "overview",
     label: "Overview",
     icon: LayoutDashboard,
-    description: "Fleet-wide KPIs and quick actions",
-    gradient: "from-primary to-primary/60",
-    tabs: [],
+    tabs: [{ key: "overview", label: "Dashboard", icon: LayoutDashboard }],
   },
   {
-    key: "operations",
+    id: "operations",
     label: "Operations",
     icon: Radio,
-    description: "Daily fleet operations",
-    gradient: "from-emerald-500 to-emerald-600",
     tabs: [
       { key: "availability", label: "Availability", icon: Radio },
       { key: "leaderboard", label: "Leaderboard", icon: Trophy },
@@ -80,11 +77,9 @@ const categories = [
     ],
   },
   {
-    key: "compliance",
+    id: "compliance",
     label: "Compliance",
     icon: ClipboardCheck,
-    description: "Licenses, documents & audits",
-    gradient: "from-blue-500 to-blue-600",
     tabs: [
       { key: "licenses", label: "Licenses", icon: CreditCard },
       { key: "compliance", label: "Calendar", icon: Calendar },
@@ -95,24 +90,20 @@ const categories = [
     ],
   },
   {
-    key: "safety",
+    id: "safety",
     label: "Safety & Risk",
     icon: ShieldAlert,
-    description: "Incidents, risk scoring & coaching",
-    gradient: "from-amber-500 to-amber-600",
     tabs: [
       { key: "risk-scoring", label: "Risk Scoring", icon: ShieldAlert },
       { key: "incidents", label: "Incidents", icon: AlertTriangle },
       { key: "fatigue", label: "Fatigue", icon: Clock, needsDriver: true },
-      { key: "auto-coaching", label: "Auto-Coaching", icon: Zap },
+      { key: "auto-coaching", label: "Coaching", icon: Zap },
     ],
   },
   {
-    key: "performance",
+    id: "performance",
     label: "Performance",
     icon: BarChart3,
-    description: "Analytics, reviews & training",
-    gradient: "from-purple-500 to-purple-600",
     tabs: [
       { key: "analytics", label: "Analytics", icon: BarChart3 },
       { key: "reviews", label: "Reviews", icon: Star, needsDriver: true },
@@ -122,94 +113,89 @@ const categories = [
     ],
   },
   {
-    key: "hr-finance",
+    id: "hr-finance",
     label: "HR & Finance",
     icon: Briefcase,
-    description: "Contracts, costs & rewards",
-    gradient: "from-pink-500 to-pink-600",
     tabs: [
       { key: "contracts", label: "Contracts", icon: Briefcase, needsDriver: true },
-      { key: "cost-allocation", label: "Cost Allocation", icon: DollarSign, needsDriver: true },
-      { key: "vehicle-history", label: "Vehicle History", icon: Car, needsDriver: true },
+      { key: "cost-allocation", label: "Costs", icon: DollarSign, needsDriver: true },
+      { key: "vehicle-history", label: "Vehicles", icon: Car, needsDriver: true },
       { key: "rewards", label: "Rewards", icon: Gift },
     ],
   },
 ];
 
-// Map URL ?tab= values to category+subtab
-const resolveTabFromUrl = (tab: string | null): { category: string; subTab: string } => {
-  if (!tab) return { category: "overview", subTab: "" };
-  for (const cat of categories) {
-    const found = cat.tabs.find(t => t.key === tab);
-    if (found) return { category: cat.key, subTab: found.key };
-  }
-  return { category: "overview", subTab: "" };
+const allTabs = sections.flatMap(s => s.tabs.map(t => ({ ...t, sectionId: s.id, sectionLabel: s.label })));
+
+const resolveTab = (tab: string | null) => {
+  if (!tab) return { sectionId: "overview", tabKey: "overview" };
+  const found = allTabs.find(t => t.key === tab);
+  if (found) return { sectionId: found.sectionId, tabKey: found.key };
+  return { sectionId: "overview", tabKey: "overview" };
 };
 
 const DriverManagement = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { drivers, loading } = useDrivers();
-  const [selectedDriverId, setSelectedDriverId] = useState<string>("");
+  const [selectedDriverId, setSelectedDriverId] = useState("");
+  const [driverSearch, setDriverSearch] = useState("");
 
   const urlTab = searchParams.get("tab");
-  const initialResolved = resolveTabFromUrl(urlTab);
-  const [activeCategory, setActiveCategory] = useState(initialResolved.category);
-  const [activeSubTab, setActiveSubTab] = useState(initialResolved.subTab);
+  const { sectionId, tabKey } = resolveTab(urlTab);
+  const [activeSection, setActiveSection] = useState(sectionId);
+  const [activeTab, setActiveTab] = useState(tabKey);
 
-  // Sync from URL changes (e.g. sidebar clicks)
   useEffect(() => {
-    const tab = searchParams.get("tab");
-    const resolved = resolveTabFromUrl(tab);
-    setActiveCategory(resolved.category);
-    setActiveSubTab(resolved.subTab);
+    const resolved = resolveTab(searchParams.get("tab"));
+    setActiveSection(resolved.sectionId);
+    setActiveTab(resolved.tabKey);
   }, [searchParams]);
 
-  const selectedDriver = drivers.find((d) => d.id === selectedDriverId);
-  const driverName = selectedDriver
-    ? `${selectedDriver.first_name} ${selectedDriver.last_name}`
-    : "";
+  const selectedDriver = drivers.find(d => d.id === selectedDriverId);
+  const driverName = selectedDriver ? `${selectedDriver.first_name} ${selectedDriver.last_name}` : "";
 
-  const currentCategory = categories.find(c => c.key === activeCategory);
-  const currentTab = currentCategory?.tabs.find(t => t.key === activeSubTab);
-  const needsDriver = currentTab?.needsDriver || false;
+  const currentTabMeta = allTabs.find(t => t.key === activeTab);
+  const needsDriver = currentTabMeta?.needsDriver || false;
+  const currentSection = sections.find(s => s.id === activeSection);
 
-  const handleNavigate = (category: string, tab?: string) => {
-    setActiveCategory(category);
-    const cat = categories.find(c => c.key === category);
-    let resolvedTab = tab;
-    if (!resolvedTab && cat && cat.tabs.length > 0) {
-      resolvedTab = cat.tabs[0].key;
-    }
-    if (resolvedTab) {
-      setActiveSubTab(resolvedTab);
-      setSearchParams({ tab: resolvedTab }, { replace: true });
-    } else {
-      setActiveSubTab("");
+  const filteredDrivers = useMemo(() => {
+    if (!driverSearch) return drivers;
+    const q = driverSearch.toLowerCase();
+    return drivers.filter(d =>
+      d.first_name.toLowerCase().includes(q) ||
+      d.last_name.toLowerCase().includes(q) ||
+      d.employee_id?.toLowerCase().includes(q)
+    );
+  }, [drivers, driverSearch]);
+
+  const navigate = (section: string, tab?: string) => {
+    setActiveSection(section);
+    const sec = sections.find(s => s.id === section);
+    const resolved = tab || (sec?.tabs[0]?.key || "overview");
+    setActiveTab(resolved);
+    if (resolved === "overview" && section === "overview") {
       setSearchParams({}, { replace: true });
+    } else {
+      setSearchParams({ tab: resolved }, { replace: true });
     }
   };
 
   const renderContent = () => {
-    if (activeCategory === "overview") {
-      return <DriverHubOverview onNavigate={handleNavigate} />;
+    if (activeTab === "overview") {
+      return <DriverHubOverview onNavigate={navigate} />;
     }
 
     if (needsDriver && !selectedDriverId) {
       return (
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="border-dashed border-2">
-            <CardContent className="py-20 text-center">
-              <div className="relative inline-block mb-5">
-                <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto">
-                  <Users className="w-10 h-10 text-primary/40" />
-                </div>
-                <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-amber-500 flex items-center justify-center">
-                  <span className="text-[10px] text-white font-bold">!</span>
-                </div>
+            <CardContent className="py-16 text-center">
+              <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <Users className="w-8 h-8 text-primary/40" />
               </div>
-              <h3 className="text-lg font-bold mb-1">Select a Driver</h3>
-              <p className="text-muted-foreground text-sm max-w-sm mx-auto">
-                Use the driver selector above to view driver-specific data for this module.
+              <h3 className="text-lg font-semibold mb-1">Select a Driver</h3>
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                Choose a driver from the selector above to view their {currentTabMeta?.label.toLowerCase()} data.
               </p>
             </CardContent>
           </Card>
@@ -217,7 +203,7 @@ const DriverManagement = () => {
       );
     }
 
-    const contentMap: Record<string, JSX.Element> = {
+    const map: Record<string, JSX.Element> = {
       availability: <DriverAvailabilityBoard />,
       leaderboard: <DriverLeaderboard />,
       communications: <DriverCommunicationHub />,
@@ -244,43 +230,65 @@ const DriverManagement = () => {
       rewards: <DriverRewardsRecognition />,
     };
 
-    return contentMap[activeSubTab] || null;
+    return map[activeTab] || null;
   };
+
+  const isOverview = activeTab === "overview";
 
   return (
     <Layout>
-      <div className="p-6 lg:p-8 space-y-6 animate-fade-in">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shadow-primary/20">
-                <Users className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-black tracking-tight">Driver Hub</h1>
-                <p className="text-muted-foreground text-xs">
-                  Enterprise driver lifecycle, compliance & performance
-                </p>
+      <div className="space-y-4 animate-fade-in">
+        {/* ─── Header ─── */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Users className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight">Driver Management</h1>
+              {/* Breadcrumb */}
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <span className="cursor-pointer hover:text-foreground" onClick={() => navigate("overview")}>Hub</span>
+                {!isOverview && currentSection && (
+                  <>
+                    <ChevronRight className="h-3 w-3" />
+                    <span className="cursor-pointer hover:text-foreground" onClick={() => navigate(activeSection)}>
+                      {currentSection.label}
+                    </span>
+                  </>
+                )}
+                {!isOverview && currentTabMeta && (
+                  <>
+                    <ChevronRight className="h-3 w-3" />
+                    <span className="text-foreground font-medium">{currentTabMeta.label}</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Driver Selector */}
-          {activeCategory !== "overview" && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-3"
-            >
+          {/* Driver Selector — always visible when not on overview */}
+          {!isOverview && (
+            <div className="flex items-center gap-2">
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border">
-                <UserCircle className="w-4 h-4 text-muted-foreground" />
+                <UserCircle className="w-4 h-4 text-muted-foreground shrink-0" />
                 <Select value={selectedDriverId} onValueChange={setSelectedDriverId}>
-                  <SelectTrigger className="w-[260px] border-0 bg-transparent h-8 text-sm focus:ring-0">
-                    <SelectValue placeholder="Select a driver..." />
+                  <SelectTrigger className="w-[220px] border-0 bg-transparent h-8 text-sm focus:ring-0">
+                    <SelectValue placeholder="Select driver..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {drivers.map((d) => (
+                    <div className="px-2 pb-2">
+                      <div className="relative">
+                        <Search className="absolute left-2 top-2 h-3.5 w-3.5 text-muted-foreground" />
+                        <Input
+                          placeholder="Search drivers..."
+                          value={driverSearch}
+                          onChange={e => setDriverSearch(e.target.value)}
+                          className="h-8 pl-7 text-xs"
+                        />
+                      </div>
+                    </div>
+                    {filteredDrivers.map(d => (
                       <SelectItem key={d.id} value={d.id}>
                         <div className="flex items-center gap-2">
                           <Avatar className="h-5 w-5">
@@ -289,8 +297,8 @@ const DriverManagement = () => {
                               {d.first_name[0]}{d.last_name[0]}
                             </AvatarFallback>
                           </Avatar>
-                          <span>{d.first_name} {d.last_name}</span>
-                          <Badge variant={d.status === "active" ? "default" : "secondary"} className="text-[10px] ml-auto">
+                          <span className="text-sm">{d.first_name} {d.last_name}</span>
+                          <Badge variant={d.status === "active" ? "default" : "secondary"} className="text-[9px] ml-auto">
                             {d.status}
                           </Badge>
                         </div>
@@ -299,77 +307,67 @@ const DriverManagement = () => {
                   </SelectContent>
                 </Select>
               </div>
-            </motion.div>
+            </div>
           )}
         </div>
 
-        {/* Category Navigation */}
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-thin">
-          {categories.map((cat) => (
-            <motion.button
-              key={cat.key}
-              whileHover={{ y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => handleNavigate(cat.key)}
-              className={cn(
-                "relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all overflow-hidden",
-                "border",
-                activeCategory === cat.key
-                  ? "text-primary-foreground border-transparent shadow-lg"
-                  : "bg-card text-muted-foreground border-border hover:text-foreground hover:border-primary/30 hover:shadow-sm"
-              )}
-            >
-              {activeCategory === cat.key && (
-                <div className={cn("absolute inset-0 bg-gradient-to-r -z-10", cat.gradient)} />
-              )}
-              <cat.icon className="w-4 h-4" />
-              <span className="hidden sm:inline">{cat.label}</span>
-            </motion.button>
-          ))}
+        {/* ─── Section Navigation ─── */}
+        <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-thin">
+          {sections.map(sec => {
+            const isActive = activeSection === sec.id;
+            return (
+              <button
+                key={sec.id}
+                onClick={() => navigate(sec.id)}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all",
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                )}
+              >
+                <sec.icon className="w-3.5 h-3.5" />
+                <span>{sec.label}</span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Sub-tabs */}
-        {currentCategory && currentCategory.tabs.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: -5 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-1 border-b pb-2 overflow-x-auto"
-          >
-            {currentCategory.tabs.map((tab) => (
+        {/* ─── Sub-tabs ─── */}
+        {currentSection && currentSection.tabs.length > 1 && activeSection !== "overview" && (
+          <div className="flex items-center gap-1 border-b pb-2 overflow-x-auto">
+            {currentSection.tabs.map(tab => (
               <button
                 key={tab.key}
-                onClick={() => setActiveSubTab(tab.key)}
+                onClick={() => {
+                  setActiveTab(tab.key);
+                  setSearchParams({ tab: tab.key }, { replace: true });
+                }}
                 className={cn(
-                  "relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all",
-                  activeSubTab === tab.key
-                    ? "bg-primary/10 text-primary"
+                  "relative flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm whitespace-nowrap transition-all",
+                  activeTab === tab.key
+                    ? "bg-accent text-accent-foreground font-medium"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 )}
               >
                 <tab.icon className="w-3.5 h-3.5" />
                 {tab.label}
                 {tab.needsDriver && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500/70" title="Requires driver selection" />
-                )}
-                {activeSubTab === tab.key && (
-                  <motion.div
-                    layoutId="activeSubTab"
-                    className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary rounded-full"
-                  />
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" title="Requires driver selection" />
                 )}
               </button>
             ))}
-          </motion.div>
+          </div>
         )}
 
-        {/* Content */}
+        {/* ─── Content ─── */}
         <AnimatePresence mode="wait">
           <motion.div
-            key={`${activeCategory}-${activeSubTab}`}
-            initial={{ opacity: 0, y: 10 }}
+            key={`${activeSection}-${activeTab}`}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
             className="min-h-[400px]"
           >
             {renderContent()}
