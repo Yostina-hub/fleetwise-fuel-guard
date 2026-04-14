@@ -33,9 +33,10 @@ const vehicleSchema = z.object({
   model: z.string().trim().min(1, "Model is required").max(50),
   year: z.number().min(1900).max(new Date().getFullYear() + 1),
   vehicle_type: z.string().trim().max(50).nullish(),
+  assigned_driver_id: z.string().uuid().nullish(),
   vin: z.string().trim().max(17).nullish(),
   color: z.string().trim().max(30).nullish(),
-  fuel_type: z.enum(["diesel", "petrol", "electric", "hybrid"]).nullish(),
+  fuel_type: z.enum(["diesel", "petrol", "electric", "hybrid"]),
   tank_capacity_liters: z.number().min(0).nullish(),
   odometer_km: z.number().min(0).nullish(),
   ownership_type: z.enum(["owned", "leased", "rented"]).nullish(),
@@ -74,6 +75,7 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
   const { drivers } = useDrivers();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const activeDrivers = drivers.filter(d => d.status === 'active');
 
   const [formData, setFormData] = useState({
     plate_number: "",
@@ -81,6 +83,7 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
     model: "",
     year: new Date().getFullYear(),
     vehicle_type: "",
+    assigned_driver_id: "",
     vin: "",
     color: "",
     fuel_type: "diesel" as const,
@@ -119,6 +122,7 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
         model: data.model || "",
         year: data.year || new Date().getFullYear(),
         vehicle_type: data.vehicle_type || "",
+        assigned_driver_id: data.assigned_driver_id || "",
         vin: data.vin || "",
         color: data.color || "",
         fuel_type: (data.fuel_type as any) || "diesel",
@@ -177,9 +181,10 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
         model: formData.model,
         year: formData.year,
         vehicle_type: formData.vehicle_type || null,
+        assigned_driver_id: formData.assigned_driver_id || null,
         vin: formData.vin || null,
         color: formData.color || null,
-        fuel_type: formData.fuel_type || null,
+        fuel_type: formData.fuel_type || "diesel",
         tank_capacity_liters: formData.tank_capacity_liters ? parseFloat(formData.tank_capacity_liters) : null,
         odometer_km: formData.odometer_km ? parseFloat(formData.odometer_km) : null,
         ownership_type: formData.ownership_type || null,
@@ -291,6 +296,35 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
                       <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="maintenance">Maintenance</SelectItem>
                       <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Driver Assignment Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
+                <User className="w-5 h-5 text-primary" />
+                Driver Assignment
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="assigned_driver">Assigned Driver</Label>
+                  <Select 
+                    value={formData.assigned_driver_id || "none"} 
+                    onValueChange={(value) => setFormData({ ...formData, assigned_driver_id: value === "none" ? "" : value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select driver..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No driver assigned</SelectItem>
+                      {activeDrivers.map((driver) => (
+                        <SelectItem key={driver.id} value={driver.id}>
+                          {driver.first_name} {driver.last_name} - {driver.license_number}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
