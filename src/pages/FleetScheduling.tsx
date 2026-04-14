@@ -29,6 +29,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "sonner";
 
 const FleetScheduling = () => {
+  const { t } = useTranslation();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("requests");
@@ -38,25 +39,25 @@ const FleetScheduling = () => {
 
   const stats = [
     {
-      title: "Pending Approval",
+      title: t("fleetScheduling.pendingApproval"),
       value: requests?.filter((r: any) => r.status === 'submitted').length || 0,
       icon: Clock,
       color: "text-yellow-600"
     },
     {
-      title: "Approved",
+      title: t("fleetScheduling.approved"),
       value: requests?.filter((r: any) => r.status === 'approved').length || 0,
       icon: CheckCircle,
       color: "text-green-600"
     },
     {
-      title: "Active Trips",
+      title: t("fleetScheduling.activeTrips"),
       value: requests?.filter((r: any) => ['dispatched', 'in_service'].includes(r.status)).length || 0,
       icon: Calendar,
       color: "text-blue-600"
     },
     {
-      title: "Rejected",
+      title: t("fleetScheduling.rejected"),
       value: requests?.filter((r: any) => r.status === 'rejected').length || 0,
       icon: XCircle,
       color: "text-red-600"
@@ -89,20 +90,20 @@ const FleetScheduling = () => {
         {/* Header */}
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold">Fleet Scheduling</h1>
+            <h1 className="text-3xl font-bold">{t("fleetScheduling.title")}</h1>
             <p className="text-muted-foreground mt-1">
-              Manage trip requests, approvals, and vehicle assignments
+              {t("fleetScheduling.subtitle")}
             </p>
           </div>
           <div className="flex gap-2 items-center flex-wrap">
-            <Button variant="outline" onClick={() => setExportDialogOpen(true)} className="gap-2" aria-label="Export schedule">
+            <Button variant="outline" onClick={() => setExportDialogOpen(true)} className="gap-2" aria-label={t("common.export")}>
               <Download className="w-4 h-4" aria-hidden="true" />
-              <span className="hidden sm:inline">Export</span>
+              <span className="hidden sm:inline">{t("common.export")}</span>
             </Button>
-            <Button onClick={() => setCreateDialogOpen(true)} className="gap-2" aria-label="Create new trip request">
+            <Button onClick={() => setCreateDialogOpen(true)} className="gap-2" aria-label={t("fleetScheduling.newTripRequest")}>
               <Plus className="w-4 h-4" aria-hidden="true" />
-              <span className="hidden sm:inline">New Trip Request</span>
-              <span className="sm:hidden">New</span>
+              <span className="hidden sm:inline">{t("fleetScheduling.newTripRequest")}</span>
+              <span className="sm:hidden">{t("common.create")}</span>
             </Button>
           </div>
         </div>
@@ -142,18 +143,18 @@ const FleetScheduling = () => {
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="flex-wrap h-auto">
-            <TabsTrigger value="requests">Requests</TabsTrigger>
-            <TabsTrigger value="assignments">Active</TabsTrigger>
-            {canApprove && <TabsTrigger value="approvals">Approvals</TabsTrigger>}
-            <TabsTrigger value="calendar">Calendar</TabsTrigger>
-            <TabsTrigger value="schedule">Schedule</TabsTrigger>
-            <TabsTrigger value="timeline">Timeline</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="availability">Availability</TabsTrigger>
-            <TabsTrigger value="activity">Activity</TabsTrigger>
-            <TabsTrigger value="templates">Templates</TabsTrigger>
-            {isSuperAdmin && <TabsTrigger value="config">Config</TabsTrigger>}
-            {isSuperAdmin && <TabsTrigger value="notifications">Preferences</TabsTrigger>}
+            <TabsTrigger value="requests">{t("fleetScheduling.requests")}</TabsTrigger>
+            <TabsTrigger value="assignments">{t("fleetScheduling.active")}</TabsTrigger>
+            {canApprove && <TabsTrigger value="approvals">{t("fleetScheduling.approvals")}</TabsTrigger>}
+            <TabsTrigger value="calendar">{t("fleetScheduling.calendar")}</TabsTrigger>
+            <TabsTrigger value="schedule">{t("fleetScheduling.schedule")}</TabsTrigger>
+            <TabsTrigger value="timeline">{t("fleetScheduling.timeline")}</TabsTrigger>
+            <TabsTrigger value="analytics">{t("fleetScheduling.analytics")}</TabsTrigger>
+            <TabsTrigger value="availability">{t("fleetScheduling.availability")}</TabsTrigger>
+            <TabsTrigger value="activity">{t("fleetScheduling.activity")}</TabsTrigger>
+            <TabsTrigger value="templates">{t("fleetScheduling.templates")}</TabsTrigger>
+            {isSuperAdmin && <TabsTrigger value="config">{t("fleetScheduling.config")}</TabsTrigger>}
+            {isSuperAdmin && <TabsTrigger value="notifications">{t("fleetScheduling.preferences")}</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="requests" className="space-y-4">
