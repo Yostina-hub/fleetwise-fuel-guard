@@ -156,6 +156,8 @@ const VehicleRequests = () => {
           </CardContent></Card>
         </div>
 
+        <VehicleRequestKPI requests={requests} />
+
         <Card>
           <CardHeader><CardTitle className="text-sm font-semibold">All Requests</CardTitle></CardHeader>
           <CardContent>
@@ -192,6 +194,9 @@ const VehicleRequests = () => {
                         </td>
                         <td className="py-2 px-3 text-center">
                           <Button size="sm" variant="ghost" onClick={() => setShowDetail(r)}><Eye className="w-3.5 h-3.5" /></Button>
+                          {r.status === "completed" && !r.requester_rating && (
+                            <Button size="sm" variant="ghost" onClick={() => setShowFeedback(r)}><MessageSquare className="w-3.5 h-3.5" /></Button>
+                          )}
                         </td>
                       </tr>
                     ))}
