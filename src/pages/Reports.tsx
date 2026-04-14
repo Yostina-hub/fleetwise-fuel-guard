@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Truck, Users, MapPin, Route, Fuel, Wrench, DollarSign, Bell, ClipboardList, FileText } from "lucide-react";
@@ -63,6 +64,7 @@ import { TotalTripsWidget } from "@/components/reports/TotalTripsWidget";
 const FAVORITES_STORAGE_KEY = "fleet_report_favorites";
 
 const Reports = () => {
+  const { t } = useTranslation();
   const [mainTab, setMainTab] = useState<"my_reports" | "scheduled">("my_reports");
   const [viewMode, setViewMode] = useState<"catalog" | "report">("catalog");
   const [activeReportTab, setActiveReportTab] = useState("vehicle");
@@ -120,16 +122,16 @@ const Reports = () => {
 
   // Main report tabs with icons
   const mainTabs = [
-    { id: "vehicle", label: "Vehicle", icon: Truck },
-    { id: "driver", label: "Driver", icon: Users },
-    { id: "location", label: "Location", icon: MapPin },
-    { id: "fuel", label: "Fuel", icon: Fuel },
-    { id: "trips", label: "Trips", icon: Route },
-    { id: "maintenance", label: "Maintenance", icon: Wrench },
-    { id: "dispatch", label: "Dispatch", icon: ClipboardList },
-    { id: "costs", label: "Costs", icon: DollarSign },
-    { id: "alerts", label: "Alerts", icon: Bell },
-    { id: "compliance", label: "Compliance", icon: FileText },
+    { id: "vehicle", label: t('reports.types.fleet', 'Vehicle'), icon: Truck },
+    { id: "driver", label: t('drivers.title', 'Driver'), icon: Users },
+    { id: "location", label: t('geofencing.title', 'Location'), icon: MapPin },
+    { id: "fuel", label: t('fuel.title', 'Fuel'), icon: Fuel },
+    { id: "trips", label: t('nav.trips', 'Trips'), icon: Route },
+    { id: "maintenance", label: t('maintenance.title', 'Maintenance'), icon: Wrench },
+    { id: "dispatch", label: t('dispatch.title', 'Dispatch'), icon: ClipboardList },
+    { id: "costs", label: t('maintenance.cost', 'Costs'), icon: DollarSign },
+    { id: "alerts", label: t('alerts.title', 'Alerts'), icon: Bell },
+    { id: "compliance", label: t('nav.compliance', 'Compliance'), icon: FileText },
   ];
 
   // Sub-tabs based on main tab - memoized to prevent hook order issues
@@ -1319,13 +1321,13 @@ const Reports = () => {
                 value="my_reports" 
                 className="px-6 py-2.5 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
-                MY REPORTS
+                {t('reports.myReports', 'MY REPORTS')}
               </TabsTrigger>
               <TabsTrigger 
                 value="scheduled" 
                 className="px-6 py-2.5 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
-                SCHEDULED & CUSTOM
+                {t('reports.scheduledCustom', 'SCHEDULED & CUSTOM')}
               </TabsTrigger>
             </TabsList>
           </div>
