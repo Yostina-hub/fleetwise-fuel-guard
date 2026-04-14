@@ -311,6 +311,14 @@ const VehicleRequests = () => {
             </DialogContent>
           </Dialog>
         )}
+
+        {showFeedback && (
+          <RequesterFeedbackDialog
+            request={showFeedback}
+            open={!!showFeedback}
+            onClose={() => setShowFeedback(null)}
+          />
+        )}
       </div>
     </Layout>
   );
