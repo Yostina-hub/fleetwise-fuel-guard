@@ -656,6 +656,92 @@ export type Database = {
           },
         ]
       }
+      breach_incidents: {
+        Row: {
+          affected_data_types: string[] | null
+          affected_records_count: number | null
+          authority_notified_at: string | null
+          breach_type: string
+          containment_actions: string | null
+          created_at: string
+          description: string | null
+          discovered_at: string
+          dpo_notified: boolean | null
+          id: string
+          incident_number: string
+          notification_deadline: string
+          occurred_at: string | null
+          organization_id: string
+          remediation_actions: string | null
+          reported_by: string | null
+          risk_to_rights: string | null
+          root_cause: string | null
+          severity: string
+          status: string
+          subjects_notified_at: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          affected_data_types?: string[] | null
+          affected_records_count?: number | null
+          authority_notified_at?: string | null
+          breach_type?: string
+          containment_actions?: string | null
+          created_at?: string
+          description?: string | null
+          discovered_at?: string
+          dpo_notified?: boolean | null
+          id?: string
+          incident_number: string
+          notification_deadline?: string
+          occurred_at?: string | null
+          organization_id: string
+          remediation_actions?: string | null
+          reported_by?: string | null
+          risk_to_rights?: string | null
+          root_cause?: string | null
+          severity?: string
+          status?: string
+          subjects_notified_at?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          affected_data_types?: string[] | null
+          affected_records_count?: number | null
+          authority_notified_at?: string | null
+          breach_type?: string
+          containment_actions?: string | null
+          created_at?: string
+          description?: string | null
+          discovered_at?: string
+          dpo_notified?: boolean | null
+          id?: string
+          incident_number?: string
+          notification_deadline?: string
+          occurred_at?: string | null
+          organization_id?: string
+          remediation_actions?: string | null
+          reported_by?: string | null
+          risk_to_rights?: string | null
+          root_cause?: string | null
+          severity?: string
+          status?: string
+          subjects_notified_at?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "breach_incidents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bulk_jobs: {
         Row: {
           completed_at: string | null
@@ -952,6 +1038,81 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "compliance_calendar_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      consent_records: {
+        Row: {
+          collected_by: string | null
+          consent_given: boolean
+          consent_text: string | null
+          consent_type: string
+          consent_version: string
+          created_at: string
+          driver_id: string | null
+          expires_at: string | null
+          given_at: string | null
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          organization_id: string
+          updated_at: string
+          user_id: string | null
+          withdrawal_reason: string | null
+          withdrawn_at: string | null
+        }
+        Insert: {
+          collected_by?: string | null
+          consent_given?: boolean
+          consent_text?: string | null
+          consent_type: string
+          consent_version?: string
+          created_at?: string
+          driver_id?: string | null
+          expires_at?: string | null
+          given_at?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          organization_id: string
+          updated_at?: string
+          user_id?: string | null
+          withdrawal_reason?: string | null
+          withdrawn_at?: string | null
+        }
+        Update: {
+          collected_by?: string | null
+          consent_given?: boolean
+          consent_text?: string | null
+          consent_type?: string
+          consent_version?: string
+          created_at?: string
+          driver_id?: string | null
+          expires_at?: string | null
+          given_at?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          organization_id?: string
+          updated_at?: string
+          user_id?: string | null
+          withdrawal_reason?: string | null
+          withdrawn_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consent_records_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consent_records_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -5107,6 +5268,9 @@ export type Database = {
           organization_id: string
           outsource_company: string | null
           phone: string | null
+          processing_restricted: boolean | null
+          processing_restricted_at: string | null
+          processing_restricted_reason: string | null
           rfid_tag: string | null
           safety_score: number | null
           status: string | null
@@ -5146,6 +5310,9 @@ export type Database = {
           organization_id: string
           outsource_company?: string | null
           phone?: string | null
+          processing_restricted?: boolean | null
+          processing_restricted_at?: string | null
+          processing_restricted_reason?: string | null
           rfid_tag?: string | null
           safety_score?: number | null
           status?: string | null
@@ -5185,6 +5352,9 @@ export type Database = {
           organization_id?: string
           outsource_company?: string | null
           phone?: string | null
+          processing_restricted?: boolean | null
+          processing_restricted_at?: string | null
+          processing_restricted_reason?: string | null
           rfid_tag?: string | null
           safety_score?: number | null
           status?: string | null
@@ -9632,6 +9802,77 @@ export type Database = {
           resource?: string
         }
         Relationships: []
+      }
+      processing_activities: {
+        Row: {
+          activity_name: string
+          created_at: string
+          data_categories: string[]
+          data_subjects: string[]
+          dpia_completed_at: string | null
+          dpia_required: boolean | null
+          id: string
+          is_active: boolean | null
+          lawful_basis: string
+          notes: string | null
+          organization_id: string
+          purpose: string
+          recipients: string[] | null
+          responsible_person: string | null
+          retention_period: string | null
+          security_measures: string | null
+          third_country_transfers: string | null
+          updated_at: string
+        }
+        Insert: {
+          activity_name: string
+          created_at?: string
+          data_categories?: string[]
+          data_subjects?: string[]
+          dpia_completed_at?: string | null
+          dpia_required?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          lawful_basis: string
+          notes?: string | null
+          organization_id: string
+          purpose: string
+          recipients?: string[] | null
+          responsible_person?: string | null
+          retention_period?: string | null
+          security_measures?: string | null
+          third_country_transfers?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activity_name?: string
+          created_at?: string
+          data_categories?: string[]
+          data_subjects?: string[]
+          dpia_completed_at?: string | null
+          dpia_required?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          lawful_basis?: string
+          notes?: string | null
+          organization_id?: string
+          purpose?: string
+          recipients?: string[] | null
+          responsible_person?: string | null
+          retention_period?: string | null
+          security_measures?: string | null
+          third_country_transfers?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "processing_activities_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

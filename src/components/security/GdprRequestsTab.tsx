@@ -18,7 +18,7 @@ import { TablePagination, usePagination } from "@/components/reports/TablePagina
 
 const GdprRequestsTab = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [requestType, setRequestType] = useState<"export" | "delete" | "rectify">("export");
+  const [requestType, setRequestType] = useState<"export" | "delete" | "rectify" | "access" | "portability" | "restriction">("export");
   const [notes, setNotes] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -137,9 +137,12 @@ const GdprRequestsTab = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="export">Data Export</SelectItem>
-                    <SelectItem value="delete">Data Deletion</SelectItem>
-                    <SelectItem value="rectify">Data Rectification</SelectItem>
+                    <SelectItem value="export">Data Export (Art. 20)</SelectItem>
+                    <SelectItem value="access">Data Access (Art. 15)</SelectItem>
+                    <SelectItem value="delete">Data Deletion (Art. 17)</SelectItem>
+                    <SelectItem value="rectify">Data Rectification (Art. 16)</SelectItem>
+                    <SelectItem value="restriction">Restrict Processing (Art. 18)</SelectItem>
+                    <SelectItem value="portability">Data Portability (Art. 20)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

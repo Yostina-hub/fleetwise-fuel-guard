@@ -14,6 +14,7 @@ import { PageLoader } from "@/components/PageLoader";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { CommandPalette } from "./components/CommandPalette";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
+import CookieConsentBanner from "@/components/security/CookieConsentBanner";
 
 // Lazy-load all pages for code splitting
 const Dashboard = lazyWithRetry(() => import("./pages/Dashboard"), "Dashboard");
@@ -90,6 +91,7 @@ const InfrastructureMonitoring = lazyWithRetry(() => import("./pages/Infrastruct
 const OperationsConsole = lazyWithRetry(() => import("./pages/OperationsConsole"), "OperationsConsole");
 const SystemArchitecture = lazyWithRetry(() => import("./pages/SystemArchitecture"), "SystemArchitecture");
 const LicensingCompliance = lazyWithRetry(() => import("./pages/LicensingCompliance"), "LicensingCompliance");
+const PrivacyPolicy = lazyWithRetry(() => import("./pages/PrivacyPolicy"), "PrivacyPolicy");
 const NotFound = lazyWithRetry(() => import("./pages/NotFound"), "NotFound");
 
 const App = () => {
@@ -115,6 +117,7 @@ const App = () => {
                 <Sonner />
                 <BrowserRouter>
                   <CommandPalette />
+                  <CookieConsentBanner />
                   <ImpersonationProvider>
                   <ErrorBoundary>
                     <Suspense fallback={<PageLoader />}>
@@ -194,6 +197,7 @@ const App = () => {
                         <Route path="/operations-console" element={<ProtectedRoute requiredRole="super_admin"><OperationsConsole /></ProtectedRoute>} />
                         <Route path="/system-architecture" element={<ProtectedRoute requiredRole="super_admin"><SystemArchitecture /></ProtectedRoute>} />
                         <Route path="/licensing-compliance" element={<ProtectedRoute><LicensingCompliance /></ProtectedRoute>} />
+                        <Route path="/privacy" element={<PrivacyPolicy />} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />
                       </Routes>
