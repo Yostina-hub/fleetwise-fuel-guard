@@ -277,7 +277,7 @@ const Dashboard = () => {
               aria-label="Refresh dashboard data"
             >
               <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
-              Refresh
+              {t('common.refresh')}
             </Button>
           </div>
         </div>
