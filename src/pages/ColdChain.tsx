@@ -5,30 +5,82 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Thermometer, AlertTriangle, BarChart3, History, DoorOpen } from "lucide-react";
+import { Thermometer, AlertTriangle, BarChart3, DoorOpen } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
-
-const mockReadings = Array.from({ length: 24 }, (_, i) => ({
-  time: `${String(i).padStart(2, "0")}:00`,
-  temp: -18 + Math.random() * 4 - 2,
-  humidity: 65 + Math.random() * 10,
-}));
-
-const coldChainVehicles = [
-  { id: "1", plate: "ET-COLD-01", cargo: "Pharmaceuticals", temp: -19.2, humidity: 68, minThresh: -25, maxThresh: -15, doorStatus: "closed", compressor: "running", status: "normal", lastReading: "2 min ago" },
-  { id: "2", plate: "ET-COLD-02", cargo: "Frozen Food", temp: -17.8, humidity: 72, minThresh: -22, maxThresh: -16, doorStatus: "closed", compressor: "running", status: "normal", lastReading: "1 min ago" },
-  { id: "3", plate: "ET-COLD-03", cargo: "Dairy Products", temp: -12.5, humidity: 80, minThresh: -20, maxThresh: -15, doorStatus: "open", compressor: "running", status: "alarm", lastReading: "30 sec ago" },
-  { id: "4", plate: "ET-COLD-04", cargo: "Vaccines", temp: -20.1, humidity: 65, minThresh: -25, maxThresh: -18, doorStatus: "closed", compressor: "standby", status: "normal", lastReading: "3 min ago" },
-];
-
-const alarms = [
-  { id: "1", plate: "ET-COLD-03", type: "Temperature Breach", message: "Temperature above max threshold (-15°C). Current: -12.5°C", severity: "critical", time: "2 min ago" },
-  { id: "2", plate: "ET-COLD-03", type: "Door Open", message: "Rear cargo door has been open for 8 minutes", severity: "warning", time: "8 min ago" },
-  { id: "3", plate: "ET-COLD-02", type: "Humidity Alert", message: "Humidity reached 72%, above 70% threshold", severity: "info", time: "25 min ago" },
-];
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useOrganization } from "@/hooks/useOrganization";
+import { format } from "date-fns";
 
 const ColdChain = () => {
   const [activeTab, setActiveTab] = useState("live");
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+  const { organizationId } = useOrganization();
+
+  // Fetch latest readings per vehicle (distinct on vehicle_id)
+  const { data: latestReadings = [], isLoading } = useQuery({
+    queryKey: ["cold-chain-latest", organizationId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("cold_chain_readings")
+        .select("*, vehicles:vehicle_id(plate_number, make, model)")
+        .eq("organization_id", organizationId!)
+        .order("recorded_at", { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      // Group by vehicle_id, keep latest
+      const map: Record<string, any> = {};
+      (data || []).forEach((r: any) => {
+        if (!map[r.vehicle_id]) map[r.vehicle_id] = r;
+      });
+      return Object.values(map);
+    },
+    enabled: !!organizationId,
+  });
+
+  // Fetch alarms
+  const { data: alarms = [] } = useQuery({
+    queryKey: ["cold-chain-alarms", organizationId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("cold_chain_readings")
+        .select("*, vehicles:vehicle_id(plate_number)")
+        .eq("organization_id", organizationId!)
+        .eq("is_alarm", true)
+        .order("recorded_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId,
+  });
+
+  // Fetch 24h chart data for selected vehicle
+  const chartVehicleId = selectedVehicleId || (latestReadings[0] as any)?.vehicle_id;
+  const { data: chartData = [] } = useQuery({
+    queryKey: ["cold-chain-chart", chartVehicleId],
+    queryFn: async () => {
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data, error } = await (supabase as any)
+        .from("cold_chain_readings")
+        .select("recorded_at, temperature_celsius, humidity_percent")
+        .eq("vehicle_id", chartVehicleId!)
+        .gte("recorded_at", since)
+        .order("recorded_at", { ascending: true })
+        .limit(200);
+      if (error) throw error;
+      return (data || []).map((r: any) => ({
+        time: format(new Date(r.recorded_at), "HH:mm"),
+        temp: r.temperature_celsius,
+        humidity: r.humidity_percent,
+      }));
+    },
+    enabled: !!chartVehicleId,
+  });
+
+  const normalCount = latestReadings.filter((r: any) => !r.is_alarm).length;
+  const alarmCount = latestReadings.filter((r: any) => r.is_alarm).length;
+  const doorsOpen = latestReadings.filter((r: any) => r.door_status === "open").length;
 
   return (
     <Layout>
@@ -43,23 +95,22 @@ const ColdChain = () => {
           </div>
         </div>
 
-        {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card><CardContent className="p-4 text-center">
             <p className="text-xs text-muted-foreground">Monitored Vehicles</p>
-            <p className="text-2xl font-bold">{coldChainVehicles.length}</p>
+            <p className="text-2xl font-bold">{latestReadings.length}</p>
           </CardContent></Card>
           <Card><CardContent className="p-4 text-center">
             <p className="text-xs text-muted-foreground">Normal</p>
-            <p className="text-2xl font-bold text-emerald-600">{coldChainVehicles.filter(v => v.status === "normal").length}</p>
+            <p className="text-2xl font-bold text-emerald-600">{normalCount}</p>
           </CardContent></Card>
           <Card><CardContent className="p-4 text-center">
             <p className="text-xs text-muted-foreground">Alarms</p>
-            <p className="text-2xl font-bold text-destructive">{coldChainVehicles.filter(v => v.status === "alarm").length}</p>
+            <p className="text-2xl font-bold text-destructive">{alarmCount}</p>
           </CardContent></Card>
           <Card><CardContent className="p-4 text-center">
             <p className="text-xs text-muted-foreground">Doors Open</p>
-            <p className="text-2xl font-bold text-amber-600">{coldChainVehicles.filter(v => v.doorStatus === "open").length}</p>
+            <p className="text-2xl font-bold text-amber-600">{doorsOpen}</p>
           </CardContent></Card>
         </div>
 
@@ -67,86 +118,130 @@ const ColdChain = () => {
           <TabsList>
             <TabsTrigger value="live" className="gap-1.5"><Thermometer className="w-3.5 h-3.5" /> Live Status</TabsTrigger>
             <TabsTrigger value="chart" className="gap-1.5"><BarChart3 className="w-3.5 h-3.5" /> Temperature Chart</TabsTrigger>
-            <TabsTrigger value="alarms" className="gap-1.5"><AlertTriangle className="w-3.5 h-3.5" /> Alarms</TabsTrigger>
+            <TabsTrigger value="alarms" className="gap-1.5"><AlertTriangle className="w-3.5 h-3.5" /> Alarms ({alarms.length})</TabsTrigger>
           </TabsList>
 
           <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="mt-4">
             <TabsContent value="live" className="mt-0 space-y-3">
-              {coldChainVehicles.map(v => (
-                <Card key={v.id} className={v.status === "alarm" ? "border-destructive/50" : ""}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between flex-wrap gap-3">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold">{v.plate}</span>
-                          {v.status === "alarm" ? <Badge variant="destructive">ALARM</Badge> : <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">Normal</Badge>}
+              {isLoading ? (
+                <div className="space-y-3">{[...Array(3)].map((_, i) => <Card key={i} className="animate-pulse h-20" />)}</div>
+              ) : latestReadings.length === 0 ? (
+                <Card><CardContent className="py-12 text-center text-muted-foreground">
+                  <Thermometer className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <p>No cold chain readings yet.</p>
+                  <p className="text-xs mt-1">Temperature data from refrigerated vehicles will appear here.</p>
+                </CardContent></Card>
+              ) : (
+                latestReadings.map((r: any) => {
+                  const isAlarm = r.is_alarm || (r.max_threshold && r.temperature_celsius > r.max_threshold);
+                  return (
+                    <Card key={r.vehicle_id} className={isAlarm ? "border-destructive/50" : ""}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between flex-wrap gap-3">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold">{r.vehicles?.plate_number || "Unknown"}</span>
+                              {isAlarm ? <Badge variant="destructive">ALARM</Badge> : <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">Normal</Badge>}
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {r.vehicles?.make} {r.vehicles?.model} • {r.sensor_id ? `Sensor: ${r.sensor_id}` : ""} • Last: {format(new Date(r.recorded_at), "HH:mm:ss")}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-6 text-sm">
+                            <div className="text-center">
+                              <Thermometer className="w-4 h-4 mx-auto text-cyan-500" />
+                              <p className={`font-bold ${isAlarm ? "text-destructive" : ""}`}>{r.temperature_celsius?.toFixed(1)}°C</p>
+                              <p className="text-xs text-muted-foreground">{r.min_threshold ?? "—"} to {r.max_threshold ?? "—"}°C</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-xs text-muted-foreground">Humidity</p>
+                              <p className="font-bold">{r.humidity_percent ?? "—"}%</p>
+                            </div>
+                            <div className="text-center">
+                              <DoorOpen className={`w-4 h-4 mx-auto ${r.door_status === "open" ? "text-amber-500" : "text-muted-foreground"}`} />
+                              <p className={`font-bold capitalize ${r.door_status === "open" ? "text-amber-600" : ""}`}>{r.door_status || "—"}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-xs text-muted-foreground">Compressor</p>
+                              <p className="font-bold capitalize">{r.compressor_status || "—"}</p>
+                            </div>
+                          </div>
                         </div>
-                        <p className="text-sm text-muted-foreground">{v.cargo} • Last: {v.lastReading}</p>
-                      </div>
-                      <div className="flex items-center gap-6 text-sm">
-                        <div className="text-center">
-                          <Thermometer className="w-4 h-4 mx-auto text-cyan-500" />
-                          <p className={`font-bold ${v.temp > v.maxThresh ? "text-destructive" : ""}`}>{v.temp}°C</p>
-                          <p className="text-xs text-muted-foreground">{v.minThresh} to {v.maxThresh}°C</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-xs text-muted-foreground">Humidity</p>
-                          <p className="font-bold">{v.humidity}%</p>
-                        </div>
-                        <div className="text-center">
-                          <DoorOpen className={`w-4 h-4 mx-auto ${v.doorStatus === "open" ? "text-amber-500" : "text-muted-foreground"}`} />
-                          <p className={`font-bold capitalize ${v.doorStatus === "open" ? "text-amber-600" : ""}`}>{v.doorStatus}</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-xs text-muted-foreground">Compressor</p>
-                          <p className="font-bold capitalize">{v.compressor}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              )}
             </TabsContent>
 
-            <TabsContent value="chart" className="mt-0">
+            <TabsContent value="chart" className="mt-0 space-y-4">
+              {latestReadings.length > 0 && (
+                <div className="flex gap-2 flex-wrap">
+                  {latestReadings.map((r: any) => (
+                    <Button
+                      key={r.vehicle_id}
+                      size="sm"
+                      variant={chartVehicleId === r.vehicle_id ? "default" : "outline"}
+                      onClick={() => setSelectedVehicleId(r.vehicle_id)}
+                    >
+                      {r.vehicles?.plate_number || "Unknown"}
+                    </Button>
+                  ))}
+                </div>
+              )}
               <Card>
-                <CardHeader><CardTitle className="text-lg">24h Temperature Trend (ET-COLD-01)</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-lg">24h Temperature Trend</CardTitle></CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={mockReadings}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                      <XAxis dataKey="time" className="text-xs" />
-                      <YAxis domain={[-25, -10]} className="text-xs" />
-                      <Tooltip />
-                      <ReferenceLine y={-15} stroke="hsl(var(--destructive))" strokeDasharray="5 5" label="Max" />
-                      <ReferenceLine y={-25} stroke="hsl(var(--primary))" strokeDasharray="5 5" label="Min" />
-                      <Line type="monotone" dataKey="temp" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Temperature (°C)" />
-                    </LineChart>
-                  </ResponsiveContainer>
+                  {chartData.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">No chart data available for this period.</div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                        <XAxis dataKey="time" className="text-xs" />
+                        <YAxis className="text-xs" />
+                        <Tooltip />
+                        <Line type="monotone" dataKey="temp" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Temperature (°C)" />
+                        <Line type="monotone" dataKey="humidity" stroke="hsl(var(--muted-foreground))" strokeWidth={1} dot={false} name="Humidity (%)" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
 
             <TabsContent value="alarms" className="mt-0 space-y-3">
-              {alarms.map(alarm => (
-                <Card key={alarm.id} className={alarm.severity === "critical" ? "border-destructive/50" : ""}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold">{alarm.plate}</span>
-                          <Badge variant={alarm.severity === "critical" ? "destructive" : "outline"} className="capitalize">{alarm.type}</Badge>
+              {alarms.length === 0 ? (
+                <Card><CardContent className="py-12 text-center text-muted-foreground">
+                  <AlertTriangle className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <p>No alarms recorded.</p>
+                </CardContent></Card>
+              ) : (
+                alarms.map((alarm: any) => (
+                  <Card key={alarm.id} className={alarm.alarm_type === "critical" ? "border-destructive/50" : ""}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">{alarm.vehicles?.plate_number || "Unknown"}</span>
+                            <Badge variant={alarm.alarm_type === "critical" ? "destructive" : "outline"} className="capitalize">
+                              {alarm.alarm_type || "Temperature"}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Temperature: {alarm.temperature_celsius?.toFixed(1)}°C 
+                            {alarm.max_threshold ? ` (max: ${alarm.max_threshold}°C)` : ""}
+                            {alarm.door_status ? ` • Door: ${alarm.door_status}` : ""}
+                          </p>
                         </div>
-                        <p className="text-sm text-muted-foreground">{alarm.message}</p>
+                        <div className="text-right">
+                          <p className="text-xs text-muted-foreground">{format(new Date(alarm.recorded_at), "MMM dd, HH:mm")}</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-xs text-muted-foreground">{alarm.time}</p>
-                        <Button size="sm" variant="outline" className="mt-1">Acknowledge</Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </TabsContent>
           </motion.div>
         </Tabs>

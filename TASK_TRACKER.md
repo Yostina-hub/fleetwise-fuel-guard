@@ -78,10 +78,10 @@
 ### 🔴 Stub Pages (No DB Integration — Static/Mock Data Only)
 | # | Page | Lines | Issue | Priority |
 |---|------|-------|-------|----------|
-| 1 | **EVManagement** | 77 | Tiny stub, no DB queries, no CRUD for `ev_vehicle_data`, `ev_charging_sessions`, `ev_charging_stations` | 🔥 High |
-| 2 | **ColdChain** | 158 | Uses `mockReadings` array, no connection to `cold_chain_readings` table | 🔥 High |
-| 3 | **RentalVehicles** | 195 | Static form, no DB integration with `rental_vehicles`/`outsource_driver_attendance` | 🔥 High |
-| 4 | **TireManagement** | 236 | Static UI, no connection to `tire_inventory`/`tire_changes` tables | 🔥 High |
+| 1 | ~~**EVManagement**~~ | ✅ | **DONE** — Full CRUD, DB queries, Add EV/Station dialogs | ✅ Done |
+| 2 | ~~**ColdChain**~~ | ✅ | **DONE** — Live DB queries, per-vehicle charts, alarm dashboard | ✅ Done |
+| 3 | ~~**RentalVehicles**~~ | ✅ | **DONE** — New `rental_vehicles` table, full CRUD, provider grouping | ✅ Done |
+| 4 | ~~**TireManagement**~~ | ✅ | **DONE** — Full CRUD on `tire_inventory`/`tire_changes`, Add Tire dialog | ✅ Done |
 | 5 | **WorkflowBuilder** | 49 | Minimal stub, drag-and-drop workflow editor not implemented | 🟡 Medium |
 | 6 | **DashboardBuilder** | 167 | Static mock, no saved dashboard persistence | 🟡 Medium |
 | 7 | **PerformanceSimulation** | 153 | Static simulation, no real data integration | 🟡 Medium |
@@ -90,7 +90,7 @@
 ### 🔧 Partial Pages (Some DB Integration But Incomplete)
 | # | Page | Lines | Issue | Priority |
 |---|------|-------|-------|----------|
-| 9 | **DelegationMatrix** | 74 | DB queries exist but UI is minimal — needs full CRUD, date pickers, scope management | 🔥 High |
+| 9 | ~~**DelegationMatrix**~~ | ✅ | **DONE** — Full CRUD with user picker, scope management, date ranges | ✅ Done |
 | 10 | **VendorManagement** | 77 | Has DB queries but minimal UI — needs vendor CRUD, contract linking | 🟡 Medium |
 | 11 | **KPIScorecard** | 85 | Has queries but hardcoded targets — needs configurable KPI management | 🟡 Medium |
 | 12 | **CarbonEmissions** | 94 | Has queries but limited UI — needs charts, vehicle breakdown, offset tracking | 🟡 Medium |
@@ -107,19 +107,27 @@
 | 19 | **UserManagement** | Bulk role assignment shows "Coming Soon" toast | 🟡 Medium |
 | 20 | **Vehicles** | Trip status counts use placeholder comment | 🟢 Low |
 | 21 | **Reports** | Some report types may not pull real data | 🟡 Medium |
-| 22 | **VehicleRequests** | Request workflow needs approval chain integration with `vehicle_request_approvals` | 🔥 High |
+| 22 | ~~**VehicleRequests**~~ | **DONE** — Full create/approve/reject/assign/complete workflow | ✅ Done |
 
 ---
 
 ## 3. Implementation Roadmap
 
-### Phase 1 — Critical RFP Gaps (Sprint 1-2)
-- [ ] **EV Charging Management** — Full CRUD for vehicles, sessions, stations with charts
-- [ ] **Cold Chain Monitoring** — Live temperature graphs from `cold_chain_readings`, alarm dashboard
-- [ ] **Rental Vehicle Management** — CRUD, contract tracking, cost projections, 3rd-party drivers
-- [ ] **Tire Management** — Inventory, change history, cost-per-km tracking
-- [ ] **Vehicle Request Workflow** — Approval chain with delegation matrix integration
-- [ ] **Delegation Matrix** — Full CRUD with scope management and date ranges
+### Phase 1 — Critical RFP Gaps (Sprint 1-2) ✅ COMPLETED
+- [x] **EV Charging Management** — Full CRUD for vehicles, sessions, stations with charts. Add EV Vehicle, Add Station dialogs wired to DB.
+- [x] **Cold Chain Monitoring** — Live temperature data from `cold_chain_readings`, per-vehicle chart selector, alarm dashboard with real DB queries.
+- [x] **Rental Vehicle Management** — New `rental_vehicles` table created. CRUD with provider grouping, cost analysis, 3rd-party driver tracking.
+- [x] **Tire Management** — Full CRUD on `tire_inventory`/`tire_changes`, wear progress bars, cost analysis, Add Tire dialog.
+- [x] **Vehicle Request Workflow** — Create request, approve/reject/assign/complete workflow with vehicle assignment. Approval history display.
+- [x] **Delegation Matrix** — Full CRUD with user picker, scope selector (vehicle_requests/fuel/maintenance/dispatch/trips), date ranges, toggle active/inactive, edit/delete.
+
+#### Phase 1 Testing Checklist
+- [x] **1A: EV Management** — Verified: DB queries for ev_vehicle_data/ev_charging_sessions/ev_charging_stations, CRUD dialogs, stat cards, empty states
+- [x] **1B: Cold Chain** — Verified: Replaced all mock data with cold_chain_readings queries, 24h chart per vehicle, alarm tab with real data
+- [x] **1C: Tire Management** — Verified: tire_inventory CRUD, tire_changes history, cost analysis, Add Tire form with vehicle selector
+- [x] **1D: Vehicle Requests** — Verified: Create request, approve/reject, assign vehicle, mark complete, approval history
+- [x] **1E: Delegation Matrix** — Verified: Create/edit/delete delegations, toggle active, scope management, user picker from profiles
+- [x] **1F: Rental Vehicles** — Verified: New table migration, CRUD, provider grouping, cost projections, TypeScript compiles clean
 
 ### Phase 2 — Operational Completeness (Sprint 3-4)
 - [ ] **Vendor Management** — Full CRUD, contract linking, performance rating
