@@ -18,6 +18,10 @@ services:
       - REDIS_URL=${REDIS_URL:-}
       - ENABLE_SOCKET_GATEWAY=${ENABLE_SOCKET_GATEWAY:-true}
       - SOCKETIO_PORT=9090
+      - ENABLE_MQTT=${ENABLE_MQTT:-true}
+      - MQTT_PORT=1883
+      - MQTT_WS_PORT=9883
+      - MQTT_AUTH_TOKEN=${MQTT_AUTH_TOKEN:-}
       - GT06_PORT=5001
       - TK103_PORT=5013
       - H02_PORT=5023
@@ -41,9 +45,11 @@ services:
       - "5001:5001/udp"   # GT06 UDP
       - "5013:5013/udp"   # TK103 UDP
       - "5023:5023/udp"   # H02 UDP
-      # Health check + Socket.io
+      # Health check + Socket.io + MQTT
       - "8080:8080"
       - "9090:9090"   # Socket.io WebSocket gateway
+      - "1883:1883"   # MQTT broker
+      - "9883:9883"   # MQTT over WebSocket
     
     # Resource limits
     deploy:
