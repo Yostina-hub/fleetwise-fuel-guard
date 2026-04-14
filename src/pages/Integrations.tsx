@@ -2,11 +2,14 @@ import { useState } from "react";
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { Webhook, Plug, Upload, Database } from "lucide-react";
+import { Webhook, Plug, Upload, Database, Zap, Users, Shield } from "lucide-react";
 import WebhooksTab from "@/components/integrations/WebhooksTab";
 import IntegrationsTab from "@/components/integrations/IntegrationsTab";
 import BulkJobsTab from "@/components/integrations/BulkJobsTab";
 import ERPNextTab from "@/components/integrations/ERPNextTab";
+import ERPWebhookBridgeTab from "@/components/integrations/ERPWebhookBridgeTab";
+import LDAPImportTab from "@/components/integrations/LDAPImportTab";
+import SIEMForwardingTab from "@/components/integrations/SIEMForwardingTab";
 import IntegrationsQuickStats from "@/components/integrations/IntegrationsQuickStats";
 import IntegrationsQuickActions from "@/components/integrations/IntegrationsQuickActions";
 import { toast } from "sonner";
@@ -68,22 +71,34 @@ const Integrations = () => {
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4 glass p-1 h-14">
-            <TabsTrigger value="webhooks" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg">
+          <TabsList className="grid w-full grid-cols-4 md:grid-cols-7 glass p-1 h-14">
+            <TabsTrigger value="webhooks" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg text-xs md:text-sm">
               <Webhook className="h-4 w-4" aria-hidden="true" />
-              Webhooks
+              <span className="hidden md:inline">Webhooks</span>
             </TabsTrigger>
-            <TabsTrigger value="erpnext" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg">
+            <TabsTrigger value="erp-bridge" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg text-xs md:text-sm">
+              <Zap className="h-4 w-4" aria-hidden="true" />
+              <span className="hidden md:inline">ERP Bridge</span>
+            </TabsTrigger>
+            <TabsTrigger value="erpnext" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg text-xs md:text-sm">
               <Database className="h-4 w-4" aria-hidden="true" />
-              tele Erp
+              <span className="hidden md:inline">tele Erp</span>
             </TabsTrigger>
-            <TabsTrigger value="integrations" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg">
+            <TabsTrigger value="ldap" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg text-xs md:text-sm">
+              <Users className="h-4 w-4" aria-hidden="true" />
+              <span className="hidden md:inline">LDAP/AD</span>
+            </TabsTrigger>
+            <TabsTrigger value="siem" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg text-xs md:text-sm">
+              <Shield className="h-4 w-4" aria-hidden="true" />
+              <span className="hidden md:inline">SIEM</span>
+            </TabsTrigger>
+            <TabsTrigger value="integrations" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg text-xs md:text-sm">
               <Plug className="h-4 w-4" aria-hidden="true" />
-              Integrations
+              <span className="hidden md:inline">Integrations</span>
             </TabsTrigger>
-            <TabsTrigger value="bulk-jobs" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg">
+            <TabsTrigger value="bulk-jobs" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg text-xs md:text-sm">
               <Upload className="h-4 w-4" aria-hidden="true" />
-              Bulk Jobs
+              <span className="hidden md:inline">Bulk Jobs</span>
             </TabsTrigger>
           </TabsList>
 
@@ -93,8 +108,20 @@ const Integrations = () => {
             </Card>
           </TabsContent>
 
+          <TabsContent value="erp-bridge" className="animate-scale-in">
+            <ERPWebhookBridgeTab />
+          </TabsContent>
+
           <TabsContent value="erpnext" className="animate-scale-in">
             <ERPNextTab />
+          </TabsContent>
+
+          <TabsContent value="ldap" className="animate-scale-in">
+            <LDAPImportTab />
+          </TabsContent>
+
+          <TabsContent value="siem" className="animate-scale-in">
+            <SIEMForwardingTab />
           </TabsContent>
 
           <TabsContent value="integrations" className="animate-scale-in">
