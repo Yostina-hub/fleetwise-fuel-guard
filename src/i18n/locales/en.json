@@ -476,11 +476,14 @@
     "circle": "Circle",
     "polygon": "Polygon",
     "rectangle": "Rectangle",
-    "entryAlert": "Entry Alert",
-    "exitAlert": "Exit Alert",
+    "entryAlert": "Entries",
+    "exitAlert": "Exits",
     "dwellTime": "Dwell Time",
     "assignedVehicles": "Assigned Vehicles",
-    "activeGeofences": "Active Geofences"
+    "activeGeofences": "Active Geofences",
+    "events": "Events",
+    "noGeofences": "No geofences yet",
+    "useDrawingTools": "Use the drawing tools to create one"
   },
   "routes": {
     "title": "Customer Sites",
