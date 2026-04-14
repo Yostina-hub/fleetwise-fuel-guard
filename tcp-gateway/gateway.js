@@ -997,7 +997,13 @@ const healthServer = http.createServer(async (req, res) => {
       imeiCacheSize: imeiCache.size,
       bufferSize: telemetryBuffer.length,
       heartbeatBufferSize: heartbeatBuffer.size,
-      dbPool: { total: pool.totalCount, idle: pool.idleCount, waiting: pool.waitingCount }
+      dbPool: { total: pool.totalCount, idle: pool.idleCount, waiting: pool.waitingCount },
+      // Advanced architecture stats
+      redis: redisStats(),
+      socketio: socketStats(),
+      workers: workerStats(),
+      timeseries: tsStats(),
+      eventBus: eventBus.getStats(),
     }));
   } else {
     res.writeHead(404);
