@@ -67,7 +67,7 @@ const DashboardBuilder = () => {
         .eq("user_id", user.id)
         .order("is_default", { ascending: false });
       if (error) throw error;
-      return (data || []) as DashboardLayout[];
+      return (data || []) as unknown as DashboardLayout[];
     },
     enabled: !!organizationId && !!user,
   });
