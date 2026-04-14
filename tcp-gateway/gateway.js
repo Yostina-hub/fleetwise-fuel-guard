@@ -1089,7 +1089,11 @@ async function start() {
 async function shutdown() {
   log('info', 'system', 'Shutting down - flushing remaining buffer...');
   clearInterval(flushTimer);
-  await flushBatch(); // Flush remaining data
+  await flushBatch(); // Flush remaining telemetry data
+  await tsShutdown(); // Flush time-series buffer
+  socketShutdown();   // Close Socket.io
+  await workerShutdown(); // Close worker queues
+  await redisShutdown();  // Disconnect Redis
   await pool.end();
   process.exit(0);
 }

@@ -17,6 +17,11 @@
   "dependencies": {
     "pg": "^8.13.1"
   },
+  "optionalDependencies": {
+    "ioredis": "^5.4.1",
+    "socket.io": "^4.8.1",
+    "bullmq": "^5.30.1"
+  },
   "keywords": ["gps", "tracker", "tcp", "udp", "gateway", "fleet", "telematics", "postgresql"],
   "author": "Fleet Management System",
   "license": "MIT",
