@@ -24,6 +24,10 @@ i18n
   .init({
     resources,
     fallbackLng: 'en',
+    supportedLngs: languages.map((language) => language.code),
+    load: 'languageOnly',
+    nonExplicitSupportedLngs: true,
+    cleanCode: true,
     debug: false,
     interpolation: {
       escapeValue: false,
@@ -31,6 +35,7 @@ i18n
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],
+      lookupLocalStorage: 'i18nextLng',
     },
   });
 
