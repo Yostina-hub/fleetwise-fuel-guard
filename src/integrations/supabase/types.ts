@@ -1647,8 +1647,11 @@ export type Database = {
           id: string
           idling_threshold: number | null
           initial_mileage: number | null
+          min_reporting_interval: number
           oil_calibration: number | null
           organization_id: string
+          reporting_interval_moving: number
+          reporting_interval_stationary: number
           sensitivity: number | null
           sharp_turn_threshold: number | null
           sms_password: string | null
@@ -1678,8 +1681,11 @@ export type Database = {
           id?: string
           idling_threshold?: number | null
           initial_mileage?: number | null
+          min_reporting_interval?: number
           oil_calibration?: number | null
           organization_id: string
+          reporting_interval_moving?: number
+          reporting_interval_stationary?: number
           sensitivity?: number | null
           sharp_turn_threshold?: number | null
           sms_password?: string | null
@@ -1709,8 +1715,11 @@ export type Database = {
           id?: string
           idling_threshold?: number | null
           initial_mileage?: number | null
+          min_reporting_interval?: number
           oil_calibration?: number | null
           organization_id?: string
+          reporting_interval_moving?: number
+          reporting_interval_stationary?: number
           sensitivity?: number | null
           sharp_turn_threshold?: number | null
           sms_password?: string | null

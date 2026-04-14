@@ -44,6 +44,7 @@ import {
   Radio,
   Gauge,
   Smartphone,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -151,6 +152,9 @@ export const TerminalSettingsPanel = ({
     sensitivity: "medium",
     speakerSwitch: true,
     bluetoothSwitch: true,
+    reportingIntervalMoving: 5,
+    reportingIntervalStationary: 600,
+    minReportingInterval: 1,
   });
 
   // Alarm settings state
@@ -192,6 +196,9 @@ export const TerminalSettingsPanel = ({
         sensitivity: savedSettings.sensitivity === 10 ? "high" : savedSettings.sensitivity === 5 ? "medium" : "low",
         speakerSwitch: savedSettings.speaker_enabled ?? true,
         bluetoothSwitch: savedSettings.bluetooth_enabled ?? true,
+        reportingIntervalMoving: savedSettings.reporting_interval_moving ?? 5,
+        reportingIntervalStationary: savedSettings.reporting_interval_stationary ?? 600,
+        minReportingInterval: savedSettings.min_reporting_interval ?? 1,
       });
       setAlarmSettings({
         sos: savedSettings.alarm_sos ?? true,
@@ -323,6 +330,15 @@ export const TerminalSettingsPanel = ({
           const thresholds = commandData.thresholds || {};
           smsContent = `behavior${password} brake:${thresholds.harshBraking || 50},accel:${thresholds.harshAcceleration || 40},turn:${thresholds.sharpTurn || 30},idle:${thresholds.idling || 5}`;
           break;
+        case "reportingIntervalMoving":
+          smsContent = `timer${password} ${commandData.value}`;
+          break;
+        case "reportingIntervalStationary":
+          smsContent = `sleep${password} ${commandData.value}`;
+          break;
+        case "minReportingInterval":
+          smsContent = `mininterval${password} ${commandData.value}`;
+          break;
         default:
           smsContent = `${commandType}${password}`;
       }
@@ -382,6 +398,15 @@ export const TerminalSettingsPanel = ({
           settingsUpdate.harsh_acceleration_threshold = behaviorData.harshAcceleration || 40;
           settingsUpdate.sharp_turn_threshold = behaviorData.sharpTurn || 30;
           settingsUpdate.idling_threshold = behaviorData.idling || 5;
+          break;
+        case "reportingIntervalMoving":
+          settingsUpdate.reporting_interval_moving = commandData.value;
+          break;
+        case "reportingIntervalStationary":
+          settingsUpdate.reporting_interval_stationary = commandData.value;
+          break;
+        case "minReportingInterval":
+          settingsUpdate.min_reporting_interval = commandData.value;
           break;
       }
       
@@ -549,6 +574,47 @@ export const TerminalSettingsPanel = ({
           type: "select" as const,
           value: settings.sensitivity,
           options: SENSITIVITY_OPTIONS,
+        },
+      ],
+    },
+    {
+      title: "Communication Intervals",
+      items: [
+        {
+          id: "reportingIntervalMoving",
+          label: "Moving interval (sec)",
+          icon: Clock,
+          type: "slider" as const,
+          value: settings.reportingIntervalMoving,
+          min: 1,
+          max: 60,
+          step: 1,
+          unit: "s",
+          description: "GPS update frequency when vehicle is moving (RFP: 5s default, supports 1s)",
+        },
+        {
+          id: "reportingIntervalStationary",
+          label: "Stationary interval (sec)",
+          icon: Clock,
+          type: "slider" as const,
+          value: settings.reportingIntervalStationary,
+          min: 60,
+          max: 3600,
+          step: 60,
+          unit: "s",
+          description: "GPS update frequency when vehicle is stationary (RFP: 600s / 10min default)",
+        },
+        {
+          id: "minReportingInterval",
+          label: "Minimum interval (sec)",
+          icon: Zap,
+          type: "slider" as const,
+          value: settings.minReportingInterval,
+          min: 1,
+          max: 10,
+          step: 1,
+          unit: "s",
+          description: "Minimum allowed interval - device supports 1-second updates",
         },
       ],
     },

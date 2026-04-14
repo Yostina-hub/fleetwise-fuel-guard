@@ -37,6 +37,10 @@ export interface DeviceTerminalSettings {
   harsh_acceleration_threshold: number;
   sharp_turn_threshold: number;
   idling_threshold: number;
+  // Communication Intervals (RFP Item 43)
+  reporting_interval_moving: number;
+  reporting_interval_stationary: number;
+  min_reporting_interval: number;
   created_at: string;
   updated_at: string;
 }
@@ -66,6 +70,10 @@ export const DEFAULT_TERMINAL_SETTINGS: Omit<DeviceTerminalSettings, 'id' | 'org
   harsh_acceleration_threshold: 50,
   sharp_turn_threshold: 50,
   idling_threshold: 50,
+  // Communication Intervals
+  reporting_interval_moving: 5,
+  reporting_interval_stationary: 600,
+  min_reporting_interval: 1,
 };
 
 export const useDeviceTerminalSettings = (deviceId?: string) => {
@@ -172,6 +180,9 @@ export const useDeviceTerminalSettings = (deviceId?: string) => {
       harsh_acceleration_threshold: settings.harsh_acceleration_threshold,
       sharp_turn_threshold: settings.sharp_turn_threshold,
       idling_threshold: settings.idling_threshold,
+      reporting_interval_moving: settings.reporting_interval_moving,
+      reporting_interval_stationary: settings.reporting_interval_stationary,
+      min_reporting_interval: settings.min_reporting_interval,
     } : {}),
   };
 

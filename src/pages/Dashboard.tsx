@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MobileSupervisorDashboard } from "@/components/mobile/MobileSupervisorDashboard";
 import KPICard from "@/components/KPICard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -106,6 +108,8 @@ import { Car, Gauge, Zap, Shield, Power, Wrench, Moon } from "lucide-react";
 const Dashboard = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+
   const { organizationId } = useOrganization();
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -246,6 +250,17 @@ const Dashboard = () => {
   const isLoading = vehiclesLoading || alertsLoading;
 
   // formatCurrency is now provided by useOrganizationSettings
+
+  // Mobile supervisor dashboard (RFP Items 31-42)
+  if (isMobile) {
+    return (
+      <Layout>
+        <div className="h-[calc(100vh-8rem)]">
+          <MobileSupervisorDashboard />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
