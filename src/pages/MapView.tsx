@@ -116,7 +116,7 @@ const MapView = () => {
   const [autoRefresh, setAutoRefresh] = useState("30");
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [searchQuery, setSearchQuery] = useState("");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [statusFilter, setStatusFilter] = useState<'all' | 'online' | 'moving' | 'idle' | 'stopped' | 'offline'>('all');
   const [showNearbySearch, setShowNearbySearch] = useState(false);
   const [showTrails, setShowTrails] = useState(true);
@@ -148,7 +148,7 @@ const MapView = () => {
   const [showDriverEvents, setShowDriverEvents] = useState(false);
   const [showDispatch, setShowDispatch] = useState(false);
   const [showFleetPulse, setShowFleetPulse] = useState(false);
-  const [showToolStrip, setShowToolStrip] = useState(true);
+  const [showToolStrip, setShowToolStrip] = useState(!isMobile);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showCommandCenter, setShowCommandCenter] = useState(false);
   const [showAnomalies, setShowAnomalies] = useState(false);
