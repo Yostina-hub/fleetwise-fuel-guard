@@ -54,6 +54,7 @@ interface UserProfile {
 }
 
 const UserManagement = () => {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { isSuperAdmin } = usePermissions();
   const [users, setUsers] = useState<UserProfile[]>([]);
