@@ -577,6 +577,47 @@ export const TerminalSettingsPanel = ({
       ],
     },
     {
+      title: "Communication Intervals",
+      items: [
+        {
+          id: "reportingIntervalMoving",
+          label: "Moving interval (sec)",
+          icon: Clock,
+          type: "slider" as const,
+          value: settings.reportingIntervalMoving,
+          min: 1,
+          max: 60,
+          step: 1,
+          unit: "s",
+          description: "GPS update frequency when vehicle is moving (RFP: 5s default, supports 1s)",
+        },
+        {
+          id: "reportingIntervalStationary",
+          label: "Stationary interval (sec)",
+          icon: Clock,
+          type: "slider" as const,
+          value: settings.reportingIntervalStationary,
+          min: 60,
+          max: 3600,
+          step: 60,
+          unit: "s",
+          description: "GPS update frequency when vehicle is stationary (RFP: 600s / 10min default)",
+        },
+        {
+          id: "minReportingInterval",
+          label: "Minimum interval (sec)",
+          icon: Zap,
+          type: "slider" as const,
+          value: settings.minReportingInterval,
+          min: 1,
+          max: 10,
+          step: 1,
+          unit: "s",
+          description: "Minimum allowed interval - device supports 1-second updates",
+        },
+      ],
+    },
+    {
       title: "Advanced Settings",
       items: [
         {
