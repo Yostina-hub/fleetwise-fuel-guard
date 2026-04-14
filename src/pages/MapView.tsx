@@ -29,6 +29,8 @@ import { SmartDispatchSuggester } from "@/components/map/SmartDispatchSuggester"
 import { FleetPulseDashboard } from "@/components/map/FleetPulseDashboard";
 import { CommandCenterHUD } from "@/components/map/CommandCenterHUD";
 import { AnomalyMapLayer } from "@/components/map/AnomalyMapLayer";
+import SumoToggle from "@/components/map/SumoToggle";
+import SumoControlPanel from "@/components/map/SumoControlPanel";
 
 import { 
   Navigation, 
@@ -68,6 +70,7 @@ import { useVehicles } from "@/hooks/useVehicles";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { useSpeedGovernor } from "@/hooks/useSpeedGovernor";
 import { useVehicleTrail } from "@/hooks/useVehicleTrail";
+import { useSumoSimulation } from "@/hooks/useSumoSimulation";
 import { useLematApiKey } from "@/hooks/useLematApiKey";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { cn } from "@/lib/utils";
@@ -152,7 +155,11 @@ const MapView = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showCommandCenter, setShowCommandCenter] = useState(false);
   const [showAnomalies, setShowAnomalies] = useState(false);
+  const [sumoActive, setSumoActive] = useState(false);
   const mapAreaRef = useRef<HTMLDivElement>(null);
+
+  // SUMO Simulation
+  const { state: sumoState, setRunning: setSumoRunning, setSpeed: setSumoSpeed, setVehicleCount: setSumoVehicleCount, reset: resetSumo } = useSumoSimulation(sumoActive);
 
   const toggleFullscreen = useCallback(() => {
     if (!mapAreaRef.current) return;
@@ -304,10 +311,34 @@ const MapView = () => {
     return filtered;
   }, [vehicles, searchQuery, statusFilter]);
 
-  const filteredMapVehicles = useMemo(() => {
+  const filteredMapVehiclesReal = useMemo(() => {
     const filteredIds = new Set(filteredVehicles.map(v => v.id));
     return mapVehicles.filter(v => filteredIds.has(v.id));
   }, [filteredVehicles, mapVehicles]);
+
+  // Bridge SUMO vehicles to map vehicle format
+  const sumoMapVehicles = useMemo(() => {
+    if (!sumoActive || !sumoState) return [];
+    return sumoState.vehicles.map(sv => ({
+      id: sv.id,
+      plate: sv.plate,
+      status: sv.status as 'moving' | 'idle' | 'stopped',
+      lat: sv.lat,
+      lng: sv.lng,
+      speed: sv.speed,
+      fuel: sv.fuel,
+      heading: sv.heading,
+      engine_on: sv.status !== 'stopped',
+      isOffline: false,
+      lastSeen: new Date().toISOString(),
+      make: sv.type,
+      model: 'SUMO',
+      type: sv.type,
+    }));
+  }, [sumoActive, sumoState]);
+
+  // Active data source: SUMO or real-world
+  const filteredMapVehicles = sumoActive ? sumoMapVehicles : filteredMapVehiclesReal;
 
   // Auto-refresh
   useEffect(() => {
@@ -569,6 +600,16 @@ const MapView = () => {
                 </Button>
               )}
             </div>
+
+            {/* SUMO / Real-World Toggle */}
+            <SumoToggle sumoActive={sumoActive} onToggle={() => setSumoActive(!sumoActive)} />
+
+            {/* SUMO Mode Indicator */}
+            {sumoActive && (
+              <Badge variant="outline" className="bg-blue-600/10 text-blue-400 border-blue-500/30 text-[10px] animate-pulse">
+                Simulation Mode — Addis Ababa
+              </Badge>
+            )}
           </div>
 
           {/* Left Vertical Tool Strip - 12 Advanced Features */}
@@ -668,6 +709,17 @@ const MapView = () => {
           <FleetPulseDashboard visible={showFleetPulse} onClose={() => setShowFleetPulse(false)} vehicles={vehicles} />
           <CommandCenterHUD visible={showCommandCenter} onClose={() => setShowCommandCenter(false)} vehicles={vehicles} />
           <AnomalyMapLayer map={mapInstance} visible={showAnomalies} onClose={() => setShowAnomalies(false)} />
+
+          {/* SUMO Control Panel */}
+          {sumoActive && sumoState && (
+            <SumoControlPanel
+              state={sumoState}
+              onToggleRunning={setSumoRunning}
+              onSetSpeed={setSumoSpeed}
+              onSetVehicleCount={setSumoVehicleCount}
+              onReset={resetSumo}
+            />
+          )}
 
           {/* Fullscreen Toggle */}
           <Button
