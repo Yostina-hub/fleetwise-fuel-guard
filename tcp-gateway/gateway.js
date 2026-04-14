@@ -46,6 +46,10 @@ const config = {
   // NestJS Telemetry Gateway forwarding
   nestjsGatewayUrl: process.env.NESTJS_GATEWAY_URL || '',
   forwardToNestjs: process.env.FORWARD_TO_NESTJS === 'true',
+  // Advanced architecture
+  redisUrl: process.env.REDIS_URL || '',
+  socketioPort: parseInt(process.env.SOCKETIO_PORT) || 9090,
+  enableSocketGateway: process.env.ENABLE_SOCKET_GATEWAY !== 'false', // default: true
   ports: {
     gt06: parseInt(process.env.GT06_PORT) || 5001,
     tk103: parseInt(process.env.TK103_PORT) || 5013,
