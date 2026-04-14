@@ -137,14 +137,14 @@
 - [x] **Maintenance Enhancement** — Already operational: schedules, inspections, service log, work orders, trend charts, insights, low stock alerts
 - [x] **Route Optimization** — Already operational: routes tab, customer sites, optimization engine, trip overview, insights, trend charts
 
-### Phase 3 — Advanced Features (Sprint 5-6)
-- [ ] **Dashboard Builder** — Drag-and-drop widget placement, saved layouts per user
-- [ ] **Workflow Builder** — Visual flow editor for approval/notification chains
-- [ ] **Performance Simulation** — What-if scenarios with real fleet data
-- [ ] **System Configuration** — Persistent org-wide settings management
-- [ ] **DashCam AI Review** — Video player, AI label review, bulk approval
-- [ ] **Hardware Sensor Management** — Sensor CRUD, calibration tracking, alert thresholds
-- [ ] **ADAS Reports Enhancement** — Detailed event analysis, driver correlation
+### Phase 3 — Advanced Features (Sprint 5-6) ✅ COMPLETED
+- [x] **Dashboard Builder** — Drag-and-drop widget placement, saved layouts per user in `dashboard_layouts` table, create/switch/delete/set default
+- [x] **Workflow Builder** — Visual flow editor with 3100+ lines of components, DB-backed persistence, templates, simulator
+- [x] **Performance Simulation** — What-if scenarios with real fleet data, save/load scenarios via `simulation_scenarios` table
+- [x] **System Configuration** — Persistent org-wide settings in `system_settings` table (general, security, telemetry, notifications), plus device protocol/fuel/SMTP/SMS tabs
+- [x] **DashCam AI Review** — Video player dialog, approve/dismiss review workflow, bulk selection & approval, driver display
+- [x] **Hardware Sensor Management** — Sensor readings with calibration tracking via `sensor_calibrations` table, add calibration dialog
+- [x] **ADAS Reports Enhancement** — Driver risk ranking with top event type, vehicle correlation tab, hourly distribution chart, time analysis
 
 ### Phase 3.5 — Time-Series Data & Gateway Architecture (Sprint 6) ✅ COMPLETED
 

@@ -1200,6 +1200,47 @@ export type Database = {
           },
         ]
       }
+      dashboard_layouts: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean | null
+          name: string
+          organization_id: string
+          updated_at: string
+          user_id: string
+          widgets: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          organization_id: string
+          updated_at?: string
+          user_id: string
+          widgets?: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          organization_id?: string
+          updated_at?: string
+          user_id?: string
+          widgets?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dashboard_layouts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       data_retention_policies: {
         Row: {
           created_at: string
@@ -10205,6 +10246,72 @@ export type Database = {
         }
         Relationships: []
       }
+      sensor_calibrations: {
+        Row: {
+          alert_thresholds: Json | null
+          calibrated_by: string | null
+          calibration_data: Json | null
+          calibration_date: string
+          created_at: string
+          id: string
+          next_calibration_date: string | null
+          notes: string | null
+          organization_id: string
+          sensor_id: string | null
+          sensor_type: string
+          status: string
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          alert_thresholds?: Json | null
+          calibrated_by?: string | null
+          calibration_data?: Json | null
+          calibration_date?: string
+          created_at?: string
+          id?: string
+          next_calibration_date?: string | null
+          notes?: string | null
+          organization_id: string
+          sensor_id?: string | null
+          sensor_type: string
+          status?: string
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          alert_thresholds?: Json | null
+          calibrated_by?: string | null
+          calibration_data?: Json | null
+          calibration_date?: string
+          created_at?: string
+          id?: string
+          next_calibration_date?: string | null
+          notes?: string | null
+          organization_id?: string
+          sensor_id?: string | null
+          sensor_type?: string
+          status?: string
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sensor_calibrations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sensor_calibrations_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sensors: {
         Row: {
           calibration_curve: Json | null
@@ -10387,6 +10494,47 @@ export type Database = {
             columns: ["work_order_id"]
             isOneToOne: false
             referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      simulation_scenarios: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          organization_id: string
+          parameters: Json
+          results: Json | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          organization_id: string
+          parameters?: Json
+          results?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          organization_id?: string
+          parameters?: Json
+          results?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulation_scenarios_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -10944,6 +11092,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "sso_configurations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      system_settings: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_settings_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
