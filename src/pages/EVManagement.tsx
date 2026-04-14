@@ -8,8 +8,10 @@ import { EVChargingHistory } from "@/components/ev/EVChargingHistory";
 import { EVChargingStations } from "@/components/ev/EVChargingStations";
 import { EVCostAnalysis } from "@/components/ev/EVCostAnalysis";
 import { EVFleetOverview } from "@/components/ev/EVFleetOverview";
+import { useTranslation } from "react-i18next";
 
 const EVManagement = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("overview");
 
   const tabs = [
@@ -28,9 +30,9 @@ const EVManagement = () => {
             <Battery className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-black tracking-tight">EV Management</h1>
+            <h1 className="text-2xl font-black tracking-tight">{t('evManagement.title')}</h1>
             <p className="text-muted-foreground text-xs">
-              Electric vehicle fleet, charging & battery monitoring
+              {t('evManagement.batteryLevel')} & {t('evManagement.chargingHistory')}
             </p>
           </div>
         </div>
