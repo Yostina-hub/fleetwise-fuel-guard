@@ -10,6 +10,7 @@ import { Activity, Server, Database, Wifi, HardDrive, Cpu, MemoryStick, RefreshC
 import { useTranslation } from "react-i18next";
 import SiteEnvironmentSelector, { type SiteEnvironment } from "@/components/monitoring/SiteEnvironmentSelector";
 import SiteHealthDashboard from "@/components/monitoring/SiteHealthDashboard";
+import FleetCapacityDashboard from "@/components/monitoring/FleetCapacityDashboard";
 
 type ServiceStatus = "healthy" | "degraded" | "down";
 
