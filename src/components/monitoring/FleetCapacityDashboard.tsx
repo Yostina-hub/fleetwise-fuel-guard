@@ -22,6 +22,15 @@ const FleetCapacityDashboard = () => {
     { tier: "Tier 4", vehicles: "15,001–50,000", infra: "Multi-node cluster / sharded DB", status: "blueprint", gps: "1,500+ msg/s", telemetry: "~2M events/hr" },
   ];
 
+  const verticalScaling = [
+    { resource: "CPU", current: "2 vCPU", max: "64 vCPU", method: "Hot-add vCPU without restart", benefit: "Higher telemetry throughput per node" },
+    { resource: "Memory (RAM)", current: "4 GB", max: "256 GB", method: "Live memory expansion", benefit: "Larger in-memory cache, more DB connections" },
+    { resource: "Storage (SSD)", current: "100 GB NVMe", max: "8 TB NVMe", method: "Online volume resize + partition expansion", benefit: "Extended telemetry retention, larger materialized views" },
+    { resource: "DB Connections", current: "500", max: "10,000", method: "PgBouncer pool resize (no downtime)", benefit: "Concurrent user & device session capacity" },
+    { resource: "Network Bandwidth", current: "1 Gbps", max: "25 Gbps", method: "NIC upgrade or bonding", benefit: "Higher GPS message ingestion rate" },
+    { resource: "IOPS", current: "16,000", max: "256,000", method: "Storage tier upgrade (gp3 → io2)", benefit: "Faster batch writes & query performance" },
+  ];
+
   const realTimeCapabilities = [
     { name: "GPS Position Tracking", desc: "Real-time lat/lng via GT06, TK103, H02, Teltonika, Queclink, Ruptela, YTWL protocols", throughput: `${CURRENT_FLEET} devices @ 30s intervals`, icon: <Signal className="h-4 w-4" /> },
     { name: "Telemetry Processing", desc: "Speed, fuel, ignition, door, temperature, OBD-II data ingestion & enrichment", throughput: "~93K events/hour sustained", icon: <Activity className="h-4 w-4" /> },
