@@ -99,6 +99,7 @@ import {
 } from "@/components/ui/context-menu";
 import maplibregl from "maplibre-gl";
 import { formatDistanceToNow } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 const ITEMS_PER_PAGE = 20; // Updated to 20 items per page
 
@@ -146,6 +147,7 @@ const getVehicleIcon = (make: string, status: string) => {
 };
 
 const Vehicles = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { vehicles: dbVehicles, loading } = useVehicles();
@@ -521,7 +523,7 @@ const Vehicles = () => {
             <div className="relative min-w-[200px] max-w-sm flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Smart search..."
+                placeholder={t('vehicles.smartSearch', 'Smart search...')}
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 className="pl-9 pr-9 bg-background/50 border-border/50"
@@ -543,7 +545,7 @@ const Vehicles = () => {
               variant="default" 
               className="px-3 py-1.5 text-sm font-semibold bg-primary text-primary-foreground"
             >
-              {filteredVehicles.length} / {vehicles.length} vehicles
+              {filteredVehicles.length} / {vehicles.length} {t('map.vehicles').toLowerCase()}
             </Badge>
             
             {/* Bulk Actions + Export */}
@@ -649,7 +651,7 @@ const Vehicles = () => {
                   <ChevronRight className="w-5 h-5" />
                 </Button>
                 <span className="text-xs text-muted-foreground writing-mode-vertical rotate-180" style={{ writingMode: 'vertical-rl' }}>
-                  {filteredVehicles.length} Vehicles
+                  {filteredVehicles.length} {t('map.vehicles')}
                 </span>
               </div>
             )}

@@ -49,8 +49,10 @@ import GeofenceQuickStats from "@/components/geofencing/GeofenceQuickStats";
 import { startOfDay } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { WorkflowAutomationPanel } from "@/components/workflow/WorkflowAutomationPanel";
+import { useTranslation } from "react-i18next";
 
 const Geofencing = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -472,7 +474,7 @@ const Geofencing = () => {
           <Card className="absolute top-4 left-4 bg-card/95 backdrop-blur z-10 shadow-lg">
             <CardContent className="p-3">
               <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
-                Create Geofence
+                {t('geofencing.addGeofence')}
               </p>
               <div className="flex gap-2">
                 <Button
@@ -482,7 +484,7 @@ const Geofencing = () => {
                   className="gap-1.5"
                 >
                   <Circle className="w-4 h-4" />
-                  Circle
+                  {t('geofencing.circle')}
                 </Button>
                 <Button
                   variant={drawingMode === 'polygon' ? 'default' : 'outline'}
@@ -491,7 +493,7 @@ const Geofencing = () => {
                   className="gap-1.5"
                 >
                   <Square className="w-4 h-4" />
-                  Polygon
+                  {t('geofencing.polygon')}
                 </Button>
               </div>
               {drawingMode && (
@@ -510,7 +512,7 @@ const Geofencing = () => {
           <div className="p-4 space-y-4">
             {/* Header */}
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold">Geofences</h2>
+              <h2 className="text-xl font-bold">{t('geofencing.title')}</h2>
               <Badge variant="secondary">{geofenceStats.totalGeofences}</Badge>
             </div>
 
@@ -518,15 +520,15 @@ const Geofencing = () => {
             <div className="grid grid-cols-3 gap-2">
               <Card className="p-3 text-center">
                 <div className="text-2xl font-bold text-primary">{geofenceStats.activeGeofences}</div>
-                <div className="text-xs text-muted-foreground">Active</div>
+                <div className="text-xs text-muted-foreground">{t('common.active')}</div>
               </Card>
               <Card className="p-3 text-center">
                 <div className="text-2xl font-bold text-green-500">{geofenceStats.entryEvents}</div>
-                <div className="text-xs text-muted-foreground">Entries</div>
+                <div className="text-xs text-muted-foreground">{t('geofencing.entryAlert')}</div>
               </Card>
               <Card className="p-3 text-center">
                 <div className="text-2xl font-bold text-orange-500">{geofenceStats.exitEvents}</div>
-                <div className="text-xs text-muted-foreground">Exits</div>
+                <div className="text-xs text-muted-foreground">{t('geofencing.exitAlert')}</div>
               </Card>
             </div>
 
@@ -542,8 +544,8 @@ const Geofencing = () => {
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="geofences">Geofences</TabsTrigger>
-                <TabsTrigger value="events">Events</TabsTrigger>
+                <TabsTrigger value="geofences">{t('geofencing.title')}</TabsTrigger>
+                <TabsTrigger value="events">{t('geofencing.events', 'Events')}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="geofences" className="mt-4 space-y-2">
@@ -556,9 +558,9 @@ const Geofencing = () => {
                 ) : geofences?.length === 0 ? (
                   <Card className="p-8 text-center">
                     <MapPin className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
-                    <p className="text-muted-foreground">No geofences yet</p>
+                    <p className="text-muted-foreground">{t('geofencing.noGeofences', 'No geofences yet')}</p>
                     <p className="text-sm text-muted-foreground/70">
-                      Use the drawing tools to create one
+                      {t('geofencing.useDrawingTools', 'Use the drawing tools to create one')}
                     </p>
                   </Card>
                 ) : (
@@ -660,7 +662,7 @@ const Geofencing = () => {
       }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{isEditMode ? 'Edit Geofence' : 'New Geofence'}</DialogTitle>
+            <DialogTitle>{isEditMode ? t('geofencing.editGeofence') : t('geofencing.addGeofence')}</DialogTitle>
             <DialogDescription>
               {formData.geometry_type === 'circle' 
                 ? `Circle at ${formData.center_lat?.toFixed(4)}, ${formData.center_lng?.toFixed(4)}`
@@ -755,11 +757,11 @@ const Geofencing = () => {
 
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleSubmit} disabled={createGeofenceMutation.isPending || updateGeofenceMutation.isPending}>
               <Check className="w-4 h-4 mr-1" />
-              {isEditMode ? 'Update' : 'Create'}
+              {isEditMode ? t('common.update') : t('common.create')}
             </Button>
           </DialogFooter>
         </DialogContent>

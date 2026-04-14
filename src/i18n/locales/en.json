@@ -476,11 +476,14 @@
     "circle": "Circle",
     "polygon": "Polygon",
     "rectangle": "Rectangle",
-    "entryAlert": "Entry Alert",
-    "exitAlert": "Exit Alert",
+    "entryAlert": "Entries",
+    "exitAlert": "Exits",
     "dwellTime": "Dwell Time",
     "assignedVehicles": "Assigned Vehicles",
-    "activeGeofences": "Active Geofences"
+    "activeGeofences": "Active Geofences",
+    "events": "Events",
+    "noGeofences": "No geofences yet",
+    "useDrawingTools": "Use the drawing tools to create one"
   },
   "routes": {
     "title": "Customer Sites",
@@ -565,8 +568,10 @@
     "dateRange": "Date Range",
     "selectVehicles": "Select Vehicles",
     "selectDrivers": "Select Drivers",
+    "myReports": "MY REPORTS",
+    "scheduledCustom": "SCHEDULED & CUSTOM",
     "types": {
-      "fleet": "Fleet Report",
+      "fleet": "Vehicle",
       "driver": "Driver Report",
       "fuel": "Fuel Report",
       "maintenance": "Maintenance Report",
@@ -1017,5 +1022,8 @@
     "complianceScore": "Compliance Score",
     "leaderboard": "Leaderboard",
     "trends": "Trends"
+  },
+  "vehicles": {
+    "smartSearch": "Smart search..."
   }
 }

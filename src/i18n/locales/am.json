@@ -476,11 +476,14 @@
     "circle": "ክብ",
     "polygon": "ፖሊጎን",
     "rectangle": "አራት ማዕዘን",
-    "entryAlert": "የመግቢያ ማንቂያ",
-    "exitAlert": "የመውጫ ማንቂያ",
+    "entryAlert": "መግቢያዎች",
+    "exitAlert": "መውጫዎች",
     "dwellTime": "የቆይታ ጊዜ",
     "assignedVehicles": "የተመደቡ ተሽከርካሪዎች",
-    "activeGeofences": "ንቁ ጂኦፌንሶች"
+    "activeGeofences": "ንቁ ጂኦፌንሶች",
+    "events": "ክስተቶች",
+    "noGeofences": "እስካሁን ጂኦፌንስ የለም",
+    "useDrawingTools": "ለመፍጠር የስዕል መሳሪያዎችን ይጠቀሙ"
   },
   "routes": {
     "title": "የደንበኛ ቦታዎች",
@@ -565,8 +568,10 @@
     "dateRange": "የቀን ክልል",
     "selectVehicles": "ተሽከርካሪዎች ምረጥ",
     "selectDrivers": "ሹፌሮች ምረጥ",
+    "myReports": "የእኔ ሪፖርቶች",
+    "scheduledCustom": "የታቀዱ እና ብጁ",
     "types": {
-      "fleet": "የፍሊት ሪፖርት",
+      "fleet": "ተሽከርካሪ",
       "driver": "የሹፌር ሪፖርት",
       "fuel": "የነዳጅ ሪፖርት",
       "maintenance": "የጥገና ሪፖርት",
@@ -1017,5 +1022,8 @@
     "complianceScore": "የተገዢነት ውጤት",
     "leaderboard": "ደረጃ ሰሌዳ",
     "trends": "አዝማሚያዎች"
+  },
+  "vehicles": {
+    "smartSearch": "ፈልግ..."
   }
 }

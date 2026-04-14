@@ -476,11 +476,14 @@
     "circle": "Geengoo",
     "polygon": "Poligoonii",
     "rectangle": "Rog-afuree",
-    "entryAlert": "Akeekkachiisa Galuu",
-    "exitAlert": "Akeekkachiisa Ba'uu",
+    "entryAlert": "Galmoota",
+    "exitAlert": "Ba'iinsa",
     "dwellTime": "Yeroo Turuu",
     "assignedVehicles": "Konkolaataalee Ramadaman",
-    "activeGeofences": "Geofence Hojii Irra"
+    "activeGeofences": "Geofence Hojii Irra",
+    "events": "Taateewwan",
+    "noGeofences": "Hanga ammaatti geofence hin jiru",
+    "useDrawingTools": "Uumuudhaaf meeshaa fakkii fayyadamaa"
   },
   "routes": {
     "title": "Bakka Maamilaa",
@@ -565,8 +568,10 @@
     "dateRange": "Hammanga Guyyaa",
     "selectVehicles": "Konkolaataalee Fili",
     "selectDrivers": "Konkolaachiftootaa Fili",
+    "myReports": "GABAASA KOO",
+    "scheduledCustom": "SAGANTAA & ADDAA",
     "types": {
-      "fleet": "Gabaasa Konkolaataa",
+      "fleet": "Konkolaataa",
       "driver": "Gabaasa Konkolaachisaa",
       "fuel": "Gabaasa Boba'aa",
       "maintenance": "Gabaasa Suphaa",
@@ -1017,5 +1022,8 @@
     "complianceScore": "Qabxii Hordoffii",
     "leaderboard": "Sadarkaa Dursaa",
     "trends": "Adeemsa"
+  },
+  "vehicles": {
+    "smartSearch": "Barbaadii..."
   }
 }
