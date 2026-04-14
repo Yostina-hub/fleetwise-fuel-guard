@@ -44,6 +44,7 @@ import {
   Radio,
   Gauge,
   Smartphone,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
