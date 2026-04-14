@@ -10,13 +10,14 @@ services:
     
     # Environment variables
     environment:
-      # REQUIRED: PostgreSQL connection string (use Supabase pooler for best results)
-      # Format: postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
       - DATABASE_URL=${DATABASE_URL}
       - GATEWAY_SHARED_KEY=${GATEWAY_SHARED_KEY}
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - BATCH_INTERVAL_MS=${BATCH_INTERVAL_MS:-5000}
       - BATCH_SIZE=${BATCH_SIZE:-50}
+      - REDIS_URL=${REDIS_URL:-}
+      - ENABLE_SOCKET_GATEWAY=${ENABLE_SOCKET_GATEWAY:-true}
+      - SOCKETIO_PORT=9090
       - GT06_PORT=5001
       - TK103_PORT=5013
       - H02_PORT=5023
@@ -40,8 +41,9 @@ services:
       - "5001:5001/udp"   # GT06 UDP
       - "5013:5013/udp"   # TK103 UDP
       - "5023:5023/udp"   # H02 UDP
-      # Health check
+      # Health check + Socket.io
       - "8080:8080"
+      - "9090:9090"   # Socket.io WebSocket gateway
     
     # Resource limits
     deploy:

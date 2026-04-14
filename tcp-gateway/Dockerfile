@@ -9,11 +9,12 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies (pg for PostgreSQL)
-RUN npm ci --only=production
+# Install dependencies (pg required, ioredis/socket.io/bullmq optional)
+RUN npm ci --only=production; npm install --no-save ioredis socket.io bullmq 2>/dev/null || true
 
 # Copy application code
 COPY gateway.js ./
+COPY lib/ ./lib/
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S gateway && \
@@ -37,6 +38,8 @@ EXPOSE 5013/udp
 EXPOSE 5023/udp
 # Health check port
 EXPOSE 8080
+# Socket.io WebSocket gateway
+EXPOSE 9090
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
@@ -58,6 +61,10 @@ ENV BATCH_SIZE=50
 ENV NESTJS_GATEWAY_URL=
 ENV FORWARD_TO_NESTJS=false
 ENV AUTO_PROVISION=true
+ENV DEFAULT_ORGANIZATION_ID=
+ENV REDIS_URL=
+ENV ENABLE_SOCKET_GATEWAY=true
+ENV SOCKETIO_PORT=9090
 ENV DEFAULT_ORGANIZATION_ID=
 
 # Run the gateway
