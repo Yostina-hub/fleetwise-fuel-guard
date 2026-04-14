@@ -43,6 +43,8 @@ import {
   Cpu,
   FlaskConical,
   LayoutGrid,
+  Activity,
+  Terminal,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
