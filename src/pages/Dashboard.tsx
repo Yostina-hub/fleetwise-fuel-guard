@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MobileSupervisorDashboard } from "@/components/mobile/MobileSupervisorDashboard";
 import KPICard from "@/components/KPICard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -106,6 +108,8 @@ import { Car, Gauge, Zap, Shield, Power, Wrench, Moon } from "lucide-react";
 const Dashboard = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+
   const { organizationId } = useOrganization();
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
