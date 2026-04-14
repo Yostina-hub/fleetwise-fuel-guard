@@ -600,6 +600,16 @@ const MapView = () => {
                 </Button>
               )}
             </div>
+
+            {/* SUMO / Real-World Toggle */}
+            <SumoToggle sumoActive={sumoActive} onToggle={() => setSumoActive(!sumoActive)} />
+
+            {/* SUMO Mode Indicator */}
+            {sumoActive && (
+              <Badge variant="outline" className="bg-blue-600/10 text-blue-400 border-blue-500/30 text-[10px] animate-pulse">
+                Simulation Mode — Addis Ababa
+              </Badge>
+            )}
           </div>
 
           {/* Left Vertical Tool Strip - 12 Advanced Features */}
@@ -699,6 +709,17 @@ const MapView = () => {
           <FleetPulseDashboard visible={showFleetPulse} onClose={() => setShowFleetPulse(false)} vehicles={vehicles} />
           <CommandCenterHUD visible={showCommandCenter} onClose={() => setShowCommandCenter(false)} vehicles={vehicles} />
           <AnomalyMapLayer map={mapInstance} visible={showAnomalies} onClose={() => setShowAnomalies(false)} />
+
+          {/* SUMO Control Panel */}
+          {sumoActive && sumoState && (
+            <SumoControlPanel
+              state={sumoState}
+              onToggleRunning={setSumoRunning}
+              onSetSpeed={setSumoSpeed}
+              onSetVehicleCount={setSumoVehicleCount}
+              onReset={resetSumo}
+            />
+          )}
 
           {/* Fullscreen Toggle */}
           <Button
