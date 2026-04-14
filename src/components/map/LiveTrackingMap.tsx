@@ -782,20 +782,24 @@ useEffect(() => {
       const isOverspeeding = vehicle.speed > speedLimit;
 
       if (existingMarker && previousPos) {
-        // Animate to new position smoothly
         const hasPositionChanged = 
           Math.abs(previousPos.lng - vehicle.lng) > 0.00001 || 
           Math.abs(previousPos.lat - vehicle.lat) > 0.00001;
+        const isSumoVehicle = vehicle.id.startsWith('sumo_v_');
 
         if (hasPositionChanged) {
-          animatePosition(
-            existingMarker,
-            previousPos.lng,
-            previousPos.lat,
-            vehicle.lng,
-            vehicle.lat,
-            1200
-          );
+          if (isSumoVehicle) {
+            existingMarker.setLngLat([vehicle.lng, vehicle.lat]);
+          } else {
+            animatePosition(
+              existingMarker,
+              previousPos.lng,
+              previousPos.lat,
+              vehicle.lng,
+              vehicle.lat,
+              1200
+            );
+          }
         }
 
         // Update marker appearance - recreate if status, overspeeding, or speed changed significantly
