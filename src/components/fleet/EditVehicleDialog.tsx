@@ -355,8 +355,8 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
                     <Label htmlFor="edit-status">Status *</Label>
                     <Select
                       value={formData.status}
-                      onValueChange={(value: "active" | "maintenance" | "inactive") => {
-                        setFormData({ ...formData, status: value });
+                      onValueChange={(value: string) => {
+                        setFormData({ ...formData, status: value as typeof formData.status });
                         setFieldErrors(prev => ({ ...prev, status: undefined }));
                       }}
                     >
@@ -441,8 +441,8 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
                     <Label htmlFor="edit-fuel_type">Fuel Type *</Label>
                     <Select
                       value={formData.fuel_type}
-                      onValueChange={(value: "diesel" | "petrol" | "electric" | "hybrid") => {
-                        setFormData({ ...formData, fuel_type: value });
+                      onValueChange={(value: string) => {
+                        setFormData({ ...formData, fuel_type: value as typeof formData.fuel_type });
                         setFieldErrors(prev => ({ ...prev, fuel_type: undefined }));
                       }}
                     >
