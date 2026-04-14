@@ -59,8 +59,8 @@ const DigitalTwinPlayer = () => {
         if (!buckets.has(key)) buckets.set(key, []);
         buckets.get(key)!.push({
           vehicle_id: row.vehicle_id,
-          lat: row.lat ?? 0,
-          lng: row.lng ?? 0,
+          lat: row.latitude ?? 0,
+          lng: row.longitude ?? 0,
           speed: row.speed_kmh ?? 0,
           fuel_level_percent: row.fuel_level_percent,
           timestamp: row.last_communication_at,
