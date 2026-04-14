@@ -64,7 +64,6 @@ const VendorManagement = () => {
         email: form.email.trim() || null,
         phone: form.phone.trim() || null,
         address: form.address.trim() || null,
-        address: form.address.trim() || null,
         notes: form.notes.trim() || null,
         rating: form.rating || null,
         organization_id: organizationId!,
