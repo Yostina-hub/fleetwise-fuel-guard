@@ -1,6 +1,7 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -270,18 +271,33 @@ const Vehicles = () => {
     return counts;
   }, [vehicles]);
   
-  // Trip status counts (placeholder - would come from dispatch/trips data)
-  const tripStatusCounts = useMemo(() => {
-    return {
-      on_trip: 0,
-      intransit: 0,
-      not_on_trip: vehicles.length,
-      at_loading: 0,
-      at_unloading: 0,
-      not_recognized: 0,
-      deviated: 0,
+  // Trip status counts from dispatch_jobs (active trips)
+  const [tripStatusCounts, setTripStatusCounts] = useState({
+    on_trip: 0, intransit: 0, not_on_trip: 0, at_loading: 0, at_unloading: 0, not_recognized: 0, deviated: 0,
+  });
+
+  useEffect(() => {
+    const fetchTripCounts = async () => {
+      const { data } = await supabase
+        .from("dispatch_jobs")
+        .select("status, vehicle_id")
+        .in("status", ["dispatched", "in_transit", "at_pickup", "at_dropoff", "completed"]);
+      
+      const vehicleIdsWithTrips = new Set((data || []).filter(d => d.vehicle_id).map(d => d.vehicle_id));
+      const activeTrips = (data || []).filter(d => !["completed", "cancelled"].includes(d.status));
+      
+      setTripStatusCounts({
+        on_trip: activeTrips.length,
+        intransit: (data || []).filter(d => d.status === "in_transit").length,
+        not_on_trip: Math.max(0, vehicles.length - vehicleIdsWithTrips.size),
+        at_loading: (data || []).filter(d => d.status === "at_pickup").length,
+        at_unloading: (data || []).filter(d => d.status === "at_dropoff").length,
+        not_recognized: 0,
+        deviated: 0,
+      });
     };
-  }, [vehicles]);
+    if (vehicles.length > 0) fetchTripCounts();
+  }, [vehicles.length]);
   
   // Filter vehicles with smart search
   const filteredVehicles = useMemo(() => {
