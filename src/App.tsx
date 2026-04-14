@@ -86,6 +86,8 @@ const RFIDPairing = lazyWithRetry(() => import("./pages/RFIDPairing"), "RFIDPair
 const FuelCardProviders = lazyWithRetry(() => import("./pages/FuelCardProviders"), "FuelCardProviders");
 const InstallApp = lazyWithRetry(() => import("./pages/InstallApp"), "InstallApp");
 const FuelEventsMap = lazyWithRetry(() => import("./pages/FuelEventsMap"), "FuelEventsMap");
+const InfrastructureMonitoring = lazyWithRetry(() => import("./pages/InfrastructureMonitoring"), "InfrastructureMonitoring");
+const OperationsConsole = lazyWithRetry(() => import("./pages/OperationsConsole"), "OperationsConsole");
 const NotFound = lazyWithRetry(() => import("./pages/NotFound"), "NotFound");
 
 const App = () => {
@@ -186,6 +188,8 @@ const App = () => {
                         <Route path="/fuel-card-providers" element={<ProtectedRoute><FuelCardProviders /></ProtectedRoute>} />
                         <Route path="/install" element={<InstallApp />} />
                         <Route path="/fuel-events-map" element={<ProtectedRoute><FuelEventsMap /></ProtectedRoute>} />
+                        <Route path="/infrastructure-monitoring" element={<ProtectedRoute requiredRole="super_admin"><InfrastructureMonitoring /></ProtectedRoute>} />
+                        <Route path="/operations-console" element={<ProtectedRoute requiredRole="super_admin"><OperationsConsole /></ProtectedRoute>} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />
                       </Routes>
