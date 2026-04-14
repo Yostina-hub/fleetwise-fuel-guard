@@ -11011,6 +11011,1303 @@ export type Database = {
           },
         ]
       }
+      telemetry_events: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          event_id: string
+          event_time: string
+          event_type: string
+          heading: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          organization_id: string
+          payload: Json
+          source: string | null
+          speed_kmh: number | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          event_id: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          event_id?: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id?: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telemetry_events_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telemetry_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telemetry_events_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      telemetry_events_2025_01: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          event_id: string
+          event_time: string
+          event_type: string
+          heading: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          organization_id: string
+          payload: Json
+          source: string | null
+          speed_kmh: number | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          event_id: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          event_id?: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id?: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
+      telemetry_events_2025_02: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          event_id: string
+          event_time: string
+          event_type: string
+          heading: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          organization_id: string
+          payload: Json
+          source: string | null
+          speed_kmh: number | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          event_id: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          event_id?: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id?: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
+      telemetry_events_2025_03: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          event_id: string
+          event_time: string
+          event_type: string
+          heading: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          organization_id: string
+          payload: Json
+          source: string | null
+          speed_kmh: number | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          event_id: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          event_id?: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id?: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
+      telemetry_events_2025_04: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          event_id: string
+          event_time: string
+          event_type: string
+          heading: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          organization_id: string
+          payload: Json
+          source: string | null
+          speed_kmh: number | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          event_id: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          event_id?: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id?: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
+      telemetry_events_2025_05: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          event_id: string
+          event_time: string
+          event_type: string
+          heading: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          organization_id: string
+          payload: Json
+          source: string | null
+          speed_kmh: number | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          event_id: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          event_id?: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id?: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
+      telemetry_events_2025_06: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          event_id: string
+          event_time: string
+          event_type: string
+          heading: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          organization_id: string
+          payload: Json
+          source: string | null
+          speed_kmh: number | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          event_id: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          event_id?: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id?: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
+      telemetry_events_2025_07: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          event_id: string
+          event_time: string
+          event_type: string
+          heading: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          organization_id: string
+          payload: Json
+          source: string | null
+          speed_kmh: number | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          event_id: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          event_id?: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id?: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
+      telemetry_events_2025_08: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          event_id: string
+          event_time: string
+          event_type: string
+          heading: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          organization_id: string
+          payload: Json
+          source: string | null
+          speed_kmh: number | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          event_id: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          event_id?: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id?: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
+      telemetry_events_2025_09: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          event_id: string
+          event_time: string
+          event_type: string
+          heading: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          organization_id: string
+          payload: Json
+          source: string | null
+          speed_kmh: number | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          event_id: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          event_id?: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id?: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
+      telemetry_events_2025_10: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          event_id: string
+          event_time: string
+          event_type: string
+          heading: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          organization_id: string
+          payload: Json
+          source: string | null
+          speed_kmh: number | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          event_id: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          event_id?: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id?: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
+      telemetry_events_2025_11: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          event_id: string
+          event_time: string
+          event_type: string
+          heading: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          organization_id: string
+          payload: Json
+          source: string | null
+          speed_kmh: number | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          event_id: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          event_id?: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id?: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
+      telemetry_events_2025_12: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          event_id: string
+          event_time: string
+          event_type: string
+          heading: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          organization_id: string
+          payload: Json
+          source: string | null
+          speed_kmh: number | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          event_id: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          event_id?: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id?: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
+      telemetry_events_2026_01: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          event_id: string
+          event_time: string
+          event_type: string
+          heading: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          organization_id: string
+          payload: Json
+          source: string | null
+          speed_kmh: number | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          event_id: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          event_id?: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id?: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
+      telemetry_events_2026_02: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          event_id: string
+          event_time: string
+          event_type: string
+          heading: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          organization_id: string
+          payload: Json
+          source: string | null
+          speed_kmh: number | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          event_id: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          event_id?: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id?: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
+      telemetry_events_2026_03: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          event_id: string
+          event_time: string
+          event_type: string
+          heading: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          organization_id: string
+          payload: Json
+          source: string | null
+          speed_kmh: number | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          event_id: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          event_id?: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id?: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
+      telemetry_events_2026_04: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          event_id: string
+          event_time: string
+          event_type: string
+          heading: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          organization_id: string
+          payload: Json
+          source: string | null
+          speed_kmh: number | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          event_id: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          event_id?: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id?: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
+      telemetry_events_2026_05: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          event_id: string
+          event_time: string
+          event_type: string
+          heading: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          organization_id: string
+          payload: Json
+          source: string | null
+          speed_kmh: number | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          event_id: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          event_id?: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id?: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
+      telemetry_events_2026_06: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          event_id: string
+          event_time: string
+          event_type: string
+          heading: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          organization_id: string
+          payload: Json
+          source: string | null
+          speed_kmh: number | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          event_id: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          event_id?: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id?: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
+      telemetry_events_2026_07: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          event_id: string
+          event_time: string
+          event_type: string
+          heading: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          organization_id: string
+          payload: Json
+          source: string | null
+          speed_kmh: number | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          event_id: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          event_id?: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id?: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
+      telemetry_events_2026_08: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          event_id: string
+          event_time: string
+          event_type: string
+          heading: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          organization_id: string
+          payload: Json
+          source: string | null
+          speed_kmh: number | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          event_id: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          event_id?: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id?: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
+      telemetry_events_2026_09: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          event_id: string
+          event_time: string
+          event_type: string
+          heading: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          organization_id: string
+          payload: Json
+          source: string | null
+          speed_kmh: number | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          event_id: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          event_id?: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id?: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
+      telemetry_events_2026_10: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          event_id: string
+          event_time: string
+          event_type: string
+          heading: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          organization_id: string
+          payload: Json
+          source: string | null
+          speed_kmh: number | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          event_id: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          event_id?: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id?: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
+      telemetry_events_2026_11: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          event_id: string
+          event_time: string
+          event_type: string
+          heading: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          organization_id: string
+          payload: Json
+          source: string | null
+          speed_kmh: number | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          event_id: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          event_id?: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id?: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
+      telemetry_events_2026_12: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          event_id: string
+          event_time: string
+          event_type: string
+          heading: number | null
+          id: string
+          lat: number | null
+          lng: number | null
+          organization_id: string
+          payload: Json
+          source: string | null
+          speed_kmh: number | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          event_id: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          event_id?: string
+          event_time?: string
+          event_type?: string
+          heading?: number | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          organization_id?: string
+          payload?: Json
+          source?: string | null
+          speed_kmh?: number | null
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
       telemetry_raw: {
         Row: {
           created_at: string
@@ -13780,6 +15077,70 @@ export type Database = {
           },
         ]
       }
+      telemetry_daily_agg: {
+        Row: {
+          alarm_count: number | null
+          avg_fuel: number | null
+          avg_speed: number | null
+          bucket: string | null
+          distance_km: number | null
+          event_count: number | null
+          event_type: string | null
+          max_fuel: number | null
+          max_speed: number | null
+          min_fuel: number | null
+          organization_id: string | null
+          vehicle_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telemetry_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telemetry_events_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      telemetry_hourly_agg: {
+        Row: {
+          alarm_count: number | null
+          avg_fuel: number | null
+          avg_speed: number | null
+          bucket: string | null
+          distance_km: number | null
+          event_count: number | null
+          event_type: string | null
+          max_fuel: number | null
+          max_speed: number | null
+          min_fuel: number | null
+          organization_id: string | null
+          vehicle_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telemetry_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telemetry_events_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       check_account_lockout: {
@@ -13828,7 +15189,15 @@ export type Database = {
           reset_at: string
         }[]
       }
+      cleanup_old_telemetry: {
+        Args: { p_retain_months?: number }
+        Returns: string
+      }
       clear_failed_login: { Args: { p_email: string }; Returns: undefined }
+      create_telemetry_partition: {
+        Args: { p_date: string }
+        Returns: undefined
+      }
       get_user_organization: { Args: { _user_id: string }; Returns: string }
       get_vehicle_fuel_status: {
         Args: { p_vehicle_ids: string[] }
@@ -13893,6 +15262,7 @@ export type Database = {
           locked_until: string
         }[]
       }
+      refresh_telemetry_aggregates: { Args: never; Returns: undefined }
       send_notification: {
         Args: {
           _link?: string
