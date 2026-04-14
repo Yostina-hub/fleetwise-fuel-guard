@@ -180,7 +180,7 @@ const SpeedGovernor = () => {
                       </SelectTrigger>
                       <SelectContent>
                         {vehiclesWithConfig.length === 0 ? (
-                          <SelectItem value="none" disabled>No vehicles found</SelectItem>
+                          <SelectItem value="none" disabled>{t('common.noVehiclesFound', 'No vehicles found')}</SelectItem>
                         ) : (
                           vehiclesWithConfig.map((v) => (
                             <SelectItem key={v.id} value={v.id}>

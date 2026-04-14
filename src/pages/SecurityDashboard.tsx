@@ -190,7 +190,7 @@ const SecurityDashboard = () => {
               <TabsTrigger value="overview">{t('common.overview', 'Overview')}</TabsTrigger>
               <TabsTrigger value="audit">Audit Compliance</TabsTrigger>
               <TabsTrigger value="delay">Progressive Delay</TabsTrigger>
-              <TabsTrigger value="sessions">Sessions</TabsTrigger>
+              <TabsTrigger value="sessions">{t('security.sessions', 'Sessions')}</TabsTrigger>
               <TabsTrigger value="expiry">Password Expiry</TabsTrigger>
               <TabsTrigger value="alerts">Login Alerts</TabsTrigger>
               <TabsTrigger value="mfa">MFA Settings</TabsTrigger>

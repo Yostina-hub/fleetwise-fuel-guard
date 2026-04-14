@@ -87,7 +87,7 @@ const TireManagement = () => {
     switch (status) {
       case "active": return <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">{t('common.active', 'Active')}</Badge>;
       case "warning": return <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">Replace Soon</Badge>;
-      case "retired": return <Badge variant="destructive">Retired</Badge>;
+      case "retired": return <Badge variant="destructive">{t('tires.retired', 'Retired')}</Badge>;
       default: return <Badge variant="outline">{status || "Unknown"}</Badge>;
     }
   };
@@ -258,7 +258,7 @@ const TireManagement = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div><Label>Size *</Label><Input value={form.size} onChange={e => setForm(f => ({ ...f, size: e.target.value }))} placeholder="e.g. 315/80R22.5" /></div>
-                <div><Label>Position</Label>
+                <div><Label>{t('tires.position', 'Position')}</Label>
                   <Select value={form.position} onValueChange={v => setForm(f => ({ ...f, position: v }))}>
                     <SelectTrigger><SelectValue placeholder="Select position" /></SelectTrigger>
                     <SelectContent>

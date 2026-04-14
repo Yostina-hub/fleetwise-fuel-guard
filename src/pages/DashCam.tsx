@@ -142,7 +142,7 @@ const DashCam = () => {
           <TabsContent value="events" className="space-y-4">
             <div className="flex gap-3">
               <div className="relative flex-1"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input placeholder="Search by event or plate..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" /></div>
-              <Select value={severityFilter} onValueChange={setSeverityFilter}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Severity</SelectItem><SelectItem value="critical">{t('alerts.critical', 'Critical')}</SelectItem><SelectItem value="high">High</SelectItem><SelectItem value="medium">{t('common.medium', 'Medium')}</SelectItem><SelectItem value="low">Low</SelectItem></SelectContent></Select>
+              <Select value={severityFilter} onValueChange={setSeverityFilter}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Severity</SelectItem><SelectItem value="critical">{t('alerts.critical', 'Critical')}</SelectItem><SelectItem value="high">{t('common.high', 'High')}</SelectItem><SelectItem value="medium">{t('common.medium', 'Medium')}</SelectItem><SelectItem value="low">{t('common.low', 'Low')}</SelectItem></SelectContent></Select>
             </div>
             <Card>
               <Table>

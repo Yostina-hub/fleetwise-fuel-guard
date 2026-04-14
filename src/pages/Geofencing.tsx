@@ -686,7 +686,7 @@ const Geofencing = () => {
 
             {/* Category */}
             <div>
-              <Label>Category</Label>
+              <Label>{t('common.category', 'Category')}</Label>
               <Select
                 value={formData.category}
                 onValueChange={(value) => setFormData({ ...formData, category: value })}

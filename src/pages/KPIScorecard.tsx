@@ -144,7 +144,7 @@ const KPIScorecard = () => {
             <div className="space-y-4">
               <div><Label>KPI Name *</Label><Input value={form.kpi_name} onChange={e => setForm(p => ({ ...p, kpi_name: e.target.value }))} className={errors.kpi_name ? "border-destructive" : ""} />{errors.kpi_name && <p className="text-sm text-destructive mt-1">{errors.kpi_name}</p>}</div>
               <div className="grid grid-cols-2 gap-4">
-                <div><Label>Category</Label>
+                <div><Label>{t('common.category', 'Category')}</Label>
                   <Select value={form.category} onValueChange={v => setForm(p => ({ ...p, category: v }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>{KPI_CATEGORIES.map(c => <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>)}</SelectContent>
