@@ -55,6 +55,12 @@ const smsCommands: Record<string, { apn: string; server: string; timer: string; 
     timer: "timer,10#",
     description: "Send via SMS to device SIM number",
   },
+  mqtt: {
+    apn: "N/A – MQTT devices use WiFi or built-in cellular",
+    server: "Broker: {ip}:1883 | Topic: fleet/{IMEI}/telemetry",
+    timer: "Publish interval: 10 seconds (device firmware setting)",
+    description: "Configure device MQTT broker settings",
+  },
 };
 
 function CopyButton({ text }: { text: string }) {
@@ -181,8 +187,15 @@ export function DeviceSetupGuide({ serverIp, onServerIpChange }: DeviceSetupGuid
             Connection Settings for Device
           </p>
           <CommandBlock label="Server IP" command={serverIp || "YOUR_VPS_IP"} />
-          <CommandBlock label="Port" command={String(port)} />
-          <CommandBlock label="Protocol" command="TCP" />
+          <CommandBlock label="Port" command={selectedProtocol === 'mqtt' ? '1883' : String(port)} />
+          <CommandBlock label="Protocol" command={selectedProtocol === 'mqtt' ? 'MQTT (TCP)' : 'TCP'} />
+          {selectedProtocol === 'mqtt' && (
+            <>
+              <CommandBlock label="WS Port" command="9883" />
+              <CommandBlock label="Topic" command="fleet/{IMEI}/telemetry" />
+              <CommandBlock label="Payload" command='{"latitude":9.02,"longitude":38.75,"speed":45,"ignition":true}' />
+            </>
+          )}
           <CommandBlock label="APN" command={apn} />
           <CommandBlock label="Report Interval" command="10 seconds" />
         </div>
@@ -236,7 +249,21 @@ export function DeviceSetupGuide({ serverIp, onServerIpChange }: DeviceSetupGuid
                     </ol>
                   </>
                 )}
-                {selectedProtocol !== "teltonika" && selectedProtocol !== "ruptela" && (
+                {selectedProtocol === "mqtt" && (
+                  <>
+                    <p className="font-medium">MQTT Device Configuration</p>
+                    <ol className="list-decimal list-inside text-xs text-muted-foreground space-y-1">
+                      <li>Set MQTT Broker Host: <span className="font-mono">{serverIp || "YOUR_VPS_IP"}</span></li>
+                      <li>Set MQTT Port: <span className="font-mono">1883</span> (TCP) or <span className="font-mono">9883</span> (WebSocket)</li>
+                      <li>Set Publish Topic: <span className="font-mono">fleet/&#123;IMEI&#125;/telemetry</span></li>
+                      <li>Set Payload Format: JSON with lat, lng, speed, heading, ignition fields</li>
+                      <li>Optional: Subscribe to <span className="font-mono">fleet/&#123;IMEI&#125;/command</span> for remote commands</li>
+                      <li>Set QoS: 1 (at least once) for telemetry, 2 for commands</li>
+                      <li>Set Keep-Alive: 60 seconds</li>
+                    </ol>
+                  </>
+                )}
+                {selectedProtocol !== "teltonika" && selectedProtocol !== "ruptela" && selectedProtocol !== "mqtt" && (
                   <p className="text-xs text-muted-foreground">
                     This device is typically configured via SMS commands. Switch to the SMS tab for instructions.
                   </p>
