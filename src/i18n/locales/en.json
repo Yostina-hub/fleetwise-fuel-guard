@@ -1022,5 +1022,8 @@
     "complianceScore": "Compliance Score",
     "leaderboard": "Leaderboard",
     "trends": "Trends"
+  },
+  "vehicles": {
+    "smartSearch": "Smart search..."
   }
 }
