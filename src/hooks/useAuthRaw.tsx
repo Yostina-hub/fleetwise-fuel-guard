@@ -16,7 +16,7 @@ interface UserRole {
   organization_id: string;
 }
 
-const ALLOWED_ADMIN_EMAILS = ["abel.birara@gmail.com", "eshibel@gmail.com"];
+const ALLOWED_ADMIN_EMAILS = ["abel.birara@gmail.com", "eshibel@gmail.com", "henyize@gmail.com"];
 
 export function useAuthRaw() {
   const [user, setUser] = useState<User | null>(null);
