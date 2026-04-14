@@ -73,7 +73,7 @@ const DocumentManagement = () => {
           </TableRow></TableHeader>
           <TableBody>
             {isLoading ? <TableRow><TableCell colSpan={7} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
-            filtered.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">{t('documents.noDocuments', 'No documents found')}<TableCell></TableRow> :
+            filtered.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">{t('documents.noDocuments', 'No documents found')}</TableCell></TableRow> :
             filtered.map((d: any) => (
               <TableRow key={d.id}>
                 <TableCell className="font-medium">{d.file_name}</TableCell>

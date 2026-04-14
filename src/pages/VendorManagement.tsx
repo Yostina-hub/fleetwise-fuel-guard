@@ -130,7 +130,7 @@ const VendorManagement = () => {
           </TableRow></TableHeader>
           <TableBody>
             {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
-            filtered.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">{t('vendors.noVendors', 'No vendors found')}<TableCell></TableRow> :
+            filtered.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">{t('vendors.noVendors', 'No vendors found')}</TableCell></TableRow> :
             filtered.map((v: any) => (
               <TableRow key={v.id}>
                 <TableCell className="font-medium">{v.name}</TableCell>

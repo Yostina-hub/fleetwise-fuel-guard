@@ -65,7 +65,7 @@ const ContractManagement = () => {
           </TableRow></TableHeader>
           <TableBody>
             {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
-            filtered.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">{t('contracts.noContracts', 'No contracts found')}<TableCell></TableRow> :
+            filtered.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">{t('contracts.noContracts', 'No contracts found')}</TableCell></TableRow> :
             filtered.map((c: any) => (
               <TableRow key={c.id}>
                 <TableCell className="font-mono">{c.contract_number}</TableCell>
