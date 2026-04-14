@@ -85,8 +85,8 @@ const FleetCapacityDashboard = () => {
         {/* Scaling Tiers */}
         <Card className="glass-strong">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><TrendingUp className="h-5 w-5" /> Horizontal Scaling Tiers</CardTitle>
-            <CardDescription>Auto-scaling roadmap for fleet growth</CardDescription>
+            <CardTitle className="flex items-center gap-2"><Layers className="h-5 w-5" /> Horizontal Scaling Tiers</CardTitle>
+            <CardDescription>Add more nodes to distribute fleet load</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -108,6 +108,50 @@ const FleetCapacityDashboard = () => {
           </CardContent>
         </Card>
 
+        {/* Vertical Scaling */}
+        <Card className="glass-strong">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><ArrowUpCircle className="h-5 w-5" /> Vertical Scaling</CardTitle>
+            <CardDescription>Scale up individual node resources — CPU, RAM, storage, I/O</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {verticalScaling.map((v) => (
+                <div key={v.resource} className="p-3 rounded-lg border border-border/30 hover:border-primary/30 transition-all">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-semibold text-sm">{v.resource}</span>
+                    <div className="flex items-center gap-1 text-xs">
+                      <Badge variant="outline" className="text-xs">{v.current}</Badge>
+                      <span className="text-muted-foreground">→</span>
+                      <Badge variant="secondary" className="text-xs">{v.max}</Badge>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{v.method}</p>
+                  <p className="text-xs text-primary/80 mt-0.5">↑ {v.benefit}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Combined Scaling Strategy Summary */}
+      <Card className="glass-strong border-primary/20 bg-primary/5">
+        <CardContent className="py-4">
+          <div className="flex items-start gap-3">
+            <TrendingUp className="h-6 w-6 text-primary mt-0.5" />
+            <div>
+              <p className="font-semibold text-primary">Dual Scaling Strategy: Vertical + Horizontal</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                The system employs both <strong>vertical scaling</strong> (upgrading CPU, RAM, storage, IOPS per node for immediate capacity gains) and <strong>horizontal scaling</strong> (adding nodes, sharding databases, load-balancing gateway listeners for linear throughput growth). 
+                At {CURRENT_FLEET.toLocaleString()} vehicles, the current node operates at ~31% capacity. Vertical scaling can 4× throughput on the same node before horizontal expansion is needed. Combined, the architecture supports 50,000+ vehicles with zero-downtime scaling.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-4 md:grid-cols-2">
         {/* System Component Load */}
         <Card className="glass-strong">
           <CardHeader>
