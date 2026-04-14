@@ -55,6 +55,7 @@ import { RefuelingReportTable } from "@/components/reports/RefuelingReportTable"
 import { FuelDrainReportTable } from "@/components/reports/FuelDrainReportTable";
 import { AlarmStatisticsTable } from "@/components/reports/AlarmStatisticsTable";
 import RestrictedHoursReportTable from "@/components/reports/RestrictedHoursReportTable";
+import CustomReportTemplates from "@/components/reports/CustomReportTemplates";
 
 // Dashboard Widgets
 import { FleetViolationsWidget } from "@/components/reports/FleetViolationsWidget";
@@ -65,7 +66,7 @@ const FAVORITES_STORAGE_KEY = "fleet_report_favorites";
 
 const Reports = () => {
   const { t } = useTranslation();
-  const [mainTab, setMainTab] = useState<"my_reports" | "scheduled">("my_reports");
+  const [mainTab, setMainTab] = useState<"my_reports" | "scheduled" | "templates">("my_reports");
   const [viewMode, setViewMode] = useState<"catalog" | "report">("catalog");
   const [activeReportTab, setActiveReportTab] = useState("vehicle");
   const [activeSubTab, setActiveSubTab] = useState("summary");
@@ -1314,7 +1315,7 @@ const Reports = () => {
         />
 
         {/* Main Tabs: My Reports / Scheduled & Custom */}
-        <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as "my_reports" | "scheduled")} className="w-full">
+        <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as "my_reports" | "scheduled" | "templates")} className="w-full">
           <div className="flex items-center justify-center mb-4">
             <TabsList className="bg-muted/50 p-1">
               <TabsTrigger 
@@ -1328,6 +1329,12 @@ const Reports = () => {
                 className="px-6 py-2.5 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
                 {t('reports.scheduledCustom', 'SCHEDULED & CUSTOM')}
+              </TabsTrigger>
+              <TabsTrigger 
+                value="templates" 
+                className="px-6 py-2.5 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              >
+                TEMPLATES
               </TabsTrigger>
             </TabsList>
           </div>
@@ -1413,6 +1420,10 @@ const Reports = () => {
 
           <TabsContent value="scheduled" className="mt-0">
             <ScheduledReportsTab onAddReport={handleAddScheduledReport} />
+          </TabsContent>
+
+          <TabsContent value="templates" className="mt-0">
+            <CustomReportTemplates />
           </TabsContent>
         </Tabs>
 

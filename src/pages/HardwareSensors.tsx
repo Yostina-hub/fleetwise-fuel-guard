@@ -15,6 +15,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import FuelProbeCalibrationPanel from "@/components/fleet/FuelProbeCalibrationPanel";
+import OBDRemoteDiagnosticsPanel from "@/components/fleet/OBDRemoteDiagnosticsPanel";
 
 import { useTranslation } from 'react-i18next';
 const HardwareSensors = () => {
@@ -130,7 +132,9 @@ const HardwareSensors = () => {
             <TabsTrigger value="all">All Sensors</TabsTrigger>
             <TabsTrigger value="tpms">TPMS</TabsTrigger>
             <TabsTrigger value="obd2">OBD-II</TabsTrigger>
+            <TabsTrigger value="obd-live">OBD Diagnostics</TabsTrigger>
             <TabsTrigger value="load">Load/Weight</TabsTrigger>
+            <TabsTrigger value="fuel-probe">Fuel Probes</TabsTrigger>
             <TabsTrigger value="calibrations">Calibrations ({calibrations.length})</TabsTrigger>
           </TabsList>
 
@@ -158,6 +162,18 @@ const HardwareSensors = () => {
               </Table></Card>
             </TabsContent>
           ))}
+
+          <TabsContent value="obd-live">
+            <Card className="p-6">
+              <OBDRemoteDiagnosticsPanel />
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="fuel-probe">
+            <Card className="p-6">
+              <FuelProbeCalibrationPanel />
+            </Card>
+          </TabsContent>
 
           <TabsContent value="calibrations">
             <Card><Table>
