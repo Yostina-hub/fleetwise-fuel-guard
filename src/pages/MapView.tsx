@@ -29,6 +29,8 @@ import { SmartDispatchSuggester } from "@/components/map/SmartDispatchSuggester"
 import { FleetPulseDashboard } from "@/components/map/FleetPulseDashboard";
 import { CommandCenterHUD } from "@/components/map/CommandCenterHUD";
 import { AnomalyMapLayer } from "@/components/map/AnomalyMapLayer";
+import SumoToggle from "@/components/map/SumoToggle";
+import SumoControlPanel from "@/components/map/SumoControlPanel";
 
 import { 
   Navigation, 
@@ -68,6 +70,7 @@ import { useVehicles } from "@/hooks/useVehicles";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { useSpeedGovernor } from "@/hooks/useSpeedGovernor";
 import { useVehicleTrail } from "@/hooks/useVehicleTrail";
+import { useSumoSimulation } from "@/hooks/useSumoSimulation";
 import { useLematApiKey } from "@/hooks/useLematApiKey";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { cn } from "@/lib/utils";
