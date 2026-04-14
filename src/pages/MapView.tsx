@@ -72,6 +72,7 @@ import { useLematApiKey } from "@/hooks/useLematApiKey";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 const CLUSTER_THRESHOLD = 100;
 
@@ -89,6 +90,7 @@ const hasValidCoords = (lat: number | null | undefined, lng: number | null | und
 };
 
 const MapView = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -499,7 +501,7 @@ const MapView = () => {
                 onClick={() => setMapStyle('satellite')}
               >
                 <Satellite className="w-3.5 h-3.5" />
-                Satellite
+                {t('map.satellite')}
               </Button>
               <Button
                 variant={mapStyle === 'streets' ? 'default' : 'ghost'}
@@ -508,7 +510,7 @@ const MapView = () => {
                 onClick={() => setMapStyle('streets')}
               >
                 <Map className="w-3.5 h-3.5" />
-                Streets
+                {t('map.streets')}
               </Button>
               <Button
                 variant={mapStyle === 'dark' ? 'default' : 'ghost'}
@@ -517,7 +519,7 @@ const MapView = () => {
                 onClick={() => setMapStyle('dark')}
               >
                 <Map className="w-3.5 h-3.5" />
-                Dark
+                {t('map.dark')}
               </Button>
             </div>
 
@@ -530,7 +532,7 @@ const MapView = () => {
                 onClick={() => setShowTrails(!showTrails)}
               >
                 <Route className="w-3.5 h-3.5" />
-                Trails
+                {t('map.trails')}
               </Button>
               <Button
                 variant={showNearbySearch ? "default" : "ghost"}
@@ -539,7 +541,7 @@ const MapView = () => {
                 onClick={() => setShowNearbySearch(!showNearbySearch)}
               >
                 <Radar className="w-3.5 h-3.5" />
-                Nearby
+                {t('map.nearby')}
               </Button>
               <MeasureDistanceTool
                 map={mapInstance}
@@ -558,7 +560,7 @@ const MapView = () => {
                   onClick={() => setFollowMode(!followMode)}
                 >
                   <Focus className={cn("w-3.5 h-3.5", followMode && "animate-pulse")} />
-                  {followMode ? 'Following' : 'Follow'}
+                  {followMode ? t('map.following') : t('map.follow')}
                 </Button>
               )}
             </div>
@@ -697,18 +699,18 @@ const MapView = () => {
           <div className="p-4 border-b space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-semibold">Vehicles</h2>
+                <h2 className="text-lg font-semibold">{t('map.vehicles')}</h2>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
                   <span className="flex items-center gap-1">
                     <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" aria-hidden="true" />
-                    {onlineCount} online
+                    {onlineCount} {t('map.online')}
                   </span>
-                  <span>{movingCount} moving</span>
+                  <span>{movingCount} {t('map.moving').toLowerCase()}</span>
                 </div>
               </div>
               <Badge variant="outline" className="gap-1.5 text-xs font-normal">
                 <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" aria-hidden="true" />
-                Live
+                {t('map.live')}
               </Badge>
             </div>
 
@@ -716,7 +718,7 @@ const MapView = () => {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
               <Input
-                placeholder="Search vehicles..."
+                placeholder={t('map.searchVehicles')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 pr-9 h-9 bg-muted/50"
@@ -739,38 +741,38 @@ const MapView = () => {
               <Filter className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
               <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
                 <SelectTrigger className="h-8 flex-1 text-xs" aria-label="Filter by vehicle status">
-                  <SelectValue placeholder="All statuses" />
+                  <SelectValue placeholder={t('map.allStatuses')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All ({vehicles.length})</SelectItem>
+                  <SelectItem value="all">{t('common.all')} ({vehicles.length})</SelectItem>
                   <SelectItem value="online">
                     <span className="flex items-center gap-1.5">
                       <div className="w-2 h-2 rounded-full bg-success" />
-                      Live ({onlineCount})
+                      {t('map.live')} ({onlineCount})
                     </span>
                   </SelectItem>
                   <SelectItem value="moving">
                     <span className="flex items-center gap-1.5">
                       <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                      Moving ({movingCount})
+                      {t('map.moving')} ({movingCount})
                     </span>
                   </SelectItem>
                   <SelectItem value="idle">
                     <span className="flex items-center gap-1.5">
                       <div className="w-2 h-2 rounded-full bg-amber-500" />
-                      Idle ({idleCount})
+                      {t('map.idle')} ({idleCount})
                     </span>
                   </SelectItem>
                   <SelectItem value="stopped">
                     <span className="flex items-center gap-1.5">
                       <div className="w-2 h-2 rounded-full bg-slate-400" />
-                      Stopped ({stoppedCount})
+                      {t('map.stopped')} ({stoppedCount})
                     </span>
                   </SelectItem>
                   <SelectItem value="offline">
                     <span className="flex items-center gap-1.5">
                       <div className="w-2 h-2 rounded-full bg-rose-500" />
-                      Offline ({offlineCount})
+                      {t('map.offline')} ({offlineCount})
                     </span>
                   </SelectItem>
                 </SelectContent>
@@ -807,7 +809,7 @@ const MapView = () => {
               </div>
             ) : filteredVehicles.length === 0 ? (
               <div className="p-6 text-center text-muted-foreground" role="status" aria-live="polite">
-                <p className="text-sm">No vehicles found</p>
+                <p className="text-sm">{t('map.noVehiclesFound')}</p>
               </div>
             ) : (
               <div
@@ -861,7 +863,7 @@ const MapView = () => {
                         {vehicle.isOffline ? (
                             <Badge variant="secondary" className="text-xs h-5 px-1.5 gap-1">
                               <WifiOff className="w-3 h-3" aria-hidden="true" />
-                              Offline
+                              {t('map.offline')}
                             </Badge>
                           ) : (
                             <StatusBadge status={vehicle.status} />
