@@ -311,10 +311,34 @@ const MapView = () => {
     return filtered;
   }, [vehicles, searchQuery, statusFilter]);
 
-  const filteredMapVehicles = useMemo(() => {
+  const filteredMapVehiclesReal = useMemo(() => {
     const filteredIds = new Set(filteredVehicles.map(v => v.id));
     return mapVehicles.filter(v => filteredIds.has(v.id));
   }, [filteredVehicles, mapVehicles]);
+
+  // Bridge SUMO vehicles to map vehicle format
+  const sumoMapVehicles = useMemo(() => {
+    if (!sumoActive || !sumoState) return [];
+    return sumoState.vehicles.map(sv => ({
+      id: sv.id,
+      plate: sv.plate,
+      status: sv.status as 'moving' | 'idle' | 'stopped',
+      lat: sv.lat,
+      lng: sv.lng,
+      speed: sv.speed,
+      fuel: sv.fuel,
+      heading: sv.heading,
+      engine_on: sv.status !== 'stopped',
+      isOffline: false,
+      lastSeen: new Date().toISOString(),
+      make: sv.type,
+      model: 'SUMO',
+      type: sv.type,
+    }));
+  }, [sumoActive, sumoState]);
+
+  // Active data source: SUMO or real-world
+  const filteredMapVehicles = sumoActive ? sumoMapVehicles : filteredMapVehiclesReal;
 
   // Auto-refresh
   useEffect(() => {
