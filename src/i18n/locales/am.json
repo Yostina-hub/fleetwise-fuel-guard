@@ -1022,5 +1022,8 @@
     "complianceScore": "የተገዢነት ውጤት",
     "leaderboard": "ደረጃ ሰሌዳ",
     "trends": "አዝማሚያዎች"
+  },
+  "vehicles": {
+    "smartSearch": "ፈልግ..."
   }
 }
