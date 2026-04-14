@@ -978,11 +978,27 @@
     }
   },
   "fleetScheduling": {
-    "title": "የጉዞ አስተዳደር",
+    "title": "የፍሊት መርሐ ግብር",
+    "subtitle": "የጉዞ ጥያቄዎችን፣ ፈቃዶችን እና ምደባዎችን ያስተዳድሩ",
     "scheduleTrip": "ጉዞ አዘጋጅ",
     "recurringTrip": "ተደጋጋሚ ጉዞ",
     "calendar": "ቀን መቁጠሪያ",
-    "timeline": "ጊዜ መስመር"
+    "timeline": "ጊዜ መስመር",
+    "pendingApproval": "በመጠባበቅ ላይ ያለ ፈቃድ",
+    "approved": "ተፈቅዷል",
+    "activeTrips": "ንቁ ጉዞዎች",
+    "rejected": "ተቀባይነት አላገኘም",
+    "newTripRequest": "አዲስ የጉዞ ጥያቄ",
+    "requests": "ጥያቄዎች",
+    "active": "ንቁ",
+    "approvals": "ፈቃዶች",
+    "schedule": "መርሐ ግብር",
+    "analytics": "ትንተና",
+    "availability": "ተገኝነት",
+    "activity": "እንቅስቃሴ",
+    "templates": "ቅንብሮች",
+    "config": "ውቅር",
+    "preferences": "ምርጫዎች"
   },
   "tripManagement": {
     "title": "የጉዞ አስተዳደር",

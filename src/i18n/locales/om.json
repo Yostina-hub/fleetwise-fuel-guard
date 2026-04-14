@@ -978,11 +978,27 @@
     }
   },
   "fleetScheduling": {
-    "title": "Bulchiinsa Imala",
+    "title": "Sagantaa Konkolaataa",
+    "subtitle": "Gaaffii imala, eeyyama, fi ramaddii bulchi",
     "scheduleTrip": "Imala Sagantaa",
     "recurringTrip": "Imala Irra Deebi'uu",
     "calendar": "Kaaleendara",
-    "timeline": "Sarara Yeroo"
+    "timeline": "Sarara Yeroo",
+    "pendingApproval": "Eeyyama Eeggaa Jiru",
+    "approved": "Eeyyamame",
+    "activeTrips": "Imala Hojii Irra",
+    "rejected": "Didame",
+    "newTripRequest": "Gaaffii Imala Haaraa",
+    "requests": "Gaaffii",
+    "active": "Hojii Irra",
+    "approvals": "Eeyyama",
+    "schedule": "Sagantaa",
+    "analytics": "Xiinxala",
+    "availability": "Argamuu",
+    "activity": "Sochii",
+    "templates": "Unka",
+    "config": "Qindaa'ina",
+    "preferences": "Filannoo"
   },
   "tripManagement": {
     "title": "Bulchiinsa Imala",
