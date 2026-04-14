@@ -1237,10 +1237,78 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Only accept POST
+  // ============================================================================
+  // OsmAnd / Traccar Client Protocol (HTTP GET)
+  // URL format: ?id=IMEI&lat=9.01&lon=38.75&speed=45&heading=180&altitude=2400&batt=85&timestamp=1234567890
+  // ============================================================================
+  if (req.method === 'GET') {
+    const url = new URL(req.url);
+    const params = url.searchParams;
+    const imei = params.get('id') || params.get('deviceid') || params.get('imei');
+    
+    if (!imei) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Missing device id parameter', code: 'MISSING_IMEI' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Parse OsmAnd/Traccar parameters
+    const lat = parseFloat(params.get('lat') || '0');
+    const lon = parseFloat(params.get('lon') || params.get('lng') || params.get('longitude') || '0');
+    const speed = parseFloat(params.get('speed') || params.get('speed_kmh') || '0');
+    const heading = parseFloat(params.get('heading') || params.get('bearing') || '0');
+    const altitude = parseFloat(params.get('altitude') || params.get('alt') || '0');
+    const batt = parseFloat(params.get('batt') || params.get('battery') || '0');
+    const accuracy = parseFloat(params.get('accuracy') || params.get('hdop') || '0');
+    const tsParam = params.get('timestamp') || params.get('time');
+
+    let timestamp: string | undefined;
+    if (tsParam) {
+      const tsNum = Number(tsParam);
+      timestamp = !isNaN(tsNum) && tsNum > 1e9
+        ? new Date(tsNum > 1e12 ? tsNum : tsNum * 1000).toISOString()
+        : tsParam;
+    }
+
+    const record: TelemetryRecord = {
+      imei,
+      latitude: lat,
+      longitude: lon,
+      speed_kmh: speed,
+      heading,
+      altitude_m: altitude,
+      battery_voltage: batt > 0 ? batt : undefined,
+      gps_hdop: accuracy > 0 ? accuracy : undefined,
+      timestamp,
+      event_type: 'position',
+    };
+
+    console.log(`OsmAnd/Traccar GET: IMEI=${imei}, lat=${lat}, lon=${lon}, speed=${speed}`);
+
+    const result = await processRecord(supabase, record);
+    
+    if (!result.success) {
+      const status = result.code === 'DEVICE_NOT_FOUND' ? 404 : 
+                    result.code === 'RATE_LIMITED' ? 429 : 400;
+      return new Response(
+        JSON.stringify(result),
+        { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Return simple OK for Traccar Client compatibility
+    return new Response('OK', { status: 200, headers: corsHeaders });
+  }
+
+  // Only accept POST for JSON mode
   if (req.method !== 'POST') {
     return new Response(
-      JSON.stringify({ success: false, error: 'Method not allowed', code: 'METHOD_NOT_ALLOWED' }),
+      JSON.stringify({ success: false, error: 'Method not allowed. Use GET (OsmAnd/Traccar) or POST (JSON)', code: 'METHOD_NOT_ALLOWED' }),
       { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
