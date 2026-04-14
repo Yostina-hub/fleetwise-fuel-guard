@@ -18,8 +18,10 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 const DashCam = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const { user } = useAuthContext();
   const queryClient = useQueryClient();

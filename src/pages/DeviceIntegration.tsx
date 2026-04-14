@@ -21,8 +21,10 @@ import { DeviceCommandsTab } from "@/components/devices/DeviceCommandsTab";
 import { RawTelemetryTab } from "@/components/devices/RawTelemetryTab";
 import { deviceTemplates, DeviceTemplate } from "@/data/deviceTemplates";
 import { DeviceSetupGuide } from "@/components/devices/DeviceSetupGuide";
+import { useTranslation } from "react-i18next";
 
 const DeviceIntegration = () => {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { organizationId } = useOrganization();
   const queryClient = useQueryClient();

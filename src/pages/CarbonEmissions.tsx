@@ -16,10 +16,12 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))", "#6366f1", "#f59e0b", "#10b981"];
 
 const CarbonEmissions = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const qc = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);

@@ -10,8 +10,10 @@ import ERPNextTab from "@/components/integrations/ERPNextTab";
 import IntegrationsQuickStats from "@/components/integrations/IntegrationsQuickStats";
 import IntegrationsQuickActions from "@/components/integrations/IntegrationsQuickActions";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 const Integrations = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("webhooks");
 
   // Mock stats - in production, these would come from hooks

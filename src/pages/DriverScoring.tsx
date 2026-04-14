@@ -15,8 +15,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 const DriverScoring = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("scoring");
   const { driverScores, scoreHistory } = useDriverScores();

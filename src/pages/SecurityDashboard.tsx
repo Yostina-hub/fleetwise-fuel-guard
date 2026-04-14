@@ -32,6 +32,7 @@ import ProgressiveDelayTab from "@/components/security/ProgressiveDelayTab";
 import SessionManagementTab from "@/components/security/SessionManagementTab";
 import PasswordExpiryTab from "@/components/security/PasswordExpiryTab";
 import LoginAlertsTab from "@/components/security/LoginAlertsTab";
+import { useTranslation } from "react-i18next";
 
 interface SecurityFeature {
   id: string;
@@ -43,6 +44,7 @@ interface SecurityFeature {
 }
 
 const SecurityDashboard = () => {
+  const { t } = useTranslation();
   const [securityScore] = useState(78);
   
   const securityFeatures: SecurityFeature[] = [

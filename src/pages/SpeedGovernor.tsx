@@ -43,8 +43,10 @@ import { SpeedInsightsCard } from "@/components/speedgovernor/SpeedInsightsCard"
 import { DriverSpeedLeaderboard } from "@/components/speedgovernor/DriverSpeedLeaderboard";
 import { BulkSpeedConfigCard } from "@/components/speedgovernor/BulkSpeedConfigCard";
 import { SendGovernorCommandDialog } from "@/components/speedgovernor/SendGovernorCommandDialog";
+import { useTranslation } from "react-i18next";
 
 const SpeedGovernor = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const { telemetry, isVehicleOnline } = useVehicleTelemetry();
   const { kpis, kpisLoading, updateConfig, governorConfigs } = useSpeedGovernor();

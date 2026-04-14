@@ -11,8 +11,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 const ColdChain = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("live");
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const { organizationId } = useOrganization();

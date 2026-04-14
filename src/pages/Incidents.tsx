@@ -10,8 +10,10 @@ import { WorkflowAutomationPanel } from "@/components/workflow/WorkflowAutomatio
 import { IncidentInsightsCard } from "@/components/incidents/IncidentInsightsCard";
 import { IncidentTrendChart } from "@/components/incidents/IncidentTrendChart";
 import { RecentIncidentsCard } from "@/components/incidents/RecentIncidentsCard";
+import { useTranslation } from "react-i18next";
 
 const Incidents = () => {
+  const { t } = useTranslation();
   return (
     <Layout>
       <div className="p-4 md:p-8 space-y-6 animate-fade-in">
@@ -20,9 +22,9 @@ const Incidents = () => {
             <AlertTriangle className="h-8 w-8 text-destructive" aria-hidden="true" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold">Incident Management</h1>
+            <h1 className="text-3xl font-bold">{t('incidents.title')}</h1>
             <p className="text-muted-foreground">
-              Track and manage accidents, breakdowns, insurance claims, and traffic violations
+              {t('incidents.reportIncident')}
             </p>
           </div>
         </div>
