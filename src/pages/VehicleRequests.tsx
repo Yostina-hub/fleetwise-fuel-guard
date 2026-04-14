@@ -8,7 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { ClipboardList, Plus, Clock, CheckCircle, XCircle, Truck, Eye } from "lucide-react";
+import { ClipboardList, Plus, Clock, CheckCircle, XCircle, Truck, Eye, MessageSquare } from "lucide-react";
+import { VehicleRequestKPI } from "@/components/vehicle-requests/VehicleRequestKPI";
+import { RequesterFeedbackDialog } from "@/components/vehicle-requests/RequesterFeedbackDialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -24,6 +26,7 @@ const VehicleRequests = () => {
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [showDetail, setShowDetail] = useState<any>(null);
+  const [showFeedback, setShowFeedback] = useState<any>(null);
   const [form, setForm] = useState({
     requester_name: "", purpose: "", needed_from: "", needed_until: "", destination: "", priority: "normal", passengers: "", pool_location: "",
   });
@@ -92,6 +95,12 @@ const VehicleRequests = () => {
       if (status === "assigned" && vehicle_id) {
         updates.assigned_vehicle_id = vehicle_id;
         updates.assigned_at = new Date().toISOString();
+        // Calculate actual_assignment_minutes
+        const req = requests.find((r: any) => r.id === id);
+        if (req) {
+          const mins = Math.round((Date.now() - new Date(req.created_at).getTime()) / 60000);
+          updates.actual_assignment_minutes = mins;
+        }
       }
       if (status === "completed") updates.completed_at = new Date().toISOString();
       if (status === "cancelled") updates.cancelled_at = new Date().toISOString();
