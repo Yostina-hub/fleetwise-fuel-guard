@@ -55,8 +55,10 @@ export function useTelemetryAnalytics(params: TelemetryAnalyticsParams) {
       limit,
     ],
     queryFn: async () => {
-      const queryParams = new URLSearchParams({ action });
+      const session = (await supabase.auth.getSession()).data.session;
+      if (!session) throw new Error("Not authenticated");
 
+      const queryParams = new URLSearchParams({ action });
       if (granularity) queryParams.set("granularity", granularity);
       if (vehicleId) queryParams.set("vehicle_id", vehicleId);
       if (eventType) queryParams.set("event_type", eventType);
@@ -64,24 +66,9 @@ export function useTelemetryAnalytics(params: TelemetryAnalyticsParams) {
       if (to) queryParams.set("to", to);
       if (limit) queryParams.set("limit", String(limit));
 
-      const { data, error } = await supabase.functions.invoke(
-        "telemetry-analytics",
-        {
-          body: null,
-          headers: {},
-          method: "GET",
-        }
-      );
-
-      // supabase.functions.invoke doesn't support query params natively,
-      // so we construct the URL manually
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const session = (await supabase.auth.getSession()).data.session;
-
-      if (!session) throw new Error("Not authenticated");
-
       const url = `${supabaseUrl}/functions/v1/telemetry-analytics?${queryParams.toString()}`;
+
       const response = await fetch(url, {
         method: "GET",
         headers: {
@@ -99,7 +86,7 @@ export function useTelemetryAnalytics(params: TelemetryAnalyticsParams) {
     },
     enabled: !!organizationId && enabled,
     staleTime: action === "aggregates" ? 60_000 : 30_000,
-    refetchInterval: action === "aggregates" ? 300_000 : undefined, // Auto-refresh aggregates every 5 min
+    refetchInterval: action === "aggregates" ? 300_000 : undefined,
   });
 }
 
@@ -115,7 +102,7 @@ export function useVehicleTelemetrySummary(vehicleId: string | undefined) {
 }
 
 /**
- * Convenience hook for hourly/daily aggregates
+ * Convenience hook for hourly/daily aggregates via edge function
  */
 export function useTelemetryAggregatesViaEdge(options: {
   granularity?: "hourly" | "daily";
