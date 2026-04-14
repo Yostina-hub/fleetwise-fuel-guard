@@ -6,8 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity, Server, Database, Wifi, HardDrive, Cpu, MemoryStick, RefreshCw, CheckCircle2, AlertTriangle, XCircle, Clock, Globe, Zap, BarChart3, Signal } from "lucide-react";
+import { Activity, Server, Database, Wifi, HardDrive, Cpu, MemoryStick, RefreshCw, CheckCircle2, AlertTriangle, XCircle, Clock, Globe, Zap, BarChart3, Signal, Building2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import SiteEnvironmentSelector, { type SiteEnvironment } from "@/components/monitoring/SiteEnvironmentSelector";
+import SiteHealthDashboard from "@/components/monitoring/SiteHealthDashboard";
 
 type ServiceStatus = "healthy" | "degraded" | "down";
 
@@ -39,6 +41,7 @@ const InfrastructureMonitoring = () => {
   const { t } = useTranslation();
   const [refreshing, setRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [selectedSite, setSelectedSite] = useState<SiteEnvironment>("production");
 
   const services: ServiceHealth[] = [
     { name: "Database (PostgreSQL)", status: "healthy", uptime: "99.99%", latency: "12ms", lastCheck: "10s ago", icon: <Database className="h-5 w-5" />, details: "Primary DB, 142 active connections" },
@@ -126,13 +129,20 @@ const InfrastructureMonitoring = () => {
           </CardContent>
         </Card>
 
-        <Tabs defaultValue="services" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4 glass p-1 h-12">
+        <Tabs defaultValue="sites" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-5 glass p-1 h-12">
+            <TabsTrigger value="sites"><Building2 className="h-4 w-4 mr-1.5" />Sites</TabsTrigger>
             <TabsTrigger value="services">Services</TabsTrigger>
             <TabsTrigger value="resources">Resources</TabsTrigger>
             <TabsTrigger value="snmp">SNMP Stats</TabsTrigger>
             <TabsTrigger value="performance">Performance</TabsTrigger>
           </TabsList>
+
+          {/* Sites / Multi-Environment Tab */}
+          <TabsContent value="sites" className="space-y-4">
+            <SiteEnvironmentSelector selected={selectedSite} onSelect={setSelectedSite} />
+            <SiteHealthDashboard site={selectedSite} />
+          </TabsContent>
 
           {/* Services Tab */}
           <TabsContent value="services" className="space-y-4">
