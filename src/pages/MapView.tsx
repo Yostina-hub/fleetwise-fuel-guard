@@ -493,7 +493,10 @@ const MapView = () => {
             onMeasureFrom={(pt) => setMeasureFromPoint(pt)}
           />
           {/* Top Map Controls Bar */}
-          <div className="absolute top-3 left-3 right-[22rem] z-10 flex items-center gap-2 flex-wrap">
+            <div className={cn(
+              "absolute top-3 left-3 z-10 flex items-center gap-2 flex-wrap",
+              isMobile ? "right-3" : sidebarCollapsed ? "right-12" : "right-[22rem]"
+            )}>
             {/* Map Style Toggle */}
             <div className="bg-background/90 backdrop-blur-sm rounded-lg border shadow-lg p-0.5 flex" role="group" aria-label="Map style selection">
               <Button
