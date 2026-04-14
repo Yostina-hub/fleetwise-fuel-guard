@@ -1,6 +1,7 @@
-import type { SimVehicle, SimulationState, VehicleType, TrafficSignal } from "./types";
+import type { SimVehicle, SimulationState, VehicleType, TrafficSignal, SimDeviceInfo, SimDriverInfo } from "./types";
 import { SEGMENTS, NODES, getOutgoingSegments } from "./AddisAbabaNetwork";
 
+// ── Vehicle appearance ──
 const VEHICLE_COLORS: Record<VehicleType, string> = {
   sedan: "#22c55e",
   minibus: "#eab308",
@@ -11,8 +12,8 @@ const VEHICLE_COLORS: Record<VehicleType, string> = {
 
 const VEHICLE_TYPES: VehicleType[] = ["sedan", "sedan", "sedan", "minibus", "minibus", "bus", "truck", "suv"];
 
+// ── Realistic Ethiopian plates ──
 const PLATES_PREFIX = ["AA", "OR", "ET", "DR", "SN", "TG", "AM"];
-
 function randomPlate(): string {
   const pfx = PLATES_PREFIX[Math.floor(Math.random() * PLATES_PREFIX.length)];
   const num = Math.floor(Math.random() * 9000 + 1000);
@@ -20,13 +21,112 @@ function randomPlate(): string {
   return `${pfx}-${num}-${sfx}`;
 }
 
+// ── Vehicle make/model combos ──
+const VEHICLE_MAKES: Record<VehicleType, { make: string; model: string; year: number }[]> = {
+  sedan: [
+    { make: "Toyota", model: "Corolla", year: 2021 },
+    { make: "Toyota", model: "Yaris", year: 2022 },
+    { make: "Hyundai", model: "Elantra", year: 2020 },
+    { make: "Suzuki", model: "Dzire", year: 2023 },
+    { make: "Volkswagen", model: "Jetta", year: 2019 },
+  ],
+  minibus: [
+    { make: "Toyota", model: "HiAce", year: 2020 },
+    { make: "Hyundai", model: "H-100", year: 2021 },
+    { make: "Nissan", model: "Urvan", year: 2019 },
+  ],
+  bus: [
+    { make: "Yutong", model: "ZK6122H", year: 2022 },
+    { make: "King Long", model: "XMQ6127", year: 2021 },
+    { make: "Zhongtong", model: "LCK6129", year: 2023 },
+  ],
+  truck: [
+    { make: "Sinotruk", model: "HOWO", year: 2020 },
+    { make: "Isuzu", model: "FTR", year: 2021 },
+    { make: "FAW", model: "J6P", year: 2022 },
+  ],
+  suv: [
+    { make: "Toyota", model: "Land Cruiser", year: 2022 },
+    { make: "Toyota", model: "Hilux", year: 2023 },
+    { make: "Mitsubishi", model: "Pajero", year: 2021 },
+  ],
+};
+
+// ── Tracker device models ──
+const TRACKER_MODELS = [
+  "Teltonika FMB920", "Teltonika FMB140", "Queclink GV310LAU",
+  "Coban GPS103", "Ruptela FM-Tco4", "YTWL CA100F",
+  "Concox GT06N", "Meitrack T366G",
+];
+
+// ── Ethiopian driver names ──
+const FIRST_NAMES = [
+  "Abebe", "Dawit", "Yohannes", "Solomon", "Girma", "Tesfaye",
+  "Mulugeta", "Bekele", "Haile", "Kidane", "Tadesse", "Mengistu",
+  "Amanuel", "Bereket", "Dereje", "Fikru", "Getachew", "Henok",
+];
+const LAST_NAMES = [
+  "Kebede", "Tadesse", "Hailu", "Wolde", "Gebre", "Tessema",
+  "Mekonnen", "Lemma", "Desta", "Assefa", "Negash", "Alemu",
+  "Worku", "Bekele", "Demissie", "Biruk", "Teshome", "Abera",
+];
+
+// ── Generator helpers ──
+function randomIMEI(): string {
+  let imei = "35";
+  for (let i = 0; i < 13; i++) imei += Math.floor(Math.random() * 10);
+  return imei;
+}
+
+function randomICCID(): string {
+  let iccid = "8925";
+  for (let i = 0; i < 16; i++) iccid += Math.floor(Math.random() * 10);
+  return iccid;
+}
+
+function randomPhone(): string {
+  return `+2519${Math.floor(Math.random() * 90000000 + 10000000)}`;
+}
+
+function randomLicense(): string {
+  const region = PLATES_PREFIX[Math.floor(Math.random() * PLATES_PREFIX.length)];
+  return `${region}-DL-${Math.floor(Math.random() * 900000 + 100000)}`;
+}
+
+function createDeviceInfo(): SimDeviceInfo {
+  return {
+    imei: randomIMEI(),
+    trackerModel: TRACKER_MODELS[Math.floor(Math.random() * TRACKER_MODELS.length)],
+    simIccid: randomICCID(),
+    firmwareVersion: `v${Math.floor(Math.random() * 3 + 1)}.${Math.floor(Math.random() * 9)}.${Math.floor(Math.random() * 20)}`,
+    status: "online",
+    lastHeartbeat: new Date().toISOString(),
+    signalStrength: 60 + Math.floor(Math.random() * 40),
+    satelliteCount: 6 + Math.floor(Math.random() * 8),
+    hdop: +(0.6 + Math.random() * 2).toFixed(1),
+    fixType: Math.random() > 0.2 ? "3D" : "2D",
+    batteryVoltage: +(3.5 + Math.random() * 0.7).toFixed(2),
+    externalPower: Math.random() > 0.1,
+    reportingInterval: [10, 15, 30, 60][Math.floor(Math.random() * 4)],
+  };
+}
+
+function createDriverInfo(): SimDriverInfo {
+  return {
+    name: `${FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)]} ${LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)]}`,
+    phone: randomPhone(),
+    licenseNumber: randomLicense(),
+    status: "on_duty",
+  };
+}
+
+// ── Interpolation along polyline ──
 function interpolateAlongWaypoints(
   waypoints: [number, number][],
   progress: number
 ): { lng: number; lat: number; heading: number } {
   if (waypoints.length < 2) return { lng: waypoints[0][0], lat: waypoints[0][1], heading: 0 };
 
-  // Compute cumulative distances
   const dists: number[] = [0];
   for (let i = 1; i < waypoints.length; i++) {
     const dx = waypoints[i][0] - waypoints[i - 1][0];
@@ -46,9 +146,7 @@ function interpolateAlongWaypoints(
         (Math.atan2(
           waypoints[i][0] - waypoints[i - 1][0],
           waypoints[i][1] - waypoints[i - 1][1]
-        ) *
-          180) /
-        Math.PI;
+        ) * 180) / Math.PI;
       return { lng, lat, heading: (heading + 360) % 360 };
     }
   }
@@ -57,12 +155,14 @@ function interpolateAlongWaypoints(
   return { lng: last[0], lat: last[1], heading: 0 };
 }
 
+// ── Vehicle factory ──
 function createVehicle(id: number): SimVehicle {
   const type = VEHICLE_TYPES[Math.floor(Math.random() * VEHICLE_TYPES.length)];
   const seg = SEGMENTS[Math.floor(Math.random() * SEGMENTS.length)];
   const progress = Math.random();
   const pos = interpolateAlongWaypoints(seg.waypoints, progress);
   const maxSpeed = type === "truck" ? 40 : type === "bus" ? 45 : type === "minibus" ? 50 : 60;
+  const makeInfo = VEHICLE_MAKES[type][Math.floor(Math.random() * VEHICLE_MAKES[type].length)];
 
   return {
     id: `sumo_v_${id}`,
@@ -81,9 +181,21 @@ function createVehicle(id: number): SimVehicle {
     routeSegments: [seg.id],
     routeIndex: 0,
     color: VEHICLE_COLORS[type],
+    device: createDeviceInfo(),
+    driver: createDriverInfo(),
+    odometer: Math.floor(10000 + Math.random() * 150000),
+    engineTemp: 75 + Math.random() * 20,
+    rpm: 800 + Math.floor(Math.random() * 2500),
+    ignitionOn: true,
+    doorOpen: false,
+    seatbeltOn: Math.random() > 0.15,
+    make: makeInfo.make,
+    model: makeInfo.model,
+    year: makeInfo.year,
   };
 }
 
+// ── Signal factory ──
 function createSignals(): TrafficSignal[] {
   return NODES.filter(n => n.signalControlled).map(n => ({
     nodeId: n.id,
@@ -100,19 +212,13 @@ export function createInitialState(vehicleCount: number): SimulationState {
   for (let i = 0; i < vehicleCount; i++) {
     vehicles.push(createVehicle(i));
   }
-  return {
-    vehicles,
-    signals: createSignals(),
-    time: 0,
-    running: true,
-    speed: 1,
-    vehicleCount,
-  };
+  return { vehicles, signals: createSignals(), time: 0, running: true, speed: 1, vehicleCount };
 }
 
+// ── Simulation step ──
 export function stepSimulation(state: SimulationState, dtReal: number): SimulationState {
   if (!state.running) return state;
-  const dt = dtReal * state.speed; // simulation seconds
+  const dt = dtReal * state.speed;
 
   // Update signals
   const signals = state.signals.map(sig => {
@@ -126,7 +232,6 @@ export function stepSimulation(state: SimulationState, dtReal: number): Simulati
     return { ...sig, phase, elapsed };
   });
 
-  // Signal lookup by nodeId
   const signalMap = new Map(signals.map(s => [s.nodeId, s]));
 
   // Update vehicles
@@ -134,46 +239,36 @@ export function stepSimulation(state: SimulationState, dtReal: number): Simulati
     const seg = SEGMENTS.find(s => s.id === v.segmentId);
     if (!seg || !seg.length) return v;
 
-    // Check if approaching a signal-controlled intersection (end of segment)
     const endNode = NODES.find(n => n.id === seg.to);
     const signal = endNode ? signalMap.get(endNode.id) : undefined;
     const nearEnd = v.segmentProgress > 0.85;
 
     let targetSpeed = Math.min(v.maxSpeed, seg.speedLimit);
 
-    // Slow down / stop at red/amber signals
     if (signal && nearEnd) {
       if (signal.phase === "red") targetSpeed = 0;
       else if (signal.phase === "amber") targetSpeed = Math.min(targetSpeed, 10);
     }
 
-    // Simple car-following: acceleration towards target
     const speedDiff = targetSpeed - v.speed;
-    const accel = speedDiff > 0
-      ? Math.min(2.5, speedDiff) // accelerate gently
-      : Math.max(-4.5, speedDiff); // brake harder
-
+    const accel = speedDiff > 0 ? Math.min(2.5, speedDiff) : Math.max(-4.5, speedDiff);
     let newSpeed = Math.max(0, v.speed + accel * dt);
 
-    // Advance along segment
-    const distMeters = (newSpeed / 3.6) * dt; // km/h to m/s
+    const distMeters = (newSpeed / 3.6) * dt;
     let newProgress = v.segmentProgress + distMeters / seg.length;
     let newSegmentId = v.segmentId;
     let newRouteSegments = v.routeSegments;
     let newRouteIndex = v.routeIndex;
 
-    // Handle segment completion
     if (newProgress >= 1) {
-      // Pick next segment from outgoing edges
       const outgoing = getOutgoingSegments(seg.to);
       if (outgoing.length > 0) {
         const nextSeg = outgoing[Math.floor(Math.random() * outgoing.length)];
         newSegmentId = nextSeg.id;
-        newProgress = newProgress - 1; // carry over
+        newProgress = newProgress - 1;
         newRouteSegments = [...v.routeSegments.slice(-5), nextSeg.id];
         newRouteIndex++;
       } else {
-        // Dead end - teleport to random segment
         const randSeg = SEGMENTS[Math.floor(Math.random() * SEGMENTS.length)];
         newSegmentId = randSeg.id;
         newProgress = 0;
@@ -186,6 +281,12 @@ export function stepSimulation(state: SimulationState, dtReal: number): Simulati
     const pos = interpolateAlongWaypoints(activeSeg.waypoints, Math.min(newProgress, 0.999));
 
     const status: SimVehicle["status"] = newSpeed < 0.5 ? "stopped" : newSpeed < 5 ? "idle" : "moving";
+
+    // Simulate IoT telemetry fluctuation
+    const newRpm = newSpeed < 1 ? 750 + Math.random() * 100 : 1000 + (newSpeed / 60) * 3000 + (Math.random() - 0.5) * 200;
+    const newEngineTemp = Math.min(105, Math.max(70, v.engineTemp + (Math.random() - 0.48) * 0.3));
+    const deviceSignal = Math.max(20, Math.min(100, v.device.signalStrength + (Math.random() - 0.5) * 4));
+    const satCount = Math.max(3, Math.min(14, v.device.satelliteCount + (Math.random() > 0.9 ? (Math.random() > 0.5 ? 1 : -1) : 0)));
 
     return {
       ...v,
@@ -200,10 +301,22 @@ export function stepSimulation(state: SimulationState, dtReal: number): Simulati
       status,
       routeSegments: newRouteSegments,
       routeIndex: newRouteIndex,
+      odometer: v.odometer + distMeters / 1000,
+      engineTemp: Math.round(newEngineTemp * 10) / 10,
+      rpm: Math.round(newRpm),
+      ignitionOn: newSpeed > 0 || status === "idle",
+      device: {
+        ...v.device,
+        signalStrength: Math.round(deviceSignal),
+        satelliteCount: satCount,
+        lastHeartbeat: new Date().toISOString(),
+        status: deviceSignal < 30 ? "degraded" : "online",
+        hdop: +(Math.max(0.5, v.device.hdop + (Math.random() - 0.5) * 0.2)).toFixed(1),
+      },
     };
   });
 
-  // Adjust vehicle count if needed
+  // Adjust vehicle count
   let adjustedVehicles = vehicles;
   if (vehicles.length < state.vehicleCount) {
     for (let i = vehicles.length; i < state.vehicleCount; i++) {
@@ -213,10 +326,5 @@ export function stepSimulation(state: SimulationState, dtReal: number): Simulati
     adjustedVehicles = vehicles.slice(0, state.vehicleCount);
   }
 
-  return {
-    ...state,
-    vehicles: adjustedVehicles,
-    signals,
-    time: state.time + dt,
-  };
+  return { ...state, vehicles: adjustedVehicles, signals, time: state.time + dt };
 }
