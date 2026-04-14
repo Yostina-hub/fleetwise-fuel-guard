@@ -247,7 +247,7 @@ const RentalVehicles = () => {
               <div><Label>Driver Name</Label><Input value={form.driver_name} onChange={e => setForm(f => ({ ...f, driver_name: e.target.value }))} placeholder="Driver name" /></div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setShowAddDialog(false)}>{t('common.cancel', 'Cancel')}</Button>
               <Button onClick={() => addMutation.mutate()} disabled={!form.plate_number || !form.provider_name || !form.contract_start || !form.contract_end || addMutation.isPending}>
                 {addMutation.isPending ? "Adding..." : "Add Vehicle"}
               </Button>

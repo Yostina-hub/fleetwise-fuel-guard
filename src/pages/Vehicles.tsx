@@ -766,7 +766,7 @@ const Vehicles = () => {
                           </TableHead>
                         )}
                         {isColVisible('fuelTrend') && <TableHead className="text-foreground font-semibold w-[70px]">Fuel Trend</TableHead>}
-                        {isColVisible('actions') && <TableHead className="text-foreground font-semibold w-20">Actions</TableHead>}
+                        {isColVisible('actions') && <TableHead className="text-foreground font-semibold w-20">{t('common.actions', 'Actions')}</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>

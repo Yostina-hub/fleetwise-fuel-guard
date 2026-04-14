@@ -307,7 +307,7 @@ const DashboardBuilder = () => {
           <DialogHeader><DialogTitle>Create New Layout</DialogTitle></DialogHeader>
           <Input placeholder="Dashboard name..." value={newName} onChange={e => setNewName(e.target.value)} />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewDialog(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setShowNewDialog(false)}>{t('common.cancel', 'Cancel')}</Button>
             <Button onClick={createNewLayout} disabled={!newName.trim()}>Create</Button>
           </DialogFooter>
         </DialogContent>

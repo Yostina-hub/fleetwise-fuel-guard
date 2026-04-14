@@ -674,7 +674,7 @@ const Geofencing = () => {
           <div className="space-y-4">
             {/* Name */}
             <div>
-              <Label htmlFor="name">Name *</Label>
+              <Label htmlFor="name">{t('common.name', 'Name')} *</Label>
               <Input
                 id="name"
                 value={formData.name}

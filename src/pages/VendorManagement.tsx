@@ -117,20 +117,20 @@ const VendorManagement = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Building2 className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{vendors.length}</p><p className="text-sm text-muted-foreground">Total Vendors</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><CheckCircle className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{active.length}</p><p className="text-sm text-muted-foreground">Active</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Star className="h-8 w-8 text-yellow-500" /><div><p className="text-2xl font-bold">{vendors.filter((v: any) => v.rating && v.rating >= 4).length}</p><p className="text-sm text-muted-foreground">Top Rated (4+)</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Building2 className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{vendors.length}</p><p className="text-sm text-muted-foreground">{t('vendors.totalVendors', 'Total Vendors')}</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><CheckCircle className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{active.length}</p><p className="text-sm text-muted-foreground">{t('common.active', 'Active')}</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Star className="h-8 w-8 text-yellow-500" /><div><p className="text-2xl font-bold">{vendors.filter((v: any) => v.rating && v.rating >= 4).length}</p><p className="text-sm text-muted-foreground">{t('vendors.topRated', 'Top Rated (4+)')}</p></div></div></CardContent></Card>
         </div>
 
-        <div className="relative"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input placeholder="Search vendors..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" /></div>
+        <div className="relative"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input placeholder={t('vendors.search', 'Search vendors...')} value={search} onChange={e => setSearch(e.target.value)} className="pl-9" /></div>
 
         <Card><Table>
           <TableHeader><TableRow>
-            <TableHead>Name</TableHead><TableHead>Contact</TableHead><TableHead>Email</TableHead><TableHead>Phone</TableHead><TableHead>Type</TableHead><TableHead>Rating</TableHead><TableHead>Status</TableHead><TableHead className="w-24">Actions</TableHead>
+            <TableHead>{t('common.name', 'Name')}</TableHead><TableHead>{t('common.contact', 'Contact')}</TableHead><TableHead>{t('common.email', 'Email')}</TableHead><TableHead>{t('common.phone', 'Phone')}</TableHead><TableHead>{t('common.type', 'Type')}</TableHead><TableHead>{t('vendors.rating', 'Rating')}</TableHead><TableHead>{t('common.status', 'Status')}</TableHead><TableHead className="w-24">{t('common.actions', 'Actions')}</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">Loading...</TableCell></TableRow> :
-            filtered.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No vendors found</TableCell></TableRow> :
+            {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}<TableCell></TableRow> :
+            filtered.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">{t('vendors.noVendors', 'No vendors found')}<TableCell></TableRow> :
             filtered.map((v: any) => (
               <TableRow key={v.id}>
                 <TableCell className="font-medium">{v.name}</TableCell>
@@ -153,34 +153,34 @@ const VendorManagement = () => {
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>{editing ? "Edit Vendor" : "Add Vendor"}</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{editing ? t('vendors.editVendor', 'Edit Vendor') : t('vendors.addVendor', 'Add Vendor')}</DialogTitle></DialogHeader>
             <div className="space-y-4">
-              <div><Label>Name *</Label><Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} className={errors.name ? "border-destructive" : ""} />{errors.name && <p className="text-sm text-destructive mt-1">{errors.name}</p>}</div>
+              <div><Label>{t('common.name', 'Name')} *</Label><Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} className={errors.name ? "border-destructive" : ""} />{errors.name && <p className="text-sm text-destructive mt-1">{errors.name}</p>}</div>
               <div className="grid grid-cols-2 gap-4">
-                <div><Label>Contact Person</Label><Input value={form.contact_person} onChange={e => setForm(p => ({ ...p, contact_person: e.target.value }))} /></div>
-                <div><Label>Phone</Label><Input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} /></div>
+                <div><Label>{t('vendors.contactPerson', 'Contact Person')}</Label><Input value={form.contact_person} onChange={e => setForm(p => ({ ...p, contact_person: e.target.value }))} /></div>
+                <div><Label>{t('common.phone', 'Phone')}</Label><Input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} /></div>
               </div>
-              <div><Label>Email</Label><Input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} className={errors.email ? "border-destructive" : ""} />{errors.email && <p className="text-sm text-destructive mt-1">{errors.email}</p>}</div>
+              <div><Label>{t('common.email', 'Email')}</Label><Input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} className={errors.email ? "border-destructive" : ""} />{errors.email && <p className="text-sm text-destructive mt-1">{errors.email}</p>}</div>
               <div className="grid grid-cols-2 gap-4">
-                <div><Label>Vendor Type</Label>
+                <div><Label>{t('vendors.vendorType', 'Vendor Type')}</Label>
                   <Select value={form.vendor_type} onValueChange={v => setForm(p => ({ ...p, vendor_type: v }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>{VENDOR_TYPES.map(c => <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div><Label>Rating (0–5)</Label><Input type="number" min={0} max={5} step={0.5} value={form.rating} onChange={e => setForm(p => ({ ...p, rating: parseFloat(e.target.value) || 0 }))} className={errors.rating ? "border-destructive" : ""} /></div>
+                <div><Label>{t('vendors.ratingLabel', 'Rating (0–5)')}</Label><Input type="number" min={0} max={5} step={0.5} value={form.rating} onChange={e => setForm(p => ({ ...p, rating: parseFloat(e.target.value) || 0 }))} className={errors.rating ? "border-destructive" : ""} /></div>
               </div>
-              <div className="flex items-end gap-2"><Label>Active</Label>
+              <div className="flex items-end gap-2"><Label>{t('common.active', 'Active')}</Label>
                   <Select value={form.is_active ? "true" : "false"} onValueChange={v => setForm(p => ({ ...p, is_active: v === "true" }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent><SelectItem value="true">Active</SelectItem><SelectItem value="false">Inactive</SelectItem></SelectContent>
                   </Select>
                 </div>
-              <div><Label>Address</Label><Input value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} /></div>
-              <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={3} /></div>
+              <div><Label>{t('common.address', 'Address')}</Label><Input value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} /></div>
+              <div><Label>{t('common.notes', 'Notes')}</Label><Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={3} /></div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('common.cancel', 'Cancel')}</Button>
               <Button onClick={handleSubmit} disabled={saveMutation.isPending}>{saveMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}{editing ? "Update" : "Add"}</Button>
             </DialogFooter>
           </DialogContent>

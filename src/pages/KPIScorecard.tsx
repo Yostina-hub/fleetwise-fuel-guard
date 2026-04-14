@@ -107,7 +107,7 @@ const KPIScorecard = () => {
           <Card key={cat}><CardHeader><CardTitle className="capitalize">{cat} KPIs</CardTitle></CardHeader>
             <Table>
               <TableHeader><TableRow>
-                <TableHead>KPI</TableHead><TableHead>Target</TableHead><TableHead>Actual</TableHead><TableHead>Progress</TableHead><TableHead>Period</TableHead><TableHead>Trend</TableHead><TableHead>Status</TableHead><TableHead className="w-24">Actions</TableHead>
+                <TableHead>KPI</TableHead><TableHead>Target</TableHead><TableHead>Actual</TableHead><TableHead>Progress</TableHead><TableHead>Period</TableHead><TableHead>Trend</TableHead><TableHead>{t('common.status', 'Status')}</TableHead><TableHead className="w-24">{t('common.actions', 'Actions')}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {kpis.filter((k: any) => k.category === cat).map((k: any) => {
@@ -168,7 +168,7 @@ const KPIScorecard = () => {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('common.cancel', 'Cancel')}</Button>
               <Button onClick={() => { if (validate()) saveMutation.mutate(); }} disabled={saveMutation.isPending}>{saveMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}{editing ? "Update" : "Add"}</Button>
             </DialogFooter>
           </DialogContent>

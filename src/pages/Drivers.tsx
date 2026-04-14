@@ -314,13 +314,13 @@ const Drivers = () => {
                           aria-label="Select all drivers"
                         />
                       </TableHead>
-                      <TableHead>Driver</TableHead>
+                      <TableHead>{t('common.driver', 'Driver')}</TableHead>
                       <TableHead>Employee ID</TableHead>
                       <TableHead>License</TableHead>
-                      <TableHead>Contact</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>{t('common.contact', 'Contact')}</TableHead>
+                      <TableHead>{t('common.status', 'Status')}</TableHead>
                       <TableHead>Safety Score</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead className="text-right">{t('common.actions', 'Actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

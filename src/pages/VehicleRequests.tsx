@@ -143,7 +143,7 @@ const VehicleRequests = () => {
           </CardContent></Card>
           <Card><CardContent className="p-4 flex items-center gap-3">
             <div className="h-9 w-9 rounded-lg bg-green-500/10 flex items-center justify-center"><CheckCircle className="w-4 h-4 text-green-500" /></div>
-            <div><p className="text-xl font-bold">{completed}</p><p className="text-xs text-muted-foreground">Completed</p></div>
+            <div><p className="text-xl font-bold">{completed}</p><p className="text-xs text-muted-foreground">{t('common.completed', 'Completed')}</p></div>
           </CardContent></Card>
         </div>
 
@@ -226,7 +226,7 @@ const VehicleRequests = () => {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setShowCreate(false)}>{t('common.cancel', 'Cancel')}</Button>
               <Button onClick={() => createMutation.mutate()} disabled={!form.requester_name || !form.purpose || !form.needed_from || createMutation.isPending}>
                 {createMutation.isPending ? "Creating..." : "Submit Request"}
               </Button>
@@ -291,7 +291,7 @@ const VehicleRequests = () => {
                   <Button size="sm" onClick={() => updateStatusMutation.mutate({ id: showDetail.id, status: "completed" })}>Mark Complete</Button>
                 )}
                 {["pending", "approved"].includes(showDetail.status) && (
-                  <Button size="sm" variant="outline" onClick={() => updateStatusMutation.mutate({ id: showDetail.id, status: "cancelled" })}>Cancel</Button>
+                  <Button size="sm" variant="outline" onClick={() => updateStatusMutation.mutate({ id: showDetail.id, status: "cancelled" })}>{t('common.cancel', 'Cancel')}</Button>
                 )}
               </DialogFooter>
             </DialogContent>

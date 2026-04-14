@@ -51,28 +51,28 @@ const ContractManagement = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><FileSignature className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{contracts.length}</p><p className="text-sm text-muted-foreground">Total Contracts</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><CheckCircle className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{active.length}</p><p className="text-sm text-muted-foreground">Active</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Clock className="h-8 w-8 text-orange-500" /><div><p className="text-2xl font-bold">{expiring.length}</p><p className="text-sm text-muted-foreground">Expiring Soon</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><DollarSign className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{totalValue.toLocaleString()} ETB</p><p className="text-sm text-muted-foreground">Active Value</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><FileSignature className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{contracts.length}</p><p className="text-sm text-muted-foreground">{t('contracts.totalContracts', 'Total Contracts')}</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><CheckCircle className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{active.length}</p><p className="text-sm text-muted-foreground">{t('common.active', 'Active')}</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Clock className="h-8 w-8 text-orange-500" /><div><p className="text-2xl font-bold">{expiring.length}</p><p className="text-sm text-muted-foreground">{t('common.expiringSoon', 'Expiring Soon')}</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><DollarSign className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{totalValue.toLocaleString()} ETB</p><p className="text-sm text-muted-foreground">{t('contracts.activeValue', 'Active Value')}</p></div></div></CardContent></Card>
         </div>
 
-        <div className="relative"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input placeholder="Search contracts..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" /></div>
+        <div className="relative"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input placeholder={t('contracts.search', 'Search contracts...')} value={search} onChange={e => setSearch(e.target.value)} className="pl-9" /></div>
 
         <Card><Table>
           <TableHeader><TableRow>
-            <TableHead>Contract #</TableHead><TableHead>Type</TableHead><TableHead>Party</TableHead><TableHead>Start</TableHead><TableHead>End</TableHead><TableHead>Value</TableHead><TableHead>Auto-Renew</TableHead><TableHead>Status</TableHead>
+            <TableHead>{t('contracts.contractNumber', 'Contract #')}</TableHead><TableHead>{t('common.type', 'Type')}</TableHead><TableHead>{t('contracts.party', 'Party')}</TableHead><TableHead>{t('common.start', 'Start')}</TableHead><TableHead>{t('common.end', 'End')}</TableHead><TableHead>{t('common.value', 'Value')}</TableHead><TableHead>{t('contracts.autoRenew', 'Auto-Renew')}</TableHead><TableHead>{t('common.status', 'Status')}</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">Loading...</TableCell></TableRow> :
-            filtered.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No contracts found</TableCell></TableRow> :
+            {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}<TableCell></TableRow> :
+            filtered.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">{t('contracts.noContracts', 'No contracts found')}<TableCell></TableRow> :
             filtered.map((c: any) => (
               <TableRow key={c.id}>
                 <TableCell className="font-mono">{c.contract_number}</TableCell>
                 <TableCell className="capitalize">{c.contract_type}</TableCell>
                 <TableCell className="font-medium">{c.party_name}</TableCell>
                 <TableCell>{format(new Date(c.start_date), "MMM dd, yyyy")}</TableCell>
-                <TableCell>{c.end_date ? format(new Date(c.end_date), "MMM dd, yyyy") : "Indefinite"}</TableCell>
+                <TableCell>{c.end_date ? format(new Date(c.end_date), "MMM dd, yyyy") : t('contracts.indefinite', 'Indefinite')}</TableCell>
                 <TableCell>{c.value ? `${c.value.toLocaleString()} ${c.currency}` : "—"}</TableCell>
                 <TableCell>{c.auto_renew ? "Yes" : "No"}</TableCell>
                 <TableCell><Badge variant={c.status === "active" ? "default" : c.status === "expired" ? "destructive" : "secondary"}>{c.status}</Badge></TableCell>

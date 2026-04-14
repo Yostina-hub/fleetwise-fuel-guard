@@ -200,7 +200,7 @@ const DriverApp = () => {
                             <p className="text-[10px] text-muted-foreground">Due: {format(new Date(evt.due_date), "MMM dd, yyyy")}</p>
                           </div>
                           {isPast(new Date(evt.due_date))
-                            ? <Badge variant="destructive" className="text-[10px]">Overdue</Badge>
+                            ? <Badge variant="destructive" className="text-[10px]">{t('common.overdue', 'Overdue')}</Badge>
                             : <Badge variant="secondary" className="text-[10px]">{differenceInDays(new Date(evt.due_date), new Date())}d</Badge>}
                         </div>
                       ))}

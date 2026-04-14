@@ -387,7 +387,7 @@ const Alerts = () => {
                     <SelectValue placeholder="All Types" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="all">{t('common.allTypes', 'All Types')}</SelectItem>
                     {alertTypes.map(type => (
                       <SelectItem key={type} value={type}>{type}</SelectItem>
                     ))}

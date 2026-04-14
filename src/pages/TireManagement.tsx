@@ -285,7 +285,7 @@ const TireManagement = () => {
               <div><Label>Max KM Life</Label><Input type="number" value={form.max_distance_km} onChange={e => setForm(f => ({ ...f, max_distance_km: e.target.value }))} placeholder="80000" /></div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setShowAddDialog(false)}>{t('common.cancel', 'Cancel')}</Button>
               <Button onClick={() => addTireMutation.mutate()} disabled={!form.brand || !form.size || addTireMutation.isPending}>
                 {addTireMutation.isPending ? "Adding..." : "Add Tire"}
               </Button>

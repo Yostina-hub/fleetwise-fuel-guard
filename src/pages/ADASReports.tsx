@@ -140,7 +140,7 @@ const ADASReports = () => {
               <CardContent>
                 <Table>
                   <TableHeader><TableRow>
-                    <TableHead>Rank</TableHead><TableHead>Driver</TableHead><TableHead>Total Events</TableHead><TableHead>Critical/High</TableHead><TableHead>Top Event Type</TableHead><TableHead>Risk Level</TableHead>
+                    <TableHead>Rank</TableHead><TableHead>{t('common.driver', 'Driver')}</TableHead><TableHead>Total Events</TableHead><TableHead>Critical/High</TableHead><TableHead>Top Event Type</TableHead><TableHead>Risk Level</TableHead>
                   </TableRow></TableHeader>
                   <TableBody>
                     {topDrivers.length === 0 ? (
@@ -170,7 +170,7 @@ const ADASReports = () => {
               <CardContent>
                 <Table>
                   <TableHeader><TableRow>
-                    <TableHead>Rank</TableHead><TableHead>Vehicle</TableHead><TableHead>Total Events</TableHead><TableHead>Critical/High</TableHead><TableHead>Risk</TableHead>
+                    <TableHead>Rank</TableHead><TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>Total Events</TableHead><TableHead>Critical/High</TableHead><TableHead>Risk</TableHead>
                   </TableRow></TableHeader>
                   <TableBody>
                     {topVehicles.length === 0 ? (

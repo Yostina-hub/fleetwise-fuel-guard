@@ -238,7 +238,7 @@ const FuelCardProviders = () => {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowAddProvider(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setShowAddProvider(false)}>{t('common.cancel', 'Cancel')}</Button>
               <Button onClick={() => createProviderMutation.mutate(newProvider)} disabled={!newProvider.provider_name}>
                 Add Provider
               </Button>

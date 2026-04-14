@@ -92,7 +92,7 @@ const Organizations = () => {
               </DialogHeader>
               <div className="space-y-4 py-2">
                 <div className="space-y-1.5">
-                  <Label>Name *</Label>
+                  <Label>{t('common.name', 'Name')} *</Label>
                   <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Organization name" />
                 </div>
                 <div className="space-y-1.5">
@@ -119,12 +119,12 @@ const Organizations = () => {
                   <Input value={form.contact_phone} onChange={(e) => setForm({ ...form, contact_phone: e.target.value })} placeholder="+251..." />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Address</Label>
+                  <Label>{t('common.address', 'Address')}</Label>
                   <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Address" />
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('common.cancel', 'Cancel')}</Button>
                 <Button onClick={() => createOrg.mutate()} disabled={!form.name || createOrg.isPending}>
                   {createOrg.isPending ? "Creating..." : "Create"}
                 </Button>
@@ -139,7 +139,7 @@ const Organizations = () => {
         </div>
 
         {isLoading ? (
-          <div className="text-muted-foreground text-center py-12">Loading...</div>
+          <div className="text-muted-foreground text-center py-12">{t('common.loading', 'Loading...')}<div>
         ) : filtered.length === 0 ? (
           <div className="text-muted-foreground text-center py-12">No organizations found</div>
         ) : (

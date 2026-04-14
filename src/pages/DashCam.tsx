@@ -148,10 +148,10 @@ const DashCam = () => {
               <Table>
                 <TableHeader><TableRow>
                   <TableHead className="w-10"><Checkbox checked={selectedIds.size === filtered.length && filtered.length > 0} onCheckedChange={toggleAll} /></TableHead>
-                  <TableHead>Time</TableHead><TableHead>Vehicle</TableHead><TableHead>Driver</TableHead><TableHead>Event</TableHead><TableHead>Severity</TableHead><TableHead>AI</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead>
+                  <TableHead>Time</TableHead><TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>{t('common.driver', 'Driver')}</TableHead><TableHead>Event</TableHead><TableHead>Severity</TableHead><TableHead>AI</TableHead><TableHead>{t('common.status', 'Status')}</TableHead><TableHead>{t('common.actions', 'Actions')}</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
-                  {isLoading ? <TableRow><TableCell colSpan={9} className="text-center py-8">Loading...</TableCell></TableRow> :
+                  {isLoading ? <TableRow><TableCell colSpan={9} className="text-center py-8">{t('common.loading', 'Loading...')}<TableCell></TableRow> :
                   filtered.length === 0 ? <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No dash cam events recorded yet</TableCell></TableRow> :
                   filtered.map((ev: any) => (
                     <TableRow key={ev.id} className={ev.severity === "critical" ? "bg-destructive/5" : ""}>
@@ -240,7 +240,7 @@ const DashCam = () => {
             </div>
           )}
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setSelectedEvent(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setSelectedEvent(null)}>{t('common.cancel', 'Cancel')}</Button>
             <Button variant="destructive" onClick={() => reviewMutation.mutate({ id: selectedEvent?.id, status: "dismissed", notes: reviewNotes })} disabled={reviewMutation.isPending}>
               <XCircle className="h-4 w-4 mr-1" /> Dismiss
             </Button>

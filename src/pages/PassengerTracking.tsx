@@ -183,11 +183,11 @@ const PassengerTracking = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Route</TableHead>
-                    <TableHead>Vehicle</TableHead>
-                    <TableHead>Driver</TableHead>
+                    <TableHead>{t('common.vehicle', 'Vehicle')}</TableHead>
+                    <TableHead>{t('common.driver', 'Driver')}</TableHead>
                     <TableHead>Passengers</TableHead>
                     <TableHead>Departure</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>{t('common.status', 'Status')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -284,7 +284,7 @@ const PassengerTracking = () => {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowCreateManifest(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setShowCreateManifest(false)}>{t('common.cancel', 'Cancel')}</Button>
               <Button onClick={() => createManifestMutation.mutate(newManifest)} disabled={!newManifest.vehicle_id}>
                 Create Manifest
               </Button>

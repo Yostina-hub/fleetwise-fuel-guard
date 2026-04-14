@@ -183,9 +183,9 @@ const CarbonEmissions = () => {
 
           <TabsContent value="details">
             <Card><Table>
-              <TableHeader><TableRow><TableHead>Vehicle</TableHead><TableHead>Period</TableHead><TableHead>CO₂ (kg)</TableHead><TableHead>Fuel (L)</TableHead><TableHead>Distance (km)</TableHead><TableHead>Source</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>Period</TableHead><TableHead>CO₂ (kg)</TableHead><TableHead>Fuel (L)</TableHead><TableHead>Distance (km)</TableHead><TableHead>Source</TableHead></TableRow></TableHeader>
               <TableBody>
-                {isLoading ? <TableRow><TableCell colSpan={6} className="text-center py-8">Loading...</TableCell></TableRow> :
+                {isLoading ? <TableRow><TableCell colSpan={6} className="text-center py-8">{t('common.loading', 'Loading...')}<TableCell></TableRow> :
                 emissions.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No records</TableCell></TableRow> :
                 emissions.map((e: any) => (
                   <TableRow key={e.id}>
@@ -238,7 +238,7 @@ const CarbonEmissions = () => {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setAddOpen(false)}>{t('common.cancel', 'Cancel')}</Button>
               <Button onClick={() => { if (validate()) addMutation.mutate(); }} disabled={addMutation.isPending}>{addMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Add Record</Button>
             </DialogFooter>
           </DialogContent>

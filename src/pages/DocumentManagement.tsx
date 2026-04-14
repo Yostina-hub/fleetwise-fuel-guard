@@ -56,24 +56,24 @@ const DocumentManagement = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><FileText className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{documents.length}</p><p className="text-sm text-muted-foreground">Total Documents</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><CheckCircle className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{verified.length}</p><p className="text-sm text-muted-foreground">Verified</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Clock className="h-8 w-8 text-orange-500" /><div><p className="text-2xl font-bold">{expiring.length}</p><p className="text-sm text-muted-foreground">Expiring Soon</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><File className="h-8 w-8 text-muted-foreground" /><div><p className="text-2xl font-bold">{documents.length - verified.length}</p><p className="text-sm text-muted-foreground">Pending Verification</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><FileText className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{documents.length}</p><p className="text-sm text-muted-foreground">{t('documents.totalDocuments', 'Total Documents')}</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><CheckCircle className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{verified.length}</p><p className="text-sm text-muted-foreground">{t('documents.verified', 'Verified')}</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Clock className="h-8 w-8 text-orange-500" /><div><p className="text-2xl font-bold">{expiring.length}</p><p className="text-sm text-muted-foreground">{t('common.expiringSoon', 'Expiring Soon')}</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><File className="h-8 w-8 text-muted-foreground" /><div><p className="text-2xl font-bold">{documents.length - verified.length}</p><p className="text-sm text-muted-foreground">{t('documents.pendingVerification', 'Pending Verification')}</p></div></div></CardContent></Card>
         </div>
 
         <div className="flex gap-3">
-          <div className="relative flex-1"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input placeholder="Search documents..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" /></div>
-          <Select value={typeFilter} onValueChange={setTypeFilter}><SelectTrigger className="w-44"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Types</SelectItem><SelectItem value="registration">Registration</SelectItem><SelectItem value="insurance">Insurance</SelectItem><SelectItem value="license">License</SelectItem><SelectItem value="inspection">Inspection</SelectItem><SelectItem value="contract">Contract</SelectItem></SelectContent></Select>
+          <div className="relative flex-1"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input placeholder={t('documents.search', 'Search documents...')} value={search} onChange={e => setSearch(e.target.value)} className="pl-9" /></div>
+          <Select value={typeFilter} onValueChange={setTypeFilter}><SelectTrigger className="w-44"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t('common.allTypes', 'All Types')}</SelectItem><SelectItem value="registration">{t('documents.registration', 'Registration')}</SelectItem><SelectItem value="insurance">{t('documents.insurance', 'Insurance')}</SelectItem><SelectItem value="license">{t('documents.license', 'License')}</SelectItem><SelectItem value="inspection">{t('documents.inspection', 'Inspection')}</SelectItem><SelectItem value="contract">{t('documents.contract', 'Contract')}</SelectItem></SelectContent></Select>
         </div>
 
         <Card><Table>
           <TableHeader><TableRow>
-            <TableHead>Document</TableHead><TableHead>Type</TableHead><TableHead>Entity</TableHead><TableHead>Doc #</TableHead><TableHead>Issued</TableHead><TableHead>Expires</TableHead><TableHead>Verified</TableHead>
+            <TableHead>{t('documents.document', 'Document')}</TableHead><TableHead>{t('common.type', 'Type')}</TableHead><TableHead>{t('common.entity', 'Entity')}</TableHead><TableHead>{t('documents.docNumber', 'Doc #')}</TableHead><TableHead>{t('documents.issued', 'Issued')}</TableHead><TableHead>{t('common.expires', 'Expires')}</TableHead><TableHead>{t('documents.verified', 'Verified')}</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {isLoading ? <TableRow><TableCell colSpan={7} className="text-center py-8">Loading...</TableCell></TableRow> :
-            filtered.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No documents found</TableCell></TableRow> :
+            {isLoading ? <TableRow><TableCell colSpan={7} className="text-center py-8">{t('common.loading', 'Loading...')}<TableCell></TableRow> :
+            filtered.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">{t('documents.noDocuments', 'No documents found')}<TableCell></TableRow> :
             filtered.map((d: any) => (
               <TableRow key={d.id}>
                 <TableCell className="font-medium">{d.file_name}</TableCell>

@@ -188,10 +188,10 @@ const RFIDPairing = () => {
                   <TableRow>
                     <TableHead>RFID Tag</TableHead>
                     <TableHead>Device</TableHead>
-                    <TableHead>Driver</TableHead>
+                    <TableHead>{t('common.driver', 'Driver')}</TableHead>
                     <TableHead>Paired At</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>{t('common.status', 'Status')}</TableHead>
+                    <TableHead>{t('common.actions', 'Actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -256,7 +256,7 @@ const RFIDPairing = () => {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowPairDialog(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setShowPairDialog(false)}>{t('common.cancel', 'Cancel')}</Button>
               <Button onClick={() => createPairingMutation.mutate(pairData)} disabled={!pairData.rfid_tag || !pairData.device_id || !pairData.driver_id}>
                 Pair Tag
               </Button>

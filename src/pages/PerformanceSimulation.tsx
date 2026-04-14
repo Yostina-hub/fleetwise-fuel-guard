@@ -188,11 +188,11 @@ const PerformanceSimulation = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
+                    <TableHead>{t('common.name', 'Name')}</TableHead>
                     <TableHead>Fleet Size</TableHead>
                     <TableHead>Savings %</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>{t('common.date', 'Date')}</TableHead>
+                    <TableHead>{t('common.actions', 'Actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -421,7 +421,7 @@ const PerformanceSimulation = () => {
           <DialogHeader><DialogTitle>Save Scenario</DialogTitle></DialogHeader>
           <Input placeholder="Scenario name..." value={scenarioName} onChange={e => setScenarioName(e.target.value)} />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowSaveDialog(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setShowSaveDialog(false)}>{t('common.cancel', 'Cancel')}</Button>
             <Button onClick={() => saveMutation.mutate()} disabled={!scenarioName.trim() || saveMutation.isPending}>
               {saveMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Save
             </Button>

@@ -55,8 +55,8 @@ const DriverTraining = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><GraduationCap className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{training.length}</p><p className="text-sm text-muted-foreground">Total Records</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><CheckCircle className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{completed.length}</p><p className="text-sm text-muted-foreground">Completed</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Clock className="h-8 w-8 text-orange-500" /><div><p className="text-2xl font-bold">{expiringSoon.length}</p><p className="text-sm text-muted-foreground">Expiring Soon</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><CheckCircle className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{completed.length}</p><p className="text-sm text-muted-foreground">{t('common.completed', 'Completed')}</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Clock className="h-8 w-8 text-orange-500" /><div><p className="text-2xl font-bold">{expiringSoon.length}</p><p className="text-sm text-muted-foreground">{t('common.expiringSoon', 'Expiring Soon')}</p></div></div></CardContent></Card>
           <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><AlertTriangle className="h-8 w-8 text-destructive" /><div><p className="text-2xl font-bold">{training.filter((t: any) => t.status === "expired").length}</p><p className="text-sm text-muted-foreground">Expired</p></div></div></CardContent></Card>
         </div>
 
@@ -64,10 +64,10 @@ const DriverTraining = () => {
 
         <Card><Table>
           <TableHeader><TableRow>
-            <TableHead>Driver</TableHead><TableHead>Certification</TableHead><TableHead>Type</TableHead><TableHead>Provider</TableHead><TableHead>Completed</TableHead><TableHead>Expires</TableHead><TableHead>Score</TableHead><TableHead>Status</TableHead>
+            <TableHead>{t('common.driver', 'Driver')}</TableHead><TableHead>Certification</TableHead><TableHead>{t('common.type', 'Type')}</TableHead><TableHead>{t('insurance.provider', 'Provider')}</TableHead><TableHead>Completed</TableHead><TableHead>{t('common.expires', 'Expires')}</TableHead><TableHead>Score</TableHead><TableHead>{t('common.status', 'Status')}</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">Loading...</TableCell></TableRow> :
+            {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}<TableCell></TableRow> :
             filtered.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No training records</TableCell></TableRow> :
             filtered.map((t: any) => (
               <TableRow key={t.id}>

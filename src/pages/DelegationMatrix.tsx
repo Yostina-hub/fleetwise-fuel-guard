@@ -153,7 +153,7 @@ const DelegationMatrix = () => {
           </CardContent></Card>
           <Card><CardContent className="p-4 flex items-center gap-3">
             <CheckCircle className="h-8 w-8 text-green-500" />
-            <div><p className="text-2xl font-bold">{active.length}</p><p className="text-sm text-muted-foreground">Active</p></div>
+            <div><p className="text-2xl font-bold">{active.length}</p><p className="text-sm text-muted-foreground">{t('common.active', 'Active')}</p></div>
           </CardContent></Card>
           <Card><CardContent className="p-4 flex items-center gap-3">
             <XCircle className="h-8 w-8 text-muted-foreground" />
@@ -167,10 +167,10 @@ const DelegationMatrix = () => {
             <TableHeader><TableRow>
               <TableHead>Delegator</TableHead><TableHead></TableHead><TableHead>Delegate</TableHead>
               <TableHead>Scope</TableHead><TableHead>Valid From</TableHead><TableHead>Valid Until</TableHead>
-              <TableHead>Status</TableHead><TableHead>Actions</TableHead>
+              <TableHead>{t('common.status', 'Status')}</TableHead><TableHead>{t('common.actions', 'Actions')}</TableHead>
             </TableRow></TableHeader>
             <TableBody>
-              {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">Loading...</TableCell></TableRow> :
+              {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}<TableCell></TableRow> :
               delegations.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No delegations configured</TableCell></TableRow> :
               delegations.map((d: any) => (
                 <TableRow key={d.id}>
@@ -179,7 +179,7 @@ const DelegationMatrix = () => {
                   <TableCell className="font-medium">{d.delegate_name}</TableCell>
                   <TableCell className="capitalize">{d.scope || "All"}</TableCell>
                   <TableCell>{format(new Date(d.valid_from), "MMM dd, yyyy")}</TableCell>
-                  <TableCell>{d.valid_until ? format(new Date(d.valid_until), "MMM dd, yyyy") : "Indefinite"}</TableCell>
+                  <TableCell>{d.valid_until ? format(new Date(d.valid_until), "MMM dd, yyyy") : t('contracts.indefinite', 'Indefinite')}</TableCell>
                   <TableCell>
                     <Badge
                       variant={d.is_active ? "default" : "secondary"}
@@ -252,7 +252,7 @@ const DelegationMatrix = () => {
               <div><Label>Reason</Label><Input value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} placeholder="e.g. Annual leave coverage" /></div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => { setShowAdd(false); setEditItem(null); }}>Cancel</Button>
+              <Button variant="outline" onClick={() => { setShowAdd(false); setEditItem(null); }}>{t('common.cancel', 'Cancel')}</Button>
               <Button onClick={() => saveMutation.mutate()} disabled={!form.delegator_id || !form.delegate_id || !form.valid_from || saveMutation.isPending}>
                 {saveMutation.isPending ? "Saving..." : editItem ? "Update" : "Create"}
               </Button>

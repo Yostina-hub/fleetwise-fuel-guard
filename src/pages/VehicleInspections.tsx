@@ -78,14 +78,14 @@ const VehicleInspections = () => {
           <TabsContent value="all" className="space-y-4">
             <div className="flex gap-3">
               <div className="relative flex-1"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input placeholder="Search by plate or sticker #..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" /></div>
-              <Select value={typeFilter} onValueChange={setTypeFilter}><SelectTrigger className="w-44"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Types</SelectItem><SelectItem value="routine">Routine</SelectItem><SelectItem value="annual">Annual</SelectItem><SelectItem value="pre_trip">Pre-Trip</SelectItem><SelectItem value="roadworthiness">Roadworthiness</SelectItem></SelectContent></Select>
+              <Select value={typeFilter} onValueChange={setTypeFilter}><SelectTrigger className="w-44"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t('common.allTypes', 'All Types')}</SelectItem><SelectItem value="routine">Routine</SelectItem><SelectItem value="annual">Annual</SelectItem><SelectItem value="pre_trip">Pre-Trip</SelectItem><SelectItem value="roadworthiness">Roadworthiness</SelectItem></SelectContent></Select>
             </div>
             <Card><Table>
               <TableHeader><TableRow>
-                <TableHead>Date</TableHead><TableHead>Vehicle</TableHead><TableHead>Type</TableHead><TableHead>Inspector</TableHead><TableHead>Sticker #</TableHead><TableHead>Next Due</TableHead><TableHead>Result</TableHead><TableHead>Status</TableHead>
+                <TableHead>{t('common.date', 'Date')}</TableHead><TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>{t('common.type', 'Type')}</TableHead><TableHead>Inspector</TableHead><TableHead>Sticker #</TableHead><TableHead>Next Due</TableHead><TableHead>Result</TableHead><TableHead>{t('common.status', 'Status')}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">Loading...</TableCell></TableRow> :
+                {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}<TableCell></TableRow> :
                 filtered.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No inspections recorded yet</TableCell></TableRow> :
                 filtered.map((i: any) => (
                   <TableRow key={i.id}>
@@ -109,7 +109,7 @@ const VehicleInspections = () => {
                 {inspections.filter((i: any) => i.sticker_number).length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">No stickers recorded. Add sticker numbers during inspections.</p>
                 ) : (
-                  <Table><TableHeader><TableRow><TableHead>Vehicle</TableHead><TableHead>Sticker #</TableHead><TableHead>Issued</TableHead><TableHead>Expires</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+                  <Table><TableHeader><TableRow><TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>Sticker #</TableHead><TableHead>{t('documents.issued', 'Issued')}</TableHead><TableHead>{t('common.expires', 'Expires')}</TableHead><TableHead>{t('common.status', 'Status')}</TableHead></TableRow></TableHeader>
                   <TableBody>
                     {inspections.filter((i: any) => i.sticker_number).map((i: any) => {
                       const expired = i.sticker_expiry && new Date(i.sticker_expiry) < new Date();

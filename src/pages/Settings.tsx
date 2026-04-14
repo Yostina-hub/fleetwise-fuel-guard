@@ -287,7 +287,7 @@ const Settings = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
+                  <Label htmlFor="address">{t('common.address', 'Address')}</Label>
                   <Input id="address" placeholder="Business address" defaultValue="Addis Ababa, Ethiopia" />
                 </div>
                 <Button>Save Changes</Button>

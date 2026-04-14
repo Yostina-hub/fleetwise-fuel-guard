@@ -47,21 +47,21 @@ const PenaltiesFines = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Gavel className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{fines.length}</p><p className="text-sm text-muted-foreground">Total Fines</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Clock className="h-8 w-8 text-orange-500" /><div><p className="text-2xl font-bold">{unpaid.length}</p><p className="text-sm text-muted-foreground">Unpaid</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><DollarSign className="h-8 w-8 text-destructive" /><div><p className="text-2xl font-bold">{totalUnpaid.toLocaleString()} ETB</p><p className="text-sm text-muted-foreground">Outstanding</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><CheckCircle className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{totalPaid.toLocaleString()} ETB</p><p className="text-sm text-muted-foreground">Total Paid</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Gavel className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{fines.length}</p><p className="text-sm text-muted-foreground">{t('fines.totalFines', 'Total Fines')}</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Clock className="h-8 w-8 text-orange-500" /><div><p className="text-2xl font-bold">{unpaid.length}</p><p className="text-sm text-muted-foreground">{t('fines.unpaid', 'Unpaid')}</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><DollarSign className="h-8 w-8 text-destructive" /><div><p className="text-2xl font-bold">{totalUnpaid.toLocaleString()} ETB</p><p className="text-sm text-muted-foreground">{t('fines.outstanding', 'Outstanding')}</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><CheckCircle className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{totalPaid.toLocaleString()} ETB</p><p className="text-sm text-muted-foreground">{t('fines.totalPaid', 'Total Paid')}</p></div></div></CardContent></Card>
         </div>
 
-        <div className="relative"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input placeholder="Search fines..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" /></div>
+        <div className="relative"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input placeholder={t('fines.search', 'Search fines...')} value={search} onChange={e => setSearch(e.target.value)} className="pl-9" /></div>
 
         <Card><Table>
           <TableHeader><TableRow>
-            <TableHead>Fine #</TableHead><TableHead>Date</TableHead><TableHead>Vehicle</TableHead><TableHead>Driver</TableHead><TableHead>Violation</TableHead><TableHead>Amount</TableHead><TableHead>Due Date</TableHead><TableHead>Status</TableHead>
+            <TableHead>{t('fines.fineNumber', 'Fine #')}</TableHead><TableHead>{t('common.date', 'Date')}</TableHead><TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>{t('common.driver', 'Driver')}</TableHead><TableHead>{t('fines.violation', 'Violation')}</TableHead><TableHead>{t('common.amount', 'Amount')}</TableHead><TableHead>{t('common.dueDate', 'Due Date')}</TableHead><TableHead>{t('common.status', 'Status')}</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">Loading...</TableCell></TableRow> :
-            filtered.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No fines recorded</TableCell></TableRow> :
+            {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}<TableCell></TableRow> :
+            filtered.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">{t('fines.noFines', 'No fines recorded')}<TableCell></TableRow> :
             filtered.map((f: any) => (
               <TableRow key={f.id}>
                 <TableCell className="font-mono">{f.fine_number}</TableCell>
