@@ -76,20 +76,20 @@ const FuelProbeCalibrationPanel = () => {
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!organizationId) throw new Error("No organization");
-      const { error } = await supabase.from("fuel_probe_calibrations").insert({
+      const { error } = await supabase.from("fuel_probe_calibrations").insert([{
         organization_id: organizationId,
         vehicle_id: form.vehicle_id,
         probe_model: form.probe_model || null,
         probe_serial: form.probe_serial || null,
         tank_shape: form.tank_shape,
         tank_capacity_liters: form.tank_capacity_liters,
-        calibration_points: calibPoints,
+        calibration_points: calibPoints as any,
         empty_voltage: form.empty_voltage,
         full_voltage: form.full_voltage,
         calibrated_by: form.calibrated_by || null,
         notes: form.notes || null,
         next_calibration_due: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString(),
-      });
+      }]);
       if (error) throw error;
     },
     onSuccess: () => {

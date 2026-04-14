@@ -72,7 +72,8 @@ const OBDRemoteDiagnosticsPanel = () => {
     refetchInterval: 15000, // Poll every 15s for live data
   });
 
-  const latestReading: OBDReading = obdData[0]?.readings || {};
+  const latestReadingsRaw = obdData[0]?.readings;
+  const latestReading: OBDReading = (latestReadingsRaw && typeof latestReadingsRaw === "object" && !Array.isArray(latestReadingsRaw)) ? latestReadingsRaw as unknown as OBDReading : {};
   const dtcCodes = latestReading.dtc_codes || [];
 
   return (
