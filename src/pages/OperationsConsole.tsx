@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Terminal, Search, Filter, AlertTriangle, Bug, FileText, ArrowRight, RefreshCw, Clock, CheckCircle2, XCircle, AlertOctagon, Crosshair, Layers, Zap, Network } from "lucide-react";
+import { Terminal, Search, Filter, AlertTriangle, Bug, FileText, ArrowRight, RefreshCw, Clock, CheckCircle2, XCircle, AlertOctagon, Crosshair, Layers, Zap, Network, Wifi } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 type LogLevel = "info" | "warn" | "error" | "debug";
