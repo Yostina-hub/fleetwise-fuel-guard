@@ -155,7 +155,11 @@ const MapView = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showCommandCenter, setShowCommandCenter] = useState(false);
   const [showAnomalies, setShowAnomalies] = useState(false);
+  const [sumoActive, setSumoActive] = useState(false);
   const mapAreaRef = useRef<HTMLDivElement>(null);
+
+  // SUMO Simulation
+  const { state: sumoState, setRunning: setSumoRunning, setSpeed: setSumoSpeed, setVehicleCount: setSumoVehicleCount, reset: resetSumo } = useSumoSimulation(sumoActive);
 
   const toggleFullscreen = useCallback(() => {
     if (!mapAreaRef.current) return;
