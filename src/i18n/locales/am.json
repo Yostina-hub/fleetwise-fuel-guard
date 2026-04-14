@@ -1028,145 +1028,145 @@
   },
   "pages": {
     "a_d_a_s_reports": {
-      "title": "ADAS & DMS Analytics",
-      "description": "Advanced Driver Assistance & Driver Monitoring System reports"
+      "title": "ADAS እና DMS ትንታኔዎች",
+      "description": "የላቀ የሾፌር ድጋፍ እና የሾፌር ክትትል ሪፖርቶች"
     },
     "accident_insurance": {
-      "title": "Accident & Insurance Management",
-      "description": "Track insurance policies, accident claims, and repair costs"
+      "title": "አደጋ እና ኢንሹራንስ አስተዳደር",
+      "description": "የኢንሹራንስ ፖሊሲዎችን፣ የአደጋ ጥያቄዎችን እና የጥገና ወጪዎችን ይከታተሉ"
     },
     "alcohol_fatigue_detection": {
-      "title": "Alcohol & Fatigue Detection",
-      "description": "Pre-trip and random testing compliance for driver safety"
+      "title": "የአልኮል እና ድካም ምርመራ",
+      "description": "ቅድመ-ጉዞ እና ድንገተኛ ምርመራ"
     },
     "bulk_operations": {
-      "title": "Bulk Operations",
+      "title": "የጅምላ ስራዎች",
       "description": "No detailed error log available"
     },
     "compliance_calendar": {
-      "title": "Compliance Calendar",
-      "description": "Track regulatory deadlines, renewals, and compliance milestones"
+      "title": "የተገዢነት ቀን መቁጠሪያ",
+      "description": "የቁጥጥር ግዜ ገደቦችን ይከታተሉ"
     },
     "contract_management": {
-      "title": "Contract Management",
-      "description": "Manage vendor contracts, renewals, and service agreements"
+      "title": "የውል አስተዳደር",
+      "description": "የአቅራቢ ውሎችን እና ስምምነቶችን ያስተዳድሩ"
     },
     "dashboard_builder": {
-      "title": "Dashboard Builder",
-      "description": "Create and manage custom KPI dashboard layouts"
+      "title": "ዳሽቦርድ ገንቢ",
+      "description": "ብጁ KPI ዳሽቦርድ ንድፎችን ይፍጠሩ"
     },
     "delegation_matrix": {
-      "title": "Delegation Matrix",
-      "description": "Manage approval authority delegations and substitutions"
+      "title": "የውክልና ማትሪክስ",
+      "description": "የማጽደቂያ ውክልናዎችን ያስተዳድሩ"
     },
     "document_management": {
-      "title": "Document Management",
-      "description": "Centralized document storage, verification, and expiry tracking"
+      "title": "የሰነድ አስተዳደር",
+      "description": "ማዕከላዊ የሰነድ ማከማቻ"
     },
     "driver_app": {
-      "title": "My Profile"
+      "title": "የእኔ መገለጫ"
     },
     "driver_compliance": {
-      "title": "Driver Compliance"
+      "title": "የሾፌር ተገዢነት"
     },
     "driver_h_r": {
-      "title": "HR & Finance"
+      "title": "ሰው ሀብት እና ፋይናንስ"
     },
     "driver_logbook": {
-      "title": "Driver Logbook",
+      "title": "የሾፌር ሎግ ደብተር",
       "description": "No violations recorded"
     },
     "driver_management": {
-      "title": "Driver Management"
+      "title": "የሾፌር አስተዳደር"
     },
     "driver_performance": {
-      "title": "Driver Performance"
+      "title": "የሾፌር አፈጻጸም"
     },
     "driver_safety": {
-      "title": "Safety & Risk"
+      "title": "ደህንነት እና ስጋት"
     },
     "driver_training": {
-      "title": "Driver Training & Certification",
-      "description": "Track certifications, training programs, and compliance requirements"
+      "title": "የሾፌር ስልጠና",
+      "description": "የምስክር ወረቀቶችን እና ስልጠናዎችን ይከታተሉ"
     },
     "fuel_card_providers": {
-      "title": "Fuel Card API Integration",
-      "description": "Connect fuel card providers for automated transaction syncing"
+      "title": "የነዳጅ ካርድ ውህደት",
+      "description": "የነዳጅ ካርድ አቅራቢዎችን ያገናኙ"
     },
     "fuel_requests": {
-      "title": "Fuel Request & Clearance",
-      "description": "Manage fuel request approvals and dispensing workflows"
+      "title": "የነዳጅ ጥያቄ",
+      "description": "የነዳጅ ጥያቄ ማጽደቂያዎችን ያስተዳድሩ"
     },
     "hardware_sensors": {
-      "title": "Hardware Sensors",
-      "description": "TPMS, OBD-II diagnostics, load sensors & calibration tracking"
+      "title": "ሃርድዌር ሴንሰሮች",
+      "description": "TPMS፣ OBD-II እና የጭነት ሴንሰሮች"
     },
     "k_p_i_scorecard": {
-      "title": "KPI Scorecards",
-      "description": "Track key performance indicators and organizational targets"
+      "title": "KPI ውጤት ካርድ",
+      "description": "ቁልፍ የአፈጻጸም አመልካቾችን ይከታተሉ"
     },
     "notification_center": {
-      "title": "Notification Center",
-      "description": "Centralized notifications and alerts hub"
+      "title": "የማሳወቂያ ማዕከል",
+      "description": "ማዕከላዊ ማሳወቂያዎች"
     },
     "organizations": {
-      "title": "Organizations",
-      "description": "Manage all tenant organizations"
+      "title": "ድርጅቶች",
+      "description": "ሁሉንም ድርጅቶች ያስተዳድሩ"
     },
     "parts_inventory": {
-      "title": "Parts Inventory",
-      "description": "Track spare parts, stock levels, and reorder points"
+      "title": "የመለዋወጫ ክምችት",
+      "description": "መለዋወጫ ክፍሎችን ይከታተሉ"
     },
     "passenger_tracking": {
-      "title": "Passenger Tracking",
-      "description": "Manage bus/shuttle passengers, manifests, and boarding logs"
+      "title": "የተሳፋሪ ክትትል",
+      "description": "የአውቶቡስ ተሳፋሪዎችን ያስተዳድሩ"
     },
     "penalties_fines": {
-      "title": "Penalties & Fines",
-      "description": "Track traffic violations, fines, and payment status"
+      "title": "ቅጣቶች እና ገንዘብ",
+      "description": "የትራፊክ ጥሰቶችን ይከታተሉ"
     },
     "performance_simulation": {
-      "title": "Simulation Hub",
-      "description": "What-if analysis, Digital Twin replay & predictive simulations"
+      "title": "ማስመሰያ ማዕከል",
+      "description": "What-if ትንተና እና ትንበያ ማስመሰያዎች"
     },
     "predictive_maintenance": {
-      "title": "AI Predictive Maintenance",
-      "description": "ML-powered failure prediction based on telemetry & maintenance history"
+      "title": "AI ትንበያ ጥገና",
+      "description": "በML የተጎላበተ የብልሽት ትንበያ"
     },
     "r_f_i_d_pairing": {
-      "title": "RFID Driver Pairing",
-      "description": "Pair RFID/iButton tags to devices and drivers for automatic identification"
+      "title": "RFID የሾፌር ጥምረት",
+      "description": "RFID ታጎችን ከመሳሪያዎች ጋር ያጣምሩ"
     },
     "rental_vehicles": {
-      "title": "Rental & Outsource Vehicles",
-      "description": "Manage rental contracts, third-party drivers & costs"
+      "title": "የኪራይ ተሽከርካሪዎች",
+      "description": "የኪራይ ውሎችን ያስተዳድሩ"
     },
     "roadside_assistance": {
-      "title": "Roadside Assistance",
-      "description": "Manage breakdown requests, tow services & emergency response"
+      "title": "የመንገድ ዳር እርዳታ",
+      "description": "የብልሽት ጥያቄዎችን ያስተዳድሩ"
     },
     "route_history": {
-      "title": "Route History Playback",
-      "description": "View and analyze historical vehicle routes"
+      "title": "የመንገድ ታሪክ",
+      "description": "ታሪካዊ የተሽከርካሪ መንገዶችን ይመልከቱ"
     },
     "tire_management": {
-      "title": "Tire Management",
-      "description": "Track tire inventory, wear, replacements & costs"
+      "title": "የጎማ አስተዳደር",
+      "description": "የጎማ ክምችት እና ለውጦችን ይከታተሉ"
     },
     "trip_management": {
-      "title": "Trip Management"
+      "title": "የጉዞ አስተዳደር"
     },
     "vehicle_inspections": {
-      "title": "Vehicle Inspections",
-      "description": "Manage inspection schedules, stickers, and compliance certifications"
+      "title": "የተሽከርካሪ ምርመራ",
+      "description": "የምርመራ መርሃ ግብሮችን ያስተዳድሩ"
     },
     "vehicle_requests": {
-      "title": "Vehicle Requests",
-      "description": "Request, approve & assign vehicles"
+      "title": "የተሽከርካሪ ጥያቄዎች",
+      "description": "ተሽከርካሪ ይጠይቁ፣ ያጽድቁ"
     },
     "vendor_management": {
-      "title": "Vendor Management",
-      "description": "Manage suppliers, service providers, and vendor contracts"
+      "title": "የአቅራቢ አስተዳደር",
+      "description": "አቅራቢዎችን ያስተዳድሩ"
     }
   }
 }
