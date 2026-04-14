@@ -248,4 +248,17 @@ export const deviceTemplates: DeviceTemplate[] = [
     defaultPort: 5023,
     popular: true,
   },
+  {
+    id: "mqtt_generic",
+    name: "MQTT Generic Device",
+    type: "gps",
+    vendor: "Generic",
+    description: "Any device supporting MQTT protocol - WiFi/4G IoT trackers, ESP32, custom hardware",
+    icon: "📡",
+    features: ["GPS", "MQTT Publish/Subscribe", "JSON Payload", "WebSocket Support", "QoS Levels", "Remote Commands", "Flexible Schema"],
+    parameters: ["Latitude", "Longitude", "Speed", "Heading", "Altitude", "Ignition", "Fuel Level", "Battery Voltage", "Custom IO via JSON"],
+    protocol: "mqtt",
+    defaultPort: 1883,
+    popular: false,
+  },
 ];
