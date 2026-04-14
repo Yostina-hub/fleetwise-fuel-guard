@@ -1,18 +1,30 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Leaf, TrendingDown, BarChart3, Droplets } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Leaf, TrendingDown, BarChart3, Droplets, Plus, Loader2, Car } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
+import { toast } from "sonner";
+
+const COLORS = ["hsl(var(--primary))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))", "#6366f1", "#f59e0b", "#10b981"];
 
 const CarbonEmissions = () => {
   const { organizationId } = useOrganization();
+  const qc = useQueryClient();
+  const [addOpen, setAddOpen] = useState(false);
+  const [form, setForm] = useState({ vehicle_id: "", co2_kg: 0, fuel_consumed_liters: 0, distance_km: 0, emission_source: "fuel_combustion", period_start: "", period_end: "", offset_credits: 0, notes: "" });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data: emissions = [], isLoading } = useQuery({
     queryKey: ["carbon-emissions", organizationId],
@@ -23,8 +35,18 @@ const CarbonEmissions = () => {
         .select("*, vehicles(plate_number, make, model)")
         .eq("organization_id", organizationId)
         .order("period_start", { ascending: false })
-        .limit(200);
+        .limit(500);
       if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId,
+  });
+
+  const { data: vehicles = [] } = useQuery({
+    queryKey: ["vehicles-list", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data } = await supabase.from("vehicles").select("id, plate_number, make, model").eq("organization_id", organizationId).order("plate_number");
       return data || [];
     },
     enabled: !!organizationId,
@@ -41,10 +63,69 @@ const CarbonEmissions = () => {
     fuel: Math.round(e.fuel_consumed_liters || 0),
   }));
 
+  // Vehicle breakdown for pie chart
+  const vehicleBreakdown = useMemo(() => {
+    const map: Record<string, { name: string; co2: number }> = {};
+    emissions.forEach((e: any) => {
+      const key = e.vehicle_id;
+      const name = e.vehicles?.plate_number || "Unknown";
+      if (!map[key]) map[key] = { name, co2: 0 };
+      map[key].co2 += e.co2_kg || 0;
+    });
+    return Object.values(map).sort((a, b) => b.co2 - a.co2).slice(0, 8);
+  }, [emissions]);
+
+  // Source breakdown
+  const sourceBreakdown = useMemo(() => {
+    const map: Record<string, number> = {};
+    emissions.forEach((e: any) => {
+      const src = e.emission_source || "unknown";
+      map[src] = (map[src] || 0) + (e.co2_kg || 0);
+    });
+    return Object.entries(map).map(([name, co2]) => ({ name: name.replace(/_/g, " "), co2: Math.round(co2) }));
+  }, [emissions]);
+
+  const validate = () => {
+    const e: Record<string, string> = {};
+    if (!form.vehicle_id) e.vehicle_id = "Select a vehicle";
+    if (form.co2_kg <= 0) e.co2_kg = "Must be > 0";
+    if (!form.period_start) e.period_start = "Required";
+    if (!form.period_end) e.period_end = "Required";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const addMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("carbon_emissions").insert({
+        vehicle_id: form.vehicle_id,
+        co2_kg: form.co2_kg,
+        fuel_consumed_liters: form.fuel_consumed_liters || null,
+        distance_km: form.distance_km || null,
+        emission_source: form.emission_source,
+        period_start: form.period_start,
+        period_end: form.period_end,
+        offset_credits: form.offset_credits || 0,
+        notes: form.notes.trim() || null,
+        organization_id: organizationId!,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Emission record added");
+      qc.invalidateQueries({ queryKey: ["carbon-emissions"] });
+      setAddOpen(false);
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   return (
     <Layout>
       <div className="space-y-6">
-        <div><h1 className="text-2xl font-bold">Carbon Emissions</h1><p className="text-muted-foreground">Track fleet CO₂ emissions, fuel impact, and carbon offset programs</p></div>
+        <div className="flex items-center justify-between">
+          <div><h1 className="text-2xl font-bold">Carbon Emissions</h1><p className="text-muted-foreground">Track fleet CO₂ emissions, fuel impact, and carbon offset programs</p></div>
+          <Button onClick={() => { setForm({ vehicle_id: "", co2_kg: 0, fuel_consumed_liters: 0, distance_km: 0, emission_source: "fuel_combustion", period_start: "", period_end: "", offset_credits: 0, notes: "" }); setErrors({}); setAddOpen(true); }}><Plus className="h-4 w-4 mr-2" /> Add Record</Button>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Leaf className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{(totalCO2 / 1000).toFixed(1)}t</p><p className="text-sm text-muted-foreground">Total CO₂</p></div></div></CardContent></Card>
@@ -54,7 +135,7 @@ const CarbonEmissions = () => {
         </div>
 
         <Tabs defaultValue="overview">
-          <TabsList><TabsTrigger value="overview">Overview</TabsTrigger><TabsTrigger value="details">By Vehicle</TabsTrigger></TabsList>
+          <TabsList><TabsTrigger value="overview">Overview</TabsTrigger><TabsTrigger value="vehicles">By Vehicle</TabsTrigger><TabsTrigger value="sources">By Source</TabsTrigger><TabsTrigger value="details">Details</TabsTrigger></TabsList>
 
           <TabsContent value="overview">
             <Card><CardHeader><CardTitle>Emissions Trend</CardTitle></CardHeader><CardContent>
@@ -63,6 +144,38 @@ const CarbonEmissions = () => {
                   <BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="period" /><YAxis /><Tooltip /><Bar dataKey="co2" fill="hsl(var(--primary))" name="CO₂ (kg)" /><Bar dataKey="fuel" fill="hsl(var(--muted-foreground))" name="Fuel (L)" /></BarChart>
                 </ResponsiveContainer>
               ) : <p className="text-center text-muted-foreground py-12">No emission data recorded yet</p>}
+            </CardContent></Card>
+          </TabsContent>
+
+          <TabsContent value="vehicles">
+            <Card><CardHeader><CardTitle className="flex items-center gap-2"><Car className="h-5 w-5" /> CO₂ by Vehicle (Top 8)</CardTitle></CardHeader><CardContent>
+              {vehicleBreakdown.length > 0 ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart><Pie data={vehicleBreakdown} dataKey="co2" nameKey="name" cx="50%" cy="50%" outerRadius={100} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                      {vehicleBreakdown.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                    </Pie><Tooltip /><Legend /></PieChart>
+                  </ResponsiveContainer>
+                  <div className="space-y-2">
+                    {vehicleBreakdown.map((v, i) => (
+                      <div key={i} className="flex items-center justify-between p-2 rounded bg-muted/50">
+                        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} /><span className="font-medium">{v.name}</span></div>
+                        <span className="font-bold">{(v.co2 / 1000).toFixed(2)}t</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : <p className="text-center text-muted-foreground py-12">No data</p>}
+            </CardContent></Card>
+          </TabsContent>
+
+          <TabsContent value="sources">
+            <Card><CardHeader><CardTitle>Emissions by Source</CardTitle></CardHeader><CardContent>
+              {sourceBreakdown.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={sourceBreakdown} layout="vertical"><CartesianGrid strokeDasharray="3 3" /><XAxis type="number" /><YAxis dataKey="name" type="category" width={120} /><Tooltip /><Bar dataKey="co2" fill="hsl(var(--primary))" name="CO₂ (kg)" /></BarChart>
+                </ResponsiveContainer>
+              ) : <p className="text-center text-muted-foreground py-12">No data</p>}
             </CardContent></Card>
           </TabsContent>
 
@@ -86,6 +199,48 @@ const CarbonEmissions = () => {
             </Table></Card>
           </TabsContent>
         </Tabs>
+
+        <Dialog open={addOpen} onOpenChange={setAddOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader><DialogTitle>Add Emission Record</DialogTitle></DialogHeader>
+            <div className="space-y-4">
+              <div><Label>Vehicle *</Label>
+                <Select value={form.vehicle_id} onValueChange={v => setForm(p => ({ ...p, vehicle_id: v }))}>
+                  <SelectTrigger className={errors.vehicle_id ? "border-destructive" : ""}><SelectValue placeholder="Select vehicle" /></SelectTrigger>
+                  <SelectContent>{vehicles.map((v: any) => <SelectItem key={v.id} value={v.id}>{v.plate_number} — {v.make} {v.model}</SelectItem>)}</SelectContent>
+                </Select>
+                {errors.vehicle_id && <p className="text-sm text-destructive mt-1">{errors.vehicle_id}</p>}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Period Start *</Label><Input type="date" value={form.period_start} onChange={e => setForm(p => ({ ...p, period_start: e.target.value }))} className={errors.period_start ? "border-destructive" : ""} /></div>
+                <div><Label>Period End *</Label><Input type="date" value={form.period_end} onChange={e => setForm(p => ({ ...p, period_end: e.target.value }))} className={errors.period_end ? "border-destructive" : ""} /></div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div><Label>CO₂ (kg) *</Label><Input type="number" min={0} value={form.co2_kg} onChange={e => setForm(p => ({ ...p, co2_kg: parseFloat(e.target.value) || 0 }))} className={errors.co2_kg ? "border-destructive" : ""} /></div>
+                <div><Label>Fuel (L)</Label><Input type="number" min={0} value={form.fuel_consumed_liters} onChange={e => setForm(p => ({ ...p, fuel_consumed_liters: parseFloat(e.target.value) || 0 }))} /></div>
+                <div><Label>Distance (km)</Label><Input type="number" min={0} value={form.distance_km} onChange={e => setForm(p => ({ ...p, distance_km: parseFloat(e.target.value) || 0 }))} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Source</Label>
+                  <Select value={form.emission_source} onValueChange={v => setForm(p => ({ ...p, emission_source: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="fuel_combustion">Fuel Combustion</SelectItem>
+                      <SelectItem value="idling">Idling</SelectItem>
+                      <SelectItem value="cold_start">Cold Start</SelectItem>
+                      <SelectItem value="ac_usage">AC Usage</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Offset Credits (kg)</Label><Input type="number" min={0} value={form.offset_credits} onChange={e => setForm(p => ({ ...p, offset_credits: parseFloat(e.target.value) || 0 }))} /></div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
+              <Button onClick={() => { if (validate()) addMutation.mutate(); }} disabled={addMutation.isPending}>{addMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Add Record</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );

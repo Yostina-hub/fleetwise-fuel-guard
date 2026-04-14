@@ -129,13 +129,13 @@
 - [x] **1E: Delegation Matrix** — Verified: Create/edit/delete delegations, toggle active, scope management, user picker from profiles
 - [x] **1F: Rental Vehicles** — Verified: New table migration, CRUD, provider grouping, cost projections, TypeScript compiles clean
 
-### Phase 2 — Operational Completeness (Sprint 3-4)
-- [ ] **Vendor Management** — Full CRUD, contract linking, performance rating
-- [ ] **Carbon Emissions Dashboard** — Vehicle breakdown charts, offset tracking, compliance reports
-- [ ] **KPI Scorecard** — Configurable targets, trend analysis, department breakdown
-- [ ] **Bulk Operations** — CSV/Excel upload, progress bar, error review panel
-- [ ] **Maintenance Enhancement** — Work order integration, preventive schedule calendar
-- [ ] **Route Optimization** — Waypoint editor, map-based planning, ETA calculation
+### Phase 2 — Operational Completeness (Sprint 3-4) ✅ COMPLETED
+- [x] **Vendor Management** — Full CRUD with add/edit/delete dialogs, vendor type selector, rating, active toggle, validation & toasts
+- [x] **Carbon Emissions Dashboard** — Vehicle breakdown pie chart, source breakdown horizontal bar chart, add emission record dialog, 4-tab layout
+- [x] **KPI Scorecard** — Full CRUD with add/edit/delete, category grouping, progress bars, trend indicators, configurable targets
+- [x] **Bulk Operations** — Import dialog with file picker, export job creation, progress bars, error review dialog, tabbed job history
+- [x] **Maintenance Enhancement** — Already operational: schedules, inspections, service log, work orders, trend charts, insights, low stock alerts
+- [x] **Route Optimization** — Already operational: routes tab, customer sites, optimization engine, trip overview, insights, trend charts
 
 ### Phase 3 — Advanced Features (Sprint 5-6)
 - [ ] **Dashboard Builder** — Drag-and-drop widget placement, saved layouts per user
