@@ -592,7 +592,7 @@ const RouteHistory = () => {
                   {vehiclesLoading ? (
                     <span className="flex items-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                      <span>{t('common.loading', 'Loading...')}<span>
+                      <span>{t('common.loading', 'Loading...')}</span>
                     </span>
                   ) : (
                     <SelectValue placeholder="Choose a vehicle" />
