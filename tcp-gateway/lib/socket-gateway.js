@@ -55,7 +55,8 @@ function initSocketGateway(port, options = {}) {
 
   // Authentication middleware
   io.use((socket, next) => {
-    const orgId = socket.handshake.auth?.orgId;
+    const orgId = socket.handshake.auth?.orgId
+      || socket.handshake.query?.organization_id;
     const token = socket.handshake.auth?.token;
 
     if (!orgId) {
@@ -86,6 +87,15 @@ function initSocketGateway(port, options = {}) {
       socketId: socket.id,
     }));
 
+    // Allow clients to join org room explicitly (for late-binding)
+    socket.on('join:organization', (data) => {
+      if (data?.organization_id) {
+        const room = `org:${data.organization_id}`;
+        socket.join(room);
+        stats.rooms.add(room);
+      }
+    });
+
     // Allow clients to subscribe to specific vehicle rooms
     socket.on('subscribe:vehicle', (vehicleId) => {
       if (vehicleId) {
@@ -115,17 +125,25 @@ function initSocketGateway(port, options = {}) {
     const orgRoom = `org:${data.organization_id}`;
     const vehicleRoom = `vehicle:${data.vehicle_id}`;
 
-    // Broadcast to org room
+    // Broadcast to org room — field names match SocketTelemetryEvent interface
     io.to(orgRoom).emit('telemetry:update', {
       vehicle_id: data.vehicle_id,
-      lat: data.latitude,
-      lng: data.longitude,
+      device_id: data.device_id,
+      latitude: data.latitude,
+      longitude: data.longitude,
       speed_kmh: data.speed_kmh,
       heading: data.heading,
       fuel_level_percent: data.fuel_level_percent,
       engine_on: data.engine_on,
       ignition_on: data.ignition_on,
-      timestamp: data.timestamp,
+      device_connected: true,
+      last_communication_at: data.timestamp || new Date().toISOString(),
+      altitude_meters: data.altitude_meters,
+      odometer_km: data.odometer_km,
+      gps_satellites_count: data.gps_satellites_count,
+      gps_signal_strength: data.gps_signal_strength,
+      gps_jamming_detected: data.gps_jamming_detected,
+      gps_spoofing_detected: data.gps_spoofing_detected,
     });
 
     // Broadcast to vehicle-specific room (for detail views)
