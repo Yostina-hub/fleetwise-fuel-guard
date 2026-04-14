@@ -142,16 +142,46 @@
 
 ## 4. Security Audit Status
 
-| Area | Status | Notes |
-|------|--------|-------|
-| Device table RLS | ✅ | Restricted to ops managers + super admins |
-| Auth whitelist | ✅ | ALLOWED_ADMIN_EMAILS enforced client + server side |
-| Account lockout | ✅ | Auto-lockout after failed attempts |
-| API rate limiting | ✅ | Per-key and per-device rate limits |
-| Session tracking | ✅ | Login history + heartbeat activity |
-| Impersonation audit | ✅ | Full audit trail for admin impersonation |
-| Edge function auth | ✅ | JWT verification on sensitive functions |
-| RLS policies | ✅ | 350+ policies across all tables |
+### ✅ Resolved Findings
+| # | Finding | Severity | Resolution |
+|---|---------|----------|------------|
+| 1 | Edge Functions Lack Authentication | 🔴 Critical | All 23 functions now enforce JWT auth + role checks |
+| 2 | Unsafe innerHTML Usage (XSS) | 🟡 Warning | All usage is static SVGs/markers — no user data flows to innerHTML |
+| 3 | Overly Permissive RLS on Credential Tables | 🔴 Critical | `organization_settings` SELECT restricted to super_admin + org_admin |
+| 4 | User Profiles Public Exposure | 🔴 Critical | Org-scoped RLS enforced — no cross-org data leakage |
+| 5 | Raw GPS Data (telemetry_raw) | 🟡 Warning | Restricted to super_admin only; Vault encryption unavailable |
+| 6 | Leaked Password Protection (HIBP) | 🟡 Warning | Requires manual activation in Lovable Cloud auth settings |
+
+### 🔴 Open Security Findings (Action Required)
+| # | Finding | Severity | Table | Risk | Priority |
+|---|---------|----------|-------|------|----------|
+| 1 | **Driver PII Exposure** | 🔴 Critical | `drivers` | Emails, phone numbers, license numbers, national IDs visible to all org members. Identity theft / competitor poaching risk. | 🔥 Urgent |
+| 2 | **Device Auth Token Exposure** | 🔴 Critical | `devices` | Auth tokens + IMEI + SIM details accessible beyond ops managers. Vehicle hijacking / false GPS data risk. | 🔥 Urgent |
+| 3 | **Fuel Financial Data Exposure** | 🔴 Critical | `fuel_transactions` | Fuel costs, per-liter pricing, card numbers visible to all org members. Business intelligence leakage risk. | 🔥 Urgent |
+
+### ✅ Hardening Already in Place
+| Area | Status | Details |
+|------|--------|---------|
+| Authentication Whitelist | ✅ | `ALLOWED_ADMIN_EMAILS` enforced client-side + server-side sign-out guard |
+| Account Lockout | ✅ | 3 failed attempts (email) / 10 failed (IP) → auto-lockout with exponential backoff |
+| Password Reset Throttling | ✅ | 3 per email, 5 per IP per 15 min; generic responses prevent user enumeration |
+| Self-Registration | ✅ | Completely disabled — users provisioned via `create-user` edge function only |
+| Session Tracking | ✅ | Login history, heartbeat activity, browser/OS fingerprinting |
+| Impersonation Audit | ✅ | Immutable `impersonation_audit_logs` + `impersonation_activity_logs` with IP/UA |
+| Edge Function Auth | ✅ | JWT verification + role checks on all 23 functions |
+| Governor Command Access | ✅ | Restricted to super_admin, org_admin, fleet_manager, operator roles |
+| RLS Policies | ✅ | 352 policies, all scoped `TO authenticated` (anon blocked) |
+| Database Rate Limiting | ✅ | 29 `rate_limit_inserts` triggers (10/min/user) across critical tables |
+| Payload Validation | ✅ | Triggers enforce IMEI format, plate length, fuel bounds, geofence constraints |
+| Deduplication | ✅ | `check_fuel_transaction_dedup` blocks identical entries within 60 seconds |
+| Frontend Throttling | ✅ | 2-5 second cooldowns on forms, 100-row bulk import cap |
+| CSP Headers | ✅ | `connect-src` scoped to Supabase, Mapbox, OSM, LeMat, ArcGIS |
+| Audit Logs | ✅ | Immutable append-only — UPDATE/DELETE blocked by RLS for all roles |
+| API Key Management | ✅ | Hash-stored keys, IP whitelist, per-hour rate limits, expiration |
+| Device Rate Limiting | ✅ | 120 requests/min per device in GPS receiver |
+| Gateway Auth | ✅ | `GATEWAY_SHARED_KEY` with constant-time comparison (timingSafeEqual) |
+| DB Function Hardening | ✅ | `EXECUTE` revoked from PUBLIC on 23+ SECURITY DEFINER functions |
+| Sensitive Data Storage | ✅ | All PII/tokens in `sessionStorage` only — no `localStorage` persistence |
 
 ---
 
@@ -166,4 +196,4 @@
 
 ---
 
-*Generated from codebase audit on April 14, 2026*
+*Generated from codebase + security scan audit on April 14, 2026*
