@@ -75,6 +75,7 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
   const { drivers } = useDrivers();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const activeDrivers = drivers.filter(d => d.status === 'active');
 
   const [formData, setFormData] = useState({
     plate_number: "",
