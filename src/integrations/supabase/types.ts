@@ -9470,6 +9470,87 @@ export type Database = {
         }
         Relationships: []
       }
+      rental_vehicles: {
+        Row: {
+          contract_end: string
+          contract_number: string | null
+          contract_start: string
+          created_at: string
+          daily_rate: number | null
+          driver_name: string | null
+          driver_phone: string | null
+          driver_type: string | null
+          id: string
+          make: string | null
+          model: string | null
+          monthly_cost: number | null
+          notes: string | null
+          organization_id: string
+          plate_number: string
+          provider_name: string
+          status: string | null
+          updated_at: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          contract_end: string
+          contract_number?: string | null
+          contract_start: string
+          created_at?: string
+          daily_rate?: number | null
+          driver_name?: string | null
+          driver_phone?: string | null
+          driver_type?: string | null
+          id?: string
+          make?: string | null
+          model?: string | null
+          monthly_cost?: number | null
+          notes?: string | null
+          organization_id: string
+          plate_number: string
+          provider_name: string
+          status?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          contract_end?: string
+          contract_number?: string | null
+          contract_start?: string
+          created_at?: string
+          daily_rate?: number | null
+          driver_name?: string | null
+          driver_phone?: string | null
+          driver_type?: string | null
+          id?: string
+          make?: string | null
+          model?: string | null
+          monthly_cost?: number | null
+          notes?: string | null
+          organization_id?: string
+          plate_number?: string
+          provider_name?: string
+          status?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rental_vehicles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rental_vehicles_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       restricted_hours_violations: {
         Row: {
           acknowledged_at: string | null
