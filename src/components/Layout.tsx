@@ -46,6 +46,7 @@ import {
   Activity,
   Terminal,
   Layers,
+  Scale,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -219,6 +220,7 @@ const getAdminItems = (t: (key: string) => string) => [
   { label: "Architecture", path: "/system-architecture", icon: Layers },
   { label: "Monitoring", path: "/infrastructure-monitoring", icon: Activity },
   { label: "Operations", path: "/operations-console", icon: Terminal },
+  { label: "Licensing", path: "/licensing-compliance", icon: Scale },
 ];
 
 const Layout = ({ children }: LayoutProps) => {
