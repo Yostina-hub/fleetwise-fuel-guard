@@ -50,8 +50,8 @@ const Settings = () => {
       <div className="p-4 md:p-8 space-y-8">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold">System Settings</h1>
-          <p className="text-muted-foreground mt-1">Configure your fleet management system</p>
+          <h1 className="text-3xl font-bold">{t('settings.title')}</h1>
+          <p className="text-muted-foreground mt-1">{t('settings.preferences')}</p>
         </div>
 
         <Tabs defaultValue="general" className="space-y-6">

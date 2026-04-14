@@ -95,8 +95,8 @@ const SystemConfig = () => {
             <Settings2 className="h-8 w-8 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-4xl font-bold">System Configuration</h1>
-            <p className="text-muted-foreground mt-1 text-lg">Configure organization settings, device protocols, and integrations</p>
+            <h1 className="text-2xl md:text-4xl font-bold">{t('nav.systemConfig')}</h1>
+            <p className="text-muted-foreground mt-1 text-lg">{t('settings.preferences')}</p>
           </div>
         </div>
 
