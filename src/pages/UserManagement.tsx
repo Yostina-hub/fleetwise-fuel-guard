@@ -35,6 +35,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import UsersQuickStats from "@/components/users/UsersQuickStats";
 import UsersQuickActions from "@/components/users/UsersQuickActions";
 import InviteUserDialog from "@/components/users/InviteUserDialog";
+import BulkRoleAssignDialog from "@/components/users/BulkRoleAssignDialog";
 
 const roles = [
   { value: "super_admin", label: "Super Admin", color: "destructive" },
@@ -63,6 +64,7 @@ const UserManagement = () => {
   const [roleFilter, setRoleFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -217,7 +219,7 @@ const UserManagement = () => {
   };
 
   const handleBulkAssign = () => {
-    toast({ title: "Coming Soon", description: "Bulk role assignment is under development" });
+    setBulkAssignOpen(true);
   };
 
   return (
@@ -250,6 +252,12 @@ const UserManagement = () => {
           open={inviteDialogOpen}
           onOpenChange={setInviteDialogOpen}
           onUserCreated={fetchUsers}
+        />
+        <BulkRoleAssignDialog
+          open={bulkAssignOpen}
+          onOpenChange={setBulkAssignOpen}
+          users={users}
+          onComplete={fetchUsers}
         />
         {/* Search and Filter */}
         <Card>
