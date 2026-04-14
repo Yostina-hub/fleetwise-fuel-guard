@@ -125,7 +125,7 @@ const BulkOperations = () => {
                     <TableHead>{t('common.date', 'Date')}</TableHead><TableHead>{t('common.type', 'Type')}</TableHead><TableHead>{t('common.entity', 'Entity')}</TableHead><TableHead>File</TableHead><TableHead>Format</TableHead><TableHead>Progress</TableHead><TableHead>{t('common.status', 'Status')}</TableHead><TableHead className="w-16">Errors</TableHead>
                   </TableRow></TableHeader>
                   <TableBody>
-                    {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}<TableCell></TableRow> :
+                    {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
                     jobs.filter(j => tab === "all" || (tab === "imports" ? j.job_type === "import" : j.job_type === "export")).length === 0 ?
                       <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No jobs</TableCell></TableRow> :
                     jobs.filter((j: any) => tab === "all" || (tab === "imports" ? j.job_type === "import" : j.job_type === "export")).map((j: any) => {

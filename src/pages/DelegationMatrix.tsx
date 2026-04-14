@@ -170,7 +170,7 @@ const DelegationMatrix = () => {
               <TableHead>{t('common.status', 'Status')}</TableHead><TableHead>{t('common.actions', 'Actions')}</TableHead>
             </TableRow></TableHeader>
             <TableBody>
-              {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}<TableCell></TableRow> :
+              {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
               delegations.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No delegations configured</TableCell></TableRow> :
               delegations.map((d: any) => (
                 <TableRow key={d.id}>

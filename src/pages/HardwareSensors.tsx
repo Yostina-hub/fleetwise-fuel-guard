@@ -141,7 +141,7 @@ const HardwareSensors = () => {
                   <TableHead>Time</TableHead><TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>{t('common.type', 'Type')}</TableHead><TableHead>Sensor ID</TableHead><TableHead>Readings</TableHead><TableHead>{t('common.status', 'Status')}</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
-                  {isLoading ? <TableRow><TableCell colSpan={6} className="text-center py-8">{t('common.loading', 'Loading...')}<TableCell></TableRow> :
+                  {isLoading ? <TableRow><TableCell colSpan={6} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
                   (tab === "all" ? sensorData : sensorData.filter((s: any) => s.sensor_type === tab)).length === 0 ?
                     <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No sensor data recorded. Connect sensors to begin.</TableCell></TableRow> :
                   (tab === "all" ? sensorData : sensorData.filter((s: any) => s.sensor_type === tab)).map((s: any) => (

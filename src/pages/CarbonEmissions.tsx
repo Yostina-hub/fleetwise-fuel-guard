@@ -185,7 +185,7 @@ const CarbonEmissions = () => {
             <Card><Table>
               <TableHeader><TableRow><TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>Period</TableHead><TableHead>CO₂ (kg)</TableHead><TableHead>Fuel (L)</TableHead><TableHead>Distance (km)</TableHead><TableHead>Source</TableHead></TableRow></TableHeader>
               <TableBody>
-                {isLoading ? <TableRow><TableCell colSpan={6} className="text-center py-8">{t('common.loading', 'Loading...')}<TableCell></TableRow> :
+                {isLoading ? <TableRow><TableCell colSpan={6} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
                 emissions.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No records</TableCell></TableRow> :
                 emissions.map((e: any) => (
                   <TableRow key={e.id}>

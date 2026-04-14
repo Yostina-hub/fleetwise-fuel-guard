@@ -72,7 +72,7 @@ const DocumentManagement = () => {
             <TableHead>{t('documents.document', 'Document')}</TableHead><TableHead>{t('common.type', 'Type')}</TableHead><TableHead>{t('common.entity', 'Entity')}</TableHead><TableHead>{t('documents.docNumber', 'Doc #')}</TableHead><TableHead>{t('documents.issued', 'Issued')}</TableHead><TableHead>{t('common.expires', 'Expires')}</TableHead><TableHead>{t('documents.verified', 'Verified')}</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {isLoading ? <TableRow><TableCell colSpan={7} className="text-center py-8">{t('common.loading', 'Loading...')}<TableCell></TableRow> :
+            {isLoading ? <TableRow><TableCell colSpan={7} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
             filtered.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">{t('documents.noDocuments', 'No documents found')}<TableCell></TableRow> :
             filtered.map((d: any) => (
               <TableRow key={d.id}>

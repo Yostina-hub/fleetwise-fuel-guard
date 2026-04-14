@@ -67,7 +67,7 @@ const ComplianceCalendar = () => {
               <TableHead>{t('common.title', 'Title')}</TableHead><TableHead>{t('common.category', 'Category')}</TableHead><TableHead>{t('common.entity', 'Entity')}</TableHead><TableHead>{t('compliance.deadline', 'Deadline')}</TableHead><TableHead>{t('compliance.daysLeft', 'Days Left')}</TableHead><TableHead>{t('common.assignedTo', 'Assigned To')}</TableHead><TableHead>{t('common.status', 'Status')}</TableHead>
             </TableRow></TableHeader>
             <TableBody>
-              {isLoading ? <TableRow><TableCell colSpan={7} className="text-center py-8">{t('common.loading', 'Loading...')}<TableCell></TableRow> :
+              {isLoading ? <TableRow><TableCell colSpan={7} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
               items.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">{t('compliance.noItems', 'No compliance items scheduled')}<TableCell></TableRow> :
               items.map((i: any) => {
                 const days = differenceInDays(new Date(i.deadline), new Date());

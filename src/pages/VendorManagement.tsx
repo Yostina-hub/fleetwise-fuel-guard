@@ -129,7 +129,7 @@ const VendorManagement = () => {
             <TableHead>{t('common.name', 'Name')}</TableHead><TableHead>{t('common.contact', 'Contact')}</TableHead><TableHead>{t('common.email', 'Email')}</TableHead><TableHead>{t('common.phone', 'Phone')}</TableHead><TableHead>{t('common.type', 'Type')}</TableHead><TableHead>{t('vendors.rating', 'Rating')}</TableHead><TableHead>{t('common.status', 'Status')}</TableHead><TableHead className="w-24">{t('common.actions', 'Actions')}</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}<TableCell></TableRow> :
+            {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
             filtered.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">{t('vendors.noVendors', 'No vendors found')}<TableCell></TableRow> :
             filtered.map((v: any) => (
               <TableRow key={v.id}>

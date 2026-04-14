@@ -58,7 +58,7 @@ const PartsInventory = () => {
             <TableHead>{t('parts.partNumber', 'Part #')}</TableHead><TableHead>{t('common.name', 'Name')}</TableHead><TableHead>{t('common.category', 'Category')}</TableHead><TableHead>{t('parts.qty', 'Qty')}</TableHead><TableHead>{t('parts.minStock', 'Min Stock')}</TableHead><TableHead>{t('parts.unitCost', 'Unit Cost')}</TableHead><TableHead>{t('parts.supplier', 'Supplier')}</TableHead><TableHead>{t('common.location', 'Location')}</TableHead><TableHead>{t('common.status', 'Status')}</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {isLoading ? <TableRow><TableCell colSpan={9} className="text-center py-8">{t('common.loading', 'Loading...')}<TableCell></TableRow> :
+            {isLoading ? <TableRow><TableCell colSpan={9} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
             filtered.length === 0 ? <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">{t('parts.noParts', 'No parts in inventory')}<TableCell></TableRow> :
             filtered.map((p: any) => (
               <TableRow key={p.id}>

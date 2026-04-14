@@ -60,7 +60,7 @@ const PenaltiesFines = () => {
             <TableHead>{t('fines.fineNumber', 'Fine #')}</TableHead><TableHead>{t('common.date', 'Date')}</TableHead><TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>{t('common.driver', 'Driver')}</TableHead><TableHead>{t('fines.violation', 'Violation')}</TableHead><TableHead>{t('common.amount', 'Amount')}</TableHead><TableHead>{t('common.dueDate', 'Due Date')}</TableHead><TableHead>{t('common.status', 'Status')}</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}<TableCell></TableRow> :
+            {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
             filtered.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">{t('fines.noFines', 'No fines recorded')}<TableCell></TableRow> :
             filtered.map((f: any) => (
               <TableRow key={f.id}>

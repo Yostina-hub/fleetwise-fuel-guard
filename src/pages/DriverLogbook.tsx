@@ -67,7 +67,7 @@ const DriverLogbook = () => {
                 <TableHead>{t('common.date', 'Date')}</TableHead><TableHead>{t('common.driver', 'Driver')}</TableHead><TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>Driving</TableHead><TableHead>Rest</TableHead><TableHead>Breaks</TableHead><TableHead>Distance</TableHead><TableHead>{t('common.status', 'Status')}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}<TableCell></TableRow> :
+                {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
                 filtered.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No logbook entries yet</TableCell></TableRow> :
                 filtered.map((l: any) => (
                   <TableRow key={l.id}>

@@ -72,7 +72,7 @@ const RoadsideAssistance = () => {
             <TableHead>{t('common.requestNumber', 'Request #')}</TableHead><TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>{t('common.type', 'Type')}</TableHead><TableHead>{t('common.location', 'Location')}</TableHead><TableHead>{t('insurance.provider', 'Provider')}</TableHead><TableHead>Priority</TableHead><TableHead>{t('common.status', 'Status')}</TableHead><TableHead>Requested</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}<TableCell></TableRow> :
+            {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
             filtered.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No assistance requests</TableCell></TableRow> :
             filtered.map((r: any) => (
               <TableRow key={r.id}>

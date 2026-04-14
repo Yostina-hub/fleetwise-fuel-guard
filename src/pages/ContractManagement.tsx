@@ -64,7 +64,7 @@ const ContractManagement = () => {
             <TableHead>{t('contracts.contractNumber', 'Contract #')}</TableHead><TableHead>{t('common.type', 'Type')}</TableHead><TableHead>{t('contracts.party', 'Party')}</TableHead><TableHead>{t('common.start', 'Start')}</TableHead><TableHead>{t('common.end', 'End')}</TableHead><TableHead>{t('common.value', 'Value')}</TableHead><TableHead>{t('contracts.autoRenew', 'Auto-Renew')}</TableHead><TableHead>{t('common.status', 'Status')}</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}<TableCell></TableRow> :
+            {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
             filtered.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">{t('contracts.noContracts', 'No contracts found')}<TableCell></TableRow> :
             filtered.map((c: any) => (
               <TableRow key={c.id}>

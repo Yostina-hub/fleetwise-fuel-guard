@@ -77,7 +77,7 @@ const AlcoholFatigueDetection = () => {
                 <TableHead>{t('common.date', 'Date')}</TableHead><TableHead>{t('common.driver', 'Driver')}</TableHead><TableHead>{t('common.type', 'Type')}</TableHead><TableHead>Reading</TableHead><TableHead>Threshold</TableHead><TableHead>Device</TableHead><TableHead>Result</TableHead><TableHead>Tested By</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}<TableCell></TableRow> :
+                {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
                 filtered.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No test records yet</TableCell></TableRow> :
                 filtered.map((t: any) => (
                   <TableRow key={t.id}>

@@ -67,7 +67,7 @@ const DriverTraining = () => {
             <TableHead>{t('common.driver', 'Driver')}</TableHead><TableHead>Certification</TableHead><TableHead>{t('common.type', 'Type')}</TableHead><TableHead>{t('insurance.provider', 'Provider')}</TableHead><TableHead>Completed</TableHead><TableHead>{t('common.expires', 'Expires')}</TableHead><TableHead>Score</TableHead><TableHead>{t('common.status', 'Status')}</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}<TableCell></TableRow> :
+            {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
             filtered.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No training records</TableCell></TableRow> :
             filtered.map((t: any) => (
               <TableRow key={t.id}>

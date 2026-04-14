@@ -85,7 +85,7 @@ const VehicleInspections = () => {
                 <TableHead>{t('common.date', 'Date')}</TableHead><TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>{t('common.type', 'Type')}</TableHead><TableHead>Inspector</TableHead><TableHead>Sticker #</TableHead><TableHead>Next Due</TableHead><TableHead>Result</TableHead><TableHead>{t('common.status', 'Status')}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}<TableCell></TableRow> :
+                {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
                 filtered.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No inspections recorded yet</TableCell></TableRow> :
                 filtered.map((i: any) => (
                   <TableRow key={i.id}>
