@@ -11,7 +11,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
 
+import { useTranslation } from 'react-i18next';
 const DriverTraining = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const [search, setSearch] = useState("");
 
@@ -47,7 +49,7 @@ const DriverTraining = () => {
     <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div><h1 className="text-2xl font-bold">Driver Training & Certification</h1><p className="text-muted-foreground">Track certifications, training programs, and compliance requirements</p></div>
+          <div><h1 className="text-2xl font-bold">{t('pages.driver_training.title', 'Driver Training & Certification')}</h1><p className="text-muted-foreground">{t('pages.driver_training.description', 'Track certifications, training programs, and compliance requirements')}</p></div>
           <Button><Plus className="h-4 w-4 mr-2" /> Add Training</Button>
         </div>
 

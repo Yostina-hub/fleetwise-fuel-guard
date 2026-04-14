@@ -15,7 +15,9 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
+import { useTranslation } from 'react-i18next';
 const DelegationMatrix = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
   const [showAdd, setShowAdd] = useState(false);
@@ -135,8 +137,8 @@ const DelegationMatrix = () => {
               <Users className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-black tracking-tight">Delegation Matrix</h1>
-              <p className="text-muted-foreground text-xs">Manage approval authority delegations and substitutions</p>
+              <h1 className="text-2xl font-black tracking-tight">{t('pages.delegation_matrix.title', 'Delegation Matrix')}</h1>
+              <p className="text-muted-foreground text-xs">{t('pages.delegation_matrix.description', 'Manage approval authority delegations and substitutions')}</p>
             </div>
           </div>
           <Button onClick={() => { resetForm(); setEditItem(null); setShowAdd(true); }}>

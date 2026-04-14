@@ -11,7 +11,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
 
+import { useTranslation } from 'react-i18next';
 const PenaltiesFines = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const [search, setSearch] = useState("");
 
@@ -40,7 +42,7 @@ const PenaltiesFines = () => {
     <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div><h1 className="text-2xl font-bold">Penalties & Fines</h1><p className="text-muted-foreground">Track traffic violations, fines, and payment status</p></div>
+          <div><h1 className="text-2xl font-bold">{t('pages.penalties_fines.title', 'Penalties & Fines')}</h1><p className="text-muted-foreground">{t('pages.penalties_fines.description', 'Track traffic violations, fines, and payment status')}</p></div>
           <Button><Plus className="h-4 w-4 mr-2" /> Record Fine</Button>
         </div>
 

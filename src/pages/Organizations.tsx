@@ -13,7 +13,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import InviteUserDialog from "@/components/users/InviteUserDialog";
 
+import { useTranslation } from 'react-i18next';
 const Organizations = () => {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [inviteOrgId, setInviteOrgId] = useState<string | null>(null);
@@ -76,8 +78,8 @@ const Organizations = () => {
           <div className="flex items-center gap-3">
             <Building2 className="h-8 w-8 text-primary" />
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold">Organizations</h1>
-              <p className="text-muted-foreground text-sm">Manage all tenant organizations</p>
+              <h1 className="text-2xl md:text-3xl font-bold">{t('pages.organizations.title', 'Organizations')}</h1>
+              <p className="text-muted-foreground text-sm">{t('pages.organizations.description', 'Manage all tenant organizations')}</p>
             </div>
           </div>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

@@ -15,7 +15,9 @@ import { Users, Bus, Plus, Search, MapPin, Clock, UserCheck, Loader2 } from "luc
 import { toast } from "sonner";
 import { format } from "date-fns";
 
+import { useTranslation } from 'react-i18next';
 const PassengerTracking = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"manifests" | "boardings" | "analytics">("manifests");
@@ -108,8 +110,8 @@ const PassengerTracking = () => {
       <div className="p-4 md:p-6 space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Passenger Tracking</h1>
-            <p className="text-muted-foreground text-sm">Manage bus/shuttle passengers, manifests, and boarding logs</p>
+            <h1 className="text-2xl font-bold text-foreground">{t('pages.passenger_tracking.title', 'Passenger Tracking')}</h1>
+            <p className="text-muted-foreground text-sm">{t('pages.passenger_tracking.description', 'Manage bus/shuttle passengers, manifests, and boarding logs')}</p>
           </div>
           <Button className="gap-2" onClick={() => setShowCreateManifest(true)}>
             <Plus className="w-4 h-4" /> New Manifest

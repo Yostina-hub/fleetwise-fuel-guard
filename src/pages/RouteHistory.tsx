@@ -50,6 +50,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format, parseISO, differenceInMinutes } from "date-fns";
 
+import { useTranslation } from 'react-i18next';
 interface TelemetryPoint {
   id: string;
   latitude: number | null;
@@ -62,6 +63,7 @@ interface TelemetryPoint {
 }
 
 const getDayBoundsISO = (dateStr: string) => {
+  const { t } = useTranslation();
   // Interpret the selected date in the user's local timezone, then convert
   // to UTC ISO bounds for querying.
   const start = new Date(`${dateStr}T00:00:00`);
@@ -543,10 +545,8 @@ const RouteHistory = () => {
         <div className="p-6 border-b border-border bg-card">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                Route History Playback
-              </h1>
-              <p className="text-muted-foreground mt-1">View and analyze historical vehicle routes</p>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">{t('pages.route_history.title', 'Route History Playback')}</h1>
+              <p className="text-muted-foreground mt-1">{t('pages.route_history.description', 'View and analyze historical vehicle routes')}</p>
             </div>
           </div>
 

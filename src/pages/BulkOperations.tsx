@@ -18,10 +18,12 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
+import { useTranslation } from 'react-i18next';
 const ENTITY_TYPES = ["vehicles", "drivers", "fuel_transactions", "maintenance_schedules", "geofences"];
 const EXPORT_FORMATS = ["csv", "xlsx"];
 
 const BulkOperations = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const { user } = useAuthContext();
   const qc = useQueryClient();
@@ -98,7 +100,7 @@ const BulkOperations = () => {
     <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div><h1 className="text-2xl font-bold">Bulk Operations</h1><p className="text-muted-foreground">Import and export data in bulk — vehicles, drivers, fuel records</p></div>
+          <div><h1 className="text-2xl font-bold">{t('pages.bulk_operations.title', 'Bulk Operations')}</h1><p className="text-muted-foreground">{t('pages.bulk_operations.description', 'Import and export data in bulk — vehicles, drivers, fuel records')}</p></div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => exportMutation.mutate({ entity_type: "vehicles", format: "csv" })}><Download className="h-4 w-4 mr-2" /> Quick Export</Button>
             <Button onClick={() => { setImportForm({ entity_type: "vehicles", format: "csv", file: null }); setImportOpen(true); }}><Upload className="h-4 w-4 mr-2" /> Import</Button>
@@ -204,7 +206,7 @@ const BulkOperations = () => {
               {errorDialog?.error_log ? (
                 <pre className="bg-muted p-4 rounded text-xs max-h-64 overflow-auto">{JSON.stringify(errorDialog.error_log, null, 2)}</pre>
               ) : (
-                <p className="text-muted-foreground text-sm">No detailed error log available</p>
+                <p className="text-muted-foreground text-sm">{t('pages.bulk_operations.description', 'No detailed error log available')}</p>
               )}
             </div>
             <DialogFooter><Button onClick={() => setErrorDialog(null)}>Close</Button></DialogFooter>

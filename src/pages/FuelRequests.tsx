@@ -12,7 +12,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
 
+import { useTranslation } from 'react-i18next';
 const FuelRequests = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const [search, setSearch] = useState("");
 
@@ -57,7 +59,7 @@ const FuelRequests = () => {
     <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div><h1 className="text-2xl font-bold">Fuel Request & Clearance</h1><p className="text-muted-foreground">Manage fuel request approvals and dispensing workflows</p></div>
+          <div><h1 className="text-2xl font-bold">{t('pages.fuel_requests.title', 'Fuel Request & Clearance')}</h1><p className="text-muted-foreground">{t('pages.fuel_requests.description', 'Manage fuel request approvals and dispensing workflows')}</p></div>
           <Button><Plus className="h-4 w-4 mr-2" /> New Request</Button>
         </div>
 

@@ -13,7 +13,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
 
+import { useTranslation } from 'react-i18next';
 const VehicleInspections = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -56,7 +58,7 @@ const VehicleInspections = () => {
     <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div><h1 className="text-2xl font-bold">Vehicle Inspections</h1><p className="text-muted-foreground">Manage inspection schedules, stickers, and compliance certifications</p></div>
+          <div><h1 className="text-2xl font-bold">{t('pages.vehicle_inspections.title', 'Vehicle Inspections')}</h1><p className="text-muted-foreground">{t('pages.vehicle_inspections.description', 'Manage inspection schedules, stickers, and compliance certifications')}</p></div>
           <Button><Plus className="h-4 w-4 mr-2" /> Schedule Inspection</Button>
         </div>
 

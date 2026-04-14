@@ -11,7 +11,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
 
+import { useTranslation } from 'react-i18next';
 const ContractManagement = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const [search, setSearch] = useState("");
 
@@ -44,7 +46,7 @@ const ContractManagement = () => {
     <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div><h1 className="text-2xl font-bold">Contract Management</h1><p className="text-muted-foreground">Manage vendor contracts, renewals, and service agreements</p></div>
+          <div><h1 className="text-2xl font-bold">{t('pages.contract_management.title', 'Contract Management')}</h1><p className="text-muted-foreground">{t('pages.contract_management.description', 'Manage vendor contracts, renewals, and service agreements')}</p></div>
           <Button><Plus className="h-4 w-4 mr-2" /> New Contract</Button>
         </div>
 

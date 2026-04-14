@@ -26,7 +26,9 @@ import { CreateTripRequestDialog } from "@/components/scheduling/CreateTripReque
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 
+import { useTranslation } from 'react-i18next';
 const TripManagement = () => {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { requests, loading, submitRequest } = useTripRequests();
   const { pendingApprovals, approveRequest, rejectRequest } = useApprovals();
@@ -100,7 +102,7 @@ const TripManagement = () => {
         {/* Header */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Trip Management</h1>
+            <h1 className="text-2xl font-bold tracking-tight">{t('pages.trip_management.title', 'Trip Management')}</h1>
             <p className="text-sm text-muted-foreground">
               Request, approve, and track trips in one place
             </p>

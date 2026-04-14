@@ -19,6 +19,7 @@ import { DriverCommunicationHub } from "@/components/drivers/DriverCommunication
 import { DriverDVIRPanel } from "@/components/drivers/DriverDVIRPanel";
 import { DriverHierarchyView } from "@/components/drivers/DriverHierarchyView";
 
+import { useTranslation } from 'react-i18next';
 const operationsTabs = [
   { key: "availability", label: "Availability", icon: Radio },
   { key: "leaderboard", label: "Leaderboard", icon: Trophy },
@@ -28,6 +29,7 @@ const operationsTabs = [
 ];
 
 const DriverManagement = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { drivers } = useDrivers();
   const [view, setView] = useState<"overview" | "operations">("overview");
@@ -73,7 +75,7 @@ const DriverManagement = () => {
             <Users className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">Driver Management</h1>
+            <h1 className="text-xl font-bold tracking-tight">{t('pages.driver_management.title', 'Driver Management')}</h1>
             <p className="text-xs text-muted-foreground">
               {view === "overview" ? "Fleet-wide driver overview & quick actions" : "Operations & real-time status"}
             </p>

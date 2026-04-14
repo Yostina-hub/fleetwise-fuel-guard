@@ -15,6 +15,7 @@ import { DriverPerformanceReviews } from "@/components/drivers/DriverPerformance
 import { DriverAchievementsPanel } from "@/components/drivers/DriverAchievementsPanel";
 import { DriverInsightsPanel } from "@/components/drivers/DriverInsightsPanel";
 
+import { useTranslation } from 'react-i18next';
 const tabs = [
   { key: "analytics", label: "Analytics", icon: BarChart3 },
   { key: "reviews", label: "Reviews", icon: Star, needsDriver: true },
@@ -23,6 +24,7 @@ const tabs = [
 ];
 
 const DriverPerformance = () => {
+  const { t } = useTranslation();
   const { drivers } = useDrivers();
   const [activeTab, setActiveTab] = useState("analytics");
   const [selectedDriverId, setSelectedDriverId] = useState("");
@@ -75,7 +77,7 @@ const DriverPerformance = () => {
               <BarChart3 className="h-5 w-5 text-blue-500" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight">Driver Performance</h1>
+              <h1 className="text-xl font-bold tracking-tight">{t('pages.driver_performance.title', 'Driver Performance')}</h1>
               <p className="text-xs text-muted-foreground">Analytics, reviews, achievements & AI insights</p>
             </div>
           </div>

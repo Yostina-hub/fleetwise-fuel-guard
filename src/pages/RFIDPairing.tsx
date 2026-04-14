@@ -15,7 +15,9 @@ import { Nfc, Plus, Search, Link2, Link2Off, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
+import { useTranslation } from 'react-i18next';
 const RFIDPairing = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -129,8 +131,8 @@ const RFIDPairing = () => {
       <div className="p-4 md:p-6 space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">RFID Driver Pairing</h1>
-            <p className="text-muted-foreground text-sm">Pair RFID/iButton tags to devices and drivers for automatic identification</p>
+            <h1 className="text-2xl font-bold text-foreground">{t('pages.r_f_i_d_pairing.title', 'RFID Driver Pairing')}</h1>
+            <p className="text-muted-foreground text-sm">{t('pages.r_f_i_d_pairing.description', 'Pair RFID/iButton tags to devices and drivers for automatic identification')}</p>
           </div>
           <Button className="gap-2" onClick={() => setShowPairDialog(true)}>
             <Plus className="w-4 h-4" /> New Pairing

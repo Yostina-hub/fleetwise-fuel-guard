@@ -15,6 +15,7 @@ import { DriverIncidentReporting } from "@/components/drivers/DriverIncidentRepo
 import { DriverFatiguePanel } from "@/components/drivers/DriverFatiguePanel";
 import { DriverAutoCoaching } from "@/components/drivers/DriverAutoCoaching";
 
+import { useTranslation } from 'react-i18next';
 const tabs = [
   { key: "risk-scoring", label: "Risk Scoring", icon: ShieldAlert },
   { key: "incidents", label: "Incidents", icon: AlertTriangle },
@@ -23,6 +24,7 @@ const tabs = [
 ];
 
 const DriverSafety = () => {
+  const { t } = useTranslation();
   const { drivers } = useDrivers();
   const [activeTab, setActiveTab] = useState("risk-scoring");
   const [selectedDriverId, setSelectedDriverId] = useState("");
@@ -73,7 +75,7 @@ const DriverSafety = () => {
               <ShieldAlert className="h-5 w-5 text-destructive" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight">Safety & Risk</h1>
+              <h1 className="text-xl font-bold tracking-tight">{t('pages.driver_safety.title', 'Safety & Risk')}</h1>
               <p className="text-xs text-muted-foreground">Risk scoring, incidents, fatigue & coaching</p>
             </div>
           </div>

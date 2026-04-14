@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Layout from "@/components/Layout";
 
+import { useTranslation } from 'react-i18next';
 const WorkflowBuilder = () => {
+  const { t } = useTranslation();
   const [view, setView] = useState<"list" | "builder">("list");
   const [editingWorkflowId, setEditingWorkflowId] = useState<string | null>(null);
 

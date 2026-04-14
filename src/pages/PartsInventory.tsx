@@ -10,7 +10,9 @@ import { Package, AlertTriangle, CheckCircle, DollarSign, Search, Plus } from "l
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 
+import { useTranslation } from 'react-i18next';
 const PartsInventory = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const [search, setSearch] = useState("");
 
@@ -38,7 +40,7 @@ const PartsInventory = () => {
     <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div><h1 className="text-2xl font-bold">Parts Inventory</h1><p className="text-muted-foreground">Track spare parts, stock levels, and reorder points</p></div>
+          <div><h1 className="text-2xl font-bold">{t('pages.parts_inventory.title', 'Parts Inventory')}</h1><p className="text-muted-foreground">{t('pages.parts_inventory.description', 'Track spare parts, stock levels, and reorder points')}</p></div>
           <Button><Plus className="h-4 w-4 mr-2" /> Add Part</Button>
         </div>
 

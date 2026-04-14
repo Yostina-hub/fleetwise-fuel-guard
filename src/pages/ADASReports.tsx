@@ -12,7 +12,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
 
+import { useTranslation } from 'react-i18next';
 const ADASReports = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const [period, setPeriod] = useState("30d");
 
@@ -79,8 +81,8 @@ const ADASReports = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">ADAS & DMS Analytics</h1>
-            <p className="text-muted-foreground">Advanced Driver Assistance & Driver Monitoring System reports</p>
+            <h1 className="text-2xl font-bold">{t('pages.a_d_a_s_reports.title', 'ADAS & DMS Analytics')}</h1>
+            <p className="text-muted-foreground">{t('pages.a_d_a_s_reports.description', 'Advanced Driver Assistance & Driver Monitoring System reports')}</p>
           </div>
           <Select value={period} onValueChange={setPeriod}>
             <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
