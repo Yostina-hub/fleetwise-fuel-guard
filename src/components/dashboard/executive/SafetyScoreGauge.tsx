@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import GlowingCard from "./GlowingCard";
+import { useTranslation } from "react-i18next";
 
 interface SafetyScoreGaugeProps {
   score: number;
@@ -95,6 +96,8 @@ interface SafetyScoreCardProps {
 }
 
 export const SafetyScoreCard = ({ overallScore, categories, loading }: SafetyScoreCardProps) => {
+  const { t } = useTranslation();
+
   if (loading) {
     return (
       <GlowingCard className="h-64" glowColor="success">
@@ -109,15 +112,15 @@ export const SafetyScoreCard = ({ overallScore, categories, loading }: SafetySco
   return (
     <GlowingCard glowColor={overallScore >= 80 ? "success" : overallScore >= 60 ? "warning" : "destructive"}>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-lg">Safety Score</h3>
-        <span className="text-xs text-muted-foreground px-2 py-1 bg-muted rounded">Last 30 days</span>
+        <h3 className="font-semibold text-lg">{t('executive.safetyScore')}</h3>
+        <span className="text-xs text-muted-foreground px-2 py-1 bg-muted rounded">{t('executive.last30Days')}</span>
       </div>
       
       <div className="flex items-start gap-6">
-        <SafetyScoreGauge score={overallScore} label="Overall" size="lg" />
+        <SafetyScoreGauge score={overallScore} label={t('executive.overall')} size="lg" />
         
         <div className="flex-1 space-y-3">
-          <h4 className="text-sm font-medium text-muted-foreground mb-2">Safety Categories</h4>
+          <h4 className="text-sm font-medium text-muted-foreground mb-2">{t('executive.safetyCategories')}</h4>
           {categories.map((cat, i) => (
             <motion.div
               key={cat.name}
@@ -130,7 +133,7 @@ export const SafetyScoreCard = ({ overallScore, categories, loading }: SafetySco
               <div className="flex-1">
                 <div className="flex justify-between text-sm">
                   <span>{cat.name}</span>
-                  <span className="font-medium">{cat.count} Vehicles</span>
+                  <span className="font-medium">{cat.count} {t('executive.vehicles')}</span>
                 </div>
               </div>
             </motion.div>

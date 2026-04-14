@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Legend } from "recharts";
 import { Target, Zap } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface RadarPerformanceChartProps {
   data: {
@@ -15,41 +16,42 @@ interface RadarPerformanceChartProps {
 }
 
 const RadarPerformanceChart = ({ data, loading }: RadarPerformanceChartProps) => {
+  const { t } = useTranslation();
   const { vehicles, drivers, trips, alerts } = data;
 
   // Calculate performance metrics
   const performanceData = [
     {
-      metric: "Utilization",
+      metric: t('executive.utilization'),
       current: vehicles.length > 0 
         ? (vehicles.filter(v => v.status === 'active').length / vehicles.length) * 100 
         : 0,
       target: 80,
     },
     {
-      metric: "Safety",
+      metric: t('executive.safety'),
       current: drivers.reduce((sum, d) => sum + (d.safety_score || 80), 0) / Math.max(drivers.length, 1),
       target: 85,
     },
     {
-      metric: "On-Time",
+      metric: t('executive.onTime'),
       current: trips.length > 0 
         ? (trips.filter(t => t.status === 'completed').length / trips.length) * 100 
         : 0,
       target: 95,
     },
     {
-      metric: "Compliance",
+      metric: t('executive.compliance'),
       current: 88,
       target: 90,
     },
     {
-      metric: "Efficiency",
+      metric: t('executive.efficiency'),
       current: 75,
       target: 82,
     },
     {
-      metric: "Response",
+      metric: t('executive.response'),
       current: alerts.length > 0 
         ? Math.max(0, 100 - alerts.filter(a => a.status !== 'resolved').length * 5)
         : 95,
@@ -65,7 +67,7 @@ const RadarPerformanceChart = ({ data, loading }: RadarPerformanceChartProps) =>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-white">
             <Target className="w-5 h-5 text-primary" />
-            Performance Radar
+            {t('executive.performanceRadar')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -81,7 +83,7 @@ const RadarPerformanceChart = ({ data, loading }: RadarPerformanceChartProps) =>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-white">
             <Target className="w-5 h-5 text-primary" />
-            Performance Radar
+            {t('executive.performanceRadar')}
           </CardTitle>
           <Badge variant="outline" className="gap-1 font-mono bg-[#0d1520] text-white border-[#2a3a4d]">
             <Zap className="w-3 h-3 text-warning" />
@@ -112,7 +114,7 @@ const RadarPerformanceChart = ({ data, loading }: RadarPerformanceChartProps) =>
                 tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }}
               />
               <Radar
-                name="Target"
+                name={t('executive.target')}
                 dataKey="target"
                 stroke="rgba(255,255,255,0.5)"
                 fill="rgba(255,255,255,0.1)"
@@ -121,7 +123,7 @@ const RadarPerformanceChart = ({ data, loading }: RadarPerformanceChartProps) =>
                 strokeDasharray="5 5"
               />
               <Radar
-                name="Current"
+                name={t('executive.currentPerformance')}
                 dataKey="current"
                 stroke="#8DC63F"
                 fill="#8DC63F"
@@ -142,19 +144,19 @@ const RadarPerformanceChart = ({ data, loading }: RadarPerformanceChartProps) =>
             <div className="text-lg font-bold text-success">
               {performanceData.filter(d => d.current >= d.target).length}
             </div>
-            <div className="text-xs text-white/60">On Target</div>
+            <div className="text-xs text-white/60">{t('executive.onTarget')}</div>
           </div>
           <div className="text-center">
             <div className="text-lg font-bold text-warning">
               {performanceData.filter(d => d.current >= d.target * 0.9 && d.current < d.target).length}
             </div>
-            <div className="text-xs text-white/60">Near Target</div>
+            <div className="text-xs text-white/60">{t('executive.nearTarget')}</div>
           </div>
           <div className="text-center">
             <div className="text-lg font-bold text-destructive">
               {performanceData.filter(d => d.current < d.target * 0.9).length}
             </div>
-            <div className="text-xs text-white/60">Below Target</div>
+            <div className="text-xs text-white/60">{t('executive.belowTarget')}</div>
           </div>
         </div>
       </CardContent>

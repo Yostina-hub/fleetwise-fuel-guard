@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from "recharts";
 import { Target, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useTranslation } from "react-i18next";
 
 interface PerformanceMetric {
   metric: string;
@@ -17,6 +18,8 @@ interface PerformanceRadarProps {
 }
 
 const PerformanceRadar = ({ data, overallScore, loading }: PerformanceRadarProps) => {
+  const { t } = useTranslation();
+
   if (loading) {
     return (
       <motion.div 
@@ -54,8 +57,8 @@ const PerformanceRadar = ({ data, overallScore, loading }: PerformanceRadarProps
       <div className="relative z-10 p-6">
         <div className="flex items-center justify-between mb-2">
           <div>
-            <h3 className="text-lg font-semibold text-white">Performance Analysis</h3>
-            <p className="text-sm text-white/60">Fleet vs Target Metrics</p>
+            <h3 className="text-lg font-semibold text-white">{t('executive.performanceAnalysis')}</h3>
+            <p className="text-sm text-white/60">{t('executive.fleetVsTarget')}</p>
           </div>
           <motion.div 
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/20 border border-primary/40"
@@ -63,7 +66,7 @@ const PerformanceRadar = ({ data, overallScore, loading }: PerformanceRadarProps
           >
             <Target className="w-5 h-5 text-primary" />
             <div>
-              <p className="text-xs text-white/60">Overall</p>
+              <p className="text-xs text-white/60">{t('executive.overall')}</p>
               <p className="text-xl font-bold text-primary">{overallScore}%</p>
             </div>
           </motion.div>
@@ -86,7 +89,7 @@ const PerformanceRadar = ({ data, overallScore, loading }: PerformanceRadarProps
                 tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }}
               />
               <Radar
-                name="Target"
+                name={t('executive.target')}
                 dataKey="B"
                 stroke="hsl(var(--muted-foreground))"
                 fill="hsl(var(--muted))"
@@ -94,7 +97,7 @@ const PerformanceRadar = ({ data, overallScore, loading }: PerformanceRadarProps
                 strokeDasharray="5 5"
               />
               <Radar
-                name="Actual"
+                name={t('executive.actual')}
                 dataKey="A"
                 stroke="hsl(var(--primary))"
                 fill="hsl(var(--primary))"
@@ -109,11 +112,11 @@ const PerformanceRadar = ({ data, overallScore, loading }: PerformanceRadarProps
         <div className="flex items-center justify-center gap-6 mt-2">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-primary" />
-            <span className="text-xs text-white/80 font-medium">Current Performance</span>
+            <span className="text-xs text-white/80 font-medium">{t('executive.currentPerformance')}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-[#2a3a4d] border border-[#3a4a5d]" />
-            <span className="text-xs text-white/80 font-medium">Target</span>
+            <span className="text-xs text-white/80 font-medium">{t('executive.target')}</span>
           </div>
         </div>
       </div>

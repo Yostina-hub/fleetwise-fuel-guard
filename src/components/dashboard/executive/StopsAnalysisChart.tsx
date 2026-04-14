@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import GlowingCard from "./GlowingCard";
+import { useTranslation } from "react-i18next";
 
 interface StopsData {
   day: string;
@@ -15,6 +16,8 @@ interface StopsAnalysisChartProps {
 }
 
 const StopsAnalysisChart = ({ data, loading }: StopsAnalysisChartProps) => {
+  const { t } = useTranslation();
+
   if (loading) {
     return (
       <GlowingCard className="h-72" glowColor="primary">
@@ -49,27 +52,27 @@ const StopsAnalysisChart = ({ data, loading }: StopsAnalysisChartProps) => {
   return (
     <GlowingCard glowColor="primary">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-lg">Number of Stops Per Day</h3>
+        <h3 className="font-semibold text-lg">{t('executive.stopsPerDay')}</h3>
         <div className="flex flex-wrap gap-3 text-xs">
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(var(--chart-1))' }} />
-            <span>Short (&lt;10 mins)</span>
+            <span>{t('executive.shortDuration')}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(var(--chart-2))' }} />
-            <span>10-20 mins</span>
+            <span>{t('executive.duration10_20')}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(var(--chart-3))' }} />
-            <span>20-30 mins</span>
+            <span>{t('executive.duration20_30')}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(var(--chart-4))' }} />
-            <span>30-40 mins</span>
+            <span>{t('executive.duration30_40')}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(var(--destructive))' }} />
-            <span>Long (&gt;40 mins)</span>
+            <span>{t('executive.longDuration')}</span>
           </div>
         </div>
       </div>
@@ -85,9 +88,9 @@ const StopsAnalysisChart = ({ data, loading }: StopsAnalysisChartProps) => {
             <XAxis dataKey="day" tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 11 }} />
             <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="shortStops" stackId="a" fill="hsl(var(--chart-1))" name="Short stops" radius={[0, 0, 0, 0]} />
-            <Bar dataKey="mediumStops" stackId="a" fill="hsl(var(--chart-2))" name="Medium stops" radius={[0, 0, 0, 0]} />
-            <Bar dataKey="longStops" stackId="a" fill="hsl(var(--destructive))" name="Long stops" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="shortStops" stackId="a" fill="hsl(var(--chart-1))" name={t('executive.shortStops')} radius={[0, 0, 0, 0]} />
+            <Bar dataKey="mediumStops" stackId="a" fill="hsl(var(--chart-2))" name={t('executive.mediumStops')} radius={[0, 0, 0, 0]} />
+            <Bar dataKey="longStops" stackId="a" fill="hsl(var(--destructive))" name={t('executive.longStops')} radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </motion.div>

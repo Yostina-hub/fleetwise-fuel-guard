@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/popover";
 import { CalendarDays } from "lucide-react";
 import { format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 interface DateRange {
   start: Date;
@@ -29,6 +30,15 @@ const presets = [
 
 const DateRangeFilter = ({ dateRange, onDateRangeChange }: DateRangeFilterProps) => {
   const [open, setOpen] = useState(false);
+  const { t } = useTranslation();
+
+  const presets = [
+    { label: t('common.today'), getValue: () => ({ start: new Date(), end: new Date() }) },
+    { label: t('common.last7Days'), getValue: () => ({ start: subDays(new Date(), 7), end: new Date() }) },
+    { label: t('common.last30Days'), getValue: () => ({ start: subDays(new Date(), 30), end: new Date() }) },
+    { label: t('common.thisMonth'), getValue: () => ({ start: startOfMonth(new Date()), end: endOfMonth(new Date()) }) },
+    { label: t('common.lastMonth'), getValue: () => ({ start: startOfMonth(subMonths(new Date(), 1)), end: endOfMonth(subMonths(new Date(), 1)) }) },
+  ];
 
   const handlePresetClick = (getValue: () => DateRange) => {
     onDateRangeChange(getValue());
@@ -59,7 +69,7 @@ const DateRangeFilter = ({ dateRange, onDateRangeChange }: DateRangeFilterProps)
         <div className="flex">
           {/* Presets */}
           <div className="border-r p-3 space-y-1">
-            <p className="text-xs font-medium text-muted-foreground mb-2">Quick Select</p>
+            <p className="text-xs font-medium text-muted-foreground mb-2">{t('common.quickSelect')}</p>
             {presets.map((preset) => (
               <Button
                 key={preset.label}
