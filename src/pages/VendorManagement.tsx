@@ -15,11 +15,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { toast } from "sonner";
 
-const CATEGORIES = ["fuel", "maintenance", "tires", "insurance", "parts", "services", "other"];
+const VENDOR_TYPES = ["fuel", "maintenance", "tires", "insurance", "parts", "services", "other"];
 
 const emptyVendor = {
-  name: "", contact_person: "", email: "", phone: "", category: "maintenance",
-  contract_number: "", rating: 0, is_active: true, address: "", notes: "",
+  name: "", contact_person: "", email: "", phone: "", vendor_type: "maintenance",
+  rating: 0, is_active: true, address: "", notes: "",
 };
 
 const VendorManagement = () => {
