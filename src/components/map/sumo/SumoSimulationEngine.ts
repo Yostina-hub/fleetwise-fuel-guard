@@ -1,16 +1,6 @@
 import type { SimVehicle, SimulationState, VehicleType, TrafficSignal, SimDeviceInfo, SimDriverInfo } from "./types";
-import { SEGMENTS, NODES, getOutgoingSegments } from "./AddisAbabaNetwork";
-
-// ── Vehicle appearance ──
-const VEHICLE_COLORS: Record<VehicleType, string> = {
-  sedan: "#22c55e",
-  minibus: "#eab308",
-  bus: "#3b82f6",
-  truck: "#f97316",
-  suv: "#8b5cf6",
-};
-
-const VEHICLE_TYPES: VehicleType[] = ["sedan", "sedan", "sedan", "minibus", "minibus", "bus", "truck", "suv"];
+import { SEGMENTS, NODES } from "./AddisAbabaNetwork";
+import { SUMO_VEHICLE_TYPES, selectWeightedRoute, selectRouteFromNode, type SumoRoute } from "./SumoRoutes";
 
 // ── Realistic Ethiopian plates ──
 const PLATES_PREFIX = ["AA", "OR", "ET", "DR", "SN", "TG", "AM"];
@@ -155,13 +145,69 @@ function interpolateAlongWaypoints(
   return { lng: last[0], lat: last[1], heading: 0 };
 }
 
-// ── Vehicle factory ──
+// ── Segment lookup cache ──
+const segmentById = new Map(SEGMENTS.map(s => [s.id, s]));
+
+function getSegment(id: string) {
+  return segmentById.get(id);
+}
+
+// ── Vehicle factory — now uses predefined SUMO routes ──
 function createVehicle(id: number): SimVehicle {
-  const type = VEHICLE_TYPES[Math.floor(Math.random() * VEHICLE_TYPES.length)];
-  const seg = SEGMENTS[Math.floor(Math.random() * SEGMENTS.length)];
+  // Select a route using weighted probability (like SUMO flow)
+  const route = selectWeightedRoute();
+  const type = route.vehicleTypes[Math.floor(Math.random() * route.vehicleTypes.length)] as VehicleType;
+  const vType = SUMO_VEHICLE_TYPES[type];
+
+  // Start at a random position along the first segment of the route
+  const firstSegId = route.segments[0];
+  const seg = getSegment(firstSegId);
+  if (!seg) {
+    // Fallback: use any random segment
+    const fallbackSeg = SEGMENTS[Math.floor(Math.random() * SEGMENTS.length)];
+    return createVehicleFallback(id, fallbackSeg, type);
+  }
+
+  const progress = Math.random() * 0.8; // don't start at very end
+  const pos = interpolateAlongWaypoints(seg.waypoints, progress);
+  const makeInfo = VEHICLE_MAKES[type][Math.floor(Math.random() * VEHICLE_MAKES[type].length)];
+
+  return {
+    id: `sumo_v_${id}`,
+    type,
+    plate: randomPlate(),
+    segmentId: firstSegId,
+    segmentProgress: progress,
+    speed: Math.random() * Math.min(vType.maxSpeed, seg.speedLimit) * 0.8,
+    maxSpeed: vType.maxSpeed,
+    acceleration: 0,
+    lat: pos.lat,
+    lng: pos.lng,
+    heading: pos.heading,
+    fuel: 40 + Math.random() * 55,
+    status: "moving",
+    routeSegments: [...route.segments],
+    routeIndex: 0,
+    color: vType.color,
+    device: createDeviceInfo(),
+    driver: createDriverInfo(),
+    odometer: Math.floor(10000 + Math.random() * 150000),
+    engineTemp: 75 + Math.random() * 20,
+    rpm: 800 + Math.floor(Math.random() * 2500),
+    ignitionOn: true,
+    doorOpen: false,
+    seatbeltOn: Math.random() > 0.15,
+    make: makeInfo.make,
+    model: makeInfo.model,
+    year: makeInfo.year,
+    currentRoadName: seg.name,
+  };
+}
+
+function createVehicleFallback(id: number, seg: typeof SEGMENTS[0], type: VehicleType): SimVehicle {
+  const vType = SUMO_VEHICLE_TYPES[type];
   const progress = Math.random();
   const pos = interpolateAlongWaypoints(seg.waypoints, progress);
-  const maxSpeed = type === "truck" ? 40 : type === "bus" ? 45 : type === "minibus" ? 50 : 60;
   const makeInfo = VEHICLE_MAKES[type][Math.floor(Math.random() * VEHICLE_MAKES[type].length)];
 
   return {
@@ -170,8 +216,8 @@ function createVehicle(id: number): SimVehicle {
     plate: randomPlate(),
     segmentId: seg.id,
     segmentProgress: progress,
-    speed: Math.random() * Math.min(maxSpeed, seg.speedLimit),
-    maxSpeed,
+    speed: Math.random() * Math.min(vType.maxSpeed, seg.speedLimit),
+    maxSpeed: vType.maxSpeed,
     acceleration: 0,
     lat: pos.lat,
     lng: pos.lng,
@@ -180,7 +226,7 @@ function createVehicle(id: number): SimVehicle {
     status: "moving",
     routeSegments: [seg.id],
     routeIndex: 0,
-    color: VEHICLE_COLORS[type],
+    color: vType.color,
     device: createDeviceInfo(),
     driver: createDriverInfo(),
     odometer: Math.floor(10000 + Math.random() * 150000),
@@ -216,7 +262,7 @@ export function createInitialState(vehicleCount: number): SimulationState {
   return { vehicles, signals: createSignals(), time: 0, running: true, speed: 1, vehicleCount };
 }
 
-// ── Simulation step ──
+// ── Simulation step — vehicles follow their route plan ──
 export function stepSimulation(state: SimulationState, dtReal: number): SimulationState {
   if (!state.running) return state;
   const dt = dtReal * state.speed;
@@ -237,14 +283,19 @@ export function stepSimulation(state: SimulationState, dtReal: number): Simulati
 
   // Update vehicles
   const vehicles = state.vehicles.map(v => {
-    const seg = SEGMENTS.find(s => s.id === v.segmentId);
+    const seg = getSegment(v.segmentId);
     if (!seg || !seg.length) return v;
 
     const endNode = NODES.find(n => n.id === seg.to);
     const signal = endNode ? signalMap.get(endNode.id) : undefined;
     const nearEnd = v.segmentProgress > 0.85;
 
-    let targetSpeed = Math.min(v.maxSpeed, seg.speedLimit);
+    // Use SUMO vType parameters for acceleration/deceleration
+    const vType = SUMO_VEHICLE_TYPES[v.type] || SUMO_VEHICLE_TYPES.sedan;
+    let targetSpeed = Math.min(vType.maxSpeed, seg.speedLimit);
+
+    // Apply driver imperfection (sigma)
+    targetSpeed *= (1 - vType.sigma * 0.1 * (Math.random() - 0.3));
 
     if (signal && nearEnd) {
       if (signal.phase === "red") targetSpeed = 0;
@@ -252,7 +303,9 @@ export function stepSimulation(state: SimulationState, dtReal: number): Simulati
     }
 
     const speedDiff = targetSpeed - v.speed;
-    const accel = speedDiff > 0 ? Math.min(2.5, speedDiff) : Math.max(-4.5, speedDiff);
+    const accel = speedDiff > 0
+      ? Math.min(vType.accel, speedDiff)
+      : Math.max(-vType.decel, speedDiff);
     let newSpeed = Math.max(0, v.speed + accel * dt);
 
     const distMeters = (newSpeed / 3.6) * dt;
@@ -260,25 +313,52 @@ export function stepSimulation(state: SimulationState, dtReal: number): Simulati
     let newSegmentId = v.segmentId;
     let newRouteSegments = v.routeSegments;
     let newRouteIndex = v.routeIndex;
+    let newRoadName = v.currentRoadName;
 
+    // When vehicle reaches end of current segment
     if (newProgress >= 1) {
-      const outgoing = getOutgoingSegments(seg.to);
-      if (outgoing.length > 0) {
-        const nextSeg = outgoing[Math.floor(Math.random() * outgoing.length)];
-        newSegmentId = nextSeg.id;
-        newProgress = newProgress - 1;
-        newRouteSegments = [...v.routeSegments.slice(-5), nextSeg.id];
-        newRouteIndex++;
+      const nextRouteIdx = v.routeIndex + 1;
+
+      if (nextRouteIdx < v.routeSegments.length) {
+        // Follow the predefined route to next segment
+        const nextSegId = v.routeSegments[nextRouteIdx];
+        const nextSeg = getSegment(nextSegId);
+
+        if (nextSeg) {
+          newSegmentId = nextSegId;
+          newProgress = newProgress - 1;
+          newRouteIndex = nextRouteIdx;
+          newRoadName = nextSeg.name;
+        } else {
+          // Segment not found — stay at end
+          newProgress = 0.999;
+        }
       } else {
-        const randSeg = SEGMENTS[Math.floor(Math.random() * SEGMENTS.length)];
-        newSegmentId = randSeg.id;
-        newProgress = 0;
-        newRouteSegments = [randSeg.id];
-        newRouteIndex = 0;
+        // Route complete — assign a new route from the destination node
+        const destNode = seg.to;
+        const newRoute = selectRouteFromNode(destNode, v.type);
+
+        if (newRoute) {
+          const firstSeg = getSegment(newRoute.segments[0]);
+          newSegmentId = newRoute.segments[0];
+          newRouteSegments = [...newRoute.segments];
+          newRouteIndex = 0;
+          newProgress = 0;
+          newRoadName = firstSeg?.name || v.currentRoadName;
+        } else {
+          // No route from this node — pick any route and teleport
+          const anyRoute = selectWeightedRoute(v.type);
+          newSegmentId = anyRoute.segments[0];
+          newRouteSegments = [...anyRoute.segments];
+          newRouteIndex = 0;
+          newProgress = 0;
+          const firstSeg = getSegment(newSegmentId);
+          newRoadName = firstSeg?.name || v.currentRoadName;
+        }
       }
     }
 
-    const activeSeg = SEGMENTS.find(s => s.id === newSegmentId) || seg;
+    const activeSeg = getSegment(newSegmentId) || seg;
     const pos = interpolateAlongWaypoints(activeSeg.waypoints, Math.min(newProgress, 0.999));
 
     const status: SimVehicle["status"] = newSpeed < 0.5 ? "stopped" : newSpeed < 5 ? "idle" : "moving";
@@ -302,6 +382,7 @@ export function stepSimulation(state: SimulationState, dtReal: number): Simulati
       status,
       routeSegments: newRouteSegments,
       routeIndex: newRouteIndex,
+      currentRoadName: newRoadName,
       odometer: v.odometer + distMeters / 1000,
       engineTemp: Math.round(newEngineTemp * 10) / 10,
       rpm: Math.round(newRpm),
