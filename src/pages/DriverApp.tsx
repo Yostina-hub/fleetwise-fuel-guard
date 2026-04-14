@@ -133,7 +133,7 @@ const DriverApp = () => {
   const getExpiryBadge = (date: string | null) => {
     if (!date) return null;
     const days = differenceInDays(new Date(date), new Date());
-    if (isPast(new Date(date))) return <Badge variant="destructive" className="text-[10px]">Expired</Badge>;
+    if (isPast(new Date(date))) return <Badge variant="destructive" className="text-[10px]">{t('common.expired', 'Expired')}</Badge>;
     if (days <= 30) return <Badge variant="destructive" className="text-[10px]">{days}d left</Badge>;
     if (days <= 90) return <Badge variant="secondary" className="text-[10px]">{days}d left</Badge>;
     return <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-400">Valid</Badge>;
@@ -200,7 +200,7 @@ const DriverApp = () => {
                             <p className="text-[10px] text-muted-foreground">Due: {format(new Date(evt.due_date), "MMM dd, yyyy")}</p>
                           </div>
                           {isPast(new Date(evt.due_date))
-                            ? <Badge variant="destructive" className="text-[10px]">Overdue</Badge>
+                            ? <Badge variant="destructive" className="text-[10px]">{t('common.overdue', 'Overdue')}</Badge>
                             : <Badge variant="secondary" className="text-[10px]">{differenceInDays(new Date(evt.due_date), new Date())}d</Badge>}
                         </div>
                       ))}
@@ -315,8 +315,8 @@ const DriverApp = () => {
                           </div>
                           <div className="flex items-center gap-2">
                             {doc.is_verified
-                              ? <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-400">Verified</Badge>
-                              : <Badge variant="outline" className="text-[10px]">Pending</Badge>}
+                              ? <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-400">{t('documents.verified', 'Verified')}</Badge>
+                              : <Badge variant="outline" className="text-[10px]">{t('common.pending', 'Pending')}</Badge>}
                             {getExpiryBadge(doc.expiry_date)}
                           </div>
                         </div>

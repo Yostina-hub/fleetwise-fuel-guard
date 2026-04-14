@@ -70,10 +70,10 @@ const RentalVehicles = () => {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "active": return <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">Active</Badge>;
+      case "active": return <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">{t('common.active', 'Active')}</Badge>;
       case "expiring_soon": return <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">Expiring Soon</Badge>;
-      case "expired": return <Badge variant="destructive">Expired</Badge>;
-      case "terminated": return <Badge variant="secondary">Terminated</Badge>;
+      case "expired": return <Badge variant="destructive">{t('common.expired', 'Expired')}</Badge>;
+      case "terminated": return <Badge variant="secondary">{t('common.terminated', 'Terminated')}</Badge>;
       default: return <Badge variant="outline">{status}</Badge>;
     }
   };
@@ -224,8 +224,8 @@ const RentalVehicles = () => {
                 <div><Label>Provider *</Label><Input value={form.provider_name} onChange={e => setForm(f => ({ ...f, provider_name: e.target.value }))} placeholder="Company name" /></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div><Label>Make</Label><Input value={form.make} onChange={e => setForm(f => ({ ...f, make: e.target.value }))} placeholder="Toyota" /></div>
-                <div><Label>Model</Label><Input value={form.model} onChange={e => setForm(f => ({ ...f, model: e.target.value }))} placeholder="HiAce" /></div>
+                <div><Label>{t('vehicles.make', 'Make')}</Label><Input value={form.make} onChange={e => setForm(f => ({ ...f, make: e.target.value }))} placeholder="Toyota" /></div>
+                <div><Label>{t('vehicles.model', 'Model')}</Label><Input value={form.model} onChange={e => setForm(f => ({ ...f, model: e.target.value }))} placeholder="HiAce" /></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div><Label>Contract Start *</Label><Input type="date" value={form.contract_start} onChange={e => setForm(f => ({ ...f, contract_start: e.target.value }))} /></div>
@@ -247,7 +247,7 @@ const RentalVehicles = () => {
               <div><Label>Driver Name</Label><Input value={form.driver_name} onChange={e => setForm(f => ({ ...f, driver_name: e.target.value }))} placeholder="Driver name" /></div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setShowAddDialog(false)}>{t('common.cancel', 'Cancel')}</Button>
               <Button onClick={() => addMutation.mutate()} disabled={!form.plate_number || !form.provider_name || !form.contract_start || !form.contract_end || addMutation.isPending}>
                 {addMutation.isPending ? "Adding..." : "Add Vehicle"}
               </Button>

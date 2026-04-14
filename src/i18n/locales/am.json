@@ -87,7 +87,34 @@
     "assignedTo": "ለተመደበ",
     "createdAt": "የተፈጠረበት",
     "updatedAt": "የተዘመነበት",
-    "createdBy": "የፈጠረው"
+    "createdBy": "የፈጠረው",
+    "vehicle": "ተሽከርካሪ",
+    "driver": "ሾፌር",
+    "location": "ቦታ",
+    "amount": "መጠን",
+    "category": "ምድብ",
+    "entity": "አካል",
+    "contact": "ግንኙነት",
+    "email": "ኢሜይል",
+    "phone": "ስልክ",
+    "address": "አድራሻ",
+    "expires": "ያለቀበት",
+    "start": "መጀመሪያ",
+    "end": "መጨረሻ",
+    "value": "ዋጋ",
+    "dueDate": "የመክፈያ ቀን",
+    "requestNumber": "ጥያቄ #",
+    "title": "ርዕስ",
+    "overdue": "ያለፈበት",
+    "expiringSoon": "በቅርቡ ያልቃል",
+    "totalItems": "ጠቅላላ ዕቃዎች",
+    "totalRequests": "ጠቅላላ ጥያቄዎች",
+    "pendingApproval": "ማጽደቂያ በመጠባበቅ",
+    "allRequests": "ሁሉም ጥያቄዎች",
+    "allTypes": "ሁሉም ዓይነቶች",
+    "addDeadline": "የግዜ ገደብ ጨምር",
+    "newRequest": "አዲስ ጥያቄ",
+    "approved": "ፀድቋል"
   },
   "nav": {
     "dashboard": "ዳሽቦርድ",
@@ -330,7 +357,15 @@
       "onLeave": "በፈቃድ ላይ",
       "onDuty": "በሥራ ላይ",
       "offDuty": "ከሥራ ውጪ"
-    }
+    },
+    "availability": "ተገኝነት",
+    "leaderboard": "ደረጃ ሰሌዳ",
+    "messages": "መልእክቶች",
+    "dvir": "DVIR",
+    "groups": "ቡድኖች",
+    "operations": "ስራዎች",
+    "overviewDesc": "አጠቃላይ የሾፌር ዕይታ",
+    "operationsDesc": "ስራዎች እና የቅጽበት ሁኔታ"
   },
   "dispatch": {
     "title": "ማሰራጨት እና መርሐ ግብር",
@@ -432,7 +467,13 @@
       "analytics": "ትንተና",
       "alerts": "ማንቂያዎች",
       "stations": "ጣቢያዎች"
-    }
+    },
+    "newRequest": "አዲስ ጥያቄ",
+    "totalRequests": "ጠቅላላ ጥያቄዎች",
+    "pendingApproval": "ማጽደቂያ በመጠባበቅ",
+    "dispensed": "የተሰጠ",
+    "estCost": "ግምት ዋጋ",
+    "noRequests": "ምንም የነዳጅ ጥያቄ አልተገኘም"
   },
   "alerts": {
     "title": "ማንቂያዎች",
@@ -751,7 +792,13 @@
     "reminder": "አስታዋሽ",
     "overdue": "ያለፈ",
     "upcoming": "መጪ",
-    "completed": "ተጠናቋል"
+    "completed": "ተጠናቋል",
+    "dueThisWeek": "በዚህ ሳምንት ያለቀ",
+    "deadlines": "የተገዢነት ግዜ ገደቦች",
+    "deadline": "ግዜ ገደብ",
+    "daysLeft": "ቀሪ ቀናት",
+    "noItems": "ምንም የተገዢነት ዕቃ አልተመደበም",
+    "dueSoon": "በቅርቡ ይደርሳል"
   },
   "contracts": {
     "title": "የውል አስተዳደር",
@@ -767,7 +814,13 @@
       "expired": "ያለፈ",
       "pending": "በመጠባበቅ ላይ",
       "terminated": "ተቋርጧል"
-    }
+    },
+    "newContract": "አዲስ ውል",
+    "totalContracts": "ጠቅላላ ውሎች",
+    "activeValue": "ንቁ ዋጋ",
+    "party": "ተዋዋይ",
+    "indefinite": "ያልተገደበ",
+    "noContracts": "ምንም ውል አልተገኘም"
   },
   "documents": {
     "title": "የሰነድ አስተዳደር",
@@ -777,7 +830,14 @@
     "fileSize": "የፋይል መጠን",
     "expiryDate": "የማብቂያ ቀን",
     "verified": "ተረጋግጧል",
-    "unverified": "ያልተረጋገጠ"
+    "unverified": "ያልተረጋገጠ",
+    "upload": "ሰነድ ስቀል",
+    "totalDocuments": "ጠቅላላ ሰነዶች",
+    "pendingVerification": "ማረጋገጫ በመጠባበቅ",
+    "document": "ሰነድ",
+    "docNumber": "ሰነድ #",
+    "issued": "የተሰጠ",
+    "noDocuments": "ምንም ሰነድ አልተገኘም"
   },
   "accidentInsurance": {
     "title": "አደጋ እና ኢንሹራንስ",
@@ -852,7 +912,12 @@
     "vendorType": "የአቅራቢ ዓይነት",
     "contactPerson": "የግንኙነት ሰው",
     "rating": "ደረጃ",
-    "contractValue": "የውል ዋጋ"
+    "contractValue": "የውል ዋጋ",
+    "addVendor": "አቅራቢ ጨምር",
+    "editVendor": "አቅራቢ አርትዕ",
+    "totalVendors": "ጠቅላላ አቅራቢዎች",
+    "topRated": "ከፍተኛ ደረጃ (4+)",
+    "noVendors": "ምንም አቅራቢ አልተገኘም"
   },
   "penalties": {
     "title": "ቅጣቶች እና መቀጫ",
@@ -917,7 +982,9 @@
     "clearAll": "ሁሉንም አጽዳ",
     "unread": "ያልተነበቡ",
     "read": "የተነበቡ",
-    "preferences": "ምርጫዎች"
+    "preferences": "ምርጫዎች",
+    "highPriority": "ከፍተኛ ቅድሚያ",
+    "noNotifications": "ምንም ማሳወቂያ የለም"
   },
   "organizations": {
     "title": "ድርጅቶች",
@@ -1168,5 +1235,45 @@
       "title": "የአቅራቢ አስተዳደር",
       "description": "አቅራቢዎችን ያስተዳድሩ"
     }
+  },
+  "insurance": {
+    "newClaim": "አዲስ ጥያቄ",
+    "activePolicies": "ንቁ ፖሊሲዎች",
+    "totalClaims": "ጠቅላላ ጥያቄዎች",
+    "openClaims": "ክፍት ጥያቄዎች",
+    "totalClaimed": "ጠቅላላ የተጠየቀ",
+    "accidentClaims": "የአደጋ ጥያቄዎች",
+    "insurancePolicies": "የኢንሹራንስ ፖሊሲዎች",
+    "claimNumber": "ጥያቄ #",
+    "policyNumber": "ፖሊሲ #",
+    "fault": "ጥፋት",
+    "provider": "አቅራቢ",
+    "coverage": "ሽፋን",
+    "premium": "ፕሪሚየም",
+    "noClaims": "ምንም ጥያቄ አልተመዘገበም",
+    "noPolicies": "ምንም ፖሊሲ አልተመዘገበም"
+  },
+  "parts": {
+    "addPart": "ክፍል ጨምር",
+    "totalParts": "ጠቅላላ ክፍሎች",
+    "inStock": "በክምችት",
+    "lowStock": "ዝቅተኛ ክምችት",
+    "inventoryValue": "የክምችት ዋጋ",
+    "partNumber": "ክፍል #",
+    "qty": "ብዛት",
+    "minStock": "ዝቅተኛ ክምችት",
+    "unitCost": "ዋጋ/ክፍል",
+    "supplier": "አቅራቢ",
+    "noParts": "ምንም ክፍል በክምችት የለም"
+  },
+  "fines": {
+    "recordFine": "ቅጣት መዝግብ",
+    "totalFines": "ጠቅላላ ቅጣቶች",
+    "unpaid": "ያልተከፈለ",
+    "outstanding": "ቀሪ",
+    "totalPaid": "ጠቅላላ የተከፈለ",
+    "fineNumber": "ቅጣት #",
+    "violation": "ጥሰት",
+    "noFines": "ምንም ቅጣት አልተመዘገበም"
   }
 }

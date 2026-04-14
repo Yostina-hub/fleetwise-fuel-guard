@@ -9,8 +9,8 @@ import { Bell, CheckCircle, AlertTriangle, Info, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
-
 import { useTranslation } from 'react-i18next';
+
 const NotificationCenter = () => {
   const { t } = useTranslation();
   const { organizationId } = useOrganization();
@@ -40,7 +40,7 @@ const NotificationCenter = () => {
 
   const renderList = (items: any[]) => (
     <div className="space-y-2">
-      {items.length === 0 ? <p className="text-center text-muted-foreground py-8">No notifications</p> :
+      {items.length === 0 ? <p className="text-center text-muted-foreground py-8">{t('notifications.noNotifications', 'No notifications')}</p> :
       items.map((n: any) => (
         <Card key={n.id} className={`cursor-pointer transition-colors ${!n.is_read ? "border-primary/30 bg-primary/5" : ""}`}>
           <CardContent className="py-3 flex items-start gap-3">
@@ -64,18 +64,22 @@ const NotificationCenter = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div><h1 className="text-2xl font-bold">{t('pages.notification_center.title', 'Notification Center')}</h1><p className="text-muted-foreground">{t('pages.notification_center.description', 'Centralized notifications and alerts hub')}</p></div>
-          <Button variant="outline">Mark All Read</Button>
+          <Button variant="outline">{t('notifications.markAllRead', 'Mark All Read')}</Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Bell className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{notifications.length}</p><p className="text-sm text-muted-foreground">Total</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Mail className="h-8 w-8 text-blue-500" /><div><p className="text-2xl font-bold">{unread.length}</p><p className="text-sm text-muted-foreground">Unread</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><AlertTriangle className="h-8 w-8 text-destructive" /><div><p className="text-2xl font-bold">{high.length}</p><p className="text-sm text-muted-foreground">High Priority</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Bell className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{notifications.length}</p><p className="text-sm text-muted-foreground">{t('common.total', 'Total')}</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Mail className="h-8 w-8 text-blue-500" /><div><p className="text-2xl font-bold">{unread.length}</p><p className="text-sm text-muted-foreground">{t('notifications.unread', 'Unread')}</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><AlertTriangle className="h-8 w-8 text-destructive" /><div><p className="text-2xl font-bold">{high.length}</p><p className="text-sm text-muted-foreground">{t('notifications.highPriority', 'High Priority')}</p></div></div></CardContent></Card>
         </div>
 
         <Tabs defaultValue="all">
-          <TabsList><TabsTrigger value="all">All ({notifications.length})</TabsTrigger><TabsTrigger value="unread">Unread ({unread.length})</TabsTrigger><TabsTrigger value="high">High Priority ({high.length})</TabsTrigger></TabsList>
-          <TabsContent value="all">{isLoading ? <p className="text-center py-8">Loading...</p> : renderList(notifications)}</TabsContent>
+          <TabsList>
+            <TabsTrigger value="all">{t('common.all', 'All')} ({notifications.length})</TabsTrigger>
+            <TabsTrigger value="unread">{t('notifications.unread', 'Unread')} ({unread.length})</TabsTrigger>
+            <TabsTrigger value="high">{t('notifications.highPriority', 'High Priority')} ({high.length})</TabsTrigger>
+          </TabsList>
+          <TabsContent value="all">{isLoading ? <p className="text-center py-8">{t('common.loading', 'Loading...')}</p> : renderList(notifications)}</TabsContent>
           <TabsContent value="unread">{renderList(unread)}</TabsContent>
           <TabsContent value="high">{renderList(high)}</TabsContent>
         </Tabs>

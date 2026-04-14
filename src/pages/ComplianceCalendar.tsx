@@ -39,11 +39,11 @@ const ComplianceCalendar = () => {
   });
 
   const urgencyBadge = (deadline: string, status: string) => {
-    if (status === "completed") return <Badge variant="default">Completed</Badge>;
+    if (status === "completed") return <Badge variant="default">{t('common.completed', 'Completed')}</Badge>;
     const days = differenceInDays(new Date(deadline), new Date());
-    if (days < 0) return <Badge variant="destructive">Overdue</Badge>;
-    if (days <= 7) return <Badge variant="secondary" className="bg-orange-100 text-orange-800">Due Soon</Badge>;
-    return <Badge variant="outline">Upcoming</Badge>;
+    if (days < 0) return <Badge variant="destructive">{t('common.overdue', 'Overdue')}</Badge>;
+    if (days <= 7) return <Badge variant="secondary" className="bg-orange-100 text-orange-800">{t('compliance.dueSoon', 'Due Soon')}</Badge>;
+    return <Badge variant="outline">{t('compliance.upcoming', 'Upcoming')}</Badge>;
   };
 
   return (
@@ -55,20 +55,20 @@ const ComplianceCalendar = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Calendar className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{items.length}</p><p className="text-sm text-muted-foreground">Total Items</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><AlertTriangle className="h-8 w-8 text-destructive" /><div><p className="text-2xl font-bold">{overdue.length}</p><p className="text-sm text-muted-foreground">Overdue</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Clock className="h-8 w-8 text-orange-500" /><div><p className="text-2xl font-bold">{dueSoon.length}</p><p className="text-sm text-muted-foreground">Due This Week</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><CheckCircle className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{completed.length}</p><p className="text-sm text-muted-foreground">Completed</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Calendar className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{items.length}</p><p className="text-sm text-muted-foreground">{t('common.totalItems', 'Total Items')}</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><AlertTriangle className="h-8 w-8 text-destructive" /><div><p className="text-2xl font-bold">{overdue.length}</p><p className="text-sm text-muted-foreground">{t('common.overdue', 'Overdue')}</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Clock className="h-8 w-8 text-orange-500" /><div><p className="text-2xl font-bold">{dueSoon.length}</p><p className="text-sm text-muted-foreground">{t('compliance.dueThisWeek', 'Due This Week')}</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><CheckCircle className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{completed.length}</p><p className="text-sm text-muted-foreground">{t('common.completed', 'Completed')}</p></div></div></CardContent></Card>
         </div>
 
-        <Card><CardHeader><CardTitle>Compliance Deadlines</CardTitle></CardHeader>
+        <Card><CardHeader><CardTitle>{t('compliance.deadlines', 'Compliance Deadlines')}</CardTitle></CardHeader>
           <Table>
             <TableHeader><TableRow>
-              <TableHead>Title</TableHead><TableHead>Category</TableHead><TableHead>Entity</TableHead><TableHead>Deadline</TableHead><TableHead>Days Left</TableHead><TableHead>Assigned To</TableHead><TableHead>Status</TableHead>
+              <TableHead>{t('common.title', 'Title')}</TableHead><TableHead>{t('common.category', 'Category')}</TableHead><TableHead>{t('common.entity', 'Entity')}</TableHead><TableHead>{t('compliance.deadline', 'Deadline')}</TableHead><TableHead>{t('compliance.daysLeft', 'Days Left')}</TableHead><TableHead>{t('common.assignedTo', 'Assigned To')}</TableHead><TableHead>{t('common.status', 'Status')}</TableHead>
             </TableRow></TableHeader>
             <TableBody>
-              {isLoading ? <TableRow><TableCell colSpan={7} className="text-center py-8">Loading...</TableCell></TableRow> :
-              items.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No compliance items scheduled</TableCell></TableRow> :
+              {isLoading ? <TableRow><TableCell colSpan={7} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
+              items.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">{t('compliance.noItems', 'No compliance items scheduled')}<TableCell></TableRow> :
               items.map((i: any) => {
                 const days = differenceInDays(new Date(i.deadline), new Date());
                 return (

@@ -233,7 +233,7 @@ const DeviceIntegration = () => {
           <div className="overflow-x-auto">
             <TabsList className="w-max">
               <TabsTrigger value="devices">Device Management</TabsTrigger>
-              <TabsTrigger value="commands">Commands</TabsTrigger>
+              <TabsTrigger value="commands">{t('devices.commands', 'Commands')}</TabsTrigger>
               <TabsTrigger value="telemetry">Raw Telemetry</TabsTrigger>
               <TabsTrigger value="heartbeat">Heartbeat Monitor</TabsTrigger>
               <TabsTrigger value="realtime">Live Status</TabsTrigger>

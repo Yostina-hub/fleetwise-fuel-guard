@@ -621,7 +621,7 @@ const Geofencing = () => {
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>Edit geofence</p>
+                                <p>{t('geofencing.editGeofence', 'Edit geofence')}</p>
                               </TooltipContent>
                             </Tooltip>
                             <Tooltip>
@@ -636,7 +636,7 @@ const Geofencing = () => {
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>Delete geofence</p>
+                                <p>{t('geofencing.deleteGeofence', 'Delete geofence')}</p>
                               </TooltipContent>
                             </Tooltip>
                           </div>
@@ -674,7 +674,7 @@ const Geofencing = () => {
           <div className="space-y-4">
             {/* Name */}
             <div>
-              <Label htmlFor="name">Name *</Label>
+              <Label htmlFor="name">{t('common.name', 'Name')} *</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -686,7 +686,7 @@ const Geofencing = () => {
 
             {/* Category */}
             <div>
-              <Label>Category</Label>
+              <Label>{t('common.category', 'Category')}</Label>
               <Select
                 value={formData.category}
                 onValueChange={(value) => setFormData({ ...formData, category: value })}
@@ -696,7 +696,7 @@ const Geofencing = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="customer_site">Customer Site</SelectItem>
-                  <SelectItem value="depot">Depot</SelectItem>
+                  <SelectItem value="depot">{t('geofencing.depot', 'Depot')}</SelectItem>
                   <SelectItem value="no_go_zone">No-Go Zone</SelectItem>
                   <SelectItem value="speed_zone">Speed Zone</SelectItem>
                   <SelectItem value="parking">Parking Area</SelectItem>
@@ -719,7 +719,7 @@ const Geofencing = () => {
 
             {/* Color */}
             <div>
-              <Label>Color</Label>
+              <Label>{t('common.color', 'Color')}</Label>
               <div className="flex gap-2 mt-1">
                 {colors.map(color => (
                   <button

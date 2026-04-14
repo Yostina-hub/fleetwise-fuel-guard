@@ -146,7 +146,7 @@ const FuelCardProviders = () => {
           <Card>
             <CardContent className="py-12 text-center text-muted-foreground">
               <CreditCard className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>No fuel card providers configured</p>
+              <p>{t('fuel.noProviders', 'No fuel card providers configured')}</p>
               <Button className="mt-4" onClick={() => setShowAddProvider(true)}>Add Your First Provider</Button>
             </CardContent>
           </Card>
@@ -210,7 +210,7 @@ const FuelCardProviders = () => {
             <DialogHeader><DialogTitle>Add Fuel Card Provider</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label>Provider</Label>
+                <Label>{t('insurance.provider', 'Provider')}</Label>
                 <Select value={newProvider.provider_name} onValueChange={v => setNewProvider(p => ({ ...p, provider_name: v }))}>
                   <SelectTrigger><SelectValue placeholder="Select provider" /></SelectTrigger>
                   <SelectContent>
@@ -238,7 +238,7 @@ const FuelCardProviders = () => {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowAddProvider(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setShowAddProvider(false)}>{t('common.cancel', 'Cancel')}</Button>
               <Button onClick={() => createProviderMutation.mutate(newProvider)} disabled={!newProvider.provider_name}>
                 Add Provider
               </Button>

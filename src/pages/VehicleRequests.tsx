@@ -143,7 +143,7 @@ const VehicleRequests = () => {
           </CardContent></Card>
           <Card><CardContent className="p-4 flex items-center gap-3">
             <div className="h-9 w-9 rounded-lg bg-green-500/10 flex items-center justify-center"><CheckCircle className="w-4 h-4 text-green-500" /></div>
-            <div><p className="text-xl font-bold">{completed}</p><p className="text-xs text-muted-foreground">Completed</p></div>
+            <div><p className="text-xl font-bold">{completed}</p><p className="text-xs text-muted-foreground">{t('common.completed', 'Completed')}</p></div>
           </CardContent></Card>
         </div>
 
@@ -203,14 +203,14 @@ const VehicleRequests = () => {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div><Label>Requester Name *</Label><Input value={form.requester_name} onChange={e => setForm(f => ({ ...f, requester_name: e.target.value }))} /></div>
-                <div><Label>Priority</Label>
+                <div><Label>{t('common.priority', 'Priority')}</Label>
                   <Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="normal">Normal</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
+                      <SelectItem value="low">{t('common.low', 'Low')}</SelectItem>
+                      <SelectItem value="normal">{t('common.normal', 'Normal')}</SelectItem>
+                      <SelectItem value="high">{t('common.high', 'High')}</SelectItem>
+                      <SelectItem value="urgent">{t('common.urgent', 'Urgent')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -221,12 +221,12 @@ const VehicleRequests = () => {
                 <div><Label>Needed Until</Label><Input type="datetime-local" value={form.needed_until} onChange={e => setForm(f => ({ ...f, needed_until: e.target.value }))} /></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div><Label>Destination</Label><Input value={form.destination} onChange={e => setForm(f => ({ ...f, destination: e.target.value }))} /></div>
-                <div><Label>Passengers</Label><Input type="number" value={form.passengers} onChange={e => setForm(f => ({ ...f, passengers: e.target.value }))} /></div>
+                <div><Label>{t('requests.destination', 'Destination')}</Label><Input value={form.destination} onChange={e => setForm(f => ({ ...f, destination: e.target.value }))} /></div>
+                <div><Label>{t('passengers.passengers', 'Passengers')}</Label><Input type="number" value={form.passengers} onChange={e => setForm(f => ({ ...f, passengers: e.target.value }))} /></div>
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setShowCreate(false)}>{t('common.cancel', 'Cancel')}</Button>
               <Button onClick={() => createMutation.mutate()} disabled={!form.requester_name || !form.purpose || !form.needed_from || createMutation.isPending}>
                 {createMutation.isPending ? "Creating..." : "Submit Request"}
               </Button>
@@ -273,8 +273,8 @@ const VehicleRequests = () => {
               <DialogFooter className="flex-wrap gap-2">
                 {showDetail.status === "pending" && (
                   <>
-                    <Button size="sm" onClick={() => updateStatusMutation.mutate({ id: showDetail.id, status: "approved" })}>Approve</Button>
-                    <Button size="sm" variant="destructive" onClick={() => updateStatusMutation.mutate({ id: showDetail.id, status: "rejected" })}>Reject</Button>
+                    <Button size="sm" onClick={() => updateStatusMutation.mutate({ id: showDetail.id, status: "approved" })}>{t('common.approve', 'Approve')}</Button>
+                    <Button size="sm" variant="destructive" onClick={() => updateStatusMutation.mutate({ id: showDetail.id, status: "rejected" })}>{t('common.reject', 'Reject')}</Button>
                   </>
                 )}
                 {showDetail.status === "approved" && (
@@ -291,7 +291,7 @@ const VehicleRequests = () => {
                   <Button size="sm" onClick={() => updateStatusMutation.mutate({ id: showDetail.id, status: "completed" })}>Mark Complete</Button>
                 )}
                 {["pending", "approved"].includes(showDetail.status) && (
-                  <Button size="sm" variant="outline" onClick={() => updateStatusMutation.mutate({ id: showDetail.id, status: "cancelled" })}>Cancel</Button>
+                  <Button size="sm" variant="outline" onClick={() => updateStatusMutation.mutate({ id: showDetail.id, status: "cancelled" })}>{t('common.cancel', 'Cancel')}</Button>
                 )}
               </DialogFooter>
             </DialogContent>

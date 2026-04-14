@@ -138,10 +138,10 @@ const HardwareSensors = () => {
             <TabsContent key={tab} value={tab}>
               <Card><Table>
                 <TableHeader><TableRow>
-                  <TableHead>Time</TableHead><TableHead>Vehicle</TableHead><TableHead>Type</TableHead><TableHead>Sensor ID</TableHead><TableHead>Readings</TableHead><TableHead>Status</TableHead>
+                  <TableHead>{t('common.time', 'Time')}</TableHead><TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>{t('common.type', 'Type')}</TableHead><TableHead>Sensor ID</TableHead><TableHead>Readings</TableHead><TableHead>{t('common.status', 'Status')}</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
-                  {isLoading ? <TableRow><TableCell colSpan={6} className="text-center py-8">Loading...</TableCell></TableRow> :
+                  {isLoading ? <TableRow><TableCell colSpan={6} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
                   (tab === "all" ? sensorData : sensorData.filter((s: any) => s.sensor_type === tab)).length === 0 ?
                     <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No sensor data recorded. Connect sensors to begin.</TableCell></TableRow> :
                   (tab === "all" ? sensorData : sensorData.filter((s: any) => s.sensor_type === tab)).map((s: any) => (
@@ -151,7 +151,7 @@ const HardwareSensors = () => {
                       <TableCell><Badge variant="outline" className="uppercase">{s.sensor_type}</Badge></TableCell>
                       <TableCell className="font-mono text-sm">{s.sensor_id || "—"}</TableCell>
                       <TableCell className="font-mono text-xs max-w-[300px] truncate">{renderReadings(s.readings, s.sensor_type)}</TableCell>
-                      <TableCell>{s.is_alert ? <Badge variant="destructive">{s.alert_type || "Alert"}</Badge> : <Badge variant="secondary">Normal</Badge>}</TableCell>
+                      <TableCell>{s.is_alert ? <Badge variant="destructive">{s.alert_type || "Alert"}</Badge> : <Badge variant="secondary">{t('common.normal', 'Normal')}</Badge>}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -162,7 +162,7 @@ const HardwareSensors = () => {
           <TabsContent value="calibrations">
             <Card><Table>
               <TableHeader><TableRow>
-                <TableHead>Vehicle</TableHead><TableHead>Sensor Type</TableHead><TableHead>Sensor ID</TableHead><TableHead>Calibration Date</TableHead><TableHead>Calibrated By</TableHead><TableHead>Status</TableHead><TableHead>Notes</TableHead>
+                <TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>Sensor Type</TableHead><TableHead>Sensor ID</TableHead><TableHead>Calibration Date</TableHead><TableHead>Calibrated By</TableHead><TableHead>{t('common.status', 'Status')}</TableHead><TableHead>Notes</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {calibrations.length === 0 ? (
@@ -188,7 +188,7 @@ const HardwareSensors = () => {
         <DialogContent>
           <DialogHeader><DialogTitle>Add Sensor Calibration</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div><Label>Vehicle</Label>
+            <div><Label>{t('common.vehicle', 'Vehicle')}</Label>
               <Select value={calibForm.vehicle_id} onValueChange={v => setCalibForm(p => ({ ...p, vehicle_id: v }))}>
                 <SelectTrigger><SelectValue placeholder="Select vehicle" /></SelectTrigger>
                 <SelectContent>{vehicles.map((v: any) => <SelectItem key={v.id} value={v.id}>{v.plate_number}</SelectItem>)}</SelectContent>
@@ -202,16 +202,16 @@ const HardwareSensors = () => {
                   <SelectItem value="obd2">OBD-II</SelectItem>
                   <SelectItem value="load">Load/Weight</SelectItem>
                   <SelectItem value="fuel">Fuel Sensor</SelectItem>
-                  <SelectItem value="temperature">Temperature</SelectItem>
+                  <SelectItem value="temperature">{t('sensors.temperature', 'Temperature')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div><Label>Sensor ID</Label><Input value={calibForm.sensor_id} onChange={e => setCalibForm(p => ({ ...p, sensor_id: e.target.value }))} placeholder="e.g. TPMS-FL-001" /></div>
             <div><Label>Calibrated By</Label><Input value={calibForm.calibrated_by} onChange={e => setCalibForm(p => ({ ...p, calibrated_by: e.target.value }))} placeholder="Technician name" /></div>
-            <div><Label>Notes</Label><Input value={calibForm.notes} onChange={e => setCalibForm(p => ({ ...p, notes: e.target.value }))} placeholder="Calibration notes..." /></div>
+            <div><Label>{t('common.notes', 'Notes')}</Label><Input value={calibForm.notes} onChange={e => setCalibForm(p => ({ ...p, notes: e.target.value }))} placeholder="Calibration notes..." /></div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCalibrationDialog(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setShowCalibrationDialog(false)}>{t('common.cancel', 'Cancel')}</Button>
             <Button onClick={() => addCalibrationMutation.mutate()} disabled={!calibForm.vehicle_id || addCalibrationMutation.isPending}>
               {addCalibrationMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Save
             </Button>

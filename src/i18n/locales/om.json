@@ -87,7 +87,34 @@
     "assignedTo": "Kan Ramadame",
     "createdAt": "Kan Uumame",
     "updatedAt": "Kan Haaromfame",
-    "createdBy": "Kan Uume"
+    "createdBy": "Kan Uume",
+    "vehicle": "Konkolaataa",
+    "driver": "Konkolaachisaa",
+    "location": "Bakka",
+    "amount": "Hamma",
+    "category": "Gosa",
+    "entity": "Qaama",
+    "contact": "Quunnamtii",
+    "email": "Imeelii",
+    "phone": "Bilbila",
+    "address": "Teessoo",
+    "expires": "Yeroo dhumaa",
+    "start": "Jalqaba",
+    "end": "Dhumaa",
+    "value": "Gatii",
+    "dueDate": "Guyyaa Kaffaltii",
+    "requestNumber": "Gaaffii #",
+    "title": "Mata duree",
+    "overdue": "Yeroon darbe",
+    "expiringSoon": "Dhiyootti ni dhuma",
+    "totalItems": "Waliigala Meeshaalee",
+    "totalRequests": "Waliigala Gaaffilee",
+    "pendingApproval": "Mirkaneessa eegaa",
+    "allRequests": "Gaaffilee Hundaa",
+    "allTypes": "Gosa Hundaa",
+    "addDeadline": "Yeroo Dabaluu",
+    "newRequest": "Gaaffii Haaraa",
+    "approved": "Mirkanaa'e"
   },
   "nav": {
     "dashboard": "Daashboordii",
@@ -330,7 +357,15 @@
       "onLeave": "Boqonnaa Irra",
       "onDuty": "Hojii Irra",
       "offDuty": "Hojii Irraa"
-    }
+    },
+    "availability": "Argamuu",
+    "leaderboard": "Sadarkaa",
+    "messages": "Ergaalee",
+    "dvir": "DVIR",
+    "groups": "Gareelee",
+    "operations": "Hojiiwwan",
+    "overviewDesc": "Ilaalcha waliigala konkolaachisaa",
+    "operationsDesc": "Hojiiwwan fi haala yeroo qabatamaa"
   },
   "dispatch": {
     "title": "Ergaa fi Sagantaa",
@@ -432,7 +467,13 @@
       "analytics": "Xiinxala",
       "alerts": "Akeekkachiisa",
       "stations": "Buufataalee"
-    }
+    },
+    "newRequest": "Gaaffii Haaraa",
+    "totalRequests": "Waliigala Gaaffilee",
+    "pendingApproval": "Mirkaneessa Eegaa",
+    "dispensed": "Kenname",
+    "estCost": "Tilmaama Gatii",
+    "noRequests": "Gaaffiin boba'aa hin argamne"
   },
   "alerts": {
     "title": "Akeekkachiisa",
@@ -751,7 +792,13 @@
     "reminder": "Yaadachiisa",
     "overdue": "Dabarse",
     "upcoming": "Dhufaa Jiru",
-    "completed": "Xumure"
+    "completed": "Xumure",
+    "dueThisWeek": "Torban Kanatti Dhuma",
+    "deadlines": "Yeroo Dhumaa Hordoffii",
+    "deadline": "Yeroo Dhumaa",
+    "daysLeft": "Guyyaa Hafan",
+    "noItems": "Meeshaan hordoffii hin ramadamne",
+    "dueSoon": "Dhiyootti Dhuma"
   },
   "contracts": {
     "title": "Bulchiinsa Waliigaltee",
@@ -767,7 +814,13 @@
       "expired": "Dabarse",
       "pending": "Eeggaa Jira",
       "terminated": "Dhaabame"
-    }
+    },
+    "newContract": "Waliigaltee Haaraa",
+    "totalContracts": "Waliigala Waliigalteewwan",
+    "activeValue": "Gatii Hojiirra",
+    "party": "Qooda Fudhaa",
+    "indefinite": "Daangaa Hin Qabu",
+    "noContracts": "Waliigalteen hin argamne"
   },
   "documents": {
     "title": "Bulchiinsa Sanadaa",
@@ -777,7 +830,14 @@
     "fileSize": "Guddina Faayilii",
     "expiryDate": "Guyyaa Dhumaa",
     "verified": "Mirkanaa'e",
-    "unverified": "Hin Mirkanaa'in"
+    "unverified": "Hin Mirkanaa'in",
+    "upload": "Sanadaa Olkaa'uu",
+    "totalDocuments": "Waliigala Sanadaalee",
+    "pendingVerification": "Mirkaneessa Eegaa",
+    "document": "Sanadaa",
+    "docNumber": "Sanadaa #",
+    "issued": "Kenname",
+    "noDocuments": "Sanadaan hin argamne"
   },
   "accidentInsurance": {
     "title": "Balaa fi Inshuraansii",
@@ -852,7 +912,12 @@
     "vendorType": "Gosa Dhiyeessituu",
     "contactPerson": "Nama Quunnamtii",
     "rating": "Sadarkaa",
-    "contractValue": "Gatii Waliigaltee"
+    "contractValue": "Gatii Waliigaltee",
+    "addVendor": "Dhiyeessituu Dabaluu",
+    "editVendor": "Dhiyeessituu Gulaalu",
+    "totalVendors": "Waliigala Dhiyeessitootaa",
+    "topRated": "Sadarkaa Ol'aanaa (4+)",
+    "noVendors": "Dhiyeessituun hin argamne"
   },
   "penalties": {
     "title": "Adabbii fi Qaraxii",
@@ -917,7 +982,9 @@
     "clearAll": "Hunda Haqi",
     "unread": "Hin Dubbifamne",
     "read": "Dubbifame",
-    "preferences": "Filannoo"
+    "preferences": "Filannoo",
+    "highPriority": "Dursa Ol'aanaa",
+    "noNotifications": "Beeksisni hin jiru"
   },
   "organizations": {
     "title": "Dhaabbilee",
@@ -1168,5 +1235,45 @@
       "title": "Bulchiinsa Dhiyeessitootaa",
       "description": "Dhiyeessitootaa bulchuu"
     }
+  },
+  "insurance": {
+    "newClaim": "Gaaffii Haaraa",
+    "activePolicies": "Poolisiiwwan Hojiirra",
+    "totalClaims": "Waliigala Gaaffilee",
+    "openClaims": "Gaaffilee Banaa",
+    "totalClaimed": "Waliigala Gaafatame",
+    "accidentClaims": "Gaaffilee Balaa",
+    "insurancePolicies": "Poolisiiwwan Inshuraansii",
+    "claimNumber": "Gaaffii #",
+    "policyNumber": "Poolisii #",
+    "fault": "Balleessaa",
+    "provider": "Dhiyeessaa",
+    "coverage": "Uwwisa",
+    "premium": "Pirimiyeemii",
+    "noClaims": "Gaaffiin hin galmoofne",
+    "noPolicies": "Poolisiin hin galmoofne"
+  },
+  "parts": {
+    "addPart": "Kutaa Dabaluu",
+    "totalParts": "Waliigala Kutaalee",
+    "inStock": "Kuusaa Keessatti",
+    "lowStock": "Kuusaan Xiqqaa",
+    "inventoryValue": "Gatii Kuusaa",
+    "partNumber": "Kutaa #",
+    "qty": "Baay'ina",
+    "minStock": "Kuusaa Gadi Aanaa",
+    "unitCost": "Gatii/Kutaa",
+    "supplier": "Dhiyeessaa",
+    "noParts": "Kutaan kuusaa keessatti hin jiru"
+  },
+  "fines": {
+    "recordFine": "Adabbii Galmeessuu",
+    "totalFines": "Waliigala Adabbii",
+    "unpaid": "Hin Kaffalle",
+    "outstanding": "Hafan",
+    "totalPaid": "Waliigala Kaffalame",
+    "fineNumber": "Adabbii #",
+    "violation": "Cabsaa",
+    "noFines": "Adabbiin hin galmoofne"
   }
 }

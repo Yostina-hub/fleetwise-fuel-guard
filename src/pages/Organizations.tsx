@@ -92,21 +92,21 @@ const Organizations = () => {
               </DialogHeader>
               <div className="space-y-4 py-2">
                 <div className="space-y-1.5">
-                  <Label>Name *</Label>
+                  <Label>{t('common.name', 'Name')} *</Label>
                   <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Organization name" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Slug</Label>
+                  <Label>{t('organizations.slug', 'Slug')}</Label>
                   <Input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} placeholder="auto-generated-from-name" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Type</Label>
+                  <Label>{t('common.type', 'Type')}</Label>
                   <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="cpo">CPO</SelectItem>
                       <SelectItem value="fleet_operator">Fleet Operator</SelectItem>
-                      <SelectItem value="enterprise">Enterprise</SelectItem>
+                      <SelectItem value="enterprise">{t('common.enterprise', 'Enterprise')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -119,12 +119,12 @@ const Organizations = () => {
                   <Input value={form.contact_phone} onChange={(e) => setForm({ ...form, contact_phone: e.target.value })} placeholder="+251..." />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Address</Label>
+                  <Label>{t('common.address', 'Address')}</Label>
                   <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Address" />
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('common.cancel', 'Cancel')}</Button>
                 <Button onClick={() => createOrg.mutate()} disabled={!form.name || createOrg.isPending}>
                   {createOrg.isPending ? "Creating..." : "Create"}
                 </Button>
@@ -139,7 +139,7 @@ const Organizations = () => {
         </div>
 
         {isLoading ? (
-          <div className="text-muted-foreground text-center py-12">Loading...</div>
+          <div className="text-muted-foreground text-center py-12">{t('common.loading', 'Loading...')}<div>
         ) : filtered.length === 0 ? (
           <div className="text-muted-foreground text-center py-12">No organizations found</div>
         ) : (
@@ -150,7 +150,7 @@ const Organizations = () => {
                   <div className="flex items-start justify-between">
                     <CardTitle className="text-base">{org.name}</CardTitle>
                     <div className="flex gap-1.5">
-                      {org.suspended && <Badge variant="destructive" className="text-[10px]">Suspended</Badge>}
+                      {org.suspended && <Badge variant="destructive" className="text-[10px]">{t('common.suspended', 'Suspended')}</Badge>}
                       <Badge variant={org.active ? "default" : "secondary"} className="text-[10px]">
                         {org.active ? "Active" : "Inactive"}
                       </Badge>

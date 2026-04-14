@@ -101,7 +101,7 @@ const PredictiveMaintenance = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Vehicle</TableHead><TableHead>Health Score</TableHead><TableHead>Risk</TableHead><TableHead>Predicted Failure</TableHead><TableHead>Est. Days</TableHead><TableHead>Overdue Tasks</TableHead>
+                    <TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>Health Score</TableHead><TableHead>Risk</TableHead><TableHead>Predicted Failure</TableHead><TableHead>Est. Days</TableHead><TableHead>Overdue Tasks</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

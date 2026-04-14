@@ -109,7 +109,7 @@ const BulkOperations = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Upload className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{jobs.length}</p><p className="text-sm text-muted-foreground">Total Jobs</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><CheckCircle className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{completed.length}</p><p className="text-sm text-muted-foreground">Completed</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><CheckCircle className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{completed.length}</p><p className="text-sm text-muted-foreground">{t('common.completed', 'Completed')}</p></div></div></CardContent></Card>
           <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Clock className="h-8 w-8 text-orange-500" /><div><p className="text-2xl font-bold">{jobs.filter((j: any) => j.status === "processing").length}</p><p className="text-sm text-muted-foreground">Processing</p></div></div></CardContent></Card>
           <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><AlertTriangle className="h-8 w-8 text-destructive" /><div><p className="text-2xl font-bold">{failed.length}</p><p className="text-sm text-muted-foreground">Failed</p></div></div></CardContent></Card>
         </div>
@@ -122,10 +122,10 @@ const BulkOperations = () => {
               <Card><CardHeader><CardTitle>Job History</CardTitle></CardHeader>
                 <Table>
                   <TableHeader><TableRow>
-                    <TableHead>Date</TableHead><TableHead>Type</TableHead><TableHead>Entity</TableHead><TableHead>File</TableHead><TableHead>Format</TableHead><TableHead>Progress</TableHead><TableHead>Status</TableHead><TableHead className="w-16">Errors</TableHead>
+                    <TableHead>{t('common.date', 'Date')}</TableHead><TableHead>{t('common.type', 'Type')}</TableHead><TableHead>{t('common.entity', 'Entity')}</TableHead><TableHead>File</TableHead><TableHead>Format</TableHead><TableHead>Progress</TableHead><TableHead>{t('common.status', 'Status')}</TableHead><TableHead className="w-16">Errors</TableHead>
                   </TableRow></TableHeader>
                   <TableBody>
-                    {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">Loading...</TableCell></TableRow> :
+                    {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
                     jobs.filter(j => tab === "all" || (tab === "imports" ? j.job_type === "import" : j.job_type === "export")).length === 0 ?
                       <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No jobs</TableCell></TableRow> :
                     jobs.filter((j: any) => tab === "all" || (tab === "imports" ? j.job_type === "import" : j.job_type === "export")).map((j: any) => {
@@ -170,14 +170,14 @@ const BulkOperations = () => {
                   <SelectContent>{ENTITY_TYPES.map(e => <SelectItem key={e} value={e} className="capitalize">{e.replace(/_/g, " ")}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div><Label>Format</Label>
+              <div><Label>{t('common.format', 'Format')}</Label>
                 <Select value={importForm.format} onValueChange={v => setImportForm(p => ({ ...p, format: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{EXPORT_FORMATS.map(f => <SelectItem key={f} value={f}>{f.toUpperCase()}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>File</Label>
+                <Label>{t('common.file', 'File')}</Label>
                 <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors" onClick={() => fileInputRef.current?.click()}>
                   <FileSpreadsheet className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                   {importForm.file ? (
@@ -190,7 +190,7 @@ const BulkOperations = () => {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setImportOpen(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setImportOpen(false)}>{t('common.cancel', 'Cancel')}</Button>
               <Button onClick={() => importMutation.mutate()} disabled={!importForm.file || importMutation.isPending}>{importMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Start Import</Button>
             </DialogFooter>
           </DialogContent>
@@ -209,7 +209,7 @@ const BulkOperations = () => {
                 <p className="text-muted-foreground text-sm">{t('pages.bulk_operations.description', 'No detailed error log available')}</p>
               )}
             </div>
-            <DialogFooter><Button onClick={() => setErrorDialog(null)}>Close</Button></DialogFooter>
+            <DialogFooter><Button onClick={() => setErrorDialog(null)}>{t('common.close', 'Close')}</Button></DialogFooter>
           </DialogContent>
         </Dialog>
       </div>

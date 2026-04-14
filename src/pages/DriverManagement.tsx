@@ -8,25 +8,13 @@ import {
   Radio, Trophy, MessageSquare, ClipboardList, FolderTree,
   Users, LayoutDashboard,
 } from "lucide-react";
-
-// Overview
 import { DriverHubOverview } from "@/components/drivers/DriverHubOverview";
-
-// Operations sub-tabs
 import { DriverAvailabilityBoard } from "@/components/drivers/DriverAvailabilityBoard";
 import { DriverLeaderboard } from "@/components/drivers/DriverLeaderboard";
 import { DriverCommunicationHub } from "@/components/drivers/DriverCommunicationHub";
 import { DriverDVIRPanel } from "@/components/drivers/DriverDVIRPanel";
 import { DriverHierarchyView } from "@/components/drivers/DriverHierarchyView";
-
 import { useTranslation } from 'react-i18next';
-const operationsTabs = [
-  { key: "availability", label: "Availability", icon: Radio },
-  { key: "leaderboard", label: "Leaderboard", icon: Trophy },
-  { key: "messages", label: "Messages", icon: MessageSquare },
-  { key: "dvir", label: "DVIR", icon: ClipboardList },
-  { key: "groups", label: "Groups", icon: FolderTree },
-];
 
 const DriverManagement = () => {
   const { t } = useTranslation();
@@ -35,8 +23,15 @@ const DriverManagement = () => {
   const [view, setView] = useState<"overview" | "operations">("overview");
   const [opsTab, setOpsTab] = useState("availability");
 
+  const operationsTabs = useMemo(() => [
+    { key: "availability", label: t('drivers.availability', 'Availability'), icon: Radio },
+    { key: "leaderboard", label: t('drivers.leaderboard', 'Leaderboard'), icon: Trophy },
+    { key: "messages", label: t('drivers.messages', 'Messages'), icon: MessageSquare },
+    { key: "dvir", label: t('drivers.dvir', 'DVIR'), icon: ClipboardList },
+    { key: "groups", label: t('drivers.groups', 'Groups'), icon: FolderTree },
+  ], [t]);
+
   const handleNavigate = (section: string, tab?: string) => {
-    // Route to dedicated pages
     const routeMap: Record<string, string> = {
       compliance: "/driver-compliance",
       safety: "/driver-safety",
@@ -69,7 +64,6 @@ const DriverManagement = () => {
   return (
     <Layout>
       <div className="space-y-4 animate-fade-in">
-        {/* Header */}
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
             <Users className="h-5 w-5 text-primary" />
@@ -77,12 +71,11 @@ const DriverManagement = () => {
           <div>
             <h1 className="text-xl font-bold tracking-tight">{t('pages.driver_management.title', 'Driver Management')}</h1>
             <p className="text-xs text-muted-foreground">
-              {view === "overview" ? "Fleet-wide driver overview & quick actions" : "Operations & real-time status"}
+              {view === "overview" ? t('drivers.overviewDesc', 'Fleet-wide driver overview & quick actions') : t('drivers.operationsDesc', 'Operations & real-time status')}
             </p>
           </div>
         </div>
 
-        {/* View Toggle */}
         <div className="flex gap-1 border-b pb-1">
           <button
             onClick={() => setView("overview")}
@@ -92,7 +85,7 @@ const DriverManagement = () => {
             )}
           >
             <LayoutDashboard className="w-3.5 h-3.5" />
-            Overview
+            {t('common.overview', 'Overview')}
           </button>
           <button
             onClick={() => setView("operations")}
@@ -102,11 +95,10 @@ const DriverManagement = () => {
             )}
           >
             <Radio className="w-3.5 h-3.5" />
-            Operations
+            {t('drivers.operations', 'Operations')}
           </button>
         </div>
 
-        {/* Operations Sub-tabs */}
         {view === "operations" && (
           <div className="flex gap-1 overflow-x-auto scrollbar-thin">
             {operationsTabs.map(tab => (
@@ -127,7 +119,6 @@ const DriverManagement = () => {
           </div>
         )}
 
-        {/* Content */}
         <AnimatePresence mode="wait">
           <motion.div
             key={view === "overview" ? "overview" : `ops-${opsTab}`}

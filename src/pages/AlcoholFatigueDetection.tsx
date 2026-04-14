@@ -65,7 +65,7 @@ const AlcoholFatigueDetection = () => {
 
         <div className="flex gap-3">
           <div className="relative flex-1"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input placeholder="Search by driver name..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" /></div>
-          <Select value={typeFilter} onValueChange={setTypeFilter}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Types</SelectItem><SelectItem value="alcohol">Alcohol</SelectItem><SelectItem value="fatigue">Fatigue</SelectItem></SelectContent></Select>
+          <Select value={typeFilter} onValueChange={setTypeFilter}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t('common.allTypes', 'All Types')}</SelectItem><SelectItem value="alcohol">Alcohol</SelectItem><SelectItem value="fatigue">Fatigue</SelectItem></SelectContent></Select>
         </div>
 
         <Tabs defaultValue="results">
@@ -74,10 +74,10 @@ const AlcoholFatigueDetection = () => {
           <TabsContent value="results">
             <Card><Table>
               <TableHeader><TableRow>
-                <TableHead>Date</TableHead><TableHead>Driver</TableHead><TableHead>Type</TableHead><TableHead>Reading</TableHead><TableHead>Threshold</TableHead><TableHead>Device</TableHead><TableHead>Result</TableHead><TableHead>Tested By</TableHead>
+                <TableHead>{t('common.date', 'Date')}</TableHead><TableHead>{t('common.driver', 'Driver')}</TableHead><TableHead>{t('common.type', 'Type')}</TableHead><TableHead>Reading</TableHead><TableHead>Threshold</TableHead><TableHead>{t('devices.device', 'Device')}</TableHead><TableHead>Result</TableHead><TableHead>Tested By</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">Loading...</TableCell></TableRow> :
+                {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
                 filtered.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No test records yet</TableCell></TableRow> :
                 filtered.map((t: any) => (
                   <TableRow key={t.id}>
@@ -100,7 +100,7 @@ const AlcoholFatigueDetection = () => {
               {tests.filter((t: any) => t.pass === false).length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">No failed tests recorded</p>
               ) : (
-                <Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Driver</TableHead><TableHead>Type</TableHead><TableHead>Reading</TableHead><TableHead>Action Taken</TableHead></TableRow></TableHeader>
+                <Table><TableHeader><TableRow><TableHead>{t('common.date', 'Date')}</TableHead><TableHead>{t('common.driver', 'Driver')}</TableHead><TableHead>{t('common.type', 'Type')}</TableHead><TableHead>Reading</TableHead><TableHead>Action Taken</TableHead></TableRow></TableHeader>
                 <TableBody>{tests.filter((t: any) => t.pass === false).map((t: any) => (
                   <TableRow key={t.id}>
                     <TableCell>{format(new Date(t.test_date), "MMM dd, yyyy")}</TableCell>

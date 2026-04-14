@@ -139,13 +139,13 @@ const Dispatch = () => {
             <TabsContent value="tracking">
               <div className="text-center py-12 text-muted-foreground" role="status" aria-label="Live tracking section">
                 <Navigation className="w-12 h-12 mx-auto mb-4 opacity-50" aria-hidden="true" />
-                <p>Live tracking view coming soon</p>
+                <p>{t('common.comingSoon', 'Coming soon')}</p>
               </div>
             </TabsContent>
             <TabsContent value="history">
               <div className="text-center py-12 text-muted-foreground" role="status" aria-label="Dispatch history section">
                 <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" aria-hidden="true" />
-                <p>Dispatch history coming soon</p>
+                <p>{t('common.comingSoon', 'Coming soon')}</p>
               </div>
             </TabsContent>
           </Tabs>

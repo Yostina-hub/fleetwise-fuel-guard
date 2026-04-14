@@ -45,21 +45,21 @@ const PartsInventory = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Package className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{parts.length}</p><p className="text-sm text-muted-foreground">Total Parts</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><CheckCircle className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{parts.filter((p: any) => p.quantity > (p.min_stock_level || 5)).length}</p><p className="text-sm text-muted-foreground">In Stock</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><AlertTriangle className="h-8 w-8 text-destructive" /><div><p className="text-2xl font-bold">{lowStock.length}</p><p className="text-sm text-muted-foreground">Low Stock</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><DollarSign className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{totalValue.toLocaleString()} ETB</p><p className="text-sm text-muted-foreground">Inventory Value</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Package className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{parts.length}</p><p className="text-sm text-muted-foreground">{t('parts.totalParts', 'Total Parts')}</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><CheckCircle className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{parts.filter((p: any) => p.quantity > (p.min_stock_level || 5)).length}</p><p className="text-sm text-muted-foreground">{t('parts.inStock', 'In Stock')}</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><AlertTriangle className="h-8 w-8 text-destructive" /><div><p className="text-2xl font-bold">{lowStock.length}</p><p className="text-sm text-muted-foreground">{t('parts.lowStock', 'Low Stock')}</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><DollarSign className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{totalValue.toLocaleString()} ETB</p><p className="text-sm text-muted-foreground">{t('parts.inventoryValue', 'Inventory Value')}</p></div></div></CardContent></Card>
         </div>
 
-        <div className="relative"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input placeholder="Search parts..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" /></div>
+        <div className="relative"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input placeholder={t('parts.search', 'Search parts...')} value={search} onChange={e => setSearch(e.target.value)} className="pl-9" /></div>
 
         <Card><Table>
           <TableHeader><TableRow>
-            <TableHead>Part #</TableHead><TableHead>Name</TableHead><TableHead>Category</TableHead><TableHead>Qty</TableHead><TableHead>Min Stock</TableHead><TableHead>Unit Cost</TableHead><TableHead>Supplier</TableHead><TableHead>Location</TableHead><TableHead>Status</TableHead>
+            <TableHead>{t('parts.partNumber', 'Part #')}</TableHead><TableHead>{t('common.name', 'Name')}</TableHead><TableHead>{t('common.category', 'Category')}</TableHead><TableHead>{t('parts.qty', 'Qty')}</TableHead><TableHead>{t('parts.minStock', 'Min Stock')}</TableHead><TableHead>{t('parts.unitCost', 'Unit Cost')}</TableHead><TableHead>{t('parts.supplier', 'Supplier')}</TableHead><TableHead>{t('common.location', 'Location')}</TableHead><TableHead>{t('common.status', 'Status')}</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {isLoading ? <TableRow><TableCell colSpan={9} className="text-center py-8">Loading...</TableCell></TableRow> :
-            filtered.length === 0 ? <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No parts in inventory</TableCell></TableRow> :
+            {isLoading ? <TableRow><TableCell colSpan={9} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
+            filtered.length === 0 ? <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">{t('parts.noParts', 'No parts in inventory')}<TableCell></TableRow> :
             filtered.map((p: any) => (
               <TableRow key={p.id}>
                 <TableCell className="font-mono">{p.part_number}</TableCell>

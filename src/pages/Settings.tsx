@@ -287,7 +287,7 @@ const Settings = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
+                  <Label htmlFor="address">{t('common.address', 'Address')}</Label>
                   <Input id="address" placeholder="Business address" defaultValue="Addis Ababa, Ethiopia" />
                 </div>
                 <Button>Save Changes</Button>
@@ -301,11 +301,11 @@ const Settings = () => {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="language">Language</Label>
+                    <Label htmlFor="language">{t('settings.language', 'Language')}</Label>
                     <Input id="language" placeholder="Select language" defaultValue="English" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="currency">Currency</Label>
+                    <Label htmlFor="currency">{t('settings.currency', 'Currency')}</Label>
                     <Input id="currency" placeholder="Select currency" defaultValue="ETB (Ethiopian Birr)" />
                   </div>
                 </div>
@@ -589,8 +589,8 @@ const Settings = () => {
                           <div className="font-medium">{user.role}</div>
                         </div>
                         <div className="flex gap-2">
-                          <Button size="sm" variant="outline">Edit</Button>
-                          <Button size="sm" variant="outline">Remove</Button>
+                          <Button size="sm" variant="outline">{t('common.edit', 'Edit')}</Button>
+                          <Button size="sm" variant="outline">{t('common.remove', 'Remove')}</Button>
                         </div>
                       </div>
                     </div>

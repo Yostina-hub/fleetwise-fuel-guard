@@ -187,11 +187,11 @@ const RFIDPairing = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>RFID Tag</TableHead>
-                    <TableHead>Device</TableHead>
-                    <TableHead>Driver</TableHead>
+                    <TableHead>{t('devices.device', 'Device')}</TableHead>
+                    <TableHead>{t('common.driver', 'Driver')}</TableHead>
                     <TableHead>Paired At</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>{t('common.status', 'Status')}</TableHead>
+                    <TableHead>{t('common.actions', 'Actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -233,7 +233,7 @@ const RFIDPairing = () => {
                 <Input value={pairData.rfid_tag} onChange={e => setPairData(p => ({ ...p, rfid_tag: e.target.value }))} placeholder="Scan or enter tag ID" />
               </div>
               <div>
-                <Label>Device</Label>
+                <Label>{t('devices.device', 'Device')}</Label>
                 <Select value={pairData.device_id} onValueChange={v => setPairData(p => ({ ...p, device_id: v }))}>
                   <SelectTrigger><SelectValue placeholder="Select device" /></SelectTrigger>
                   <SelectContent>
@@ -244,7 +244,7 @@ const RFIDPairing = () => {
                 </Select>
               </div>
               <div>
-                <Label>Driver</Label>
+                <Label>{t('common.driver', 'Driver')}</Label>
                 <Select value={pairData.driver_id} onValueChange={v => setPairData(p => ({ ...p, driver_id: v }))}>
                   <SelectTrigger><SelectValue placeholder="Select driver" /></SelectTrigger>
                   <SelectContent>
@@ -256,7 +256,7 @@ const RFIDPairing = () => {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowPairDialog(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setShowPairDialog(false)}>{t('common.cancel', 'Cancel')}</Button>
               <Button onClick={() => createPairingMutation.mutate(pairData)} disabled={!pairData.rfid_tag || !pairData.device_id || !pairData.driver_id}>
                 Pair Tag
               </Button>

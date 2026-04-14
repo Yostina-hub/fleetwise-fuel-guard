@@ -85,9 +85,9 @@ const TireManagement = () => {
 
   const getStatusBadge = (status: string | null) => {
     switch (status) {
-      case "active": return <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">Active</Badge>;
+      case "active": return <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">{t('common.active', 'Active')}</Badge>;
       case "warning": return <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">Replace Soon</Badge>;
-      case "retired": return <Badge variant="destructive">Retired</Badge>;
+      case "retired": return <Badge variant="destructive">{t('tires.retired', 'Retired')}</Badge>;
       default: return <Badge variant="outline">{status || "Unknown"}</Badge>;
     }
   };
@@ -254,11 +254,11 @@ const TireManagement = () => {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div><Label>Brand *</Label><Input value={form.brand} onChange={e => setForm(f => ({ ...f, brand: e.target.value }))} placeholder="e.g. Michelin" /></div>
-                <div><Label>Model</Label><Input value={form.model} onChange={e => setForm(f => ({ ...f, model: e.target.value }))} placeholder="e.g. X Multi D" /></div>
+                <div><Label>{t('vehicles.model', 'Model')}</Label><Input value={form.model} onChange={e => setForm(f => ({ ...f, model: e.target.value }))} placeholder="e.g. X Multi D" /></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div><Label>Size *</Label><Input value={form.size} onChange={e => setForm(f => ({ ...f, size: e.target.value }))} placeholder="e.g. 315/80R22.5" /></div>
-                <div><Label>Position</Label>
+                <div><Label>{t('tires.position', 'Position')}</Label>
                   <Select value={form.position} onValueChange={v => setForm(f => ({ ...f, position: v }))}>
                     <SelectTrigger><SelectValue placeholder="Select position" /></SelectTrigger>
                     <SelectContent>
@@ -270,7 +270,7 @@ const TireManagement = () => {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div><Label>Vehicle</Label>
+                <div><Label>{t('common.vehicle', 'Vehicle')}</Label>
                   <Select value={form.vehicle_id} onValueChange={v => setForm(f => ({ ...f, vehicle_id: v }))}>
                     <SelectTrigger><SelectValue placeholder="Select vehicle" /></SelectTrigger>
                     <SelectContent>
@@ -285,7 +285,7 @@ const TireManagement = () => {
               <div><Label>Max KM Life</Label><Input type="number" value={form.max_distance_km} onChange={e => setForm(f => ({ ...f, max_distance_km: e.target.value }))} placeholder="80000" /></div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setShowAddDialog(false)}>{t('common.cancel', 'Cancel')}</Button>
               <Button onClick={() => addTireMutation.mutate()} disabled={!form.brand || !form.size || addTireMutation.isPending}>
                 {addTireMutation.isPending ? "Adding..." : "Add Tire"}
               </Button>

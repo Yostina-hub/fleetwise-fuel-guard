@@ -137,7 +137,7 @@ const CarbonEmissions = () => {
         </div>
 
         <Tabs defaultValue="overview">
-          <TabsList><TabsTrigger value="overview">Overview</TabsTrigger><TabsTrigger value="vehicles">By Vehicle</TabsTrigger><TabsTrigger value="sources">By Source</TabsTrigger><TabsTrigger value="details">Details</TabsTrigger></TabsList>
+          <TabsList><TabsTrigger value="overview">{t('common.overview', 'Overview')}</TabsTrigger><TabsTrigger value="vehicles">{t('emissions.byVehicle', 'By Vehicle')}</TabsTrigger><TabsTrigger value="sources">{t('emissions.bySource', 'By Source')}</TabsTrigger><TabsTrigger value="details">{t('common.details', 'Details')}</TabsTrigger></TabsList>
 
           <TabsContent value="overview">
             <Card><CardHeader><CardTitle>Emissions Trend</CardTitle></CardHeader><CardContent>
@@ -183,9 +183,9 @@ const CarbonEmissions = () => {
 
           <TabsContent value="details">
             <Card><Table>
-              <TableHeader><TableRow><TableHead>Vehicle</TableHead><TableHead>Period</TableHead><TableHead>CO₂ (kg)</TableHead><TableHead>Fuel (L)</TableHead><TableHead>Distance (km)</TableHead><TableHead>Source</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>Period</TableHead><TableHead>CO₂ (kg)</TableHead><TableHead>Fuel (L)</TableHead><TableHead>Distance (km)</TableHead><TableHead>Source</TableHead></TableRow></TableHeader>
               <TableBody>
-                {isLoading ? <TableRow><TableCell colSpan={6} className="text-center py-8">Loading...</TableCell></TableRow> :
+                {isLoading ? <TableRow><TableCell colSpan={6} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
                 emissions.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No records</TableCell></TableRow> :
                 emissions.map((e: any) => (
                   <TableRow key={e.id}>
@@ -223,12 +223,12 @@ const CarbonEmissions = () => {
                 <div><Label>Distance (km)</Label><Input type="number" min={0} value={form.distance_km} onChange={e => setForm(p => ({ ...p, distance_km: parseFloat(e.target.value) || 0 }))} /></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div><Label>Source</Label>
+                <div><Label>{t('common.source', 'Source')}</Label>
                   <Select value={form.emission_source} onValueChange={v => setForm(p => ({ ...p, emission_source: v }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="fuel_combustion">Fuel Combustion</SelectItem>
-                      <SelectItem value="idling">Idling</SelectItem>
+                      <SelectItem value="idling">{t('common.idling', 'Idling')}</SelectItem>
                       <SelectItem value="cold_start">Cold Start</SelectItem>
                       <SelectItem value="ac_usage">AC Usage</SelectItem>
                     </SelectContent>
@@ -238,7 +238,7 @@ const CarbonEmissions = () => {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setAddOpen(false)}>{t('common.cancel', 'Cancel')}</Button>
               <Button onClick={() => { if (validate()) addMutation.mutate(); }} disabled={addMutation.isPending}>{addMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Add Record</Button>
             </DialogFooter>
           </DialogContent>

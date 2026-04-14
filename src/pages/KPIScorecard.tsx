@@ -107,7 +107,7 @@ const KPIScorecard = () => {
           <Card key={cat}><CardHeader><CardTitle className="capitalize">{cat} KPIs</CardTitle></CardHeader>
             <Table>
               <TableHeader><TableRow>
-                <TableHead>KPI</TableHead><TableHead>Target</TableHead><TableHead>Actual</TableHead><TableHead>Progress</TableHead><TableHead>Period</TableHead><TableHead>Trend</TableHead><TableHead>Status</TableHead><TableHead className="w-24">Actions</TableHead>
+                <TableHead>KPI</TableHead><TableHead>Target</TableHead><TableHead>Actual</TableHead><TableHead>Progress</TableHead><TableHead>Period</TableHead><TableHead>Trend</TableHead><TableHead>{t('common.status', 'Status')}</TableHead><TableHead className="w-24">{t('common.actions', 'Actions')}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {kpis.filter((k: any) => k.category === cat).map((k: any) => {
@@ -144,13 +144,13 @@ const KPIScorecard = () => {
             <div className="space-y-4">
               <div><Label>KPI Name *</Label><Input value={form.kpi_name} onChange={e => setForm(p => ({ ...p, kpi_name: e.target.value }))} className={errors.kpi_name ? "border-destructive" : ""} />{errors.kpi_name && <p className="text-sm text-destructive mt-1">{errors.kpi_name}</p>}</div>
               <div className="grid grid-cols-2 gap-4">
-                <div><Label>Category</Label>
+                <div><Label>{t('common.category', 'Category')}</Label>
                   <Select value={form.category} onValueChange={v => setForm(p => ({ ...p, category: v }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>{KPI_CATEGORIES.map(c => <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div><Label>Unit</Label><Input value={form.unit} onChange={e => setForm(p => ({ ...p, unit: e.target.value }))} placeholder="%, km, L, etc." /></div>
+                <div><Label>{t('common.unit', 'Unit')}</Label><Input value={form.unit} onChange={e => setForm(p => ({ ...p, unit: e.target.value }))} placeholder="%, km, L, etc." /></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div><Label>Target Value</Label><Input type="number" value={form.target_value} onChange={e => setForm(p => ({ ...p, target_value: parseFloat(e.target.value) || 0 }))} /></div>
@@ -159,16 +159,16 @@ const KPIScorecard = () => {
               <div className="grid grid-cols-3 gap-4">
                 <div><Label>Period Start *</Label><Input type="date" value={form.period_start} onChange={e => setForm(p => ({ ...p, period_start: e.target.value }))} className={errors.period_start ? "border-destructive" : ""} /></div>
                 <div><Label>Period End *</Label><Input type="date" value={form.period_end} onChange={e => setForm(p => ({ ...p, period_end: e.target.value }))} className={errors.period_end ? "border-destructive" : ""} /></div>
-                <div><Label>Trend</Label>
+                <div><Label>{t('kpi.trend', 'Trend')}</Label>
                   <Select value={form.trend} onValueChange={v => setForm(p => ({ ...p, trend: v }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="up">Up</SelectItem><SelectItem value="down">Down</SelectItem><SelectItem value="stable">Stable</SelectItem></SelectContent>
+                    <SelectContent><SelectItem value="up">{t('common.up', 'Up')}</SelectItem><SelectItem value="down">{t('common.down', 'Down')}</SelectItem><SelectItem value="stable">{t('common.stable', 'Stable')}</SelectItem></SelectContent>
                   </Select>
                 </div>
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>{t('common.cancel', 'Cancel')}</Button>
               <Button onClick={() => { if (validate()) saveMutation.mutate(); }} disabled={saveMutation.isPending}>{saveMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}{editing ? "Update" : "Add"}</Button>
             </DialogFooter>
           </DialogContent>

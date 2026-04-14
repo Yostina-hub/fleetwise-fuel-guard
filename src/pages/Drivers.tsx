@@ -109,11 +109,11 @@ const Drivers = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
-        return <Badge className="bg-success/10 text-success border-success/20">Active</Badge>;
+        return <Badge className="bg-success/10 text-success border-success/20">{t('common.active', 'Active')}</Badge>;
       case "inactive":
-        return <Badge variant="secondary">Inactive</Badge>;
+        return <Badge variant="secondary">{t('common.inactive', 'Inactive')}</Badge>;
       case "suspended":
-        return <Badge variant="destructive">Suspended</Badge>;
+        return <Badge variant="destructive">{t('common.suspended', 'Suspended')}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -286,9 +286,9 @@ const Drivers = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                      <SelectItem value="suspended">Suspended</SelectItem>
+                      <SelectItem value="active">{t('common.active', 'Active')}</SelectItem>
+                      <SelectItem value="inactive">{t('common.inactive', 'Inactive')}</SelectItem>
+                      <SelectItem value="suspended">{t('common.suspended', 'Suspended')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -314,13 +314,13 @@ const Drivers = () => {
                           aria-label="Select all drivers"
                         />
                       </TableHead>
-                      <TableHead>Driver</TableHead>
+                      <TableHead>{t('common.driver', 'Driver')}</TableHead>
                       <TableHead>Employee ID</TableHead>
-                      <TableHead>License</TableHead>
-                      <TableHead>Contact</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>{t('common.license', 'License')}</TableHead>
+                      <TableHead>{t('common.contact', 'Contact')}</TableHead>
+                      <TableHead>{t('common.status', 'Status')}</TableHead>
                       <TableHead>Safety Score</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead className="text-right">{t('common.actions', 'Actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -411,7 +411,7 @@ const Drivers = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuLabel>{t('common.actions', 'Actions')}</DropdownMenuLabel>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => handleViewDriver(driver)}>
                                 <Eye className="w-4 h-4 mr-2" aria-hidden="true" />
