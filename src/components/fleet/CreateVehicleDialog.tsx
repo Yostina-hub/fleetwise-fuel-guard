@@ -154,7 +154,7 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
         assigned_driver_id: formData.assigned_driver_id || null,
         vin: formData.vin || null,
         color: formData.color || null,
-        fuel_type: formData.fuel_type || null,
+        fuel_type: formData.fuel_type || "diesel",
         tank_capacity_liters: formData.tank_capacity_liters ? parseFloat(formData.tank_capacity_liters) : null,
         odometer_km: formData.odometer_km ? parseFloat(formData.odometer_km) : null,
         ownership_type: formData.ownership_type || null,
