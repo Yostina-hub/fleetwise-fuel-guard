@@ -6462,6 +6462,81 @@ export type Database = {
           },
         ]
       }
+      fuel_probe_calibrations: {
+        Row: {
+          calibrated_by: string | null
+          calibration_date: string | null
+          calibration_points: Json | null
+          created_at: string
+          empty_voltage: number | null
+          full_voltage: number | null
+          id: string
+          next_calibration_due: string | null
+          notes: string | null
+          organization_id: string
+          probe_model: string | null
+          probe_serial: string | null
+          status: string | null
+          tank_capacity_liters: number | null
+          tank_shape: string | null
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          calibrated_by?: string | null
+          calibration_date?: string | null
+          calibration_points?: Json | null
+          created_at?: string
+          empty_voltage?: number | null
+          full_voltage?: number | null
+          id?: string
+          next_calibration_due?: string | null
+          notes?: string | null
+          organization_id: string
+          probe_model?: string | null
+          probe_serial?: string | null
+          status?: string | null
+          tank_capacity_liters?: number | null
+          tank_shape?: string | null
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          calibrated_by?: string | null
+          calibration_date?: string | null
+          calibration_points?: Json | null
+          created_at?: string
+          empty_voltage?: number | null
+          full_voltage?: number | null
+          id?: string
+          next_calibration_due?: string | null
+          notes?: string | null
+          organization_id?: string
+          probe_model?: string | null
+          probe_serial?: string | null
+          status?: string | null
+          tank_capacity_liters?: number | null
+          tank_shape?: string | null
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_probe_calibrations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_probe_calibrations_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fuel_reconciliations: {
         Row: {
           actual_consumption_liters: number | null
@@ -9819,6 +9894,74 @@ export type Database = {
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_templates: {
+        Row: {
+          columns: string[] | null
+          created_at: string
+          created_by: string
+          date_range_type: string | null
+          description: string | null
+          filters: Json | null
+          group_by: string | null
+          id: string
+          is_default: boolean | null
+          is_shared: boolean | null
+          name: string
+          organization_id: string
+          report_category: string
+          report_type: string
+          sort_by: string | null
+          sort_order: string | null
+          updated_at: string
+        }
+        Insert: {
+          columns?: string[] | null
+          created_at?: string
+          created_by: string
+          date_range_type?: string | null
+          description?: string | null
+          filters?: Json | null
+          group_by?: string | null
+          id?: string
+          is_default?: boolean | null
+          is_shared?: boolean | null
+          name: string
+          organization_id: string
+          report_category: string
+          report_type: string
+          sort_by?: string | null
+          sort_order?: string | null
+          updated_at?: string
+        }
+        Update: {
+          columns?: string[] | null
+          created_at?: string
+          created_by?: string
+          date_range_type?: string | null
+          description?: string | null
+          filters?: Json | null
+          group_by?: string | null
+          id?: string
+          is_default?: boolean | null
+          is_shared?: boolean | null
+          name?: string
+          organization_id?: string
+          report_category?: string
+          report_type?: string
+          sort_by?: string | null
+          sort_order?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_templates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
