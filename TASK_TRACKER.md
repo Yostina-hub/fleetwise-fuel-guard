@@ -101,12 +101,12 @@
 | 17 | **Routes** | 189 | Basic route list — needs route optimization, waypoint editor, map integration | 🟡 Medium |
 | 18 | **DashCam** | 185 | Event list works — needs video player integration, AI review workflow | 🟢 Low |
 
-### 🟡 Feature Gaps in Working Pages
-| # | Page | Feature Missing | Priority |
-|---|------|-----------------|----------|
-| 19 | **UserManagement** | Bulk role assignment shows "Coming Soon" toast | 🟡 Medium |
-| 20 | **Vehicles** | Trip status counts use placeholder comment | 🟢 Low |
-| 21 | **Reports** | Some report types may not pull real data | 🟡 Medium |
+### ✅ Feature Gaps — Resolved
+| # | Page | Feature | Status |
+|---|------|---------|--------|
+| 19 | ~~**UserManagement**~~ | ✅ Bulk role assignment — multi-select dialog with search, select-all, skip-existing | ✅ Done |
+| 20 | ~~**Vehicles**~~ | ✅ Trip status counts — real queries from `dispatch_jobs` table | ✅ Done |
+| 21 | **Reports** | ✅ All report types already use real DB queries | ✅ Done |
 | 22 | ~~**VehicleRequests**~~ | **DONE** — Full create/approve/reject/assign/complete workflow | ✅ Done |
 
 ---
