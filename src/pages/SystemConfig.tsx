@@ -87,13 +87,13 @@ const SystemConfig = () => {
 
   return (
     <Layout>
-      <div className="p-8 space-y-6 animate-fade-in">
+      <div className="p-4 md:p-8 space-y-6 animate-fade-in">
         <div className="flex items-center gap-3">
           <div className="p-4 rounded-2xl bg-primary/10">
             <Settings2 className="h-8 w-8 text-primary" />
           </div>
           <div>
-            <h1 className="text-4xl font-bold">System Configuration</h1>
+            <h1 className="text-2xl md:text-4xl font-bold">System Configuration</h1>
             <p className="text-muted-foreground mt-1 text-lg">Configure organization settings, device protocols, and integrations</p>
           </div>
         </div>
@@ -107,7 +107,7 @@ const SystemConfig = () => {
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 p-1 h-12">
+          <TabsList className="flex w-full overflow-x-auto p-1 h-12">
             <TabsTrigger value="general" className="gap-1.5 text-xs"><Settings2 className="h-3.5 w-3.5" /> General</TabsTrigger>
             <TabsTrigger value="security" className="gap-1.5 text-xs"><Shield className="h-3.5 w-3.5" /> Security</TabsTrigger>
             <TabsTrigger value="telemetry" className="gap-1.5 text-xs"><Database className="h-3.5 w-3.5" /> Telemetry</TabsTrigger>

@@ -190,7 +190,7 @@ const FuelMonitoring = () => {
   if (loading) {
     return (
       <Layout>
-        <div className="p-8 flex items-center justify-center min-h-[400px]">
+        <div className="p-4 md:p-8 flex items-center justify-center min-h-[400px]">
           <div className="text-center" role="status" aria-label="Loading fuel data">
             <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" aria-hidden="true" />
             <p className="text-muted-foreground">Loading fuel data...</p>
@@ -203,14 +203,14 @@ const FuelMonitoring = () => {
   return (
     <FuelPageContext.Provider value={contextValue}>
       <Layout>
-        <div className="p-8 space-y-6">
+        <div className="p-4 md:p-8 space-y-6">
           {/* Header */}
           <div className="flex items-center gap-4">
             <div className="p-4 rounded-2xl glass-strong glow">
               <Fuel className="w-8 h-8 text-primary float-animation" aria-hidden="true" />
             </div>
             <div>
-              <h1 className="text-4xl font-bold gradient-text">Fuel Management</h1>
+              <h1 className="text-2xl md:text-4xl font-bold gradient-text">Fuel Management</h1>
               <p className="text-muted-foreground mt-1 text-lg">Track consumption, transactions, detect anomalies, and manage depots</p>
             </div>
           </div>
@@ -270,7 +270,7 @@ const FuelMonitoring = () => {
           {/* Tabbed Content */}
           <div ref={tabsRef}>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
+              <TabsList className="flex w-full overflow-x-auto lg:w-auto lg:inline-flex">
                 <TabsTrigger value="events" className="gap-2">
                   <Droplet className="w-4 h-4" aria-hidden="true" />
                   <span className="hidden sm:inline">Fuel</span> Events

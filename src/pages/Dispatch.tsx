@@ -57,7 +57,7 @@ const Dispatch = () => {
   if (loading) {
     return (
       <Layout>
-        <div className="p-8 flex items-center justify-center min-h-[400px]">
+        <div className="p-4 md:p-8 flex items-center justify-center min-h-[400px]">
           <div className="text-center" role="status" aria-label="Loading dispatch data">
             <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" aria-hidden="true" />
             <p className="text-muted-foreground">Loading dispatch data...</p>
@@ -69,14 +69,14 @@ const Dispatch = () => {
 
   return (
     <Layout>
-      <div className="p-8 space-y-6">
+      <div className="p-4 md:p-8 space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
           <div className="p-4 rounded-2xl glass-strong glow">
             <Truck className="w-8 h-8 text-primary float-animation" aria-hidden="true" />
           </div>
           <div>
-            <h1 className="text-4xl font-bold gradient-text">Dispatch & Operations</h1>
+            <h1 className="text-2xl md:text-4xl font-bold gradient-text">Dispatch & Operations</h1>
             <p className="text-muted-foreground mt-1 text-lg">Manage delivery jobs, assignments, and proof of delivery</p>
           </div>
         </div>

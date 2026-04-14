@@ -45,7 +45,7 @@ const Settings = () => {
 
   return (
     <Layout>
-      <div className="p-8 space-y-8">
+      <div className="p-4 md:p-8 space-y-8">
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold">System Settings</h1>
@@ -53,7 +53,7 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 lg:w-auto">
+          <TabsList className="flex w-full overflow-x-auto lg:w-auto lg:inline-flex">
             <TabsTrigger value="general" className="gap-2">
               <SettingsIcon className="w-4 h-4" aria-hidden="true" />
               General

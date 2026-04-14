@@ -82,13 +82,13 @@ const RoutesPage = () => {
 
   return (
     <Layout>
-      <div className="p-8 space-y-6 animate-fade-in">
+      <div className="p-4 md:p-8 space-y-6 animate-fade-in">
         <div className="flex items-center gap-3 slide-in-left">
           <div className="p-4 rounded-2xl glass-strong glow">
             <Route className="h-8 w-8 text-primary animate-float" aria-hidden="true" />
           </div>
           <div>
-            <h1 className="text-4xl font-bold gradient-text">Routes & Dispatch</h1>
+            <h1 className="text-2xl md:text-4xl font-bold gradient-text">Routes & Dispatch</h1>
             <p className="text-muted-foreground mt-1 text-lg">
               Optimize delivery routes and manage customer locations
             </p>
