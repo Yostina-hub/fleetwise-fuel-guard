@@ -11,8 +11,8 @@ import { Fuel, CheckCircle, Clock, XCircle, Search, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
-
 import { useTranslation } from 'react-i18next';
+
 const FuelRequests = () => {
   const { t } = useTranslation();
   const { organizationId } = useOrganization();
@@ -60,35 +60,35 @@ const FuelRequests = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div><h1 className="text-2xl font-bold">{t('pages.fuel_requests.title', 'Fuel Request & Clearance')}</h1><p className="text-muted-foreground">{t('pages.fuel_requests.description', 'Manage fuel request approvals and dispensing workflows')}</p></div>
-          <Button><Plus className="h-4 w-4 mr-2" /> New Request</Button>
+          <Button><Plus className="h-4 w-4 mr-2" /> {t('fuel.newRequest', 'New Request')}</Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Fuel className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{stats.total}</p><p className="text-sm text-muted-foreground">Total Requests</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Clock className="h-8 w-8 text-orange-500" /><div><p className="text-2xl font-bold">{stats.pending}</p><p className="text-sm text-muted-foreground">Pending Approval</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><CheckCircle className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{stats.approved}</p><p className="text-sm text-muted-foreground">Approved</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Fuel className="h-8 w-8 text-blue-500" /><div><p className="text-2xl font-bold">{stats.totalLiters.toLocaleString()}L</p><p className="text-sm text-muted-foreground">Dispensed</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Fuel className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{stats.total}</p><p className="text-sm text-muted-foreground">{t('fuel.totalRequests', 'Total Requests')}</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Clock className="h-8 w-8 text-orange-500" /><div><p className="text-2xl font-bold">{stats.pending}</p><p className="text-sm text-muted-foreground">{t('fuel.pendingApproval', 'Pending Approval')}</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><CheckCircle className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{stats.approved}</p><p className="text-sm text-muted-foreground">{t('common.approved', 'Approved')}</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Fuel className="h-8 w-8 text-blue-500" /><div><p className="text-2xl font-bold">{stats.totalLiters.toLocaleString()}L</p><p className="text-sm text-muted-foreground">{t('fuel.dispensed', 'Dispensed')}</p></div></div></CardContent></Card>
         </div>
 
         <Tabs defaultValue="all">
           <TabsList>
-            <TabsTrigger value="all">All Requests</TabsTrigger>
-            <TabsTrigger value="pending">Pending ({stats.pending})</TabsTrigger>
-            <TabsTrigger value="approved">Approved</TabsTrigger>
+            <TabsTrigger value="all">{t('fuel.allRequests', 'All Requests')}</TabsTrigger>
+            <TabsTrigger value="pending">{t('common.pending', 'Pending')} ({stats.pending})</TabsTrigger>
+            <TabsTrigger value="approved">{t('common.approved', 'Approved')}</TabsTrigger>
           </TabsList>
 
           {["all", "pending", "approved"].map(tab => (
             <TabsContent key={tab} value={tab} className="space-y-4">
-              <div className="relative"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input placeholder="Search by request # or plate..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" /></div>
+              <div className="relative"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input placeholder={t('fuel.searchPlaceholder', 'Search by request # or plate...')} value={search} onChange={e => setSearch(e.target.value)} className="pl-9" /></div>
               <Card>
                 <Table>
                   <TableHeader><TableRow>
-                    <TableHead>Request #</TableHead><TableHead>Vehicle</TableHead><TableHead>Driver</TableHead><TableHead>Fuel Type</TableHead><TableHead>Liters</TableHead><TableHead>Est. Cost</TableHead><TableHead>Status</TableHead><TableHead>Date</TableHead>
+                    <TableHead>{t('fuel.requestNumber', 'Request #')}</TableHead><TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>{t('common.driver', 'Driver')}</TableHead><TableHead>{t('fuel.fuelType', 'Fuel Type')}</TableHead><TableHead>{t('fuel.liters', 'Liters')}</TableHead><TableHead>{t('fuel.estCost', 'Est. Cost')}</TableHead><TableHead>{t('common.status', 'Status')}</TableHead><TableHead>{t('common.date', 'Date')}</TableHead>
                   </TableRow></TableHeader>
                   <TableBody>
-                    {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">Loading...</TableCell></TableRow> :
+                    {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
                     (tab === "all" ? filtered : filtered.filter((r: any) => r.status === tab)).length === 0 ?
-                      <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No fuel requests found</TableCell></TableRow> :
+                      <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">{t('fuel.noRequests', 'No fuel requests found')}</TableCell></TableRow> :
                     (tab === "all" ? filtered : filtered.filter((r: any) => r.status === tab)).map((r: any) => (
                       <TableRow key={r.id}>
                         <TableCell className="font-mono text-sm">{r.request_number}</TableCell>

@@ -11,8 +11,8 @@ import { Shield, FileText, AlertTriangle, DollarSign, Search, Plus } from "lucid
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
-
 import { useTranslation } from 'react-i18next';
+
 const AccidentInsurance = () => {
   const { t } = useTranslation();
   const { organizationId } = useOrganization();
@@ -61,29 +61,29 @@ const AccidentInsurance = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div><h1 className="text-2xl font-bold">{t('pages.accident_insurance.title', 'Accident & Insurance Management')}</h1><p className="text-muted-foreground">{t('pages.accident_insurance.description', 'Track insurance policies, accident claims, and repair costs')}</p></div>
-          <Button><Plus className="h-4 w-4 mr-2" /> New Claim</Button>
+          <Button><Plus className="h-4 w-4 mr-2" /> {t('insurance.newClaim', 'New Claim')}</Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Shield className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{activePolicies.length}</p><p className="text-sm text-muted-foreground">Active Policies</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><FileText className="h-8 w-8 text-blue-500" /><div><p className="text-2xl font-bold">{claims.length}</p><p className="text-sm text-muted-foreground">Total Claims</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><AlertTriangle className="h-8 w-8 text-orange-500" /><div><p className="text-2xl font-bold">{openClaims.length}</p><p className="text-sm text-muted-foreground">Open Claims</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><DollarSign className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{totalClaimAmount.toLocaleString()} ETB</p><p className="text-sm text-muted-foreground">Total Claimed</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Shield className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{activePolicies.length}</p><p className="text-sm text-muted-foreground">{t('insurance.activePolicies', 'Active Policies')}</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><FileText className="h-8 w-8 text-blue-500" /><div><p className="text-2xl font-bold">{claims.length}</p><p className="text-sm text-muted-foreground">{t('insurance.totalClaims', 'Total Claims')}</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><AlertTriangle className="h-8 w-8 text-orange-500" /><div><p className="text-2xl font-bold">{openClaims.length}</p><p className="text-sm text-muted-foreground">{t('insurance.openClaims', 'Open Claims')}</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><DollarSign className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{totalClaimAmount.toLocaleString()} ETB</p><p className="text-sm text-muted-foreground">{t('insurance.totalClaimed', 'Total Claimed')}</p></div></div></CardContent></Card>
         </div>
 
-        <div className="relative"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input placeholder="Search claims or policies..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" /></div>
+        <div className="relative"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input placeholder={t('insurance.searchPlaceholder', 'Search claims or policies...')} value={search} onChange={e => setSearch(e.target.value)} className="pl-9" /></div>
 
         <Tabs defaultValue="claims">
-          <TabsList><TabsTrigger value="claims">Accident Claims</TabsTrigger><TabsTrigger value="policies">Insurance Policies</TabsTrigger></TabsList>
+          <TabsList><TabsTrigger value="claims">{t('insurance.accidentClaims', 'Accident Claims')}</TabsTrigger><TabsTrigger value="policies">{t('insurance.insurancePolicies', 'Insurance Policies')}</TabsTrigger></TabsList>
           <TabsContent value="claims">
             <Card><Table>
               <TableHeader><TableRow>
-                <TableHead>Claim #</TableHead><TableHead>Date</TableHead><TableHead>Vehicle</TableHead><TableHead>Location</TableHead><TableHead>Amount</TableHead><TableHead>Fault</TableHead><TableHead>Status</TableHead>
+                <TableHead>{t('insurance.claimNumber', 'Claim #')}</TableHead><TableHead>{t('common.date', 'Date')}</TableHead><TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>{t('common.location', 'Location')}</TableHead><TableHead>{t('insurance.amount', 'Amount')}</TableHead><TableHead>{t('insurance.fault', 'Fault')}</TableHead><TableHead>{t('common.status', 'Status')}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {claimsLoading ? <TableRow><TableCell colSpan={7} className="text-center py-8">Loading...</TableCell></TableRow> :
+                {claimsLoading ? <TableRow><TableCell colSpan={7} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
                 claims.filter((c: any) => !search || c.claim_number?.toLowerCase().includes(search.toLowerCase()) || c.vehicles?.plate_number?.toLowerCase().includes(search.toLowerCase())).length === 0 ?
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No claims recorded</TableCell></TableRow> :
+                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">{t('insurance.noClaims', 'No claims recorded')}</TableCell></TableRow> :
                 claims.filter((c: any) => !search || c.claim_number?.toLowerCase().includes(search.toLowerCase()) || c.vehicles?.plate_number?.toLowerCase().includes(search.toLowerCase())).map((c: any) => (
                   <TableRow key={c.id}>
                     <TableCell className="font-mono">{c.claim_number}</TableCell>
@@ -101,11 +101,11 @@ const AccidentInsurance = () => {
           <TabsContent value="policies">
             <Card><Table>
               <TableHeader><TableRow>
-                <TableHead>Policy #</TableHead><TableHead>Vehicle</TableHead><TableHead>Provider</TableHead><TableHead>Coverage</TableHead><TableHead>Premium</TableHead><TableHead>Expires</TableHead><TableHead>Status</TableHead>
+                <TableHead>{t('insurance.policyNumber', 'Policy #')}</TableHead><TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>{t('insurance.provider', 'Provider')}</TableHead><TableHead>{t('insurance.coverage', 'Coverage')}</TableHead><TableHead>{t('insurance.premium', 'Premium')}</TableHead><TableHead>{t('insurance.expires', 'Expires')}</TableHead><TableHead>{t('common.status', 'Status')}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {policiesLoading ? <TableRow><TableCell colSpan={7} className="text-center py-8">Loading...</TableCell></TableRow> :
-                policies.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No policies recorded</TableCell></TableRow> :
+                {policiesLoading ? <TableRow><TableCell colSpan={7} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
+                policies.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">{t('insurance.noPolicies', 'No policies recorded')}</TableCell></TableRow> :
                 policies.map((p: any) => (
                   <TableRow key={p.id}>
                     <TableCell className="font-mono">{p.policy_number}</TableCell>
