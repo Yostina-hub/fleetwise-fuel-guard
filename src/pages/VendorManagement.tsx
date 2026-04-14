@@ -63,7 +63,7 @@ const VendorManagement = () => {
         contact_person: form.contact_person.trim() || null,
         email: form.email.trim() || null,
         phone: form.phone.trim() || null,
-        contract_number: form.contract_number.trim() || null,
+        address: form.address.trim() || null,
         address: form.address.trim() || null,
         notes: form.notes.trim() || null,
         rating: form.rating || null,
@@ -97,7 +97,7 @@ const VendorManagement = () => {
   const openAdd = () => { setEditing(null); setForm(emptyVendor); setErrors({}); setDialogOpen(true); };
   const openEdit = (v: any) => {
     setEditing(v);
-    setForm({ name: v.name || "", contact_person: v.contact_person || "", email: v.email || "", phone: v.phone || "", category: v.category || "maintenance", contract_number: v.contract_number || "", rating: v.rating || 0, is_active: v.is_active ?? true, address: v.address || "", notes: v.notes || "" });
+    setForm({ name: v.name || "", contact_person: v.contact_person || "", email: v.email || "", phone: v.phone || "", vendor_type: v.vendor_type || "maintenance", rating: v.rating || 0, is_active: v.is_active ?? true, address: v.address || "", notes: v.notes || "" });
     setErrors({});
     setDialogOpen(true);
   };
@@ -105,7 +105,7 @@ const VendorManagement = () => {
   const handleSubmit = () => { if (validate()) saveMutation.mutate(); };
 
   const active = vendors.filter((v: any) => v.is_active);
-  const filtered = vendors.filter((v: any) => !search || v.name?.toLowerCase().includes(search.toLowerCase()) || v.category?.toLowerCase().includes(search.toLowerCase()));
+  const filtered = vendors.filter((v: any) => !search || v.name?.toLowerCase().includes(search.toLowerCase()) || v.vendor_type?.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <Layout>
@@ -125,19 +125,18 @@ const VendorManagement = () => {
 
         <Card><Table>
           <TableHeader><TableRow>
-            <TableHead>Name</TableHead><TableHead>Contact</TableHead><TableHead>Email</TableHead><TableHead>Phone</TableHead><TableHead>Category</TableHead><TableHead>Contract #</TableHead><TableHead>Rating</TableHead><TableHead>Status</TableHead><TableHead className="w-24">Actions</TableHead>
+            <TableHead>Name</TableHead><TableHead>Contact</TableHead><TableHead>Email</TableHead><TableHead>Phone</TableHead><TableHead>Type</TableHead><TableHead>Rating</TableHead><TableHead>Status</TableHead><TableHead className="w-24">Actions</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {isLoading ? <TableRow><TableCell colSpan={9} className="text-center py-8">Loading...</TableCell></TableRow> :
-            filtered.length === 0 ? <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No vendors found</TableCell></TableRow> :
+            {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">Loading...</TableCell></TableRow> :
+            filtered.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No vendors found</TableCell></TableRow> :
             filtered.map((v: any) => (
               <TableRow key={v.id}>
                 <TableCell className="font-medium">{v.name}</TableCell>
                 <TableCell>{v.contact_person || "—"}</TableCell>
                 <TableCell>{v.email || "—"}</TableCell>
                 <TableCell>{v.phone || "—"}</TableCell>
-                <TableCell className="capitalize">{v.category}</TableCell>
-                <TableCell className="font-mono">{v.contract_number || "—"}</TableCell>
+                <TableCell className="capitalize">{v.vendor_type}</TableCell>
                 <TableCell>{v.rating ? `${v.rating}/5` : "—"}</TableCell>
                 <TableCell><Badge variant={v.is_active ? "default" : "secondary"}>{v.is_active ? "Active" : "Inactive"}</Badge></TableCell>
                 <TableCell>
@@ -162,13 +161,14 @@ const VendorManagement = () => {
               </div>
               <div><Label>Email</Label><Input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} className={errors.email ? "border-destructive" : ""} />{errors.email && <p className="text-sm text-destructive mt-1">{errors.email}</p>}</div>
               <div className="grid grid-cols-2 gap-4">
-                <div><Label>Category</Label>
-                  <Select value={form.category} onValueChange={v => setForm(p => ({ ...p, category: v }))}>
+                <div><Label>Vendor Type</Label>
+                  <Select value={form.vendor_type} onValueChange={v => setForm(p => ({ ...p, vendor_type: v }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>{CATEGORIES.map(c => <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>)}</SelectContent>
+                    <SelectContent>{VENDOR_TYPES.map(c => <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div><Label>Contract #</Label><Input value={form.contract_number} onChange={e => setForm(p => ({ ...p, contract_number: e.target.value }))} /></div>
+                <div><Label>Rating (0–5)</Label><Input type="number" min={0} max={5} step={0.5} value={form.rating} onChange={e => setForm(p => ({ ...p, rating: parseFloat(e.target.value) || 0 }))} className={errors.rating ? "border-destructive" : ""} /></div>
+              </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div><Label>Rating (0–5)</Label><Input type="number" min={0} max={5} step={0.5} value={form.rating} onChange={e => setForm(p => ({ ...p, rating: parseFloat(e.target.value) || 0 }))} className={errors.rating ? "border-destructive" : ""} /></div>
