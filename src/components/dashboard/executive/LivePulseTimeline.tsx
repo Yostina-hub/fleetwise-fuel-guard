@@ -3,6 +3,7 @@ import { Activity, MapPin, Fuel, AlertTriangle, Clock, Truck, Route } from "luci
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useTranslation } from "react-i18next";
 
 interface TimelineEvent {
   id: string;
@@ -21,41 +22,19 @@ interface LivePulseTimelineProps {
 }
 
 const typeConfig = {
-  trip: {
-    icon: Route,
-    color: 'bg-secondary/20 text-secondary border-secondary/30',
-    pulse: 'bg-secondary',
-  },
-  alert: {
-    icon: AlertTriangle,
-    color: 'bg-warning/20 text-warning border-warning/30',
-    pulse: 'bg-warning',
-  },
-  fuel: {
-    icon: Fuel,
-    color: 'bg-primary/20 text-primary border-primary/30',
-    pulse: 'bg-primary',
-  },
-  geofence: {
-    icon: MapPin,
-    color: 'bg-success/20 text-success border-success/30',
-    pulse: 'bg-success',
-  },
-  vehicle: {
-    icon: Truck,
-    color: 'bg-chart-2/20 text-chart-2 border-chart-2/30',
-    pulse: 'bg-chart-2',
-  },
+  trip: { icon: Route, color: 'bg-secondary/20 text-secondary border-secondary/30', pulse: 'bg-secondary' },
+  alert: { icon: AlertTriangle, color: 'bg-warning/20 text-warning border-warning/30', pulse: 'bg-warning' },
+  fuel: { icon: Fuel, color: 'bg-primary/20 text-primary border-primary/30', pulse: 'bg-primary' },
+  geofence: { icon: MapPin, color: 'bg-success/20 text-success border-success/30', pulse: 'bg-success' },
+  vehicle: { icon: Truck, color: 'bg-chart-2/20 text-chart-2 border-chart-2/30', pulse: 'bg-chart-2' },
 };
 
 const LivePulseTimeline = ({ events, loading }: LivePulseTimelineProps) => {
+  const { t } = useTranslation();
+
   if (loading) {
     return (
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="rounded-2xl bg-gradient-to-br from-card to-card/80 border border-border/50 p-6 h-96"
-      >
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-2xl bg-gradient-to-br from-card to-card/80 border border-border/50 p-6 h-96">
         <div className="animate-pulse space-y-4">
           <div className="h-6 bg-muted/30 rounded w-1/3" />
           {[1, 2, 3, 4, 5].map(i => (
@@ -73,72 +52,38 @@ const LivePulseTimeline = ({ events, loading }: LivePulseTimelineProps) => {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="relative rounded-2xl bg-gradient-to-br from-card via-card/95 to-card/90 border border-border/50 overflow-hidden"
-    >
-      {/* Animated top border */}
-      <motion.div 
-        className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent"
-        animate={{ opacity: [0.3, 1, 0.3] }}
-        transition={{ duration: 2, repeat: Infinity }}
-      />
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative rounded-2xl bg-gradient-to-br from-card via-card/95 to-card/90 border border-border/50 overflow-hidden">
+      <motion.div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 2, repeat: Infinity }} />
 
       <div className="p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <motion.div 
-              className="w-2 h-2 rounded-full bg-primary"
-              animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-            />
-            <h3 className="text-lg font-semibold text-white">Live Activity Pulse</h3>
+            <motion.div className="w-2 h-2 rounded-full bg-primary" animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+            <h3 className="text-lg font-semibold text-white">{t('executive.liveActivityPulse')}</h3>
           </div>
           <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
             <Activity className="w-3 h-3 mr-1" />
-            {events.length} Events
+            {events.length} {t('executive.events')}
           </Badge>
         </div>
 
         <ScrollArea className="h-80 pr-4">
           <div className="relative">
-            {/* Timeline line */}
             <div className="absolute left-5 top-2 bottom-2 w-0.5 bg-gradient-to-b from-primary via-primary/50 to-transparent" />
-
             <AnimatePresence mode="popLayout">
               {events.map((event, index) => {
                 const config = typeConfig[event.type];
                 const Icon = config.icon;
-                
                 return (
-                  <motion.div
-                    key={event.id}
-                    layout
-                    initial={{ opacity: 0, x: -20, scale: 0.9 }}
-                    animate={{ opacity: 1, x: 0, scale: 1 }}
-                    exit={{ opacity: 0, x: 20, scale: 0.9 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className="relative flex gap-4 pb-4 group"
-                  >
-                    {/* Icon with pulse */}
+                  <motion.div key={event.id} layout initial={{ opacity: 0, x: -20, scale: 0.9 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: 20, scale: 0.9 }} transition={{ duration: 0.3, delay: index * 0.05 }} className="relative flex gap-4 pb-4 group">
                     <div className="relative z-10">
-                      <motion.div 
-                        className={`w-10 h-10 rounded-xl ${config.color} border flex items-center justify-center`}
-                        whileHover={{ scale: 1.1 }}
-                      >
+                      <motion.div className={`w-10 h-10 rounded-xl ${config.color} border flex items-center justify-center`} whileHover={{ scale: 1.1 }}>
                         <Icon className="w-5 h-5" />
                       </motion.div>
                       {index === 0 && (
-                        <motion.div 
-                          className={`absolute -inset-1 rounded-xl ${config.pulse} opacity-30`}
-                          animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0, 0.3] }}
-                          transition={{ duration: 2, repeat: Infinity }}
-                        />
+                        <motion.div className={`absolute -inset-1 rounded-xl ${config.pulse} opacity-30`} animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0, 0.3] }} transition={{ duration: 2, repeat: Infinity }} />
                       )}
                     </div>
-
-                    {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 mb-1">
                         <p className="font-medium text-white text-sm truncate">{event.title}</p>

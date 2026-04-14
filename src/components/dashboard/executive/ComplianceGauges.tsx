@@ -6,6 +6,7 @@ import { Shield, FileText, Car, User, Clock, AlertTriangle, CheckCircle, Wrench 
 import { ComplianceItem } from "@/hooks/useExecutiveMetrics";
 import { format } from "date-fns";
 import AnimatedMetricRing from "./AnimatedMetricRing";
+import { useTranslation } from "react-i18next";
 
 interface ComplianceGaugesProps {
   items: ComplianceItem[];
@@ -13,6 +14,8 @@ interface ComplianceGaugesProps {
 }
 
 const ComplianceGauges = ({ items, loading }: ComplianceGaugesProps) => {
+  const { t } = useTranslation();
+
   const getTypeIcon = (type: ComplianceItem['type']) => {
     switch (type) {
       case 'license': return <FileText className="w-4 h-4" />;
@@ -39,7 +42,7 @@ const ComplianceGauges = ({ items, loading }: ComplianceGaugesProps) => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-white">
             <Shield className="w-5 h-5 text-[#8DC63F]" />
-            Compliance Overview
+            {t('executive.complianceOverview')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -55,18 +58,17 @@ const ComplianceGauges = ({ items, loading }: ComplianceGaugesProps) => {
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-white">
             <Shield className="w-5 h-5 text-[#8DC63F]" />
-            Compliance Overview
+            {t('executive.complianceOverview')}
           </CardTitle>
           {expiredCount > 0 && (
             <Badge variant="destructive" className="gap-1 bg-red-500/20 text-red-400 border-red-400/40">
               <AlertTriangle className="w-3 h-3" />
-              {expiredCount} Critical
+              {expiredCount} {t('executive.critical')}
             </Badge>
           )}
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Main Compliance Gauge */}
         <div className="flex items-center justify-center">
           <AnimatedMetricRing
             value={complianceRate}
@@ -75,48 +77,31 @@ const ComplianceGauges = ({ items, loading }: ComplianceGaugesProps) => {
             color={complianceRate >= 90 ? 'hsl(var(--success))' : 
                    complianceRate >= 70 ? 'hsl(var(--warning))' : 
                    'hsl(var(--destructive))'}
-            label="Compliance"
-            sublabel={`${validCount} of ${totalItems} items valid`}
+            label={t('executive.compliance')}
+            sublabel={t('executive.itemsValid', { valid: validCount, total: totalItems })}
           />
         </div>
 
-        {/* Status breakdown */}
         <div className="grid grid-cols-3 gap-2">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="text-center p-3 rounded-lg bg-destructive/10"
-          >
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="text-center p-3 rounded-lg bg-destructive/10">
             <div className="text-2xl font-bold text-destructive">{expiredCount}</div>
-            <div className="text-xs text-muted-foreground">Expired</div>
+            <div className="text-xs text-muted-foreground">{t('executive.expired')}</div>
           </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="text-center p-3 rounded-lg bg-warning/10"
-          >
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="text-center p-3 rounded-lg bg-warning/10">
             <div className="text-2xl font-bold text-warning">{expiringCount}</div>
-            <div className="text-xs text-muted-foreground">Expiring</div>
+            <div className="text-xs text-muted-foreground">{t('executive.expiring')}</div>
           </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="text-center p-3 rounded-lg bg-success/10"
-          >
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="text-center p-3 rounded-lg bg-success/10">
             <div className="text-2xl font-bold text-success">{validCount}</div>
-            <div className="text-xs text-muted-foreground">Valid</div>
+            <div className="text-xs text-muted-foreground">{t('executive.valid')}</div>
           </motion.div>
         </div>
 
-        {/* Critical Items */}
         {criticalItems.length > 0 && (
           <div>
             <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-warning" />
-              Requires Attention
+              {t('executive.requiresAttention')}
             </h4>
             <ScrollArea className="h-[180px]">
               <div className="space-y-2 pr-2">
@@ -150,10 +135,10 @@ const ComplianceGauges = ({ items, loading }: ComplianceGaugesProps) => {
                       <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
                         <Clock className="w-3 h-3" />
                         {item.daysUntilExpiry < 0 
-                          ? `${Math.abs(item.daysUntilExpiry)} days overdue`
+                          ? t('executive.daysOverdue', { days: Math.abs(item.daysUntilExpiry) })
                           : item.daysUntilExpiry === 0 
-                            ? 'Expires today'
-                            : `${item.daysUntilExpiry} days left`
+                            ? t('executive.expiresToday')
+                            : t('executive.daysLeft', { days: item.daysUntilExpiry })
                         }
                       </div>
                     </div>
