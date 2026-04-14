@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { startOfDay, endOfDay, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 type TimePeriod = "today" | "yesterday" | "last_7_days" | "last_30_days" | "this_month";
 
@@ -51,6 +52,15 @@ const COLORS = {
 export const FleetViolationsDonut = () => {
   const [period, setPeriod] = useState<TimePeriod>("last_7_days");
   const { organizationId } = useOrganization();
+  const { t } = useTranslation();
+
+  const TIME_OPTIONS_TRANSLATED = [
+    { value: "today" as TimePeriod, label: t('common.today') },
+    { value: "yesterday" as TimePeriod, label: t('common.yesterday') },
+    { value: "last_7_days" as TimePeriod, label: t('common.last7Days') },
+    { value: "last_30_days" as TimePeriod, label: t('common.last30Days') },
+    { value: "this_month" as TimePeriod, label: t('common.thisMonth') },
+  ];
 
   const dateRange = useMemo(() => getDateRange(period), [period]);
 
@@ -175,14 +185,14 @@ export const FleetViolationsDonut = () => {
               >
                 <Settings2 className="w-5 h-5 text-cyan-400" />
               </motion.div>
-              Fleet Violations
+              {t('executive.fleetViolations')}
             </CardTitle>
             <Select value={period} onValueChange={(v) => setPeriod(v as TimePeriod)}>
               <SelectTrigger className="w-[130px] h-8 text-xs bg-white/10 border-cyan-500/30 text-white">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {TIME_OPTIONS.map((opt) => (
+                {TIME_OPTIONS_TRANSLATED.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
                   </SelectItem>
@@ -224,7 +234,7 @@ export const FleetViolationsDonut = () => {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
               >
-                Total
+                {t('common.total')}
               </motion.span>
               <motion.span 
                 className="text-4xl font-bold text-foreground"
@@ -239,10 +249,10 @@ export const FleetViolationsDonut = () => {
 
           <div className="mt-4 space-y-2.5">
             {[
-              { key: 'overSpeeds', label: 'OverSpeeds', color: COLORS.overSpeeds, value: percentages.overSpeeds },
-              { key: 'alerts', label: 'Alerts', color: COLORS.alerts, value: percentages.alerts },
-              { key: 'harshBehavior', label: 'Harsh Behavior', color: COLORS.harshBehavior, value: percentages.harshBehavior },
-              { key: 'noGoKeepIn', label: 'NO-Go/Keep In', color: COLORS.noGoKeepIn, value: percentages.noGoKeepIn },
+              { key: 'overSpeeds', label: t('executive.overSpeeds'), color: COLORS.overSpeeds, value: percentages.overSpeeds },
+              { key: 'alerts', label: t('executive.alerts'), color: COLORS.alerts, value: percentages.alerts },
+              { key: 'harshBehavior', label: t('executive.harshBehavior'), color: COLORS.harshBehavior, value: percentages.harshBehavior },
+              { key: 'noGoKeepIn', label: t('executive.noGoKeepIn'), color: COLORS.noGoKeepIn, value: percentages.noGoKeepIn },
             ].map((item, index) => (
               <motion.div 
                 key={item.key}

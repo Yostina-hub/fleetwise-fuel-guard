@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Heart, Truck, AlertTriangle, CheckCircle, Wrench, Fuel, Activity } from "lucide-react";
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 
 interface VehicleData {
   id: string;
@@ -18,6 +19,7 @@ interface FleetHealthSummaryProps {
 }
 
 const FleetHealthSummary = ({ vehicles, maintenanceOverdue, complianceRate, loading }: FleetHealthSummaryProps) => {
+  const { t } = useTranslation();
   const healthMetrics = useMemo(() => {
     const total = vehicles.length;
     if (total === 0) return { overall: 0, operational: 0, maintenance: 0, fuel: 0 };
@@ -57,7 +59,7 @@ const FleetHealthSummary = ({ vehicles, maintenanceOverdue, complianceRate, load
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Heart className="w-5 h-5 text-destructive" />
-            Fleet Health
+            {t('dashboard.fleetHealth')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -73,10 +75,10 @@ const FleetHealthSummary = ({ vehicles, maintenanceOverdue, complianceRate, load
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Heart className={`w-5 h-5 ${getHealthColor(healthMetrics.overall)} ${healthMetrics.overall < 60 ? 'animate-pulse' : ''}`} />
-            Fleet Health
+            {t('dashboard.fleetHealth')}
           </CardTitle>
           <Badge className={`${getHealthBg(healthMetrics.overall)} text-white`}>
-            {healthMetrics.overall >= 80 ? 'Excellent' : healthMetrics.overall >= 60 ? 'Good' : 'Needs Attention'}
+            {healthMetrics.overall >= 80 ? t('dashboard.excellent') : healthMetrics.overall >= 60 ? t('dashboard.good') : t('dashboard.needsAttention')}
           </Badge>
         </div>
       </CardHeader>
@@ -110,7 +112,7 @@ const FleetHealthSummary = ({ vehicles, maintenanceOverdue, complianceRate, load
               <span className={`text-3xl font-bold ${getHealthColor(healthMetrics.overall)}`}>
                 {healthMetrics.overall}
               </span>
-              <span className="text-xs text-muted-foreground">Health Score</span>
+              <span className="text-xs text-muted-foreground">{t('dashboard.healthScore')}</span>
             </div>
           </div>
         </div>
@@ -121,7 +123,7 @@ const FleetHealthSummary = ({ vehicles, maintenanceOverdue, complianceRate, load
             <div className="flex items-center justify-between text-sm">
               <span className="flex items-center gap-2">
                 <Truck className="w-4 h-4 text-primary" />
-                Operational
+                {t('dashboard.operational')}
               </span>
               <span className="font-medium">{healthMetrics.operational}%</span>
             </div>
@@ -132,7 +134,7 @@ const FleetHealthSummary = ({ vehicles, maintenanceOverdue, complianceRate, load
             <div className="flex items-center justify-between text-sm">
               <span className="flex items-center gap-2">
                 <Wrench className="w-4 h-4 text-orange-500" />
-                Maintenance
+                {t('maintenance.title')}
               </span>
               <span className="font-medium">{healthMetrics.maintenance}%</span>
             </div>
@@ -143,7 +145,7 @@ const FleetHealthSummary = ({ vehicles, maintenanceOverdue, complianceRate, load
             <div className="flex items-center justify-between text-sm">
               <span className="flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-success" />
-                Compliance
+                {t('dashboard.compliance')}
               </span>
               <span className="font-medium">{Math.round(complianceRate)}%</span>
             </div>
@@ -154,7 +156,7 @@ const FleetHealthSummary = ({ vehicles, maintenanceOverdue, complianceRate, load
             <div className="flex items-center justify-between text-sm">
               <span className="flex items-center gap-2">
                 <Fuel className="w-4 h-4 text-blue-500" />
-                Avg Fuel Level
+                {t('dashboard.avgFuelLevel')}
               </span>
               <span className="font-medium">{healthMetrics.fuel}%</span>
             </div>
@@ -168,19 +170,19 @@ const FleetHealthSummary = ({ vehicles, maintenanceOverdue, complianceRate, load
             <div className="text-lg font-bold text-success">
               {vehicles.filter(v => v.status === 'active').length}
             </div>
-            <div className="text-xs text-muted-foreground">Active</div>
+            <div className="text-xs text-muted-foreground">{t('common.active')}</div>
           </div>
           <div className="text-center">
             <div className="text-lg font-bold text-warning">
               {vehicles.filter(v => v.status === 'maintenance').length}
             </div>
-            <div className="text-xs text-muted-foreground">In Service</div>
+            <div className="text-xs text-muted-foreground">{t('dashboard.inService')}</div>
           </div>
           <div className="text-center">
             <div className="text-lg font-bold text-destructive">
               {maintenanceOverdue}
             </div>
-            <div className="text-xs text-muted-foreground">Overdue</div>
+            <div className="text-xs text-muted-foreground">{t('dashboard.overdue')}</div>
           </div>
         </div>
       </CardContent>

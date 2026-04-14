@@ -10,17 +10,19 @@ import {
   Truck
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const QuickActionsCard = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const actions = [
-    { id: "add-vehicle", icon: Plus, label: "Add Vehicle", onClick: () => navigate('/fleet'), color: "text-primary" },
-    { id: "add-driver", icon: Users, label: "Add Driver", onClick: () => navigate('/drivers'), color: "text-success" },
-    { id: "live-map", icon: MapPin, label: "Live Map", onClick: () => navigate('/map'), color: "text-info" },
-    { id: "schedule-service", icon: Wrench, label: "Schedule Service", onClick: () => navigate('/maintenance'), color: "text-warning" },
-    { id: "view-alerts", icon: AlertTriangle, label: "View Alerts", onClick: () => navigate('/alerts'), color: "text-destructive" },
-    { id: "generate-report", icon: FileText, label: "Generate Report", onClick: () => navigate('/reports'), color: "text-muted-foreground" },
+    { id: "add-vehicle", icon: Plus, label: t('dashboard.addVehicle'), onClick: () => navigate('/fleet'), color: "text-primary" },
+    { id: "add-driver", icon: Users, label: t('dashboard.addDriver'), onClick: () => navigate('/drivers'), color: "text-success" },
+    { id: "live-map", icon: MapPin, label: t('dashboard.liveMap'), onClick: () => navigate('/map'), color: "text-info" },
+    { id: "schedule-service", icon: Wrench, label: t('dashboard.scheduleService'), onClick: () => navigate('/maintenance'), color: "text-warning" },
+    { id: "view-alerts", icon: AlertTriangle, label: t('dashboard.viewAlerts'), onClick: () => navigate('/alerts'), color: "text-destructive" },
+    { id: "generate-report", icon: FileText, label: t('dashboard.generateReport'), onClick: () => navigate('/reports'), color: "text-muted-foreground" },
   ];
 
   return (
@@ -28,7 +30,7 @@ const QuickActionsCard = () => {
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium flex items-center gap-2">
           <Truck className="w-4 h-4 text-primary" />
-          Quick Actions
+          {t('dashboard.quickActions')}
         </CardTitle>
       </CardHeader>
       <CardContent>

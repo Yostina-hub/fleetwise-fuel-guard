@@ -4,6 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Activity, Truck, AlertTriangle, MapPin, Fuel, Wrench, Route, Radio } from "lucide-react";
 import { FleetActivity, GeofenceActivity } from "@/hooks/useExecutiveMetrics";
 import { formatDistanceToNow } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 interface LiveActivityFeedProps {
   activities: FleetActivity[];
@@ -12,6 +13,8 @@ interface LiveActivityFeedProps {
 }
 
 const LiveActivityFeed = ({ activities, geofenceActivities, loading }: LiveActivityFeedProps) => {
+  const { t } = useTranslation();
+
   const getActivityIcon = (type: FleetActivity['type']) => {
     switch (type) {
       case 'trip_start': return <Route className="w-4 h-4 text-primary" />;
@@ -38,7 +41,7 @@ const LiveActivityFeed = ({ activities, geofenceActivities, loading }: LiveActiv
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Radio className="w-5 h-5 text-success animate-pulse" />
-            Live Activity
+            {t('dashboard.liveActivity')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -58,11 +61,11 @@ const LiveActivityFeed = ({ activities, geofenceActivities, loading }: LiveActiv
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Radio className="w-5 h-5 text-success animate-pulse" />
-            Live Activity
+            {t('dashboard.liveActivity')}
           </CardTitle>
           <Badge variant="outline" className="text-xs gap-1">
             <span className="w-2 h-2 bg-success rounded-full animate-pulse" />
-            Real-time
+            {t('dashboard.realTime')}
           </Badge>
         </div>
       </CardHeader>
@@ -74,7 +77,7 @@ const LiveActivityFeed = ({ activities, geofenceActivities, loading }: LiveActiv
               <div className="mb-4">
                 <div className="flex items-center gap-2 mb-2">
                   <MapPin className="w-4 h-4 text-purple-500" />
-                  <span className="text-xs font-medium text-muted-foreground uppercase">Geofence Events</span>
+                  <span className="text-xs font-medium text-muted-foreground uppercase">{t('dashboard.geofenceEvents')}</span>
                 </div>
                 <div className="space-y-2">
                   {geofenceActivities.slice(0, 5).map((event) => (
@@ -94,7 +97,7 @@ const LiveActivityFeed = ({ activities, geofenceActivities, loading }: LiveActiv
                             {event.vehiclePlate}
                           </Badge>
                           <span className="text-xs">
-                            {event.eventType === 'entry' ? 'entered' : 'exited'}
+                            {event.eventType === 'entry' ? t('dashboard.entered') : t('dashboard.exited')}
                           </span>
                           <span className="text-xs font-medium">{event.geofenceName}</span>
                         </div>
@@ -114,11 +117,11 @@ const LiveActivityFeed = ({ activities, geofenceActivities, loading }: LiveActiv
             {/* General Activities */}
             <div className="flex items-center gap-2 mb-2">
               <Activity className="w-4 h-4 text-primary" />
-              <span className="text-xs font-medium text-muted-foreground uppercase">Fleet Activity</span>
+              <span className="text-xs font-medium text-muted-foreground uppercase">{t('dashboard.fleetActivity')}</span>
             </div>
             {activities.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                No recent activity
+                {t('dashboard.noRecentActivity')}
               </div>
             ) : (
               activities.map((activity) => (

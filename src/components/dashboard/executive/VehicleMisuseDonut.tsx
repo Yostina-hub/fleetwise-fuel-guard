@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 type TimePeriod = "today" | "yesterday" | "last_7_days" | "last_30_days" | "this_month";
 
@@ -53,6 +54,15 @@ const COLORS = {
 export const VehicleMisuseDonut = () => {
   const [period, setPeriod] = useState<TimePeriod>("last_7_days");
   const { organizationId } = useOrganization();
+  const { t } = useTranslation();
+
+  const TIME_OPTIONS_TRANSLATED = [
+    { value: "today" as TimePeriod, label: t('common.today') },
+    { value: "yesterday" as TimePeriod, label: t('common.yesterday') },
+    { value: "last_7_days" as TimePeriod, label: t('common.last7Days') },
+    { value: "last_30_days" as TimePeriod, label: t('common.last30Days') },
+    { value: "this_month" as TimePeriod, label: t('common.thisMonth') },
+  ];
 
   const dateRange = useMemo(() => getDateRange(period), [period]);
 
@@ -151,14 +161,14 @@ export const VehicleMisuseDonut = () => {
               >
                 <Settings2 className="w-5 h-5 text-amber-400" />
               </motion.div>
-              Vehicle Misuse Overview
+              {t('executive.vehicleMisuseOverview')}
             </CardTitle>
             <Select value={period} onValueChange={(v) => setPeriod(v as TimePeriod)}>
               <SelectTrigger className="w-[130px] h-8 text-xs bg-white/10 border-cyan-500/30 text-white">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {TIME_OPTIONS.map((opt) => (
+                {TIME_OPTIONS_TRANSLATED.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
                   </SelectItem>
@@ -200,7 +210,7 @@ export const VehicleMisuseDonut = () => {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 }}
               >
-                Total
+                {t('common.total')}
               </motion.span>
               <motion.span 
                 className="text-4xl font-bold text-foreground"
@@ -215,13 +225,13 @@ export const VehicleMisuseDonut = () => {
 
           <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             {[
-              { label: 'Speeding (device)', color: COLORS.speedingDevice },
-              { label: 'Harsh braking', color: COLORS.harshBraking },
-              { label: 'Harsh acceleration', color: COLORS.harshAcceleration },
-              { label: 'Excessive idle', color: COLORS.excessiveIdle },
-              { label: 'Harsh cornering', color: COLORS.harshCornering },
-              { label: 'Speeding (road)', color: COLORS.speedingRoad },
-              { label: 'Speeding (platform)', color: COLORS.speedingPlatform },
+              { label: t('executive.speedingDevice'), color: COLORS.speedingDevice },
+              { label: t('executive.harshBraking'), color: COLORS.harshBraking },
+              { label: t('executive.harshAcceleration'), color: COLORS.harshAcceleration },
+              { label: t('executive.excessiveIdle'), color: COLORS.excessiveIdle },
+              { label: t('executive.harshCornering'), color: COLORS.harshCornering },
+              { label: t('executive.speedingRoad'), color: COLORS.speedingRoad },
+              { label: t('executive.speedingPlatform'), color: COLORS.speedingPlatform },
             ].map((item, index) => (
               <motion.div 
                 key={item.label}

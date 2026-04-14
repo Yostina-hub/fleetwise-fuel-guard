@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useVehicles } from "@/hooks/useVehicles";
 import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, format, eachDayOfInterval } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 type TimePeriod = "today" | "yesterday" | "last_7_days" | "last_30_days";
 
@@ -44,6 +45,14 @@ export const TotalTripsCard = () => {
   const [showChart, setShowChart] = useState(true);
   const { organizationId } = useOrganization();
   const { vehicles } = useVehicles();
+  const { t } = useTranslation();
+
+  const TIME_OPTIONS_TRANSLATED = [
+    { value: "today" as TimePeriod, label: t('common.today') },
+    { value: "yesterday" as TimePeriod, label: t('common.yesterday') },
+    { value: "last_7_days" as TimePeriod, label: t('common.last7Days') },
+    { value: "last_30_days" as TimePeriod, label: t('common.last30Days') },
+  ];
 
   const dateRange = useMemo(() => getDateRange(period), [period]);
   const daysInRange = useMemo(() => eachDayOfInterval({ start: dateRange.start, end: dateRange.end }), [dateRange]);
@@ -114,7 +123,7 @@ export const TotalTripsCard = () => {
               >
                 <Settings2 className="w-5 h-5 text-[#8DC63F]" />
               </motion.div>
-              Total Trips
+              {t('executive.totalTrips')}
             </CardTitle>
             <div className="flex items-center gap-3">
               <Switch 
@@ -127,7 +136,7 @@ export const TotalTripsCard = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {TIME_OPTIONS.map((opt) => (
+                  {TIME_OPTIONS_TRANSLATED.map((opt) => (
                     <SelectItem key={opt.value} value={opt.value}>
                       {opt.label}
                     </SelectItem>
@@ -141,9 +150,9 @@ export const TotalTripsCard = () => {
         <CardContent className="pt-0 relative">
           <div className="grid grid-cols-3 gap-4 mb-4">
             {[
-              { label: 'All trips', value: totalTrips, color: 'text-[#8DC63F]' },
-              { label: 'Daily average', value: dailyAverage, color: 'text-cyan-400' },
-              { label: 'Assets', value: activeAssets, color: 'text-emerald-400' },
+              { label: t('executive.allTrips'), value: totalTrips, color: 'text-[#8DC63F]' },
+              { label: t('executive.dailyAverage'), value: dailyAverage, color: 'text-cyan-400' },
+              { label: t('executive.assets'), value: activeAssets, color: 'text-emerald-400' },
             ].map((stat, index) => (
               <motion.div
                 key={stat.label}

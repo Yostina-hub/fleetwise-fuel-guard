@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity, TrendingUp, TrendingDown } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface UtilizationGaugeProps {
   utilizationRate: number;
@@ -17,22 +18,24 @@ const UtilizationGauge = ({
   trend = 'stable',
   trendPercentage = 0
 }: UtilizationGaugeProps) => {
+  const { t } = useTranslation();
+
   const { strokeDasharray, strokeDashoffset, color, label } = useMemo(() => {
     const circumference = 2 * Math.PI * 45; // radius = 45
     const offset = circumference - (utilizationRate / 100) * circumference;
     
     let gaugeColor = 'hsl(var(--success))';
-    let gaugeLabel = 'Excellent';
+    let gaugeLabel = t('dashboard.excellent');
     
     if (utilizationRate < 50) {
       gaugeColor = 'hsl(var(--destructive))';
-      gaugeLabel = 'Low';
+      gaugeLabel = t('dashboard.low');
     } else if (utilizationRate < 70) {
       gaugeColor = 'hsl(var(--warning))';
-      gaugeLabel = 'Moderate';
+      gaugeLabel = t('dashboard.moderate');
     } else if (utilizationRate < 85) {
       gaugeColor = 'hsl(var(--primary))';
-      gaugeLabel = 'Good';
+      gaugeLabel = t('dashboard.good');
     }
     
     return {
@@ -41,7 +44,7 @@ const UtilizationGauge = ({
       color: gaugeColor,
       label: gaugeLabel
     };
-  }, [utilizationRate]);
+  }, [utilizationRate, t]);
 
   return (
     <Card className="relative overflow-hidden">
@@ -49,7 +52,7 @@ const UtilizationGauge = ({
       <CardHeader className="relative pb-2">
         <CardTitle className="flex items-center gap-2 text-base">
           <Activity className="w-4 h-4 text-primary" />
-          Fleet Utilization
+          {t('dashboard.fleetUtilization')}
         </CardTitle>
       </CardHeader>
       <CardContent className="relative">
@@ -91,11 +94,11 @@ const UtilizationGauge = ({
         <div className="grid grid-cols-2 gap-4 mt-4">
           <div className="text-center p-2 rounded-lg bg-muted/50">
             <div className="text-lg font-semibold text-success">{activeVehicles}</div>
-            <div className="text-xs text-muted-foreground">Active</div>
+            <div className="text-xs text-muted-foreground">{t('common.active')}</div>
           </div>
           <div className="text-center p-2 rounded-lg bg-muted/50">
             <div className="text-lg font-semibold">{totalVehicles}</div>
-            <div className="text-xs text-muted-foreground">Total</div>
+            <div className="text-xs text-muted-foreground">{t('common.total')}</div>
           </div>
         </div>
         
@@ -107,11 +110,11 @@ const UtilizationGauge = ({
             <TrendingDown className="w-4 h-4 text-destructive" />
           ) : null}
           <span className={`text-xs ${trend === 'up' ? 'text-success' : trend === 'down' ? 'text-destructive' : 'text-muted-foreground'}`}>
-            {trend === 'up' 
-              ? `+${trendPercentage.toFixed(1)}% vs last week` 
-              : trend === 'down' 
-              ? `-${trendPercentage.toFixed(1)}% vs last week` 
-              : 'Stable'}
+            {trend === 'up'
+              ? `+${trendPercentage.toFixed(1)}% ${t('dashboard.vsLastWeek')}`
+              : trend === 'down'
+              ? `-${trendPercentage.toFixed(1)}% ${t('dashboard.vsLastWeek')}`
+              : t('dashboard.stable')}
           </span>
         </div>
       </CardContent>

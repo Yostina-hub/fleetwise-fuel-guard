@@ -8,6 +8,7 @@ import {
 import { DollarSign, TrendingUp, TrendingDown, ArrowUpRight, Wallet, PiggyBank, Target } from "lucide-react";
 import { FinancialMetrics } from "@/hooks/useExecutiveMetrics";
 import { useOrganizationSettings } from "@/hooks/useOrganizationSettings";
+import { useTranslation } from "react-i18next";
 
 interface FinancialTrendCardProps {
   metrics: FinancialMetrics;
@@ -16,6 +17,7 @@ interface FinancialTrendCardProps {
 
 const FinancialTrendCard = ({ metrics, loading }: FinancialTrendCardProps) => {
   const { formatCurrency, settings } = useOrganizationSettings();
+  const { t } = useTranslation();
 
   const isProfit = metrics.profit >= 0;
 
@@ -25,7 +27,7 @@ const FinancialTrendCard = ({ metrics, loading }: FinancialTrendCardProps) => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-white">
             <DollarSign className="w-5 h-5 text-emerald-400" />
-            Financial Performance
+            {t('executive.financialPerformance')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -41,14 +43,14 @@ const FinancialTrendCard = ({ metrics, loading }: FinancialTrendCardProps) => {
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-white">
             <DollarSign className="w-5 h-5 text-emerald-400" />
-            Financial Performance
+            {t('executive.financialPerformance')}
           </CardTitle>
           <Badge 
             variant="outline" 
             className={`gap-1 ${isProfit ? 'text-emerald-400 border-emerald-400/30 bg-emerald-500/10' : 'text-red-400 border-red-400/30 bg-red-500/10'}`}
           >
             {isProfit ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-            {metrics.profitMargin.toFixed(1)}% Margin
+            {metrics.profitMargin.toFixed(1)}% {t('executive.margin')}
           </Badge>
         </div>
       </CardHeader>
@@ -56,10 +58,10 @@ const FinancialTrendCard = ({ metrics, loading }: FinancialTrendCardProps) => {
         {/* Key Metrics Grid */}
         <div className="grid grid-cols-4 gap-4">
           {[
-            { label: 'Revenue', value: metrics.totalRevenue, icon: Wallet, color: 'text-success', bg: 'bg-success/10' },
-            { label: 'Costs', value: metrics.totalCosts, icon: TrendingDown, color: 'text-destructive', bg: 'bg-destructive/10' },
-            { label: 'Net Profit', value: metrics.profit, icon: DollarSign, color: isProfit ? 'text-success' : 'text-destructive', bg: isProfit ? 'bg-success/10' : 'bg-destructive/10' },
-            { label: 'Savings', value: metrics.costSavings, icon: PiggyBank, color: 'text-primary', bg: 'bg-primary/10' },
+            { label: t('executive.revenue'), value: metrics.totalRevenue, icon: Wallet, color: 'text-success', bg: 'bg-success/10' },
+            { label: t('executive.costs'), value: metrics.totalCosts, icon: TrendingDown, color: 'text-destructive', bg: 'bg-destructive/10' },
+            { label: t('executive.netProfit'), value: metrics.profit, icon: DollarSign, color: isProfit ? 'text-success' : 'text-destructive', bg: isProfit ? 'bg-success/10' : 'bg-destructive/10' },
+            { label: t('executive.savings'), value: metrics.costSavings, icon: PiggyBank, color: 'text-primary', bg: 'bg-primary/10' },
           ].map((stat, index) => (
             <motion.div
               key={stat.label}
@@ -125,7 +127,7 @@ const FinancialTrendCard = ({ metrics, loading }: FinancialTrendCardProps) => {
               <Area
                 type="monotone"
                 dataKey="revenue"
-                name="Revenue"
+                name={t('executive.revenue')}
                 stroke="hsl(var(--success))"
                 fill="url(#revenueAreaGradient)"
                 strokeWidth={2}
@@ -134,7 +136,7 @@ const FinancialTrendCard = ({ metrics, loading }: FinancialTrendCardProps) => {
               {/* Costs as bars */}
               <Bar
                 dataKey="costs"
-                name="Costs"
+                name={t('executive.costs')}
                 fill="hsl(var(--destructive))"
                 fillOpacity={0.6}
                 radius={[4, 4, 0, 0]}
@@ -145,7 +147,7 @@ const FinancialTrendCard = ({ metrics, loading }: FinancialTrendCardProps) => {
               <Line
                 type="monotone"
                 dataKey="profit"
-                name="Profit"
+                name={t('executive.profit')}
                 stroke="hsl(var(--primary))"
                 strokeWidth={3}
                 dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
@@ -159,7 +161,7 @@ const FinancialTrendCard = ({ metrics, loading }: FinancialTrendCardProps) => {
         <div className="flex items-center justify-between pt-4 border-t">
           <div className="flex items-center gap-4">
             <div>
-              <span className="text-xs text-muted-foreground">Revenue/Vehicle</span>
+              <span className="text-xs text-muted-foreground">{t('executive.revenuePerVehicle')}</span>
               <p className="text-lg font-bold">{formatCurrency(metrics.revenuePerVehicle)}</p>
             </div>
             <div className="w-px h-10 bg-border" />
@@ -170,7 +172,7 @@ const FinancialTrendCard = ({ metrics, loading }: FinancialTrendCardProps) => {
           </div>
           <div className="flex items-center gap-2 text-sm">
             <Target className="w-4 h-4 text-primary" />
-            <span className="text-muted-foreground">Budget Utilization:</span>
+            <span className="text-muted-foreground">{t('executive.budgetUtilization')}:</span>
             <span className="font-bold">{metrics.budgetUtilization.toFixed(1)}%</span>
           </div>
         </div>
