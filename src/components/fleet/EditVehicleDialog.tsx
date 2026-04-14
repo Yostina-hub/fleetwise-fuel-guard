@@ -301,6 +301,35 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
               </div>
             </div>
 
+            {/* Driver Assignment Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
+                <User className="w-5 h-5 text-primary" />
+                Driver Assignment
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="assigned_driver">Assigned Driver</Label>
+                  <Select 
+                    value={formData.assigned_driver_id || "none"} 
+                    onValueChange={(value) => setFormData({ ...formData, assigned_driver_id: value === "none" ? "" : value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select driver..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No driver assigned</SelectItem>
+                      {activeDrivers.map((driver) => (
+                        <SelectItem key={driver.id} value={driver.id}>
+                          {driver.first_name} {driver.last_name} - {driver.license_number}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
             {/* Technical Details Section */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
