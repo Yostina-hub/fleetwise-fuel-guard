@@ -1421,6 +1421,10 @@ const Reports = () => {
           <TabsContent value="scheduled" className="mt-0">
             <ScheduledReportsTab onAddReport={handleAddScheduledReport} />
           </TabsContent>
+
+          <TabsContent value="templates" className="mt-0">
+            <CustomReportTemplates />
+          </TabsContent>
         </Tabs>
 
         {/* Schedule Report Dialog */}
