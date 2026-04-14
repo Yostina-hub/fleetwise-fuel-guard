@@ -146,6 +146,30 @@
 - [ ] **Hardware Sensor Management** — Sensor CRUD, calibration tracking, alert thresholds
 - [ ] **ADAS Reports Enhancement** — Detailed event analysis, driver correlation
 
+### Phase 3.5 — Time-Series Data & Gateway Architecture (Sprint 6) ✅ COMPLETED
+
+#### ✅ Time-Series Event Architecture (Cold/Hot Data Strategy)
+| # | Task | Status | Details |
+|---|------|--------|---------|
+| 1 | **Partitioned telemetry_events table** | ✅ | 24 monthly range partitions (2025-01 to 2026-12), JSONB payload, composite unique key `(event_id, event_time)` for idempotency |
+| 2 | **Materialized views for aggregation** | ✅ | `telemetry_hourly_agg` and `telemetry_daily_agg` pre-calculate avg speed, fuel, distance, event counts |
+| 3 | **Data retention function** | ✅ | `cleanup_old_telemetry(p_retain_months)` drops expired partitions; `refresh_telemetry_aggregates()` refreshes materialized views |
+| 4 | **RLS on partitioned tables** | ✅ | RLS enabled on parent + all 24 partitions, org-scoped SELECT/INSERT policies |
+| 5 | **Realtime publication** | ✅ | `telemetry_events` added to `supabase_realtime` for hot-lane broadcasting |
+| 6 | **Frontend hooks** | ✅ | `useTelemetryEvents` (raw queries), `useTelemetryAggregates` (hourly/daily metrics) |
+| 7 | **Telemetry service** | ✅ | `telemetryEventService.ts` with `insertTelemetryEvent`, `batchInsertTelemetryEvents` using upsert + `ignoreDuplicates` |
+
+#### ✅ TCP Gateway Architecture Enhancements
+| # | Task | Status | Details |
+|---|------|--------|---------|
+| 1 | **Internal Event Bus** | ✅ | `tcp-gateway/lib/event-bus.js` — Node.js EventEmitter decoupling ingestion from alerts/audit/notifications |
+| 2 | **Redis Pub/Sub Transport** | ✅ | `tcp-gateway/lib/redis-pubsub.js` — Org-scoped channels (`fleet:{org_id}:telemetry`), graceful fallback to event bus if Redis unavailable |
+| 3 | **Socket.io Real-time Gateway** | ✅ | `tcp-gateway/lib/socket-gateway.js` — WebSocket server on port 9090, broadcasts `telemetry:update`, `alert:new` to frontend |
+| 4 | **Idempotency Guard** | ✅ | `tcp-gateway/lib/idempotency.js` — LRU cache with `IMEI:timestamp` composite key preventing duplicate DB records |
+| 5 | **BullMQ Worker Pattern** | ✅ | `tcp-gateway/lib/workers.js` — Redis-backed job queues for geofence checks, aggregate refreshes; in-process fallback |
+| 6 | **Time-Series Dual-Write Sink** | ✅ | `tcp-gateway/lib/timeseries-sink.js` — Fast Lane (Redis/Socket.io broadcast) + Storage Lane (batched inserts every 10s/100 records, `ON CONFLICT DO NOTHING`) |
+| 7 | **Docker & Infrastructure** | ✅ | Updated `Dockerfile`, `docker-compose.yml` to expose port 9090, optional Redis/BullMQ dependencies |
+
 ### Phase 4 — Realtime Data Architecture & Caching (Sprint 7)
 
 #### Architecture: Event-Driven Realtime with Multi-Layer Cache
