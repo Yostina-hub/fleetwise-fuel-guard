@@ -329,6 +329,15 @@ export const TerminalSettingsPanel = ({
           const thresholds = commandData.thresholds || {};
           smsContent = `behavior${password} brake:${thresholds.harshBraking || 50},accel:${thresholds.harshAcceleration || 40},turn:${thresholds.sharpTurn || 30},idle:${thresholds.idling || 5}`;
           break;
+        case "reportingIntervalMoving":
+          smsContent = `timer${password} ${commandData.value}`;
+          break;
+        case "reportingIntervalStationary":
+          smsContent = `sleep${password} ${commandData.value}`;
+          break;
+        case "minReportingInterval":
+          smsContent = `mininterval${password} ${commandData.value}`;
+          break;
         default:
           smsContent = `${commandType}${password}`;
       }
@@ -388,6 +397,15 @@ export const TerminalSettingsPanel = ({
           settingsUpdate.harsh_acceleration_threshold = behaviorData.harshAcceleration || 40;
           settingsUpdate.sharp_turn_threshold = behaviorData.sharpTurn || 30;
           settingsUpdate.idling_threshold = behaviorData.idling || 5;
+          break;
+        case "reportingIntervalMoving":
+          settingsUpdate.reporting_interval_moving = commandData.value;
+          break;
+        case "reportingIntervalStationary":
+          settingsUpdate.reporting_interval_stationary = commandData.value;
+          break;
+        case "minReportingInterval":
+          settingsUpdate.min_reporting_interval = commandData.value;
           break;
       }
       
