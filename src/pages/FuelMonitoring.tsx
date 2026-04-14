@@ -25,8 +25,10 @@ import VehicleFuelRanking from "@/components/fuel/VehicleFuelRanking";
 import FuelCostBreakdown from "@/components/fuel/FuelCostBreakdown";
 import FuelBudgetTracker from "@/components/fuel/FuelBudgetTracker";
 import { FuelPageContext } from "@/contexts/FuelPageContext";
+import { useTranslation } from "react-i18next";
 
 const FuelMonitoring = () => {
+  const { t } = useTranslation();
   const { fuelEvents: dbFuelEvents, loading } = useFuelEvents();
   const { transactions } = useFuelTransactions();
   const { vehicles } = useVehicles();
@@ -210,8 +212,8 @@ const FuelMonitoring = () => {
               <Fuel className="w-8 h-8 text-primary float-animation" aria-hidden="true" />
             </div>
             <div>
-              <h1 className="text-2xl md:text-4xl font-bold gradient-text">Fuel Management</h1>
-              <p className="text-muted-foreground mt-1 text-lg">Track consumption, transactions, detect anomalies, and manage depots</p>
+              <h1 className="text-2xl md:text-4xl font-bold gradient-text">{t('fuel.title')}</h1>
+              <p className="text-muted-foreground mt-1 text-lg">{t('fuel.monitoring')}</p>
             </div>
           </div>
 
