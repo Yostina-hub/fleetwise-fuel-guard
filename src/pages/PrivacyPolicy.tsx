@@ -177,7 +177,7 @@ const PrivacyPolicy = () => {
                 "Content Security Policy (CSP) enforcement",
               ].map((m, i) => (
                 <div key={i} className="flex items-center gap-2 text-muted-foreground">
-                  <Shield className="h-3 w-3 text-green-500 flex-shrink-0" /> {m}
+                  <Shield className="h-3 w-3 text-primary flex-shrink-0" /> {m}
                 </div>
               ))}
             </div>
