@@ -53,7 +53,7 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 lg:w-auto">
+          <TabsList className="flex w-full overflow-x-auto lg:w-auto lg:inline-flex">
             <TabsTrigger value="general" className="gap-2">
               <SettingsIcon className="w-4 h-4" aria-hidden="true" />
               General

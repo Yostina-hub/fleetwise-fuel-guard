@@ -270,7 +270,7 @@ const FuelMonitoring = () => {
           {/* Tabbed Content */}
           <div ref={tabsRef}>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
+              <TabsList className="flex w-full overflow-x-auto lg:w-auto lg:inline-flex">
                 <TabsTrigger value="events" className="gap-2">
                   <Droplet className="w-4 h-4" aria-hidden="true" />
                   <span className="hidden sm:inline">Fuel</span> Events

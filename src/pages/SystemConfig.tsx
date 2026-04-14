@@ -107,7 +107,7 @@ const SystemConfig = () => {
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 p-1 h-12">
+          <TabsList className="flex w-full overflow-x-auto p-1 h-12">
             <TabsTrigger value="general" className="gap-1.5 text-xs"><Settings2 className="h-3.5 w-3.5" /> General</TabsTrigger>
             <TabsTrigger value="security" className="gap-1.5 text-xs"><Shield className="h-3.5 w-3.5" /> Security</TabsTrigger>
             <TabsTrigger value="telemetry" className="gap-1.5 text-xs"><Database className="h-3.5 w-3.5" /> Telemetry</TabsTrigger>
