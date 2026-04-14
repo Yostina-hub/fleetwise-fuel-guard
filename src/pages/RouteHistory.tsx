@@ -63,7 +63,6 @@ interface TelemetryPoint {
 }
 
 const getDayBoundsISO = (dateStr: string) => {
-  const { t } = useTranslation();
   // Interpret the selected date in the user's local timezone, then convert
   // to UTC ISO bounds for querying.
   const start = new Date(`${dateStr}T00:00:00`);
