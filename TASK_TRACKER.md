@@ -138,6 +138,81 @@
 - [ ] **Hardware Sensor Management** — Sensor CRUD, calibration tracking, alert thresholds
 - [ ] **ADAS Reports Enhancement** — Detailed event analysis, driver correlation
 
+### Phase 4 — Realtime Data Architecture & Caching (Sprint 7)
+
+#### Architecture: Event-Driven Realtime with Multi-Layer Cache
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    CLIENT (React + TanStack Query)                  │
+│                                                                     │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────────┐  │
+│  │ L1: In-Memory │  │ Optimistic   │  │ Selective Subscriptions  │  │
+│  │ Query Cache   │  │ Updates      │  │ (per-viewport entities)  │  │
+│  │ (5 min stale) │  │ (instant UI) │  │                          │  │
+│  └──────┬───────┘  └──────┬───────┘  └──────────┬───────────────┘  │
+│         │                 │                      │                  │
+│  ┌──────▼─────────────────▼──────────────────────▼───────────────┐  │
+│  │              Realtime Event Bus (useRealtimeSync)              │  │
+│  │  • Postgres Changes → invalidate/patch TanStack cache         │  │
+│  │  • Broadcast channel → cross-tab sync                         │  │
+│  │  • Presence → online user/vehicle indicators                  │  │
+│  └──────────────────────────┬────────────────────────────────────┘  │
+└─────────────────────────────┼──────────────────────────────────────┘
+                              │ WebSocket (wss://)
+┌─────────────────────────────▼──────────────────────────────────────┐
+│                    SUPABASE REALTIME                                │
+│  • vehicle_telemetry (REPLICA IDENTITY FULL)                       │
+│  • alerts, cold_chain_readings, dispatch_jobs                      │
+│  • Channel-level RLS (org_id scoped)                               │
+└─────────────────────────────┬──────────────────────────────────────┘
+                              │
+┌─────────────────────────────▼──────────────────────────────────────┐
+│                    DATABASE (PostgreSQL)                            │
+│  ┌────────────────┐  ┌──────────────────┐  ┌───────────────────┐  │
+│  │ L2: Materialized│  │ Partitioned      │  │ Aggregation       │  │
+│  │ Views (KPIs,    │  │ Telemetry        │  │ Functions         │  │
+│  │ fleet summary)  │  │ (time-based)     │  │ (rollups/hour)    │  │
+│  └────────────────┘  └──────────────────┘  └───────────────────┘  │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+#### Implementation Tasks
+| # | Task | Description | Status |
+|---|------|-------------|--------|
+| 1 | **useRealtimeSync hook** | Central hook subscribing to Postgres changes, patching TanStack Query cache directly (no refetch). Supports INSERT/UPDATE/DELETE with org-scoped channels. | 🔴 Todo |
+| 2 | **Optimistic mutation layer** | Wrap useMutation calls with optimistic updates — instant UI, rollback on error. Apply to alerts, dispatch, fuel, maintenance. | 🔴 Todo |
+| 3 | **Selective subscriptions** | Subscribe only to entities visible in current viewport/page. Unsubscribe on route change. Prevents unnecessary traffic for 2000+ vehicles. | 🔴 Todo |
+| 4 | **Cross-tab broadcast sync** | Supabase Broadcast channel to sync state across tabs — prevents stale data in multi-tab usage. | 🔴 Todo |
+| 5 | **Telemetry debounce & batch** | Client: deduplicate rapid updates (≤1/sec per vehicle on map). Server: batch heartbeats (30s debounce in gateway). | 🔴 Todo |
+| 6 | **Materialized views for KPIs** | DB materialized views for dashboard KPIs (fleet utilization, fuel cost, alert counts) refreshed every 5 min. | 🔴 Todo |
+| 7 | **Stale-while-revalidate** | Per-query stale times: telemetry (30s), alerts (1 min), reports (5 min), config (30 min). Background revalidation. | 🔴 Todo |
+| 8 | **Presence indicators** | Supabase Presence for online admins and actively-monitored vehicles — prevents conflicting actions. | 🔴 Todo |
+| 9 | **Realtime RLS enforcement** | RLS on realtime.messages scoping subscriptions by organization_id (closes OWASP A01 gap). | 🔴 Todo |
+| 10 | **Connection resilience** | Auto-reconnect with exponential backoff. Offline mutation queue (up to 50 ops) with replay on reconnect. | 🔴 Todo |
+
+#### Cache Invalidation Strategy
+```
+Event Type          → Cache Action
+──────────────────────────────────────────────────
+Telemetry UPDATE    → Patch vehicle position in-place (no refetch)
+Alert INSERT        → Prepend to alert list + increment badge count
+Dispatch UPDATE     → Patch job status + invalidate related queries
+Fuel INSERT         → Invalidate fuel summary + append to transaction list
+Maintenance UPDATE  → Invalidate schedule + patch work order status
+Config UPDATE       → Invalidate settings query (full refetch)
+User Role CHANGE    → Force auth context refresh
+```
+
+#### Performance Targets
+| Metric | Current | Target |
+|--------|---------|--------|
+| Map marker update latency | ~3-5s (polling) | <500ms (realtime) |
+| Dashboard KPI freshness | On-demand fetch | ≤5 min staleness |
+| Alert notification delay | ~10s | <2s |
+| Concurrent WebSocket channels | Unlimited | ≤5 per client |
+| Offline mutation queue | None | Up to 50 queued ops |
+
 ---
 
 ## 4. OWASP Top 10 (2021) Compliance Audit
