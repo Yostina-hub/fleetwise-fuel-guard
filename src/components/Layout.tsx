@@ -299,25 +299,25 @@ const Layout = ({ children }: LayoutProps) => {
                 ) : (
                   <>
                     <PanelLeftClose className="w-4 h-4 mr-2" />
-                    <span className="text-xs">Collapse</span>
+                    <span className="text-xs">{t('nav.collapse')}</span>
                   </>
                 )}
               </Button>
             </TooltipTrigger>
             {isCollapsed && (
               <TooltipContent side="right">
-                Expand sidebar
+                {t('nav.expandSidebar')}
               </TooltipContent>
             )}
           </Tooltip>
           
           {!isCollapsed && (
             <div className="flex items-center justify-center gap-2 text-[11px] text-white/50 mt-2">
-              <span>Press</span>
+              <span>{t('nav.press')}</span>
               <kbd className="px-1.5 py-0.5 bg-[#2a3a4d]/50 rounded text-[10px] font-mono border border-[#2a3a4d]">
                 ⌘K
               </kbd>
-              <span>for commands</span>
+              <span>{t('nav.forCommands')}</span>
             </div>
           )}
         </div>
