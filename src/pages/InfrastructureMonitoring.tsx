@@ -41,6 +41,7 @@ const InfrastructureMonitoring = () => {
   const { t } = useTranslation();
   const [refreshing, setRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [selectedSite, setSelectedSite] = useState<SiteEnvironment>("production");
 
   const services: ServiceHealth[] = [
     { name: "Database (PostgreSQL)", status: "healthy", uptime: "99.99%", latency: "12ms", lastCheck: "10s ago", icon: <Database className="h-5 w-5" />, details: "Primary DB, 142 active connections" },
