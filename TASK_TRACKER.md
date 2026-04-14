@@ -148,27 +148,86 @@
 
 ### Phase 3.5 — Time-Series Data & Gateway Architecture (Sprint 6) ✅ COMPLETED
 
-#### ✅ Time-Series Event Architecture (Cold/Hot Data Strategy)
-| # | Task | Status | Details |
-|---|------|--------|---------|
-| 1 | **Partitioned telemetry_events table** | ✅ | 24 monthly range partitions (2025-01 to 2026-12), JSONB payload, composite unique key `(event_id, event_time)` for idempotency |
-| 2 | **Materialized views for aggregation** | ✅ | `telemetry_hourly_agg` and `telemetry_daily_agg` pre-calculate avg speed, fuel, distance, event counts |
-| 3 | **Data retention function** | ✅ | `cleanup_old_telemetry(p_retain_months)` drops expired partitions; `refresh_telemetry_aggregates()` refreshes materialized views |
-| 4 | **RLS on partitioned tables** | ✅ | RLS enabled on parent + all 24 partitions, org-scoped SELECT/INSERT policies |
-| 5 | **Realtime publication** | ✅ | `telemetry_events` added to `supabase_realtime` for hot-lane broadcasting |
-| 6 | **Frontend hooks** | ✅ | `useTelemetryEvents` (raw queries), `useTelemetryAggregates` (hourly/daily metrics) |
-| 7 | **Telemetry service** | ✅ | `telemetryEventService.ts` with `insertTelemetryEvent`, `batchInsertTelemetryEvents` using upsert + `ignoreDuplicates` |
+#### ✅ Cold/Hot Hybrid Data Architecture
+| # | Component | Status | Details |
+|---|-----------|--------|---------|
+| 1 | **Schema: Partitioned telemetry_events** | ✅ | 24 monthly range partitions (2025-01 to 2026-12), JSONB `payload` column for flexible event payloads, no frequent migrations needed |
+| 2 | **Schema: Idempotency constraint** | ✅ | Composite unique key `(event_id, event_time)` prevents duplicate DB records from GPS/sensor retries |
+| 3 | **Analytical: Materialized views** | ✅ | `telemetry_hourly_agg` and `telemetry_daily_agg` pre-calculate avg speed, fuel, distance, event counts, alarm counts |
+| 4 | **Analytical: pg_cron scheduled refresh** | ✅ | Aggregates auto-refresh every 5 minutes via pg_cron; execution logged to `cron_job_history` |
+| 5 | **Retention: Auto-cleanup** | ✅ | `cleanup_old_telemetry(6)` scheduled monthly via pg_cron — drops partitions older than 6 months, keeps aggregated metrics |
+| 6 | **RLS on partitions** | ✅ | RLS enabled on parent + all 24 partitions, org-scoped SELECT/INSERT policies |
+| 7 | **Realtime publication** | ✅ | `telemetry_events` added to `supabase_realtime` for hot-lane WebSocket broadcasting |
 
-#### ✅ TCP Gateway Architecture Enhancements
-| # | Task | Status | Details |
-|---|------|--------|---------|
-| 1 | **Internal Event Bus** | ✅ | `tcp-gateway/lib/event-bus.js` — Node.js EventEmitter decoupling ingestion from alerts/audit/notifications |
-| 2 | **Redis Pub/Sub Transport** | ✅ | `tcp-gateway/lib/redis-pubsub.js` — Org-scoped channels (`fleet:{org_id}:telemetry`), graceful fallback to event bus if Redis unavailable |
-| 3 | **Socket.io Real-time Gateway** | ✅ | `tcp-gateway/lib/socket-gateway.js` — WebSocket server on port 9090, broadcasts `telemetry:update`, `alert:new` to frontend |
-| 4 | **Idempotency Guard** | ✅ | `tcp-gateway/lib/idempotency.js` — LRU cache with `IMEI:timestamp` composite key preventing duplicate DB records |
-| 5 | **BullMQ Worker Pattern** | ✅ | `tcp-gateway/lib/workers.js` — Redis-backed job queues for geofence checks, aggregate refreshes; in-process fallback |
-| 6 | **Time-Series Dual-Write Sink** | ✅ | `tcp-gateway/lib/timeseries-sink.js` — Fast Lane (Redis/Socket.io broadcast) + Storage Lane (batched inserts every 10s/100 records, `ON CONFLICT DO NOTHING`) |
-| 7 | **Docker & Infrastructure** | ✅ | Updated `Dockerfile`, `docker-compose.yml` to expose port 9090, optional Redis/BullMQ dependencies |
+#### ✅ Ingestion: Dual-Write Telemetry Sink
+| # | Component | Status | Details |
+|---|-----------|--------|---------|
+| 1 | **Fast Lane: Redis Pub/Sub** | ✅ | `tcp-gateway/lib/redis-pubsub.js` — Org-scoped channels (`fleet:{org_id}:telemetry`), graceful fallback to internal event bus |
+| 2 | **Fast Lane: Socket.io Gateway** | ✅ | `tcp-gateway/lib/socket-gateway.js` — Port 9090 WebSocket, broadcasts `telemetry:update`, `alert:new` to frontend |
+| 3 | **Storage Lane: Batch Inserts** | ✅ | `tcp-gateway/lib/timeseries-sink.js` — Batched every 10s/100 records, `ON CONFLICT DO NOTHING` for idempotency |
+| 4 | **Internal Event Bus** | ✅ | `tcp-gateway/lib/event-bus.js` — Node.js EventEmitter decoupling ingestion from alerts/audit/notifications |
+| 5 | **Idempotency Guard** | ✅ | `tcp-gateway/lib/idempotency.js` — LRU cache with `IMEI:timestamp` composite key, 100K capacity, 60s TTL |
+
+#### ✅ Scaling: Worker Pattern & Performance
+| # | Component | Status | Details |
+|---|-----------|--------|---------|
+| 1 | **BullMQ Workers** | ✅ | `tcp-gateway/lib/workers.js` — Redis-backed queues for geofence checks, aggregate refreshes; in-process fallback |
+| 2 | **Async/Non-blocking I/O** | ✅ | All DB writes use async/await; batch inserts don't block the real-time event loop |
+| 3 | **Docker infrastructure** | ✅ | Updated Dockerfile, docker-compose.yml with port 9090, optional Redis/BullMQ |
+
+#### ✅ Backend Integration: REST/Edge Function API
+| # | Component | Status | Details |
+|---|-----------|--------|---------|
+| 1 | **Gateway Analytics API** | ✅ | `tcp-gateway/lib/analytics-api.js` — REST endpoints: `/api/telemetry/aggregates`, `/api/telemetry/events`, `/api/telemetry/summary` |
+| 2 | **Edge Function API** | ✅ | `supabase/functions/telemetry-analytics/` — Org-scoped, JWT-authenticated API for frontend aggregate queries |
+| 3 | **Frontend Hooks** | ✅ | `useTelemetryAggregates` (hourly/daily), `useTelemetryEvents` (raw queries), `telemetryEventService.ts` (insert/batch) |
+| 4 | **pg_cron execution history** | ✅ | `cron_job_history` table with org-scoped RLS for monitoring scheduled job status |
+
+#### Architecture Diagram
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    TRANSACTION DATA (Hot)                            │
+│    PostgreSQL: profiles, vehicles, drivers, organizations           │
+│    Access: Direct Supabase SDK, TanStack Query cache                │
+└─────────────────────────┬───────────────────────────────────────────┘
+                          │
+┌─────────────────────────▼───────────────────────────────────────────┐
+│               TCP GATEWAY (Telemetry Sink)                          │
+│  ┌──────────┐  ┌──────────────┐  ┌────────────────┐                │
+│  │ Validate  │→│ Idempotency  │→│ Dual-Write      │                │
+│  │ (bounds)  │  │ Guard (LRU)  │  │ Pipeline        │                │
+│  └──────────┘  └──────────────┘  └──┬──────┬──────┘                │
+│                                     │      │                        │
+│                         ┌───────────┘      └──────────┐             │
+│                         ▼ FAST LANE                    ▼ STORAGE    │
+│                   ┌───────────┐              ┌────────────────┐     │
+│                   │Redis Pub/ │              │ Batch INSERT    │     │
+│                   │Sub + WS   │              │ telemetry_events│     │
+│                   │broadcast  │              │ (partitioned)   │     │
+│                   └───────────┘              └────────────────┘     │
+│                         │                            │               │
+│                   ┌─────▼─────┐              ┌──────▼──────────┐   │
+│                   │ Socket.io │              │ Mat. Views      │   │
+│                   │ :9090     │              │ (hourly/daily)  │   │
+│                   └───────────┘              │ pg_cron: 5 min  │   │
+│                                              └─────────────────┘   │
+│                   ┌───────────────────────────┐                     │
+│                   │ Analytics REST API         │                     │
+│                   │ /api/telemetry/aggregates  │                     │
+│                   │ /api/telemetry/events      │                     │
+│                   │ /api/telemetry/summary     │                     │
+│                   └───────────────────────────┘                     │
+└─────────────────────────────────────────────────────────────────────┘
+                          │
+┌─────────────────────────▼───────────────────────────────────────────┐
+│               TIME-SERIES DATA (Cold → Warm)                        │
+│    telemetry_events: Partitioned monthly, JSONB payload             │
+│    telemetry_hourly_agg: Materialized view (5-min refresh)          │
+│    telemetry_daily_agg: Materialized view (5-min refresh)           │
+│    Retention: Auto-drop partitions > 6 months (pg_cron monthly)     │
+│    Aggregates: Kept indefinitely for historical analytics           │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
 ### Phase 4 — Realtime Data Architecture & Caching (Sprint 7)
 
