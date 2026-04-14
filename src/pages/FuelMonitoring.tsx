@@ -210,7 +210,7 @@ const FuelMonitoring = () => {
               <Fuel className="w-8 h-8 text-primary float-animation" aria-hidden="true" />
             </div>
             <div>
-              <h1 className="text-4xl font-bold gradient-text">Fuel Management</h1>
+              <h1 className="text-2xl md:text-4xl font-bold gradient-text">Fuel Management</h1>
               <p className="text-muted-foreground mt-1 text-lg">Track consumption, transactions, detect anomalies, and manage depots</p>
             </div>
           </div>

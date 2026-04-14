@@ -80,7 +80,7 @@ const Maintenance = () => {
               <Wrench className="w-8 h-8 text-primary float-animation" aria-hidden="true" />
             </div>
             <div>
-              <h1 className="text-4xl font-bold gradient-text">Maintenance Management</h1>
+              <h1 className="text-2xl md:text-4xl font-bold gradient-text">Maintenance Management</h1>
               <p className="text-muted-foreground mt-1 text-lg">Track service schedules, inspections and work orders</p>
             </div>
           </div>

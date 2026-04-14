@@ -56,7 +56,7 @@ const WorkOrders = () => {
             <ClipboardList className="h-8 w-8 text-primary float-animation" aria-hidden="true" />
           </div>
           <div>
-            <h1 className="text-4xl font-bold gradient-text">Work Orders & Inventory</h1>
+            <h1 className="text-2xl md:text-4xl font-bold gradient-text">Work Orders & Inventory</h1>
             <p className="text-muted-foreground mt-1 text-lg">
               Track maintenance tasks and manage spare parts inventory
             </p>

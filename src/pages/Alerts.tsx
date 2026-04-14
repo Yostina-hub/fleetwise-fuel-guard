@@ -258,7 +258,7 @@ const Alerts = () => {
               <AlertTriangle className="w-8 h-8 text-destructive animate-float" aria-hidden="true" />
             </div>
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-destructive via-warning to-destructive bg-clip-text text-transparent">
+              <h1 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-destructive via-warning to-destructive bg-clip-text text-transparent">
                 Alert Center
               </h1>
               <p className="text-muted-foreground mt-1 text-lg">

@@ -76,7 +76,7 @@ const Dispatch = () => {
             <Truck className="w-8 h-8 text-primary float-animation" aria-hidden="true" />
           </div>
           <div>
-            <h1 className="text-4xl font-bold gradient-text">Dispatch & Operations</h1>
+            <h1 className="text-2xl md:text-4xl font-bold gradient-text">Dispatch & Operations</h1>
             <p className="text-muted-foreground mt-1 text-lg">Manage delivery jobs, assignments, and proof of delivery</p>
           </div>
         </div>
