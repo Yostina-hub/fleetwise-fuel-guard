@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Play, Pause, SkipBack, SkipForward, FastForward, MapPin, Radio } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, MapPin, Radio, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
-import { format, subHours, addMinutes } from "date-fns";
+import { format, subHours, subDays } from "date-fns";
 
 interface TelemetryFrame {
   vehicle_id: string;
@@ -19,42 +19,100 @@ interface TelemetryFrame {
   plate_number?: string;
 }
 
+function generateDemoFrames(count: number): TelemetryFrame[][] {
+  const vehicles = [
+    { id: "demo-1", plate: "AA-12345" },
+    { id: "demo-2", plate: "AA-67890" },
+    { id: "demo-3", plate: "OR-11223" },
+    { id: "demo-4", plate: "OR-44556" },
+    { id: "demo-5", plate: "AM-77889" },
+    { id: "demo-6", plate: "AM-99001" },
+  ];
+  const baseLat = 9.02;
+  const baseLng = 38.75;
+  const frames: TelemetryFrame[][] = [];
+  const now = new Date();
+
+  for (let i = 0; i < count; i++) {
+    const frameTime = new Date(now.getTime() - (count - i) * 60000);
+    const frame: TelemetryFrame[] = vehicles.map((v, vi) => ({
+      vehicle_id: v.id,
+      plate_number: v.plate,
+      lat: baseLat + Math.sin((i + vi * 10) * 0.05) * 0.03 + vi * 0.008,
+      lng: baseLng + Math.cos((i + vi * 8) * 0.04) * 0.04 + vi * 0.006,
+      speed: Math.max(0, 30 + Math.sin(i * 0.1 + vi) * 25 + (Math.random() - 0.5) * 10),
+      fuel_level_percent: Math.max(10, 80 - i * 0.3 - vi * 5 + Math.random() * 5),
+      timestamp: frameTime.toISOString(),
+    }));
+    frames.push(frame);
+  }
+  return frames;
+}
+
 const DigitalTwinPlayer = () => {
   const { organizationId } = useOrganization();
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState("1");
   const [currentFrame, setCurrentFrame] = useState(0);
   const [frames, setFrames] = useState<TelemetryFrame[][]>([]);
-  const [timeRange, setTimeRange] = useState("1h");
+  const [timeRange, setTimeRange] = useState("latest");
   const [loading, setLoading] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
   const [vehiclePositions, setVehiclePositions] = useState<Map<string, TelemetryFrame>>(new Map());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadHistoricalData = useCallback(async () => {
     if (!organizationId) return;
     setLoading(true);
+    setIsDemo(false);
     try {
-      const hours = timeRange === "1h" ? 1 : timeRange === "4h" ? 4 : timeRange === "8h" ? 8 : 24;
-      const since = subHours(new Date(), hours).toISOString();
+      let since: string;
+      if (timeRange === "latest") {
+        // Find the latest data window automatically
+        const { data: latestRow } = await supabase
+          .from("vehicle_telemetry")
+          .select("last_communication_at")
+          .eq("organization_id", organizationId)
+          .not("latitude", "is", null)
+          .not("last_communication_at", "is", null)
+          .order("last_communication_at", { ascending: false })
+          .limit(1)
+          .single();
+
+        if (!latestRow?.last_communication_at) {
+          // No data at all — use demo
+          setFrames(generateDemoFrames(60));
+          setIsDemo(true);
+          setCurrentFrame(0);
+          return;
+        }
+        since = subHours(new Date(latestRow.last_communication_at), 1).toISOString();
+      } else {
+        const hours = timeRange === "1h" ? 1 : timeRange === "4h" ? 4 : timeRange === "8h" ? 8 : timeRange === "7d" ? 168 : 24;
+        since = subHours(new Date(), hours).toISOString();
+      }
 
       const { data } = await supabase
         .from("vehicle_telemetry")
         .select("vehicle_id, latitude, longitude, speed_kmh, fuel_level_percent, last_communication_at, vehicles!inner(plate_number)")
         .eq("organization_id", organizationId)
+        .not("latitude", "is", null)
         .not("last_communication_at", "is", null)
         .gte("last_communication_at", since)
         .order("last_communication_at", { ascending: true })
         .limit(1000);
 
       if (!data || data.length === 0) {
-        setFrames([]);
+        setFrames(generateDemoFrames(60));
+        setIsDemo(true);
+        setCurrentFrame(0);
         return;
       }
 
       // Group into time buckets (1-minute intervals)
       const buckets = new Map<string, TelemetryFrame[]>();
       for (const row of data) {
-        const d = new Date(row.last_communication_at);
+        const d = new Date(row.last_communication_at!);
         const key = format(d, "yyyy-MM-dd HH:mm");
         if (!buckets.has(key)) buckets.set(key, []);
         buckets.get(key)!.push({
@@ -63,12 +121,14 @@ const DigitalTwinPlayer = () => {
           lng: row.longitude ?? 0,
           speed: row.speed_kmh ?? 0,
           fuel_level_percent: row.fuel_level_percent,
-          timestamp: row.last_communication_at,
+          timestamp: row.last_communication_at!,
           plate_number: (row.vehicles as any)?.plate_number,
         });
       }
 
-      setFrames(Array.from(buckets.values()));
+      const frameArray = Array.from(buckets.values());
+      setFrames(frameArray.length > 0 ? frameArray : generateDemoFrames(60));
+      setIsDemo(frameArray.length === 0);
       setCurrentFrame(0);
     } finally {
       setLoading(false);
@@ -95,7 +155,6 @@ const DigitalTwinPlayer = () => {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [isPlaying, playbackSpeed, frames.length]);
 
-  // Update vehicle positions when frame changes
   useEffect(() => {
     if (frames[currentFrame]) {
       const positions = new Map(vehiclePositions);
@@ -107,7 +166,6 @@ const DigitalTwinPlayer = () => {
   }, [currentFrame, frames]);
 
   const currentTime = frames[currentFrame]?.[0]?.timestamp;
-  const progress = frames.length > 0 ? (currentFrame / (frames.length - 1)) * 100 : 0;
 
   return (
     <Card>
@@ -115,15 +173,17 @@ const DigitalTwinPlayer = () => {
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <Radio className="h-5 w-5 text-primary" /> Digital Twin Replay
+            {isDemo && <Badge variant="secondary" className="text-xs"><Zap className="h-3 w-3 mr-1" /> Demo Mode</Badge>}
           </CardTitle>
           <div className="flex items-center gap-2">
             <Select value={timeRange} onValueChange={setTimeRange}>
-              <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
               <SelectContent>
+                <SelectItem value="latest">Latest Data</SelectItem>
                 <SelectItem value="1h">Last 1h</SelectItem>
                 <SelectItem value="4h">Last 4h</SelectItem>
-                <SelectItem value="8h">Last 8h</SelectItem>
                 <SelectItem value="24h">Last 24h</SelectItem>
+                <SelectItem value="7d">Last 7d</SelectItem>
               </SelectContent>
             </Select>
             <Badge variant="outline">{frames.length} frames</Badge>
@@ -137,11 +197,11 @@ const DigitalTwinPlayer = () => {
             <div className="flex items-center justify-center h-[200px] text-muted-foreground">
               <div className="text-center">
                 <MapPin className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                <p>{loading ? "Loading telemetry data..." : "No telemetry data for this time range"}</p>
+                <p>{loading ? "Loading telemetry data..." : "Press play to start replay"}</p>
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
               {Array.from(vehiclePositions.entries()).slice(0, 12).map(([vid, pos]) => (
                 <div key={vid} className="rounded-lg border bg-background p-2 text-center">
                   <p className="text-xs font-mono font-bold truncate">{pos.plate_number || vid.slice(0, 8)}</p>
@@ -169,11 +229,11 @@ const DigitalTwinPlayer = () => {
             className="w-full"
           />
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>{frames[0]?.[0]?.timestamp ? format(new Date(frames[0][0].timestamp), "HH:mm") : "--:--"}</span>
+            <span>{frames[0]?.[0]?.timestamp ? format(new Date(frames[0][0].timestamp), "MMM dd HH:mm") : "--:--"}</span>
             <span className="font-medium text-foreground">
               {currentTime ? format(new Date(currentTime), "HH:mm:ss") : "--:--:--"}
             </span>
-            <span>{frames[frames.length - 1]?.[0]?.timestamp ? format(new Date(frames[frames.length - 1][0].timestamp), "HH:mm") : "--:--"}</span>
+            <span>{frames[frames.length - 1]?.[0]?.timestamp ? format(new Date(frames[frames.length - 1][0].timestamp), "MMM dd HH:mm") : "--:--"}</span>
           </div>
         </div>
 
