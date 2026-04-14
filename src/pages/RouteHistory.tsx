@@ -77,6 +77,7 @@ const getDayBoundsISO = (dateStr: string) => {
 };
 
 const RouteHistory = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
