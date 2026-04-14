@@ -28,6 +28,14 @@ const http = require('http');
 const https = require('https');
 const { Pool } = require('pg');
 
+// ── Advanced Architecture Modules (additive, non-breaking) ──
+const { eventBus } = require('./lib/event-bus');
+const { initRedis, publish, isConnected: redisConnected, getStats: redisStats, shutdown: redisShutdown, CHANNELS } = require('./lib/redis-pubsub');
+const { initSocketGateway, getStats: socketStats, shutdown: socketShutdown } = require('./lib/socket-gateway');
+const { IdempotencyGuard } = require('./lib/idempotency');
+const { initWorkers, enqueueGeofenceCheck, getStats: workerStats, shutdown: workerShutdown } = require('./lib/workers');
+const { init: initTimeSeriesSink, ingest: tsIngest, getStats: tsStats, shutdown: tsShutdown } = require('./lib/timeseries-sink');
+
 // Configuration from environment
 const config = {
   databaseUrl: process.env.DATABASE_URL || '',
