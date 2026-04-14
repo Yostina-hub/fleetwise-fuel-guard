@@ -17,7 +17,9 @@ import { useVehicles } from "@/hooks/useVehicles";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
+import { useTranslation } from 'react-i18next';
 const TireManagement = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("inventory");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const { organizationId } = useOrganization();
@@ -108,8 +110,8 @@ const TireManagement = () => {
               <CircleDot className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-black tracking-tight">Tire Management</h1>
-              <p className="text-muted-foreground text-xs">Track tire inventory, wear, replacements & costs</p>
+              <h1 className="text-2xl font-black tracking-tight">{t('pages.tire_management.title', 'Tire Management')}</h1>
+              <p className="text-muted-foreground text-xs">{t('pages.tire_management.description', 'Track tire inventory, wear, replacements & costs')}</p>
             </div>
           </div>
           <Button className="gap-2" onClick={() => setShowAddDialog(true)}>

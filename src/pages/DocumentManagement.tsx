@@ -12,7 +12,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
 
+import { useTranslation } from 'react-i18next';
 const DocumentManagement = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -49,7 +51,7 @@ const DocumentManagement = () => {
     <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div><h1 className="text-2xl font-bold">Document Management</h1><p className="text-muted-foreground">Centralized document storage, verification, and expiry tracking</p></div>
+          <div><h1 className="text-2xl font-bold">{t('pages.document_management.title', 'Document Management')}</h1><p className="text-muted-foreground">{t('pages.document_management.description', 'Centralized document storage, verification, and expiry tracking')}</p></div>
           <Button><Upload className="h-4 w-4 mr-2" /> Upload Document</Button>
         </div>
 

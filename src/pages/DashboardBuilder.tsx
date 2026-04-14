@@ -13,6 +13,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
+import { useTranslation } from 'react-i18next';
 type Widget = {
   id: string;
   type: string;
@@ -44,6 +45,7 @@ const WIDGET_CATALOG = [
 ];
 
 const DashboardBuilder = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const { user } = useAuthContext();
   const queryClient = useQueryClient();
@@ -192,8 +194,8 @@ const DashboardBuilder = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Dashboard Builder</h1>
-            <p className="text-muted-foreground">Create and manage custom KPI dashboard layouts</p>
+            <h1 className="text-2xl font-bold">{t('pages.dashboard_builder.title', 'Dashboard Builder')}</h1>
+            <p className="text-muted-foreground">{t('pages.dashboard_builder.description', 'Create and manage custom KPI dashboard layouts')}</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setShowCatalog(!showCatalog)}><Plus className="h-4 w-4 mr-2" /> Add Widget</Button>

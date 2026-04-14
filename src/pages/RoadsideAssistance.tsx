@@ -11,7 +11,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
 
+import { useTranslation } from 'react-i18next';
 const RoadsideAssistance = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const [search, setSearch] = useState("");
 
@@ -52,7 +54,7 @@ const RoadsideAssistance = () => {
     <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div><h1 className="text-2xl font-bold">Roadside Assistance</h1><p className="text-muted-foreground">Manage breakdown requests, tow services & emergency response</p></div>
+          <div><h1 className="text-2xl font-bold">{t('pages.roadside_assistance.title', 'Roadside Assistance')}</h1><p className="text-muted-foreground">{t('pages.roadside_assistance.description', 'Manage breakdown requests, tow services & emergency response')}</p></div>
           <Button variant="destructive"><Plus className="h-4 w-4 mr-2" /> Emergency Request</Button>
         </div>
 

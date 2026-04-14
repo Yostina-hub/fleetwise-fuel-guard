@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { toast } from "sonner";
 
+import { useTranslation } from 'react-i18next';
 const VENDOR_TYPES = ["fuel", "maintenance", "tires", "insurance", "parts", "services", "other"];
 
 const emptyVendor = {
@@ -23,6 +24,7 @@ const emptyVendor = {
 };
 
 const VendorManagement = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
@@ -110,7 +112,7 @@ const VendorManagement = () => {
     <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div><h1 className="text-2xl font-bold">Vendor Management</h1><p className="text-muted-foreground">Manage suppliers, service providers, and vendor contracts</p></div>
+          <div><h1 className="text-2xl font-bold">{t('pages.vendor_management.title', 'Vendor Management')}</h1><p className="text-muted-foreground">{t('pages.vendor_management.description', 'Manage suppliers, service providers, and vendor contracts')}</p></div>
           <Button onClick={openAdd}><Plus className="h-4 w-4 mr-2" /> Add Vendor</Button>
         </div>
 

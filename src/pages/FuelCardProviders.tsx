@@ -15,6 +15,7 @@ import { CreditCard, Plus, RefreshCw, Settings, Loader2, CheckCircle2, XCircle, 
 import { toast } from "sonner";
 import { format } from "date-fns";
 
+import { useTranslation } from 'react-i18next';
 const PROVIDERS = [
   { value: "ola", label: "OLA Energy", logo: "🛢️" },
   { value: "total", label: "TotalEnergies", logo: "⛽" },
@@ -24,6 +25,7 @@ const PROVIDERS = [
 ];
 
 const FuelCardProviders = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
   const [showAddProvider, setShowAddProvider] = useState(false);
@@ -98,8 +100,8 @@ const FuelCardProviders = () => {
       <div className="p-4 md:p-6 space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Fuel Card API Integration</h1>
-            <p className="text-muted-foreground text-sm">Connect fuel card providers for automated transaction syncing</p>
+            <h1 className="text-2xl font-bold text-foreground">{t('pages.fuel_card_providers.title', 'Fuel Card API Integration')}</h1>
+            <p className="text-muted-foreground text-sm">{t('pages.fuel_card_providers.description', 'Connect fuel card providers for automated transaction syncing')}</p>
           </div>
           <Button className="gap-2" onClick={() => setShowAddProvider(true)}>
             <Plus className="w-4 h-4" /> Add Provider

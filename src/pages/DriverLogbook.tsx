@@ -11,7 +11,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
 
+import { useTranslation } from 'react-i18next';
 const DriverLogbook = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const [search, setSearch] = useState("");
 
@@ -46,7 +48,7 @@ const DriverLogbook = () => {
   return (
     <Layout>
       <div className="space-y-6">
-        <div><h1 className="text-2xl font-bold">Driver Logbook</h1><p className="text-muted-foreground">Track duty hours, rest periods, and compliance with driving regulations</p></div>
+        <div><h1 className="text-2xl font-bold">{t('pages.driver_logbook.title', 'Driver Logbook')}</h1><p className="text-muted-foreground">{t('pages.driver_logbook.description', 'Track duty hours, rest periods, and compliance with driving regulations')}</p></div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><BookOpen className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{stats.total}</p><p className="text-sm text-muted-foreground">Log Entries</p></div></div></CardContent></Card>
@@ -85,7 +87,7 @@ const DriverLogbook = () => {
 
           <TabsContent value="violations">
             <Card><CardHeader><CardTitle>HOS Violations</CardTitle></CardHeader><CardContent>
-              {stats.violations === 0 ? <p className="text-muted-foreground text-center py-8">No violations recorded</p> :
+              {stats.violations === 0 ? <p className="text-muted-foreground text-center py-8">{t('pages.driver_logbook.description', 'No violations recorded')}</p> :
               <Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Driver</TableHead><TableHead>Driving Hours</TableHead><TableHead>Details</TableHead></TableRow></TableHeader>
               <TableBody>{filtered.filter((l: any) => l.compliance_status === "violation").map((l: any) => (
                 <TableRow key={l.id}>

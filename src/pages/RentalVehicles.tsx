@@ -16,7 +16,9 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
+import { useTranslation } from 'react-i18next';
 const RentalVehicles = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("vehicles");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const { organizationId } = useOrganization();
@@ -97,8 +99,8 @@ const RentalVehicles = () => {
               <Truck className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-black tracking-tight">Rental & Outsource Vehicles</h1>
-              <p className="text-muted-foreground text-xs">Manage rental contracts, third-party drivers & costs</p>
+              <h1 className="text-2xl font-black tracking-tight">{t('pages.rental_vehicles.title', 'Rental & Outsource Vehicles')}</h1>
+              <p className="text-muted-foreground text-xs">{t('pages.rental_vehicles.description', 'Manage rental contracts, third-party drivers & costs')}</p>
             </div>
           </div>
           <Button className="gap-2" onClick={() => setShowAddDialog(true)}>

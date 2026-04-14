@@ -10,7 +10,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format, differenceInDays } from "date-fns";
 
+import { useTranslation } from 'react-i18next';
 const ComplianceCalendar = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
 
   const { data: items = [], isLoading } = useQuery({
@@ -48,7 +50,7 @@ const ComplianceCalendar = () => {
     <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div><h1 className="text-2xl font-bold">Compliance Calendar</h1><p className="text-muted-foreground">Track regulatory deadlines, renewals, and compliance milestones</p></div>
+          <div><h1 className="text-2xl font-bold">{t('pages.compliance_calendar.title', 'Compliance Calendar')}</h1><p className="text-muted-foreground">{t('pages.compliance_calendar.description', 'Track regulatory deadlines, renewals, and compliance milestones')}</p></div>
           <Button><Plus className="h-4 w-4 mr-2" /> Add Deadline</Button>
         </div>
 

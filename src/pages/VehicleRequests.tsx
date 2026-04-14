@@ -16,7 +16,9 @@ import { useVehicles } from "@/hooks/useVehicles";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
+import { useTranslation } from 'react-i18next';
 const VehicleRequests = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const { vehicles } = useVehicles();
   const queryClient = useQueryClient();
@@ -121,8 +123,8 @@ const VehicleRequests = () => {
               <ClipboardList className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-black tracking-tight">Vehicle Requests</h1>
-              <p className="text-muted-foreground text-xs">Request, approve & assign vehicles</p>
+              <h1 className="text-2xl font-black tracking-tight">{t('pages.vehicle_requests.title', 'Vehicle Requests')}</h1>
+              <p className="text-muted-foreground text-xs">{t('pages.vehicle_requests.description', 'Request, approve & assign vehicles')}</p>
             </div>
           </div>
           <Button size="sm" className="gap-1.5" onClick={() => setShowCreate(true)}>

@@ -11,7 +11,9 @@ import { Brain, AlertTriangle, Wrench, TrendingUp, Clock, CheckCircle, XCircle, 
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 
+import { useTranslation } from 'react-i18next';
 const PredictiveMaintenance = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
 
   const { data: vehicles = [] } = useQuery({
@@ -75,8 +77,8 @@ const PredictiveMaintenance = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">AI Predictive Maintenance</h1>
-            <p className="text-muted-foreground">ML-powered failure prediction based on telemetry & maintenance history</p>
+            <h1 className="text-2xl font-bold">{t('pages.predictive_maintenance.title', 'AI Predictive Maintenance')}</h1>
+            <p className="text-muted-foreground">{t('pages.predictive_maintenance.description', 'ML-powered failure prediction based on telemetry & maintenance history')}</p>
           </div>
           <Button><Brain className="h-4 w-4 mr-2" /> Re-run Analysis</Button>
         </div>

@@ -10,7 +10,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
 
+import { useTranslation } from 'react-i18next';
 const NotificationCenter = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
 
   const { data: notifications = [], isLoading } = useQuery({
@@ -61,7 +63,7 @@ const NotificationCenter = () => {
     <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div><h1 className="text-2xl font-bold">Notification Center</h1><p className="text-muted-foreground">Centralized notifications and alerts hub</p></div>
+          <div><h1 className="text-2xl font-bold">{t('pages.notification_center.title', 'Notification Center')}</h1><p className="text-muted-foreground">{t('pages.notification_center.description', 'Centralized notifications and alerts hub')}</p></div>
           <Button variant="outline">Mark All Read</Button>
         </div>
 

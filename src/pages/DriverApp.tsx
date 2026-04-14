@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format, differenceInDays, isPast } from "date-fns";
 
+import { useTranslation } from 'react-i18next';
 interface MobileDispatchJob {
   id: string;
   job_number: string;
@@ -49,6 +50,7 @@ const mapToMobileJob = (job: DispatchJob): MobileDispatchJob => ({
 });
 
 const DriverApp = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [driverId, setDriverId] = useState<string | null>(null);
   const [driverData, setDriverData] = useState<any>(null);
@@ -329,7 +331,7 @@ const DriverApp = () => {
           {/* Profile Tab — Live Data */}
           {activeTab === "profile" && (
             <div className="p-4 space-y-4">
-              <h1 className="text-2xl font-bold">My Profile</h1>
+              <h1 className="text-2xl font-bold">{t('pages.driver_app.title', 'My Profile')}</h1>
               <Card>
                 <CardContent className="pt-6 space-y-4">
                   <div className="flex items-center gap-4">

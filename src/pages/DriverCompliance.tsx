@@ -20,6 +20,7 @@ import { DriverMVRPanel } from "@/components/drivers/DriverMVRPanel";
 import { DriverFuelCards } from "@/components/drivers/DriverFuelCards";
 import { DriverTrainingPanel } from "@/components/drivers/DriverTrainingPanel";
 
+import { useTranslation } from 'react-i18next';
 const tabs = [
   { key: "licenses", label: "Licenses", icon: CreditCard },
   { key: "calendar", label: "Calendar", icon: Calendar },
@@ -31,6 +32,7 @@ const tabs = [
 ];
 
 const DriverCompliance = () => {
+  const { t } = useTranslation();
   const { drivers } = useDrivers();
   const [activeTab, setActiveTab] = useState("licenses");
   const [selectedDriverId, setSelectedDriverId] = useState("");
@@ -87,7 +89,7 @@ const DriverCompliance = () => {
               <ShieldCheck className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight">Driver Compliance</h1>
+              <h1 className="text-xl font-bold tracking-tight">{t('pages.driver_compliance.title', 'Driver Compliance')}</h1>
               <p className="text-xs text-muted-foreground">Licenses, training, documents & onboarding</p>
             </div>
           </div>

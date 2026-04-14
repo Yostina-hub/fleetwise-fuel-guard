@@ -16,7 +16,9 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
+import { useTranslation } from 'react-i18next';
 const HardwareSensors = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
   const [sensorFilter, setSensorFilter] = useState("all");
@@ -111,7 +113,7 @@ const HardwareSensors = () => {
     <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div><h1 className="text-2xl font-bold">Hardware Sensors</h1><p className="text-muted-foreground">TPMS, OBD-II diagnostics, load sensors & calibration tracking</p></div>
+          <div><h1 className="text-2xl font-bold">{t('pages.hardware_sensors.title', 'Hardware Sensors')}</h1><p className="text-muted-foreground">{t('pages.hardware_sensors.description', 'TPMS, OBD-II diagnostics, load sensors & calibration tracking')}</p></div>
           <Button onClick={() => setShowCalibrationDialog(true)}><Plus className="h-4 w-4 mr-2" /> Add Calibration</Button>
         </div>
 

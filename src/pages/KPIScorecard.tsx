@@ -16,11 +16,13 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
+import { useTranslation } from 'react-i18next';
 const KPI_CATEGORIES = ["fleet", "fuel", "safety", "maintenance", "compliance", "financial", "driver", "operations"];
 
 const emptyKpi = { kpi_name: "", category: "fleet", target_value: 0, actual_value: 0, unit: "", trend: "stable", period_start: "", period_end: "" };
 
 const KPIScorecard = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const qc = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -91,7 +93,7 @@ const KPIScorecard = () => {
     <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div><h1 className="text-2xl font-bold">KPI Scorecards</h1><p className="text-muted-foreground">Track key performance indicators and organizational targets</p></div>
+          <div><h1 className="text-2xl font-bold">{t('pages.k_p_i_scorecard.title', 'KPI Scorecards')}</h1><p className="text-muted-foreground">{t('pages.k_p_i_scorecard.description', 'Track key performance indicators and organizational targets')}</p></div>
           <Button onClick={openAdd}><Plus className="h-4 w-4 mr-2" /> Add KPI</Button>
         </div>
 

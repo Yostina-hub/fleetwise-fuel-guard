@@ -12,7 +12,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
 
+import { useTranslation } from 'react-i18next';
 const AlcoholFatigueDetection = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -51,7 +53,7 @@ const AlcoholFatigueDetection = () => {
   return (
     <Layout>
       <div className="space-y-6">
-        <div><h1 className="text-2xl font-bold">Alcohol & Fatigue Detection</h1><p className="text-muted-foreground">Pre-trip and random testing compliance for driver safety</p></div>
+        <div><h1 className="text-2xl font-bold">{t('pages.alcohol_fatigue_detection.title', 'Alcohol & Fatigue Detection')}</h1><p className="text-muted-foreground">{t('pages.alcohol_fatigue_detection.description', 'Pre-trip and random testing compliance for driver safety')}</p></div>
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Wine className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{stats.total}</p><p className="text-sm text-muted-foreground">Total Tests</p></div></div></CardContent></Card>

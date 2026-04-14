@@ -23,7 +23,9 @@ import ScenarioComparison from "@/components/simulation/ScenarioComparison";
 import DigitalTwinPlayer from "@/components/simulation/DigitalTwinPlayer";
 import ProjectionChart from "@/components/simulation/ProjectionChart";
 
+import { useTranslation } from 'react-i18next';
 const PerformanceSimulation = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const { user } = useAuthContext();
   const queryClient = useQueryClient();
@@ -163,8 +165,8 @@ const PerformanceSimulation = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Simulation Hub</h1>
-            <p className="text-muted-foreground">What-if analysis, Digital Twin replay & predictive simulations</p>
+            <h1 className="text-2xl font-bold">{t('pages.performance_simulation.title', 'Simulation Hub')}</h1>
+            <p className="text-muted-foreground">{t('pages.performance_simulation.description', 'What-if analysis, Digital Twin replay & predictive simulations')}</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setShowHistory(!showHistory)}>

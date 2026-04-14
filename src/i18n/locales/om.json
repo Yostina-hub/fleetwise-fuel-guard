@@ -1025,5 +1025,148 @@
   },
   "vehicles": {
     "smartSearch": "Barbaadii..."
+  },
+  "pages": {
+    "a_d_a_s_reports": {
+      "title": "ADAS fi DMS Xiinxala",
+      "description": "Gabaasa gargaarsa konkolaachisaa fi siistama hordoffii"
+    },
+    "accident_insurance": {
+      "title": "Bulchiinsa Balaa fi Inshuraansii",
+      "description": "Poolisii inshuraansii fi baasii suphaa hordofuu"
+    },
+    "alcohol_fatigue_detection": {
+      "title": "Qorannoo Alkoolii fi Dadhabina",
+      "description": "Qorannoo duraa-imala fi tasumaa"
+    },
+    "bulk_operations": {
+      "title": "Hojiiwwan Guddaa",
+      "description": "No detailed error log available"
+    },
+    "compliance_calendar": {
+      "title": "Kaalaandarii Hordoffii",
+      "description": "Yeroo murtaa'e seeraa hordofuu"
+    },
+    "contract_management": {
+      "title": "Bulchiinsa Waliigaltee",
+      "description": "Waliigalteewwan dhiyeessitootaa bulchuu"
+    },
+    "dashboard_builder": {
+      "title": "Ijaarsaa Daashboordii",
+      "description": "Qaaqa KPI daashboordii uumuu"
+    },
+    "delegation_matrix": {
+      "title": "Maatiriksii Bakka Bu'iinsaa",
+      "description": "Bakka bu'iinsa mirkaneessaa bulchuu"
+    },
+    "document_management": {
+      "title": "Bulchiinsa Sanadaa",
+      "description": "Kuusaa sanadaa giddu galeessaa"
+    },
+    "driver_app": {
+      "title": "Profaayilii Koo"
+    },
+    "driver_compliance": {
+      "title": "Hordoffii Konkolaachisaa"
+    },
+    "driver_h_r": {
+      "title": "HR fi Faayinaansii"
+    },
+    "driver_logbook": {
+      "title": "Galmee Konkolaachisaa",
+      "description": "No violations recorded"
+    },
+    "driver_management": {
+      "title": "Bulchiinsa Konkolaachisaa"
+    },
+    "driver_performance": {
+      "title": "Raawwii Konkolaachisaa"
+    },
+    "driver_safety": {
+      "title": "Nageenya fi Balaa"
+    },
+    "driver_training": {
+      "title": "Leenjii Konkolaachisaa",
+      "description": "Sertifikeettii fi leenjii hordofuu"
+    },
+    "fuel_card_providers": {
+      "title": "Walitti Makiinsa Kaardii Boba'aa",
+      "description": "Dhiyeessituu kaardii boba'aa walqunnamsiisuu"
+    },
+    "fuel_requests": {
+      "title": "Gaaffii Boba'aa",
+      "description": "Mirkaneessa gaaffii boba'aa bulchuu"
+    },
+    "hardware_sensors": {
+      "title": "Seensaroota Haarduweeraa",
+      "description": "TPMS, OBD-II fi seensaroota fe'umsaa"
+    },
+    "k_p_i_scorecard": {
+      "title": "Kaardii Qabxii KPI",
+      "description": "Agarsiistuu raawwii ijoo hordofuu"
+    },
+    "notification_center": {
+      "title": "Giddu Gala Beeksisaa",
+      "description": "Beeksisa giddu galeessaa"
+    },
+    "organizations": {
+      "title": "Dhaabbiilee",
+      "description": "Dhaabbiilee hundaa bulchuu"
+    },
+    "parts_inventory": {
+      "title": "Kuusaa Meeshaalee",
+      "description": "Meeshaalee jijjiiramaa hordofuu"
+    },
+    "passenger_tracking": {
+      "title": "Hordoffii Imaltootaa",
+      "description": "Imaltootaa baasii bulchuu"
+    },
+    "penalties_fines": {
+      "title": "Adabbii fi Maallaqa",
+      "description": "Cabsaa tiraafikaa hordofuu"
+    },
+    "performance_simulation": {
+      "title": "Giddu Gala Fakkeessaa",
+      "description": "Xiinxala What-if fi tilmaama"
+    },
+    "predictive_maintenance": {
+      "title": "AI Suphaa Tilmaamaa",
+      "description": "Tilmaama caccabsaa ML-dhaan"
+    },
+    "r_f_i_d_pairing": {
+      "title": "Walqunnamtii RFID Konkolaachisaa",
+      "description": "Taagii RFID meeshaalee waliin makuu"
+    },
+    "rental_vehicles": {
+      "title": "Konkolaattota Kiraa",
+      "description": "Waliigaltee kiraa bulchuu"
+    },
+    "roadside_assistance": {
+      "title": "Gargaarsa Qarqara Daandii",
+      "description": "Gaaffii caccabsaa bulchuu"
+    },
+    "route_history": {
+      "title": "Seenaa Daandii",
+      "description": "Daandii konkolaattota seenaa ilaaluu"
+    },
+    "tire_management": {
+      "title": "Bulchiinsa Taayirii",
+      "description": "Kuusaa fi jijjiirama taayirii hordofuu"
+    },
+    "trip_management": {
+      "title": "Bulchiinsa Imala"
+    },
+    "vehicle_inspections": {
+      "title": "Qorannoo Konkolaattota",
+      "description": "Sagantaa qorannoo bulchuu"
+    },
+    "vehicle_requests": {
+      "title": "Gaaffii Konkolaattota",
+      "description": "Konkolaattota gaafachuu fi mirkaneessuu"
+    },
+    "vendor_management": {
+      "title": "Bulchiinsa Dhiyeessitootaa",
+      "description": "Dhiyeessitootaa bulchuu"
+    }
   }
 }

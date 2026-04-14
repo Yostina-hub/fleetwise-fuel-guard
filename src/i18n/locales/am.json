@@ -1025,5 +1025,148 @@
   },
   "vehicles": {
     "smartSearch": "ፈልግ..."
+  },
+  "pages": {
+    "a_d_a_s_reports": {
+      "title": "ADAS እና DMS ትንታኔዎች",
+      "description": "የላቀ የሾፌር ድጋፍ እና የሾፌር ክትትል ሪፖርቶች"
+    },
+    "accident_insurance": {
+      "title": "አደጋ እና ኢንሹራንስ አስተዳደር",
+      "description": "የኢንሹራንስ ፖሊሲዎችን፣ የአደጋ ጥያቄዎችን እና የጥገና ወጪዎችን ይከታተሉ"
+    },
+    "alcohol_fatigue_detection": {
+      "title": "የአልኮል እና ድካም ምርመራ",
+      "description": "ቅድመ-ጉዞ እና ድንገተኛ ምርመራ"
+    },
+    "bulk_operations": {
+      "title": "የጅምላ ስራዎች",
+      "description": "No detailed error log available"
+    },
+    "compliance_calendar": {
+      "title": "የተገዢነት ቀን መቁጠሪያ",
+      "description": "የቁጥጥር ግዜ ገደቦችን ይከታተሉ"
+    },
+    "contract_management": {
+      "title": "የውል አስተዳደር",
+      "description": "የአቅራቢ ውሎችን እና ስምምነቶችን ያስተዳድሩ"
+    },
+    "dashboard_builder": {
+      "title": "ዳሽቦርድ ገንቢ",
+      "description": "ብጁ KPI ዳሽቦርድ ንድፎችን ይፍጠሩ"
+    },
+    "delegation_matrix": {
+      "title": "የውክልና ማትሪክስ",
+      "description": "የማጽደቂያ ውክልናዎችን ያስተዳድሩ"
+    },
+    "document_management": {
+      "title": "የሰነድ አስተዳደር",
+      "description": "ማዕከላዊ የሰነድ ማከማቻ"
+    },
+    "driver_app": {
+      "title": "የእኔ መገለጫ"
+    },
+    "driver_compliance": {
+      "title": "የሾፌር ተገዢነት"
+    },
+    "driver_h_r": {
+      "title": "ሰው ሀብት እና ፋይናንስ"
+    },
+    "driver_logbook": {
+      "title": "የሾፌር ሎግ ደብተር",
+      "description": "No violations recorded"
+    },
+    "driver_management": {
+      "title": "የሾፌር አስተዳደር"
+    },
+    "driver_performance": {
+      "title": "የሾፌር አፈጻጸም"
+    },
+    "driver_safety": {
+      "title": "ደህንነት እና ስጋት"
+    },
+    "driver_training": {
+      "title": "የሾፌር ስልጠና",
+      "description": "የምስክር ወረቀቶችን እና ስልጠናዎችን ይከታተሉ"
+    },
+    "fuel_card_providers": {
+      "title": "የነዳጅ ካርድ ውህደት",
+      "description": "የነዳጅ ካርድ አቅራቢዎችን ያገናኙ"
+    },
+    "fuel_requests": {
+      "title": "የነዳጅ ጥያቄ",
+      "description": "የነዳጅ ጥያቄ ማጽደቂያዎችን ያስተዳድሩ"
+    },
+    "hardware_sensors": {
+      "title": "ሃርድዌር ሴንሰሮች",
+      "description": "TPMS፣ OBD-II እና የጭነት ሴንሰሮች"
+    },
+    "k_p_i_scorecard": {
+      "title": "KPI ውጤት ካርድ",
+      "description": "ቁልፍ የአፈጻጸም አመልካቾችን ይከታተሉ"
+    },
+    "notification_center": {
+      "title": "የማሳወቂያ ማዕከል",
+      "description": "ማዕከላዊ ማሳወቂያዎች"
+    },
+    "organizations": {
+      "title": "ድርጅቶች",
+      "description": "ሁሉንም ድርጅቶች ያስተዳድሩ"
+    },
+    "parts_inventory": {
+      "title": "የመለዋወጫ ክምችት",
+      "description": "መለዋወጫ ክፍሎችን ይከታተሉ"
+    },
+    "passenger_tracking": {
+      "title": "የተሳፋሪ ክትትል",
+      "description": "የአውቶቡስ ተሳፋሪዎችን ያስተዳድሩ"
+    },
+    "penalties_fines": {
+      "title": "ቅጣቶች እና ገንዘብ",
+      "description": "የትራፊክ ጥሰቶችን ይከታተሉ"
+    },
+    "performance_simulation": {
+      "title": "ማስመሰያ ማዕከል",
+      "description": "What-if ትንተና እና ትንበያ ማስመሰያዎች"
+    },
+    "predictive_maintenance": {
+      "title": "AI ትንበያ ጥገና",
+      "description": "በML የተጎላበተ የብልሽት ትንበያ"
+    },
+    "r_f_i_d_pairing": {
+      "title": "RFID የሾፌር ጥምረት",
+      "description": "RFID ታጎችን ከመሳሪያዎች ጋር ያጣምሩ"
+    },
+    "rental_vehicles": {
+      "title": "የኪራይ ተሽከርካሪዎች",
+      "description": "የኪራይ ውሎችን ያስተዳድሩ"
+    },
+    "roadside_assistance": {
+      "title": "የመንገድ ዳር እርዳታ",
+      "description": "የብልሽት ጥያቄዎችን ያስተዳድሩ"
+    },
+    "route_history": {
+      "title": "የመንገድ ታሪክ",
+      "description": "ታሪካዊ የተሽከርካሪ መንገዶችን ይመልከቱ"
+    },
+    "tire_management": {
+      "title": "የጎማ አስተዳደር",
+      "description": "የጎማ ክምችት እና ለውጦችን ይከታተሉ"
+    },
+    "trip_management": {
+      "title": "የጉዞ አስተዳደር"
+    },
+    "vehicle_inspections": {
+      "title": "የተሽከርካሪ ምርመራ",
+      "description": "የምርመራ መርሃ ግብሮችን ያስተዳድሩ"
+    },
+    "vehicle_requests": {
+      "title": "የተሽከርካሪ ጥያቄዎች",
+      "description": "ተሽከርካሪ ይጠይቁ፣ ያጽድቁ"
+    },
+    "vendor_management": {
+      "title": "የአቅራቢ አስተዳደር",
+      "description": "አቅራቢዎችን ያስተዳድሩ"
+    }
   }
 }

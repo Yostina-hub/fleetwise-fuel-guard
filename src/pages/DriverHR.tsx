@@ -15,6 +15,7 @@ import { DriverCostAllocation } from "@/components/drivers/DriverCostAllocation"
 import { DriverVehicleHistory } from "@/components/drivers/DriverVehicleHistory";
 import { DriverRewardsRecognition } from "@/components/drivers/DriverRewardsRecognition";
 
+import { useTranslation } from 'react-i18next';
 const tabs = [
   { key: "contracts", label: "Contracts", icon: Briefcase, needsDriver: true },
   { key: "costs", label: "Cost Allocation", icon: DollarSign, needsDriver: true },
@@ -23,6 +24,7 @@ const tabs = [
 ];
 
 const DriverHR = () => {
+  const { t } = useTranslation();
   const { drivers } = useDrivers();
   const [activeTab, setActiveTab] = useState("contracts");
   const [selectedDriverId, setSelectedDriverId] = useState("");
@@ -75,7 +77,7 @@ const DriverHR = () => {
               <Briefcase className="h-5 w-5 text-amber-500" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight">HR & Finance</h1>
+              <h1 className="text-xl font-bold tracking-tight">{t('pages.driver_h_r.title', 'HR & Finance')}</h1>
               <p className="text-xs text-muted-foreground">Contracts, cost allocation, vehicles & rewards</p>
             </div>
           </div>
