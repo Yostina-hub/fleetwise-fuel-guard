@@ -88,6 +88,7 @@ const InstallApp = lazyWithRetry(() => import("./pages/InstallApp"), "InstallApp
 const FuelEventsMap = lazyWithRetry(() => import("./pages/FuelEventsMap"), "FuelEventsMap");
 const InfrastructureMonitoring = lazyWithRetry(() => import("./pages/InfrastructureMonitoring"), "InfrastructureMonitoring");
 const OperationsConsole = lazyWithRetry(() => import("./pages/OperationsConsole"), "OperationsConsole");
+const SystemArchitecture = lazyWithRetry(() => import("./pages/SystemArchitecture"), "SystemArchitecture");
 const NotFound = lazyWithRetry(() => import("./pages/NotFound"), "NotFound");
 
 const App = () => {
