@@ -476,11 +476,14 @@
     "circle": "ክብ",
     "polygon": "ፖሊጎን",
     "rectangle": "አራት ማዕዘን",
-    "entryAlert": "የመግቢያ ማንቂያ",
-    "exitAlert": "የመውጫ ማንቂያ",
+    "entryAlert": "መግቢያዎች",
+    "exitAlert": "መውጫዎች",
     "dwellTime": "የቆይታ ጊዜ",
     "assignedVehicles": "የተመደቡ ተሽከርካሪዎች",
-    "activeGeofences": "ንቁ ጂኦፌንሶች"
+    "activeGeofences": "ንቁ ጂኦፌንሶች",
+    "events": "ክስተቶች",
+    "noGeofences": "እስካሁን ጂኦፌንስ የለም",
+    "useDrawingTools": "ለመፍጠር የስዕል መሳሪያዎችን ይጠቀሙ"
   },
   "routes": {
     "title": "የደንበኛ ቦታዎች",
