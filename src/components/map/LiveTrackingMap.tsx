@@ -902,7 +902,7 @@ useEffect(() => {
 
           const statusLabel = vNow.status.charAt(0).toUpperCase() + vNow.status.slice(1);
           const statusClass = `popup-status-${vNow.status}`;
-          const currentAddress = vehicleAddressesRef.current.get(vNow.id) || 'Locating...';
+          const currentAddress = vehicleAddressesRef.current.get(vNow.id) || vNow.address || 'Locating...';
           const driverName = vNow.driverName || 'No driver assigned';
           const speedInfo = vNow.speed > 0 ? `${Math.round(vNow.speed)} km/h` : 'Stationary';
           const isOverspeed = vNow.speed > (vNow.speed_limit || 80);

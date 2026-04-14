@@ -361,7 +361,7 @@ const MapView = () => {
   }, [autoRefresh, refetch]);
 
   const isInitialLoading = loading && vehicles.length === 0;
-  const useClusteredMap = filteredMapVehicles.length > CLUSTER_THRESHOLD;
+  const useClusteredMap = !sumoActive && filteredMapVehicles.length > CLUSTER_THRESHOLD;
 
   // Virtual list for sidebar
   const sidebarRef = useRef<HTMLDivElement>(null);
