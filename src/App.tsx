@@ -14,6 +14,7 @@ import { PageLoader } from "@/components/PageLoader";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { CommandPalette } from "./components/CommandPalette";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
+import CookieConsentBanner from "@/components/security/CookieConsentBanner";
 
 // Lazy-load all pages for code splitting
 const Dashboard = lazyWithRetry(() => import("./pages/Dashboard"), "Dashboard");
