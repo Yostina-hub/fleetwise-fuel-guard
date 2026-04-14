@@ -73,6 +73,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { useTranslation } from "react-i18next";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const CLUSTER_THRESHOLD = 100;
 
@@ -90,6 +91,7 @@ const hasValidCoords = (lat: number | null | undefined, lng: number | null | und
 };
 
 const MapView = () => {
+  const isMobile = useIsMobile();
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
@@ -114,7 +116,7 @@ const MapView = () => {
   const [autoRefresh, setAutoRefresh] = useState("30");
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [searchQuery, setSearchQuery] = useState("");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [statusFilter, setStatusFilter] = useState<'all' | 'online' | 'moving' | 'idle' | 'stopped' | 'offline'>('all');
   const [showNearbySearch, setShowNearbySearch] = useState(false);
   const [showTrails, setShowTrails] = useState(true);
@@ -146,7 +148,7 @@ const MapView = () => {
   const [showDriverEvents, setShowDriverEvents] = useState(false);
   const [showDispatch, setShowDispatch] = useState(false);
   const [showFleetPulse, setShowFleetPulse] = useState(false);
-  const [showToolStrip, setShowToolStrip] = useState(true);
+  const [showToolStrip, setShowToolStrip] = useState(!isMobile);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showCommandCenter, setShowCommandCenter] = useState(false);
   const [showAnomalies, setShowAnomalies] = useState(false);
@@ -491,7 +493,10 @@ const MapView = () => {
             onMeasureFrom={(pt) => setMeasureFromPoint(pt)}
           />
           {/* Top Map Controls Bar */}
-          <div className="absolute top-3 left-3 right-[22rem] z-10 flex items-center gap-2 flex-wrap">
+            <div className={cn(
+              "absolute top-3 left-3 z-10 flex items-center gap-2 flex-wrap",
+              isMobile ? "right-3" : sidebarCollapsed ? "right-12" : "right-[22rem]"
+            )}>
             {/* Map Style Toggle */}
             <div className="bg-background/90 backdrop-blur-sm rounded-lg border shadow-lg p-0.5 flex" role="group" aria-label="Map style selection">
               <Button
@@ -501,7 +506,7 @@ const MapView = () => {
                 onClick={() => setMapStyle('satellite')}
               >
                 <Satellite className="w-3.5 h-3.5" />
-                {t('map.satellite')}
+                <span className="hidden sm:inline">{t('map.satellite')}</span>
               </Button>
               <Button
                 variant={mapStyle === 'streets' ? 'default' : 'ghost'}
@@ -510,7 +515,7 @@ const MapView = () => {
                 onClick={() => setMapStyle('streets')}
               >
                 <Map className="w-3.5 h-3.5" />
-                {t('map.streets')}
+                <span className="hidden sm:inline">{t('map.streets')}</span>
               </Button>
               <Button
                 variant={mapStyle === 'dark' ? 'default' : 'ghost'}
@@ -519,7 +524,7 @@ const MapView = () => {
                 onClick={() => setMapStyle('dark')}
               >
                 <Map className="w-3.5 h-3.5" />
-                {t('map.dark')}
+                <span className="hidden sm:inline">{t('map.dark')}</span>
               </Button>
             </div>
 
@@ -532,7 +537,7 @@ const MapView = () => {
                 onClick={() => setShowTrails(!showTrails)}
               >
                 <Route className="w-3.5 h-3.5" />
-                {t('map.trails')}
+                <span className="hidden sm:inline">{t('map.trails')}</span>
               </Button>
               <Button
                 variant={showNearbySearch ? "default" : "ghost"}
@@ -541,7 +546,7 @@ const MapView = () => {
                 onClick={() => setShowNearbySearch(!showNearbySearch)}
               >
                 <Radar className="w-3.5 h-3.5" />
-                {t('map.nearby')}
+                <span className="hidden sm:inline">{t('map.nearby')}</span>
               </Button>
               <MeasureDistanceTool
                 map={mapInstance}
@@ -583,7 +588,7 @@ const MapView = () => {
             </button>
 
             {showToolStrip && (
-              <div className="ml-0 flex flex-col gap-1 bg-background/90 backdrop-blur-sm rounded-xl border shadow-xl p-1.5 max-h-[80vh] overflow-y-auto">
+              <div className="ml-0 flex flex-col gap-1 bg-background/90 backdrop-blur-sm rounded-xl border shadow-xl p-1.5 max-h-[60vh] sm:max-h-[80vh] overflow-y-auto">
                 {[
                   { key: 'heatmap', icon: Flame, label: 'Heatmap', active: showHeatmap, toggle: () => setShowHeatmap(!showHeatmap), color: 'text-orange-500' },
                   { key: 'timewarp', icon: History, label: 'Time-Warp', active: showTimeWarp, toggle: () => setShowTimeWarp(!showTimeWarp), color: 'text-blue-500' },
@@ -680,7 +685,7 @@ const MapView = () => {
             size="icon"
             className={cn(
               "absolute top-1/2 -translate-y-1/2 z-20 h-10 w-6 rounded-l-lg rounded-r-none shadow-lg transition-all",
-              sidebarCollapsed ? "right-0" : "right-80"
+              "right-0"
             )}
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             aria-label={sidebarCollapsed ? "Expand vehicle sidebar" : "Collapse vehicle sidebar"}
@@ -693,8 +698,17 @@ const MapView = () => {
         {/* Side Panel - Clean & Modern */}
         <div className={cn(
           "bg-background border-l flex flex-col transition-all duration-300",
-          sidebarCollapsed ? "w-0 overflow-hidden" : "w-80"
+          isMobile
+            ? cn("absolute top-0 right-0 bottom-0 z-30 shadow-2xl", sidebarCollapsed ? "w-0 overflow-hidden" : "w-[85vw] max-w-80")
+            : cn(sidebarCollapsed ? "w-0 overflow-hidden" : "w-80")
         )}>
+          {/* Mobile backdrop */}
+          {isMobile && !sidebarCollapsed && (
+            <div
+              className="fixed inset-0 bg-black/40 z-20"
+              onClick={() => setSidebarCollapsed(true)}
+            />
+          )}
           {/* Header */}
           <div className="p-4 border-b space-y-4">
             <div className="flex items-center justify-between">
