@@ -37,7 +37,7 @@ const vehicleSchema = z.object({
   assigned_driver_id: z.string().uuid().nullish(),
   vin: z.string().trim().max(17).nullish(),
   color: z.string().trim().max(30).nullish(),
-  fuel_type: z.enum(["diesel", "petrol", "electric", "hybrid"]).nullish(),
+  fuel_type: z.enum(["diesel", "petrol", "electric", "hybrid"]),
   tank_capacity_liters: z.number().min(0).nullish(),
   odometer_km: z.number().min(0).nullish(),
   ownership_type: z.enum(["owned", "leased", "rented"]).nullish(),

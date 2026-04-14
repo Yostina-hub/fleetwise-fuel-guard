@@ -318,8 +318,8 @@ const Fleet = () => {
 
   const handleTerminalSettings = useCallback((vehicle: any) => {
     setVehicleForTerminal({
-      vehicleId: vehicle.id,
-      plate: vehicle.plate_number,
+      vehicleId: vehicle.vehicleId || vehicle.id,
+      plate: vehicle.plate || vehicle.plate_number,
       make: vehicle.make,
       model: vehicle.model,
       phoneNumber: vehicle.phoneNumber || null,

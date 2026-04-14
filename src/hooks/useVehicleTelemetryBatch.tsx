@@ -39,7 +39,8 @@ export function useVehicleTelemetryBatch(vehicleIds: string[]) {
         .from("vehicle_telemetry")
         .select("vehicle_id, latitude, longitude, speed_kmh, fuel_level_percent, engine_on, device_connected, last_communication_at, gps_signal_strength, gps_jamming_detected, gps_spoofing_detected")
         .in("vehicle_id", vehicleIds)
-        .eq("organization_id", organizationId);
+        .eq("organization_id", organizationId)
+        .order("last_communication_at", { ascending: false });
 
       if (error) {
         console.error("Error fetching telemetry:", error);
