@@ -55,7 +55,8 @@ function initSocketGateway(port, options = {}) {
 
   // Authentication middleware
   io.use((socket, next) => {
-    const orgId = socket.handshake.auth?.orgId;
+    const orgId = socket.handshake.auth?.orgId
+      || socket.handshake.query?.organization_id;
     const token = socket.handshake.auth?.token;
 
     if (!orgId) {
@@ -85,6 +86,15 @@ function initSocketGateway(port, options = {}) {
       orgId,
       socketId: socket.id,
     }));
+
+    // Allow clients to join org room explicitly (for late-binding)
+    socket.on('join:organization', (data) => {
+      if (data?.organization_id) {
+        const room = `org:${data.organization_id}`;
+        socket.join(room);
+        stats.rooms.add(room);
+      }
+    });
 
     // Allow clients to subscribe to specific vehicle rooms
     socket.on('subscribe:vehicle', (vehicleId) => {
