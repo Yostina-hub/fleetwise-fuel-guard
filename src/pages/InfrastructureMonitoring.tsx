@@ -6,8 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity, Server, Database, Wifi, HardDrive, Cpu, MemoryStick, RefreshCw, CheckCircle2, AlertTriangle, XCircle, Clock, Globe, Zap, BarChart3, Signal } from "lucide-react";
+import { Activity, Server, Database, Wifi, HardDrive, Cpu, MemoryStick, RefreshCw, CheckCircle2, AlertTriangle, XCircle, Clock, Globe, Zap, BarChart3, Signal, Building2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import SiteEnvironmentSelector, { type SiteEnvironment } from "@/components/monitoring/SiteEnvironmentSelector";
+import SiteHealthDashboard from "@/components/monitoring/SiteHealthDashboard";
 
 type ServiceStatus = "healthy" | "degraded" | "down";
 
