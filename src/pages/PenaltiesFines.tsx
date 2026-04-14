@@ -61,7 +61,7 @@ const PenaltiesFines = () => {
           </TableRow></TableHeader>
           <TableBody>
             {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
-            filtered.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">{t('fines.noFines', 'No fines recorded')}<TableCell></TableRow> :
+            filtered.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">{t('fines.noFines', 'No fines recorded')}</TableCell></TableRow> :
             filtered.map((f: any) => (
               <TableRow key={f.id}>
                 <TableCell className="font-mono">{f.fine_number}</TableCell>

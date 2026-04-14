@@ -68,7 +68,7 @@ const ComplianceCalendar = () => {
             </TableRow></TableHeader>
             <TableBody>
               {isLoading ? <TableRow><TableCell colSpan={7} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
-              items.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">{t('compliance.noItems', 'No compliance items scheduled')}<TableCell></TableRow> :
+              items.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">{t('compliance.noItems', 'No compliance items scheduled')}</TableCell></TableRow> :
               items.map((i: any) => {
                 const days = differenceInDays(new Date(i.deadline), new Date());
                 return (
