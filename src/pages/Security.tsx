@@ -2,11 +2,14 @@ import { useState } from "react";
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { Shield, Key, History, FileText } from "lucide-react";
+import { Shield, Key, History, FileText, UserCheck, AlertTriangle, ClipboardList } from "lucide-react";
 import ApiKeysTab from "@/components/security/ApiKeysTab";
 import AuditLogsTab from "@/components/security/AuditLogsTab";
 import DataRetentionTab from "@/components/security/DataRetentionTab";
 import GdprRequestsTab from "@/components/security/GdprRequestsTab";
+import ConsentManagementTab from "@/components/security/ConsentManagementTab";
+import BreachNotificationTab from "@/components/security/BreachNotificationTab";
+import ProcessingActivitiesTab from "@/components/security/ProcessingActivitiesTab";
 import SecurityQuickStats from "@/components/security/SecurityQuickStats";
 import SecurityQuickActions from "@/components/security/SecurityQuickActions";
 import { useToast } from "@/hooks/use-toast";
@@ -30,7 +33,6 @@ const Security = () => {
           </div>
         </div>
 
-        {/* Quick Stats */}
         <SecurityQuickStats
           activeApiKeys={3}
           auditLogsToday={45}
@@ -38,7 +40,6 @@ const Security = () => {
           pendingGdprRequests={0}
         />
 
-        {/* Quick Actions */}
         <SecurityQuickActions
           onCreateApiKey={() => setActiveTab("api-keys")}
           onExportAuditLogs={() => toast({ title: "Exporting audit logs..." })}
@@ -47,7 +48,7 @@ const Security = () => {
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="flex flex-wrap h-auto gap-1">
           <TabsTrigger value="api-keys" className="gap-2">
             <Key className="h-4 w-4" aria-hidden="true" />
             API Keys
@@ -58,36 +59,46 @@ const Security = () => {
           </TabsTrigger>
           <TabsTrigger value="retention" className="gap-2">
             <FileText className="h-4 w-4" aria-hidden="true" />
-            Data Retention
+            Retention
           </TabsTrigger>
           <TabsTrigger value="gdpr" className="gap-2">
             <Shield className="h-4 w-4" aria-hidden="true" />
             GDPR Requests
           </TabsTrigger>
+          <TabsTrigger value="consent" className="gap-2">
+            <UserCheck className="h-4 w-4" aria-hidden="true" />
+            Consent
+          </TabsTrigger>
+          <TabsTrigger value="breach" className="gap-2">
+            <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+            Breach
+          </TabsTrigger>
+          <TabsTrigger value="ropa" className="gap-2">
+            <ClipboardList className="h-4 w-4" aria-hidden="true" />
+            ROPA
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="api-keys">
-          <Card className="p-6">
-            <ApiKeysTab />
-          </Card>
+          <Card className="p-6"><ApiKeysTab /></Card>
         </TabsContent>
-
         <TabsContent value="audit-logs">
-          <Card className="p-6">
-            <AuditLogsTab />
-          </Card>
+          <Card className="p-6"><AuditLogsTab /></Card>
         </TabsContent>
-
         <TabsContent value="retention">
-          <Card className="p-6">
-            <DataRetentionTab />
-          </Card>
+          <Card className="p-6"><DataRetentionTab /></Card>
         </TabsContent>
-
         <TabsContent value="gdpr">
-          <Card className="p-6">
-            <GdprRequestsTab />
-          </Card>
+          <Card className="p-6"><GdprRequestsTab /></Card>
+        </TabsContent>
+        <TabsContent value="consent">
+          <Card className="p-6"><ConsentManagementTab /></Card>
+        </TabsContent>
+        <TabsContent value="breach">
+          <Card className="p-6"><BreachNotificationTab /></Card>
+        </TabsContent>
+        <TabsContent value="ropa">
+          <Card className="p-6"><ProcessingActivitiesTab /></Card>
         </TabsContent>
       </Tabs>
     </div>
