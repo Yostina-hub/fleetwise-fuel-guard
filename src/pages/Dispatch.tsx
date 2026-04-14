@@ -9,8 +9,10 @@ import DispatchInsightsCard from "@/components/dispatch/DispatchInsightsCard";
 import { useDispatchJobs } from "@/hooks/useDispatchJobs";
 import { useNavigate } from "react-router-dom";
 import { startOfDay, isAfter, parseISO } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 const Dispatch = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { jobs, loading } = useDispatchJobs();
   const [activeTab, setActiveTab] = useState("jobs");
@@ -76,8 +78,8 @@ const Dispatch = () => {
             <Truck className="w-8 h-8 text-primary float-animation" aria-hidden="true" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-4xl font-bold gradient-text">Dispatch & Operations</h1>
-            <p className="text-muted-foreground mt-1 text-lg">Manage delivery jobs, assignments, and proof of delivery</p>
+            <h1 className="text-2xl md:text-4xl font-bold gradient-text">{t('dispatch.title')}</h1>
+            <p className="text-muted-foreground mt-1 text-lg">{t('dispatch.jobs')}</p>
           </div>
         </div>
 

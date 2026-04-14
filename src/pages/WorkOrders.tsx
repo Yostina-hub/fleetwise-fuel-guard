@@ -10,8 +10,10 @@ import WorkOrdersQuickActions from "@/components/workorders/WorkOrdersQuickActio
 import WorkOrdersInsightsCard from "@/components/workorders/WorkOrdersInsightsCard";
 import WorkOrdersTrendChart from "@/components/workorders/WorkOrdersTrendChart";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 const WorkOrders = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("orders");
 
   // Mock stats - in production, these would come from hooks
@@ -56,9 +58,9 @@ const WorkOrders = () => {
             <ClipboardList className="h-8 w-8 text-primary float-animation" aria-hidden="true" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-4xl font-bold gradient-text">Work Orders & Inventory</h1>
+            <h1 className="text-2xl md:text-4xl font-bold gradient-text">{t('maintenance.workOrders')}</h1>
             <p className="text-muted-foreground mt-1 text-lg">
-              Track maintenance tasks and manage spare parts inventory
+              {t('maintenance.partsInventory')}
             </p>
           </div>
         </div>

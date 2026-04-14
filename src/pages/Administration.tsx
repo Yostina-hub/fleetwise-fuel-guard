@@ -14,8 +14,10 @@ import { PenaltyConfigTab } from "@/components/admin/PenaltyConfigTab";
 import { DriverPenaltiesTab } from "@/components/admin/DriverPenaltiesTab";
 import AdminQuickStats from "@/components/admin/AdminQuickStats";
 import AdminQuickActions from "@/components/admin/AdminQuickActions";
+import { useTranslation } from "react-i18next";
 
 const Administration = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("org-settings");
 
   return (
@@ -24,9 +26,9 @@ const Administration = () => {
         <div className="flex items-center gap-3">
           <Settings className="h-8 w-8 text-primary" aria-hidden="true" />
           <div>
-            <h1 className="text-3xl font-bold">Administration</h1>
+            <h1 className="text-3xl font-bold">{t('administration.title')}</h1>
             <p className="text-muted-foreground">
-              Manage organization settings, security, and compliance
+              {t('administration.organizationSettings')}
             </p>
           </div>
         </div>

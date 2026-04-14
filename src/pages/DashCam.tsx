@@ -18,8 +18,10 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 const DashCam = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const { user } = useAuthContext();
   const queryClient = useQueryClient();
@@ -107,8 +109,8 @@ const DashCam = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Dash Cam Management</h1>
-            <p className="text-muted-foreground">Monitor camera events, AI-detected incidents & video review</p>
+            <h1 className="text-2xl font-bold">{t('dashCam.title')}</h1>
+            <p className="text-muted-foreground">{t('dashCam.events')}</p>
           </div>
           {selectedIds.size > 0 && (
             <div className="flex gap-2">

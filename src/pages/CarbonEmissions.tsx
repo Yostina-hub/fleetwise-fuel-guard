@@ -16,10 +16,12 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))", "#6366f1", "#f59e0b", "#10b981"];
 
 const CarbonEmissions = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const qc = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);
@@ -123,7 +125,7 @@ const CarbonEmissions = () => {
     <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div><h1 className="text-2xl font-bold">Carbon Emissions</h1><p className="text-muted-foreground">Track fleet CO₂ emissions, fuel impact, and carbon offset programs</p></div>
+          <div><h1 className="text-2xl font-bold">{t('carbonEmissions.title')}</h1><p className="text-muted-foreground">{t('carbonEmissions.totalEmissions')}</p></div>
           <Button onClick={() => { setForm({ vehicle_id: "", co2_kg: 0, fuel_consumed_liters: 0, distance_km: 0, emission_source: "fuel_combustion", period_start: "", period_end: "", offset_credits: 0, notes: "" }); setErrors({}); setAddOpen(true); }}><Plus className="h-4 w-4 mr-2" /> Add Record</Button>
         </div>
 

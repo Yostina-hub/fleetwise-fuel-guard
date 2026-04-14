@@ -69,8 +69,10 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 const Drivers = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -205,10 +207,10 @@ const Drivers = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              Driver Management
+              {t('drivers.title')}
             </h1>
             <p className="text-muted-foreground mt-1">
-              Manage all drivers and their information • {totalCount} drivers total
+              {totalCount} {t('nav.drivers').toLowerCase()}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -218,7 +220,7 @@ const Drivers = () => {
               onClick={() => setImportDialogOpen(true)}
             >
               <Upload className="w-4 h-4" aria-hidden="true" />
-              Import
+              {t('common.import')}
             </Button>
             <Button 
               variant="outline"
@@ -231,7 +233,7 @@ const Drivers = () => {
               ) : (
                 <Download className="w-4 h-4" aria-hidden="true" />
               )}
-              {isExporting ? "Exporting..." : "Export"}
+              {isExporting ? `${t('common.export')}...` : t('common.export')}
             </Button>
             <Button 
               variant="outline"
@@ -246,7 +248,7 @@ const Drivers = () => {
               onClick={() => setCreateDialogOpen(true)}
             >
               <Plus className="w-4 h-4" aria-hidden="true" />
-              Add Driver
+              {t('drivers.addDriver')}
             </Button>
           </div>
         </div>

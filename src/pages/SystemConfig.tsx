@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 const SETTING_DEFAULTS: Record<string, Record<string, any>> = {
   general: { timezone: "Africa/Addis_Ababa", date_format: "dd/MM/yyyy", distance_unit: "km", currency: "ETB", language: "en" },
@@ -29,6 +30,7 @@ const SETTING_DEFAULTS: Record<string, Record<string, any>> = {
 };
 
 const SystemConfig = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const { user } = useAuthContext();
   const queryClient = useQueryClient();
@@ -93,8 +95,8 @@ const SystemConfig = () => {
             <Settings2 className="h-8 w-8 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-4xl font-bold">System Configuration</h1>
-            <p className="text-muted-foreground mt-1 text-lg">Configure organization settings, device protocols, and integrations</p>
+            <h1 className="text-2xl md:text-4xl font-bold">{t('nav.systemConfig')}</h1>
+            <p className="text-muted-foreground mt-1 text-lg">{t('settings.preferences')}</p>
           </div>
         </div>
 

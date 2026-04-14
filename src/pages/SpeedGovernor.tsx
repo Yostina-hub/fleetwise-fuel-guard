@@ -43,8 +43,10 @@ import { SpeedInsightsCard } from "@/components/speedgovernor/SpeedInsightsCard"
 import { DriverSpeedLeaderboard } from "@/components/speedgovernor/DriverSpeedLeaderboard";
 import { BulkSpeedConfigCard } from "@/components/speedgovernor/BulkSpeedConfigCard";
 import { SendGovernorCommandDialog } from "@/components/speedgovernor/SendGovernorCommandDialog";
+import { useTranslation } from "react-i18next";
 
 const SpeedGovernor = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const { telemetry, isVehicleOnline } = useVehicleTelemetry();
   const { kpis, kpisLoading, updateConfig, governorConfigs } = useSpeedGovernor();
@@ -104,7 +106,7 @@ const SpeedGovernor = () => {
               <div className="p-2 rounded-lg bg-gradient-to-br from-red-500/10 to-orange-500/10">
                 <Gauge className="w-8 h-8 text-red-600" aria-hidden="true" />
               </div>
-              Speed Governor Control
+              {t('speedGovernor.title')}
             </h1>
             <p className="text-muted-foreground mt-2">
               Ethiopian Compliance • Remote Speed Management • Real-time Monitoring

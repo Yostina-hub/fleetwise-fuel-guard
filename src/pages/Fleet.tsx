@@ -50,6 +50,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useDrivers } from "@/hooks/useDrivers";
 import { useVehicleTelemetryBatch } from "@/hooks/useVehicleTelemetryBatch";
 import { useNextServiceDate } from "@/hooks/useNextServiceDate";
+import { useTranslation } from "react-i18next";
 
 const VEHICLE_TYPES = [
   { value: "all", label: "All Types" },
@@ -85,6 +86,7 @@ const DRIVER_FILTER = [
 ];
 
 const Fleet = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { drivers } = useDrivers();
@@ -403,22 +405,22 @@ const Fleet = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">
-              Fleet Management
+              {t('fleet.title')}
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
               {focusedVehicleId 
                 ? "1 vehicle selected" 
-                : `${totalCount.toLocaleString()} vehicles in your fleet`}
+                : `${totalCount.toLocaleString()} ${t('fleet.vehicles').toLowerCase()}`}
             </p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" className="gap-2" onClick={() => setImportDialogOpen(true)}>
               <Upload className="w-4 h-4" aria-hidden="true" />
-              <span className="hidden sm:inline">Import</span>
+              <span className="hidden sm:inline">{t('common.import')}</span>
             </Button>
             <Button variant="outline" size="sm" className="gap-2" onClick={handleExportAll} disabled={exporting}>
               <Download className="w-4 h-4" aria-hidden="true" />
-              <span className="hidden sm:inline">{exporting ? 'Exporting...' : 'Export All'}</span>
+              <span className="hidden sm:inline">{exporting ? `${t('common.export')}...` : t('common.export')}</span>
             </Button>
             <Button
               size="sm"
@@ -426,7 +428,7 @@ const Fleet = () => {
               onClick={() => setCreateDialogOpen(true)}
             >
               <Plus className="w-4 h-4" aria-hidden="true" />
-              Add Vehicle
+              {t('fleet.addVehicle')}
             </Button>
           </div>
         </div>

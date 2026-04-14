@@ -59,6 +59,7 @@ import ComplianceAlertsCard from "@/components/dashboard/ComplianceAlertsCard";
 import DateRangeFilter from "@/components/dashboard/DateRangeFilter";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { startOfMonth } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 // Executive Dashboard Components
 import ExecutiveKPIGrid from "@/components/dashboard/executive/ExecutiveKPIGrid";
@@ -103,6 +104,7 @@ import DistanceDurationSummary from "@/components/analytics/DistanceDurationSumm
 import { Car, Gauge, Zap, Shield, Power, Wrench, Moon } from "lucide-react";
 
 const Dashboard = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { organizationId } = useOrganization();
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
@@ -260,9 +262,9 @@ const Dashboard = () => {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className={`text-3xl font-bold ${activeTab === 'executive' ? 'text-white' : 'bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent'}`}>
-              Fleet Dashboard
+              {t('dashboard.title')}
             </h1>
-            <p className={`mt-1 ${activeTab === 'executive' ? 'text-white/70' : 'text-muted-foreground'}`}>Real-time overview of your fleet operations</p>
+            <p className={`mt-1 ${activeTab === 'executive' ? 'text-white/70' : 'text-muted-foreground'}`}>{t('dashboard.subtitle')}</p>
           </div>
           <div className="flex items-center gap-3">
             <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
@@ -275,7 +277,7 @@ const Dashboard = () => {
               aria-label="Refresh dashboard data"
             >
               <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
-              Refresh
+              {t('common.refresh')}
             </Button>
           </div>
         </div>

@@ -28,6 +28,7 @@ import MaintenanceTrendChart from "@/components/maintenance/MaintenanceTrendChar
 import LowStockAlert from "@/components/maintenance/LowStockAlert";
 import DateRangeFilter from "@/components/dashboard/DateRangeFilter";
 import { subDays, differenceInDays, parseISO, isAfter } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 interface DateRange {
   start: Date;
@@ -35,6 +36,7 @@ interface DateRange {
 }
 
 const Maintenance = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { loading: vehiclesLoading } = useVehicles();
   const { metrics, loading: metricsLoading } = useMaintenanceMetrics();
@@ -80,8 +82,8 @@ const Maintenance = () => {
               <Wrench className="w-8 h-8 text-primary float-animation" aria-hidden="true" />
             </div>
             <div>
-              <h1 className="text-2xl md:text-4xl font-bold gradient-text">Maintenance Management</h1>
-              <p className="text-muted-foreground mt-1 text-lg">Track service schedules, inspections and work orders</p>
+              <h1 className="text-2xl md:text-4xl font-bold gradient-text">{t('maintenance.title')}</h1>
+              <p className="text-muted-foreground mt-1 text-lg">{t('maintenance.serviceHistory')}</p>
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">

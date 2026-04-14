@@ -53,10 +53,12 @@ import { useAlerts, Alert } from "@/hooks/useAlerts";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
 import { format } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 const ITEMS_PER_PAGE = 10;
 
 const Alerts = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
@@ -259,10 +261,10 @@ const Alerts = () => {
             </div>
             <div>
               <h1 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-destructive via-warning to-destructive bg-clip-text text-transparent">
-                Alert Center
+                {t('alerts.title')}
               </h1>
               <p className="text-muted-foreground mt-1 text-lg">
-                Monitor and manage fleet alerts • <span className="font-semibold text-foreground">{stats.total}</span> total alerts
+                <span className="font-semibold text-foreground">{stats.total}</span> {t('common.total').toLowerCase()}
               </p>
             </div>
           </div>

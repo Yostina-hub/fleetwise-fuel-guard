@@ -32,6 +32,7 @@ import ProgressiveDelayTab from "@/components/security/ProgressiveDelayTab";
 import SessionManagementTab from "@/components/security/SessionManagementTab";
 import PasswordExpiryTab from "@/components/security/PasswordExpiryTab";
 import LoginAlertsTab from "@/components/security/LoginAlertsTab";
+import { useTranslation } from "react-i18next";
 
 interface SecurityFeature {
   id: string;
@@ -43,6 +44,7 @@ interface SecurityFeature {
 }
 
 const SecurityDashboard = () => {
+  const { t } = useTranslation();
   const [securityScore] = useState(78);
   
   const securityFeatures: SecurityFeature[] = [
@@ -91,7 +93,7 @@ const SecurityDashboard = () => {
           <div className="flex items-center gap-3">
             <Shield className="h-8 w-8 text-primary" aria-hidden="true" />
             <div>
-              <h1 className="text-3xl font-bold">Security Dashboard</h1>
+              <h1 className="text-3xl font-bold">{t('security.dashboard')}</h1>
               <p className="text-muted-foreground">
                 Monitor and manage all security features
               </p>

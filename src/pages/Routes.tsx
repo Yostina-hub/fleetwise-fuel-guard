@@ -16,8 +16,10 @@ import { useTripMetrics } from "@/hooks/useTripMetrics";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useTranslation } from "react-i18next";
 
 const RoutesPage = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("routes");
   const { organizationId } = useOrganization();
   const { metrics, loading: metricsLoading } = useTripMetrics();
@@ -88,9 +90,9 @@ const RoutesPage = () => {
             <Route className="h-8 w-8 text-primary animate-float" aria-hidden="true" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-4xl font-bold gradient-text">Routes & Dispatch</h1>
+            <h1 className="text-2xl md:text-4xl font-bold gradient-text">{t('routes.title')}</h1>
             <p className="text-muted-foreground mt-1 text-lg">
-              Optimize delivery routes and manage customer locations
+              {t('routes.address')}
             </p>
           </div>
         </div>
