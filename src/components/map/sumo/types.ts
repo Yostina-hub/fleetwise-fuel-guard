@@ -10,40 +10,79 @@ export interface RoadNode {
 
 export interface RoadSegment {
   id: string;
-  from: string; // node id
-  to: string;   // node id
+  from: string;
+  to: string;
   name: string;
-  speedLimit: number; // km/h
+  speedLimit: number;
   lanes: number;
-  waypoints: [number, number][]; // [lng, lat] polyline
-  length?: number; // meters, computed
+  waypoints: [number, number][];
+  length?: number;
 }
 
 export type VehicleType = 'sedan' | 'minibus' | 'bus' | 'truck' | 'suv';
+
+// IoT Device information attached to each simulated vehicle
+export interface SimDeviceInfo {
+  imei: string;
+  trackerModel: string;
+  simIccid: string;
+  firmwareVersion: string;
+  status: 'online' | 'offline' | 'degraded';
+  lastHeartbeat: string;
+  signalStrength: number;     // 0-100
+  satelliteCount: number;     // 3-14
+  hdop: number;               // GPS accuracy 0.5-5.0
+  fixType: '2D' | '3D' | 'DGPS';
+  batteryVoltage: number;     // device battery 3.2-4.2V
+  externalPower: boolean;
+  reportingInterval: number;  // seconds
+}
+
+// Driver info attached to vehicle
+export interface SimDriverInfo {
+  name: string;
+  phone: string;
+  licenseNumber: string;
+  status: 'on_duty' | 'off_duty' | 'break';
+}
 
 export interface SimVehicle {
   id: string;
   type: VehicleType;
   plate: string;
   segmentId: string;
-  segmentProgress: number; // 0-1 along segment
-  speed: number;           // km/h
+  segmentProgress: number;
+  speed: number;
   maxSpeed: number;
-  acceleration: number;    // m/s²
+  acceleration: number;
   lat: number;
   lng: number;
-  heading: number;         // degrees
-  fuel: number;            // percent
+  heading: number;
+  fuel: number;
   status: 'moving' | 'idle' | 'stopped';
-  routeSegments: string[]; // sequence of segment ids
+  routeSegments: string[];
   routeIndex: number;
   color: string;
+  // IoT device telemetry
+  device: SimDeviceInfo;
+  driver: SimDriverInfo;
+  // Extended telemetry
+  odometer: number;           // km
+  engineTemp: number;         // celsius
+  rpm: number;
+  ignitionOn: boolean;
+  doorOpen: boolean;
+  seatbeltOn: boolean;
+  // Make/model for display
+  make: string;
+  model: string;
+  year: number;
 }
 
 export interface TrafficSignal {
   nodeId: string;
   phase: 'green' | 'amber' | 'red';
-  greenDuration: number;   // seconds
+  greenDuration: number;
   amberDuration: number;
   redDuration: number;
   elapsed: number;
@@ -52,8 +91,8 @@ export interface TrafficSignal {
 export interface SimulationState {
   vehicles: SimVehicle[];
   signals: TrafficSignal[];
-  time: number;          // simulation seconds elapsed
+  time: number;
   running: boolean;
-  speed: number;         // multiplier
+  speed: number;
   vehicleCount: number;
 }
