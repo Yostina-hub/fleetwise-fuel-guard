@@ -35,6 +35,7 @@ const { initSocketGateway, getStats: socketStats, shutdown: socketShutdown } = r
 const { IdempotencyGuard } = require('./lib/idempotency');
 const { initWorkers, enqueueGeofenceCheck, getStats: workerStats, shutdown: workerShutdown } = require('./lib/workers');
 const { init: initTimeSeriesSink, ingest: tsIngest, getStats: tsStats, shutdown: tsShutdown } = require('./lib/timeseries-sink');
+const { init: initAnalyticsApi, handleRequest: handleAnalyticsRequest } = require('./lib/analytics-api');
 
 // Configuration from environment
 const config = {
