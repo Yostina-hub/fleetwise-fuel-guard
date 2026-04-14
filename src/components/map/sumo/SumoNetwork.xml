@@ -1,0 +1,116 @@
+<!--
+  SUMO Network Definition Reference — Addis Ababa
+  This documents the road network structure. Actual implementation in AddisAbabaNetwork.ts.
+
+  Nodes correspond to major intersections.
+  Edges (segments) are bidirectional with waypoint geometry.
+  Traffic light nodes have signal-controlled phases.
+-->
+
+<net version="1.20" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- JUNCTION NODES                          -->
+  <!-- ═══════════════════════════════════════ -->
+
+  <junction id="meskel" type="traffic_light" x="38.7615" y="9.0108" name="Meskel Square"/>
+  <junction id="bole_brass" type="traffic_light" x="38.7758" y="9.0042" name="Bole Brass"/>
+  <junction id="megenagna" type="traffic_light" x="38.8002" y="9.0208" name="Megenagna"/>
+  <junction id="piazza" type="traffic_light" x="38.7475" y="9.0315" name="Piazza"/>
+  <junction id="lideta" type="traffic_light" x="38.7368" y="9.0198" name="Lideta"/>
+  <junction id="gotera" type="traffic_light" x="38.7445" y="8.9975" name="Gotera"/>
+  <junction id="airport" type="priority" x="38.7993" y="8.9779" name="Bole Airport"/>
+  <junction id="urael" type="traffic_light" x="38.7778" y="9.0140" name="Urael"/>
+  <junction id="gerji" type="traffic_light" x="38.8062" y="9.0105" name="Gerji"/>
+  <junction id="kazanchis" type="traffic_light" x="38.7618" y="9.0188" name="Kazanchis"/>
+  <junction id="merkato" type="traffic_light" x="38.7350" y="9.0300" name="Merkato"/>
+  <junction id="saris" type="traffic_light" x="38.7525" y="8.9685" name="Saris"/>
+  <junction id="cmc" type="traffic_light" x="38.8180" y="9.0420" name="CMC"/>
+  <junction id="ayat" type="priority" x="38.8405" y="9.0485" name="Ayat"/>
+  <junction id="arat_kilo" type="traffic_light" x="38.7588" y="9.0340" name="Arat Kilo"/>
+  <junction id="sidist_kilo" type="traffic_light" x="38.7635" y="9.0385" name="Sidist Kilo"/>
+  <junction id="kotebe" type="priority" x="38.7905" y="9.0405" name="Kotebe"/>
+  <junction id="bole_bulb" type="priority" x="38.7745" y="8.9745" name="Bole Bulbula"/>
+  <junction id="mexico" type="traffic_light" x="38.7450" y="9.0166" name="Mexico Square"/>
+  <junction id="bambis" type="priority" x="38.7850" y="9.0170" name="Bambis"/>
+  <junction id="kality" type="priority" x="38.7598" y="8.9515" name="Kality"/>
+  <junction id="jemo" type="priority" x="38.7005" y="8.9768" name="Jemo"/>
+  <junction id="torhailoch" type="traffic_light" x="38.7205" y="9.0220" name="Torhailoch"/>
+  <junction id="stadium" type="priority" x="38.7562" y="9.0138" name="Stadium"/>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- EDGES (Road Segments)                   -->
+  <!-- ═══════════════════════════════════════ -->
+
+  <!-- Bole Road -->
+  <edge id="bole_1" from="airport" to="bole_brass" numLanes="3" speed="16.67" name="Bole Road (Airport)"/>
+  <edge id="bole_2" from="bole_brass" to="meskel" numLanes="3" speed="13.89" name="Bole Road (Meskel)"/>
+
+  <!-- Africa Avenue -->
+  <edge id="africa_1" from="bole_brass" to="urael" numLanes="3" speed="13.89" name="Africa Ave"/>
+  <edge id="africa_2" from="urael" to="bambis" numLanes="3" speed="13.89" name="Africa Ave"/>
+  <edge id="africa_3" from="bambis" to="megenagna" numLanes="3" speed="13.89" name="Africa Ave"/>
+
+  <!-- Churchill Avenue -->
+  <edge id="church_1" from="meskel" to="stadium" numLanes="2" speed="11.11" name="Churchill Ave"/>
+  <edge id="church_2" from="stadium" to="piazza" numLanes="2" speed="11.11" name="Churchill Ave"/>
+
+  <!-- Ring Road South -->
+  <edge id="ring_s1" from="meskel" to="mexico" numLanes="3" speed="16.67" name="Ring Road"/>
+  <edge id="ring_s2" from="mexico" to="lideta" numLanes="3" speed="16.67" name="Ring Road"/>
+
+  <!-- Ring Road North -->
+  <edge id="ring_n1" from="megenagna" to="cmc" numLanes="3" speed="16.67" name="Ring Road"/>
+  <edge id="ring_n2" from="cmc" to="ayat" numLanes="3" speed="16.67" name="Ring Road"/>
+
+  <!-- Arat/Sidist Kilo -->
+  <edge id="arat_1" from="piazza" to="arat_kilo" numLanes="2" speed="9.72" name="Piazza-Arat Kilo"/>
+  <edge id="arat_2" from="arat_kilo" to="sidist_kilo" numLanes="2" speed="9.72" name="Arat-Sidist Kilo"/>
+
+  <!-- South Corridor -->
+  <edge id="south_1" from="meskel" to="gotera" numLanes="2" speed="13.89" name="Meskel-Gotera"/>
+  <edge id="south_2" from="gotera" to="saris" numLanes="2" speed="12.50" name="Gotera-Saris"/>
+  <edge id="south_3" from="saris" to="kality" numLanes="2" speed="13.89" name="Saris-Kality"/>
+
+  <!-- East Corridor -->
+  <edge id="east_1" from="airport" to="gerji" numLanes="2" speed="12.50" name="Bole-Gerji"/>
+  <edge id="east_2" from="gerji" to="megenagna" numLanes="2" speed="11.11" name="Gerji-Megenagna"/>
+  <edge id="east_3" from="gerji" to="cmc" numLanes="2" speed="13.89" name="Gerji-CMC"/>
+
+  <!-- Merkato -->
+  <edge id="merk_1" from="lideta" to="merkato" numLanes="2" speed="8.33" name="Merkato Road"/>
+  <edge id="merk_2" from="merkato" to="piazza" numLanes="2" speed="9.72" name="Piazza-Merkato"/>
+
+  <!-- West Corridor -->
+  <edge id="west_1" from="lideta" to="torhailoch" numLanes="2" speed="12.50" name="Lideta-Torhailoch"/>
+  <edge id="west_2" from="torhailoch" to="jemo" numLanes="2" speed="12.50" name="Torhailoch-Jemo"/>
+
+  <!-- Connectors -->
+  <edge id="wollo_1" from="meskel" to="urael" numLanes="2" speed="11.11" name="Wollo Sefer Road"/>
+  <edge id="kaz_1" from="meskel" to="kazanchis" numLanes="2" speed="11.11" name="Kazanchis Road"/>
+  <edge id="bulb_1" from="bole_brass" to="bole_bulb" numLanes="2" speed="12.50" name="Bole Bulbula Road"/>
+  <edge id="bulb_2" from="bole_bulb" to="saris" numLanes="2" speed="11.11" name="Bole Bulbula-Saris"/>
+  <edge id="kot_1" from="megenagna" to="kotebe" numLanes="2" speed="11.11" name="Megenagna-Kotebe"/>
+  <edge id="kot_2" from="kotebe" to="sidist_kilo" numLanes="2" speed="9.72" name="Kotebe-Sidist Kilo"/>
+
+  <!-- NOTE: All edges also have reverse versions (id + "_r") for bidirectional traffic -->
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- TRAFFIC LIGHT PROGRAMS                  -->
+  <!-- ═══════════════════════════════════════ -->
+
+  <tlLogic id="meskel" type="static" programID="0" offset="0">
+    <phase duration="30" state="GGrrGGrr"/>
+    <phase duration="4"  state="yyrryyrr"/>
+    <phase duration="25" state="rrGGrrGG"/>
+    <phase duration="4"  state="rryyrryyy"/>
+  </tlLogic>
+
+  <tlLogic id="megenagna" type="static" programID="0" offset="5">
+    <phase duration="35" state="GGrrGGrr"/>
+    <phase duration="4"  state="yyrryyrr"/>
+    <phase duration="30" state="rrGGrrGG"/>
+    <phase duration="4"  state="rryyrryy"/>
+  </tlLogic>
+
+</net>

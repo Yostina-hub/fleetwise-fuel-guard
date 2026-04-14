@@ -1,0 +1,23 @@
+<!--
+  SUMO Configuration Reference for Addis Ababa Fleet Simulation
+  This XML serves as documentation for the simulation parameters.
+  The actual logic is implemented in TypeScript but follows SUMO conventions.
+-->
+
+<configuration>
+  <input>
+    <net-file value="AddisAbabaNetwork.ts"/>
+    <route-files value="SumoRoutes.ts"/>
+  </input>
+
+  <time>
+    <begin value="0"/>
+    <step-length value="0.1"/>
+  </time>
+
+  <processing>
+    <lateral-resolution value="0.8"/>
+    <collision.action value="warn"/>
+    <collision.mingap-factor value="0"/>
+  </processing>
+</configuration>
