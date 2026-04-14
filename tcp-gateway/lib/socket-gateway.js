@@ -125,17 +125,25 @@ function initSocketGateway(port, options = {}) {
     const orgRoom = `org:${data.organization_id}`;
     const vehicleRoom = `vehicle:${data.vehicle_id}`;
 
-    // Broadcast to org room
+    // Broadcast to org room — field names match SocketTelemetryEvent interface
     io.to(orgRoom).emit('telemetry:update', {
       vehicle_id: data.vehicle_id,
-      lat: data.latitude,
-      lng: data.longitude,
+      device_id: data.device_id,
+      latitude: data.latitude,
+      longitude: data.longitude,
       speed_kmh: data.speed_kmh,
       heading: data.heading,
       fuel_level_percent: data.fuel_level_percent,
       engine_on: data.engine_on,
       ignition_on: data.ignition_on,
-      timestamp: data.timestamp,
+      device_connected: true,
+      last_communication_at: data.timestamp || new Date().toISOString(),
+      altitude_meters: data.altitude_meters,
+      odometer_km: data.odometer_km,
+      gps_satellites_count: data.gps_satellites_count,
+      gps_signal_strength: data.gps_signal_strength,
+      gps_jamming_detected: data.gps_jamming_detected,
+      gps_spoofing_detected: data.gps_spoofing_detected,
     });
 
     // Broadcast to vehicle-specific room (for detail views)
