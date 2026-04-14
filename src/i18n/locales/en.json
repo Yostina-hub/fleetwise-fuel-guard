@@ -1025,5 +1025,148 @@
   },
   "vehicles": {
     "smartSearch": "Smart search..."
+  },
+  "pages": {
+    "a_d_a_s_reports": {
+      "title": "ADAS & DMS Analytics",
+      "description": "Advanced Driver Assistance & Driver Monitoring System reports"
+    },
+    "accident_insurance": {
+      "title": "Accident & Insurance Management",
+      "description": "Track insurance policies, accident claims, and repair costs"
+    },
+    "alcohol_fatigue_detection": {
+      "title": "Alcohol & Fatigue Detection",
+      "description": "Pre-trip and random testing compliance for driver safety"
+    },
+    "bulk_operations": {
+      "title": "Bulk Operations",
+      "description": "No detailed error log available"
+    },
+    "compliance_calendar": {
+      "title": "Compliance Calendar",
+      "description": "Track regulatory deadlines, renewals, and compliance milestones"
+    },
+    "contract_management": {
+      "title": "Contract Management",
+      "description": "Manage vendor contracts, renewals, and service agreements"
+    },
+    "dashboard_builder": {
+      "title": "Dashboard Builder",
+      "description": "Create and manage custom KPI dashboard layouts"
+    },
+    "delegation_matrix": {
+      "title": "Delegation Matrix",
+      "description": "Manage approval authority delegations and substitutions"
+    },
+    "document_management": {
+      "title": "Document Management",
+      "description": "Centralized document storage, verification, and expiry tracking"
+    },
+    "driver_app": {
+      "title": "My Profile"
+    },
+    "driver_compliance": {
+      "title": "Driver Compliance"
+    },
+    "driver_h_r": {
+      "title": "HR & Finance"
+    },
+    "driver_logbook": {
+      "title": "Driver Logbook",
+      "description": "No violations recorded"
+    },
+    "driver_management": {
+      "title": "Driver Management"
+    },
+    "driver_performance": {
+      "title": "Driver Performance"
+    },
+    "driver_safety": {
+      "title": "Safety & Risk"
+    },
+    "driver_training": {
+      "title": "Driver Training & Certification",
+      "description": "Track certifications, training programs, and compliance requirements"
+    },
+    "fuel_card_providers": {
+      "title": "Fuel Card API Integration",
+      "description": "Connect fuel card providers for automated transaction syncing"
+    },
+    "fuel_requests": {
+      "title": "Fuel Request & Clearance",
+      "description": "Manage fuel request approvals and dispensing workflows"
+    },
+    "hardware_sensors": {
+      "title": "Hardware Sensors",
+      "description": "TPMS, OBD-II diagnostics, load sensors & calibration tracking"
+    },
+    "k_p_i_scorecard": {
+      "title": "KPI Scorecards",
+      "description": "Track key performance indicators and organizational targets"
+    },
+    "notification_center": {
+      "title": "Notification Center",
+      "description": "Centralized notifications and alerts hub"
+    },
+    "organizations": {
+      "title": "Organizations",
+      "description": "Manage all tenant organizations"
+    },
+    "parts_inventory": {
+      "title": "Parts Inventory",
+      "description": "Track spare parts, stock levels, and reorder points"
+    },
+    "passenger_tracking": {
+      "title": "Passenger Tracking",
+      "description": "Manage bus/shuttle passengers, manifests, and boarding logs"
+    },
+    "penalties_fines": {
+      "title": "Penalties & Fines",
+      "description": "Track traffic violations, fines, and payment status"
+    },
+    "performance_simulation": {
+      "title": "Simulation Hub",
+      "description": "What-if analysis, Digital Twin replay & predictive simulations"
+    },
+    "predictive_maintenance": {
+      "title": "AI Predictive Maintenance",
+      "description": "ML-powered failure prediction based on telemetry & maintenance history"
+    },
+    "r_f_i_d_pairing": {
+      "title": "RFID Driver Pairing",
+      "description": "Pair RFID/iButton tags to devices and drivers for automatic identification"
+    },
+    "rental_vehicles": {
+      "title": "Rental & Outsource Vehicles",
+      "description": "Manage rental contracts, third-party drivers & costs"
+    },
+    "roadside_assistance": {
+      "title": "Roadside Assistance",
+      "description": "Manage breakdown requests, tow services & emergency response"
+    },
+    "route_history": {
+      "title": "Route History Playback",
+      "description": "View and analyze historical vehicle routes"
+    },
+    "tire_management": {
+      "title": "Tire Management",
+      "description": "Track tire inventory, wear, replacements & costs"
+    },
+    "trip_management": {
+      "title": "Trip Management"
+    },
+    "vehicle_inspections": {
+      "title": "Vehicle Inspections",
+      "description": "Manage inspection schedules, stickers, and compliance certifications"
+    },
+    "vehicle_requests": {
+      "title": "Vehicle Requests",
+      "description": "Request, approve & assign vehicles"
+    },
+    "vendor_management": {
+      "title": "Vendor Management",
+      "description": "Manage suppliers, service providers, and vendor contracts"
+    }
   }
 }
