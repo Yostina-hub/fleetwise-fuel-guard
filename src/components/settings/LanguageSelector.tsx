@@ -17,16 +17,18 @@ interface LanguageSelectorProps {
 const LanguageSelector = ({ variant = 'default', className }: LanguageSelectorProps) => {
   const { i18n } = useTranslation();
 
+  const selectedLanguage = (i18n.resolvedLanguage || i18n.language || languages[0].code).split('-')[0];
+
   const handleLanguageChange = (langCode: string) => {
     i18n.changeLanguage(langCode);
     localStorage.setItem('i18nextLng', langCode);
   };
 
-  const currentLang = languages.find(l => l.code === i18n.language) || languages[0];
+  const currentLang = languages.find((language) => language.code === selectedLanguage) || languages[0];
 
   if (variant === 'compact') {
     return (
-      <Select value={i18n.language} onValueChange={handleLanguageChange}>
+      <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
         <SelectTrigger className={`w-[120px] bg-[#0d1520] border-[#2a3a4d] text-white/80 hover:bg-[#2a3a4d] ${className}`}>
           <Globe className="w-4 h-4 mr-2" />
           <SelectValue>{currentLang.code.toUpperCase()}</SelectValue>
@@ -45,7 +47,7 @@ const LanguageSelector = ({ variant = 'default', className }: LanguageSelectorPr
   }
 
   return (
-    <Select value={i18n.language} onValueChange={handleLanguageChange}>
+    <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
       <SelectTrigger className={`w-[180px] ${className}`}>
         <Globe className="w-4 h-4 mr-2" />
         <SelectValue>{currentLang.nativeName}</SelectValue>
