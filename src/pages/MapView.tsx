@@ -334,6 +334,7 @@ const MapView = () => {
       make: sv.make,
       model: sv.model,
       type: sv.type,
+      address: `${sv.currentRoadName}, Addis Ababa`,
       gps_signal_strength: sv.device.signalStrength,
       gps_satellites_count: sv.device.satelliteCount,
       gps_hdop: sv.device.hdop,
@@ -509,7 +510,7 @@ const MapView = () => {
               onMapReady={setMapInstance}
               showTrails={showTrails}
               trails={trails}
-              disablePopups
+              disablePopups={!sumoActive}
             />
           ) : (
             <LiveTrackingMap
@@ -521,7 +522,7 @@ const MapView = () => {
               onMapReady={setMapInstance}
               showTrails={showTrails}
               trails={trails}
-              disablePopups
+              disablePopups={!sumoActive}
             />
           )}
 

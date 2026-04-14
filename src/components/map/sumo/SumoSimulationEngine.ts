@@ -192,6 +192,7 @@ function createVehicle(id: number): SimVehicle {
     make: makeInfo.make,
     model: makeInfo.model,
     year: makeInfo.year,
+    currentRoadName: seg.name,
   };
 }
 

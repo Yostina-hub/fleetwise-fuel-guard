@@ -77,6 +77,8 @@ export interface SimVehicle {
   make: string;
   model: string;
   year: number;
+  // Current road context
+  currentRoadName: string;
 }
 
 export interface TrafficSignal {
