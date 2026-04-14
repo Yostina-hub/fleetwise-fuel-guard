@@ -310,7 +310,7 @@ export function stepSimulation(state: SimulationState, dtReal: number): Simulati
         signalStrength: Math.round(deviceSignal),
         satelliteCount: satCount,
         lastHeartbeat: new Date().toISOString(),
-        status: deviceSignal < 30 ? "degraded" : "online",
+        status: (deviceSignal < 30 ? "degraded" : "online") as SimDeviceInfo["status"],
         hdop: +(Math.max(0.5, v.device.hdop + (Math.random() - 0.5) * 0.2)).toFixed(1),
       },
     };
