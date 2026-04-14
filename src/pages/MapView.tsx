@@ -506,7 +506,7 @@ const MapView = () => {
                 onClick={() => setMapStyle('satellite')}
               >
                 <Satellite className="w-3.5 h-3.5" />
-                {t('map.satellite')}
+                <span className="hidden sm:inline">{t('map.satellite')}</span>
               </Button>
               <Button
                 variant={mapStyle === 'streets' ? 'default' : 'ghost'}
@@ -515,7 +515,7 @@ const MapView = () => {
                 onClick={() => setMapStyle('streets')}
               >
                 <Map className="w-3.5 h-3.5" />
-                {t('map.streets')}
+                <span className="hidden sm:inline">{t('map.streets')}</span>
               </Button>
               <Button
                 variant={mapStyle === 'dark' ? 'default' : 'ghost'}
@@ -524,7 +524,7 @@ const MapView = () => {
                 onClick={() => setMapStyle('dark')}
               >
                 <Map className="w-3.5 h-3.5" />
-                {t('map.dark')}
+                <span className="hidden sm:inline">{t('map.dark')}</span>
               </Button>
             </div>
 
