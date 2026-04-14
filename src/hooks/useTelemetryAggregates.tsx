@@ -66,7 +66,7 @@ export function useTelemetryAggregates(options: UseTelemetryAggregatesOptions = 
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data ?? []) as TelemetryAggregate[];
+      return (data ?? []) as unknown as TelemetryAggregate[];
     },
     enabled: !!organizationId && enabled,
     staleTime: 60_000,

@@ -1,5 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
-import { v4 as uuidv4 } from "uuid";
+
+function generateUUID(): string {
+  return crypto.randomUUID();
+}
 
 /**
  * Generates an idempotency key from device IMEI + event timestamp.
@@ -30,7 +33,7 @@ export interface TelemetryEventInput {
  */
 export async function insertTelemetryEvent(input: TelemetryEventInput) {
   const eventTime = input.eventTime ?? new Date().toISOString();
-  const eventId = input.eventId ?? `evt_${uuidv4()}`;
+  const eventId = input.eventId ?? `evt_${generateUUID()}`;
 
   const { data, error } = await supabase
     .from("telemetry_events")
@@ -67,7 +70,7 @@ export async function insertTelemetryEvent(input: TelemetryEventInput) {
  */
 export async function batchInsertTelemetryEvents(events: TelemetryEventInput[]) {
   const rows = events.map((input) => ({
-    event_id: input.eventId ?? `evt_${uuidv4()}`,
+    event_id: input.eventId ?? `evt_${generateUUID()}`,
     organization_id: input.organizationId,
     vehicle_id: input.vehicleId ?? null,
     device_id: input.deviceId ?? null,
