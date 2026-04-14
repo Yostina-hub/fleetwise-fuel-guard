@@ -373,6 +373,21 @@ function enqueueTelemetry(device, parsed, rawHex, protocol) {
   // Forward to NestJS for advanced processing (fire-and-forget)
   forwardToNestjs(device, parsed, protocol);
   forwardGeofenceToNestjs(device, parsed);
+
+  // ── Advanced Architecture: dual-write pipeline ──
+  // 1. Time-series sink (event bus + Redis fast lane + batch DB write)
+  tsIngest(device, parsed, protocol);
+  // 2. Offload geofence check to worker queue
+  if (parsed.latitude && parsed.longitude && device.vehicle_id) {
+    enqueueGeofenceCheck({
+      vehicle_id: device.vehicle_id,
+      organization_id: device.organization_id,
+      latitude: parsed.latitude || parsed.lat,
+      longitude: parsed.longitude || parsed.lng,
+      speed_kmh: parsed.speed || 0,
+      timestamp: parsed.timestamp || new Date().toISOString(),
+    });
+  }
 }
 
 function enqueueHeartbeat(deviceId) {
