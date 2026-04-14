@@ -565,8 +565,10 @@
     "dateRange": "Date Range",
     "selectVehicles": "Select Vehicles",
     "selectDrivers": "Select Drivers",
+    "myReports": "MY REPORTS",
+    "scheduledCustom": "SCHEDULED & CUSTOM",
     "types": {
-      "fleet": "Fleet Report",
+      "fleet": "Vehicle",
       "driver": "Driver Report",
       "fuel": "Fuel Report",
       "maintenance": "Maintenance Report",
