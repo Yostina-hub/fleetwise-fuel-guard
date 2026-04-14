@@ -215,6 +215,7 @@ const getAdminItems = (t: (key: string) => string) => [
   { label: t("nav.integrations"), path: "/integrations", icon: Plug },
   { label: t("nav.systemConfig"), path: "/config", icon: Settings2 },
   { label: t("nav.administration"), path: "/administration", icon: Settings },
+  { label: "Architecture", path: "/system-architecture", icon: Layers },
   { label: "Monitoring", path: "/infrastructure-monitoring", icon: Activity },
   { label: "Operations", path: "/operations-console", icon: Terminal },
 ];
