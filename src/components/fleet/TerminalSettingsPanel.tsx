@@ -151,6 +151,9 @@ export const TerminalSettingsPanel = ({
     sensitivity: "medium",
     speakerSwitch: true,
     bluetoothSwitch: true,
+    reportingIntervalMoving: 5,
+    reportingIntervalStationary: 600,
+    minReportingInterval: 1,
   });
 
   // Alarm settings state
