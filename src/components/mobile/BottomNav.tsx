@@ -2,20 +2,23 @@ import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, Map, Car, Bell, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { useTranslation } from 'react-i18next';
 
 interface BottomNavProps {
   onMenuClick: () => void;
 }
 
-const navItems = [
-  { icon: LayoutDashboard, label: "Home", path: "/" },
-  { icon: Map, label: "Track", path: "/map" },
-  { icon: Car, label: "Fleet", path: "/vehicles" },
-  { icon: Bell, label: "Alerts", path: "/alerts" },
+const getNavItems = (t: (key: string, fallback: string) => string) => [
+  { icon: LayoutDashboard, label: t('nav.home', 'Home'), path: "/" },
+  { icon: Map, label: t('nav.track', 'Track'), path: "/map" },
+  { icon: Car, label: t('nav.fleet', 'Fleet'), path: "/vehicles" },
+  { icon: Bell, label: t('nav.alerts', 'Alerts'), path: "/alerts" },
 ];
 
 export function BottomNav({ onMenuClick }: BottomNavProps) {
   const location = useLocation();
+  const { t } = useTranslation();
+  const navItems = getNavItems(t);
 
   const isActive = (path: string) => {
     if (path === "/") return location.pathname === "/";
@@ -72,7 +75,7 @@ export function BottomNav({ onMenuClick }: BottomNavProps) {
           )}
         >
           <Menu className="w-5 h-5" />
-          <span className="text-[10px] font-medium opacity-70">More</span>
+          <span className="text-[10px] font-medium opacity-70">{t('nav.more', 'More')}</span>
         </button>
       </div>
     </nav>
