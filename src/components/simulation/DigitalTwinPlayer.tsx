@@ -39,8 +39,9 @@ const DigitalTwinPlayer = () => {
 
       const { data } = await supabase
         .from("vehicle_telemetry")
-        .select("vehicle_id, lat, lng, speed_kmh, fuel_level_percent, last_communication_at, vehicles!inner(plate_number)")
+        .select("vehicle_id, latitude, longitude, speed_kmh, fuel_level_percent, last_communication_at, vehicles!inner(plate_number)")
         .eq("organization_id", organizationId)
+        .not("last_communication_at", "is", null)
         .gte("last_communication_at", since)
         .order("last_communication_at", { ascending: true })
         .limit(1000);
