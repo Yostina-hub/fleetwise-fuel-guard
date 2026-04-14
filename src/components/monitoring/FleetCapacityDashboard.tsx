@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Truck, Cpu, Database, Signal, Wifi, BarChart3, TrendingUp, Shield, Zap, Activity, Server, HardDrive, Users } from "lucide-react";
+import { Truck, Cpu, Database, Signal, Wifi, BarChart3, TrendingUp, Shield, Zap, Activity, Server, HardDrive, Users, ArrowUpCircle, Layers } from "lucide-react";
 
 const CURRENT_FLEET = 3119;
 const MAX_CAPACITY = 10000;
