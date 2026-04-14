@@ -1065,6 +1065,44 @@ export type Database = {
           },
         ]
       }
+      cron_job_history: {
+        Row: {
+          details: string | null
+          duration_ms: number | null
+          executed_at: string
+          id: string
+          job_name: string
+          organization_id: string | null
+          status: string
+        }
+        Insert: {
+          details?: string | null
+          duration_ms?: number | null
+          executed_at?: string
+          id?: string
+          job_name: string
+          organization_id?: string | null
+          status?: string
+        }
+        Update: {
+          details?: string | null
+          duration_ms?: number | null
+          executed_at?: string
+          id?: string
+          job_name?: string
+          organization_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cron_job_history_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dash_cam_events: {
         Row: {
           ai_confidence: number | null

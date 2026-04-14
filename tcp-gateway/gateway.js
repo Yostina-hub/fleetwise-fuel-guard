@@ -35,6 +35,7 @@ const { initSocketGateway, getStats: socketStats, shutdown: socketShutdown } = r
 const { IdempotencyGuard } = require('./lib/idempotency');
 const { initWorkers, enqueueGeofenceCheck, getStats: workerStats, shutdown: workerShutdown } = require('./lib/workers');
 const { init: initTimeSeriesSink, ingest: tsIngest, getStats: tsStats, shutdown: tsShutdown } = require('./lib/timeseries-sink');
+const { init: initAnalyticsApi, handleRequest: handleAnalyticsRequest } = require('./lib/analytics-api');
 
 // Configuration from environment
 const config = {
@@ -1006,8 +1007,12 @@ const healthServer = http.createServer(async (req, res) => {
       eventBus: eventBus.getStats(),
     }));
   } else {
-    res.writeHead(404);
-    res.end('Not found');
+    // Try analytics API endpoints
+    const handled = await handleAnalyticsRequest(req, res);
+    if (!handled) {
+      res.writeHead(404);
+      res.end('Not found');
+    }
   }
 });
 
@@ -1037,6 +1042,9 @@ async function start() {
   
   // 1. Time-series sink (uses existing PG pool)
   initTimeSeriesSink(pool);
+
+  // 1b. Analytics REST API
+  initAnalyticsApi(pool);
 
   // 2. Redis pub/sub transport layer
   const redisOk = await initRedis(config.redisUrl);
