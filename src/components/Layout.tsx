@@ -77,9 +77,12 @@ interface LayoutProps {
 
 // Navigation structure with collapsible groups - using translation keys
 const getNavItems = (t: (key: string) => string) => [
+  // ── Quick Access (pinned) ──
   { icon: LayoutDashboard, label: t("nav.dashboard"), path: "/" },
   { icon: Map, label: t("nav.liveTracking"), path: "/map" },
   { icon: Car, label: t("nav.vehicles"), path: "/vehicles" },
+
+  // ── Fleet Assets ──
   { 
     icon: Truck, 
     label: t("nav.fleetManagement"), 
@@ -88,8 +91,11 @@ const getNavItems = (t: (key: string) => string) => [
       { label: t("nav.devices"), path: "/devices" },
       { label: t("nav.hardwareSensorsShort"), path: "/hardware-sensors" },
       { label: t("nav.rfidPairing"), path: "/rfid-pairing" },
+      { label: t("nav.rentalVehicles"), path: "/rental-vehicles" },
     ]
   },
+
+  // ── Drivers ──
   { 
     icon: Users, 
     label: t("nav.driverManagement"), 
@@ -103,18 +109,41 @@ const getNavItems = (t: (key: string) => string) => [
       { label: t("nav.hrFinance"), path: "/driver-hr" },
     ]
   },
+
+  // ── Operations ──
+  { 
+    icon: CalendarClock, 
+    label: t("nav.tripManagement"), 
+    highlight: true,
+    subItems: [
+      { label: t("nav.tripHub"), path: "/trip-management" },
+      { label: t("nav.requestDashboard"), path: "/fleet-scheduling" },
+      { label: t("nav.dispatchJobs"), path: "/dispatch" },
+      { label: t("nav.pendingApprovals"), path: "/trip-management?tab=approvals" },
+      { label: t("nav.assignments"), path: "/trip-management?tab=active" },
+    ]
+  },
+  { 
+    icon: MapPinned, 
+    label: t("nav.routesLocations"), 
+    subItems: [
+      { label: t("nav.routes"), path: "/routes" },
+      { label: t("nav.routeHistory"), path: "/route-history" },
+      { label: t("nav.geofences"), path: "/geofencing" },
+    ]
+  },
+  { icon: Users, label: t("nav.passengerTracking"), path: "/passenger-tracking" },
+
+  // ── Fuel & Energy ──
   { icon: Fuel, label: t("nav.fuelMonitoring"), subItems: [
     { label: t("nav.consumption"), path: "/fuel" },
     { label: t("nav.fuelRequests"), path: "/fuel-requests" },
     { label: t("nav.fuelCardProviders"), path: "/fuel-card-providers" },
   ]},
-  { icon: Users, label: t("nav.passengerTracking"), path: "/passenger-tracking" },
   { icon: Battery, label: t("nav.evManagement"), path: "/ev-management" },
-  { icon: Thermometer, label: t("nav.coldChain"), path: "/cold-chain" },
-  { icon: Camera, label: t("nav.dashCamADAS"), subItems: [
-    { label: t("nav.dashCamEvents"), path: "/dash-cam" },
-    { label: t("nav.adasDmsReports"), path: "/adas-reports" },
-  ]},
+  { icon: Leaf, label: t("nav.carbonEmissions"), path: "/carbon-emissions" },
+
+  // ── Safety & Compliance ──
   { 
     icon: ShieldCheck, 
     label: t("nav.safetyCompliance"), 
@@ -130,16 +159,13 @@ const getNavItems = (t: (key: string) => string) => [
       { label: t("nav.complianceCalendar"), path: "/compliance-calendar" },
     ]
   },
-  { 
-    icon: MapPinned, 
-    label: t("nav.routesLocations"), 
-    subItems: [
-      { label: t("nav.routes"), path: "/routes" },
-      { label: t("nav.routeHistory"), path: "/route-history" },
-      { label: t("nav.geofences"), path: "/geofencing" },
-    ]
-  },
-  { icon: Bell, label: t("nav.alerts"), path: "/alerts" },
+  { icon: Camera, label: t("nav.dashCamADAS"), subItems: [
+    { label: t("nav.dashCamEvents"), path: "/dash-cam" },
+    { label: t("nav.adasDmsReports"), path: "/adas-reports" },
+  ]},
+  { icon: Thermometer, label: t("nav.coldChain"), path: "/cold-chain" },
+
+  // ── Maintenance ──
   { 
     icon: Wrench, 
     label: t("nav.maintenance"), 
@@ -152,49 +178,43 @@ const getNavItems = (t: (key: string) => string) => [
       { label: t("nav.vendorManagement"), path: "/vendor-management" },
     ]
   },
-  { 
-    icon: Truck, 
-    label: t("nav.rentalVehicles"), 
-    path: "/rental-vehicles"
-  },
-  { 
-    icon: CalendarClock, 
-    label: t("nav.tripManagement"), 
-    highlight: true,
-    subItems: [
-      { label: t("nav.tripHub"), path: "/trip-management" },
-      { label: t("nav.requestDashboard"), path: "/fleet-scheduling" },
-      { label: t("nav.dispatchJobs"), path: "/dispatch" },
-      { label: t("nav.pendingApprovals"), path: "/trip-management?tab=approvals" },
-      { label: t("nav.assignments"), path: "/trip-management?tab=active" },
-    ]
-  },
-  
+
+  // ── Alerts & Notifications ──
+  { icon: Bell, label: t("nav.alerts"), path: "/alerts" },
+  { icon: Bell, label: t("nav.notifications"), path: "/notification-center" },
+
+  // ── Reports & Analytics ──
   { icon: BarChart3, label: t("nav.reportsKPIs"), subItems: [
     { label: t("nav.reports"), path: "/reports" },
     { label: t("nav.kpiScorecards"), path: "/kpi-scorecards" },
     { label: t("nav.dashboardBuilder"), path: "/dashboard-builder" },
+    { label: t("nav.performanceSimulation"), path: "/performance-simulation" },
   ]},
-  { icon: FileText, label: t("nav.documents"), path: "/document-management" },
-  { icon: FileSignature, label: t("nav.contracts"), path: "/contract-management" },
-  { icon: Leaf, label: t("nav.carbonEmissions"), path: "/carbon-emissions" },
-  { icon: FlaskConical, label: t("nav.performanceSimulation"), path: "/performance-simulation" },
+
+  // ── Documents & Contracts ──
+  { icon: FileText, label: t("nav.documents"), subItems: [
+    { label: t("nav.documents"), path: "/document-management" },
+    { label: t("nav.contracts"), path: "/contract-management" },
+  ]},
+
+  // ── Tools & Automation ──
+  { icon: Workflow, label: t("nav.workflowBuilder"), path: "/workflow-builder", highlight: true },
   { icon: GitBranch, label: t("nav.delegationMatrix"), path: "/delegation-matrix" },
   { icon: Upload, label: t("nav.bulkOperations"), path: "/bulk-operations" },
-  { icon: Bell, label: t("nav.notifications"), path: "/notification-center" },
-  { icon: Workflow, label: t("nav.workflowBuilder"), path: "/workflow-builder", highlight: true },
+
+  // ── Settings ──
   { icon: Settings, label: t("nav.settings"), path: "/settings" },
 ];
 
-// Admin navigation items
+// Admin navigation items — grouped logically
 const getAdminItems = (t: (key: string) => string) => [
   { label: t("nav.organizations"), path: "/organizations", icon: Building2 },
   { label: t("nav.users"), path: "/users", icon: Users },
   { label: t("nav.security"), path: "/security", icon: Shield },
   { label: t("nav.securityDashboard"), path: "/security-dashboard", icon: ShieldCheck },
   { label: t("nav.integrations"), path: "/integrations", icon: Plug },
-  { label: t("nav.administration"), path: "/administration", icon: Settings },
   { label: t("nav.systemConfig"), path: "/config", icon: Settings2 },
+  { label: t("nav.administration"), path: "/administration", icon: Settings },
   { label: "Monitoring", path: "/infrastructure-monitoring", icon: Activity },
   { label: "Operations", path: "/operations-console", icon: Terminal },
 ];
