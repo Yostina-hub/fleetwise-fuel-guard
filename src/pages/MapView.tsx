@@ -537,7 +537,7 @@ const MapView = () => {
                 onClick={() => setShowTrails(!showTrails)}
               >
                 <Route className="w-3.5 h-3.5" />
-                {t('map.trails')}
+                <span className="hidden sm:inline">{t('map.trails')}</span>
               </Button>
               <Button
                 variant={showNearbySearch ? "default" : "ghost"}
@@ -546,7 +546,7 @@ const MapView = () => {
                 onClick={() => setShowNearbySearch(!showNearbySearch)}
               >
                 <Radar className="w-3.5 h-3.5" />
-                {t('map.nearby')}
+                <span className="hidden sm:inline">{t('map.nearby')}</span>
               </Button>
               <MeasureDistanceTool
                 map={mapInstance}
@@ -588,7 +588,7 @@ const MapView = () => {
             </button>
 
             {showToolStrip && (
-              <div className="ml-0 flex flex-col gap-1 bg-background/90 backdrop-blur-sm rounded-xl border shadow-xl p-1.5 max-h-[80vh] overflow-y-auto">
+              <div className="ml-0 flex flex-col gap-1 bg-background/90 backdrop-blur-sm rounded-xl border shadow-xl p-1.5 max-h-[60vh] sm:max-h-[80vh] overflow-y-auto">
                 {[
                   { key: 'heatmap', icon: Flame, label: 'Heatmap', active: showHeatmap, toggle: () => setShowHeatmap(!showHeatmap), color: 'text-orange-500' },
                   { key: 'timewarp', icon: History, label: 'Time-Warp', active: showTimeWarp, toggle: () => setShowTimeWarp(!showTimeWarp), color: 'text-blue-500' },
