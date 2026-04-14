@@ -6,10 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity, Server, Database, Wifi, HardDrive, Cpu, MemoryStick, RefreshCw, CheckCircle2, AlertTriangle, XCircle, Clock, Globe, Zap, BarChart3, Signal, Building2 } from "lucide-react";
+import { Activity, Server, Database, Wifi, HardDrive, Cpu, MemoryStick, RefreshCw, CheckCircle2, AlertTriangle, XCircle, Clock, Globe, Zap, BarChart3, Signal, Building2, Truck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import SiteEnvironmentSelector, { type SiteEnvironment } from "@/components/monitoring/SiteEnvironmentSelector";
 import SiteHealthDashboard from "@/components/monitoring/SiteHealthDashboard";
+import FleetCapacityDashboard from "@/components/monitoring/FleetCapacityDashboard";
 
 type ServiceStatus = "healthy" | "degraded" | "down";
 
@@ -129,14 +130,20 @@ const InfrastructureMonitoring = () => {
           </CardContent>
         </Card>
 
-        <Tabs defaultValue="sites" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5 glass p-1 h-12">
+        <Tabs defaultValue="fleet" className="space-y-4">
+          <TabsList className="flex w-full overflow-x-auto glass p-1 h-12">
+            <TabsTrigger value="fleet"><Truck className="h-4 w-4 mr-1.5" />Fleet Capacity</TabsTrigger>
             <TabsTrigger value="sites"><Building2 className="h-4 w-4 mr-1.5" />Sites</TabsTrigger>
             <TabsTrigger value="services">Services</TabsTrigger>
             <TabsTrigger value="resources">Resources</TabsTrigger>
             <TabsTrigger value="snmp">SNMP Stats</TabsTrigger>
             <TabsTrigger value="performance">Performance</TabsTrigger>
           </TabsList>
+
+          {/* Fleet Capacity Tab */}
+          <TabsContent value="fleet">
+            <FleetCapacityDashboard />
+          </TabsContent>
 
           {/* Sites / Multi-Environment Tab */}
           <TabsContent value="sites" className="space-y-4">
