@@ -568,8 +568,10 @@
     "dateRange": "የቀን ክልል",
     "selectVehicles": "ተሽከርካሪዎች ምረጥ",
     "selectDrivers": "ሹፌሮች ምረጥ",
+    "myReports": "የእኔ ሪፖርቶች",
+    "scheduledCustom": "የታቀዱ እና ብጁ",
     "types": {
-      "fleet": "የፍሊት ሪፖርት",
+      "fleet": "ተሽከርካሪ",
       "driver": "የሹፌር ሪፖርት",
       "fuel": "የነዳጅ ሪፖርት",
       "maintenance": "የጥገና ሪፖርት",

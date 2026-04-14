@@ -568,8 +568,10 @@
     "dateRange": "Hammanga Guyyaa",
     "selectVehicles": "Konkolaataalee Fili",
     "selectDrivers": "Konkolaachiftootaa Fili",
+    "myReports": "GABAASA KOO",
+    "scheduledCustom": "SAGANTAA & ADDAA",
     "types": {
-      "fleet": "Gabaasa Konkolaataa",
+      "fleet": "Konkolaataa",
       "driver": "Gabaasa Konkolaachisaa",
       "fuel": "Gabaasa Boba'aa",
       "maintenance": "Gabaasa Suphaa",
