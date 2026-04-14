@@ -195,6 +195,9 @@ export const TerminalSettingsPanel = ({
         sensitivity: savedSettings.sensitivity === 10 ? "high" : savedSettings.sensitivity === 5 ? "medium" : "low",
         speakerSwitch: savedSettings.speaker_enabled ?? true,
         bluetoothSwitch: savedSettings.bluetooth_enabled ?? true,
+        reportingIntervalMoving: savedSettings.reporting_interval_moving ?? 5,
+        reportingIntervalStationary: savedSettings.reporting_interval_stationary ?? 600,
+        minReportingInterval: savedSettings.min_reporting_interval ?? 1,
       });
       setAlarmSettings({
         sos: savedSettings.alarm_sos ?? true,
