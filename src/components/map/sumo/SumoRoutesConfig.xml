@@ -1,0 +1,97 @@
+<!--
+  SUMO Route Definitions Reference — Addis Ababa
+  This documents the vehicle routes and flows. Actual implementation in SumoRoutes.ts.
+
+  Routes define sequences of edges vehicles must follow.
+  Flows define vehicle spawn rates on each route.
+-->
+
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- VEHICLE TYPES                           -->
+  <!-- ═══════════════════════════════════════ -->
+
+  <vType id="sedan" accel="2.6" decel="4.5" sigma="0.5" length="4.5" minGap="2.5"
+         maxSpeed="16.67" color="#22c55e" guiShape="passenger"/>
+
+  <vType id="minibus" accel="1.8" decel="3.5" sigma="0.6" length="5.5" minGap="3.0"
+         maxSpeed="13.89" color="#eab308" guiShape="bus/flexible"/>
+
+  <vType id="bus" accel="1.2" decel="3.0" sigma="0.4" length="12.0" minGap="4.0"
+         maxSpeed="12.50" color="#3b82f6" guiShape="bus"/>
+
+  <vType id="truck" accel="1.0" decel="3.0" sigma="0.4" length="10.0" minGap="4.5"
+         maxSpeed="11.11" color="#f97316" guiShape="truck"/>
+
+  <vType id="suv" accel="2.4" decel="4.2" sigma="0.5" length="5.0" minGap="2.5"
+         maxSpeed="15.28" color="#8b5cf6" guiShape="passenger/sedan"/>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- ROUTES                                  -->
+  <!-- ═══════════════════════════════════════ -->
+
+  <!-- Bole Corridor -->
+  <route id="route_bole_inbound" edges="bole_1 bole_2"/>
+  <route id="route_bole_outbound" edges="bole_2_r bole_1_r"/>
+
+  <!-- Africa Avenue -->
+  <route id="route_africa_east" edges="africa_1 africa_2 africa_3"/>
+  <route id="route_africa_west" edges="africa_3_r africa_2_r africa_1_r"/>
+
+  <!-- Ring Road South -->
+  <route id="route_ring_south_west" edges="ring_s1 ring_s2"/>
+  <route id="route_ring_south_east" edges="ring_s2_r ring_s1_r"/>
+
+  <!-- Ring Road North -->
+  <route id="route_ring_north_out" edges="ring_n1 ring_n2"/>
+  <route id="route_ring_north_in" edges="conn_4 ring_n1_r"/>
+
+  <!-- Churchill Avenue -->
+  <route id="route_churchill_north" edges="church_1 church_2"/>
+  <route id="route_churchill_south" edges="church_2_r church_1_r"/>
+
+  <!-- South Corridor -->
+  <route id="route_south_out" edges="south_1 south_2 south_3"/>
+  <route id="route_south_in" edges="south_3_r south_2_r south_1_r"/>
+
+  <!-- Merkato -->
+  <route id="route_merkato_from_lideta" edges="merk_1 merk_2"/>
+  <route id="route_merkato_return" edges="merk_2_r merk_1_r"/>
+
+  <!-- East Corridor -->
+  <route id="route_gerji_north" edges="east_1 east_2"/>
+  <route id="route_gerji_cmc" edges="east_1 east_3"/>
+
+  <!-- Bole Bulbula -->
+  <route id="route_bulbula_south" edges="bulb_1 bulb_2"/>
+  <route id="route_bulbula_north" edges="bulb_2_r bulb_1_r"/>
+
+  <!-- West Corridor -->
+  <route id="route_west_out" edges="west_1 west_2"/>
+  <route id="route_west_in" edges="west_2_r west_1_r"/>
+
+  <!-- Cross-city -->
+  <route id="route_airport_to_merkato" edges="bole_1 bole_2 ring_s1 ring_s2 merk_1"/>
+  <route id="route_circular_inner" edges="ring_s1 ring_s2 conn_3 arat_1_r conn_1_r kaz_1_r"/>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- FLOWS (vehicle generation rates)        -->
+  <!-- ═══════════════════════════════════════ -->
+
+  <flow id="flow_bole_in" type="sedan" route="route_bole_inbound"
+        begin="0" end="3600" probability="0.15"/>
+
+  <flow id="flow_africa_east" type="minibus" route="route_africa_east"
+        begin="0" end="3600" probability="0.18"/>
+
+  <flow id="flow_ring_south" type="bus" route="route_ring_south_west"
+        begin="0" end="3600" probability="0.12"/>
+
+  <flow id="flow_merkato" type="truck" route="route_merkato_from_lideta"
+        begin="0" end="3600" probability="0.14"/>
+
+  <flow id="flow_south" type="sedan" route="route_south_out"
+        begin="0" end="3600" probability="0.08"/>
+
+</routes>
