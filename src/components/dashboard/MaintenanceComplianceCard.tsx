@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Wrench, AlertCircle, Clock, CheckCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { useTranslation } from "react-i18next";
 
 interface MaintenanceComplianceCardProps {
   complianceRate: number;
@@ -13,11 +14,13 @@ const MaintenanceComplianceCard = ({
   overdueCount,
   upcomingCount
 }: MaintenanceComplianceCardProps) => {
+  const { t } = useTranslation();
+
   const getComplianceStatus = (rate: number) => {
-    if (rate >= 95) return { label: 'Excellent', color: 'text-success', bgColor: 'bg-success' };
-    if (rate >= 85) return { label: 'Good', color: 'text-primary', bgColor: 'bg-primary' };
-    if (rate >= 70) return { label: 'Fair', color: 'text-warning', bgColor: 'bg-warning' };
-    return { label: 'Poor', color: 'text-destructive', bgColor: 'bg-destructive' };
+    if (rate >= 95) return { label: t('dashboard.excellent'), color: 'text-success', bgColor: 'bg-success' };
+    if (rate >= 85) return { label: t('dashboard.good'), color: 'text-primary', bgColor: 'bg-primary' };
+    if (rate >= 70) return { label: t('dashboard.fair'), color: 'text-warning', bgColor: 'bg-warning' };
+    return { label: t('dashboard.poor'), color: 'text-destructive', bgColor: 'bg-destructive' };
   };
 
   const status = getComplianceStatus(complianceRate);
@@ -28,7 +31,7 @@ const MaintenanceComplianceCard = ({
       <CardHeader className="relative pb-2">
         <CardTitle className="flex items-center gap-2 text-base">
           <Wrench className="w-4 h-4 text-warning" />
-          Maintenance Compliance
+          {t('dashboard.maintenanceCompliance')}
         </CardTitle>
       </CardHeader>
       <CardContent className="relative space-y-4">
@@ -51,7 +54,7 @@ const MaintenanceComplianceCard = ({
               <AlertCircle className="w-4 h-4 text-destructive" />
               <div>
                 <div className="text-sm font-semibold text-destructive">{overdueCount}</div>
-                <div className="text-xs text-muted-foreground">Overdue</div>
+                <div className="text-xs text-muted-foreground">{t('dashboard.overdue')}</div>
               </div>
             </div>
           ) : (
@@ -59,7 +62,7 @@ const MaintenanceComplianceCard = ({
               <CheckCircle className="w-4 h-4 text-success" />
               <div>
                 <div className="text-sm font-semibold text-success">0</div>
-                <div className="text-xs text-muted-foreground">Overdue</div>
+                <div className="text-xs text-muted-foreground">{t('dashboard.overdue')}</div>
               </div>
             </div>
           )}
@@ -67,7 +70,7 @@ const MaintenanceComplianceCard = ({
             <Clock className="w-4 h-4 text-warning" />
             <div>
               <div className="text-sm font-semibold text-warning">{upcomingCount}</div>
-              <div className="text-xs text-muted-foreground">Upcoming</div>
+              <div className="text-xs text-muted-foreground">{t('dashboard.upcoming')}</div>
             </div>
           </div>
         </div>
@@ -76,7 +79,7 @@ const MaintenanceComplianceCard = ({
         {overdueCount > 0 && (
           <div className="p-2 rounded-lg bg-destructive/10 text-destructive text-xs flex items-center gap-2">
             <AlertCircle className="w-3 h-3" />
-            <span>{overdueCount} vehicle{overdueCount > 1 ? 's' : ''} need{overdueCount === 1 ? 's' : ''} immediate attention</span>
+            <span>{t('dashboard.vehiclesNeedAttention', { count: overdueCount })}</span>
           </div>
         )}
       </CardContent>

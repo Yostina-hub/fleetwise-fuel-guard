@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface SafetyScoreCardProps {
   averageScore: number;
@@ -14,6 +15,8 @@ const SafetyScoreCard = ({
   trend,
   trendPercentage = 0
 }: SafetyScoreCardProps) => {
+  const { t } = useTranslation();
+
   const getScoreColor = (score: number) => {
     if (score >= 90) return 'text-success';
     if (score >= 75) return 'text-primary';
@@ -22,10 +25,10 @@ const SafetyScoreCard = ({
   };
 
   const getScoreLabel = (score: number) => {
-    if (score >= 90) return 'Excellent';
-    if (score >= 75) return 'Good';
-    if (score >= 60) return 'Fair';
-    return 'Needs Improvement';
+    if (score >= 90) return t('dashboard.excellent');
+    if (score >= 75) return t('dashboard.good');
+    if (score >= 60) return t('dashboard.fair');
+    return t('dashboard.needsImprovement');
   };
 
   const scoreColor = getScoreColor(averageScore);
@@ -41,7 +44,7 @@ const SafetyScoreCard = ({
       <CardHeader className="relative pb-2">
         <CardTitle className="flex items-center gap-2 text-base">
           <Shield className="w-4 h-4 text-success" />
-          Fleet Safety Score
+          {t('dashboard.fleetSafetyScore')}
         </CardTitle>
       </CardHeader>
       <CardContent className="relative">
@@ -86,15 +89,15 @@ const SafetyScoreCard = ({
               {trend === 'up' ? (
                 <>
                   <TrendingUp className="w-3 h-3" />
-                  <span>Improving {trendPercentage > 0 && `(+${trendPercentage.toFixed(1)}%)`}</span>
+                  <span>{t('dashboard.improving')} {trendPercentage > 0 && `(+${trendPercentage.toFixed(1)}%)`}</span>
                 </>
               ) : trend === 'down' ? (
                 <>
                   <TrendingDown className="w-3 h-3" />
-                  <span>Declining {trendPercentage > 0 && `(-${trendPercentage.toFixed(1)}%)`}</span>
+                  <span>{t('dashboard.declining')} {trendPercentage > 0 && `(-${trendPercentage.toFixed(1)}%)`}</span>
                 </>
               ) : (
-                <span>Stable</span>
+                <span>{t('dashboard.stable')}</span>
               )}
             </div>
             
@@ -103,7 +106,7 @@ const SafetyScoreCard = ({
               <AlertTriangle className={`w-4 h-4 ${incidentsThisMonth > 5 ? 'text-destructive' : incidentsThisMonth > 2 ? 'text-warning' : 'text-success'}`} />
               <div>
                 <div className="text-sm font-semibold">{incidentsThisMonth}</div>
-                <div className="text-xs text-muted-foreground">Incidents this month</div>
+                <div className="text-xs text-muted-foreground">{t('dashboard.incidentsThisMonth')}</div>
               </div>
             </div>
           </div>

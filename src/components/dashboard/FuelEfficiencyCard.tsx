@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Fuel, TrendingUp, TrendingDown, Award, AlertTriangle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface FuelEfficiencyCardProps {
   averageLPer100Km: number;
@@ -20,6 +21,8 @@ const FuelEfficiencyCard = ({
   distanceUnit = 'km',
   fuelUnit = 'liters'
 }: FuelEfficiencyCardProps) => {
+  const { t } = useTranslation();
+
   // Convert L/100km to appropriate unit
   const displayValue = fuelUnit === 'gallons' && distanceUnit === 'miles'
     ? (235.215 / averageLPer100Km) // Convert to MPG
@@ -41,16 +44,16 @@ const FuelEfficiencyCard = ({
     const isMPG = fuelUnit === 'gallons' && distanceUnit === 'miles';
     if (isMPG) {
       // MPG: higher is better
-      if (value > 35) return { label: 'Excellent', color: 'text-success' };
-      if (value > 25) return { label: 'Good', color: 'text-primary' };
-      if (value > 18) return { label: 'Average', color: 'text-warning' };
-      return { label: 'Poor', color: 'text-destructive' };
+      if (value > 35) return { label: t('dashboard.excellent'), color: 'text-success' };
+      if (value > 25) return { label: t('dashboard.good'), color: 'text-primary' };
+      if (value > 18) return { label: t('dashboard.fair'), color: 'text-warning' };
+      return { label: t('dashboard.poor'), color: 'text-destructive' };
     }
     // L/100km: lower is better
-    if (value < 7) return { label: 'Excellent', color: 'text-success' };
-    if (value < 10) return { label: 'Good', color: 'text-primary' };
-    if (value < 13) return { label: 'Average', color: 'text-warning' };
-    return { label: 'Poor', color: 'text-destructive' };
+    if (value < 7) return { label: t('dashboard.excellent'), color: 'text-success' };
+    if (value < 10) return { label: t('dashboard.good'), color: 'text-primary' };
+    if (value < 13) return { label: t('dashboard.fair'), color: 'text-warning' };
+    return { label: t('dashboard.poor'), color: 'text-destructive' };
   };
 
   const rating = getEfficiencyRating(displayValue);
@@ -61,7 +64,7 @@ const FuelEfficiencyCard = ({
       <CardHeader className="relative pb-2">
         <CardTitle className="flex items-center gap-2 text-base">
           <Fuel className="w-4 h-4 text-primary" />
-          Fuel Efficiency
+          {t('dashboard.fuelEfficiency')}
         </CardTitle>
       </CardHeader>
       <CardContent className="relative space-y-4">
@@ -77,15 +80,15 @@ const FuelEfficiencyCard = ({
           {trend === 'up' ? (
             <>
               <TrendingUp className="w-3 h-3" />
-              <span>Improving efficiency {trendPercentage > 0 ? `(${trendPercentage.toFixed(1)}%)` : ''}</span>
+              <span>{t('dashboard.improvingEfficiency')} {trendPercentage > 0 ? `(${trendPercentage.toFixed(1)}%)` : ''}</span>
             </>
           ) : trend === 'down' ? (
             <>
               <TrendingDown className="w-3 h-3" />
-              <span>Declining efficiency {trendPercentage > 0 ? `(${trendPercentage.toFixed(1)}%)` : ''}</span>
+              <span>{t('dashboard.decliningEfficiency')} {trendPercentage > 0 ? `(${trendPercentage.toFixed(1)}%)` : ''}</span>
             </>
           ) : (
-            <span>Stable</span>
+            <span>{t('dashboard.stable')}</span>
           )}
         </div>
         
@@ -94,14 +97,14 @@ const FuelEfficiencyCard = ({
           <div className="flex items-center justify-between p-2 rounded-lg bg-success/10">
             <div className="flex items-center gap-2">
               <Award className="w-4 h-4 text-success" />
-              <span className="text-xs text-muted-foreground">Best</span>
+              <span className="text-xs text-muted-foreground">{t('dashboard.best')}</span>
             </div>
             <span className="text-sm font-medium">{bestPerformer}</span>
           </div>
           <div className="flex items-center justify-between p-2 rounded-lg bg-destructive/10">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-destructive" />
-              <span className="text-xs text-muted-foreground">Needs Attention</span>
+              <span className="text-xs text-muted-foreground">{t('dashboard.needsAttention')}</span>
             </div>
             <span className="text-sm font-medium">{worstPerformer}</span>
           </div>

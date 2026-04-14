@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Minus, Crown, AlertTriangle, Activity, DollarSign, Users } from "lucide-react";
 import { ExecutiveKPI } from "@/hooks/useExecutiveMetrics";
+import { useTranslation } from "react-i18next";
 
 interface ExecutiveScorecardProps {
   kpis: ExecutiveKPI[];
@@ -16,6 +17,8 @@ const categoryIcons: Record<string, React.ReactNode> = {
 };
 
 const ExecutiveScorecard = ({ kpis, loading }: ExecutiveScorecardProps) => {
+  const { t } = useTranslation();
+
   const getTrendIcon = (trend: 'up' | 'down' | 'stable') => {
     switch (trend) {
       case 'up': return <TrendingUp className="w-4 h-4 text-success" />;
@@ -44,7 +47,7 @@ const ExecutiveScorecard = ({ kpis, loading }: ExecutiveScorecardProps) => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Crown className="w-5 h-5 text-warning" />
-            Executive Scorecard
+            {t('dashboard.executiveScorecard')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -64,10 +67,10 @@ const ExecutiveScorecard = ({ kpis, loading }: ExecutiveScorecardProps) => {
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Crown className="w-5 h-5 text-warning" />
-            Executive Scorecard
+            {t('dashboard.executiveScorecard')}
           </CardTitle>
           <Badge variant="outline" className="text-xs">
-            Live Data
+            {t('dashboard.liveData')}
           </Badge>
         </div>
       </CardHeader>
