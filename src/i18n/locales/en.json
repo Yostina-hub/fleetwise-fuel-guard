@@ -978,11 +978,27 @@
     }
   },
   "fleetScheduling": {
-    "title": "Trip Management",
+    "title": "Fleet Scheduling",
+    "subtitle": "Manage trip requests, approvals, and vehicle assignments",
     "scheduleTrip": "Schedule Trip",
     "recurringTrip": "Recurring Trip",
     "calendar": "Calendar",
-    "timeline": "Timeline"
+    "timeline": "Timeline",
+    "pendingApproval": "Pending Approval",
+    "approved": "Approved",
+    "activeTrips": "Active Trips",
+    "rejected": "Rejected",
+    "newTripRequest": "New Trip Request",
+    "requests": "Requests",
+    "active": "Active",
+    "approvals": "Approvals",
+    "schedule": "Schedule",
+    "analytics": "Analytics",
+    "availability": "Availability",
+    "activity": "Activity",
+    "templates": "Templates",
+    "config": "Config",
+    "preferences": "Preferences"
   },
   "tripManagement": {
     "title": "Trip Management",
