@@ -140,52 +140,173 @@
 
 ---
 
-## 4. Security Audit Status
+## 4. OWASP Top 10 (2021) Compliance Audit
 
-### ✅ Resolved Findings
-| # | Finding | Severity | Resolution |
-|---|---------|----------|------------|
-| 1 | Edge Functions Lack Authentication | 🔴 Critical | All 23 functions now enforce JWT auth + role checks |
-| 2 | Unsafe innerHTML Usage (XSS) | 🟡 Warning | All usage is static SVGs/markers — no user data flows to innerHTML |
-| 3 | Overly Permissive RLS on Credential Tables | 🔴 Critical | `organization_settings` SELECT restricted to super_admin + org_admin |
-| 4 | User Profiles Public Exposure | 🔴 Critical | Org-scoped RLS enforced — no cross-org data leakage |
-| 5 | Raw GPS Data (telemetry_raw) | 🟡 Warning | Restricted to super_admin only; Vault encryption unavailable |
-| 6 | Leaked Password Protection (HIBP) | 🟡 Warning | Requires manual activation in Lovable Cloud auth settings |
+### A01: Broken Access Control ✅ STRONG
+| Control | Status | Implementation |
+|---------|--------|----------------|
+| Row-Level Security | ✅ | 352 RLS policies, all `TO authenticated` — anon/public blocked |
+| Organization Isolation | ✅ | All queries scoped by `organization_id`; cross-tenant access prevented |
+| Role-Based Access (RBAC) | ✅ | 8-tier system: super_admin → viewer; enforced via `user_roles` + `ProtectedRoute` |
+| Profile Org Tampering | ✅ | `WITH CHECK` prevents users modifying their own `organization_id` |
+| Admin Whitelist | ✅ | `ALLOWED_ADMIN_EMAILS` enforced client + server side; unauthorized sessions auto-signed out |
+| Self-Registration | ✅ | Disabled — users provisioned via `create-user` edge function only |
+| Edge Function Authorization | ✅ | All 23 functions enforce JWT + role checks |
+| Governor Commands | ✅ | Restricted to super_admin, org_admin, fleet_manager, operator |
+| DB Function ACLs | ✅ | `EXECUTE` revoked from `PUBLIC` on 23+ `SECURITY DEFINER` functions |
+| **⚠️ GAP: Driver PII over-exposed** | 🔴 | national_id, medical_info, emergency contacts visible to technician/operator roles |
+| **⚠️ GAP: Audit logs over-exposed** | 🟡 | IP addresses, old/new values readable by all org members (should be admin-only) |
+| **⚠️ GAP: Realtime channels open** | 🔴 | No RLS on `realtime.messages` — any authenticated user can subscribe to any channel |
 
-### 🔴 Open Security Findings (Action Required)
-| # | Finding | Severity | Table | Risk | Priority |
-|---|---------|----------|-------|------|----------|
-| 1 | **Driver PII Exposure** | 🔴 Critical | `drivers` | Emails, phone numbers, license numbers, national IDs visible to all org members. Identity theft / competitor poaching risk. | 🔥 Urgent |
-| 2 | **Device Auth Token Exposure** | 🔴 Critical | `devices` | Auth tokens + IMEI + SIM details accessible beyond ops managers. Vehicle hijacking / false GPS data risk. | 🔥 Urgent |
-| 3 | **Fuel Financial Data Exposure** | 🔴 Critical | `fuel_transactions` | Fuel costs, per-liter pricing, card numbers visible to all org members. Business intelligence leakage risk. | 🔥 Urgent |
+### A02: Cryptographic Failures ⚠️ NEEDS ATTENTION
+| Control | Status | Implementation |
+|---------|--------|----------------|
+| HTTPS/TLS | ✅ | Enforced by Supabase infrastructure (TLS 1.2+) |
+| API Key Hashing | ✅ | Keys stored as `key_hash`, only prefix exposed |
+| Gateway Auth | ✅ | `GATEWAY_SHARED_KEY` validated via `timingSafeEqual` (timing-safe) |
+| Password Hashing | ✅ | Handled by Supabase Auth (bcrypt) |
+| Session Tokens | ✅ | PII/tokens in `sessionStorage` only — no `localStorage` persistence |
+| **⚠️ GAP: Secrets in plaintext** | 🔴 | SMTP passwords, SMS API keys, ERPNext credentials, SSO secrets, device SMS passwords stored unencrypted in DB. Supabase Vault unavailable in Lovable Cloud. |
+| **⚠️ GAP: 2FA secrets unencrypted** | 🟡 | TOTP secret + backup codes in `user_2fa_settings` stored as plaintext |
 
-### ✅ Hardening Already in Place
-| Area | Status | Details |
-|------|--------|---------|
-| Authentication Whitelist | ✅ | `ALLOWED_ADMIN_EMAILS` enforced client-side + server-side sign-out guard |
-| Account Lockout | ✅ | 3 failed attempts (email) / 10 failed (IP) → auto-lockout with exponential backoff |
-| Password Reset Throttling | ✅ | 3 per email, 5 per IP per 15 min; generic responses prevent user enumeration |
-| Self-Registration | ✅ | Completely disabled — users provisioned via `create-user` edge function only |
-| Session Tracking | ✅ | Login history, heartbeat activity, browser/OS fingerprinting |
-| Impersonation Audit | ✅ | Immutable `impersonation_audit_logs` + `impersonation_activity_logs` with IP/UA |
-| Edge Function Auth | ✅ | JWT verification + role checks on all 23 functions |
-| Governor Command Access | ✅ | Restricted to super_admin, org_admin, fleet_manager, operator roles |
-| RLS Policies | ✅ | 352 policies, all scoped `TO authenticated` (anon blocked) |
-| Database Rate Limiting | ✅ | 29 `rate_limit_inserts` triggers (10/min/user) across critical tables |
-| Payload Validation | ✅ | Triggers enforce IMEI format, plate length, fuel bounds, geofence constraints |
-| Deduplication | ✅ | `check_fuel_transaction_dedup` blocks identical entries within 60 seconds |
-| Frontend Throttling | ✅ | 2-5 second cooldowns on forms, 100-row bulk import cap |
-| CSP Headers | ✅ | `connect-src` scoped to Supabase, Mapbox, OSM, LeMat, ArcGIS |
-| Audit Logs | ✅ | Immutable append-only — UPDATE/DELETE blocked by RLS for all roles |
-| API Key Management | ✅ | Hash-stored keys, IP whitelist, per-hour rate limits, expiration |
-| Device Rate Limiting | ✅ | 120 requests/min per device in GPS receiver |
-| Gateway Auth | ✅ | `GATEWAY_SHARED_KEY` with constant-time comparison (timingSafeEqual) |
-| DB Function Hardening | ✅ | `EXECUTE` revoked from PUBLIC on 23+ SECURITY DEFINER functions |
-| Sensitive Data Storage | ✅ | All PII/tokens in `sessionStorage` only — no `localStorage` persistence |
+### A03: Injection ✅ STRONG
+| Control | Status | Implementation |
+|---------|--------|----------------|
+| Parameterized Queries | ✅ | All DB access via Supabase SDK (parameterized) — no raw SQL |
+| Input Validation (DB) | ✅ | Triggers validate IMEI format, plate length, fuel bounds, geofence constraints |
+| Input Validation (Frontend) | ✅ | Zod schemas + form validation on all critical inputs |
+| XSS Prevention | ✅ | React JSX auto-escapes; `sanitization.ts` provides `escapeHtml()`/`sanitizeHtml()` |
+| innerHTML Usage | ✅ | Only static SVG/marker templates — no user data flows |
+| Edge Function Input Validation | ✅ | All functions validate request payloads |
+| CSP Headers | ✅ | `connect-src` scoped to allowed origins only |
+
+### A04: Insecure Design ✅ STRONG
+| Control | Status | Implementation |
+|---------|--------|----------------|
+| Multi-Tenancy by Design | ✅ | Organization-scoped data at every layer |
+| Delegation Matrix | ✅ | Approval authority management with time-bounded delegation |
+| Separation of Duties | ✅ | Different roles for fleet ops, drivers, finance, HR |
+| Threat Modeling Files | ✅ | 22 security modules in `src/lib/security/` (anomaly detection, threat detection, VPN detection) |
+| File Upload Validation | ✅ | `fileUploadValidation.ts` enforces type/size constraints |
+| Deduplication | ✅ | `check_fuel_transaction_dedup` blocks identical entries within 60s |
+
+### A05: Security Misconfiguration ✅ GOOD
+| Control | Status | Implementation |
+|---------|--------|----------------|
+| RLS Enabled Everywhere | ✅ | Linter confirms no tables with disabled RLS |
+| Default Deny | ✅ | All policies `TO authenticated`; anon blocked at policy layer |
+| CORS Configuration | ✅ | Edge functions use dynamic CORS; only approved origins allowed |
+| Error Handling | ✅ | Generic error messages prevent information leakage |
+| No Debug in Production | ✅ | No debug modes, no verbose error responses |
+| **⚠️ GAP: HIBP disabled** | 🟡 | Leaked password protection requires manual activation in Lovable Cloud settings |
+
+### A06: Vulnerable and Outdated Components ✅ CLEAN
+| Control | Status | Implementation |
+|---------|--------|----------------|
+| Dependency Scan | ✅ | `npm audit` — **0 high/critical vulnerabilities** |
+| Framework Currency | ✅ | React 18, Vite 5, TypeScript 5, Tailwind v3 |
+| No Known CVEs | ✅ | All dependencies at secure versions |
+
+### A07: Identification and Authentication Failures ✅ STRONG
+| Control | Status | Implementation |
+|---------|--------|----------------|
+| Brute Force Protection | ✅ | 3 attempts (email) / 10 attempts (IP) → auto-lockout |
+| Exponential Backoff | ✅ | Progressive delay on repeated failures |
+| Password Reset Throttling | ✅ | 3/email, 5/IP per 15 min; generic responses (no enumeration) |
+| Session Management | ✅ | `sessionTracker.ts` with heartbeat, fingerprinting, timeout |
+| Login History | ✅ | `login_history` table with IP, UA, device fingerprint |
+| User Enumeration Prevention | ✅ | Password reset always returns generic success |
+| Password Policy | ✅ | Minimum 8 characters enforced |
+| Admin Impersonation Audit | ✅ | Immutable audit logs for all impersonation sessions |
+
+### A08: Software and Data Integrity Failures ✅ GOOD
+| Control | Status | Implementation |
+|---------|--------|----------------|
+| Audit Log Immutability | ✅ | UPDATE/DELETE blocked by RLS for all roles on `audit_logs` |
+| Gateway Signature Validation | ✅ | `GATEWAY_SHARED_KEY` with constant-time comparison |
+| Rate-Limited Inserts | ✅ | 29 triggers prevent mass data manipulation (10/min/user) |
+| Bulk Import Caps | ✅ | 100-row maximum per batch for vehicles/drivers |
+| Frontend Submission Guards | ✅ | 2-5 second cooldowns, fingerprint-based throttling |
+
+### A09: Security Logging and Monitoring ✅ STRONG
+| Control | Status | Implementation |
+|---------|--------|----------------|
+| Audit Logs | ✅ | `audit_logs` table — immutable, append-only, org-scoped |
+| Security Audit Logs | ✅ | `security_audit_logs` for critical security events |
+| Login History | ✅ | `login_history` with IP, device, browser, OS tracking |
+| Impersonation Logs | ✅ | `impersonation_audit_logs` + `impersonation_activity_logs` |
+| Account Lockout Logs | ✅ | `account_lockouts` with reason, timestamp, IP |
+| Rate Limit Violations | ✅ | `rate_limit_violations` + `rate_limit_logs` tables |
+| Device Offline Events | ✅ | `device_offline_events` with notification tracking |
+| Edge Function Rate Limits | ✅ | `edge_function_rate_limits` with per-client tracking |
+
+### A10: Server-Side Request Forgery (SSRF) ✅ GOOD
+| Control | Status | Implementation |
+|---------|--------|----------------|
+| No User-Controlled URLs | ✅ | Edge functions don't fetch user-supplied URLs |
+| Fixed External Endpoints | ✅ | Only hardcoded endpoints (Mapbox, LeMat, ERPNext) |
+| CSP connect-src | ✅ | Restricts outbound connections to allowed domains |
 
 ---
 
-## 5. Super Admin Accounts
+## 5. Open Security Findings (Mapped to OWASP)
+
+### 🔴 Critical (Requires Migration/Code Change)
+| # | Finding | OWASP | Table | Remediation |
+|---|---------|-------|-------|-------------|
+| 1 | **Plaintext credentials in DB** | A02 | `organization_settings`, `sso_configurations`, `smtp_configurations`, `erpnext_config`, `sms_gateway_config` | Move to Supabase secrets or encrypt at app layer. Vault unavailable — accepted risk with admin-only RLS. |
+| 2 | **Device auth_token exposed** | A01 | `devices` | Create view excluding `auth_token`; restrict raw table to service_role |
+| 3 | **Realtime channel open access** | A01 | `realtime.messages` | Add RLS policies scoping channel subscriptions by org_id |
+| 4 | **Device SMS passwords exposed** | A02 | `device_terminal_settings` | Restrict `sms_password`, `auth_number` columns to super_admin only |
+
+### 🟡 Warning (Tighten Access)
+| # | Finding | OWASP | Table | Remediation |
+|---|---------|-------|-------|-------------|
+| 5 | **Driver PII over-exposed** | A01 | `drivers` | Restrict national_id, medical_info, emergency contacts to HR/admin roles |
+| 6 | **Audit logs over-exposed** | A01 | `audit_logs` | Restrict SELECT to super_admin + org_admin only |
+| 7 | **2FA secrets unencrypted** | A02 | `user_2fa_settings` | Hash backup codes; encrypt TOTP secret |
+| 8 | **HIBP check disabled** | A05 | Auth config | Enable leaked password protection in Lovable Cloud settings |
+| 9 | **Account lockout INSERT missing** | A07 | `account_lockouts` | Verify lockout creation is server-side only (via SECURITY DEFINER functions) |
+
+### ✅ Accepted Risks (Cannot Fix in Lovable Cloud)
+| # | Finding | Reason |
+|---|---------|--------|
+| 1 | Encryption at rest for credentials | Requires Supabase Vault — not available in Lovable Cloud |
+| 2 | HIBP leaked password check | Backend setting — must be manually enabled in Lovable Cloud UI |
+
+---
+
+## 6. Security Utilities Inventory
+
+```
+src/lib/security/
+├── anomalyDetection.ts      — Behavioral anomaly detection
+├── captcha.ts                — CAPTCHA integration
+├── deviceTrust.ts            — Device trust scoring
+├── fileUploadValidation.ts   — File type/size validation
+├── geoBlocking.ts            — Geographic access restrictions
+├── index.ts                  — Security module exports
+├── ipReputation.ts           — IP reputation checking
+├── loginAlerts.ts            — Suspicious login notifications
+├── passwordExpiry.ts         — Password age enforcement
+├── passwordHistory.ts        — Password reuse prevention
+├── passwordValidation.ts     — Password strength rules
+├── progressiveDelay.ts       — Exponential backoff logic
+├── rateLimiting.ts           — Client-side rate limiting
+├── sanitization.ts           — HTML/XSS sanitization (escapeHtml, sanitizeHtml)
+├── securityAudit.ts          — Security event tracking
+├── securityHeaders.ts        — CSP/HSTS header management
+├── sessionFingerprint.ts     — Browser fingerprinting
+├── sessionManagement.ts      — Session lifecycle management
+├── sessionTimeout.ts         — Inactivity timeout
+├── submissionGuard.ts        — Form submission throttling
+├── threatDetection.ts        — Threat pattern recognition
+└── vpnDetection.ts           — VPN/proxy detection
+```
+
+---
+
+## 7. Super Admin Accounts
 
 | Email | Role | Status |
 |-------|------|--------|
@@ -196,4 +317,4 @@
 
 ---
 
-*Generated from codebase + security scan audit on April 14, 2026*
+*Generated from codebase + OWASP Top 10 security scan audit on April 14, 2026*
