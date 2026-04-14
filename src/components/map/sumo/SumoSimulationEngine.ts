@@ -1,6 +1,6 @@
 import type { SimVehicle, SimulationState, VehicleType, TrafficSignal, SimDeviceInfo, SimDriverInfo } from "./types";
 import { SEGMENTS, NODES } from "./AddisAbabaNetwork";
-import { SUMO_VEHICLE_TYPES, selectWeightedRoute, selectRouteFromNode, type SumoRoute } from "./SumoRoutes";
+import { SUMO_VEHICLE_TYPES, selectWeightedRoute, selectRouteFromNode } from "./SumoRoutes";
 
 // ── Realistic Ethiopian plates ──
 const PLATES_PREFIX = ["AA", "OR", "ET", "DR", "SN", "TG", "AM"];
@@ -152,23 +152,31 @@ function getSegment(id: string) {
   return segmentById.get(id);
 }
 
+function getReverseSegmentId(segmentId: string): string {
+  return segmentId.endsWith("_r") ? segmentId.slice(0, -2) : `${segmentId}_r`;
+}
+
+function buildReturnRoute(routeSegments: string[]): string[] {
+  return [...routeSegments]
+    .reverse()
+    .map(getReverseSegmentId)
+    .filter((segmentId) => segmentById.has(segmentId));
+}
+
 // ── Vehicle factory — now uses predefined SUMO routes ──
 function createVehicle(id: number): SimVehicle {
-  // Select a route using weighted probability (like SUMO flow)
   const route = selectWeightedRoute();
   const type = route.vehicleTypes[Math.floor(Math.random() * route.vehicleTypes.length)] as VehicleType;
   const vType = SUMO_VEHICLE_TYPES[type];
 
-  // Start at a random position along the first segment of the route
   const firstSegId = route.segments[0];
   const seg = getSegment(firstSegId);
   if (!seg) {
-    // Fallback: use any random segment
     const fallbackSeg = SEGMENTS[Math.floor(Math.random() * SEGMENTS.length)];
     return createVehicleFallback(id, fallbackSeg, type);
   }
 
-  const progress = Math.random() * 0.8; // don't start at very end
+  const progress = Math.random() * 0.8;
   const pos = interpolateAlongWaypoints(seg.waypoints, progress);
   const makeInfo = VEHICLE_MAKES[type][Math.floor(Math.random() * VEHICLE_MAKES[type].length)];
 
@@ -267,7 +275,6 @@ export function stepSimulation(state: SimulationState, dtReal: number): Simulati
   if (!state.running) return state;
   const dt = dtReal * state.speed;
 
-  // Update signals
   const signals = state.signals.map(sig => {
     let { phase, elapsed, greenDuration, amberDuration, redDuration } = sig;
     elapsed += dt;
@@ -281,7 +288,6 @@ export function stepSimulation(state: SimulationState, dtReal: number): Simulati
 
   const signalMap = new Map(signals.map(s => [s.nodeId, s]));
 
-  // Update vehicles
   const vehicles = state.vehicles.map(v => {
     const seg = getSegment(v.segmentId);
     if (!seg || !seg.length) return v;
@@ -290,12 +296,9 @@ export function stepSimulation(state: SimulationState, dtReal: number): Simulati
     const signal = endNode ? signalMap.get(endNode.id) : undefined;
     const nearEnd = v.segmentProgress > 0.85;
 
-    // Use SUMO vType parameters for acceleration/deceleration
     const vType = SUMO_VEHICLE_TYPES[v.type] || SUMO_VEHICLE_TYPES.sedan;
     let targetSpeed = Math.min(vType.maxSpeed, seg.speedLimit);
-
-    // Apply driver imperfection (sigma)
-    targetSpeed *= (1 - vType.sigma * 0.1 * (Math.random() - 0.3));
+    targetSpeed *= 1 - vType.sigma * 0.1 * (Math.random() - 0.3);
 
     if (signal && nearEnd) {
       if (signal.phase === "red") targetSpeed = 0;
@@ -315,55 +318,56 @@ export function stepSimulation(state: SimulationState, dtReal: number): Simulati
     let newRouteIndex = v.routeIndex;
     let newRoadName = v.currentRoadName;
 
-    // When vehicle reaches end of current segment
     if (newProgress >= 1) {
       const nextRouteIdx = v.routeIndex + 1;
 
       if (nextRouteIdx < v.routeSegments.length) {
-        // Follow the predefined route to next segment
         const nextSegId = v.routeSegments[nextRouteIdx];
         const nextSeg = getSegment(nextSegId);
 
-        if (nextSeg) {
+        if (nextSeg && nextSeg.from === seg.to) {
           newSegmentId = nextSegId;
           newProgress = newProgress - 1;
           newRouteIndex = nextRouteIdx;
           newRoadName = nextSeg.name;
         } else {
-          // Segment not found — stay at end
           newProgress = 0.999;
+          newSpeed = 0;
         }
       } else {
-        // Route complete — assign a new route from the destination node
         const destNode = seg.to;
-        const newRoute = selectRouteFromNode(destNode, v.type);
+        const nextRoute = selectRouteFromNode(destNode, v.type);
 
-        if (newRoute) {
-          const firstSeg = getSegment(newRoute.segments[0]);
-          newSegmentId = newRoute.segments[0];
-          newRouteSegments = [...newRoute.segments];
+        if (nextRoute && getSegment(nextRoute.segments[0])?.from === destNode) {
+          const firstSeg = getSegment(nextRoute.segments[0]);
+          newSegmentId = nextRoute.segments[0];
+          newRouteSegments = [...nextRoute.segments];
           newRouteIndex = 0;
           newProgress = 0;
           newRoadName = firstSeg?.name || v.currentRoadName;
         } else {
-          // No route from this node — pick any route and teleport
-          const anyRoute = selectWeightedRoute(v.type);
-          newSegmentId = anyRoute.segments[0];
-          newRouteSegments = [...anyRoute.segments];
-          newRouteIndex = 0;
-          newProgress = 0;
-          const firstSeg = getSegment(newSegmentId);
-          newRoadName = firstSeg?.name || v.currentRoadName;
+          const returnRoute = buildReturnRoute(v.routeSegments);
+          const firstReturnSeg = returnRoute[0] ? getSegment(returnRoute[0]) : undefined;
+
+          if (firstReturnSeg && firstReturnSeg.from === destNode) {
+            newSegmentId = firstReturnSeg.id;
+            newRouteSegments = returnRoute;
+            newRouteIndex = 0;
+            newProgress = 0;
+            newRoadName = firstReturnSeg.name;
+          } else {
+            newProgress = 0.999;
+            newSpeed = 0;
+            newRoadName = seg.name;
+          }
         }
       }
     }
 
     const activeSeg = getSegment(newSegmentId) || seg;
     const pos = interpolateAlongWaypoints(activeSeg.waypoints, Math.min(newProgress, 0.999));
-
     const status: SimVehicle["status"] = newSpeed < 0.5 ? "stopped" : newSpeed < 5 ? "idle" : "moving";
 
-    // Simulate IoT telemetry fluctuation
     const newRpm = newSpeed < 1 ? 750 + Math.random() * 100 : 1000 + (newSpeed / 60) * 3000 + (Math.random() - 0.5) * 200;
     const newEngineTemp = Math.min(105, Math.max(70, v.engineTemp + (Math.random() - 0.48) * 0.3));
     const deviceSignal = Math.max(20, Math.min(100, v.device.signalStrength + (Math.random() - 0.5) * 4));
@@ -398,7 +402,6 @@ export function stepSimulation(state: SimulationState, dtReal: number): Simulati
     };
   });
 
-  // Adjust vehicle count
   let adjustedVehicles = vehicles;
   if (vehicles.length < state.vehicleCount) {
     for (let i = vehicles.length; i < state.vehicleCount; i++) {
