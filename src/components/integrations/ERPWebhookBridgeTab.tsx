@@ -194,9 +194,9 @@ const ERPWebhookBridgeTab = () => {
                 </TableCell>
                 <TableCell><Badge variant="outline" className="text-xs">{bridge.auth_type}</Badge></TableCell>
                 <TableCell>
-                  <span className="text-xs text-green-500">{bridge.success_count}✓</span>
+                  <span className="text-xs text-primary">{bridge.success_count}✓</span>
                   {" / "}
-                  <span className="text-xs text-red-500">{bridge.failure_count}✗</span>
+                  <span className="text-xs text-destructive">{bridge.failure_count}✗</span>
                 </TableCell>
                 <TableCell>
                   <Badge variant={bridge.is_active ? "default" : "secondary"}>
