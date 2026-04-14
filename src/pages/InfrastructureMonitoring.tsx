@@ -130,14 +130,20 @@ const InfrastructureMonitoring = () => {
           </CardContent>
         </Card>
 
-        <Tabs defaultValue="sites" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5 glass p-1 h-12">
+        <Tabs defaultValue="fleet" className="space-y-4">
+          <TabsList className="flex w-full overflow-x-auto glass p-1 h-12">
+            <TabsTrigger value="fleet"><Truck className="h-4 w-4 mr-1.5" />Fleet Capacity</TabsTrigger>
             <TabsTrigger value="sites"><Building2 className="h-4 w-4 mr-1.5" />Sites</TabsTrigger>
             <TabsTrigger value="services">Services</TabsTrigger>
             <TabsTrigger value="resources">Resources</TabsTrigger>
             <TabsTrigger value="snmp">SNMP Stats</TabsTrigger>
             <TabsTrigger value="performance">Performance</TabsTrigger>
           </TabsList>
+
+          {/* Fleet Capacity Tab */}
+          <TabsContent value="fleet">
+            <FleetCapacityDashboard />
+          </TabsContent>
 
           {/* Sites / Multi-Environment Tab */}
           <TabsContent value="sites" className="space-y-4">
