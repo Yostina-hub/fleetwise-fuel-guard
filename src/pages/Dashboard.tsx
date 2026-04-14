@@ -251,6 +251,17 @@ const Dashboard = () => {
 
   // formatCurrency is now provided by useOrganizationSettings
 
+  // Mobile supervisor dashboard (RFP Items 31-42)
+  if (isMobile) {
+    return (
+      <Layout>
+        <div className="h-[calc(100vh-8rem)]">
+          <MobileSupervisorDashboard />
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div className="relative min-h-screen">
