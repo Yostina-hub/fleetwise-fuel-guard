@@ -1313,7 +1313,8 @@ serve(async (req) => {
     );
   }
 
-  // Validate gateway shared key for server-to-server requests
+  // Validate gateway shared key for POST (server-to-server) requests
+  // GET requests (OsmAnd/Traccar) use device IMEI lookup as authentication
   const gatewayAuthError = validateGatewayKey(req);
   if (gatewayAuthError) return gatewayAuthError;
 
