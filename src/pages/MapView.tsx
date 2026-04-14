@@ -685,7 +685,7 @@ const MapView = () => {
             size="icon"
             className={cn(
               "absolute top-1/2 -translate-y-1/2 z-20 h-10 w-6 rounded-l-lg rounded-r-none shadow-lg transition-all",
-              sidebarCollapsed ? "right-0" : "right-80"
+              "right-0"
             )}
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             aria-label={sidebarCollapsed ? "Expand vehicle sidebar" : "Collapse vehicle sidebar"}
@@ -698,8 +698,17 @@ const MapView = () => {
         {/* Side Panel - Clean & Modern */}
         <div className={cn(
           "bg-background border-l flex flex-col transition-all duration-300",
-          sidebarCollapsed ? "w-0 overflow-hidden" : "w-80"
+          isMobile
+            ? cn("absolute top-0 right-0 bottom-0 z-30 shadow-2xl", sidebarCollapsed ? "w-0 overflow-hidden" : "w-[85vw] max-w-80")
+            : cn(sidebarCollapsed ? "w-0 overflow-hidden" : "w-80")
         )}>
+          {/* Mobile backdrop */}
+          {isMobile && !sidebarCollapsed && (
+            <div
+              className="fixed inset-0 bg-black/40 z-20"
+              onClick={() => setSidebarCollapsed(true)}
+            />
+          )}
           {/* Header */}
           <div className="p-4 border-b space-y-4">
             <div className="flex items-center justify-between">
