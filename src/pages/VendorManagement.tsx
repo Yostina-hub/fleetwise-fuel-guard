@@ -169,16 +169,12 @@ const VendorManagement = () => {
                 </div>
                 <div><Label>Rating (0–5)</Label><Input type="number" min={0} max={5} step={0.5} value={form.rating} onChange={e => setForm(p => ({ ...p, rating: parseFloat(e.target.value) || 0 }))} className={errors.rating ? "border-destructive" : ""} /></div>
               </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div><Label>Rating (0–5)</Label><Input type="number" min={0} max={5} step={0.5} value={form.rating} onChange={e => setForm(p => ({ ...p, rating: parseFloat(e.target.value) || 0 }))} className={errors.rating ? "border-destructive" : ""} /></div>
-                <div className="flex items-end gap-2"><Label>Active</Label>
+              <div className="flex items-end gap-2"><Label>Active</Label>
                   <Select value={form.is_active ? "true" : "false"} onValueChange={v => setForm(p => ({ ...p, is_active: v === "true" }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent><SelectItem value="true">Active</SelectItem><SelectItem value="false">Inactive</SelectItem></SelectContent>
                   </Select>
                 </div>
-              </div>
               <div><Label>Address</Label><Input value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} /></div>
               <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={3} /></div>
             </div>
