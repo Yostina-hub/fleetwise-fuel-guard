@@ -215,7 +215,57 @@ User Role CHANGE    → Force auth context refresh
 
 ---
 
-## 4. OWASP Top 10 (2021) Compliance Audit
+## 4. GDPR / Data Privacy Compliance
+
+### ✅ Existing Infrastructure
+| Component | Table/File | Status | Details |
+|-----------|------------|--------|---------|
+| GDPR Request Management | `gdpr_requests` | ✅ | Subject access, erasure, portability, rectification requests with workflow (pending → processing → completed) |
+| GDPR Requests UI | `GdprRequestsTab.tsx` | ✅ | Admin UI for managing data subject requests |
+| Data Retention Policies | `data_retention_policies` | ✅ | Per-table retention rules with configurable days, active/inactive toggle, last cleanup timestamp |
+| Data Retention UI | `DataRetentionTab.tsx` | ✅ | Admin UI for configuring retention per table |
+| Legal Holds | `legal_holds` | ✅ | Litigation holds with case numbers, scope, data types, issued/released workflow |
+| Legal Holds UI | `LegalHoldsTab.tsx` | ✅ | Admin UI for managing legal preservation orders |
+| Audit Logging | `audit_logs` | ✅ | Immutable, append-only record of all data access and modifications |
+| Organization Isolation | RLS (352 policies) | ✅ | All data scoped by `organization_id` — no cross-tenant leakage |
+| Session Storage Policy | `sessionStorage` only | ✅ | PII/tokens never persisted in `localStorage` |
+| Account Deletion | `ON DELETE CASCADE` | ✅ | Profile + role cleanup on auth user deletion |
+
+### GDPR Article Compliance Matrix
+| Article | Requirement | Status | Implementation |
+|---------|-------------|--------|----------------|
+| **Art. 5** | Data minimization | ✅ | Only necessary fields collected; telemetry partitioned for cleanup |
+| **Art. 6** | Lawful basis | ✅ | Fleet management = legitimate interest; employee consent managed externally |
+| **Art. 7** | Consent records | 🔴 Todo | Need `consent_records` table for explicit driver consent tracking |
+| **Art. 12-14** | Transparency / Privacy notices | 🟡 Partial | No in-app privacy policy page yet |
+| **Art. 15** | Right of access (SAR) | ✅ | `gdpr_requests` with `request_type = 'access'` |
+| **Art. 16** | Right to rectification | ✅ | `gdpr_requests` with `request_type = 'rectification'` |
+| **Art. 17** | Right to erasure | ✅ | `gdpr_requests` with `request_type = 'erasure'` + cascade deletion |
+| **Art. 18** | Restriction of processing | 🔴 Todo | Need processing restriction flag on driver/user records |
+| **Art. 20** | Data portability | ✅ | `gdpr_requests` with `request_type = 'portability'` (export capability exists) |
+| **Art. 25** | Privacy by design | ✅ | Org-scoped RLS, session-only storage, input validation, encryption in transit |
+| **Art. 30** | Records of processing | 🟡 Partial | `audit_logs` covers access; need formal processing activity register |
+| **Art. 32** | Security of processing | ✅ | OWASP Top 10 compliant, 352 RLS policies, rate limiting, brute force protection |
+| **Art. 33** | Breach notification | 🔴 Todo | Need automated breach detection + 72-hour notification workflow |
+| **Art. 35** | DPIA (Impact Assessment) | 🔴 Todo | Need Data Protection Impact Assessment documentation |
+| **Art. 37-39** | DPO designation | ℹ️ Org | Organizational responsibility — outside app scope |
+
+### 🔴 GDPR Tasks (Action Required)
+| # | Task | Priority | Description |
+|---|------|----------|-------------|
+| 1 | **Consent management table** | 🔥 High | Create `consent_records` table tracking driver consent for GPS tracking, data processing, communications. Include consent version, timestamp, withdrawal capability. |
+| 2 | **Privacy policy page** | 🔥 High | In-app `/privacy` route displaying data processing purposes, retention periods, subject rights, DPO contact. |
+| 3 | **Data export (portability)** | 🟡 Medium | Edge function to generate downloadable ZIP of all driver data (trips, scores, events, PII) in machine-readable JSON/CSV format. |
+| 4 | **Processing restriction flag** | 🟡 Medium | Add `processing_restricted` boolean to `drivers` table; when true, exclude from scoring, alerts, and analytics while retaining data. |
+| 5 | **Automated data cleanup** | 🟡 Medium | Scheduled edge function or `pg_cron` job to enforce `data_retention_policies` — purge expired telemetry, logs, and session data automatically. |
+| 6 | **Breach notification workflow** | 🟡 Medium | Automated detection of anomalous bulk data access + email notification template for 72-hour GDPR breach reporting. |
+| 7 | **Cookie/tracking consent banner** | 🟢 Low | Cookie consent UI for web app (if analytics/tracking pixels are added). |
+| 8 | **Processing activity register** | 🟢 Low | Formal ROPA (Record of Processing Activities) accessible to admins documenting all data flows. |
+| 9 | **Data anonymization utility** | 🟢 Low | Function to anonymize (not delete) historical driver data for analytics retention post-erasure. |
+
+---
+
+## 5. OWASP Top 10 (2021) Compliance Audit
 
 ### A01: Broken Access Control ✅ STRONG
 | Control | Status | Implementation |
