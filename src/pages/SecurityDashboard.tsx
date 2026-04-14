@@ -86,7 +86,7 @@ const SecurityDashboard = () => {
 
   return (
     <Layout>
-      <div className="p-8 space-y-6 animate-fade-in">
+      <div className="p-4 md:p-8 space-y-6 animate-fade-in">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Shield className="h-8 w-8 text-primary" aria-hidden="true" />

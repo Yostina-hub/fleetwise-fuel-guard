@@ -50,7 +50,7 @@ const WorkOrders = () => {
 
   return (
     <Layout>
-      <div className="p-8 space-y-6 animate-fade-in">
+      <div className="p-4 md:p-8 space-y-6 animate-fade-in">
         <div className="flex items-center gap-3 slide-in-right">
           <div className="p-4 rounded-2xl glass-strong glow-strong">
             <ClipboardList className="h-8 w-8 text-primary float-animation" aria-hidden="true" />

@@ -87,7 +87,7 @@ const SystemConfig = () => {
 
   return (
     <Layout>
-      <div className="p-8 space-y-6 animate-fade-in">
+      <div className="p-4 md:p-8 space-y-6 animate-fade-in">
         <div className="flex items-center gap-3">
           <div className="p-4 rounded-2xl bg-primary/10">
             <Settings2 className="h-8 w-8 text-primary" />

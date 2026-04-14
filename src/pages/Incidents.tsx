@@ -14,7 +14,7 @@ import { RecentIncidentsCard } from "@/components/incidents/RecentIncidentsCard"
 const Incidents = () => {
   return (
     <Layout>
-      <div className="p-8 space-y-6 animate-fade-in">
+      <div className="p-4 md:p-8 space-y-6 animate-fade-in">
         <div className="flex items-center gap-3">
           <div className="p-3 rounded-xl bg-destructive/10">
             <AlertTriangle className="h-8 w-8 text-destructive" aria-hidden="true" />

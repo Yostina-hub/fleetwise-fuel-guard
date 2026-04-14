@@ -184,7 +184,7 @@ const Drivers = () => {
   if (initialLoading) {
     return (
       <Layout>
-        <div className="p-8 flex items-center justify-center min-h-[400px]">
+        <div className="p-4 md:p-8 flex items-center justify-center min-h-[400px]">
           <div className="text-center" role="status" aria-live="polite">
             <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" aria-hidden="true" />
             <p className="text-muted-foreground">Loading drivers...</p>
@@ -200,7 +200,7 @@ const Drivers = () => {
 
   return (
     <Layout>
-      <div className="p-8 space-y-8 animate-fade-in">
+      <div className="p-4 md:p-8 space-y-8 animate-fade-in">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>

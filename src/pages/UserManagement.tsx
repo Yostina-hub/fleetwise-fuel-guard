@@ -224,7 +224,7 @@ const UserManagement = () => {
 
   return (
     <Layout>
-      <div className="p-8 space-y-6 animate-fade-in">
+      <div className="p-4 md:p-8 space-y-6 animate-fade-in">
         <div className="flex items-center gap-3 slide-in-left">
           <div className="p-4 rounded-2xl glass-strong glow">
             <Users className="h-8 w-8 text-primary animate-float" aria-hidden="true" />

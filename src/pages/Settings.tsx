@@ -45,7 +45,7 @@ const Settings = () => {
 
   return (
     <Layout>
-      <div className="p-8 space-y-8">
+      <div className="p-4 md:p-8 space-y-8">
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold">System Settings</h1>

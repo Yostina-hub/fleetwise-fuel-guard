@@ -60,7 +60,7 @@ const Maintenance = () => {
   if (loading) {
     return (
       <Layout>
-        <div className="p-8 flex items-center justify-center min-h-[400px]">
+        <div className="p-4 md:p-8 flex items-center justify-center min-h-[400px]">
           <div className="text-center" role="status" aria-label="Loading maintenance data">
             <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" aria-hidden="true" />
             <p className="text-muted-foreground">Loading maintenance data...</p>
@@ -72,7 +72,7 @@ const Maintenance = () => {
 
   return (
     <Layout>
-      <div className="p-8 space-y-8 animate-fade-in">
+      <div className="p-4 md:p-8 space-y-8 animate-fade-in">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 slide-in-right">
           <div className="flex items-center gap-4">
