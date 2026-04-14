@@ -5335,6 +5335,68 @@ export type Database = {
           },
         ]
       }
+      erp_webhook_bridges: {
+        Row: {
+          auth_token: string | null
+          auth_type: string
+          created_at: string
+          events: string[]
+          failure_count: number | null
+          headers: Json | null
+          id: string
+          is_active: boolean | null
+          last_triggered_at: string | null
+          name: string
+          organization_id: string
+          success_count: number | null
+          target_url: string
+          transform_template: Json | null
+          updated_at: string
+        }
+        Insert: {
+          auth_token?: string | null
+          auth_type?: string
+          created_at?: string
+          events?: string[]
+          failure_count?: number | null
+          headers?: Json | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          name: string
+          organization_id: string
+          success_count?: number | null
+          target_url: string
+          transform_template?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          auth_token?: string | null
+          auth_type?: string
+          created_at?: string
+          events?: string[]
+          failure_count?: number | null
+          headers?: Json | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          name?: string
+          organization_id?: string
+          success_count?: number | null
+          target_url?: string
+          transform_template?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_webhook_bridges_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erpnext_config: {
         Row: {
           api_key: string
@@ -7872,6 +7934,128 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "kpi_scorecards_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ldap_configs: {
+        Row: {
+          base_dn: string
+          bind_dn: string | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          last_sync_at: string | null
+          last_sync_count: number | null
+          last_sync_status: string | null
+          name: string
+          organization_id: string
+          search_filter: string | null
+          server_url: string
+          tls_enabled: boolean | null
+          updated_at: string
+          user_attributes: Json | null
+        }
+        Insert: {
+          base_dn: string
+          bind_dn?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          last_sync_count?: number | null
+          last_sync_status?: string | null
+          name?: string
+          organization_id: string
+          search_filter?: string | null
+          server_url: string
+          tls_enabled?: boolean | null
+          updated_at?: string
+          user_attributes?: Json | null
+        }
+        Update: {
+          base_dn?: string
+          bind_dn?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          last_sync_count?: number | null
+          last_sync_status?: string | null
+          name?: string
+          organization_id?: string
+          search_filter?: string | null
+          server_url?: string
+          tls_enabled?: boolean | null
+          updated_at?: string
+          user_attributes?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ldap_configs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ldap_sync_logs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          errors: Json | null
+          id: string
+          ldap_config_id: string
+          organization_id: string
+          started_at: string | null
+          status: string
+          users_created: number | null
+          users_skipped: number | null
+          users_synced: number | null
+          users_updated: number | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          errors?: Json | null
+          id?: string
+          ldap_config_id: string
+          organization_id: string
+          started_at?: string | null
+          status?: string
+          users_created?: number | null
+          users_skipped?: number | null
+          users_synced?: number | null
+          users_updated?: number | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          errors?: Json | null
+          id?: string
+          ldap_config_id?: string
+          organization_id?: string
+          started_at?: string | null
+          status?: string
+          users_created?: number | null
+          users_skipped?: number | null
+          users_synced?: number | null
+          users_updated?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ldap_sync_logs_ldap_config_id_fkey"
+            columns: ["ldap_config_id"]
+            isOneToOne: false
+            referencedRelation: "ldap_configs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ldap_sync_logs_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -10503,6 +10687,122 @@ export type Database = {
             columns: ["work_order_id"]
             isOneToOne: false
             referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      siem_configs: {
+        Row: {
+          auth_token: string | null
+          auth_type: string
+          batch_size: number | null
+          created_at: string
+          endpoint_url: string
+          event_types: string[] | null
+          format: string
+          forward_interval_seconds: number | null
+          id: string
+          is_active: boolean | null
+          last_forward_at: string | null
+          last_forward_count: number | null
+          last_forward_status: string | null
+          name: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          auth_token?: string | null
+          auth_type?: string
+          batch_size?: number | null
+          created_at?: string
+          endpoint_url: string
+          event_types?: string[] | null
+          format?: string
+          forward_interval_seconds?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_forward_at?: string | null
+          last_forward_count?: number | null
+          last_forward_status?: string | null
+          name?: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          auth_token?: string | null
+          auth_type?: string
+          batch_size?: number | null
+          created_at?: string
+          endpoint_url?: string
+          event_types?: string[] | null
+          format?: string
+          forward_interval_seconds?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_forward_at?: string | null
+          last_forward_count?: number | null
+          last_forward_status?: string | null
+          name?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "siem_configs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      siem_forward_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          events_failed: number | null
+          events_forwarded: number | null
+          id: string
+          organization_id: string
+          response_code: number | null
+          siem_config_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          events_failed?: number | null
+          events_forwarded?: number | null
+          id?: string
+          organization_id: string
+          response_code?: number | null
+          siem_config_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          events_failed?: number | null
+          events_forwarded?: number | null
+          id?: string
+          organization_id?: string
+          response_code?: number | null
+          siem_config_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "siem_forward_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "siem_forward_logs_siem_config_id_fkey"
+            columns: ["siem_config_id"]
+            isOneToOne: false
+            referencedRelation: "siem_configs"
             referencedColumns: ["id"]
           },
         ]
