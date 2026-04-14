@@ -109,8 +109,8 @@ const DashCam = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Dash Cam Management</h1>
-            <p className="text-muted-foreground">Monitor camera events, AI-detected incidents & video review</p>
+            <h1 className="text-2xl font-bold">{t('dashCam.title')}</h1>
+            <p className="text-muted-foreground">{t('dashCam.events')}</p>
           </div>
           {selectedIds.size > 0 && (
             <div className="flex gap-2">

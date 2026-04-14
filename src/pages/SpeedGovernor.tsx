@@ -106,7 +106,7 @@ const SpeedGovernor = () => {
               <div className="p-2 rounded-lg bg-gradient-to-br from-red-500/10 to-orange-500/10">
                 <Gauge className="w-8 h-8 text-red-600" aria-hidden="true" />
               </div>
-              Speed Governor Control
+              {t('speedGovernor.title')}
             </h1>
             <p className="text-muted-foreground mt-2">
               Ethiopian Compliance • Remote Speed Management • Real-time Monitoring

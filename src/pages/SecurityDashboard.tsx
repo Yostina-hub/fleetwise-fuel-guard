@@ -93,7 +93,7 @@ const SecurityDashboard = () => {
           <div className="flex items-center gap-3">
             <Shield className="h-8 w-8 text-primary" aria-hidden="true" />
             <div>
-              <h1 className="text-3xl font-bold">Security Dashboard</h1>
+              <h1 className="text-3xl font-bold">{t('security.dashboard')}</h1>
               <p className="text-muted-foreground">
                 Monitor and manage all security features
               </p>
