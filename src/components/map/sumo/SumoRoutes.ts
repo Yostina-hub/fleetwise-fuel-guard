@@ -338,9 +338,9 @@ export const SUMO_ROUTES: SumoRoute[] = [
   },
   {
     id: "route_jemo_to_megenagna",
-    name: "Jemo → Saris → Gotera → Meskel → Urael → Megenagna",
+    name: "Jemo → Torhailoch → Lideta → Mexico → Meskel → Urael → Bambis → Megenagna",
     description: "West to east cross-city commute",
-    segments: ["conn_6_r", "south_2_r", "south_1_r", "wollo_1", "africa_2", "africa_3"],
+    segments: ["west_2_r", "west_1_r", "ring_s2_r", "ring_s1_r", "wollo_1", "africa_2", "africa_3"],
     vehicleTypes: ["sedan", "bus"],
     weight: 4,
     departureZone: "jemo",
@@ -348,9 +348,9 @@ export const SUMO_ROUTES: SumoRoute[] = [
   },
   {
     id: "route_circular_inner",
-    name: "Meskel → Mexico → Lideta → Piazza → Arat Kilo → Kazanchis → Meskel",
+    name: "Meskel → Mexico → Lideta → Piazza → Stadium → Meskel",
     description: "Inner city circular route",
-    segments: ["ring_s1", "ring_s2", "conn_3", "arat_1_r", "conn_1_r", "kaz_1_r"],
+    segments: ["ring_s1", "ring_s2", "conn_3", "church_2_r", "church_1_r"],
     vehicleTypes: ["minibus", "bus"],
     weight: 8,
     departureZone: "meskel",
