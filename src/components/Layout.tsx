@@ -1,5 +1,6 @@
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { ReactNode, useEffect, useRef, useState, useMemo } from "react";
 import { useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { 
   LayoutDashboard, 
   Map, 
@@ -72,126 +73,126 @@ interface LayoutProps {
   children: ReactNode;
 }
 
-// Navigation structure with collapsible groups
-const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-  { icon: Map, label: "Live Tracking", path: "/map" },
-  { icon: Car, label: "Vehicles", path: "/vehicles" },
+// Navigation structure with collapsible groups - using translation keys
+const getNavItems = (t: (key: string) => string) => [
+  { icon: LayoutDashboard, label: t("nav.dashboard"), path: "/" },
+  { icon: Map, label: t("nav.liveTracking"), path: "/map" },
+  { icon: Car, label: t("nav.vehicles"), path: "/vehicles" },
   { 
     icon: Truck, 
-    label: "Fleet Management", 
+    label: t("nav.fleetManagement"), 
     subItems: [
-      { label: "Vehicle List", path: "/fleet" },
-      { label: "Device Management", path: "/devices" },
-      { label: "Hardware Sensors", path: "/hardware-sensors" },
-      { label: "RFID Pairing", path: "/rfid-pairing" },
+      { label: t("nav.vehicleList"), path: "/fleet" },
+      { label: t("nav.devices"), path: "/devices" },
+      { label: t("nav.hardwareSensorsShort"), path: "/hardware-sensors" },
+      { label: t("nav.rfidPairing"), path: "/rfid-pairing" },
     ]
   },
   { 
     icon: Users, 
-    label: "Driver Management", 
+    label: t("nav.driverManagement"), 
     subItems: [
-      { label: "Driver Hub", path: "/driver-management" },
-      { label: "Drivers Directory", path: "/drivers" },
-      { label: "Scoring & Behavior", path: "/driver-scoring" },
-      { label: "Compliance", path: "/driver-compliance" },
-      { label: "Safety & Risk", path: "/driver-safety" },
-      { label: "Performance", path: "/driver-performance" },
-      { label: "HR & Finance", path: "/driver-hr" },
+      { label: t("nav.driverHub"), path: "/driver-management" },
+      { label: t("nav.driversDirectory"), path: "/drivers" },
+      { label: t("nav.scoringBehavior"), path: "/driver-scoring" },
+      { label: t("nav.compliance"), path: "/driver-compliance" },
+      { label: t("nav.safetyRisk"), path: "/driver-safety" },
+      { label: t("nav.performance"), path: "/driver-performance" },
+      { label: t("nav.hrFinance"), path: "/driver-hr" },
     ]
   },
-  { icon: Fuel, label: "Fuel Monitoring", subItems: [
-    { label: "Consumption", path: "/fuel" },
-    { label: "Fuel Requests", path: "/fuel-requests" },
-    { label: "Fuel Card Providers", path: "/fuel-card-providers" },
+  { icon: Fuel, label: t("nav.fuelMonitoring"), subItems: [
+    { label: t("nav.consumption"), path: "/fuel" },
+    { label: t("nav.fuelRequests"), path: "/fuel-requests" },
+    { label: t("nav.fuelCardProviders"), path: "/fuel-card-providers" },
   ]},
-  { icon: Users, label: "Passenger Tracking", path: "/passenger-tracking" },
-  { icon: Battery, label: "EV Management", path: "/ev-management" },
-  { icon: Thermometer, label: "Cold Chain", path: "/cold-chain" },
-  { icon: Camera, label: "Dash Cam & ADAS", subItems: [
-    { label: "Dash Cam Events", path: "/dash-cam" },
-    { label: "ADAS & DMS Reports", path: "/adas-reports" },
+  { icon: Users, label: t("nav.passengerTracking"), path: "/passenger-tracking" },
+  { icon: Battery, label: t("nav.evManagement"), path: "/ev-management" },
+  { icon: Thermometer, label: t("nav.coldChain"), path: "/cold-chain" },
+  { icon: Camera, label: t("nav.dashCamADAS"), subItems: [
+    { label: t("nav.dashCamEvents"), path: "/dash-cam" },
+    { label: t("nav.adasDmsReports"), path: "/adas-reports" },
   ]},
   { 
     icon: ShieldCheck, 
-    label: "Safety & Compliance", 
+    label: t("nav.safetyCompliance"), 
     subItems: [
-      { label: "Speed Governor", path: "/speed-governor" },
-      { label: "Incidents", path: "/incidents" },
-      { label: "Accident & Insurance", path: "/accident-insurance" },
-      { label: "Roadside Assistance", path: "/roadside-assistance" },
-      { label: "Driver Logbook", path: "/driver-logbook" },
-      { label: "Alcohol & Fatigue", path: "/alcohol-fatigue" },
-      { label: "Vehicle Inspections", path: "/vehicle-inspections" },
-      { label: "Penalties & Fines", path: "/penalties-fines" },
-      { label: "Compliance Calendar", path: "/compliance-calendar" },
+      { label: t("nav.speedGovernor"), path: "/speed-governor" },
+      { label: t("nav.incidents"), path: "/incidents" },
+      { label: t("nav.accidentInsurance"), path: "/accident-insurance" },
+      { label: t("nav.roadsideAssistance"), path: "/roadside-assistance" },
+      { label: t("nav.driverLogbook"), path: "/driver-logbook" },
+      { label: t("nav.alcoholFatigue"), path: "/alcohol-fatigue" },
+      { label: t("nav.vehicleInspections"), path: "/vehicle-inspections" },
+      { label: t("nav.penaltiesFines"), path: "/penalties-fines" },
+      { label: t("nav.complianceCalendar"), path: "/compliance-calendar" },
     ]
   },
   { 
     icon: MapPinned, 
-    label: "Routes & Locations", 
+    label: t("nav.routesLocations"), 
     subItems: [
-      { label: "Customer Sites", path: "/routes" },
-      { label: "Journey History", path: "/route-history" },
-      { label: "Geofences", path: "/geofencing" },
+      { label: t("nav.routes"), path: "/routes" },
+      { label: t("nav.routeHistory"), path: "/route-history" },
+      { label: t("nav.geofences"), path: "/geofencing" },
     ]
   },
-  { icon: Bell, label: "Alerts", path: "/alerts" },
+  { icon: Bell, label: t("nav.alerts"), path: "/alerts" },
   { 
     icon: Wrench, 
-    label: "Maintenance", 
+    label: t("nav.maintenance"), 
     subItems: [
-      { label: "Service History", path: "/maintenance" },
-      { label: "Work Orders", path: "/work-orders" },
-      { label: "Predictive AI", path: "/predictive-maintenance" },
-      { label: "Tire Management", path: "/tire-management" },
-      { label: "Parts Inventory", path: "/parts-inventory" },
-      { label: "Vendor Management", path: "/vendor-management" },
+      { label: t("nav.serviceHistory"), path: "/maintenance" },
+      { label: t("nav.workOrders"), path: "/work-orders" },
+      { label: t("nav.predictiveAI"), path: "/predictive-maintenance" },
+      { label: t("nav.tireManagement"), path: "/tire-management" },
+      { label: t("nav.partsInventory"), path: "/parts-inventory" },
+      { label: t("nav.vendorManagement"), path: "/vendor-management" },
     ]
   },
   { 
     icon: Truck, 
-    label: "Rental Vehicles", 
+    label: t("nav.rentalVehicles"), 
     path: "/rental-vehicles"
   },
   { 
     icon: CalendarClock, 
-    label: "Trip Management", 
+    label: t("nav.tripManagement"), 
     highlight: true,
     subItems: [
-      { label: "Trip Hub", path: "/trip-management" },
-      { label: "Request Dashboard", path: "/fleet-scheduling" },
-      { label: "Dispatch Jobs", path: "/dispatch" },
-      { label: "Pending Approvals", path: "/trip-management?tab=approvals" },
-      { label: "Assignments", path: "/trip-management?tab=active" },
+      { label: t("nav.tripHub"), path: "/trip-management" },
+      { label: t("nav.requestDashboard"), path: "/fleet-scheduling" },
+      { label: t("nav.dispatchJobs"), path: "/dispatch" },
+      { label: t("nav.pendingApprovals"), path: "/trip-management?tab=approvals" },
+      { label: t("nav.assignments"), path: "/trip-management?tab=active" },
     ]
   },
   
-  { icon: BarChart3, label: "Reports & KPIs", subItems: [
-    { label: "Reports", path: "/reports" },
-    { label: "KPI Scorecards", path: "/kpi-scorecards" },
-    { label: "Dashboard Builder", path: "/dashboard-builder" },
+  { icon: BarChart3, label: t("nav.reportsKPIs"), subItems: [
+    { label: t("nav.reports"), path: "/reports" },
+    { label: t("nav.kpiScorecards"), path: "/kpi-scorecards" },
+    { label: t("nav.dashboardBuilder"), path: "/dashboard-builder" },
   ]},
-  { icon: FileText, label: "Documents", path: "/document-management" },
-  { icon: FileSignature, label: "Contracts", path: "/contract-management" },
-  { icon: Leaf, label: "Carbon Emissions", path: "/carbon-emissions" },
-  { icon: FlaskConical, label: "Performance Simulation", path: "/performance-simulation" },
-  { icon: GitBranch, label: "Delegation Matrix", path: "/delegation-matrix" },
-  { icon: Upload, label: "Bulk Operations", path: "/bulk-operations" },
-  { icon: Bell, label: "Notifications", path: "/notification-center" },
-  { icon: Workflow, label: "Workflow Builder", path: "/workflow-builder", highlight: true },
-  { icon: Settings, label: "Settings", path: "/settings" },
+  { icon: FileText, label: t("nav.documents"), path: "/document-management" },
+  { icon: FileSignature, label: t("nav.contracts"), path: "/contract-management" },
+  { icon: Leaf, label: t("nav.carbonEmissions"), path: "/carbon-emissions" },
+  { icon: FlaskConical, label: t("nav.performanceSimulation"), path: "/performance-simulation" },
+  { icon: GitBranch, label: t("nav.delegationMatrix"), path: "/delegation-matrix" },
+  { icon: Upload, label: t("nav.bulkOperations"), path: "/bulk-operations" },
+  { icon: Bell, label: t("nav.notifications"), path: "/notification-center" },
+  { icon: Workflow, label: t("nav.workflowBuilder"), path: "/workflow-builder", highlight: true },
+  { icon: Settings, label: t("nav.settings"), path: "/settings" },
 ];
 
 // Admin navigation items
-const adminItems = [
-  { label: "Organizations", path: "/organizations", icon: Building2 },
-  { label: "Users", path: "/users", icon: Users },
-  { label: "Security", path: "/security", icon: Shield },
-  { label: "Security Dashboard", path: "/security-dashboard", icon: ShieldCheck },
-  { label: "Integrations", path: "/integrations", icon: Plug },
-  { label: "Administration", path: "/administration", icon: Settings },
-  { label: "System Config", path: "/config", icon: Settings2 },
+const getAdminItems = (t: (key: string) => string) => [
+  { label: t("nav.organizations"), path: "/organizations", icon: Building2 },
+  { label: t("nav.users"), path: "/users", icon: Users },
+  { label: t("nav.security"), path: "/security", icon: Shield },
+  { label: t("nav.securityDashboard"), path: "/security-dashboard", icon: ShieldCheck },
+  { label: t("nav.integrations"), path: "/integrations", icon: Plug },
+  { label: t("nav.administration"), path: "/administration", icon: Settings },
+  { label: t("nav.systemConfig"), path: "/config", icon: Settings2 },
 ];
 
 const Layout = ({ children }: LayoutProps) => {
