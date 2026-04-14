@@ -129,13 +129,20 @@ const InfrastructureMonitoring = () => {
           </CardContent>
         </Card>
 
-        <Tabs defaultValue="services" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4 glass p-1 h-12">
+        <Tabs defaultValue="sites" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-5 glass p-1 h-12">
+            <TabsTrigger value="sites"><Building2 className="h-4 w-4 mr-1.5" />Sites</TabsTrigger>
             <TabsTrigger value="services">Services</TabsTrigger>
             <TabsTrigger value="resources">Resources</TabsTrigger>
             <TabsTrigger value="snmp">SNMP Stats</TabsTrigger>
             <TabsTrigger value="performance">Performance</TabsTrigger>
           </TabsList>
+
+          {/* Sites / Multi-Environment Tab */}
+          <TabsContent value="sites" className="space-y-4">
+            <SiteEnvironmentSelector selected={selectedSite} onSelect={setSelectedSite} />
+            <SiteHealthDashboard site={selectedSite} />
+          </TabsContent>
 
           {/* Services Tab */}
           <TabsContent value="services" className="space-y-4">
