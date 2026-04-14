@@ -1007,8 +1007,12 @@ const healthServer = http.createServer(async (req, res) => {
       eventBus: eventBus.getStats(),
     }));
   } else {
-    res.writeHead(404);
-    res.end('Not found');
+    // Try analytics API endpoints
+    const handled = await handleAnalyticsRequest(req, res);
+    if (!handled) {
+      res.writeHead(404);
+      res.end('Not found');
+    }
   }
 });
 
@@ -1038,6 +1042,9 @@ async function start() {
   
   // 1. Time-series sink (uses existing PG pool)
   initTimeSeriesSink(pool);
+
+  // 1b. Analytics REST API
+  initAnalyticsApi(pool);
 
   // 2. Redis pub/sub transport layer
   const redisOk = await initRedis(config.redisUrl);
