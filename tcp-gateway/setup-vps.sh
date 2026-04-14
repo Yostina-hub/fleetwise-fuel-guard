@@ -59,6 +59,9 @@ if command -v ufw &>/dev/null; then
   ufw allow 5030/tcp    comment 'Queclink'
   ufw allow 5031/tcp    comment 'Ruptela'
   ufw allow 5032/tcp    comment 'YTWL'
+  # MQTT ports
+  ufw allow 1883/tcp    comment 'MQTT broker'
+  ufw allow 9883/tcp    comment 'MQTT WebSocket'
   # UDP ports
   ufw allow 5001/udp    comment 'GT06 UDP'
   ufw allow 5013/udp    comment 'TK103 UDP'

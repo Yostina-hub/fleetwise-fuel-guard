@@ -36,6 +36,7 @@ const { IdempotencyGuard } = require('./lib/idempotency');
 const { initWorkers, enqueueGeofenceCheck, getStats: workerStats, shutdown: workerShutdown } = require('./lib/workers');
 const { init: initTimeSeriesSink, ingest: tsIngest, getStats: tsStats, shutdown: tsShutdown } = require('./lib/timeseries-sink');
 const { init: initAnalyticsApi, handleRequest: handleAnalyticsRequest } = require('./lib/analytics-api');
+const { initMqttBroker, getStats: mqttStats, shutdown: mqttShutdown } = require('./lib/mqtt-broker');
 
 // Configuration from environment
 const config = {
@@ -51,6 +52,11 @@ const config = {
   redisUrl: process.env.REDIS_URL || '',
   socketioPort: parseInt(process.env.SOCKETIO_PORT) || 9090,
   enableSocketGateway: process.env.ENABLE_SOCKET_GATEWAY !== 'false', // default: true
+  // MQTT broker
+  enableMqtt: process.env.ENABLE_MQTT !== 'false', // default: true
+  mqttPort: parseInt(process.env.MQTT_PORT) || 1883,
+  mqttWsPort: parseInt(process.env.MQTT_WS_PORT) || 9883,
+  mqttAuthToken: process.env.MQTT_AUTH_TOKEN || '',
   ports: {
     gt06: parseInt(process.env.GT06_PORT) || 5001,
     tk103: parseInt(process.env.TK103_PORT) || 5013,
@@ -262,7 +268,7 @@ function getTrackerModelFromProtocol(protocol) {
   const models = {
     gt06: 'GT06/Concox', tk103: 'Coban TK103', h02: 'Sinotrack/H02',
     teltonika: 'Teltonika', queclink: 'Queclink', ruptela: 'Ruptela',
-    ytwl: 'YTWL Speed Governor'
+    ytwl: 'YTWL Speed Governor', mqtt: 'MQTT Device'
   };
   return models[protocol] || protocol || 'Unknown';
 }
@@ -1002,6 +1008,7 @@ const healthServer = http.createServer(async (req, res) => {
       // Advanced architecture stats
       redis: redisStats(),
       socketio: socketStats(),
+      mqtt: mqttStats(),
       workers: workerStats(),
       timeseries: tsStats(),
       eventBus: eventBus.getStats(),
@@ -1057,9 +1064,23 @@ async function start() {
   // 4. Worker queues (geofence, aggregates, retention)
   initWorkers({ redisUrl: config.redisUrl, pool });
 
+  // 5. MQTT broker (embedded Aedes)
+  let mqttOk = false;
+  if (config.enableMqtt) {
+    mqttOk = initMqttBroker({
+      port: config.mqttPort,
+      wsPort: config.mqttWsPort,
+      authToken: config.mqttAuthToken,
+      onMessage: async (protocol, parsed, raw) => {
+        // Feed MQTT messages into the same pipeline as TCP/UDP
+        await processParsedData(protocol, parsed, raw);
+      },
+    });
+  }
+
   console.log('╔════════════════════════════════════════════════════════════════╗');
-  console.log('║     GPS TCP/UDP Gateway v3.0 - Advanced Architecture          ║');
-  console.log('║     Direct DB + Redis Pub/Sub + Socket.io + Workers           ║');
+  console.log('║     GPS TCP/UDP/MQTT Gateway v3.1 - Advanced Architecture     ║');
+  console.log('║     Direct DB + Redis + Socket.io + MQTT + Workers            ║');
   console.log('╠════════════════════════════════════════════════════════════════╣');
   console.log(`║ GT06/Concox   (TCP/UDP) → Port ${config.ports.gt06.toString().padEnd(5)} │ Binary, full parsing  ║`);
   console.log(`║ TK103         (TCP/UDP) → Port ${config.ports.tk103.toString().padEnd(5)} │ Text, multi-format    ║`);
@@ -1068,6 +1089,8 @@ async function start() {
   console.log(`║ Queclink      (TCP)     → Port ${config.ports.queclink.toString().padEnd(5)} │ AT-style commands     ║`);
   console.log(`║ Ruptela       (TCP)     → Port ${config.ports.ruptela.toString().padEnd(5)} │ Binary with IO        ║`);
   console.log(`║ YTWL Gov      (TCP)     → Port ${config.ports.ytwl.toString().padEnd(5)} │ Speed governor        ║`);
+  console.log(`║ MQTT Broker   (TCP)     → Port ${config.mqttPort.toString().padEnd(5)} │ ${mqttOk ? 'ACTIVE' : 'DISABLED'}              ║`);
+  console.log(`║ MQTT-WS       (WS)      → Port ${config.mqttWsPort.toString().padEnd(5)} │ ${mqttOk ? 'ACTIVE' : 'DISABLED'}              ║`);
   console.log(`║ Health Check  (HTTP)    → Port ${config.ports.health.toString().padEnd(5)} │ /health, /stats       ║`);
   console.log(`║ Socket.io     (WS)      → Port ${config.socketioPort.toString().padEnd(5)} │ ${config.enableSocketGateway ? 'ACTIVE' : 'DISABLED'}              ║`);
   console.log(`║ Redis Pub/Sub           → ${redisOk ? 'CONNECTED' : 'DISABLED (in-process)'}                  ║`);
@@ -1099,6 +1122,7 @@ async function shutdown() {
   clearInterval(flushTimer);
   await flushBatch(); // Flush remaining telemetry data
   await tsShutdown(); // Flush time-series buffer
+  mqttShutdown();     // Close MQTT broker
   socketShutdown();   // Close Socket.io
   await workerShutdown(); // Close worker queues
   await redisShutdown();  // Disconnect Redis

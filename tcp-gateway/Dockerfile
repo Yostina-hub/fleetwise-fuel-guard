@@ -9,8 +9,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies (pg required, ioredis/socket.io/bullmq optional)
-RUN npm ci --only=production; npm install --no-save ioredis socket.io bullmq 2>/dev/null || true
+# Install dependencies (pg required, ioredis/socket.io/bullmq/aedes optional)
+RUN npm ci --only=production; npm install --no-save ioredis socket.io bullmq aedes websocket-stream 2>/dev/null || true
 
 # Copy application code
 COPY gateway.js ./
@@ -40,6 +40,10 @@ EXPOSE 5023/udp
 EXPOSE 8080
 # Socket.io WebSocket gateway
 EXPOSE 9090
+# MQTT broker
+EXPOSE 1883
+# MQTT over WebSocket
+EXPOSE 9883
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
@@ -65,6 +69,10 @@ ENV DEFAULT_ORGANIZATION_ID=
 ENV REDIS_URL=
 ENV ENABLE_SOCKET_GATEWAY=true
 ENV SOCKETIO_PORT=9090
+ENV ENABLE_MQTT=true
+ENV MQTT_PORT=1883
+ENV MQTT_WS_PORT=9883
+ENV MQTT_AUTH_TOKEN=
 ENV DEFAULT_ORGANIZATION_ID=
 
 # Run the gateway
