@@ -139,7 +139,7 @@ const Organizations = () => {
         </div>
 
         {isLoading ? (
-          <div className="text-muted-foreground text-center py-12">{t('common.loading', 'Loading...')}<div>
+          <div className="text-muted-foreground text-center py-12">{t('common.loading', 'Loading...')}</div>
         ) : filtered.length === 0 ? (
           <div className="text-muted-foreground text-center py-12">No organizations found</div>
         ) : (
