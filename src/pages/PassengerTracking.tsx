@@ -182,11 +182,11 @@ const PassengerTracking = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Route</TableHead>
+                    <TableHead>{t('common.route', 'Route')}</TableHead>
                     <TableHead>{t('common.vehicle', 'Vehicle')}</TableHead>
                     <TableHead>{t('common.driver', 'Driver')}</TableHead>
-                    <TableHead>Passengers</TableHead>
-                    <TableHead>Departure</TableHead>
+                    <TableHead>{t('passengers.passengers', 'Passengers')}</TableHead>
+                    <TableHead>{t('passengers.departure', 'Departure')}</TableHead>
                     <TableHead>{t('common.status', 'Status')}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -218,7 +218,7 @@ const PassengerTracking = () => {
           <Card>
             <CardContent className="py-12 text-center text-muted-foreground">
               <UserCheck className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>Select a manifest to view boarding details</p>
+              <p>{t('passengers.selectManifest', 'Select a manifest to view boarding details')}</p>
             </CardContent>
           </Card>
         ) : (
@@ -257,7 +257,7 @@ const PassengerTracking = () => {
                 <Input value={newManifest.route_name} onChange={e => setNewManifest(p => ({ ...p, route_name: e.target.value }))} placeholder="e.g., Bole → Megenagna" />
               </div>
               <div>
-                <Label>Vehicle</Label>
+                <Label>{t('common.vehicle', 'Vehicle')}</Label>
                 <Select value={newManifest.vehicle_id} onValueChange={v => setNewManifest(p => ({ ...p, vehicle_id: v }))}>
                   <SelectTrigger><SelectValue placeholder="Select vehicle" /></SelectTrigger>
                   <SelectContent>
@@ -268,7 +268,7 @@ const PassengerTracking = () => {
                 </Select>
               </div>
               <div>
-                <Label>Driver</Label>
+                <Label>{t('common.driver', 'Driver')}</Label>
                 <Select value={newManifest.driver_id} onValueChange={v => setNewManifest(p => ({ ...p, driver_id: v }))}>
                   <SelectTrigger><SelectValue placeholder="Select driver" /></SelectTrigger>
                   <SelectContent>

@@ -113,7 +113,7 @@ const Drivers = () => {
       case "inactive":
         return <Badge variant="secondary">{t('common.inactive', 'Inactive')}</Badge>;
       case "suspended":
-        return <Badge variant="destructive">Suspended</Badge>;
+        return <Badge variant="destructive">{t('common.suspended', 'Suspended')}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -286,9 +286,9 @@ const Drivers = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                      <SelectItem value="suspended">Suspended</SelectItem>
+                      <SelectItem value="active">{t('common.active', 'Active')}</SelectItem>
+                      <SelectItem value="inactive">{t('common.inactive', 'Inactive')}</SelectItem>
+                      <SelectItem value="suspended">{t('common.suspended', 'Suspended')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -316,7 +316,7 @@ const Drivers = () => {
                       </TableHead>
                       <TableHead>{t('common.driver', 'Driver')}</TableHead>
                       <TableHead>Employee ID</TableHead>
-                      <TableHead>License</TableHead>
+                      <TableHead>{t('common.license', 'License')}</TableHead>
                       <TableHead>{t('common.contact', 'Contact')}</TableHead>
                       <TableHead>{t('common.status', 'Status')}</TableHead>
                       <TableHead>Safety Score</TableHead>
@@ -411,7 +411,7 @@ const Drivers = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuLabel>{t('common.actions', 'Actions')}</DropdownMenuLabel>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => handleViewDriver(driver)}>
                                 <Eye className="w-4 h-4 mr-2" aria-hidden="true" />

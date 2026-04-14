@@ -150,7 +150,7 @@ const KPIScorecard = () => {
                     <SelectContent>{KPI_CATEGORIES.map(c => <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div><Label>Unit</Label><Input value={form.unit} onChange={e => setForm(p => ({ ...p, unit: e.target.value }))} placeholder="%, km, L, etc." /></div>
+                <div><Label>{t('common.unit', 'Unit')}</Label><Input value={form.unit} onChange={e => setForm(p => ({ ...p, unit: e.target.value }))} placeholder="%, km, L, etc." /></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div><Label>Target Value</Label><Input type="number" value={form.target_value} onChange={e => setForm(p => ({ ...p, target_value: parseFloat(e.target.value) || 0 }))} /></div>
@@ -159,10 +159,10 @@ const KPIScorecard = () => {
               <div className="grid grid-cols-3 gap-4">
                 <div><Label>Period Start *</Label><Input type="date" value={form.period_start} onChange={e => setForm(p => ({ ...p, period_start: e.target.value }))} className={errors.period_start ? "border-destructive" : ""} /></div>
                 <div><Label>Period End *</Label><Input type="date" value={form.period_end} onChange={e => setForm(p => ({ ...p, period_end: e.target.value }))} className={errors.period_end ? "border-destructive" : ""} /></div>
-                <div><Label>Trend</Label>
+                <div><Label>{t('kpi.trend', 'Trend')}</Label>
                   <Select value={form.trend} onValueChange={v => setForm(p => ({ ...p, trend: v }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="up">Up</SelectItem><SelectItem value="down">Down</SelectItem><SelectItem value="stable">Stable</SelectItem></SelectContent>
+                    <SelectContent><SelectItem value="up">{t('common.up', 'Up')}</SelectItem><SelectItem value="down">{t('common.down', 'Down')}</SelectItem><SelectItem value="stable">{t('common.stable', 'Stable')}</SelectItem></SelectContent>
                   </Select>
                 </div>
               </div>

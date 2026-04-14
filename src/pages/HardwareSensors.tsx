@@ -151,7 +151,7 @@ const HardwareSensors = () => {
                       <TableCell><Badge variant="outline" className="uppercase">{s.sensor_type}</Badge></TableCell>
                       <TableCell className="font-mono text-sm">{s.sensor_id || "—"}</TableCell>
                       <TableCell className="font-mono text-xs max-w-[300px] truncate">{renderReadings(s.readings, s.sensor_type)}</TableCell>
-                      <TableCell>{s.is_alert ? <Badge variant="destructive">{s.alert_type || "Alert"}</Badge> : <Badge variant="secondary">Normal</Badge>}</TableCell>
+                      <TableCell>{s.is_alert ? <Badge variant="destructive">{s.alert_type || "Alert"}</Badge> : <Badge variant="secondary">{t('common.normal', 'Normal')}</Badge>}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -188,7 +188,7 @@ const HardwareSensors = () => {
         <DialogContent>
           <DialogHeader><DialogTitle>Add Sensor Calibration</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div><Label>Vehicle</Label>
+            <div><Label>{t('common.vehicle', 'Vehicle')}</Label>
               <Select value={calibForm.vehicle_id} onValueChange={v => setCalibForm(p => ({ ...p, vehicle_id: v }))}>
                 <SelectTrigger><SelectValue placeholder="Select vehicle" /></SelectTrigger>
                 <SelectContent>{vehicles.map((v: any) => <SelectItem key={v.id} value={v.id}>{v.plate_number}</SelectItem>)}</SelectContent>
@@ -202,7 +202,7 @@ const HardwareSensors = () => {
                   <SelectItem value="obd2">OBD-II</SelectItem>
                   <SelectItem value="load">Load/Weight</SelectItem>
                   <SelectItem value="fuel">Fuel Sensor</SelectItem>
-                  <SelectItem value="temperature">Temperature</SelectItem>
+                  <SelectItem value="temperature">{t('sensors.temperature', 'Temperature')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>

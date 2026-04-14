@@ -173,7 +173,7 @@ const VendorManagement = () => {
               <div className="flex items-end gap-2"><Label>{t('common.active', 'Active')}</Label>
                   <Select value={form.is_active ? "true" : "false"} onValueChange={v => setForm(p => ({ ...p, is_active: v === "true" }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="true">Active</SelectItem><SelectItem value="false">Inactive</SelectItem></SelectContent>
+                    <SelectContent><SelectItem value="true">{t('common.active', 'Active')}</SelectItem><SelectItem value="false">{t('common.inactive', 'Inactive')}</SelectItem></SelectContent>
                   </Select>
                 </div>
               <div><Label>{t('common.address', 'Address')}</Label><Input value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} /></div>

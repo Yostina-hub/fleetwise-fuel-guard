@@ -143,7 +143,7 @@ const ColdChain = () => {
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
                               <span className="font-semibold">{r.vehicles?.plate_number || "Unknown"}</span>
-                              {isAlarm ? <Badge variant="destructive">ALARM</Badge> : <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">Normal</Badge>}
+                              {isAlarm ? <Badge variant="destructive">ALARM</Badge> : <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">{t('common.normal', 'Normal')}</Badge>}
                             </div>
                             <p className="text-sm text-muted-foreground">
                               {r.vehicles?.make} {r.vehicles?.model} • {r.sensor_id ? `Sensor: ${r.sensor_id}` : ""} • Last: {format(new Date(r.recorded_at), "HH:mm:ss")}

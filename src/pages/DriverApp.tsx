@@ -133,7 +133,7 @@ const DriverApp = () => {
   const getExpiryBadge = (date: string | null) => {
     if (!date) return null;
     const days = differenceInDays(new Date(date), new Date());
-    if (isPast(new Date(date))) return <Badge variant="destructive" className="text-[10px]">Expired</Badge>;
+    if (isPast(new Date(date))) return <Badge variant="destructive" className="text-[10px]">{t('common.expired', 'Expired')}</Badge>;
     if (days <= 30) return <Badge variant="destructive" className="text-[10px]">{days}d left</Badge>;
     if (days <= 90) return <Badge variant="secondary" className="text-[10px]">{days}d left</Badge>;
     return <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-400">Valid</Badge>;

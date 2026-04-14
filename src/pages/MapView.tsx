@@ -791,7 +791,7 @@ const MapView = () => {
                     <SelectItem value="10">10s</SelectItem>
                     <SelectItem value="30">30s</SelectItem>
                     <SelectItem value="60">1m</SelectItem>
-                    <SelectItem value="off">Off</SelectItem>
+                    <SelectItem value="off">{t('common.off', 'Off')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -96,17 +96,17 @@ const Organizations = () => {
                   <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Organization name" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Slug</Label>
+                  <Label>{t('organizations.slug', 'Slug')}</Label>
                   <Input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} placeholder="auto-generated-from-name" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Type</Label>
+                  <Label>{t('common.type', 'Type')}</Label>
                   <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="cpo">CPO</SelectItem>
                       <SelectItem value="fleet_operator">Fleet Operator</SelectItem>
-                      <SelectItem value="enterprise">Enterprise</SelectItem>
+                      <SelectItem value="enterprise">{t('common.enterprise', 'Enterprise')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -150,7 +150,7 @@ const Organizations = () => {
                   <div className="flex items-start justify-between">
                     <CardTitle className="text-base">{org.name}</CardTitle>
                     <div className="flex gap-1.5">
-                      {org.suspended && <Badge variant="destructive" className="text-[10px]">Suspended</Badge>}
+                      {org.suspended && <Badge variant="destructive" className="text-[10px]">{t('common.suspended', 'Suspended')}</Badge>}
                       <Badge variant={org.active ? "default" : "secondary"} className="text-[10px]">
                         {org.active ? "Active" : "Inactive"}
                       </Badge>

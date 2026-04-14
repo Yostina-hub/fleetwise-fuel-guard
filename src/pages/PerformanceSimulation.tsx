@@ -203,7 +203,7 @@ const PerformanceSimulation = () => {
                       <TableCell>{((s.results?.totalSavingsPercent || 0) * 100).toFixed(1)}%</TableCell>
                       <TableCell className="text-sm">{format(new Date(s.created_at), "MMM dd, yyyy")}</TableCell>
                       <TableCell className="flex gap-1">
-                        <Button size="sm" variant="ghost" onClick={() => loadScenario(s)}>Load</Button>
+                        <Button size="sm" variant="ghost" onClick={() => loadScenario(s)}>{t('common.load', 'Load')}</Button>
                         <Button size="sm" variant="ghost" className="text-destructive" onClick={() => deleteMutation.mutate(s.id)}>
                           <Trash2 className="h-3 w-3" />
                         </Button>

@@ -254,7 +254,7 @@ const TireManagement = () => {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div><Label>Brand *</Label><Input value={form.brand} onChange={e => setForm(f => ({ ...f, brand: e.target.value }))} placeholder="e.g. Michelin" /></div>
-                <div><Label>Model</Label><Input value={form.model} onChange={e => setForm(f => ({ ...f, model: e.target.value }))} placeholder="e.g. X Multi D" /></div>
+                <div><Label>{t('vehicles.model', 'Model')}</Label><Input value={form.model} onChange={e => setForm(f => ({ ...f, model: e.target.value }))} placeholder="e.g. X Multi D" /></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div><Label>Size *</Label><Input value={form.size} onChange={e => setForm(f => ({ ...f, size: e.target.value }))} placeholder="e.g. 315/80R22.5" /></div>
@@ -270,7 +270,7 @@ const TireManagement = () => {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div><Label>Vehicle</Label>
+                <div><Label>{t('common.vehicle', 'Vehicle')}</Label>
                   <Select value={form.vehicle_id} onValueChange={v => setForm(f => ({ ...f, vehicle_id: v }))}>
                     <SelectTrigger><SelectValue placeholder="Select vehicle" /></SelectTrigger>
                     <SelectContent>
