@@ -206,8 +206,12 @@ const Layout = ({ children }: LayoutProps) => {
   const { isCollapsed, toggleSidebar } = useSidebar();
   const isMobile = useIsMobile();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  
+  const navItems = useMemo(() => getNavItems(t), [t]);
+  const adminItems = useMemo(() => getAdminItems(t), [t]);
   
   const isDark = theme === "dark" || theme === "cyber";
 
