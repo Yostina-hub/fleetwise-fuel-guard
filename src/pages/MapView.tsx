@@ -91,6 +91,7 @@ const hasValidCoords = (lat: number | null | undefined, lng: number | null | und
 };
 
 const MapView = () => {
+  const isMobile = useIsMobile();
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
