@@ -87,7 +87,34 @@
     "assignedTo": "Assigned To",
     "createdAt": "Created At",
     "updatedAt": "Updated At",
-    "createdBy": "Created By"
+    "createdBy": "Created By",
+    "vehicle": "Vehicle",
+    "driver": "Driver",
+    "location": "Location",
+    "amount": "Amount",
+    "category": "Category",
+    "entity": "Entity",
+    "contact": "Contact",
+    "email": "Email",
+    "phone": "Phone",
+    "address": "Address",
+    "expires": "Expires",
+    "start": "Start",
+    "end": "End",
+    "value": "Value",
+    "dueDate": "Due Date",
+    "requestNumber": "Request #",
+    "title": "Title",
+    "overdue": "Overdue",
+    "expiringSoon": "Expiring Soon",
+    "totalItems": "Total Items",
+    "totalRequests": "Total Requests",
+    "pendingApproval": "Pending Approval",
+    "allRequests": "All Requests",
+    "allTypes": "All Types",
+    "addDeadline": "Add Deadline",
+    "newRequest": "New Request",
+    "approved": "Approved"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -330,7 +357,15 @@
       "onLeave": "On Leave",
       "onDuty": "On Duty",
       "offDuty": "Off Duty"
-    }
+    },
+    "availability": "Availability",
+    "leaderboard": "Leaderboard",
+    "messages": "Messages",
+    "dvir": "DVIR",
+    "groups": "Groups",
+    "operations": "Operations",
+    "overviewDesc": "Fleet-wide driver overview & quick actions",
+    "operationsDesc": "Operations & real-time status"
   },
   "dispatch": {
     "title": "Dispatch & Scheduling",
@@ -432,7 +467,16 @@
       "analytics": "Analytics",
       "alerts": "Alerts",
       "stations": "Stations"
-    }
+    },
+    "newRequest": "New Request",
+    "totalRequests": "Total Requests",
+    "pendingApproval": "Pending Approval",
+    "dispensed": "Dispensed",
+    "allRequests": "All Requests",
+    "searchPlaceholder": "Search by request # or plate...",
+    "requestNumber": "Request #",
+    "estCost": "Est. Cost",
+    "noRequests": "No fuel requests found"
   },
   "alerts": {
     "title": "Alerts",
@@ -751,7 +795,13 @@
     "reminder": "Reminder",
     "overdue": "Overdue",
     "upcoming": "Upcoming",
-    "completed": "Completed"
+    "completed": "Completed",
+    "dueThisWeek": "Due This Week",
+    "deadlines": "Compliance Deadlines",
+    "deadline": "Deadline",
+    "daysLeft": "Days Left",
+    "noItems": "No compliance items scheduled",
+    "dueSoon": "Due Soon"
   },
   "contracts": {
     "title": "Contract Management",
@@ -767,7 +817,14 @@
       "expired": "Expired",
       "pending": "Pending",
       "terminated": "Terminated"
-    }
+    },
+    "newContract": "New Contract",
+    "totalContracts": "Total Contracts",
+    "activeValue": "Active Value",
+    "party": "Party",
+    "indefinite": "Indefinite",
+    "noContracts": "No contracts found",
+    "search": "Search contracts..."
   },
   "documents": {
     "title": "Document Management",
@@ -777,7 +834,20 @@
     "fileSize": "File Size",
     "expiryDate": "Expiry Date",
     "verified": "Verified",
-    "unverified": "Unverified"
+    "unverified": "Unverified",
+    "upload": "Upload Document",
+    "totalDocuments": "Total Documents",
+    "pendingVerification": "Pending Verification",
+    "document": "Document",
+    "docNumber": "Doc #",
+    "issued": "Issued",
+    "noDocuments": "No documents found",
+    "search": "Search documents...",
+    "registration": "Registration",
+    "insurance": "Insurance",
+    "license": "License",
+    "inspection": "Inspection",
+    "contract": "Contract"
   },
   "accidentInsurance": {
     "title": "Accident & Insurance",
@@ -852,7 +922,14 @@
     "vendorType": "Vendor Type",
     "contactPerson": "Contact Person",
     "rating": "Rating",
-    "contractValue": "Contract Value"
+    "contractValue": "Contract Value",
+    "addVendor": "Add Vendor",
+    "editVendor": "Edit Vendor",
+    "totalVendors": "Total Vendors",
+    "topRated": "Top Rated (4+)",
+    "ratingLabel": "Rating (0–5)",
+    "noVendors": "No vendors found",
+    "search": "Search vendors..."
   },
   "penalties": {
     "title": "Penalties & Fines",
@@ -917,7 +994,9 @@
     "clearAll": "Clear All",
     "unread": "Unread",
     "read": "Read",
-    "preferences": "Preferences"
+    "preferences": "Preferences",
+    "highPriority": "High Priority",
+    "noNotifications": "No notifications"
   },
   "organizations": {
     "title": "Organizations",
@@ -1167,6 +1246,59 @@
     "vendor_management": {
       "title": "Vendor Management",
       "description": "Manage suppliers, service providers, and vendor contracts"
+    },
+    "integrations": {
+      "title": "APIs & Integrations",
+      "description": "Manage webhooks, external integrations, and bulk data operations"
     }
+  },
+  "insurance": {
+    "newClaim": "New Claim",
+    "activePolicies": "Active Policies",
+    "totalClaims": "Total Claims",
+    "openClaims": "Open Claims",
+    "totalClaimed": "Total Claimed",
+    "searchPlaceholder": "Search claims or policies...",
+    "accidentClaims": "Accident Claims",
+    "insurancePolicies": "Insurance Policies",
+    "claimNumber": "Claim #",
+    "policyNumber": "Policy #",
+    "fault": "Fault",
+    "provider": "Provider",
+    "coverage": "Coverage",
+    "premium": "Premium",
+    "amount": "Amount",
+    "expires": "Expires",
+    "noClaims": "No claims recorded",
+    "noPolicies": "No policies recorded",
+    "search": "Search claims or policies..."
+  },
+  "parts": {
+    "addPart": "Add Part",
+    "totalParts": "Total Parts",
+    "inStock": "In Stock",
+    "lowStock": "Low Stock",
+    "inventoryValue": "Inventory Value",
+    "partNumber": "Part #",
+    "qty": "Qty",
+    "minStock": "Min Stock",
+    "unitCost": "Unit Cost",
+    "supplier": "Supplier",
+    "noParts": "No parts in inventory",
+    "search": "Search parts..."
+  },
+  "fines": {
+    "recordFine": "Record Fine",
+    "totalFines": "Total Fines",
+    "unpaid": "Unpaid",
+    "outstanding": "Outstanding",
+    "totalPaid": "Total Paid",
+    "fineNumber": "Fine #",
+    "violation": "Violation",
+    "noFines": "No fines recorded",
+    "search": "Search fines..."
+  },
+  "trips": {
+    "search": "Search trips..."
   }
 }
