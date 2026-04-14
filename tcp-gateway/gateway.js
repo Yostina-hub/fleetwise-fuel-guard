@@ -1033,9 +1033,25 @@ async function start() {
   // Preload IMEI cache
   await preloadDeviceCache();
 
+  // ── Initialize Advanced Architecture (all optional, non-breaking) ──
+  
+  // 1. Time-series sink (uses existing PG pool)
+  initTimeSeriesSink(pool);
+
+  // 2. Redis pub/sub transport layer
+  const redisOk = await initRedis(config.redisUrl);
+  
+  // 3. Socket.io real-time gateway
+  if (config.enableSocketGateway) {
+    initSocketGateway(config.socketioPort);
+  }
+
+  // 4. Worker queues (geofence, aggregates, retention)
+  initWorkers({ redisUrl: config.redisUrl, pool });
+
   console.log('╔════════════════════════════════════════════════════════════════╗');
-  console.log('║     GPS TCP/UDP Gateway - Direct DB Write Mode                 ║');
-  console.log('║     No edge functions - batched PostgreSQL writes              ║');
+  console.log('║     GPS TCP/UDP Gateway v3.0 - Advanced Architecture          ║');
+  console.log('║     Direct DB + Redis Pub/Sub + Socket.io + Workers           ║');
   console.log('╠════════════════════════════════════════════════════════════════╣');
   console.log(`║ GT06/Concox   (TCP/UDP) → Port ${config.ports.gt06.toString().padEnd(5)} │ Binary, full parsing  ║`);
   console.log(`║ TK103         (TCP/UDP) → Port ${config.ports.tk103.toString().padEnd(5)} │ Text, multi-format    ║`);
@@ -1045,6 +1061,9 @@ async function start() {
   console.log(`║ Ruptela       (TCP)     → Port ${config.ports.ruptela.toString().padEnd(5)} │ Binary with IO        ║`);
   console.log(`║ YTWL Gov      (TCP)     → Port ${config.ports.ytwl.toString().padEnd(5)} │ Speed governor        ║`);
   console.log(`║ Health Check  (HTTP)    → Port ${config.ports.health.toString().padEnd(5)} │ /health, /stats       ║`);
+  console.log(`║ Socket.io     (WS)      → Port ${config.socketioPort.toString().padEnd(5)} │ ${config.enableSocketGateway ? 'ACTIVE' : 'DISABLED'}              ║`);
+  console.log(`║ Redis Pub/Sub           → ${redisOk ? 'CONNECTED' : 'DISABLED (in-process)'}                  ║`);
+  console.log(`║ Workers                 → ${config.redisUrl ? 'BullMQ' : 'In-process'}                          ║`);
   console.log(`║ Batch interval: ${config.batchIntervalMs}ms │ Batch size: ${config.batchSize.toString().padEnd(3)}         ║`);
   console.log(`║ IMEI cache: ${imeiCache.size} devices preloaded                         ║`);
   console.log('╚════════════════════════════════════════════════════════════════╝');
