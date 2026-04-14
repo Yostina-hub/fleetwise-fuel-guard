@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, Area, AreaChart } from "recharts";
 import GlowingCard from "./GlowingCard";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface FuelTrendData {
   month: string;
@@ -17,6 +18,7 @@ interface FuelTrendChartProps {
 }
 
 const FuelTrendChart = ({ data, trend, trendPercentage, loading }: FuelTrendChartProps) => {
+  const { t } = useTranslation();
   const TrendIcon = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus;
   const trendColor = trend === 'down' ? 'text-success' : trend === 'up' ? 'text-destructive' : 'text-muted-foreground';
 
@@ -37,10 +39,10 @@ const FuelTrendChart = ({ data, trend, trendPercentage, loading }: FuelTrendChar
         <div className="bg-popover border rounded-lg shadow-lg p-3">
           <p className="font-medium mb-1">{label}</p>
           <p className="text-sm text-warning">
-            Consumption: {payload[0]?.value?.toLocaleString()} L
+            {t('executive.consumption')}: {payload[0]?.value?.toLocaleString()} L
           </p>
           <p className="text-sm text-primary">
-            Cost: ETB {payload[1]?.value?.toLocaleString()}
+            {t('executive.cost')}: ETB {payload[1]?.value?.toLocaleString()}
           </p>
         </div>
       );
@@ -52,28 +54,23 @@ const FuelTrendChart = ({ data, trend, trendPercentage, loading }: FuelTrendChar
     <GlowingCard glowColor="warning">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="font-semibold text-lg">Last 3 Months Fuel Trend</h3>
+          <h3 className="font-semibold text-lg">{t('executive.fuelTrend')}</h3>
           <div className="flex items-center gap-2 mt-1">
             <TrendIcon className={`w-4 h-4 ${trendColor}`} />
             <span className={`text-sm font-medium ${trendColor}`}>
-              {trendPercentage.toFixed(1)}% {trend === 'down' ? 'decrease' : trend === 'up' ? 'increase' : 'stable'}
+              {trendPercentage.toFixed(1)}% {trend === 'down' ? t('executive.decrease') : trend === 'up' ? t('executive.increase') : t('executive.stable')}
             </span>
           </div>
         </div>
         <div className="text-right">
-          <span className="text-xs text-muted-foreground">Fuel Usage</span>
+          <span className="text-xs text-muted-foreground">{t('executive.fuelUsage')}</span>
           <p className="text-2xl font-bold text-warning">
             {data.reduce((s, d) => s + d.consumption, 0).toLocaleString()} L
           </p>
         </div>
       </div>
       
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className="h-40"
-      >
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }} className="h-40">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
             <defs>
@@ -86,13 +83,7 @@ const FuelTrendChart = ({ data, trend, trendPercentage, loading }: FuelTrendChar
             <XAxis dataKey="month" tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 11 }} />
             <Tooltip content={<CustomTooltip />} />
-            <Area
-              type="monotone"
-              dataKey="consumption"
-              stroke="hsl(var(--warning))"
-              strokeWidth={2}
-              fill="url(#fuelGradient)"
-            />
+            <Area type="monotone" dataKey="consumption" stroke="hsl(var(--warning))" strokeWidth={2} fill="url(#fuelGradient)" />
           </AreaChart>
         </ResponsiveContainer>
       </motion.div>

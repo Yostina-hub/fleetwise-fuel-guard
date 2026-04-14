@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Trophy, Medal, TrendingUp, TrendingDown, Star } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { useTranslation } from "react-i18next";
 
 interface Driver {
   id: string;
@@ -21,6 +22,8 @@ interface TopDriversCardProps {
 }
 
 const TopDriversCard = ({ drivers, loading }: TopDriversCardProps) => {
+  const { t } = useTranslation();
+
   if (loading) {
     return (
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-2xl bg-[#1a2332] border border-[#2a3a4d] p-6">
@@ -62,7 +65,6 @@ const TopDriversCard = ({ drivers, loading }: TopDriversCardProps) => {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative rounded-2xl bg-[#1a2332] border border-[#2a3a4d] overflow-hidden">
       <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-primary/10 to-transparent" />
-
       <div className="relative z-10 p-6">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
@@ -70,11 +72,11 @@ const TopDriversCard = ({ drivers, loading }: TopDriversCardProps) => {
               <Star className="w-5 h-5 text-warning" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white">Top Drivers</h3>
-              <p className="text-sm text-white/60">By safety performance</p>
+              <h3 className="text-lg font-semibold text-white">{t('executive.topDrivers')}</h3>
+              <p className="text-sm text-white/60">{t('executive.bySafetyPerformance')}</p>
             </div>
           </div>
-          <Badge variant="outline" className="bg-primary/20 text-primary border-primary/40">This Month</Badge>
+          <Badge variant="outline" className="bg-primary/20 text-primary border-primary/40">{t('executive.thisMonth')}</Badge>
         </div>
 
         <div className="space-y-4">
@@ -96,7 +98,7 @@ const TopDriversCard = ({ drivers, loading }: TopDriversCardProps) => {
                 <div className="relative h-1.5 bg-[#2a3a4d] rounded-full overflow-hidden">
                   <motion.div className={`absolute inset-y-0 left-0 rounded-full ${getProgressColor(driver.safetyScore)}`} initial={{ width: '0%' }} animate={{ width: `${driver.safetyScore}%` }} transition={{ duration: 1, delay: index * 0.15 }} />
                 </div>
-                <p className="text-xs text-white/60 mt-1">{driver.totalTrips} trips • {driver.totalDistance.toLocaleString()} km</p>
+                <p className="text-xs text-white/60 mt-1">{driver.totalTrips} {t('executive.trips')} • {driver.totalDistance.toLocaleString()} km</p>
               </div>
             </motion.div>
           ))}

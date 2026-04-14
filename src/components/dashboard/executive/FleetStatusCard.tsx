@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
+import { useTranslation } from "react-i18next";
 
 interface StatusItem {
   status: string;
@@ -17,6 +18,7 @@ interface FleetStatusCardProps {
 }
 
 const FleetStatusCard = ({ totalAssets, statuses, loading }: FleetStatusCardProps) => {
+  const { t } = useTranslation();
   const { formattedValue: animatedTotal } = useAnimatedCounter(totalAssets, { duration: 1500 });
 
   if (loading) {
@@ -54,19 +56,11 @@ const FleetStatusCard = ({ totalAssets, statuses, loading }: FleetStatusCardProp
       style={{ background: 'linear-gradient(135deg, #001a33 0%, #002244 50%, #001a33 100%)' }}
     >
       <div className="flex items-center gap-3 mb-4">
-        <h3 className="font-bold text-lg text-white tracking-tight">Fleet Status</h3>
+        <h3 className="font-bold text-lg text-white tracking-tight">{t('executive.fleetStatus')}</h3>
         <Badge variant="outline" className="text-xs bg-[#8DC63F]/20 text-[#8DC63F] border-[#8DC63F]/40 font-medium">
-          <motion.span
-            animate={{ opacity: [1, 0.6, 1] }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-            className="inline-flex items-center gap-1.5"
-          >
-            <motion.span 
-              className="w-2 h-2 rounded-full bg-[#8DC63F]"
-              animate={{ scale: [1, 1.4, 1], opacity: [1, 0.7, 1] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-            />
-            Live
+          <motion.span animate={{ opacity: [1, 0.6, 1] }} transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }} className="inline-flex items-center gap-1.5">
+            <motion.span className="w-2 h-2 rounded-full bg-[#8DC63F]" animate={{ scale: [1, 1.4, 1], opacity: [1, 0.7, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+            {t('executive.live')}
           </motion.span>
         </Badge>
       </div>
@@ -86,7 +80,7 @@ const FleetStatusCard = ({ totalAssets, statuses, loading }: FleetStatusCardProp
             <motion.span className="text-2xl font-bold text-white" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }} key={totalAssets}>
               {animatedTotal}
             </motion.span>
-            <span className="text-[10px] text-white/60 font-medium">Vehicles</span>
+            <span className="text-[10px] text-white/60 font-medium">{t('executive.vehicles')}</span>
           </div>
         </div>
 
@@ -94,9 +88,9 @@ const FleetStatusCard = ({ totalAssets, statuses, loading }: FleetStatusCardProp
           <table className="w-full text-xs">
             <thead>
               <tr className="text-white/60">
-                <th className="text-left py-1 font-semibold">Status</th>
-                <th className="text-center py-1 font-semibold">Count</th>
-                <th className="text-right py-1 font-semibold">Fleet %</th>
+                <th className="text-left py-1 font-semibold">{t('common.status')}</th>
+                <th className="text-center py-1 font-semibold">{t('executive.count')}</th>
+                <th className="text-right py-1 font-semibold">{t('executive.fleetPercent')}</th>
               </tr>
             </thead>
             <tbody>
