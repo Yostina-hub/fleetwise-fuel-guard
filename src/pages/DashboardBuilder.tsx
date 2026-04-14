@@ -270,9 +270,9 @@ const DashboardBuilder = () => {
                       <Select value={widget.size} onValueChange={(v) => updateWidgetSize(widget.id, v as Widget["size"])}>
                         <SelectTrigger className="h-7 w-20 text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="small">Small</SelectItem>
-                          <SelectItem value="medium">Medium</SelectItem>
-                          <SelectItem value="large">Large</SelectItem>
+                          <SelectItem value="small">{t('common.small', 'Small')}</SelectItem>
+                          <SelectItem value="medium">{t('common.medium', 'Medium')}</SelectItem>
+                          <SelectItem value="large">{t('common.large', 'Large')}</SelectItem>
                         </SelectContent>
                       </Select>
                       <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => removeWidget(widget.id)}>
@@ -308,7 +308,7 @@ const DashboardBuilder = () => {
           <Input placeholder="Dashboard name..." value={newName} onChange={e => setNewName(e.target.value)} />
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowNewDialog(false)}>{t('common.cancel', 'Cancel')}</Button>
-            <Button onClick={createNewLayout} disabled={!newName.trim()}>Create</Button>
+            <Button onClick={createNewLayout} disabled={!newName.trim()}>{t('common.create', 'Create')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -85,7 +85,7 @@ const TireManagement = () => {
 
   const getStatusBadge = (status: string | null) => {
     switch (status) {
-      case "active": return <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">Active</Badge>;
+      case "active": return <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">{t('common.active', 'Active')}</Badge>;
       case "warning": return <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">Replace Soon</Badge>;
       case "retired": return <Badge variant="destructive">Retired</Badge>;
       default: return <Badge variant="outline">{status || "Unknown"}</Badge>;

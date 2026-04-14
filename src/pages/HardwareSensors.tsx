@@ -138,7 +138,7 @@ const HardwareSensors = () => {
             <TabsContent key={tab} value={tab}>
               <Card><Table>
                 <TableHeader><TableRow>
-                  <TableHead>Time</TableHead><TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>{t('common.type', 'Type')}</TableHead><TableHead>Sensor ID</TableHead><TableHead>Readings</TableHead><TableHead>{t('common.status', 'Status')}</TableHead>
+                  <TableHead>{t('common.time', 'Time')}</TableHead><TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>{t('common.type', 'Type')}</TableHead><TableHead>Sensor ID</TableHead><TableHead>Readings</TableHead><TableHead>{t('common.status', 'Status')}</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
                   {isLoading ? <TableRow><TableCell colSpan={6} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :

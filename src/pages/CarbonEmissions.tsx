@@ -137,7 +137,7 @@ const CarbonEmissions = () => {
         </div>
 
         <Tabs defaultValue="overview">
-          <TabsList><TabsTrigger value="overview">Overview</TabsTrigger><TabsTrigger value="vehicles">By Vehicle</TabsTrigger><TabsTrigger value="sources">By Source</TabsTrigger><TabsTrigger value="details">Details</TabsTrigger></TabsList>
+          <TabsList><TabsTrigger value="overview">{t('common.overview', 'Overview')}</TabsTrigger><TabsTrigger value="vehicles">{t('emissions.byVehicle', 'By Vehicle')}</TabsTrigger><TabsTrigger value="sources">{t('emissions.bySource', 'By Source')}</TabsTrigger><TabsTrigger value="details">{t('common.details', 'Details')}</TabsTrigger></TabsList>
 
           <TabsContent value="overview">
             <Card><CardHeader><CardTitle>Emissions Trend</CardTitle></CardHeader><CardContent>
@@ -223,12 +223,12 @@ const CarbonEmissions = () => {
                 <div><Label>Distance (km)</Label><Input type="number" min={0} value={form.distance_km} onChange={e => setForm(p => ({ ...p, distance_km: parseFloat(e.target.value) || 0 }))} /></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div><Label>Source</Label>
+                <div><Label>{t('common.source', 'Source')}</Label>
                   <Select value={form.emission_source} onValueChange={v => setForm(p => ({ ...p, emission_source: v }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="fuel_combustion">Fuel Combustion</SelectItem>
-                      <SelectItem value="idling">Idling</SelectItem>
+                      <SelectItem value="idling">{t('common.idling', 'Idling')}</SelectItem>
                       <SelectItem value="cold_start">Cold Start</SelectItem>
                       <SelectItem value="ac_usage">AC Usage</SelectItem>
                     </SelectContent>

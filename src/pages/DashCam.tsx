@@ -142,13 +142,13 @@ const DashCam = () => {
           <TabsContent value="events" className="space-y-4">
             <div className="flex gap-3">
               <div className="relative flex-1"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input placeholder="Search by event or plate..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" /></div>
-              <Select value={severityFilter} onValueChange={setSeverityFilter}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Severity</SelectItem><SelectItem value="critical">Critical</SelectItem><SelectItem value="high">High</SelectItem><SelectItem value="medium">Medium</SelectItem><SelectItem value="low">Low</SelectItem></SelectContent></Select>
+              <Select value={severityFilter} onValueChange={setSeverityFilter}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Severity</SelectItem><SelectItem value="critical">{t('alerts.critical', 'Critical')}</SelectItem><SelectItem value="high">High</SelectItem><SelectItem value="medium">{t('common.medium', 'Medium')}</SelectItem><SelectItem value="low">Low</SelectItem></SelectContent></Select>
             </div>
             <Card>
               <Table>
                 <TableHeader><TableRow>
                   <TableHead className="w-10"><Checkbox checked={selectedIds.size === filtered.length && filtered.length > 0} onCheckedChange={toggleAll} /></TableHead>
-                  <TableHead>Time</TableHead><TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>{t('common.driver', 'Driver')}</TableHead><TableHead>Event</TableHead><TableHead>Severity</TableHead><TableHead>AI</TableHead><TableHead>{t('common.status', 'Status')}</TableHead><TableHead>{t('common.actions', 'Actions')}</TableHead>
+                  <TableHead>{t('common.time', 'Time')}</TableHead><TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>{t('common.driver', 'Driver')}</TableHead><TableHead>Event</TableHead><TableHead>{t('common.severity', 'Severity')}</TableHead><TableHead>AI</TableHead><TableHead>{t('common.status', 'Status')}</TableHead><TableHead>{t('common.actions', 'Actions')}</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
                   {isLoading ? <TableRow><TableCell colSpan={9} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :

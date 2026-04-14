@@ -132,7 +132,7 @@ const Alerts = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "unacknowledged":
-        return <Badge variant="destructive">Unacknowledged</Badge>;
+        return <Badge variant="destructive">{t('alerts.unacknowledged', 'Unacknowledged')}</Badge>;
       case "acknowledged":
         return <Badge variant="outline" className="border-warning text-warning">Acknowledged</Badge>;
       case "resolved":
@@ -356,9 +356,9 @@ const Alerts = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Severities</SelectItem>
-                    <SelectItem value="critical">Critical</SelectItem>
-                    <SelectItem value="warning">Warning</SelectItem>
-                    <SelectItem value="info">Info</SelectItem>
+                    <SelectItem value="critical">{t('alerts.critical', 'Critical')}</SelectItem>
+                    <SelectItem value="warning">{t('alerts.warning', 'Warning')}</SelectItem>
+                    <SelectItem value="info">{t('alerts.info', 'Info')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -372,9 +372,9 @@ const Alerts = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="unacknowledged">Unacknowledged</SelectItem>
-                    <SelectItem value="acknowledged">Acknowledged</SelectItem>
-                    <SelectItem value="resolved">Resolved</SelectItem>
+                    <SelectItem value="unacknowledged">{t('alerts.unacknowledged', 'Unacknowledged')}</SelectItem>
+                    <SelectItem value="acknowledged">{t('alerts.acknowledged', 'Acknowledged')}</SelectItem>
+                    <SelectItem value="resolved">{t('alerts.resolved', 'Resolved')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -588,7 +588,7 @@ const Alerts = () => {
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Mark alert as acknowledged</p>
+                              <p>{t('alerts.markAcknowledged', 'Mark alert as acknowledged')}</p>
                             </TooltipContent>
                           </Tooltip>
                           <Tooltip>
@@ -605,7 +605,7 @@ const Alerts = () => {
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Mark alert as resolved</p>
+                              <p>{t('alerts.markResolved', 'Mark alert as resolved')}</p>
                             </TooltipContent>
                           </Tooltip>
                         </div>
@@ -629,7 +629,7 @@ const Alerts = () => {
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Close and mark as resolved</p>
+                              <p>{t('alerts.closeResolved', 'Close and mark as resolved')}</p>
                             </TooltipContent>
                           </Tooltip>
                         </div>

@@ -70,7 +70,7 @@ const RentalVehicles = () => {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "active": return <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">Active</Badge>;
+      case "active": return <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">{t('common.active', 'Active')}</Badge>;
       case "expiring_soon": return <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">Expiring Soon</Badge>;
       case "expired": return <Badge variant="destructive">Expired</Badge>;
       case "terminated": return <Badge variant="secondary">Terminated</Badge>;

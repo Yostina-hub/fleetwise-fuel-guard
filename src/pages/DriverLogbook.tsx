@@ -58,13 +58,13 @@ const DriverLogbook = () => {
         </div>
 
         <Tabs defaultValue="logs">
-          <TabsList><TabsTrigger value="logs">All Logs</TabsTrigger><TabsTrigger value="violations">Violations</TabsTrigger></TabsList>
+          <TabsList><TabsTrigger value="logs">{t('logbook.allLogs', 'All Logs')}</TabsTrigger><TabsTrigger value="violations">{t('logbook.violations', 'Violations')}</TabsTrigger></TabsList>
 
           <TabsContent value="logs" className="space-y-4">
             <div className="relative"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input placeholder="Search by driver name..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" /></div>
             <Card><Table>
               <TableHeader><TableRow>
-                <TableHead>{t('common.date', 'Date')}</TableHead><TableHead>{t('common.driver', 'Driver')}</TableHead><TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>Driving</TableHead><TableHead>Rest</TableHead><TableHead>Breaks</TableHead><TableHead>Distance</TableHead><TableHead>{t('common.status', 'Status')}</TableHead>
+                <TableHead>{t('common.date', 'Date')}</TableHead><TableHead>{t('common.driver', 'Driver')}</TableHead><TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>Driving</TableHead><TableHead>Rest</TableHead><TableHead>Breaks</TableHead><TableHead>{t('common.distance', 'Distance')}</TableHead><TableHead>{t('common.status', 'Status')}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :

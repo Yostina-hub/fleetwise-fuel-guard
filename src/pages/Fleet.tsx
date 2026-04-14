@@ -508,7 +508,7 @@ const Fleet = () => {
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="maintenance">Maintenance</SelectItem>
+                    <SelectItem value="maintenance">{t('common.maintenance', 'Maintenance')}</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
                   </SelectContent>
                 </Select>

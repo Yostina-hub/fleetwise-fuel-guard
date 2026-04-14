@@ -136,7 +136,7 @@ const TripManagement = () => {
               {canApprove && <TabsTrigger value="approvals" className="text-xs h-7">Approvals</TabsTrigger>}
               <TabsTrigger value="calendar" className="text-xs h-7">Calendar</TabsTrigger>
               <TabsTrigger value="timeline" className="text-xs h-7">Timeline</TabsTrigger>
-              <TabsTrigger value="analytics" className="text-xs h-7">Analytics</TabsTrigger>
+              <TabsTrigger value="analytics" className="text-xs h-7">{t('common.analytics', 'Analytics')}</TabsTrigger>
             </TabsList>
 
             {activeTab === "trips" && (

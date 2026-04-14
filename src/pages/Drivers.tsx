@@ -109,9 +109,9 @@ const Drivers = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
-        return <Badge className="bg-success/10 text-success border-success/20">Active</Badge>;
+        return <Badge className="bg-success/10 text-success border-success/20">{t('common.active', 'Active')}</Badge>;
       case "inactive":
-        return <Badge variant="secondary">Inactive</Badge>;
+        return <Badge variant="secondary">{t('common.inactive', 'Inactive')}</Badge>;
       case "suspended":
         return <Badge variant="destructive">Suspended</Badge>;
       default:

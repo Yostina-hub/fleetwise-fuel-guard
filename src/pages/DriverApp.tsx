@@ -315,8 +315,8 @@ const DriverApp = () => {
                           </div>
                           <div className="flex items-center gap-2">
                             {doc.is_verified
-                              ? <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-400">Verified</Badge>
-                              : <Badge variant="outline" className="text-[10px]">Pending</Badge>}
+                              ? <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-400">{t('documents.verified', 'Verified')}</Badge>
+                              : <Badge variant="outline" className="text-[10px]">{t('common.pending', 'Pending')}</Badge>}
                             {getExpiryBadge(doc.expiry_date)}
                           </div>
                         </div>

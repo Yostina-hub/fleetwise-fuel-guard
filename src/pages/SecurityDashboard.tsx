@@ -72,9 +72,9 @@ const SecurityDashboard = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return <Badge className="bg-green-500/10 text-green-600 border-green-500/20"><CheckCircle2 className="h-3 w-3 mr-1" aria-hidden="true" />Active</Badge>;
+        return <Badge className="bg-green-500/10 text-green-600 border-green-500/20"><CheckCircle2 className="h-3 w-3 mr-1" aria-hidden="true" />{t('common.active', 'Active')}</Badge>;
       case 'inactive':
-        return <Badge variant="outline" className="text-muted-foreground"><XCircle className="h-3 w-3 mr-1" aria-hidden="true" />Inactive</Badge>;
+        return <Badge variant="outline" className="text-muted-foreground"><XCircle className="h-3 w-3 mr-1" aria-hidden="true" />{t('common.inactive', 'Inactive')}</Badge>;
       case 'warning':
         return <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20"><AlertCircle className="h-3 w-3 mr-1" aria-hidden="true" />Needs Attention</Badge>;
       default:
@@ -187,7 +187,7 @@ const SecurityDashboard = () => {
         <Tabs defaultValue="overview" className="space-y-4">
           <ScrollArea className="w-full whitespace-nowrap">
             <TabsList className="inline-flex w-max">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="overview">{t('common.overview', 'Overview')}</TabsTrigger>
               <TabsTrigger value="audit">Audit Compliance</TabsTrigger>
               <TabsTrigger value="delay">Progressive Delay</TabsTrigger>
               <TabsTrigger value="sessions">Sessions</TabsTrigger>

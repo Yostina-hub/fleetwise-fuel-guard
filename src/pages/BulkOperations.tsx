@@ -170,14 +170,14 @@ const BulkOperations = () => {
                   <SelectContent>{ENTITY_TYPES.map(e => <SelectItem key={e} value={e} className="capitalize">{e.replace(/_/g, " ")}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div><Label>Format</Label>
+              <div><Label>{t('common.format', 'Format')}</Label>
                 <Select value={importForm.format} onValueChange={v => setImportForm(p => ({ ...p, format: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{EXPORT_FORMATS.map(f => <SelectItem key={f} value={f}>{f.toUpperCase()}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>File</Label>
+                <Label>{t('common.file', 'File')}</Label>
                 <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors" onClick={() => fileInputRef.current?.click()}>
                   <FileSpreadsheet className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                   {importForm.file ? (
@@ -209,7 +209,7 @@ const BulkOperations = () => {
                 <p className="text-muted-foreground text-sm">{t('pages.bulk_operations.description', 'No detailed error log available')}</p>
               )}
             </div>
-            <DialogFooter><Button onClick={() => setErrorDialog(null)}>Close</Button></DialogFooter>
+            <DialogFooter><Button onClick={() => setErrorDialog(null)}>{t('common.close', 'Close')}</Button></DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
