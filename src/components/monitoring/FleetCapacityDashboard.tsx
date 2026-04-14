@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Truck, Cpu, Database, Signal, Wifi, BarChart3, TrendingUp, Shield, Zap, Activity, Server, HardDrive, Users } from "lucide-react";
+import { Truck, Cpu, Database, Signal, Wifi, BarChart3, TrendingUp, Shield, Zap, Activity, Server, HardDrive, Users, ArrowUpCircle, Layers } from "lucide-react";
 
 const CURRENT_FLEET = 3119;
 const MAX_CAPACITY = 10000;
@@ -20,6 +20,15 @@ const FleetCapacityDashboard = () => {
     { tier: "Tier 2", vehicles: "3,501–7,000", infra: "4 vCPU / 8 GB / 1,000 conn", status: "ready", gps: "210 msg/s", telemetry: "~210K events/hr" },
     { tier: "Tier 3", vehicles: "7,001–15,000", infra: "8 vCPU / 16 GB / 2,000 conn", status: "planned", gps: "450 msg/s", telemetry: "~500K events/hr" },
     { tier: "Tier 4", vehicles: "15,001–50,000", infra: "Multi-node cluster / sharded DB", status: "blueprint", gps: "1,500+ msg/s", telemetry: "~2M events/hr" },
+  ];
+
+  const verticalScaling = [
+    { resource: "CPU", current: "2 vCPU", max: "64 vCPU", method: "Hot-add vCPU without restart", benefit: "Higher telemetry throughput per node" },
+    { resource: "Memory (RAM)", current: "4 GB", max: "256 GB", method: "Live memory expansion", benefit: "Larger in-memory cache, more DB connections" },
+    { resource: "Storage (SSD)", current: "100 GB NVMe", max: "8 TB NVMe", method: "Online volume resize + partition expansion", benefit: "Extended telemetry retention, larger materialized views" },
+    { resource: "DB Connections", current: "500", max: "10,000", method: "PgBouncer pool resize (no downtime)", benefit: "Concurrent user & device session capacity" },
+    { resource: "Network Bandwidth", current: "1 Gbps", max: "25 Gbps", method: "NIC upgrade or bonding", benefit: "Higher GPS message ingestion rate" },
+    { resource: "IOPS", current: "16,000", max: "256,000", method: "Storage tier upgrade (gp3 → io2)", benefit: "Faster batch writes & query performance" },
   ];
 
   const realTimeCapabilities = [
@@ -76,8 +85,8 @@ const FleetCapacityDashboard = () => {
         {/* Scaling Tiers */}
         <Card className="glass-strong">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><TrendingUp className="h-5 w-5" /> Horizontal Scaling Tiers</CardTitle>
-            <CardDescription>Auto-scaling roadmap for fleet growth</CardDescription>
+            <CardTitle className="flex items-center gap-2"><Layers className="h-5 w-5" /> Horizontal Scaling Tiers</CardTitle>
+            <CardDescription>Add more nodes to distribute fleet load</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -99,6 +108,50 @@ const FleetCapacityDashboard = () => {
           </CardContent>
         </Card>
 
+        {/* Vertical Scaling */}
+        <Card className="glass-strong">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><ArrowUpCircle className="h-5 w-5" /> Vertical Scaling</CardTitle>
+            <CardDescription>Scale up individual node resources — CPU, RAM, storage, I/O</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {verticalScaling.map((v) => (
+                <div key={v.resource} className="p-3 rounded-lg border border-border/30 hover:border-primary/30 transition-all">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-semibold text-sm">{v.resource}</span>
+                    <div className="flex items-center gap-1 text-xs">
+                      <Badge variant="outline" className="text-xs">{v.current}</Badge>
+                      <span className="text-muted-foreground">→</span>
+                      <Badge variant="secondary" className="text-xs">{v.max}</Badge>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{v.method}</p>
+                  <p className="text-xs text-primary/80 mt-0.5">↑ {v.benefit}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Combined Scaling Strategy Summary */}
+      <Card className="glass-strong border-primary/20 bg-primary/5">
+        <CardContent className="py-4">
+          <div className="flex items-start gap-3">
+            <TrendingUp className="h-6 w-6 text-primary mt-0.5" />
+            <div>
+              <p className="font-semibold text-primary">Dual Scaling Strategy: Vertical + Horizontal</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                The system employs both <strong>vertical scaling</strong> (upgrading CPU, RAM, storage, IOPS per node for immediate capacity gains) and <strong>horizontal scaling</strong> (adding nodes, sharding databases, load-balancing gateway listeners for linear throughput growth). 
+                At {CURRENT_FLEET.toLocaleString()} vehicles, the current node operates at ~31% capacity. Vertical scaling can 4× throughput on the same node before horizontal expansion is needed. Combined, the architecture supports 50,000+ vehicles with zero-downtime scaling.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-4 md:grid-cols-2">
         {/* System Component Load */}
         <Card className="glass-strong">
           <CardHeader>
