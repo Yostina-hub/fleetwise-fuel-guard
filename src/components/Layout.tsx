@@ -45,6 +45,7 @@ import {
   LayoutGrid,
   Activity,
   Terminal,
+  Layers,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
