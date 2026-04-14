@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 const SETTING_DEFAULTS: Record<string, Record<string, any>> = {
   general: { timezone: "Africa/Addis_Ababa", date_format: "dd/MM/yyyy", distance_unit: "km", currency: "ETB", language: "en" },
@@ -29,6 +30,7 @@ const SETTING_DEFAULTS: Record<string, Record<string, any>> = {
 };
 
 const SystemConfig = () => {
+  const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const { user } = useAuthContext();
   const queryClient = useQueryClient();

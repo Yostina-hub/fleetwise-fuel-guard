@@ -230,9 +230,9 @@ const UserManagement = () => {
             <Users className="h-8 w-8 text-primary animate-float" aria-hidden="true" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-4xl font-bold gradient-text">User Management</h1>
+            <h1 className="text-2xl md:text-4xl font-bold gradient-text">{t('users.title')}</h1>
             <p className="text-muted-foreground mt-1 text-lg">
-              Manage users, roles, and permissions
+              {t('users.permissions')}
             </p>
           </div>
         </div>

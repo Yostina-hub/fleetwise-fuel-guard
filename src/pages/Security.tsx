@@ -10,8 +10,10 @@ import GdprRequestsTab from "@/components/security/GdprRequestsTab";
 import SecurityQuickStats from "@/components/security/SecurityQuickStats";
 import SecurityQuickActions from "@/components/security/SecurityQuickActions";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 const Security = () => {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("api-keys");
 
@@ -21,9 +23,9 @@ const Security = () => {
         <div className="flex items-center gap-3">
           <Shield className="h-8 w-8 text-primary" aria-hidden="true" />
           <div>
-            <h1 className="text-3xl font-bold">Security & Compliance</h1>
+            <h1 className="text-3xl font-bold">{t('security.title')}</h1>
             <p className="text-muted-foreground">
-              Manage API keys, audit logs, data retention, and GDPR requests
+              {t('security.auditLog')}
             </p>
           </div>
         </div>

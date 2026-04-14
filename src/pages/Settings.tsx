@@ -21,8 +21,10 @@ import {
 import PushNotificationSettings from "@/components/settings/PushNotificationSettings";
 import { FuelAlertSettings } from "@/components/alerts/FuelAlertSettings";
 import { MaintenanceAlertSettings } from "@/components/alerts/MaintenanceAlertSettings";
+import { useTranslation } from "react-i18next";
 
 const Settings = () => {
+  const { t } = useTranslation();
   const [apiKeys, setApiKeys] = useState({
     mapbox: sessionStorage.getItem('mapbox_token') || '',
     googleMaps: sessionStorage.getItem('google_maps_token') || '',
