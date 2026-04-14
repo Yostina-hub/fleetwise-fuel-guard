@@ -1,46 +1,49 @@
 import { useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { NotificationCenter } from "@/components/scheduling/NotificationCenter";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import ethioTelecomLogo from "@/assets/ethio-telecom-logo.png";
 
-// Map routes to page titles
-const routeTitles: Record<string, string> = {
-  "/": "Dashboard",
-  "/map": "Live Tracking",
-  "/vehicles": "Vehicles",
-  "/fleet": "Fleet Management",
-  "/drivers": "Drivers",
-  "/driver-scoring": "Driver Scoring",
-  "/devices": "Device Management",
-  "/fuel": "Fuel Monitoring",
-  "/speed-governor": "Speed Governor",
-  "/incidents": "Incidents",
-  "/routes": "Customer Sites",
-  "/route-history": "Journey History",
-  "/geofencing": "Geofences",
-  "/alerts": "Alerts",
-  "/maintenance": "Service History",
-  "/work-orders": "Work Orders",
-  "/fleet-scheduling": "Trip Management",
-  "/dispatch": "Dispatch Jobs",
-  "/reports": "Reports",
-  "/settings": "Settings",
-  "/users": "Users",
-  "/security": "Security",
-  "/security-dashboard": "Security Dashboard",
-  "/integrations": "Integrations",
-  "/administration": "Administration",
-  "/config": "System Config",
+// Map routes to translation keys
+const routeTitleKeys: Record<string, string> = {
+  "/": "nav.dashboard",
+  "/map": "nav.liveTracking",
+  "/vehicles": "nav.vehicles",
+  "/fleet": "nav.fleetManagement",
+  "/drivers": "nav.drivers",
+  "/driver-scoring": "nav.driverScoring",
+  "/devices": "nav.devices",
+  "/fuel": "nav.fuelMonitoring",
+  "/speed-governor": "nav.speedGovernor",
+  "/incidents": "nav.incidents",
+  "/routes": "nav.routes",
+  "/route-history": "nav.routeHistory",
+  "/geofencing": "nav.geofences",
+  "/alerts": "nav.alerts",
+  "/maintenance": "nav.maintenance",
+  "/work-orders": "nav.workOrders",
+  "/fleet-scheduling": "nav.fleetScheduling",
+  "/dispatch": "nav.dispatch",
+  "/reports": "nav.reports",
+  "/settings": "nav.settings",
+  "/users": "nav.users",
+  "/security": "nav.security",
+  "/security-dashboard": "nav.securityDashboard",
+  "/integrations": "nav.integrations",
+  "/administration": "nav.administration",
+  "/config": "nav.systemConfig",
 };
 
 export function MobileHeader() {
   const location = useLocation();
+  const { t } = useTranslation();
   
   // Get the title for current route
   const getTitle = () => {
     const basePath = "/" + location.pathname.split("/")[1];
-    return routeTitles[basePath] || routeTitles[location.pathname] || "FleetTrack";
+    const key = routeTitleKeys[basePath] || routeTitleKeys[location.pathname];
+    return key ? t(key) : "FleetTrack";
   };
 
   return (
