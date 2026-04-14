@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
+import { useSocketGateway, SocketTelemetryEvent } from "./useSocketGateway";
 
 export interface VehicleTelemetryData {
   vehicle_id: string;
@@ -24,9 +25,43 @@ export function useVehicleTelemetryBatch(vehicleIds: string[]) {
   const [telemetryMap, setTelemetryMap] = useState<Record<string, VehicleTelemetryData>>({});
   const [loading, setLoading] = useState(true);
 
-  // Memoize the vehicle IDs string to prevent unnecessary re-renders
   const vehicleIdsKey = useMemo(() => vehicleIds.join(","), [vehicleIds]);
+  const vehicleIdsSet = useMemo(() => new Set(vehicleIds), [vehicleIdsKey]);
 
+  // ── Socket.io Fast Lane ──
+  const handleSocketTelemetry = useCallback((data: SocketTelemetryEvent) => {
+    if (!data.vehicle_id || !vehicleIdsSet.has(data.vehicle_id)) return;
+
+    setTelemetryMap(prev => {
+      const existing = prev[data.vehicle_id];
+      return {
+        ...prev,
+        [data.vehicle_id]: {
+          vehicle_id: data.vehicle_id,
+          latitude: data.latitude ?? existing?.latitude ?? null,
+          longitude: data.longitude ?? existing?.longitude ?? null,
+          speed_kmh: data.speed_kmh ?? existing?.speed_kmh ?? null,
+          fuel_level_percent: data.fuel_level_percent ?? existing?.fuel_level_percent ?? null,
+          engine_on: data.engine_on ?? existing?.engine_on ?? false,
+          ignition_on: data.ignition_on ?? existing?.ignition_on,
+          device_connected: data.device_connected ?? existing?.device_connected ?? false,
+          last_communication_at: data.last_communication_at || new Date().toISOString(),
+          gps_signal_strength: data.gps_signal_strength ?? existing?.gps_signal_strength ?? null,
+          gps_jamming_detected: data.gps_jamming_detected ?? existing?.gps_jamming_detected,
+          gps_spoofing_detected: data.gps_spoofing_detected ?? existing?.gps_spoofing_detected,
+          altitude_meters: data.altitude_meters ?? existing?.altitude_meters ?? null,
+          odometer_km: data.odometer_km ?? existing?.odometer_km ?? null,
+        },
+      };
+    });
+  }, [vehicleIdsSet]);
+
+  useSocketGateway({
+    onTelemetry: handleSocketTelemetry,
+    enabled: vehicleIds.length > 0 && !!organizationId,
+  });
+
+  // ── Initial DB Fetch ──
   const fetchTelemetry = useCallback(async () => {
     if (!organizationId || vehicleIds.length === 0) {
       setTelemetryMap({});
@@ -50,7 +85,6 @@ export function useVehicleTelemetryBatch(vehicleIds: string[]) {
       if (data) {
         const map: Record<string, VehicleTelemetryData> = {};
         data.forEach(t => {
-          // Keep only the latest telemetry per vehicle (assuming data is ordered or we just take first)
           if (!map[t.vehicle_id]) {
             map[t.vehicle_id] = t as VehicleTelemetryData;
           }
@@ -68,11 +102,9 @@ export function useVehicleTelemetryBatch(vehicleIds: string[]) {
     fetchTelemetry();
   }, [fetchTelemetry]);
 
-  // Separate effect for real-time subscription
+  // ── Supabase Realtime (Storage Lane — guaranteed delivery) ──
   useEffect(() => {
-    if (vehicleIds.length === 0 || !organizationId) {
-      return;
-    }
+    if (vehicleIds.length === 0 || !organizationId) return;
 
     const channel = supabase
       .channel(`vehicle-telemetry-batch-${vehicleIdsKey.slice(0, 50)}`)
