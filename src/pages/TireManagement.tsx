@@ -23,6 +23,7 @@ const TireManagement = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("inventory");
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showChangeDialog, setShowChangeDialog] = useState(false);
   const { organizationId } = useOrganization();
   const { vehicles } = useVehicles();
   const queryClient = useQueryClient();
