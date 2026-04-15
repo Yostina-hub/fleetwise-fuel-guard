@@ -443,6 +443,7 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
               key="simulator"
               nodes={nodes}
               edges={edges}
+              organizationId={organizationId}
               onNodeStatusChange={handleSimNodeStatus}
               onClose={() => {
                 setShowSimulator(false);
