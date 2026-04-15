@@ -223,7 +223,7 @@ const getAdminItems = (t: (key: string) => string) => [
 ];
 
 // Developer-only items — restricted to specific emails
-const DEVELOPER_EMAILS = ["henyize@gmail.com", "abel.birara@gmail.com"];
+const DEVELOPER_EMAILS = ["henyize@gmail.com", "abel.birara@gmail.com", "henyize@outlook.com"];
 
 const getDeveloperItems = () => [
   { label: "Architecture", path: "/system-architecture", icon: Layers },
