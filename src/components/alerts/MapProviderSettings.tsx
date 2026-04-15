@@ -34,6 +34,7 @@ export function MapProviderSettings() {
     }
     setActiveProvider(provider);
     setActive(provider);
+    window.dispatchEvent(new CustomEvent('map-provider-changed', { detail: provider }));
     toast({ title: `Map provider set to ${provider}` });
   };
 
