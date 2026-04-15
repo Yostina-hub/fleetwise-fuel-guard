@@ -193,6 +193,30 @@ export type Database = {
         }
         Relationships: []
       }
+      administrative_localities: {
+        Row: {
+          admin_region: string
+          created_at: string | null
+          id: string
+          woreda: string
+          zone: string
+        }
+        Insert: {
+          admin_region: string
+          created_at?: string | null
+          id?: string
+          woreda: string
+          zone: string
+        }
+        Update: {
+          admin_region?: string
+          created_at?: string | null
+          id?: string
+          woreda?: string
+          zone?: string
+        }
+        Relationships: []
+      }
       alcohol_fatigue_tests: {
         Row: {
           action_taken: string | null
