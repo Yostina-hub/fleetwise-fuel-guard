@@ -217,8 +217,7 @@ const MapView = () => {
   
   // Build sidebar vehicle list (ALL registered vehicles), enriching with telemetry.
   // Map markers will be derived from this list by filtering vehicles with valid coordinates.
-  const vehicles = useMemo(() => {
-    // Build speed limit lookup from governor configs
+  const vehicles = useMemo<DisplayVehicle[]>(() => {
     const speedLimitMap: Record<string, number> = {};
     governorConfigs?.forEach(config => {
       if (config.governor_active && config.max_speed_limit) {
@@ -226,80 +225,67 @@ const MapView = () => {
       }
     });
     
-    return dbVehicles.map((v) => {
-        const vehicleTelemetry = telemetry[v.id];
-        const online = isVehicleOnline(v.id);
-        const speedLimit = speedLimitMap[v.id];
-        const driver = v.assigned_driver;
-        
-        // Get coordinates from telemetry (could be current or last known)
-        const lat = vehicleTelemetry?.latitude;
-        const lng = vehicleTelemetry?.longitude;
-
-        const hasGps = hasValidCoords(lat, lng);
-        
-        // For offline vehicles, preserve last known telemetry values (if any)
-        if (!online || !vehicleTelemetry) {
-          return {
-            id: v.id,
-            plate: v.plate_number || 'Unknown',
-            status: 'offline' as const,
-            fuel: vehicleTelemetry?.fuel_level_percent || 0,
-            speed: 0,
-            lat: hasGps ? lat! : undefined,
-            lng: hasGps ? lng! : undefined,
-            engine_on: false,
-            heading: vehicleTelemetry?.heading || 0,
-            isOffline: true,
-            gps_signal_strength: 0,
-            gps_satellites_count: 0,
-            lastSeen: vehicleTelemetry?.last_communication_at,
-            gps_jamming_detected: false,
-            gps_spoofing_detected: false,
-            speedLimit,
-            driverName: driver ? `${driver.first_name} ${driver.last_name}` : undefined,
-            driverPhone: driver?.phone,
-            hasGps,
-          };
-        }
-        
-        // Determine status based on speed (primary) and engine state (secondary)
-        const speed = vehicleTelemetry.speed_kmh || 0;
-        const engineOn = vehicleTelemetry.engine_on || vehicleTelemetry.ignition_on;
-        let status: 'moving' | 'idle' | 'stopped' | 'offline';
-        
-        if (speed > 3) {
-          status = 'moving';
-        } else if (engineOn) {
-          status = 'idle';
-        } else {
-          status = 'stopped';
-        }
-        
+    return dbVehicles.map((v): DisplayVehicle => {
+      const vehicleTelemetry = telemetry[v.id];
+      const online = isVehicleOnline(v.id);
+      const speedLimit = speedLimitMap[v.id];
+      const driver = v.assigned_driver;
+      const lat = vehicleTelemetry?.latitude;
+      const lng = vehicleTelemetry?.longitude;
+      const hasGps = hasValidCoords(lat, lng);
+      
+      if (!online || !vehicleTelemetry) {
         return {
           id: v.id,
           plate: v.plate_number || 'Unknown',
-          status,
-          fuel: vehicleTelemetry.fuel_level_percent || 0,
-          speed,
+          status: 'offline',
+          fuel: vehicleTelemetry?.fuel_level_percent || 0,
+          speed: 0,
           lat: hasGps ? lat! : undefined,
           lng: hasGps ? lng! : undefined,
-          engine_on: engineOn,
-          heading: vehicleTelemetry.heading || 0,
-          isOffline: false,
-          lastSeen: vehicleTelemetry.last_communication_at,
-          gps_signal_strength: vehicleTelemetry.gps_signal_strength,
-          gps_satellites_count: vehicleTelemetry.gps_satellites_count,
-          gps_hdop: vehicleTelemetry.gps_hdop,
-          gps_fix_type: vehicleTelemetry.gps_fix_type,
-          gps_jamming_detected: vehicleTelemetry.gps_jamming_detected,
-          gps_spoofing_detected: vehicleTelemetry.gps_spoofing_detected,
-          speedLimit,
+          engine_on: false,
+          heading: vehicleTelemetry?.heading || 0,
+          isOffline: true,
+          gps_signal_strength: 0,
+          gps_satellites_count: 0,
+          lastSeen: vehicleTelemetry?.last_communication_at,
+          speed_limit: speedLimit,
           driverName: driver ? `${driver.first_name} ${driver.last_name}` : undefined,
           driverPhone: driver?.phone,
           hasGps,
         };
-      });
+      }
+      
+      const speed = vehicleTelemetry.speed_kmh || 0;
+      const engineOn = vehicleTelemetry.engine_on || vehicleTelemetry.ignition_on;
+      let status: DisplayVehicle['status'];
+      
+      if (speed > 3) status = 'moving';
+      else if (engineOn) status = 'idle';
+      else status = 'stopped';
+      
+      return {
+        id: v.id,
+        plate: v.plate_number || 'Unknown',
+        status,
+        fuel: vehicleTelemetry.fuel_level_percent || 0,
+        speed,
+        lat: hasGps ? lat! : undefined,
+        lng: hasGps ? lng! : undefined,
+        engine_on: engineOn,
+        heading: vehicleTelemetry.heading || 0,
+        isOffline: false,
+        lastSeen: vehicleTelemetry.last_communication_at,
+        gps_signal_strength: vehicleTelemetry.gps_signal_strength,
+        gps_satellites_count: vehicleTelemetry.gps_satellites_count,
+        gps_hdop: vehicleTelemetry.gps_hdop,
+        gps_fix_type: vehicleTelemetry.gps_fix_type,
+        speed_limit: speedLimit,
+        driverName: driver ? `${driver.first_name} ${driver.last_name}` : undefined,
+        driverPhone: driver?.phone,
+        hasGps,
+      };
+    });
   }, [dbVehicles, telemetry, isVehicleOnline, governorConfigs]);
 
   const mapVehicles = useMemo(() => {
@@ -317,16 +303,15 @@ const MapView = () => {
   // Use vehicle trail hook for live path drawing
   const { trails, clearAllTrails } = useVehicleTrail(vehicleIds);
   const activeTrails = useMemo(() => {
-    return sumoActive ? new Map() : trails;
+    return sumoActive ? new globalThis.Map() : trails;
   }, [sumoActive, trails]);
 
-  // Bridge SUMO vehicles to the same map/sidebar/detail shape used by live vehicles
-  const sumoMapVehicles = useMemo(() => {
+  const sumoMapVehicles = useMemo<DisplayVehicle[]>(() => {
     if (!sumoActive || !sumoState) return [];
-    return sumoState.vehicles.map(sv => ({
+    return sumoState.vehicles.map((sv): DisplayVehicle => ({
       id: sv.id,
       plate: sv.plate,
-      status: sv.status as 'moving' | 'idle' | 'stopped',
+      status: sv.status,
       lat: sv.lat,
       lng: sv.lng,
       speed: Math.round(sv.speed),
@@ -350,7 +335,7 @@ const MapView = () => {
     }));
   }, [sumoActive, sumoState]);
 
-  const activeSourceVehicles = useMemo(() => {
+  const activeSourceVehicles = useMemo<DisplayVehicle[]>(() => {
     return sumoActive ? sumoMapVehicles : vehicles;
   }, [sumoActive, sumoMapVehicles, vehicles]);
 
@@ -513,11 +498,11 @@ const MapView = () => {
   }, []);
 
   // Stats
-  const onlineCount = vehicles.filter(v => !v.isOffline).length;
-  const movingCount = vehicles.filter(v => v.status === 'moving').length;
-  const idleCount = vehicles.filter(v => v.status === 'idle').length;
-  const stoppedCount = vehicles.filter(v => v.status === 'stopped').length;
-  const offlineCount = vehicles.filter(v => v.isOffline).length;
+  const onlineCount = activeSourceVehicles.filter(v => !v.isOffline).length;
+  const movingCount = activeSourceVehicles.filter(v => v.status === 'moving').length;
+  const idleCount = activeSourceVehicles.filter(v => v.status === 'idle').length;
+  const stoppedCount = activeSourceVehicles.filter(v => v.status === 'stopped').length;
+  const offlineCount = activeSourceVehicles.filter(v => v.isOffline).length;
 
   return (
     <Layout>
@@ -542,7 +527,7 @@ const MapView = () => {
               mapStyle={mapStyle}
               onMapReady={setMapInstance}
               showTrails={showTrails}
-              trails={trails}
+              trails={activeTrails}
               disablePopups={!sumoActive}
             />
           ) : (
@@ -554,7 +539,7 @@ const MapView = () => {
               mapStyle={mapStyle}
               onMapReady={setMapInstance}
               showTrails={showTrails}
-              trails={trails}
+              trails={activeTrails}
               disablePopups={!sumoActive}
             />
           )}
