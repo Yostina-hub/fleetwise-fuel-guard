@@ -24,11 +24,28 @@ interface Props {
 
 export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onCheckIn, onCrossPool }: Props) => {
   const { t } = useTranslation();
-  const { vehicles } = useVehicles();
+  const { available } = useAvailableVehicles();
   const queryClient = useQueryClient();
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState("");
+  const [selectedVehicleId, setSelectedVehicleId] = useState("");
+
+  // Fetch drivers for assignment
+  const { data: drivers = [] } = useQuery({
+    queryKey: ["drivers-for-assignment", request.organization_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("drivers")
+        .select("id, first_name, last_name, phone")
+        .eq("organization_id", request.organization_id)
+        .eq("status", "active")
+        .order("first_name")
+        .limit(50);
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   const requestApprovals = approvals.filter((a: any) => a.request_id === request.id);
 
