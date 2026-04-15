@@ -91,6 +91,7 @@ const InfrastructureMonitoring = lazyWithRetry(() => import("./pages/Infrastruct
 const OperationsConsole = lazyWithRetry(() => import("./pages/OperationsConsole"), "OperationsConsole");
 const SystemArchitecture = lazyWithRetry(() => import("./pages/SystemArchitecture"), "SystemArchitecture");
 const LicensingCompliance = lazyWithRetry(() => import("./pages/LicensingCompliance"), "LicensingCompliance");
+const RBACManagement = lazyWithRetry(() => import("./pages/RBACManagement"), "RBACManagement");
 const PrivacyPolicy = lazyWithRetry(() => import("./pages/PrivacyPolicy"), "PrivacyPolicy");
 const NotFound = lazyWithRetry(() => import("./pages/NotFound"), "NotFound");
 
@@ -142,6 +143,7 @@ const App = () => {
                         <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
                         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                         <Route path="/users" element={<ProtectedRoute requiredRoles={["super_admin", "org_admin"]}><UserManagement /></ProtectedRoute>} />
+                        <Route path="/rbac" element={<ProtectedRoute requiredRole="super_admin"><RBACManagement /></ProtectedRoute>} />
                         <Route path="/security" element={<ProtectedRoute requiredRole="super_admin"><Security /></ProtectedRoute>} />
                         <Route path="/security-dashboard" element={<ProtectedRoute requiredRole="super_admin"><SecurityDashboard /></ProtectedRoute>} />
                         <Route path="/integrations" element={<ProtectedRoute requiredRole="super_admin"><Integrations /></ProtectedRoute>} />

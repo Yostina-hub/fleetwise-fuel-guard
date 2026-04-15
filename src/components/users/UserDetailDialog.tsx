@@ -17,23 +17,35 @@ import type { UserProfile } from "./UserTable";
 const ROLES = [
   { value: "super_admin", label: "Super Admin" },
   { value: "org_admin", label: "Org Admin" },
-  { value: "operator", label: "Operator" },
+  { value: "fleet_owner", label: "Fleet Owner" },
+  { value: "operations_manager", label: "Ops Manager" },
   { value: "fleet_manager", label: "Fleet Manager" },
+  { value: "dispatcher", label: "Dispatcher" },
+  { value: "fuel_controller", label: "Fuel Controller" },
+  { value: "maintenance_lead", label: "Maintenance Lead" },
+  { value: "operator", label: "Operator" },
   { value: "driver", label: "Driver" },
   { value: "technician", label: "Technician" },
-  { value: "viewer", label: "Viewer" },
   { value: "mechanic", label: "Mechanic" },
+  { value: "auditor", label: "Auditor" },
+  { value: "viewer", label: "Viewer" },
 ];
 
 const ROLE_COLORS: Record<string, string> = {
   super_admin: "bg-destructive/15 text-destructive border-destructive/30",
   org_admin: "bg-primary/15 text-primary border-primary/30",
+  fleet_owner: "bg-violet-500/15 text-violet-400 border-violet-500/30",
+  operations_manager: "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
   fleet_manager: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+  dispatcher: "bg-sky-500/15 text-sky-400 border-sky-500/30",
+  fuel_controller: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
+  maintenance_lead: "bg-orange-500/15 text-orange-400 border-orange-500/30",
   operator: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
   driver: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
   technician: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  viewer: "bg-muted text-muted-foreground border-border",
   mechanic: "bg-orange-500/15 text-orange-400 border-orange-500/30",
+  auditor: "bg-purple-500/15 text-purple-400 border-purple-500/30",
+  viewer: "bg-muted text-muted-foreground border-border",
 };
 
 interface UserDetailDialogProps {
@@ -239,13 +251,21 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
 
             <div className="rounded-lg bg-muted/20 border border-border/30 p-3 space-y-2">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Role Guide</p>
-              <div className="grid gap-1.5 text-xs">
+              <div className="grid gap-1.5 text-xs max-h-40 overflow-y-auto">
                 <div><span className="font-medium text-destructive">Super Admin</span> — Full system access, all organizations</div>
                 <div><span className="font-medium text-primary">Org Admin</span> — Full access within their organization</div>
+                <div><span className="font-medium text-violet-400">Fleet Owner</span> — Owner-level fleet visibility</div>
+                <div><span className="font-medium text-indigo-400">Ops Manager</span> — Day-to-day fleet operations management</div>
                 <div><span className="font-medium text-blue-400">Fleet Manager</span> — Manage vehicles, routes, and schedules</div>
+                <div><span className="font-medium text-sky-400">Dispatcher</span> — Assign jobs and monitor live fleet</div>
+                <div><span className="font-medium text-yellow-400">Fuel Controller</span> — Fuel monitoring and management</div>
+                <div><span className="font-medium text-orange-400">Maintenance Lead</span> — Maintenance and work orders</div>
                 <div><span className="font-medium text-cyan-400">Operator</span> — Day-to-day fleet operations</div>
                 <div><span className="font-medium text-emerald-400">Driver</span> — Trips, logbooks, and incidents</div>
                 <div><span className="font-medium text-amber-400">Technician</span> — Maintenance and inspections</div>
+                <div><span className="font-medium text-orange-400">Mechanic</span> — Hands-on vehicle repairs</div>
+                <div><span className="font-medium text-purple-400">Auditor</span> — Read-only compliance and audit</div>
+                <div><span className="font-medium text-muted-foreground">Viewer</span> — Read-only dashboard access</div>
               </div>
             </div>
           </TabsContent>
