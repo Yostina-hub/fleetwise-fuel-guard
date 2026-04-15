@@ -1292,8 +1292,12 @@ const Reports = () => {
   };
 
   const handleRefresh = () => {
-    queryClient.invalidateQueries({ queryKey: ['trips'] });
-    queryClient.invalidateQueries({ queryKey: ['driver-events'] });
+    // Invalidate all report-specific queries
+    queryClient.invalidateQueries({ predicate: (query) => {
+      const key = query.queryKey[0];
+      return typeof key === 'string' && key.startsWith('report-');
+    }});
+    // Also refresh base data
     queryClient.invalidateQueries({ queryKey: ['vehicles'] });
     queryClient.invalidateQueries({ queryKey: ['drivers'] });
     toast.success("Refreshing report data...");
