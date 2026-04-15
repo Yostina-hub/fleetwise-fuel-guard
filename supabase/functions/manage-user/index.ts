@@ -107,6 +107,53 @@ Deno.serve(async (req) => {
         return secureJsonResponse({ success: true, message: "User activated" }, req);
       }
 
+      case "delete": {
+        // Remove user roles first
+        const { error: rolesError } = await supabaseAdmin
+          .from("user_roles")
+          .delete()
+          .eq("user_id", userId);
+        if (rolesError) {
+          console.error("Failed to delete user roles:", rolesError);
+        }
+
+        // Delete from profiles
+        const { error: profileError } = await supabaseAdmin
+          .from("profiles")
+          .delete()
+          .eq("id", userId);
+        if (profileError) {
+          console.error("Failed to delete profile:", profileError);
+        }
+
+        // Delete auth user
+        const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+        if (error) {
+          return secureJsonResponse({ success: false, error: error.message }, req, 400);
+        }
+        await logSecurityEvent(supabaseAdmin, {
+          eventType: "user_deleted",
+          userId: requestingUser.id,
+          severity: "critical",
+          description: `Admin permanently deleted user ${userId}`,
+          metadata: { targetUserId: userId },
+          ipAddress,
+          userAgent,
+        });
+        return secureJsonResponse({ success: true, message: "User permanently deleted" }, req);
+      }
+
+      case "get_status": {
+        const { data, error } = await supabaseAdmin.auth.admin.getUserById(userId);
+        if (error) {
+          return secureJsonResponse({ success: false, error: error.message }, req, 400);
+        }
+        const banned = data?.user?.banned_until
+          ? new Date(data.user.banned_until).getTime() > Date.now()
+          : false;
+        return secureJsonResponse({ success: true, banned }, req);
+      }
+
       default:
         return secureJsonResponse({ success: false, error: `Unknown action: ${action}` }, req, 400);
     }

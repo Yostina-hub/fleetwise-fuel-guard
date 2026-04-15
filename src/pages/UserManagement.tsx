@@ -38,8 +38,10 @@ const UserManagement = () => {
   const [detailUser, setDetailUser] = useState<UserProfile | null>(null);
   const [detailTab, setDetailTab] = useState<"profile" | "roles">("profile");
   const [resetPwdUser, setResetPwdUser] = useState<UserProfile | null>(null);
-  const [deactivateUser, setDeactivateUser] = useState<UserProfile | null>(null);
-  const [deactivateLoading, setDeactivateLoading] = useState(false);
+  const [statusActionUser, setStatusActionUser] = useState<UserProfile | null>(null);
+  const [statusActionLoading, setStatusActionLoading] = useState(false);
+  const [deleteUser, setDeleteUser] = useState<UserProfile | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const itemsPerPage = 12;
 
   const fetchUsers = useCallback(async () => {
@@ -59,12 +61,25 @@ const UserManagement = () => {
           .map((ur) => ({ role: ur.role })),
       }));
 
-      setUsers(usersWithRoles);
+      // Fetch ban status for all users in parallel
+      const statusPromises = usersWithRoles.map(async (user) => {
+        try {
+          const { data } = await supabase.functions.invoke("manage-user", {
+            body: { action: "get_status", userId: user.id },
+          });
+          return { ...user, is_banned: data?.banned === true };
+        } catch {
+          return { ...user, is_banned: false };
+        }
+      });
 
-      // Keep open dialogs in sync with fresh data
-      setDetailUser(prev => prev ? usersWithRoles.find(u => u.id === prev.id) || null : null);
-      setResetPwdUser(prev => prev ? usersWithRoles.find(u => u.id === prev.id) || null : null);
-      setDeactivateUser(prev => prev ? usersWithRoles.find(u => u.id === prev.id) || null : null);
+      const usersWithStatus = await Promise.all(statusPromises);
+      setUsers(usersWithStatus);
+
+      // Keep open dialogs in sync
+      setDetailUser(prev => prev ? usersWithStatus.find(u => u.id === prev.id) || null : null);
+      setResetPwdUser(prev => prev ? usersWithStatus.find(u => u.id === prev.id) || null : null);
+      setStatusActionUser(prev => prev ? usersWithStatus.find(u => u.id === prev.id) || null : null);
     } catch (error) {
       console.error("Error fetching users:", error);
       toast({ title: "Error", description: "Failed to load users", variant: "destructive" });
@@ -88,12 +103,13 @@ const UserManagement = () => {
   }, [filteredUsers, currentPage]);
 
   const handleExportUsers = useCallback(() => {
-    const headers = ["Name", "Email", "Phone", "Roles", "Joined"];
+    const headers = ["Name", "Email", "Phone", "Roles", "Status", "Joined"];
     const rows = filteredUsers.map(u => [
       u.full_name || "",
       u.email,
       u.phone || "",
       u.user_roles.map(r => r.role).join("; "),
+      u.is_banned ? "Deactivated" : "Active",
       new Date(u.created_at).toLocaleDateString(),
     ]);
     const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(",")).join("\n");
@@ -107,23 +123,47 @@ const UserManagement = () => {
     toast({ title: "Export Complete", description: `${filteredUsers.length} users exported to CSV` });
   }, [filteredUsers, toast]);
 
-  const handleDeactivateUser = useCallback(async () => {
-    if (!deactivateUser) return;
-    setDeactivateLoading(true);
+  const handleToggleStatus = useCallback(async () => {
+    if (!statusActionUser) return;
+    setStatusActionLoading(true);
+    const action = statusActionUser.is_banned ? "activate" : "deactivate";
     try {
-      const { error } = await supabase.functions.invoke("manage-user", {
-        body: { action: "deactivate", userId: deactivateUser.id },
+      const { data, error } = await supabase.functions.invoke("manage-user", {
+        body: { action, userId: statusActionUser.id },
       });
       if (error) throw error;
-      toast({ title: "User Deactivated", description: `${deactivateUser.email} has been deactivated.` });
-      setDeactivateUser(null);
+      if (data && !data.success) throw new Error(data.error);
+      toast({
+        title: action === "activate" ? "User Activated" : "User Deactivated",
+        description: `${statusActionUser.email} has been ${action === "activate" ? "activated" : "deactivated"}.`,
+      });
+      setStatusActionUser(null);
       fetchUsers();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message || "Failed to deactivate user", variant: "destructive" });
+      toast({ title: "Error", description: err.message || `Failed to ${action} user`, variant: "destructive" });
     } finally {
-      setDeactivateLoading(false);
+      setStatusActionLoading(false);
     }
-  }, [deactivateUser, toast, fetchUsers]);
+  }, [statusActionUser, toast, fetchUsers]);
+
+  const handleDeleteUser = useCallback(async () => {
+    if (!deleteUser) return;
+    setDeleteLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-user", {
+        body: { action: "delete", userId: deleteUser.id },
+      });
+      if (error) throw error;
+      if (data && !data.success) throw new Error(data.error);
+      toast({ title: "User Deleted", description: `${deleteUser.email} has been permanently deleted.` });
+      setDeleteUser(null);
+      fetchUsers();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to delete user", variant: "destructive" });
+    } finally {
+      setDeleteLoading(false);
+    }
+  }, [deleteUser, toast, fetchUsers]);
 
   if (!isSuperAdmin) {
     return (
@@ -142,7 +182,7 @@ const UserManagement = () => {
   const userStats = {
     totalUsers: users.length,
     admins: users.filter(u => u.user_roles.some(r => r.role === "super_admin")).length,
-    activeUsers: users.filter(u => u.user_roles.length > 0).length,
+    activeUsers: users.filter(u => !u.is_banned).length,
     unassignedUsers: users.filter(u => u.user_roles.length === 0).length,
   };
 
@@ -193,7 +233,8 @@ const UserManagement = () => {
               onViewUser={(u) => { setDetailTab("profile"); setDetailUser(u); }}
               onAssignRole={(u) => { setDetailTab("roles"); setDetailUser(u); }}
               onResetPassword={setResetPwdUser}
-              onToggleStatus={setDeactivateUser}
+              onToggleStatus={setStatusActionUser}
+              onDeleteUser={setDeleteUser}
             />
           </CardContent>
         </Card>
@@ -246,14 +287,33 @@ const UserManagement = () => {
         <BulkRoleAssignDialog open={bulkAssignOpen} onOpenChange={setBulkAssignOpen} users={users} onComplete={fetchUsers} />
         <UserDetailDialog open={!!detailUser} onOpenChange={(o) => !o && setDetailUser(null)} user={detailUser} onUserUpdated={fetchUsers} initialTab={detailTab} />
         <ResetPasswordDialog open={!!resetPwdUser} onOpenChange={(o) => !o && setResetPwdUser(null)} user={resetPwdUser} />
+        
+        {/* Deactivate / Activate Dialog */}
         <ConfirmActionDialog
-          open={!!deactivateUser}
-          onOpenChange={(o) => !o && setDeactivateUser(null)}
-          title="Deactivate User"
-          description={`Are you sure you want to deactivate ${deactivateUser?.email}? They will no longer be able to sign in.`}
-          confirmLabel="Deactivate"
-          loading={deactivateLoading}
-          onConfirm={handleDeactivateUser}
+          open={!!statusActionUser}
+          onOpenChange={(o) => !o && setStatusActionUser(null)}
+          title={statusActionUser?.is_banned ? "Activate User" : "Deactivate User"}
+          description={
+            statusActionUser?.is_banned
+              ? `Are you sure you want to activate ${statusActionUser?.email}? They will be able to sign in again.`
+              : `Are you sure you want to deactivate ${statusActionUser?.email}? They will no longer be able to sign in.`
+          }
+          confirmLabel={statusActionUser?.is_banned ? "Activate" : "Deactivate"}
+          loading={statusActionLoading}
+          onConfirm={handleToggleStatus}
+          variant={statusActionUser?.is_banned ? "default" : "destructive"}
+        />
+
+        {/* Delete User Dialog */}
+        <ConfirmActionDialog
+          open={!!deleteUser}
+          onOpenChange={(o) => !o && setDeleteUser(null)}
+          title="Delete User Permanently"
+          description={`Are you sure you want to permanently delete ${deleteUser?.email}? This will remove their account, profile, and all role assignments. This action CANNOT be undone.`}
+          confirmLabel="Delete Permanently"
+          loading={deleteLoading}
+          onConfirm={handleDeleteUser}
+          variant="destructive"
         />
       </div>
     </Layout>
