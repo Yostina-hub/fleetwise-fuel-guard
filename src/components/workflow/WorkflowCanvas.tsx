@@ -234,7 +234,7 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
         if (error) throw error;
         setWorkflowId(data.id);
       }
-      queryClient.invalidateQueries({ queryKey: ["workflows"] });
+      queryClient.invalidateQueries({ queryKey: ["workflows", organizationId] });
       toast({ title: "Saved!", description: "Workflow saved successfully" });
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });

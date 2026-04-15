@@ -66,7 +66,7 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["workflows"] });
+      queryClient.invalidateQueries({ queryKey: ["workflows", organizationId] });
       toast({ title: "Deleted", description: "Workflow removed" });
     },
   });

@@ -1,15 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { WorkflowCanvas } from "@/components/workflow/WorkflowCanvas";
 import { WorkflowList } from "@/components/workflow/WorkflowList";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Layout from "@/components/Layout";
+import { useOrganization } from "@/hooks/useOrganization";
 
 import { useTranslation } from 'react-i18next';
 const WorkflowBuilder = () => {
   const { t } = useTranslation();
+  const { organizationId } = useOrganization();
   const [view, setView] = useState<"list" | "builder">("list");
   const [editingWorkflowId, setEditingWorkflowId] = useState<string | null>(null);
+
+  // Reset to list view when organization changes
+  useEffect(() => {
+    setView("list");
+    setEditingWorkflowId(null);
+  }, [organizationId]);
 
   return (
     <Layout>
@@ -40,7 +48,7 @@ const WorkflowBuilder = () => {
             </Button>
           </div>
           <div className="flex-1 overflow-hidden">
-            <WorkflowCanvas editWorkflowId={editingWorkflowId} />
+            <WorkflowCanvas key={organizationId} editWorkflowId={editingWorkflowId} />
           </div>
         </div>
       )}
