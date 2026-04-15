@@ -14164,10 +14164,14 @@ export type Database = {
       trip_requests: {
         Row: {
           approved_at: string | null
+          cargo_description: string | null
+          cargo_volume_m3: number | null
+          cargo_weight_kg: number | null
           cost_center_id: string | null
           created_at: string
           drop_geofence_id: string | null
           id: string
+          notes: string | null
           organization_id: string
           passenger_count: number
           pickup_at: string
@@ -14179,6 +14183,7 @@ export type Database = {
           rejection_reason: string | null
           request_number: string
           requester_id: string
+          required_class: string | null
           return_at: string
           sla_deadline_at: string | null
           special_requirements: string | null
@@ -14188,10 +14193,14 @@ export type Database = {
         }
         Insert: {
           approved_at?: string | null
+          cargo_description?: string | null
+          cargo_volume_m3?: number | null
+          cargo_weight_kg?: number | null
           cost_center_id?: string | null
           created_at?: string
           drop_geofence_id?: string | null
           id?: string
+          notes?: string | null
           organization_id: string
           passenger_count?: number
           pickup_at: string
@@ -14203,6 +14212,7 @@ export type Database = {
           rejection_reason?: string | null
           request_number: string
           requester_id: string
+          required_class?: string | null
           return_at: string
           sla_deadline_at?: string | null
           special_requirements?: string | null
@@ -14212,10 +14222,14 @@ export type Database = {
         }
         Update: {
           approved_at?: string | null
+          cargo_description?: string | null
+          cargo_volume_m3?: number | null
+          cargo_weight_kg?: number | null
           cost_center_id?: string | null
           created_at?: string
           drop_geofence_id?: string | null
           id?: string
+          notes?: string | null
           organization_id?: string
           passenger_count?: number
           pickup_at?: string
@@ -14227,6 +14241,7 @@ export type Database = {
           rejection_reason?: string | null
           request_number?: string
           requester_id?: string
+          required_class?: string | null
           return_at?: string
           sla_deadline_at?: string | null
           special_requirements?: string | null
