@@ -145,9 +145,9 @@ useEffect(() => {
   };
 }, [onTripReplay, onManageAsset]);
 
-  // Fetch token from backend (organization settings or edge function)
+  // Initialize map — don't block on API key (tiles are public, key is only for data endpoints)
   useEffect(() => {
-    if (!mapContainer.current || map.current || !lematKeyReady || !lematApiKey) return;
+    if (!mapContainer.current || map.current) return;
 
     const initMap = async () => {
       if (!mapContainer.current || map.current) return;

@@ -239,7 +239,7 @@ const ClusteredMap = ({
 
   // Initialize map
   useEffect(() => {
-    if (!mapContainer.current || !lematKeyReady || !lematApiKey || map.current) return;
+    if (!mapContainer.current || map.current) return;
 
     setMapLoaded(false);
     setStyleError(false);

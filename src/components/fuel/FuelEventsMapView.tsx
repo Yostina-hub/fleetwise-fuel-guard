@@ -87,7 +87,7 @@ const FuelEventsMapView = ({
 
   // Initialize map
   useEffect(() => {
-    if (!mapContainer.current || !lematKeyReady || map.current) return;
+    if (!mapContainer.current || map.current) return;
 
     const initMap = async () => {
       if (!mapContainer.current || map.current) return;
