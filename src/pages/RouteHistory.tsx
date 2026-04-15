@@ -10,6 +10,7 @@ import RouteHistoryTrendChart from "@/components/routehistory/RouteHistoryTrendC
 import { useStopMarkers, StopEvent, getEventColor } from "@/components/routehistory/StopMarkers";
 import RouteHistoryEventMarkers from "@/components/routehistory/RouteHistoryEventMarkers";
 import EventLocationDisplay from "@/components/routehistory/EventLocationDisplay";
+import { RouteAnomalyPanel } from "@/components/ai/RouteAnomalyPanel";
 import { useAddressGeocoding } from "@/hooks/useAddressGeocoding";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -1021,6 +1022,16 @@ const RouteHistory = () => {
 
                   {/* Trend Chart */}
                   {hasData && <RouteHistoryTrendChart routeData={routeHistory} />}
+
+                  {/* AI Route Anomaly Detection */}
+                  {selectedVehicle && organizationId && hasData && (
+                    <RouteAnomalyPanel
+                      vehicleId={selectedVehicle}
+                      organizationId={organizationId}
+                      date={selectedDate}
+                      telemetryPoints={routeHistory}
+                    />
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-12 text-muted-foreground" role="status">
