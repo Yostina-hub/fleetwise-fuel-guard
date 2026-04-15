@@ -104,6 +104,10 @@ export const WorkflowSimulator = ({
     logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
 
+  // Keep refs in sync with state
+  useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
+  useEffect(() => { speedRef.current = speed; }, [speed]);
+
   const getExecutionOrder = useCallback(() => {
     // Topological sort based on edges
     const adjList = new Map<string, string[]>();
