@@ -2691,6 +2691,85 @@ export type Database = {
           },
         ]
       }
+      driver_attendance: {
+        Row: {
+          approved_by: string | null
+          check_in_time: string | null
+          check_out_time: string | null
+          created_at: string
+          date: string
+          driver_id: string
+          id: string
+          notes: string | null
+          organization_id: string
+          overtime_hours: number | null
+          shift_type: string | null
+          source: string
+          status: string
+          total_hours: number | null
+          trip_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_by?: string | null
+          check_in_time?: string | null
+          check_out_time?: string | null
+          created_at?: string
+          date: string
+          driver_id: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          overtime_hours?: number | null
+          shift_type?: string | null
+          source?: string
+          status?: string
+          total_hours?: number | null
+          trip_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_by?: string | null
+          check_in_time?: string | null
+          check_out_time?: string | null
+          created_at?: string
+          date?: string
+          driver_id?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          overtime_hours?: number | null
+          shift_type?: string | null
+          source?: string
+          status?: string
+          total_hours?: number | null
+          trip_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_attendance_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_attendance_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_attendance_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_availability: {
         Row: {
           created_at: string
@@ -4261,6 +4340,72 @@ export type Database = {
           },
         ]
       }
+      driver_leave_requests: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          driver_id: string
+          end_date: string
+          id: string
+          leave_type: string
+          organization_id: string
+          reason: string | null
+          rejection_reason: string | null
+          start_date: string
+          status: string
+          total_days: number
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          driver_id: string
+          end_date: string
+          id?: string
+          leave_type?: string
+          organization_id: string
+          reason?: string | null
+          rejection_reason?: string | null
+          start_date: string
+          status?: string
+          total_days?: number
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          driver_id?: string
+          end_date?: string
+          id?: string
+          leave_type?: string
+          organization_id?: string
+          reason?: string | null
+          rejection_reason?: string | null
+          start_date?: string
+          status?: string
+          total_days?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_leave_requests_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_leave_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_license_alerts: {
         Row: {
           alert_type: string
@@ -4638,6 +4783,168 @@ export type Database = {
           },
         ]
       }
+      driver_payroll: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          base_salary: number | null
+          created_at: string
+          currency: string | null
+          deductions: Json | null
+          driver_id: string
+          gross_pay: number | null
+          id: string
+          km_bonus: number | null
+          net_pay: number | null
+          notes: string | null
+          organization_id: string
+          other_earnings: number | null
+          overtime_pay: number | null
+          paid_at: string | null
+          pay_period_end: string
+          pay_period_start: string
+          payment_method: string | null
+          payment_reference: string | null
+          status: string
+          total_deductions: number | null
+          trip_bonus: number | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          base_salary?: number | null
+          created_at?: string
+          currency?: string | null
+          deductions?: Json | null
+          driver_id: string
+          gross_pay?: number | null
+          id?: string
+          km_bonus?: number | null
+          net_pay?: number | null
+          notes?: string | null
+          organization_id: string
+          other_earnings?: number | null
+          overtime_pay?: number | null
+          paid_at?: string | null
+          pay_period_end: string
+          pay_period_start: string
+          payment_method?: string | null
+          payment_reference?: string | null
+          status?: string
+          total_deductions?: number | null
+          trip_bonus?: number | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          base_salary?: number | null
+          created_at?: string
+          currency?: string | null
+          deductions?: Json | null
+          driver_id?: string
+          gross_pay?: number | null
+          id?: string
+          km_bonus?: number | null
+          net_pay?: number | null
+          notes?: string | null
+          organization_id?: string
+          other_earnings?: number | null
+          overtime_pay?: number | null
+          paid_at?: string | null
+          pay_period_end?: string
+          pay_period_start?: string
+          payment_method?: string | null
+          payment_reference?: string | null
+          status?: string
+          total_deductions?: number | null
+          trip_bonus?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_payroll_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_payroll_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_payroll_config: {
+        Row: {
+          base_monthly_salary: number | null
+          created_at: string
+          driver_id: string
+          effective_from: string
+          effective_until: string | null
+          id: string
+          is_active: boolean | null
+          night_shift_multiplier: number | null
+          organization_id: string
+          overtime_hourly_rate: number | null
+          per_km_rate: number | null
+          per_trip_rate: number | null
+          updated_at: string
+          weekend_multiplier: number | null
+        }
+        Insert: {
+          base_monthly_salary?: number | null
+          created_at?: string
+          driver_id: string
+          effective_from?: string
+          effective_until?: string | null
+          id?: string
+          is_active?: boolean | null
+          night_shift_multiplier?: number | null
+          organization_id: string
+          overtime_hourly_rate?: number | null
+          per_km_rate?: number | null
+          per_trip_rate?: number | null
+          updated_at?: string
+          weekend_multiplier?: number | null
+        }
+        Update: {
+          base_monthly_salary?: number | null
+          created_at?: string
+          driver_id?: string
+          effective_from?: string
+          effective_until?: string | null
+          id?: string
+          is_active?: boolean | null
+          night_shift_multiplier?: number | null
+          organization_id?: string
+          overtime_hourly_rate?: number | null
+          per_km_rate?: number | null
+          per_trip_rate?: number | null
+          updated_at?: string
+          weekend_multiplier?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_payroll_config_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_payroll_config_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_penalties: {
         Row: {
           appeal_reason: string | null
@@ -4829,6 +5136,72 @@ export type Database = {
           },
           {
             foreignKeyName: "driver_penalty_summary_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_performance_kpis: {
+        Row: {
+          attendance_rate: number | null
+          complaint_count: number | null
+          composite_score: number | null
+          created_at: string
+          driver_id: string
+          fuel_efficiency_score: number | null
+          id: string
+          incident_count: number | null
+          on_time_percentage: number | null
+          organization_id: string
+          period: string
+          total_km: number | null
+          trips_completed: number | null
+          updated_at: string
+        }
+        Insert: {
+          attendance_rate?: number | null
+          complaint_count?: number | null
+          composite_score?: number | null
+          created_at?: string
+          driver_id: string
+          fuel_efficiency_score?: number | null
+          id?: string
+          incident_count?: number | null
+          on_time_percentage?: number | null
+          organization_id: string
+          period: string
+          total_km?: number | null
+          trips_completed?: number | null
+          updated_at?: string
+        }
+        Update: {
+          attendance_rate?: number | null
+          complaint_count?: number | null
+          composite_score?: number | null
+          created_at?: string
+          driver_id?: string
+          fuel_efficiency_score?: number | null
+          id?: string
+          incident_count?: number | null
+          on_time_percentage?: number | null
+          organization_id?: string
+          period?: string
+          total_km?: number | null
+          trips_completed?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_performance_kpis_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_performance_kpis_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -10449,6 +10822,95 @@ export type Database = {
         }
         Relationships: []
       }
+      outsource_contracts: {
+        Row: {
+          auto_renew: boolean | null
+          contract_number: string
+          contract_type: string
+          contractor_contact: string | null
+          contractor_email: string | null
+          contractor_name: string
+          created_at: string
+          currency: string | null
+          documents: string[] | null
+          drivers_included: Json | null
+          end_date: string | null
+          id: string
+          monthly_cost: number | null
+          notes: string | null
+          organization_id: string
+          payment_terms: string | null
+          penalty_terms: string | null
+          performance_metrics: Json | null
+          sla_terms: string | null
+          start_date: string
+          status: string
+          total_contract_value: number | null
+          updated_at: string
+          vehicles_included: Json | null
+        }
+        Insert: {
+          auto_renew?: boolean | null
+          contract_number: string
+          contract_type?: string
+          contractor_contact?: string | null
+          contractor_email?: string | null
+          contractor_name: string
+          created_at?: string
+          currency?: string | null
+          documents?: string[] | null
+          drivers_included?: Json | null
+          end_date?: string | null
+          id?: string
+          monthly_cost?: number | null
+          notes?: string | null
+          organization_id: string
+          payment_terms?: string | null
+          penalty_terms?: string | null
+          performance_metrics?: Json | null
+          sla_terms?: string | null
+          start_date: string
+          status?: string
+          total_contract_value?: number | null
+          updated_at?: string
+          vehicles_included?: Json | null
+        }
+        Update: {
+          auto_renew?: boolean | null
+          contract_number?: string
+          contract_type?: string
+          contractor_contact?: string | null
+          contractor_email?: string | null
+          contractor_name?: string
+          created_at?: string
+          currency?: string | null
+          documents?: string[] | null
+          drivers_included?: Json | null
+          end_date?: string | null
+          id?: string
+          monthly_cost?: number | null
+          notes?: string | null
+          organization_id?: string
+          payment_terms?: string | null
+          penalty_terms?: string | null
+          performance_metrics?: Json | null
+          sla_terms?: string | null
+          start_date?: string
+          status?: string
+          total_contract_value?: number | null
+          updated_at?: string
+          vehicles_included?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outsource_contracts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       outsource_driver_attendance: {
         Row: {
           attendance_date: string
@@ -10496,6 +10958,75 @@ export type Database = {
           },
           {
             foreignKeyName: "outsource_driver_attendance_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outsource_payments: {
+        Row: {
+          amount: number
+          contract_id: string
+          created_at: string
+          currency: string | null
+          due_date: string | null
+          id: string
+          invoice_number: string | null
+          invoice_url: string | null
+          notes: string | null
+          organization_id: string
+          paid_at: string | null
+          payment_date: string
+          payment_method: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          contract_id: string
+          created_at?: string
+          currency?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_number?: string | null
+          invoice_url?: string | null
+          notes?: string | null
+          organization_id: string
+          paid_at?: string | null
+          payment_date: string
+          payment_method?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          contract_id?: string
+          created_at?: string
+          currency?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_number?: string | null
+          invoice_url?: string | null
+          notes?: string | null
+          organization_id?: string
+          paid_at?: string | null
+          payment_date?: string
+          payment_method?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outsource_payments_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "outsource_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outsource_payments_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
