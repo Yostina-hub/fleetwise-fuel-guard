@@ -40,7 +40,7 @@ const WorkflowBuilder = () => {
             </Button>
           </div>
           <div className="flex-1 overflow-hidden">
-            <WorkflowCanvas />
+            <WorkflowCanvas editWorkflowId={editingWorkflowId} />
           </div>
         </div>
       )}

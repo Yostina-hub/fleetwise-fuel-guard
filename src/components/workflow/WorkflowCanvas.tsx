@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState, useMemo, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import TEMPLATES from "./workflowTemplates";
 import {
@@ -47,7 +48,7 @@ function getNodeTypeForCategory(category: string) {
 
 let nodeIdCounter = 0;
 
-function WorkflowCanvasInner() {
+function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | null }) {
   const { toast } = useToast();
   const { organizationId } = useOrganization();
   const { user } = useAuth();
@@ -60,9 +61,36 @@ function WorkflowCanvasInner() {
   const [workflowName, setWorkflowName] = useState("Untitled Workflow");
   const [workflowStatus, setWorkflowStatus] = useState("draft");
   const [isSaving, setIsSaving] = useState(false);
-  const [workflowId, setWorkflowId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [workflowId, setWorkflowId] = useState<string | null>(editWorkflowId || null);
   const [showSimulator, setShowSimulator] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+
+  // Load existing workflow when editing
+  const loadedRef = useRef(false);
+  useEffect(() => {
+    if (!editWorkflowId || loadedRef.current) return;
+    loadedRef.current = true;
+    setIsLoading(true);
+    supabase
+      .from("workflows")
+      .select("*")
+      .eq("id", editWorkflowId)
+      .single()
+      .then(({ data, error }) => {
+        setIsLoading(false);
+        if (error || !data) {
+          toast({ title: "Error", description: "Failed to load workflow", variant: "destructive" });
+          return;
+        }
+        setWorkflowName(data.name);
+        setWorkflowStatus(data.status);
+        setWorkflowId(data.id);
+        if (Array.isArray(data.nodes)) setNodes(data.nodes as any);
+        if (Array.isArray(data.edges)) setEdges(data.edges as any);
+        setTimeout(() => fitView({ padding: 0.2 }), 200);
+      });
+  }, [editWorkflowId, toast, setNodes, setEdges, fitView]);
 
   // History for undo/redo
   const [history, setHistory] = useState<Array<{ nodes: any[]; edges: any[] }>>([]);
@@ -165,6 +193,8 @@ function WorkflowCanvasInner() {
     [setNodes, setEdges, pushHistory]
   );
 
+  const queryClient = useQueryClient();
+
   const handleSave = useCallback(async () => {
     if (!organizationId) {
       toast({ title: "Error", description: "Organization not found", variant: "destructive" });
@@ -172,29 +202,45 @@ function WorkflowCanvasInner() {
     }
     setIsSaving(true);
     try {
-      const workflowData = {
-        organization_id: organizationId,
-        name: workflowName,
-        nodes: JSON.parse(JSON.stringify(nodes)),
-        edges: JSON.parse(JSON.stringify(edges)),
-        status: workflowStatus,
-        created_by: user?.id,
-      };
+      const serializedNodes = JSON.parse(JSON.stringify(nodes));
+      const serializedEdges = JSON.parse(JSON.stringify(edges));
       if (workflowId) {
-        const { error } = await supabase.from("workflows").update(workflowData).eq("id", workflowId);
+        const { error } = await supabase
+          .from("workflows")
+          .update({
+            name: workflowName,
+            description: `Workflow with ${nodes.length} nodes and ${edges.length} connections`,
+            nodes: serializedNodes,
+            edges: serializedEdges,
+            status: workflowStatus,
+          })
+          .eq("id", workflowId);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase.from("workflows").insert(workflowData).select("id").single();
+        const { data, error } = await supabase
+          .from("workflows")
+          .insert({
+            organization_id: organizationId,
+            name: workflowName,
+            description: `Workflow with ${nodes.length} nodes and ${edges.length} connections`,
+            nodes: serializedNodes,
+            edges: serializedEdges,
+            status: workflowStatus,
+            created_by: user?.id,
+          })
+          .select("id")
+          .single();
         if (error) throw error;
         setWorkflowId(data.id);
       }
+      queryClient.invalidateQueries({ queryKey: ["workflows"] });
       toast({ title: "Saved!", description: "Workflow saved successfully" });
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
-  }, [organizationId, workflowName, nodes, edges, workflowStatus, workflowId, user, toast]);
+  }, [organizationId, workflowName, nodes, edges, workflowStatus, workflowId, user, toast, queryClient]);
 
   const handleUndo = useCallback(() => {
     if (historyIndex <= 0) return;
@@ -429,8 +475,8 @@ function WorkflowCanvasInner() {
   );
 }
 
-export const WorkflowCanvas = () => (
+export const WorkflowCanvas = ({ editWorkflowId }: { editWorkflowId?: string | null }) => (
   <ReactFlowProvider>
-    <WorkflowCanvasInner />
+    <WorkflowCanvasInner editWorkflowId={editWorkflowId} />
   </ReactFlowProvider>
 );
