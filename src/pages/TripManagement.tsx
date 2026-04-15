@@ -4,10 +4,11 @@ import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
-  Kanban, List, Download, Plus, LayoutGrid, Search, SlidersHorizontal,
-  CheckCircle, XCircle
+  Kanban, List, Download, Plus, LayoutGrid, Search,
+  CheckCircle, XCircle, ClipboardList, Package
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { useTripRequests } from "@/hooks/useTripRequests";
 import { useApprovals } from "@/hooks/useApprovals";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -23,10 +24,12 @@ import { TimelineView } from "@/components/scheduling/TimelineView";
 import { UtilizationAnalytics } from "@/components/scheduling/UtilizationAnalytics";
 import { ExportScheduleDialog } from "@/components/scheduling/ExportScheduleDialog";
 import { CreateTripRequestDialog } from "@/components/scheduling/CreateTripRequestDialog";
+import { VehicleRequestsPanel } from "@/components/vehicle-requests/VehicleRequestsPanel";
+import DispatchJobsTab from "@/components/dispatch/DispatchJobsTab";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
-
 import { useTranslation } from 'react-i18next';
+
 const TripManagement = () => {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -44,13 +47,19 @@ const TripManagement = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "trips");
 
-  // Sync from URL changes (sidebar deep links)
+  // Sync tab from URL changes (sidebar deep links)
   useEffect(() => {
     const tab = searchParams.get("tab");
     if (tab && tab !== activeTab) {
       setActiveTab(tab);
     }
   }, [searchParams]);
+
+  // Sync URL when tab changes
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    setSearchParams({ tab }, { replace: true });
+  };
 
   const filteredTrips = useMemo(() => {
     let trips = requests || [];
@@ -96,6 +105,8 @@ const TripManagement = () => {
     }
   };
 
+  const pendingApprovalCount = pendingApprovals?.length || 0;
+
   return (
     <Layout>
       <div className="p-4 md:p-6 space-y-4">
@@ -128,12 +139,27 @@ const TripManagement = () => {
         />
 
         {/* Tabs & View Toggle */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <TabsList className="h-8">
               <TabsTrigger value="trips" className="text-xs h-7">Trips</TabsTrigger>
-              <TabsTrigger value="active" className="text-xs h-7">Active</TabsTrigger>
-              {canApprove && <TabsTrigger value="approvals" className="text-xs h-7">Approvals</TabsTrigger>}
+              <TabsTrigger value="vehicle-requests" className="text-xs h-7 gap-1">
+                <ClipboardList className="w-3 h-3" /> Vehicle Requests
+              </TabsTrigger>
+              <TabsTrigger value="dispatch" className="text-xs h-7 gap-1">
+                <Package className="w-3 h-3" /> Dispatch
+              </TabsTrigger>
+              <TabsTrigger value="active" className="text-xs h-7">Assignments</TabsTrigger>
+              {canApprove && (
+                <TabsTrigger value="approvals" className="text-xs h-7 gap-1">
+                  Approvals
+                  {pendingApprovalCount > 0 && (
+                    <Badge variant="destructive" className="h-4 px-1 text-[9px] ml-1">
+                      {pendingApprovalCount}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              )}
               <TabsTrigger value="calendar" className="text-xs h-7">Calendar</TabsTrigger>
               <TabsTrigger value="timeline" className="text-xs h-7">Timeline</TabsTrigger>
               <TabsTrigger value="analytics" className="text-xs h-7">{t('common.analytics', 'Analytics')}</TabsTrigger>
@@ -213,7 +239,6 @@ const TripManagement = () => {
                 )}
               </div>
             ) : (
-              /* List view - compact table-like rows */
               <div className="space-y-1.5">
                 <AnimatePresence mode="popLayout">
                   {filteredTrips.map((trip: any) => (
@@ -259,13 +284,24 @@ const TripManagement = () => {
             )}
           </TabsContent>
 
+          {/* Vehicle Requests Tab */}
+          <TabsContent value="vehicle-requests" className="mt-4">
+            <VehicleRequestsPanel />
+          </TabsContent>
+
+          {/* Dispatch Tab */}
+          <TabsContent value="dispatch" className="mt-4">
+            <DispatchJobsTab />
+          </TabsContent>
+
+          {/* Active Assignments Tab */}
           <TabsContent value="active" className="mt-4">
             <ActiveAssignments />
           </TabsContent>
 
+          {/* Approvals Tab */}
           {canApprove && (
             <TabsContent value="approvals" className="mt-4 space-y-4">
-              {/* Inline approval cards */}
               {pendingApprovals && pendingApprovals.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {pendingApprovals.map((approval: any) => (

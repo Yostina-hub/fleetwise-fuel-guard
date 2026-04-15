@@ -26,7 +26,7 @@ export const useTripRequests = () => {
     queryKey: ["trip-requests"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("trip_requests" as any)
+        .from("trip_requests")
         .select(`
           *,
           pickup_geofence:pickup_geofence_id(id, name),
@@ -37,7 +37,7 @@ export const useTripRequests = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data as any;
+      return data as any[];
     },
   });
 
@@ -46,15 +46,14 @@ export const useTripRequests = () => {
       const { data: orgData } = await supabase
         .from("profiles")
         .select("organization_id")
-        .eq("id", (await supabase.auth.getUser()).data.user?.id)
+        .eq("id", (await supabase.auth.getUser()).data.user?.id!)
         .single();
 
       const requestNumber = `TR-${Date.now().toString().slice(-8)}`;
 
-      // Map form field names to DB column names
-      const payload: any = {
-        organization_id: orgData?.organization_id,
-        requester_id: (await supabase.auth.getUser()).data.user?.id,
+      const payload = {
+        organization_id: orgData?.organization_id!,
+        requester_id: (await supabase.auth.getUser()).data.user?.id!,
         request_number: requestNumber,
         purpose: request.purpose,
         pickup_at: request.pickup_at,
@@ -75,34 +74,27 @@ export const useTripRequests = () => {
       };
 
       const { data, error } = await supabase
-        .from("trip_requests" as any)
+        .from("trip_requests")
         .insert(payload)
         .select()
         .single();
 
       if (error) throw error;
-      return data as any;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["trip-requests"] });
-      toast({
-        title: "Success",
-        description: "Trip request created successfully",
-      });
+      toast({ title: "Success", description: "Trip request created successfully" });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
 
   const submitRequest = useMutation({
     mutationFn: async (requestId: string) => {
       const { data: request, error } = await supabase
-        .from("trip_requests" as any)
+        .from("trip_requests")
         .update({
           status: "submitted",
           submitted_at: new Date().toISOString(),
@@ -117,7 +109,7 @@ export const useTripRequests = () => {
       const { data: orgData } = await supabase
         .from("profiles")
         .select("organization_id")
-        .eq("id", (await supabase.auth.getUser()).data.user?.id)
+        .eq("id", (await supabase.auth.getUser()).data.user?.id!)
         .single();
 
       if (!orgData?.organization_id) throw new Error("Organization not found");
@@ -131,7 +123,7 @@ export const useTripRequests = () => {
 
       if (approvers && approvers.length > 0) {
         const { error: approvalError } = await supabase
-          .from("trip_approvals" as any)
+          .from("trip_approvals")
           .insert({
             trip_request_id: requestId,
             step: 1,
@@ -142,28 +134,17 @@ export const useTripRequests = () => {
         if (approvalError) throw approvalError;
       }
 
-      return request as any;
+      return request;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["trip-requests"] });
-      toast({
-        title: "Success",
-        description: "Trip request submitted for approval",
-      });
+      queryClient.invalidateQueries({ queryKey: ["pending-approvals"] });
+      toast({ title: "Success", description: "Trip request submitted for approval" });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
 
-  return {
-    requests,
-    loading,
-    createRequest,
-    submitRequest,
-  };
+  return { requests, loading, createRequest, submitRequest };
 };

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -5,6 +6,19 @@ import { useToast } from "@/hooks/use-toast";
 export const useApprovals = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Realtime subscription for approvals
+  useEffect(() => {
+    const channel = supabase
+      .channel("trip-approvals-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "trip_approvals" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["pending-approvals"] });
+          queryClient.invalidateQueries({ queryKey: ["approval-history"] });
+        }
+      ).subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
 
   // Fetch pending approvals for current user
   const { data: pendingApprovals, isLoading: loading } = useQuery({
@@ -14,7 +28,7 @@ export const useApprovals = () => {
       if (!user.user) return [];
 
       const { data, error } = await supabase
-        .from("trip_approvals" as any)
+        .from("trip_approvals")
         .select(`
           *,
           trip_request:trip_request_id(
@@ -29,7 +43,7 @@ export const useApprovals = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data as any;
+      return data as any[];
     },
   });
 
@@ -41,7 +55,7 @@ export const useApprovals = () => {
       if (!user.user) return [];
 
       const { data, error } = await supabase
-        .from("trip_approvals" as any)
+        .from("trip_approvals")
         .select(`
           *,
           trip_request:trip_request_id(
@@ -56,24 +70,15 @@ export const useApprovals = () => {
         .limit(50);
 
       if (error) throw error;
-      return data as any;
+      return data as any[];
     },
   });
 
   // Approve request
   const approveRequest = useMutation({
-    mutationFn: async ({ 
-      approvalId, 
-      requestId, 
-      comment 
-    }: { 
-      approvalId: string; 
-      requestId: string; 
-      comment?: string;
-    }) => {
-      // Update approval
+    mutationFn: async ({ approvalId, requestId, comment }: { approvalId: string; requestId: string; comment?: string }) => {
       const { error: approvalError } = await supabase
-        .from("trip_approvals" as any)
+        .from("trip_approvals")
         .update({
           action: "approve",
           comment,
@@ -83,22 +88,20 @@ export const useApprovals = () => {
 
       if (approvalError) throw approvalError;
 
-      // Check if this was the last approval step
+      // Check remaining pending approvals
       const { data: allApprovals } = await supabase
-        .from("trip_approvals" as any)
+        .from("trip_approvals")
         .select("*")
         .eq("trip_request_id", requestId)
         .order("step");
 
-      const pendingCount = allApprovals?.filter((a: any) => a.action === "pending").length || 0;
+      const pendingCount = allApprovals?.filter((a) => a.action === "pending").length || 0;
 
-      // If no more pending approvals, update request status to approved
       if (pendingCount === 0) {
         const { error: requestError } = await supabase
-          .from("trip_requests" as any)
-          .update({ status: "approved" })
+          .from("trip_requests")
+          .update({ status: "approved", approved_at: new Date().toISOString() })
           .eq("id", requestId);
-
         if (requestError) throw requestError;
       }
 
@@ -108,37 +111,23 @@ export const useApprovals = () => {
       queryClient.invalidateQueries({ queryKey: ["pending-approvals"] });
       queryClient.invalidateQueries({ queryKey: ["approval-history"] });
       queryClient.invalidateQueries({ queryKey: ["trip-requests"] });
-      
       toast({
         title: "Approved",
-        description: data.allApproved 
-          ? "Request fully approved and ready for scheduling" 
+        description: data.allApproved
+          ? "Request fully approved and ready for scheduling"
           : "Approval recorded. Waiting for other approvers.",
       });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
 
   // Reject request
   const rejectRequest = useMutation({
-    mutationFn: async ({ 
-      approvalId, 
-      requestId, 
-      comment 
-    }: { 
-      approvalId: string; 
-      requestId: string; 
-      comment: string;
-    }) => {
-      // Update approval
+    mutationFn: async ({ approvalId, requestId, comment }: { approvalId: string; requestId: string; comment: string }) => {
       const { error: approvalError } = await supabase
-        .from("trip_approvals" as any)
+        .from("trip_approvals")
         .update({
           action: "reject",
           comment,
@@ -148,49 +137,34 @@ export const useApprovals = () => {
 
       if (approvalError) throw approvalError;
 
-      // Update request status to rejected
       const { error: requestError } = await supabase
-        .from("trip_requests" as any)
-        .update({ 
+        .from("trip_requests")
+        .update({
           status: "rejected",
           rejection_reason: comment,
+          rejected_at: new Date().toISOString(),
         })
         .eq("id", requestId);
 
       if (requestError) throw requestError;
-
       return requestId;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pending-approvals"] });
       queryClient.invalidateQueries({ queryKey: ["approval-history"] });
       queryClient.invalidateQueries({ queryKey: ["trip-requests"] });
-      
-      toast({
-        title: "Rejected",
-        description: "Request has been rejected",
-      });
+      toast({ title: "Rejected", description: "Request has been rejected" });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
 
   // Escalate approval
   const escalateApproval = useMutation({
-    mutationFn: async ({ 
-      approvalId, 
-      comment 
-    }: { 
-      approvalId: string; 
-      comment?: string;
-    }) => {
+    mutationFn: async ({ approvalId, comment }: { approvalId: string; comment?: string }) => {
       const { error } = await supabase
-        .from("trip_approvals" as any)
+        .from("trip_approvals")
         .update({
           action: "escalate",
           comment,
@@ -204,27 +178,12 @@ export const useApprovals = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pending-approvals"] });
       queryClient.invalidateQueries({ queryKey: ["approval-history"] });
-      
-      toast({
-        title: "Escalated",
-        description: "Approval has been escalated to next level",
-      });
+      toast({ title: "Escalated", description: "Approval has been escalated to next level" });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
 
-  return {
-    pendingApprovals,
-    approvalHistory,
-    loading,
-    approveRequest,
-    rejectRequest,
-    escalateApproval,
-  };
+  return { pendingApprovals, approvalHistory, loading, approveRequest, rejectRequest, escalateApproval };
 };
