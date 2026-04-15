@@ -12,7 +12,7 @@ import {
 } from "./AnimatedMarker";
 import { useMapMatching } from "@/hooks/useMapMatching";
 import { useLematApiKey } from "@/hooks/useLematApiKey";
-import { createLematTransformRequest, getLematFallbackMapStyle, getLematMapStyle, getOsmFallbackStyle } from "@/lib/lemat";
+import { createLematTransformRequest, getLematMapStyle, getPreviewSafeMapStyle } from "@/lib/lemat";
 
 interface VehiclePoint {
   id: string;
@@ -281,8 +281,7 @@ const ClusteredMap = ({
           fallbackTriedRef.current = true;
           setMapLoaded(false);
           try {
-            // Use inline OSM raster style directly (no external style JSON fetch needed)
-            map.current?.setStyle(getOsmFallbackStyle());
+            map.current?.setStyle(getPreviewSafeMapStyle(mapStyle));
             return;
           } catch {}
         }

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useLematApiKey } from "@/hooks/useLematApiKey";
-import { createLematTransformRequest, getLematFallbackMapStyle, getLematMapStyle, getOsmFallbackStyle } from "@/lib/lemat";
+import { createLematTransformRequest, getLematMapStyle, getPreviewSafeMapStyle } from "@/lib/lemat";
 import { 
   createAnimatedMarkerElement, 
   animatePosition, 
@@ -216,8 +216,7 @@ useEffect(() => {
             fallbackTriedRef.current = true;
             setMapLoaded(false);
             try {
-              // Use inline OSM raster style directly (no external style JSON fetch needed)
-              map.current?.setStyle(getOsmFallbackStyle());
+              map.current?.setStyle(getPreviewSafeMapStyle(mapStyle));
               return;
             } catch {}
           }
