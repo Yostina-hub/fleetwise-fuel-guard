@@ -213,6 +213,7 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
         {request.trip_duration_days && <div><span className="text-muted-foreground">Duration:</span> {request.trip_duration_days} days</div>}
         {request.project_number && <div><span className="text-muted-foreground">Project #:</span> {request.project_number}</div>}
         {request.distance_log_km && <div><span className="text-muted-foreground">Distance:</span> {request.distance_log_km} km</div>}
+      </div>
 
       {request.purpose && (
         <div className="text-sm"><span className="text-muted-foreground">Purpose:</span> {request.purpose}</div>
