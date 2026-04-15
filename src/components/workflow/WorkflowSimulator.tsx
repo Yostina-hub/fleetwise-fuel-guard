@@ -69,6 +69,16 @@ const SIMULATION_DATA: Record<string, () => Record<string, any>> = {
     waited_ms: Math.floor(Math.random() * 5000 + 1000),
     resumed: true,
   }),
+  sensors: () => ({
+    reading: (Math.random() * 100).toFixed(2),
+    unit: ["°C", "%", "kg", "g", "V"][Math.floor(Math.random() * 5)],
+    sensor_status: "online",
+  }),
+  safety_hardware: () => ({
+    device_status: "active",
+    event_captured: true,
+    confidence: (Math.random() * 30 + 70).toFixed(1) + "%",
+  }),
 };
 
 export const WorkflowSimulator = ({
