@@ -272,12 +272,27 @@ useEffect(() => {
 
     const applyStyle = async () => {
       if (!map.current) return;
-      const targetStyle = await fetchLematMapStyle(mapStyle);
-      setMapLoaded(false);
-      setTokenError(null);
-      // Clear trail source tracking so they get re-added after style loads
-      trailSourcesAdded.current.clear();
-      map.current.setStyle(targetStyle);
+      try {
+        const targetStyle = await fetchLematMapStyle(mapStyle);
+        setMapLoaded(false);
+        setTokenError(null);
+        // Clear trail source tracking so they get re-added after style loads
+        trailSourcesAdded.current.clear();
+
+        // Remove existing style.load listener to avoid stacking
+        const onStyleLoad = () => {
+          setMapLoaded(true);
+        };
+        map.current.once('style.load', onStyleLoad);
+        map.current.setStyle(targetStyle);
+      } catch (err) {
+        console.error('Failed to apply map style:', err);
+        // Force fallback
+        try {
+          const fallback = getPreviewSafeMapStyle(mapStyle);
+          map.current?.setStyle(fallback);
+        } catch {}
+      }
     };
 
     // Wait for current style to finish loading before switching
