@@ -89,6 +89,7 @@ export const WorkflowSimulator = ({
 }: WorkflowSimulatorProps) => {
   const [isRunning, setIsRunning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const isPausedRef = useRef(false);
   const [logs, setLogs] = useState<SimulationLog[]>([]);
   const [currentNodeIdx, setCurrentNodeIdx] = useState(-1);
   const [speed, setSpeed] = useState([1]);
@@ -96,6 +97,7 @@ export const WorkflowSimulator = ({
   const [errorCount, setErrorCount] = useState(0);
   const [totalDuration, setTotalDuration] = useState(0);
   const abortRef = useRef(false);
+  const speedRef = useRef(speed);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
