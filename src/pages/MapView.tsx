@@ -282,41 +282,18 @@ const MapView = () => {
     );
   }, [vehicles]);
 
-  // Get vehicle IDs for trail tracking
-  const vehicleIds = useMemo(() => mapVehicles.map(v => v.id), [mapVehicles]);
+  // Get vehicle IDs for trail tracking (real telemetry only)
+  const vehicleIds = useMemo(() => {
+    return sumoActive ? [] : mapVehicles.map(v => v.id);
+  }, [sumoActive, mapVehicles]);
   
   // Use vehicle trail hook for live path drawing
   const { trails, clearAllTrails } = useVehicleTrail(vehicleIds);
+  const activeTrails = useMemo(() => {
+    return sumoActive ? new Map() : trails;
+  }, [sumoActive, trails]);
 
-  // Filter vehicles by search and status
-  const filteredVehicles = useMemo(() => {
-    let filtered = vehicles;
-    
-    // Apply status filter
-    if (statusFilter === 'online') {
-      // Live = all non-offline vehicles
-      filtered = filtered.filter(v => !v.isOffline);
-    } else if (statusFilter === 'offline') {
-      filtered = filtered.filter(v => v.isOffline);
-    } else if (statusFilter !== 'all') {
-      filtered = filtered.filter(v => v.status === statusFilter);
-    }
-    
-    // Apply search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(v => v.plate.toLowerCase().includes(query));
-    }
-    
-    return filtered;
-  }, [vehicles, searchQuery, statusFilter]);
-
-  const filteredMapVehiclesReal = useMemo(() => {
-    const filteredIds = new Set(filteredVehicles.map(v => v.id));
-    return mapVehicles.filter(v => filteredIds.has(v.id));
-  }, [filteredVehicles, mapVehicles]);
-
-  // Bridge SUMO vehicles to map vehicle format
+  // Bridge SUMO vehicles to the same map/sidebar/detail shape used by live vehicles
   const sumoMapVehicles = useMemo(() => {
     if (!sumoActive || !sumoState) return [];
     return sumoState.vehicles.map(sv => ({
@@ -325,14 +302,15 @@ const MapView = () => {
       status: sv.status as 'moving' | 'idle' | 'stopped',
       lat: sv.lat,
       lng: sv.lng,
-      speed: sv.speed,
-      fuel: sv.fuel,
+      speed: Math.round(sv.speed),
+      fuel: Math.round(sv.fuel),
       heading: sv.heading,
       engine_on: sv.ignitionOn,
       isOffline: sv.device.status === 'offline',
       lastSeen: sv.device.lastHeartbeat,
       make: sv.make,
       model: sv.model,
+      year: sv.year,
       type: sv.type,
       address: `${sv.currentRoadName}, Addis Ababa`,
       gps_signal_strength: sv.device.signalStrength,
@@ -341,16 +319,47 @@ const MapView = () => {
       gps_fix_type: sv.device.fixType,
       driverName: sv.driver.name,
       driverPhone: sv.driver.phone,
-      speed_limit: undefined,
+      speed_limit: sv.maxSpeed,
     }));
   }, [sumoActive, sumoState]);
 
-  // Active data source: SUMO or real-world
-  const filteredMapVehicles = sumoActive ? sumoMapVehicles : filteredMapVehiclesReal;
+  const activeSourceVehicles = useMemo(() => {
+    return sumoActive ? sumoMapVehicles : vehicles;
+  }, [sumoActive, sumoMapVehicles, vehicles]);
+
+  // Filter vehicles by search and status for both real and SUMO sources
+  const filteredVehicles = useMemo(() => {
+    let filtered = activeSourceVehicles;
+    
+    if (statusFilter === 'online') {
+      filtered = filtered.filter(v => !v.isOffline);
+    } else if (statusFilter === 'offline') {
+      filtered = filtered.filter(v => v.isOffline);
+    } else if (statusFilter !== 'all') {
+      filtered = filtered.filter(v => v.status === statusFilter);
+    }
+    
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(v => v.plate.toLowerCase().includes(query));
+    }
+    
+    return filtered;
+  }, [activeSourceVehicles, searchQuery, statusFilter]);
+
+  const filteredMapVehicles = useMemo(() => {
+    return filteredVehicles.filter(
+      (v): v is typeof v & { lat: number; lng: number } =>
+        typeof v.lat === 'number' &&
+        typeof v.lng === 'number' &&
+        Number.isFinite(v.lat) &&
+        Number.isFinite(v.lng)
+    );
+  }, [filteredVehicles]);
 
   // Auto-refresh
   useEffect(() => {
-    if (autoRefresh === "off") return;
+    if (sumoActive || autoRefresh === "off") return;
     
     const interval = setInterval(() => {
       setLastUpdate(new Date());
@@ -358,9 +367,9 @@ const MapView = () => {
     }, parseInt(autoRefresh) * 1000);
 
     return () => clearInterval(interval);
-  }, [autoRefresh, refetch]);
+  }, [sumoActive, autoRefresh, refetch]);
 
-  const isInitialLoading = loading && vehicles.length === 0;
+  const isInitialLoading = !sumoActive && loading && vehicles.length === 0;
   const useClusteredMap = !sumoActive && filteredMapVehicles.length > CLUSTER_THRESHOLD;
 
   // Virtual list for sidebar
@@ -376,16 +385,15 @@ const MapView = () => {
   useEffect(() => {
     if (!followMode || !selectedVehicleId || !mapInstance) return;
     
-    const selectedVehicle = mapVehicles.find(v => v.id === selectedVehicleId);
+    const selectedVehicle = filteredMapVehicles.find(v => v.id === selectedVehicleId);
     if (!selectedVehicle) return;
 
-    // Smoothly pan to the vehicle's current position
     mapInstance.easeTo({
       center: [selectedVehicle.lng, selectedVehicle.lat],
       duration: 500,
       essential: true,
     });
-  }, [followMode, selectedVehicleId, vehicles, mapInstance]);
+  }, [followMode, selectedVehicleId, filteredMapVehicles, mapInstance]);
 
   // Disable follow mode when user manually interacts with the map
   useEffect(() => {
@@ -393,7 +401,6 @@ const MapView = () => {
 
     const handleDragStart = () => setFollowMode(false);
     const handleZoomStart = (e: any) => {
-      // Only disable if user-initiated zoom (not programmatic)
       if (!e.originalEvent) return;
       setFollowMode(false);
     };
@@ -409,7 +416,6 @@ const MapView = () => {
 
   const handleVehicleClick = useCallback((vehicle: any) => {
     setSelectedVehicleId(vehicle.id);
-    // Pan map to vehicle
     if (mapInstance && typeof vehicle.lng === 'number' && typeof vehicle.lat === 'number') {
       mapInstance.flyTo({
         center: [vehicle.lng, vehicle.lat],
@@ -433,8 +439,8 @@ const MapView = () => {
   // Get selected vehicle for info panel
   const selectedVehicle = useMemo(() => {
     if (!selectedVehicleId) return null;
-    return filteredVehicles.find(v => v.id === selectedVehicleId) || null;
-  }, [selectedVehicleId, filteredVehicles]);
+    return activeSourceVehicles.find(v => v.id === selectedVehicleId) || null;
+  }, [selectedVehicleId, activeSourceVehicles]);
 
   // Handle Street View from info panel
   const handleStreetView = useCallback((lat: number, lng: number, plate: string) => {
