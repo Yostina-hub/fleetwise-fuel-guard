@@ -5860,6 +5860,65 @@ export type Database = {
         }
         Relationships: []
       }
+      energy_cost_rates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          currency: string
+          effective_from: string
+          effective_until: string | null
+          energy_type: string
+          fuel_type: string | null
+          id: string
+          notes: string | null
+          organization_id: string
+          rate_per_unit: number
+          source: string | null
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          effective_from: string
+          effective_until?: string | null
+          energy_type?: string
+          fuel_type?: string | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          rate_per_unit: number
+          source?: string | null
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          effective_from?: string
+          effective_until?: string | null
+          energy_type?: string
+          fuel_type?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          rate_per_unit?: number
+          source?: string | null
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energy_cost_rates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       enrichment_configs: {
         Row: {
           cache_geocoding_results: boolean | null

@@ -10,8 +10,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Plus, DollarSign, TrendingUp, TrendingDown, Search } from "lucide-react";
+import { Plus, DollarSign, TrendingUp, TrendingDown, Search, Gauge } from "lucide-react";
 import { format } from "date-fns";
+import EnergyCostRatesManager from "@/components/energy/EnergyCostRatesManager";
 
 const COST_TYPES = ["labor", "parts", "external_service", "transport", "disposal", "inspection", "other"];
 
@@ -192,6 +193,18 @@ const MaintenanceCostTab = () => {
           {filtered.length === 0 && <p className="text-center text-muted-foreground py-8">No cost entries found</p>}
         </div>
       )}
+
+      {/* Dynamic Cost Rates */}
+      <Card className="glass-strong">
+        <CardHeader>
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Gauge className="w-4 h-4" /> Dynamic Energy Cost Rates
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <EnergyCostRatesManager filterType="fuel" />
+        </CardContent>
+      </Card>
     </div>
   );
 };

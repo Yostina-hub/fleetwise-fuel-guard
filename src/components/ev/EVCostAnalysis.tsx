@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, TrendingUp, Zap, Calendar } from "lucide-react";
+import { DollarSign, TrendingUp, Zap, Calendar, Gauge } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
+import EnergyCostRatesManager from "@/components/energy/EnergyCostRatesManager";
 
 export const EVCostAnalysis = () => {
   const { organizationId } = useOrganization();
@@ -125,6 +126,18 @@ export const EVCostAnalysis = () => {
               </table>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Dynamic EV Charging Rates */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <Gauge className="w-4 h-4" /> Configurable Charging Cost Rates
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <EnergyCostRatesManager filterType="ev_charging" />
         </CardContent>
       </Card>
     </div>
