@@ -69,6 +69,16 @@ const SIMULATION_DATA: Record<string, () => Record<string, any>> = {
     waited_ms: Math.floor(Math.random() * 5000 + 1000),
     resumed: true,
   }),
+  sensors: () => ({
+    reading: (Math.random() * 100).toFixed(2),
+    unit: ["°C", "%", "kg", "g", "V"][Math.floor(Math.random() * 5)],
+    sensor_status: "online",
+  }),
+  safety_hardware: () => ({
+    device_status: "active",
+    event_captured: true,
+    confidence: (Math.random() * 30 + 70).toFixed(1) + "%",
+  }),
 };
 
 export const WorkflowSimulator = ({
@@ -79,6 +89,7 @@ export const WorkflowSimulator = ({
 }: WorkflowSimulatorProps) => {
   const [isRunning, setIsRunning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const isPausedRef = useRef(false);
   const [logs, setLogs] = useState<SimulationLog[]>([]);
   const [currentNodeIdx, setCurrentNodeIdx] = useState(-1);
   const [speed, setSpeed] = useState([1]);
@@ -86,11 +97,16 @@ export const WorkflowSimulator = ({
   const [errorCount, setErrorCount] = useState(0);
   const [totalDuration, setTotalDuration] = useState(0);
   const abortRef = useRef(false);
+  const speedRef = useRef(speed);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
+
+  // Keep refs in sync with state
+  useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
+  useEffect(() => { speedRef.current = speed; }, [speed]);
 
   const getExecutionOrder = useCallback(() => {
     // Topological sort based on edges
@@ -127,7 +143,7 @@ export const WorkflowSimulator = ({
     return order;
   }, [nodes, edges]);
 
-  const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms / speed[0]));
+  const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms / speedRef.current[0]));
 
   const addLog = useCallback((log: Omit<SimulationLog, "id" | "timestamp">) => {
     const newLog: SimulationLog = {
@@ -185,7 +201,7 @@ export const WorkflowSimulator = ({
       if (abortRef.current) break;
 
       // Wait while paused
-      while (isPaused && !abortRef.current) {
+      while (isPausedRef.current && !abortRef.current) {
         await delay(100);
       }
 
@@ -212,50 +228,35 @@ export const WorkflowSimulator = ({
 
       if (abortRef.current) break;
 
-      // Determine result (90% success for simulation)
-      const isError = Math.random() < 0.08;
       const category = nodeData?.category || "actions";
       const simData = SIMULATION_DATA[category]?.() || {};
 
-      if (isError) {
-        onNodeStatusChange(nodeId, "error");
-        setErrorCount((c) => c + 1);
+      // For condition nodes, show which branch was taken
+      if (category === "conditions") {
+        const branch = simData.branch || "true";
+        onNodeStatusChange(nodeId, "success");
+        setCompletedCount((c) => c + 1);
         addLog({
           nodeId,
           nodeLabel: nodeData?.label || "Unknown",
           nodeIcon: nodeData?.icon || "⚙️",
-          status: "error",
-          message: `Error in ${nodeData?.label}: Connection timeout after ${processingTime}ms`,
+          status: "success",
+          message: `Condition evaluated → ${branch === "true" ? "✓ TRUE branch" : "✗ FALSE branch"} (${processingTime}ms)`,
           duration: processingTime,
-          data: { error: "TIMEOUT", retry_count: 0 },
+          data: simData,
         });
       } else {
-        // For condition nodes, show which branch was taken
-        if (category === "conditions") {
-          const branch = simData.branch || "true";
-          onNodeStatusChange(nodeId, "success");
-          addLog({
-            nodeId,
-            nodeLabel: nodeData?.label || "Unknown",
-            nodeIcon: nodeData?.icon || "⚙️",
-            status: "success",
-            message: `Condition evaluated → ${branch === "true" ? "✓ TRUE branch" : "✗ FALSE branch"} (${processingTime}ms)`,
-            duration: processingTime,
-            data: simData,
-          });
-        } else {
-          onNodeStatusChange(nodeId, "success");
-          setCompletedCount((c) => c + 1);
-          addLog({
-            nodeId,
-            nodeLabel: nodeData?.label || "Unknown",
-            nodeIcon: nodeData?.icon || "⚙️",
-            status: "success",
-            message: `${nodeData?.label} completed in ${processingTime}ms`,
-            duration: processingTime,
-            data: simData,
-          });
-        }
+        onNodeStatusChange(nodeId, "success");
+        setCompletedCount((c) => c + 1);
+        addLog({
+          nodeId,
+          nodeLabel: nodeData?.label || "Unknown",
+          nodeIcon: nodeData?.icon || "⚙️",
+          status: "success",
+          message: `${nodeData?.label} completed in ${processingTime}ms`,
+          duration: processingTime,
+          data: simData,
+        });
       }
 
       await delay(200);
@@ -276,7 +277,7 @@ export const WorkflowSimulator = ({
 
     setIsRunning(false);
     setCurrentNodeIdx(-1);
-  }, [nodes, edges, onNodeStatusChange, getExecutionOrder, addLog, delay, speed, isPaused]);
+  }, [nodes, edges, onNodeStatusChange, getExecutionOrder, addLog]);
 
   const stopSimulation = useCallback(() => {
     abortRef.current = true;
