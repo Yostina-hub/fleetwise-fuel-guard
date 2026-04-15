@@ -143,7 +143,7 @@ export const WorkflowSimulator = ({
     return order;
   }, [nodes, edges]);
 
-  const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms / speed[0]));
+  const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms / speedRef.current[0]));
 
   const addLog = useCallback((log: Omit<SimulationLog, "id" | "timestamp">) => {
     const newLog: SimulationLog = {
