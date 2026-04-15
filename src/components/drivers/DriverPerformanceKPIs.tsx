@@ -37,13 +37,14 @@ interface Review {
   review_period_end: string;
   reviewer_name: string | null;
   safety_score: number | null;
-  punctuality_score: number | null;
+  compliance_score: number | null;
   customer_score: number | null;
   efficiency_score: number | null;
   overall_score: number | null;
-  strengths: string | null;
-  improvements: string | null;
-  goals: string | null;
+  strengths: string[] | null;
+  improvement_areas: string[] | null;
+  improvement_plan: string | null;
+  goals: any;
   status: string;
   created_at: string;
 }
@@ -57,8 +58,8 @@ export const DriverPerformanceKPIs = ({ driverId, driverName }: DriverPerformanc
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [reviewForm, setReviewForm] = useState({
     period_start: "", period_end: "", reviewer_name: "",
-    safety: 75, punctuality: 75, customer: 75, efficiency: 75,
-    strengths: "", improvements: "", goals: ""
+    safety: 75, compliance: 75, customer: 75, efficiency: 75,
+    strengths: "", improvement_plan: "", goals: ""
   });
 
   useEffect(() => {
@@ -94,7 +95,7 @@ export const DriverPerformanceKPIs = ({ driverId, driverName }: DriverPerformanc
 
   const handleCreateReview = async () => {
     if (!organizationId) return;
-    const overall = Math.round((reviewForm.safety + reviewForm.punctuality + reviewForm.customer + reviewForm.efficiency) / 4);
+    const overall = Math.round((reviewForm.safety + reviewForm.compliance + reviewForm.customer + reviewForm.efficiency) / 4);
 
     const { error } = await supabase.from("driver_performance_reviews").insert({
       organization_id: organizationId,
@@ -103,13 +104,13 @@ export const DriverPerformanceKPIs = ({ driverId, driverName }: DriverPerformanc
       review_period_end: reviewForm.period_end,
       reviewer_name: reviewForm.reviewer_name || null,
       safety_score: reviewForm.safety,
-      punctuality_score: reviewForm.punctuality,
+      compliance_score: reviewForm.compliance,
       customer_score: reviewForm.customer,
       efficiency_score: reviewForm.efficiency,
       overall_score: overall,
-      strengths: reviewForm.strengths || null,
-      improvements: reviewForm.improvements || null,
-      goals: reviewForm.goals || null,
+      strengths: reviewForm.strengths ? [reviewForm.strengths] : null,
+      improvement_plan: reviewForm.improvement_plan || null,
+      goals: reviewForm.goals ? [reviewForm.goals] : null,
       status: "submitted",
     });
 
@@ -118,7 +119,7 @@ export const DriverPerformanceKPIs = ({ driverId, driverName }: DriverPerformanc
     } else {
       toast({ title: "Review submitted" });
       setShowReviewDialog(false);
-      setReviewForm({ period_start: "", period_end: "", reviewer_name: "", safety: 75, punctuality: 75, customer: 75, efficiency: 75, strengths: "", improvements: "", goals: "" });
+      setReviewForm({ period_start: "", period_end: "", reviewer_name: "", safety: 75, compliance: 75, customer: 75, efficiency: 75, strengths: "", improvement_plan: "", goals: "" });
     }
   };
 
@@ -204,7 +205,7 @@ export const DriverPerformanceKPIs = ({ driverId, driverName }: DriverPerformanc
 
               {[
                 { key: "safety", label: "Safety", icon: Shield },
-                { key: "punctuality", label: "Punctuality", icon: Clock },
+                { key: "compliance", label: "Compliance", icon: Clock },
                 { key: "customer", label: "Customer Service", icon: Star },
                 { key: "efficiency", label: "Efficiency", icon: TrendingUp },
               ].map(({ key, label, icon: Icon }) => (
@@ -218,8 +219,8 @@ export const DriverPerformanceKPIs = ({ driverId, driverName }: DriverPerformanc
               ))}
 
               <Textarea placeholder="Strengths..." value={reviewForm.strengths} onChange={e => setReviewForm(f => ({ ...f, strengths: e.target.value }))} rows={2} />
-              <Textarea placeholder="Areas for improvement..." value={reviewForm.improvements} onChange={e => setReviewForm(f => ({ ...f, improvements: e.target.value }))} rows={2} />
-              <Textarea placeholder="Goals & coaching plan..." value={reviewForm.goals} onChange={e => setReviewForm(f => ({ ...f, goals: e.target.value }))} rows={2} />
+              <Textarea placeholder="Improvement plan..." value={reviewForm.improvement_plan} onChange={e => setReviewForm(f => ({ ...f, improvement_plan: e.target.value }))} rows={2} />
+              <Textarea placeholder="Goals..." value={reviewForm.goals} onChange={e => setReviewForm(f => ({ ...f, goals: e.target.value }))} rows={2} />
               <Button className="w-full" onClick={handleCreateReview}>Submit Review</Button>
             </div>
           </DialogContent>
@@ -245,7 +246,7 @@ export const DriverPerformanceKPIs = ({ driverId, driverName }: DriverPerformanc
             <div className="grid grid-cols-4 gap-2">
               {[
                 { label: "Safety", score: r.safety_score },
-                { label: "Punctuality", score: r.punctuality_score },
+                { label: "Compliance", score: r.compliance_score },
                 { label: "Customer", score: r.customer_score },
                 { label: "Efficiency", score: r.efficiency_score },
               ].map(s => (
@@ -263,11 +264,11 @@ export const DriverPerformanceKPIs = ({ driverId, driverName }: DriverPerformanc
                 </div>
               ))}
             </div>
-            {(r.strengths || r.improvements || r.goals) && (
+            {(r.strengths || r.improvement_plan || r.goals) && (
               <div className="text-[10px] space-y-1 pt-1 border-t">
-                {r.strengths && <p><span className="font-medium text-emerald-400">Strengths:</span> {r.strengths}</p>}
-                {r.improvements && <p><span className="font-medium text-amber-400">Improve:</span> {r.improvements}</p>}
-                {r.goals && <p><span className="font-medium text-blue-400">Goals:</span> {r.goals}</p>}
+                {r.strengths && <p><span className="font-medium text-emerald-400">Strengths:</span> {Array.isArray(r.strengths) ? r.strengths.join(", ") : r.strengths}</p>}
+                {r.improvement_plan && <p><span className="font-medium text-amber-400">Improve:</span> {r.improvement_plan}</p>}
+                {r.goals && <p><span className="font-medium text-blue-400">Goals:</span> {Array.isArray(r.goals) ? r.goals.join(", ") : String(r.goals)}</p>}
               </div>
             )}
           </CardContent>
