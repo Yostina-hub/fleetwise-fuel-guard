@@ -192,6 +192,74 @@ const TireManagement = () => {
               )}
             </TabsContent>
 
+            <TabsContent value="positions" className="mt-0">
+              {(() => {
+                const vehicleMap: Record<string, { plate: string; tires: any[] }> = {};
+                tireInventory.filter((t: any) => t.current_vehicle_id && t.status === "active").forEach((tire: any) => {
+                  const vid = tire.current_vehicle_id;
+                  if (!vehicleMap[vid]) vehicleMap[vid] = { plate: (tire as any).vehicles?.plate_number || "Unknown", tires: [] };
+                  vehicleMap[vid].tires.push(tire);
+                });
+                const vehicleEntries = Object.entries(vehicleMap);
+                if (vehicleEntries.length === 0) return (
+                  <Card><CardContent className="py-12 text-center text-muted-foreground">
+                    <CircleDot className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                    <p>No tires assigned to vehicles yet.</p>
+                  </CardContent></Card>
+                );
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {vehicleEntries.map(([vid, { plate, tires }]) => (
+                      <Card key={vid}>
+                        <CardHeader className="pb-2"><CardTitle className="text-base">{plate}</CardTitle></CardHeader>
+                        <CardContent>
+                          <div className="relative mx-auto w-48">
+                            <div className="border-2 border-muted rounded-2xl px-4 py-6 space-y-4">
+                              <p className="text-[10px] text-center text-muted-foreground uppercase tracking-wider">Front</p>
+                              <div className="flex justify-between">
+                                {["Front Left", "Front Right"].map(pos => {
+                                  const tire = tires.find((t: any) => t.position === pos);
+                                  const wear = tire ? getWearPercent(tire.total_distance_km, tire.max_distance_km) : 0;
+                                  return (
+                                    <div key={pos} className={`w-14 h-8 rounded border-2 flex items-center justify-center text-[9px] font-bold ${tire ? (wear > 90 ? "border-destructive bg-destructive/10 text-destructive" : wear > 75 ? "border-warning bg-warning/10 text-warning" : "border-success bg-success/10 text-success") : "border-dashed border-muted-foreground/30 text-muted-foreground"}`}>
+                                      {tire ? `${wear}%` : "—"}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                              <div className="flex justify-between">
+                                {["Rear Left Outer", "Rear Right Outer"].map(pos => {
+                                  const tire = tires.find((t: any) => t.position === pos);
+                                  const wear = tire ? getWearPercent(tire.total_distance_km, tire.max_distance_km) : 0;
+                                  return (
+                                    <div key={pos} className={`w-14 h-8 rounded border-2 flex items-center justify-center text-[9px] font-bold ${tire ? (wear > 90 ? "border-destructive bg-destructive/10 text-destructive" : wear > 75 ? "border-warning bg-warning/10 text-warning" : "border-success bg-success/10 text-success") : "border-dashed border-muted-foreground/30 text-muted-foreground"}`}>
+                                      {tire ? `${wear}%` : "—"}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                              <p className="text-[10px] text-center text-muted-foreground uppercase tracking-wider">Rear</p>
+                            </div>
+                          </div>
+                          <div className="mt-3 space-y-1">
+                            {tires.map((tire: any) => {
+                              const costPerKm = tire.total_distance_km && tire.purchase_cost ? (tire.purchase_cost / tire.total_distance_km).toFixed(2) : "—";
+                              return (
+                                <div key={tire.id} className="flex items-center justify-between text-xs">
+                                  <span className="text-muted-foreground">{tire.position || "?"}: {tire.brand}</span>
+                                  <span className="font-mono">{costPerKm} ETB/km</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                );
+              })()}
+            </TabsContent>
+
             <TabsContent value="changes" className="mt-0 space-y-3">
               {tireChanges.length === 0 ? (
                 <Card><CardContent className="py-12 text-center text-muted-foreground">
