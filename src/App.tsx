@@ -72,6 +72,7 @@ const DelegationMatrixPage = lazyWithRetry(() => import("./pages/DelegationMatri
 const VehicleInspections = lazyWithRetry(() => import("./pages/VehicleInspections"), "VehicleInspections");
 const AlcoholFatigueDetection = lazyWithRetry(() => import("./pages/AlcoholFatigueDetection"), "AlcoholFatigueDetection");
 const HardwareSensors = lazyWithRetry(() => import("./pages/HardwareSensors"), "HardwareSensors");
+const IoTSensorManagement = lazyWithRetry(() => import("./pages/IoTSensorManagement"), "IoTSensorManagement");
 const AccidentInsurance = lazyWithRetry(() => import("./pages/AccidentInsurance"), "AccidentInsurance");
 const DocumentManagement = lazyWithRetry(() => import("./pages/DocumentManagement"), "DocumentManagement");
 const ComplianceCalendar = lazyWithRetry(() => import("./pages/ComplianceCalendar"), "ComplianceCalendar");
@@ -181,6 +182,7 @@ const App = () => {
                         <Route path="/vehicle-inspections" element={<ProtectedRoute><VehicleInspections /></ProtectedRoute>} />
                         <Route path="/alcohol-fatigue" element={<ProtectedRoute><AlcoholFatigueDetection /></ProtectedRoute>} />
                         <Route path="/hardware-sensors" element={<ProtectedRoute><HardwareSensors /></ProtectedRoute>} />
+                        <Route path="/iot-sensors" element={<ProtectedRoute><IoTSensorManagement /></ProtectedRoute>} />
                         <Route path="/accident-insurance" element={<ProtectedRoute><AccidentInsurance /></ProtectedRoute>} />
                         <Route path="/document-management" element={<ProtectedRoute><DocumentManagement /></ProtectedRoute>} />
                         <Route path="/compliance-calendar" element={<ProtectedRoute><ComplianceCalendar /></ProtectedRoute>} />
