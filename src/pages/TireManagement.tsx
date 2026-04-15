@@ -85,6 +85,22 @@ const TireManagement = () => {
     onError: (err: any) => toast.error(err.message),
   });
 
+  const addTireRetireMutation = useMutation({
+    mutationFn: async (tireId: string) => {
+      const { error } = await supabase.from("tire_inventory").update({
+        status: "retired",
+        retired_date: new Date().toISOString().split("T")[0],
+        retired_reason: "manual_retire",
+      }).eq("id", tireId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Tire retired");
+      queryClient.invalidateQueries({ queryKey: ["tire-inventory"] });
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   const getStatusBadge = (status: string | null) => {
     switch (status) {
       case "active": return <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">{t('common.active', 'Active')}</Badge>;
