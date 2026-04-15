@@ -13,9 +13,12 @@ import {
   XCircle,
   Clock,
   Zap,
+  Database,
+  ArrowUpDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { executeNode, type ExecutionResult } from "./workflowExecutor";
 
 interface SimulationLog {
   id: string;
@@ -27,63 +30,22 @@ interface SimulationLog {
   timestamp: number;
   duration?: number;
   data?: Record<string, any>;
+  operation?: string;
+  table?: string;
 }
 
 interface WorkflowSimulatorProps {
   nodes: any[];
   edges: any[];
+  organizationId: string;
   onNodeStatusChange: (nodeId: string, status: string) => void;
   onClose: () => void;
 }
 
-// Realistic simulation data generators
-const SIMULATION_DATA: Record<string, () => Record<string, any>> = {
-  triggers: () => ({
-    vehicle: { id: "VH-" + Math.floor(Math.random() * 999), name: "Truck #" + Math.floor(Math.random() * 50 + 1), plate: "AB-" + Math.floor(Math.random() * 9999) },
-    driver: { id: "DR-" + Math.floor(Math.random() * 999), name: ["John Doe", "Sarah Smith", "Mike Chen", "Emma Wilson", "James Brown"][Math.floor(Math.random() * 5)] },
-    event: { speed_kmh: Math.floor(Math.random() * 60 + 80), fuel_level: Math.floor(Math.random() * 100), lat: 9.01 + Math.random() * 0.1, lng: 38.74 + Math.random() * 0.1 },
-    timestamp: new Date().toISOString(),
-  }),
-  conditions: () => ({
-    result: Math.random() > 0.4,
-    evaluated: true,
-    branch: Math.random() > 0.4 ? "true" : "false",
-  }),
-  fleet: () => ({
-    action_id: "ACT-" + Math.floor(Math.random() * 99999),
-    completed: true,
-    affected_vehicles: Math.floor(Math.random() * 5 + 1),
-  }),
-  notifications: () => ({
-    sent: true,
-    recipients: Math.floor(Math.random() * 5 + 1),
-    delivery_status: "delivered",
-    message_id: "MSG-" + Math.floor(Math.random() * 99999),
-  }),
-  data: () => ({
-    records_processed: Math.floor(Math.random() * 100 + 10),
-    query_time_ms: Math.floor(Math.random() * 200 + 20),
-    result_count: Math.floor(Math.random() * 50 + 1),
-  }),
-  timing: () => ({
-    waited_ms: Math.floor(Math.random() * 5000 + 1000),
-    resumed: true,
-  }),
-  sensors: () => ({
-    reading: (Math.random() * 100).toFixed(2),
-    unit: ["°C", "%", "kg", "g", "V"][Math.floor(Math.random() * 5)],
-    sensor_status: "online",
-  }),
-  safety_hardware: () => ({
-    device_status: "active",
-    event_captured: true,
-    confidence: (Math.random() * 30 + 70).toFixed(1) + "%",
-  }),
-};
-
 export const WorkflowSimulator = ({
   nodes,
   edges,
+  organizationId,
   onNodeStatusChange,
   onClose,
 }: WorkflowSimulatorProps) => {
@@ -96,6 +58,7 @@ export const WorkflowSimulator = ({
   const [completedCount, setCompletedCount] = useState(0);
   const [errorCount, setErrorCount] = useState(0);
   const [totalDuration, setTotalDuration] = useState(0);
+  const [dbOpsCount, setDbOpsCount] = useState({ reads: 0, writes: 0 });
   const abortRef = useRef(false);
   const speedRef = useRef(speed);
   const logsEndRef = useRef<HTMLDivElement>(null);
@@ -104,15 +67,13 @@ export const WorkflowSimulator = ({
     logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
 
-  // Keep refs in sync with state
   useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
   useEffect(() => { speedRef.current = speed; }, [speed]);
 
   const getExecutionOrder = useCallback(() => {
-    // Topological sort based on edges
     const adjList = new Map<string, string[]>();
     const inDegree = new Map<string, number>();
-    
+
     nodes.forEach((n) => {
       adjList.set(n.id, []);
       inDegree.set(n.id, 0);
@@ -155,21 +116,6 @@ export const WorkflowSimulator = ({
     return newLog;
   }, []);
 
-  const getNodeMessages = (nodeData: any): string => {
-    const category = nodeData?.category;
-    const label = nodeData?.label || "Node";
-    const messages: Record<string, string[]> = {
-      triggers: [`Trigger fired: ${label}`, `Event received for ${label}`, `${label} activated`],
-      conditions: [`Evaluating: ${label}`, `Checking condition: ${label}`],
-      fleet: [`Executing fleet action: ${label}`, `Processing: ${label}`],
-      notifications: [`Sending notification: ${label}`, `Delivering: ${label}`],
-      data: [`Querying data: ${label}`, `Processing: ${label}`],
-      timing: [`Timer started: ${label}`, `Waiting: ${label}`],
-    };
-    const pool = messages[category] || [`Processing: ${label}`];
-    return pool[Math.floor(Math.random() * pool.length)];
-  };
-
   const runSimulation = useCallback(async () => {
     abortRef.current = false;
     setIsRunning(true);
@@ -178,9 +124,9 @@ export const WorkflowSimulator = ({
     setCompletedCount(0);
     setErrorCount(0);
     setTotalDuration(0);
+    setDbOpsCount({ reads: 0, writes: 0 });
     setCurrentNodeIdx(0);
 
-    // Reset all nodes
     nodes.forEach((n) => onNodeStatusChange(n.id, "idle"));
 
     const executionOrder = getExecutionOrder();
@@ -190,17 +136,16 @@ export const WorkflowSimulator = ({
       nodeLabel: "Simulator",
       nodeIcon: "🚀",
       status: "running",
-      message: `Starting simulation with ${executionOrder.length} nodes...`,
+      message: `Starting LIVE simulation with ${executionOrder.length} nodes — real database operations...`,
     });
 
-    await delay(800);
+    await delay(600);
 
     const startTime = Date.now();
 
     for (let i = 0; i < executionOrder.length; i++) {
       if (abortRef.current) break;
 
-      // Wait while paused
       while (isPausedRef.current && !abortRef.current) {
         await delay(100);
       }
@@ -212,28 +157,40 @@ export const WorkflowSimulator = ({
       const nodeData = node.data as any;
       setCurrentNodeIdx(i);
 
-      // Set node to running
       onNodeStatusChange(nodeId, "running");
       addLog({
         nodeId,
         nodeLabel: nodeData?.label || "Unknown",
         nodeIcon: nodeData?.icon || "⚙️",
         status: "running",
-        message: getNodeMessages(nodeData),
+        message: `Executing: ${nodeData?.label}...`,
       });
 
-      // Simulate processing time (300ms - 1500ms)
-      const processingTime = Math.floor(Math.random() * 1200 + 300);
-      await delay(processingTime);
+      // Execute real database operation
+      const execStart = Date.now();
+      let result: ExecutionResult;
+      try {
+        result = await executeNode(
+          nodeData?.nodeType || "",
+          nodeData?.category || "",
+          nodeData?.config,
+          organizationId
+        );
+      } catch (err: any) {
+        result = { success: false, operation: "SELECT", message: `Unexpected error: ${err.message}`, error: err.message };
+      }
+      const execDuration = Date.now() - execStart;
 
       if (abortRef.current) break;
 
-      const category = nodeData?.category || "actions";
-      const simData = SIMULATION_DATA[category]?.() || {};
+      // Track DB operations
+      if (result.operation === "SELECT") {
+        setDbOpsCount((prev) => ({ ...prev, reads: prev.reads + 1 }));
+      } else if (["INSERT", "UPDATE", "DELETE"].includes(result.operation)) {
+        setDbOpsCount((prev) => ({ ...prev, writes: prev.writes + 1 }));
+      }
 
-      // For condition nodes, show which branch was taken
-      if (category === "conditions") {
-        const branch = simData.branch || "true";
+      if (result.success) {
         onNodeStatusChange(nodeId, "success");
         setCompletedCount((c) => c + 1);
         addLog({
@@ -241,25 +198,29 @@ export const WorkflowSimulator = ({
           nodeLabel: nodeData?.label || "Unknown",
           nodeIcon: nodeData?.icon || "⚙️",
           status: "success",
-          message: `Condition evaluated → ${branch === "true" ? "✓ TRUE branch" : "✗ FALSE branch"} (${processingTime}ms)`,
-          duration: processingTime,
-          data: simData,
+          message: result.message,
+          duration: execDuration,
+          data: result.data,
+          operation: result.operation,
+          table: result.table,
         });
       } else {
-        onNodeStatusChange(nodeId, "success");
-        setCompletedCount((c) => c + 1);
+        onNodeStatusChange(nodeId, "error");
+        setErrorCount((c) => c + 1);
         addLog({
           nodeId,
           nodeLabel: nodeData?.label || "Unknown",
           nodeIcon: nodeData?.icon || "⚙️",
-          status: "success",
-          message: `${nodeData?.label} completed in ${processingTime}ms`,
-          duration: processingTime,
-          data: simData,
+          status: "error",
+          message: result.message,
+          duration: execDuration,
+          data: result.data,
+          operation: result.operation,
+          table: result.table,
         });
       }
 
-      await delay(200);
+      await delay(300);
     }
 
     const elapsed = Date.now() - startTime;
@@ -277,7 +238,7 @@ export const WorkflowSimulator = ({
 
     setIsRunning(false);
     setCurrentNodeIdx(-1);
-  }, [nodes, edges, onNodeStatusChange, getExecutionOrder, addLog]);
+  }, [nodes, edges, organizationId, onNodeStatusChange, getExecutionOrder, addLog]);
 
   const stopSimulation = useCallback(() => {
     abortRef.current = true;
@@ -292,6 +253,7 @@ export const WorkflowSimulator = ({
     setCompletedCount(0);
     setErrorCount(0);
     setTotalDuration(0);
+    setDbOpsCount({ reads: 0, writes: 0 });
     setCurrentNodeIdx(-1);
   }, [stopSimulation]);
 
@@ -312,7 +274,10 @@ export const WorkflowSimulator = ({
                 <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
               )}
             </div>
-            <h3 className="text-sm font-bold text-foreground">Simulator</h3>
+            <h3 className="text-sm font-bold text-foreground">Live Simulator</h3>
+            <Badge variant="outline" className="text-[8px] h-4 px-1 border-emerald-500/50 text-emerald-500">
+              REAL DB
+            </Badge>
           </div>
           <Button size="sm" variant="ghost" onClick={onClose} className="h-6 text-[10px]">
             Close
@@ -325,11 +290,11 @@ export const WorkflowSimulator = ({
             <Button
               size="sm"
               onClick={runSimulation}
-              disabled={nodes.length === 0}
+              disabled={nodes.length === 0 || !organizationId}
               className="h-7 gap-1 text-xs flex-1 bg-emerald-600 hover:bg-emerald-700"
             >
               <Play className="h-3 w-3" />
-              Run Simulation
+              Run Live
             </Button>
           ) : (
             <>
@@ -379,7 +344,7 @@ export const WorkflowSimulator = ({
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-1 p-2 border-b border-border">
+      <div className="grid grid-cols-4 gap-1 p-2 border-b border-border">
         <div className="text-center p-1.5 rounded-md bg-muted/50">
           <div className="text-lg font-bold text-emerald-500">{completedCount}</div>
           <div className="text-[9px] text-muted-foreground">Passed</div>
@@ -389,8 +354,12 @@ export const WorkflowSimulator = ({
           <div className="text-[9px] text-muted-foreground">Errors</div>
         </div>
         <div className="text-center p-1.5 rounded-md bg-muted/50">
-          <div className="text-lg font-bold text-primary">{(totalDuration / 1000).toFixed(1)}s</div>
-          <div className="text-[9px] text-muted-foreground">Duration</div>
+          <div className="text-lg font-bold text-cyan-500">{dbOpsCount.reads}</div>
+          <div className="text-[9px] text-muted-foreground">Reads</div>
+        </div>
+        <div className="text-center p-1.5 rounded-md bg-muted/50">
+          <div className="text-lg font-bold text-amber-500">{dbOpsCount.writes}</div>
+          <div className="text-[9px] text-muted-foreground">Writes</div>
         </div>
       </div>
 
@@ -441,9 +410,32 @@ export const WorkflowSimulator = ({
                       {log.status === "error" && <XCircle className="h-2.5 w-2.5 text-destructive" />}
                     </div>
                     <p className="text-muted-foreground mt-0.5 leading-relaxed">{log.message}</p>
+                    {/* Operation & Table badges */}
+                    {(log.operation || log.table) && log.status !== "running" && (
+                      <div className="mt-1 flex items-center gap-1">
+                        {log.operation && (
+                          <Badge variant="outline" className={cn(
+                            "text-[8px] h-4 px-1 font-mono",
+                            log.operation === "SELECT" && "border-cyan-500/40 text-cyan-500",
+                            log.operation === "INSERT" && "border-emerald-500/40 text-emerald-500",
+                            log.operation === "UPDATE" && "border-amber-500/40 text-amber-500",
+                            log.operation === "DELETE" && "border-destructive/40 text-destructive",
+                            log.operation === "INVOKE" && "border-purple-500/40 text-purple-500",
+                          )}>
+                            {log.operation}
+                          </Badge>
+                        )}
+                        {log.table && (
+                          <Badge variant="secondary" className="text-[8px] h-4 px-1 font-mono gap-0.5">
+                            <Database className="h-2 w-2" />
+                            {log.table}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
                     {log.data && log.status === "success" && (
                       <div className="mt-1 flex flex-wrap gap-1">
-                        {Object.entries(log.data).slice(0, 3).map(([key, val]) => (
+                        {Object.entries(log.data).slice(0, 4).map(([key, val]) => (
                           <Badge key={key} variant="secondary" className="text-[8px] h-4 px-1 font-mono">
                             {key}: {typeof val === "object" ? JSON.stringify(val).substring(0, 20) : String(val).substring(0, 15)}
                           </Badge>
@@ -475,8 +467,13 @@ export const WorkflowSimulator = ({
               : "bg-emerald-500/10 text-emerald-600"
           )}>
             {errorCount > 0
-              ? `⚠️ Simulation completed with ${errorCount} error(s)`
+              ? `⚠️ Completed with ${errorCount} error(s)`
               : "✅ All nodes executed successfully!"}
+          </div>
+          <div className="flex items-center justify-center gap-3 mt-1.5 text-[10px] text-muted-foreground">
+            <span className="flex items-center gap-1"><Database className="h-2.5 w-2.5" /> {dbOpsCount.reads} reads</span>
+            <span className="flex items-center gap-1"><ArrowUpDown className="h-2.5 w-2.5" /> {dbOpsCount.writes} writes</span>
+            <span className="flex items-center gap-1"><Clock className="h-2.5 w-2.5" /> {(totalDuration / 1000).toFixed(1)}s</span>
           </div>
         </div>
       )}
