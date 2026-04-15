@@ -270,9 +270,9 @@ useEffect(() => {
     if (prevMapStyleRef.current === mapStyle) return;
     prevMapStyleRef.current = mapStyle;
 
-    const applyStyle = () => {
+    const applyStyle = async () => {
       if (!map.current) return;
-      const targetStyle = getLematMapStyle(mapStyle);
+      const targetStyle = await fetchLematMapStyle(mapStyle);
       setMapLoaded(false);
       setTokenError(null);
       // Clear trail source tracking so they get re-added after style loads
