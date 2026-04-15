@@ -1,3 +1,4 @@
+import { useSearchParams } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertTriangle, FileText, Receipt, Ticket, User, Users } from "lucide-react";
