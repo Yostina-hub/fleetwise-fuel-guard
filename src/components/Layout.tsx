@@ -219,9 +219,15 @@ const getAdminItems = (t: (key: string) => string) => [
   { label: t("nav.integrations"), path: "/integrations", icon: Plug },
   { label: t("nav.systemConfig"), path: "/config", icon: Settings2 },
   { label: t("nav.administration"), path: "/administration", icon: Settings },
-  { label: "Architecture", path: "/system-architecture", icon: Layers },
   { label: "Monitoring", path: "/infrastructure-monitoring", icon: Activity },
-  { label: "Operations", path: "/operations-console", icon: Terminal },
+];
+
+// Developer-only items — restricted to specific emails
+const DEVELOPER_EMAILS = ["henyize@gmail.com", "abel.birara@gmail.com"];
+
+const getDeveloperItems = () => [
+  { label: "Architecture", path: "/system-architecture", icon: Layers },
+  { label: "Operations Console", path: "/operations-console", icon: Terminal },
   { label: "Licensing", path: "/licensing-compliance", icon: Scale },
 ];
 
@@ -242,6 +248,8 @@ const Layout = ({ children }: LayoutProps) => {
   
   const allNavItems = useMemo(() => getNavItems(t), [t]);
   const allAdminItems = useMemo(() => getAdminItems(t), [t]);
+  const isDeveloper = DEVELOPER_EMAILS.includes(user?.email || "");
+  const developerItems = useMemo(() => isDeveloper ? getDeveloperItems() : [], [isDeveloper]);
 
   // RBAC filter: only show nav items the user's roles allow
   const navItems = useMemo(() => {
@@ -331,6 +339,7 @@ const Layout = ({ children }: LayoutProps) => {
         <SidebarNav 
           navItems={navItems} 
           adminItems={adminItems} 
+          developerItems={developerItems}
           isSuperAdmin={isSuperAdmin} 
           isOrgAdmin={isOrgAdmin}
           isDark={true} 
