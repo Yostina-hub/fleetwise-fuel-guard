@@ -61,7 +61,7 @@ const Incidents = () => {
           compact
         />
 
-        <Tabs defaultValue="incidents" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="grid w-full max-w-4xl grid-cols-6">
             <TabsTrigger value="incidents" className="gap-2">
               <AlertTriangle className="w-4 h-4" aria-hidden="true" />
