@@ -1,3 +1,4 @@
+import { useSearchParams } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertTriangle, FileText, Receipt, Ticket, User, Users } from "lucide-react";
@@ -17,6 +18,13 @@ import { useTranslation } from "react-i18next";
 
 const Incidents = () => {
   const { t } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "incidents";
+
+  const handleTabChange = (value: string) => {
+    setSearchParams(value === "incidents" ? {} : { tab: value });
+  };
+
   return (
     <Layout>
       <div className="p-4 md:p-8 space-y-6 animate-fade-in">
@@ -53,7 +61,7 @@ const Incidents = () => {
           compact
         />
 
-        <Tabs defaultValue="incidents" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="grid w-full max-w-4xl grid-cols-6">
             <TabsTrigger value="incidents" className="gap-2">
               <AlertTriangle className="w-4 h-4" aria-hidden="true" />
