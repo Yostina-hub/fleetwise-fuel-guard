@@ -107,11 +107,11 @@ export const AIRouteOptimizer = ({ visible, onClose, vehicles, allVehicles, sele
   }, [allVehicles, vehicles]);
 
   // Auto-select the vehicle currently selected on the map
-  useState(() => {
+  useEffect(() => {
     if (preSelectedId && !selectedVehicleId) {
       setSelectedVehicleId(preSelectedId);
     }
-  });
+  }, [preSelectedId]);
 
   const selectedVehicle = useMemo(() => 
     [...vehicles, ...(allVehicles || [])].find(v => v.id === selectedVehicleId), 
