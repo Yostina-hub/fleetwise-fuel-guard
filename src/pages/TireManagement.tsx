@@ -132,9 +132,14 @@ const TireManagement = () => {
               <p className="text-muted-foreground text-xs">{t('pages.tire_management.description', 'Track tire inventory, wear, replacements & costs')}</p>
             </div>
           </div>
-          <Button className="gap-2" onClick={() => setShowAddDialog(true)}>
-            <Plus className="w-4 h-4" /> Add Tire
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" className="gap-2" onClick={() => setShowChangeDialog(true)}>
+              <RotateCcw className="w-4 h-4" /> Record Change
+            </Button>
+            <Button className="gap-2" onClick={() => setShowAddDialog(true)}>
+              <Plus className="w-4 h-4" /> Add Tire
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
