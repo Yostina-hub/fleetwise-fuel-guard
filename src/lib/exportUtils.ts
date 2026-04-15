@@ -1,6 +1,22 @@
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 
+// Reliable download trigger that works in iframes and all browsers
+const triggerDownload = (blob: Blob, filename: string) => {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  // Cleanup after a short delay to ensure download starts
+  setTimeout(() => {
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, 100);
+};
+
 // Ethio Telecom brand colors
 const ET_BLUE = [0, 114, 188] as const;    // #0072BC
 const ET_GREEN = [141, 198, 63] as const;  // #8DC63F
