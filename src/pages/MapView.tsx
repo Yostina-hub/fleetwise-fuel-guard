@@ -754,6 +754,8 @@ const MapView = () => {
             visible={showRouteOptimizer}
             onClose={() => setShowRouteOptimizer(false)}
             vehicles={filteredMapVehicles}
+            allVehicles={activeSourceVehicles}
+            selectedVehicleId={selectedVehicleId}
             map={mapInstance}
           />
 
