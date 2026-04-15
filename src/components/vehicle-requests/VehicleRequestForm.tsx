@@ -114,6 +114,7 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
         pool_name: form.pool_name || null,
         start_time: form.start_time || null,
         end_time: form.end_time || null,
+        project_number: form.request_type === "project_operation" ? (form.project_number || null) : null,
         status: "pending",
       };
 
