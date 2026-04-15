@@ -780,6 +780,79 @@ const Reports = () => {
             };
         }
 
+      case "ev":
+        switch (activeSubTab) {
+          case "charge_state":
+            return {
+              data: evChargingSessions.map(s => ({
+                vehicle: s.vehicle?.plate_number || "Unknown",
+                date: format(new Date(s.start_time), "yyyy-MM-dd HH:mm"),
+                soc_start: s.soc_start_percent != null ? `${s.soc_start_percent}%` : "—",
+                soc_end: s.soc_end_percent != null ? `${s.soc_end_percent}%` : "—",
+                kwh: s.energy_consumed_kwh?.toFixed(1) || "—",
+                station: s.station_name || "—",
+                type: s.charging_type || "—",
+              })),
+              filename: "ev_charge_state_report",
+              columns: [
+                { key: "vehicle", label: "Vehicle", width: 40 },
+                { key: "date", label: "Date", width: 45 },
+                { key: "soc_start", label: "SOC Start", width: 30 },
+                { key: "soc_end", label: "SOC End", width: 30 },
+                { key: "kwh", label: "kWh", width: 25 },
+                { key: "station", label: "Station", width: 40 },
+              ],
+              title: "EV Charge State Report",
+            };
+          case "ev_cost":
+            return {
+              data: evChargingSessions.map(s => ({
+                vehicle: s.vehicle?.plate_number || "Unknown",
+                date: format(new Date(s.start_time), "yyyy-MM-dd"),
+                kwh: s.energy_consumed_kwh?.toFixed(1) || "—",
+                cost_per_kwh: s.cost_per_kwh?.toFixed(2) || "—",
+                total_cost: s.total_cost?.toFixed(2) || "—",
+                station: s.station_name || "—",
+              })),
+              filename: "ev_cost_analysis_report",
+              columns: [
+                { key: "vehicle", label: "Vehicle", width: 40 },
+                { key: "date", label: "Date", width: 40 },
+                { key: "kwh", label: "kWh", width: 25 },
+                { key: "cost_per_kwh", label: "Cost/kWh", width: 30 },
+                { key: "total_cost", label: "Total Cost", width: 30 },
+                { key: "station", label: "Station", width: 45 },
+              ],
+              title: "EV Charging Cost Analysis Report",
+            };
+          default:
+            return {
+              data: evChargingSessions.map(s => ({
+                date: format(new Date(s.start_time), "yyyy-MM-dd HH:mm"),
+                vehicle: s.vehicle?.plate_number || "Unknown",
+                station: s.station_name || "—",
+                type: s.charging_type || "—",
+                kwh: s.energy_consumed_kwh?.toFixed(1) || "—",
+                soc_start: s.soc_start_percent != null ? `${s.soc_start_percent}%` : "—",
+                soc_end: s.soc_end_percent != null ? `${s.soc_end_percent}%` : "—",
+                cost: s.total_cost?.toFixed(2) || "—",
+                status: s.status || "—",
+              })),
+              filename: "ev_charging_sessions_report",
+              columns: [
+                { key: "date", label: "Date", width: 40 },
+                { key: "vehicle", label: "Vehicle", width: 35 },
+                { key: "station", label: "Station", width: 40 },
+                { key: "kwh", label: "kWh", width: 25 },
+                { key: "soc_start", label: "SOC Start", width: 30 },
+                { key: "soc_end", label: "SOC End", width: 30 },
+                { key: "cost", label: "Cost", width: 30 },
+                { key: "status", label: "Status", width: 25 },
+              ],
+              title: "EV Charging Sessions Report",
+            };
+        }
+
       case "trips":
         switch (activeSubTab) {
           case "idle_time":
