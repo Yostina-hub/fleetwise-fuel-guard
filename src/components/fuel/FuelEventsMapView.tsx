@@ -242,13 +242,6 @@ const FuelEventsMapView = ({
     }
   }, [selectedEventId, eventsWithCoords]);
 
-  if (!lematKeyReady) {
-    return (
-      <Card className="h-[500px] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </Card>
-    );
-  }
 
   return (
     <div className="space-y-3">
