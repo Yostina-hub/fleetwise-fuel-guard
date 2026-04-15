@@ -36,6 +36,7 @@ const UserManagement = () => {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
   const [detailUser, setDetailUser] = useState<UserProfile | null>(null);
+  const [detailTab, setDetailTab] = useState<"profile" | "roles">("profile");
   const [resetPwdUser, setResetPwdUser] = useState<UserProfile | null>(null);
   const [deactivateUser, setDeactivateUser] = useState<UserProfile | null>(null);
   const [deactivateLoading, setDeactivateLoading] = useState(false);
@@ -59,6 +60,11 @@ const UserManagement = () => {
       }));
 
       setUsers(usersWithRoles);
+
+      // Keep open dialogs in sync with fresh data
+      setDetailUser(prev => prev ? usersWithRoles.find(u => u.id === prev.id) || null : null);
+      setResetPwdUser(prev => prev ? usersWithRoles.find(u => u.id === prev.id) || null : null);
+      setDeactivateUser(prev => prev ? usersWithRoles.find(u => u.id === prev.id) || null : null);
     } catch (error) {
       console.error("Error fetching users:", error);
       toast({ title: "Error", description: "Failed to load users", variant: "destructive" });
@@ -184,8 +190,8 @@ const UserManagement = () => {
             <UserTable
               users={paginatedUsers}
               loading={loading}
-              onViewUser={setDetailUser}
-              onAssignRole={setDetailUser}
+              onViewUser={(u) => { setDetailTab("profile"); setDetailUser(u); }}
+              onAssignRole={(u) => { setDetailTab("roles"); setDetailUser(u); }}
               onResetPassword={setResetPwdUser}
               onToggleStatus={setDeactivateUser}
             />
@@ -238,7 +244,7 @@ const UserManagement = () => {
         {/* Dialogs */}
         <InviteUserDialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen} onUserCreated={fetchUsers} />
         <BulkRoleAssignDialog open={bulkAssignOpen} onOpenChange={setBulkAssignOpen} users={users} onComplete={fetchUsers} />
-        <UserDetailDialog open={!!detailUser} onOpenChange={(o) => !o && setDetailUser(null)} user={detailUser} onUserUpdated={fetchUsers} />
+        <UserDetailDialog open={!!detailUser} onOpenChange={(o) => !o && setDetailUser(null)} user={detailUser} onUserUpdated={fetchUsers} initialTab={detailTab} />
         <ResetPasswordDialog open={!!resetPwdUser} onOpenChange={(o) => !o && setResetPwdUser(null)} user={resetPwdUser} />
         <ConfirmActionDialog
           open={!!deactivateUser}

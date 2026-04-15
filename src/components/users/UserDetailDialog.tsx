@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,24 +41,27 @@ interface UserDetailDialogProps {
   onOpenChange: (open: boolean) => void;
   user: UserProfile | null;
   onUserUpdated: () => void;
+  initialTab?: "profile" | "roles";
 }
 
-const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated }: UserDetailDialogProps) => {
+const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab = "profile" }: UserDetailDialogProps) => {
   const { toast } = useToast();
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [saving, setSaving] = useState(false);
   const [newRole, setNewRole] = useState("");
   const [roleLoading, setRoleLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState(initialTab);
 
-  // Sync local state when user changes
-  const handleOpenChange = (isOpen: boolean) => {
-    if (isOpen && user) {
+  // Sync local state whenever user or open state changes
+  useEffect(() => {
+    if (open && user) {
       setEditName(user.full_name || "");
       setEditPhone(user.phone || "");
+      setActiveTab(initialTab);
+      setNewRole("");
     }
-    onOpenChange(isOpen);
-  };
+  }, [open, user, initialTab]);
 
   const handleSaveProfile = async () => {
     if (!user) return;
@@ -86,7 +89,7 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated }: UserDetai
         .from("user_roles")
         .insert({ user_id: user.id, role: newRole as any } as any);
       if (error) throw error;
-      toast({ title: "Role Added" });
+      toast({ title: "Role Added", description: `${ROLES.find(r => r.value === newRole)?.label} assigned successfully.` });
       setNewRole("");
       onUserUpdated();
     } catch (err: any) {
@@ -106,7 +109,7 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated }: UserDetai
         .eq("user_id", user.id)
         .eq("role", role as any);
       if (error) throw error;
-      toast({ title: "Role Removed" });
+      toast({ title: "Role Removed", description: `${ROLES.find(r => r.value === role)?.label} removed.` });
       onUserUpdated();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -124,7 +127,7 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated }: UserDetai
     : user.email[0].toUpperCase();
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-4">
@@ -141,14 +144,13 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated }: UserDetai
           </div>
         </DialogHeader>
 
-        <Tabs defaultValue="profile" className="mt-2">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "profile" | "roles")} className="mt-2">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="roles">Roles & Permissions</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile" className="space-y-4 mt-4">
-            {/* Info cards */}
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/30 border border-border/30">
                 <Calendar className="w-4 h-4 text-muted-foreground" />
@@ -188,7 +190,6 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated }: UserDetai
           </TabsContent>
 
           <TabsContent value="roles" className="space-y-4 mt-4">
-            {/* Current roles */}
             <div className="space-y-2">
               <Label className="text-sm font-medium">Current Roles</Label>
               {existingRoles.length === 0 ? (
@@ -217,7 +218,6 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated }: UserDetai
 
             <Separator />
 
-            {/* Add role */}
             <div className="space-y-2">
               <Label className="text-sm font-medium">Add Role</Label>
               <div className="flex gap-2">
@@ -237,7 +237,6 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated }: UserDetai
               </div>
             </div>
 
-            {/* Role descriptions */}
             <div className="rounded-lg bg-muted/20 border border-border/30 p-3 space-y-2">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Role Guide</p>
               <div className="grid gap-1.5 text-xs">
