@@ -157,6 +157,43 @@ export function SidebarNav({ navItems, adminItems, developerItems = [], isSuperA
             ))}
           </>
         )}
+
+        {/* Developer Section - email-gated */}
+        {developerItems.length > 0 && (
+          <>
+            {!isCollapsed && (
+              <div className="pt-3 pb-1.5">
+                <div className={cn(
+                  "px-3 text-[10px] font-semibold uppercase tracking-wider",
+                  isDark ? "text-cyan-400/60" : "text-muted-foreground"
+                )}>
+                  Developers
+                </div>
+              </div>
+            )}
+            {isCollapsed && <div className="border-t border-cyan-500/20 my-2" />}
+            {developerItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={cn(
+                  "flex items-center gap-2.5 px-3 py-2 rounded-md transition-all duration-200 group text-sm",
+                  isCollapsed && "justify-center px-2",
+                  location.pathname === item.path
+                    ? isDark
+                      ? "bg-cyan-500/20 text-cyan-300 shadow-sm"
+                      : "bg-primary/10 text-foreground shadow-sm"
+                    : isDark
+                      ? "text-white/70 hover:bg-cyan-500/10 hover:text-cyan-300"
+                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                )}
+              >
+                <item.icon className="w-4 h-4 shrink-0" />
+                {!isCollapsed && <span className="font-medium">{item.label}</span>}
+              </Link>
+            ))}
+          </>
+        )}
       </nav>
     </div>
   );
