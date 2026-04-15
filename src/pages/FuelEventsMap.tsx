@@ -51,7 +51,19 @@ const FuelEventsMap = () => {
     if (!mapContainer.current || mapRef.current) return;
     const map = new maplibregl.Map({
       container: mapContainer.current,
-      style: "https://tiles.openfreemap.org/styles/liberty",
+      style: {
+        version: 8,
+        name: 'CARTO Dark Matter',
+        sources: {
+          raster: {
+            type: 'raster',
+            tiles: ['https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png'],
+            tileSize: 256,
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+          },
+        },
+        layers: [{ id: 'carto-dark-layer', type: 'raster', source: 'raster', minzoom: 0, maxzoom: 20 }],
+      },
       center: [38.75, 9.02],
       zoom: 6,
     });
