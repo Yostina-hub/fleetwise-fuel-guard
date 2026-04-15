@@ -90,13 +90,16 @@ type DisplayVehicle = {
   fuel: number;
   heading?: number;
   engine_on?: boolean;
-  isOffline?: boolean;
+  isOffline: boolean;
   lastSeen?: string;
   gps_signal_strength?: number;
   gps_satellites_count?: number;
   gps_hdop?: number;
   gps_fix_type?: string;
+  gps_jamming_detected?: boolean;
+  gps_spoofing_detected?: boolean;
   speed_limit?: number;
+  speedLimit?: number;
   driverName?: string;
   driverPhone?: string;
   address?: string;
@@ -249,7 +252,10 @@ const MapView = () => {
           gps_signal_strength: 0,
           gps_satellites_count: 0,
           lastSeen: vehicleTelemetry?.last_communication_at,
+          gps_jamming_detected: false,
+          gps_spoofing_detected: false,
           speed_limit: speedLimit,
+          speedLimit: speedLimit,
           driverName: driver ? `${driver.first_name} ${driver.last_name}` : undefined,
           driverPhone: driver?.phone,
           hasGps,
@@ -280,7 +286,10 @@ const MapView = () => {
         gps_satellites_count: vehicleTelemetry.gps_satellites_count,
         gps_hdop: vehicleTelemetry.gps_hdop,
         gps_fix_type: vehicleTelemetry.gps_fix_type,
+        gps_jamming_detected: vehicleTelemetry.gps_jamming_detected,
+        gps_spoofing_detected: vehicleTelemetry.gps_spoofing_detected,
         speed_limit: speedLimit,
+        speedLimit: speedLimit,
         driverName: driver ? `${driver.first_name} ${driver.last_name}` : undefined,
         driverPhone: driver?.phone,
         hasGps,
@@ -329,9 +338,12 @@ const MapView = () => {
       gps_satellites_count: sv.device.satelliteCount,
       gps_hdop: sv.device.hdop,
       gps_fix_type: sv.device.fixType,
+      gps_jamming_detected: false,
+      gps_spoofing_detected: false,
       driverName: sv.driver.name,
       driverPhone: sv.driver.phone,
       speed_limit: sv.maxSpeed,
+      speedLimit: sv.maxSpeed,
     }));
   }, [sumoActive, sumoState]);
 
