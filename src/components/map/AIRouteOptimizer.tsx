@@ -246,6 +246,50 @@ export const AIRouteOptimizer = ({ visible, onClose, vehicles, onRouteSelect, ma
           });
         }
       } catch { /* non-critical */ }
+
+      setRoutes(routeOptions);
+      setSelectedRouteId('fastest');
+      toast.success(`${routeOptions.length} route options generated`);
+    } catch (err: any) {
+      toast.error('Route generation failed');
+      console.error('Route optimization error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedVehicleId, destLat, destLng, vehicles, vehicleProfile]);
+
+  const handleSelectRoute = useCallback((route: RouteOption) => {
+    setSelectedRouteId(route.id);
+    onRouteSelect?.(route, selectedVehicleId);
+
+    // Draw route on map if available
+    if (map && route.coordinates.length > 1) {
+      const sourceId = 'ai-route-preview';
+      const layerId = 'ai-route-line';
+
+      if (map.getLayer(layerId)) map.removeLayer(layerId);
+      if (map.getSource(sourceId)) map.removeSource(sourceId);
+
+      map.addSource(sourceId, {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: {},
+          geometry: { type: 'LineString', coordinates: route.coordinates },
+        },
+      });
+
+      map.addLayer({
+        id: layerId,
+        type: 'line',
+        source: sourceId,
+        paint: {
+          'line-color': route.type === 'eco' ? '#10b981' : route.type === 'fastest' ? '#3b82f6' : '#f59e0b',
+          'line-width': 4,
+          'line-opacity': 0.8,
+          'line-dasharray': route.type === 'avoid_restrictions' ? [2, 1] : [1, 0],
+        },
+      });
     }
   }, [map, onRouteSelect, selectedVehicleId]);
 
