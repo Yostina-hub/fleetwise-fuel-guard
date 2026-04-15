@@ -10,8 +10,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Plus, DollarSign, TrendingUp, TrendingDown, Search } from "lucide-react";
+import { Plus, DollarSign, TrendingUp, TrendingDown, Search, Gauge } from "lucide-react";
 import { format } from "date-fns";
+import EnergyCostRatesManager from "@/components/energy/EnergyCostRatesManager";
 
 const COST_TYPES = ["labor", "parts", "external_service", "transport", "disposal", "inspection", "other"];
 
