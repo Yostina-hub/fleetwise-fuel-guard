@@ -49,6 +49,10 @@ const DispatchJobsTab = () => {
     cargo_description: '',
     cargo_weight_kg: 0,
     special_instructions: '',
+    scheduled_pickup_at: undefined as Date | undefined,
+    scheduled_pickup_time: '09:00',
+    scheduled_dropoff_at: undefined as Date | undefined,
+    scheduled_dropoff_time: '17:00',
   });
 
   const [assignData, setAssignData] = useState({
