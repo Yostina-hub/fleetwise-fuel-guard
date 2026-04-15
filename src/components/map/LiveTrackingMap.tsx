@@ -768,12 +768,13 @@ useEffect(() => {
         Math.abs(prevPos.lat - vehicle.lat) > 0.0001
       );
       
-      // Fetch address if not already cached OR if position changed significantly
-      if (!vehicleAddressesRef.current.has(vehicle.id) || positionChanged) {
+      // For SUMO / simulated vehicles, prefer the provided road/address context
+      const hasProvidedAddress = typeof vehicle.address === 'string' && vehicle.address.trim().length > 0;
+      if (!hasProvidedAddress && (!vehicleAddressesRef.current.has(vehicle.id) || positionChanged)) {
         fetchAddressDebounced(vehicle.lng, vehicle.lat, vehicle.id);
       }
       
-      const address = vehicleAddressesRef.current.get(vehicle.id) || `Locating... (${vehicle.lat.toFixed(4)}, ${vehicle.lng.toFixed(4)})`;
+      const address = vehicleAddressesRef.current.get(vehicle.id) || vehicle.address || `Locating... (${vehicle.lat.toFixed(4)}, ${vehicle.lng.toFixed(4)})`;
       const existingMarker = markers.current.get(vehicle.id);
       const previousPos = previousPositions.current.get(vehicle.id);
       

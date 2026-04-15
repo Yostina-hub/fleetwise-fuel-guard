@@ -80,6 +80,36 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 const CLUSTER_THRESHOLD = 100;
 
+type DisplayVehicle = {
+  id: string;
+  plate: string;
+  status: 'moving' | 'idle' | 'stopped' | 'offline';
+  lat?: number;
+  lng?: number;
+  speed: number;
+  fuel: number;
+  heading?: number;
+  engine_on?: boolean;
+  isOffline: boolean;
+  lastSeen?: string;
+  gps_signal_strength?: number;
+  gps_satellites_count?: number;
+  gps_hdop?: number;
+  gps_fix_type?: string;
+  gps_jamming_detected?: boolean;
+  gps_spoofing_detected?: boolean;
+  speed_limit?: number;
+  speedLimit?: number;
+  driverName?: string;
+  driverPhone?: string;
+  address?: string;
+  make?: string;
+  model?: string;
+  year?: number;
+  type?: string;
+  hasGps?: boolean;
+};
+
 const hasValidCoords = (lat: number | null | undefined, lng: number | null | undefined): lat is number => {
   return (
     typeof lat === 'number' &&
@@ -190,8 +220,7 @@ const MapView = () => {
   
   // Build sidebar vehicle list (ALL registered vehicles), enriching with telemetry.
   // Map markers will be derived from this list by filtering vehicles with valid coordinates.
-  const vehicles = useMemo(() => {
-    // Build speed limit lookup from governor configs
+  const vehicles = useMemo<DisplayVehicle[]>(() => {
     const speedLimitMap: Record<string, number> = {};
     governorConfigs?.forEach(config => {
       if (config.governor_active && config.max_speed_limit) {
@@ -199,80 +228,73 @@ const MapView = () => {
       }
     });
     
-    return dbVehicles.map((v) => {
-        const vehicleTelemetry = telemetry[v.id];
-        const online = isVehicleOnline(v.id);
-        const speedLimit = speedLimitMap[v.id];
-        const driver = v.assigned_driver;
-        
-        // Get coordinates from telemetry (could be current or last known)
-        const lat = vehicleTelemetry?.latitude;
-        const lng = vehicleTelemetry?.longitude;
-
-        const hasGps = hasValidCoords(lat, lng);
-        
-        // For offline vehicles, preserve last known telemetry values (if any)
-        if (!online || !vehicleTelemetry) {
-          return {
-            id: v.id,
-            plate: v.plate_number || 'Unknown',
-            status: 'offline' as const,
-            fuel: vehicleTelemetry?.fuel_level_percent || 0,
-            speed: 0,
-            lat: hasGps ? lat! : undefined,
-            lng: hasGps ? lng! : undefined,
-            engine_on: false,
-            heading: vehicleTelemetry?.heading || 0,
-            isOffline: true,
-            gps_signal_strength: 0,
-            gps_satellites_count: 0,
-            lastSeen: vehicleTelemetry?.last_communication_at,
-            gps_jamming_detected: false,
-            gps_spoofing_detected: false,
-            speedLimit,
-            driverName: driver ? `${driver.first_name} ${driver.last_name}` : undefined,
-            driverPhone: driver?.phone,
-            hasGps,
-          };
-        }
-        
-        // Determine status based on speed (primary) and engine state (secondary)
-        const speed = vehicleTelemetry.speed_kmh || 0;
-        const engineOn = vehicleTelemetry.engine_on || vehicleTelemetry.ignition_on;
-        let status: 'moving' | 'idle' | 'stopped' | 'offline';
-        
-        if (speed > 3) {
-          status = 'moving';
-        } else if (engineOn) {
-          status = 'idle';
-        } else {
-          status = 'stopped';
-        }
-        
+    return dbVehicles.map((v): DisplayVehicle => {
+      const vehicleTelemetry = telemetry[v.id];
+      const online = isVehicleOnline(v.id);
+      const speedLimit = speedLimitMap[v.id];
+      const driver = v.assigned_driver;
+      const lat = vehicleTelemetry?.latitude;
+      const lng = vehicleTelemetry?.longitude;
+      const hasGps = hasValidCoords(lat, lng);
+      
+      if (!online || !vehicleTelemetry) {
         return {
           id: v.id,
           plate: v.plate_number || 'Unknown',
-          status,
-          fuel: vehicleTelemetry.fuel_level_percent || 0,
-          speed,
+          status: 'offline',
+          fuel: vehicleTelemetry?.fuel_level_percent || 0,
+          speed: 0,
           lat: hasGps ? lat! : undefined,
           lng: hasGps ? lng! : undefined,
-          engine_on: engineOn,
-          heading: vehicleTelemetry.heading || 0,
-          isOffline: false,
-          lastSeen: vehicleTelemetry.last_communication_at,
-          gps_signal_strength: vehicleTelemetry.gps_signal_strength,
-          gps_satellites_count: vehicleTelemetry.gps_satellites_count,
-          gps_hdop: vehicleTelemetry.gps_hdop,
-          gps_fix_type: vehicleTelemetry.gps_fix_type,
-          gps_jamming_detected: vehicleTelemetry.gps_jamming_detected,
-          gps_spoofing_detected: vehicleTelemetry.gps_spoofing_detected,
-          speedLimit,
+          engine_on: false,
+          heading: vehicleTelemetry?.heading || 0,
+          isOffline: true,
+          gps_signal_strength: 0,
+          gps_satellites_count: 0,
+          lastSeen: vehicleTelemetry?.last_communication_at,
+          gps_jamming_detected: false,
+          gps_spoofing_detected: false,
+          speed_limit: speedLimit,
+          speedLimit: speedLimit,
           driverName: driver ? `${driver.first_name} ${driver.last_name}` : undefined,
           driverPhone: driver?.phone,
           hasGps,
         };
-      });
+      }
+      
+      const speed = vehicleTelemetry.speed_kmh || 0;
+      const engineOn = vehicleTelemetry.engine_on || vehicleTelemetry.ignition_on;
+      let status: DisplayVehicle['status'];
+      
+      if (speed > 3) status = 'moving';
+      else if (engineOn) status = 'idle';
+      else status = 'stopped';
+      
+      return {
+        id: v.id,
+        plate: v.plate_number || 'Unknown',
+        status,
+        fuel: vehicleTelemetry.fuel_level_percent || 0,
+        speed,
+        lat: hasGps ? lat! : undefined,
+        lng: hasGps ? lng! : undefined,
+        engine_on: engineOn,
+        heading: vehicleTelemetry.heading || 0,
+        isOffline: false,
+        lastSeen: vehicleTelemetry.last_communication_at,
+        gps_signal_strength: vehicleTelemetry.gps_signal_strength,
+        gps_satellites_count: vehicleTelemetry.gps_satellites_count,
+        gps_hdop: vehicleTelemetry.gps_hdop,
+        gps_fix_type: vehicleTelemetry.gps_fix_type,
+        gps_jamming_detected: vehicleTelemetry.gps_jamming_detected,
+        gps_spoofing_detected: vehicleTelemetry.gps_spoofing_detected,
+        speed_limit: speedLimit,
+        speedLimit: speedLimit,
+        driverName: driver ? `${driver.first_name} ${driver.last_name}` : undefined,
+        driverPhone: driver?.phone,
+        hasGps,
+      };
+    });
   }, [dbVehicles, telemetry, isVehicleOnline, governorConfigs]);
 
   const mapVehicles = useMemo(() => {
@@ -282,19 +304,58 @@ const MapView = () => {
     );
   }, [vehicles]);
 
-  // Get vehicle IDs for trail tracking
-  const vehicleIds = useMemo(() => mapVehicles.map(v => v.id), [mapVehicles]);
+  // Get vehicle IDs for trail tracking (real telemetry only)
+  const vehicleIds = useMemo(() => {
+    return sumoActive ? [] : mapVehicles.map(v => v.id);
+  }, [sumoActive, mapVehicles]);
   
   // Use vehicle trail hook for live path drawing
   const { trails, clearAllTrails } = useVehicleTrail(vehicleIds);
+  const activeTrails = useMemo(() => {
+    return sumoActive ? new globalThis.Map() : trails;
+  }, [sumoActive, trails]);
 
-  // Filter vehicles by search and status
+  const sumoMapVehicles = useMemo<DisplayVehicle[]>(() => {
+    if (!sumoActive || !sumoState) return [];
+    return sumoState.vehicles.map((sv): DisplayVehicle => ({
+      id: sv.id,
+      plate: sv.plate,
+      status: sv.status,
+      lat: sv.lat,
+      lng: sv.lng,
+      speed: Math.round(sv.speed),
+      fuel: Math.round(sv.fuel),
+      heading: sv.heading,
+      engine_on: sv.ignitionOn,
+      isOffline: sv.device.status === 'offline',
+      lastSeen: sv.device.lastHeartbeat,
+      make: sv.make,
+      model: sv.model,
+      year: sv.year,
+      type: sv.type,
+      address: `${sv.currentRoadName}, Addis Ababa`,
+      gps_signal_strength: sv.device.signalStrength,
+      gps_satellites_count: sv.device.satelliteCount,
+      gps_hdop: sv.device.hdop,
+      gps_fix_type: sv.device.fixType,
+      gps_jamming_detected: false,
+      gps_spoofing_detected: false,
+      driverName: sv.driver.name,
+      driverPhone: sv.driver.phone,
+      speed_limit: sv.maxSpeed,
+      speedLimit: sv.maxSpeed,
+    }));
+  }, [sumoActive, sumoState]);
+
+  const activeSourceVehicles = useMemo<DisplayVehicle[]>(() => {
+    return sumoActive ? sumoMapVehicles : vehicles;
+  }, [sumoActive, sumoMapVehicles, vehicles]);
+
+  // Filter vehicles by search and status for both real and SUMO sources
   const filteredVehicles = useMemo(() => {
-    let filtered = vehicles;
+    let filtered = activeSourceVehicles;
     
-    // Apply status filter
     if (statusFilter === 'online') {
-      // Live = all non-offline vehicles
       filtered = filtered.filter(v => !v.isOffline);
     } else if (statusFilter === 'offline') {
       filtered = filtered.filter(v => v.isOffline);
@@ -302,55 +363,27 @@ const MapView = () => {
       filtered = filtered.filter(v => v.status === statusFilter);
     }
     
-    // Apply search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(v => v.plate.toLowerCase().includes(query));
     }
     
     return filtered;
-  }, [vehicles, searchQuery, statusFilter]);
+  }, [activeSourceVehicles, searchQuery, statusFilter]);
 
-  const filteredMapVehiclesReal = useMemo(() => {
-    const filteredIds = new Set(filteredVehicles.map(v => v.id));
-    return mapVehicles.filter(v => filteredIds.has(v.id));
-  }, [filteredVehicles, mapVehicles]);
-
-  // Bridge SUMO vehicles to map vehicle format
-  const sumoMapVehicles = useMemo(() => {
-    if (!sumoActive || !sumoState) return [];
-    return sumoState.vehicles.map(sv => ({
-      id: sv.id,
-      plate: sv.plate,
-      status: sv.status as 'moving' | 'idle' | 'stopped',
-      lat: sv.lat,
-      lng: sv.lng,
-      speed: sv.speed,
-      fuel: sv.fuel,
-      heading: sv.heading,
-      engine_on: sv.ignitionOn,
-      isOffline: sv.device.status === 'offline',
-      lastSeen: sv.device.lastHeartbeat,
-      make: sv.make,
-      model: sv.model,
-      type: sv.type,
-      address: `${sv.currentRoadName}, Addis Ababa`,
-      gps_signal_strength: sv.device.signalStrength,
-      gps_satellites_count: sv.device.satelliteCount,
-      gps_hdop: sv.device.hdop,
-      gps_fix_type: sv.device.fixType,
-      driverName: sv.driver.name,
-      driverPhone: sv.driver.phone,
-      speed_limit: undefined,
-    }));
-  }, [sumoActive, sumoState]);
-
-  // Active data source: SUMO or real-world
-  const filteredMapVehicles = sumoActive ? sumoMapVehicles : filteredMapVehiclesReal;
+  const filteredMapVehicles = useMemo(() => {
+    return filteredVehicles.filter(
+      (v): v is typeof v & { lat: number; lng: number } =>
+        typeof v.lat === 'number' &&
+        typeof v.lng === 'number' &&
+        Number.isFinite(v.lat) &&
+        Number.isFinite(v.lng)
+    );
+  }, [filteredVehicles]);
 
   // Auto-refresh
   useEffect(() => {
-    if (autoRefresh === "off") return;
+    if (sumoActive || autoRefresh === "off") return;
     
     const interval = setInterval(() => {
       setLastUpdate(new Date());
@@ -358,9 +391,9 @@ const MapView = () => {
     }, parseInt(autoRefresh) * 1000);
 
     return () => clearInterval(interval);
-  }, [autoRefresh, refetch]);
+  }, [sumoActive, autoRefresh, refetch]);
 
-  const isInitialLoading = loading && vehicles.length === 0;
+  const isInitialLoading = !sumoActive && loading && vehicles.length === 0;
   const useClusteredMap = !sumoActive && filteredMapVehicles.length > CLUSTER_THRESHOLD;
 
   // Virtual list for sidebar
@@ -376,16 +409,15 @@ const MapView = () => {
   useEffect(() => {
     if (!followMode || !selectedVehicleId || !mapInstance) return;
     
-    const selectedVehicle = mapVehicles.find(v => v.id === selectedVehicleId);
+    const selectedVehicle = filteredMapVehicles.find(v => v.id === selectedVehicleId);
     if (!selectedVehicle) return;
 
-    // Smoothly pan to the vehicle's current position
     mapInstance.easeTo({
       center: [selectedVehicle.lng, selectedVehicle.lat],
       duration: 500,
       essential: true,
     });
-  }, [followMode, selectedVehicleId, vehicles, mapInstance]);
+  }, [followMode, selectedVehicleId, filteredMapVehicles, mapInstance]);
 
   // Disable follow mode when user manually interacts with the map
   useEffect(() => {
@@ -393,7 +425,6 @@ const MapView = () => {
 
     const handleDragStart = () => setFollowMode(false);
     const handleZoomStart = (e: any) => {
-      // Only disable if user-initiated zoom (not programmatic)
       if (!e.originalEvent) return;
       setFollowMode(false);
     };
@@ -409,7 +440,6 @@ const MapView = () => {
 
   const handleVehicleClick = useCallback((vehicle: any) => {
     setSelectedVehicleId(vehicle.id);
-    // Pan map to vehicle
     if (mapInstance && typeof vehicle.lng === 'number' && typeof vehicle.lat === 'number') {
       mapInstance.flyTo({
         center: [vehicle.lng, vehicle.lat],
@@ -433,8 +463,8 @@ const MapView = () => {
   // Get selected vehicle for info panel
   const selectedVehicle = useMemo(() => {
     if (!selectedVehicleId) return null;
-    return filteredVehicles.find(v => v.id === selectedVehicleId) || null;
-  }, [selectedVehicleId, filteredVehicles]);
+    return activeSourceVehicles.find(v => v.id === selectedVehicleId) || null;
+  }, [selectedVehicleId, activeSourceVehicles]);
 
   // Handle Street View from info panel
   const handleStreetView = useCallback((lat: number, lng: number, plate: string) => {
@@ -480,11 +510,11 @@ const MapView = () => {
   }, []);
 
   // Stats
-  const onlineCount = vehicles.filter(v => !v.isOffline).length;
-  const movingCount = vehicles.filter(v => v.status === 'moving').length;
-  const idleCount = vehicles.filter(v => v.status === 'idle').length;
-  const stoppedCount = vehicles.filter(v => v.status === 'stopped').length;
-  const offlineCount = vehicles.filter(v => v.isOffline).length;
+  const onlineCount = activeSourceVehicles.filter(v => !v.isOffline).length;
+  const movingCount = activeSourceVehicles.filter(v => v.status === 'moving').length;
+  const idleCount = activeSourceVehicles.filter(v => v.status === 'idle').length;
+  const stoppedCount = activeSourceVehicles.filter(v => v.status === 'stopped').length;
+  const offlineCount = activeSourceVehicles.filter(v => v.isOffline).length;
 
   return (
     <Layout>
@@ -509,7 +539,7 @@ const MapView = () => {
               mapStyle={mapStyle}
               onMapReady={setMapInstance}
               showTrails={showTrails}
-              trails={trails}
+              trails={activeTrails}
               disablePopups={!sumoActive}
             />
           ) : (
@@ -521,7 +551,7 @@ const MapView = () => {
               mapStyle={mapStyle}
               onMapReady={setMapInstance}
               showTrails={showTrails}
-              trails={trails}
+              trails={activeTrails}
               disablePopups={!sumoActive}
             />
           )}

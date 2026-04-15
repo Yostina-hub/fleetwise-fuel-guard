@@ -41,6 +41,11 @@ interface Vehicle {
   driverPhone?: string;
   lastSeen?: string;
   isOffline?: boolean;
+  address?: string;
+  make?: string;
+  model?: string;
+  year?: number;
+  type?: string;
 }
 
 interface VehicleInfoPanelProps {
@@ -73,6 +78,12 @@ export const VehicleInfoPanel = ({
   useEffect(() => {
     if (!vehicle) {
       setAddress('');
+      return;
+    }
+
+    if (vehicle.address) {
+      setAddress(vehicle.address);
+      setIsLoadingAddress(false);
       return;
     }
 
@@ -116,7 +127,7 @@ export const VehicleInfoPanel = ({
     };
 
     fetchAddress();
-  }, [vehicle?.id, vehicle?.lat, vehicle?.lng]);
+  }, [vehicle?.id, vehicle?.lat, vehicle?.lng, vehicle?.address]);
 
   const getRelativeTime = (dateStr: string): string => {
     const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
