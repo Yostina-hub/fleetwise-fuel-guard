@@ -242,7 +242,9 @@ const Reports = () => {
       case "location":
         return [{ id: "geofence", label: "Geofence Events" }, { id: "speeding", label: "Speeding by Location" }];
       case "fuel":
-        return [{ id: "transactions", label: "Transactions" }, { id: "events", label: "Fill/Drain Events" }, { id: "theft", label: "Theft Cases" }, { id: "mileage_fuel", label: "Daily Mileage & Fuel" }, { id: "fuel_speedometer", label: "Fuel Mileage Speedometer" }, { id: "refueling", label: "Refueling Report" }, { id: "fuel_drain", label: "Fuel Drain Report" }];
+        return [{ id: "transactions", label: "Transactions" }, { id: "events", label: "Fill/Drain Events" }, { id: "theft", label: "Theft Cases" }, { id: "authorization", label: "Clearance & Authorization" }, { id: "consumption", label: "Full Consumption Report" }, { id: "fillup_location", label: "Fillup Locations" }, { id: "mileage_fuel", label: "Daily Mileage & Fuel" }, { id: "fuel_speedometer", label: "Fuel Mileage Speedometer" }, { id: "refueling", label: "Refueling Report" }, { id: "fuel_drain", label: "Fuel Drain Report" }];
+      case "ev":
+        return [{ id: "charging_sessions", label: "Charging Sessions (kW)" }, { id: "charge_state", label: "Charge State" }, { id: "ev_cost", label: "Cost Analysis" }];
       case "trips":
         return [{ id: "all_trips", label: "All Trips" }, { id: "idle_time", label: "Idle Time Analysis" }, { id: "stop_statistics", label: "Stop Statistics" }, { id: "ignition", label: "Ignition Statistics" }, { id: "mileage", label: "Mileage Statistics" }, { id: "total_mileage", label: "Total Mileage" }, { id: "speed_report", label: "Speed Report" }, { id: "restricted_hours", label: "Restricted Hours" }];
       case "maintenance":
