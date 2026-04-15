@@ -315,7 +315,7 @@ const IncidentsListTab = ({ externalCreateOpen, onExternalCreateClose }: Inciden
       )}
 
       {/* Create Incident Dialog */}
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+      <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Report Incident</DialogTitle>
