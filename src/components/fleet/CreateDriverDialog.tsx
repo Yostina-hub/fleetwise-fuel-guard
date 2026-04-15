@@ -258,20 +258,16 @@ export default function CreateDriverDialog({ open, onOpenChange }: CreateDriverD
             {/* 1.3 Address */}
             <Section icon={<MapPin className="w-5 h-5 text-primary" />} title="Address">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Field label="Region *">
-                  <Select value={formData.address_region} onValueChange={v => { set("address_region", v); set("address_zone", ""); set("address_woreda", ""); }}>
-                    <SelectTrigger><SelectValue placeholder="Select region..." /></SelectTrigger>
-                    <SelectContent>
-                      {ADMIN_REGIONS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field label="Zone">
-                  <Input value={formData.address_zone} onChange={e => set("address_zone", e.target.value)} placeholder="Enter zone..." disabled={!formData.address_region} />
-                </Field>
-                <Field label="Woreda">
-                  <Input value={formData.address_woreda} onChange={e => set("address_woreda", e.target.value)} placeholder="Enter woreda..." disabled={!formData.address_zone} />
-                </Field>
+                <CascadingLocationSelector
+                  region={formData.address_region}
+                  zone={formData.address_zone}
+                  woreda={formData.address_woreda}
+                  onRegionChange={v => set("address_region", v)}
+                  onZoneChange={v => set("address_zone", v)}
+                  onWoredaChange={v => set("address_woreda", v)}
+                  regionLabel="Region"
+                  required
+                />
                 <div className="md:col-span-3">
                   <Field label="Specific Address">
                     <Input value={formData.address_specific} onChange={e => set("address_specific", e.target.value)} placeholder="Building name, street, directions..." maxLength={500} />

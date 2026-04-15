@@ -404,16 +404,14 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
                 <Field label="Contact Person"><Input value={formData.owner_contact_person} onChange={e => set("owner_contact_person", e.target.value)} /></Field>
                 <Field label="Phone"><Input value={formData.owner_phone} onChange={e => set("owner_phone", e.target.value)} /></Field>
                 <Field label="Email"><Input type="email" value={formData.owner_email} onChange={e => set("owner_email", e.target.value)} /></Field>
-                <Field label="Region">
-                  <Select value={formData.owner_region} onValueChange={v => { set("owner_region", v); set("owner_zone", ""); set("owner_woreda", ""); }}>
-                    <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-                    <SelectContent>
-                      {ADMIN_REGIONS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field label="Zone"><Input value={formData.owner_zone} onChange={e => set("owner_zone", e.target.value)} disabled={!formData.owner_region} /></Field>
-                <Field label="Woreda"><Input value={formData.owner_woreda} onChange={e => set("owner_woreda", e.target.value)} disabled={!formData.owner_zone} /></Field>
+                <CascadingLocationSelector
+                  region={formData.owner_region}
+                  zone={formData.owner_zone}
+                  woreda={formData.owner_woreda}
+                  onRegionChange={v => set("owner_region", v)}
+                  onZoneChange={v => set("owner_zone", v)}
+                  onWoredaChange={v => set("owner_woreda", v)}
+                />
                 <Field label="Gov't ID / Business Reg No"><Input value={formData.owner_govt_id} onChange={e => set("owner_govt_id", e.target.value)} /></Field>
                 <Field label="Tax ID / VAT Number"><Input value={formData.owner_tax_id} onChange={e => set("owner_tax_id", e.target.value)} /></Field>
                 <Field label="Owner Status">
