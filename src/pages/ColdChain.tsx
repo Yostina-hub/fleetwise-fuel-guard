@@ -121,6 +121,7 @@ const ColdChain = () => {
             <TabsTrigger value="live" className="gap-1.5"><Thermometer className="w-3.5 h-3.5" /> Live Status</TabsTrigger>
             <TabsTrigger value="chart" className="gap-1.5"><BarChart3 className="w-3.5 h-3.5" /> Temperature Chart</TabsTrigger>
             <TabsTrigger value="alarms" className="gap-1.5"><AlertTriangle className="w-3.5 h-3.5" /> Alarms ({alarms.length})</TabsTrigger>
+            <TabsTrigger value="compliance" className="gap-1.5"><Thermometer className="w-3.5 h-3.5" /> Compliance</TabsTrigger>
           </TabsList>
 
           <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="mt-4">
@@ -244,6 +245,49 @@ const ColdChain = () => {
                   </Card>
                 ))
               )}
+            </TabsContent>
+
+            <TabsContent value="compliance" className="mt-0 space-y-4">
+              <Card>
+                <CardHeader><CardTitle className="text-lg">Temperature Compliance Report</CardTitle></CardHeader>
+                <CardContent>
+                  {latestReadings.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">No vehicles to assess.</div>
+                  ) : (
+                    <div className="space-y-4">
+                      {latestReadings.map((r: any) => {
+                        const inRange = r.temperature_celsius >= (r.min_threshold ?? -30) && r.temperature_celsius <= (r.max_threshold ?? 10);
+                        const totalReadings = alarms.filter((a: any) => a.vehicle_id === r.vehicle_id).length;
+                        const complianceRate = totalReadings === 0 ? 100 : Math.max(0, 100 - (totalReadings * 5));
+                        return (
+                          <div key={r.vehicle_id} className="flex items-center gap-4 p-3 border rounded-lg">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-semibold">{r.vehicles?.plate_number || "Unknown"}</span>
+                                <Badge className={inRange ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}>
+                                  {inRange ? "In Range" : "Out of Range"}
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Range: {r.min_threshold ?? "—"}°C to {r.max_threshold ?? "—"}°C • Current: {r.temperature_celsius?.toFixed(1)}°C • Door: {r.door_status || "—"}
+                              </p>
+                            </div>
+                            <div className="text-right min-w-[100px]">
+                              <p className={`text-2xl font-bold ${complianceRate >= 95 ? "text-success" : complianceRate >= 80 ? "text-warning" : "text-destructive"}`}>
+                                {complianceRate}%
+                              </p>
+                              <p className="text-xs text-muted-foreground">compliance</p>
+                            </div>
+                            <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
+                              <div className={`h-full rounded-full ${complianceRate >= 95 ? "bg-success" : complianceRate >= 80 ? "bg-warning" : "bg-destructive"}`} style={{ width: `${complianceRate}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
           </motion.div>
         </Tabs>
