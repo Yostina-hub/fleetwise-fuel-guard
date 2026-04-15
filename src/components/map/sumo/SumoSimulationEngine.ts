@@ -402,13 +402,21 @@ export function stepSimulation(state: SimulationState, dtReal: number): Simulati
     };
   });
 
+  // Gradual spawning/despawning — max 3 vehicles per tick for smooth transitions
   let adjustedVehicles = vehicles;
-  if (vehicles.length < state.vehicleCount) {
-    for (let i = vehicles.length; i < state.vehicleCount; i++) {
-      adjustedVehicles.push(createVehicle(i + state.time * 1000));
+  const diff = state.vehicleCount - vehicles.length;
+
+  if (diff > 0) {
+    const spawnCount = Math.min(diff, 3); // spawn up to 3 per tick
+    const newVehicles = [...vehicles];
+    for (let i = 0; i < spawnCount; i++) {
+      const uid = Math.floor(state.time * 1000) + vehicles.length + i;
+      newVehicles.push(createVehicle(uid));
     }
-  } else if (vehicles.length > state.vehicleCount) {
-    adjustedVehicles = vehicles.slice(0, state.vehicleCount);
+    adjustedVehicles = newVehicles;
+  } else if (diff < 0) {
+    const removeCount = Math.min(-diff, 3); // remove up to 3 per tick
+    adjustedVehicles = vehicles.slice(0, vehicles.length - removeCount);
   }
 
   return { ...state, vehicles: adjustedVehicles, signals, time: state.time + dt };
