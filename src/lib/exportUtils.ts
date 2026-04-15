@@ -133,6 +133,24 @@ const drawProfessionalFooter = (doc: jsPDF, pageNum: number, totalPages: number)
   doc.rect(0, pageHeight - 2, pageWidth, 2, "F");
 };
 
+// Ethio Telecom branded HTML header for Excel/Word exports
+const etBrandedHeader = (title: string) => `
+  <div style="border-bottom:3px solid #0072BC;padding-bottom:10px;margin-bottom:15px;">
+    <div>
+      <h1 style="color:#0072BC;margin:0;font-size:22px;">ethio telecom</h1>
+      <p style="color:#F7941D;margin:2px 0 0 0;font-size:11px;">Fleet Management System</p>
+    </div>
+    <h2 style="color:#002244;margin:12px 0 4px 0;font-size:16px;">${title}</h2>
+    <p style="color:#888;margin:0;font-size:10px;">Generated: ${format(new Date(), "MMMM d, yyyy 'at' h:mm a")} | CONFIDENTIAL</p>
+  </div>
+`;
+
+const etBrandedFooter = () => `
+  <div style="border-top:2px solid #0072BC;margin-top:20px;padding-top:8px;">
+    <p style="color:#999;font-size:9px;margin:0;">&copy; ${new Date().getFullYear()} ethio telecom — Fleet Management System. Confidential.</p>
+  </div>
+`;
+
 // Excel Export utility (HTML table format, opens in Excel/LibreOffice)
 export const exportToExcel = (
   title: string,
@@ -142,23 +160,23 @@ export const exportToExcel = (
 ) => {
   if (data.length === 0) return;
 
-  const header = columns.map(c => `<th style="background:#4472C4;color:white;padding:8px;border:1px solid #ddd;font-weight:bold">${c.label}</th>`).join("");
+  const header = columns.map(c => `<th style="background:#002244;color:white;padding:8px 10px;border:1px solid #ddd;font-weight:bold;font-size:10pt">${c.label}</th>`).join("");
   const rows = data.map((row, i) =>
-    columns.map(c => `<td style="padding:6px;border:1px solid #ddd;${i % 2 === 0 ? "background:#f8f9fa" : ""}">${row[c.key] ?? ""}</td>`).join("")
+    columns.map(c => `<td style="padding:6px 10px;border:1px solid #e0e0e0;font-size:10pt;${i % 2 === 0 ? "background:#f5f8fc" : "background:#fff"}">${row[c.key] ?? ""}</td>`).join("")
   );
   const html = `
     <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
     <head><meta charset="utf-8"><style>table{border-collapse:collapse;font-family:Calibri,Arial,sans-serif;font-size:11pt}th,td{mso-number-format:"\\@"}</style></head>
     <body>
-      <h2>${title}</h2>
-      <p>Generated: ${format(new Date(), "MMMM d, yyyy 'at' h:mm a")}</p>
-      <table><tr>${header}</tr>${rows.map(r => `<tr>${r}</tr>`).join("")}</table>
+      ${etBrandedHeader(title)}
+      <table style="width:100%"><tr>${header}</tr>${rows.map(r => `<tr>${r}</tr>`).join("")}</table>
+      ${etBrandedFooter()}
     </body></html>
   `;
   const blob = new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = `${filename}_${format(new Date(), "yyyy-MM-dd_HHmm")}.xls`;
+  link.download = `ET_Fleet_${filename}_${format(new Date(), "yyyy-MM-dd_HHmm")}.xls`;
   link.click();
   URL.revokeObjectURL(link.href);
 };
@@ -172,23 +190,23 @@ export const exportToWord = (
 ) => {
   if (data.length === 0) return;
 
-  const header = columns.map(c => `<th style="background:#4472C4;color:white;padding:8px;border:1px solid #ddd">${c.label}</th>`).join("");
-  const rows = data.map(row =>
-    columns.map(c => `<td style="padding:6px;border:1px solid #ddd">${row[c.key] ?? ""}</td>`).join("")
+  const header = columns.map(c => `<th style="background:#002244;color:white;padding:8px 10px;border:1px solid #ddd">${c.label}</th>`).join("");
+  const rows = data.map((row, i) =>
+    columns.map(c => `<td style="padding:6px 10px;border:1px solid #e0e0e0;${i % 2 === 0 ? "background:#f5f8fc" : ""}">${row[c.key] ?? ""}</td>`).join("")
   );
   const html = `
     <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
-    <head><meta charset="utf-8"><style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt}table{border-collapse:collapse;width:100%}h1{color:#2B579A}</style></head>
+    <head><meta charset="utf-8"><style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt}table{border-collapse:collapse;width:100%}</style></head>
     <body>
-      <h1>${title}</h1>
-      <p>Generated: ${format(new Date(), "MMMM d, yyyy 'at' h:mm a")}</p>
+      ${etBrandedHeader(title)}
       <table><tr>${header}</tr>${rows.map(r => `<tr>${r}</tr>`).join("")}</table>
+      ${etBrandedFooter()}
     </body></html>
   `;
   const blob = new Blob([html], { type: "application/msword;charset=utf-8" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = `${filename}_${format(new Date(), "yyyy-MM-dd_HHmm")}.doc`;
+  link.download = `ET_Fleet_${filename}_${format(new Date(), "yyyy-MM-dd_HHmm")}.doc`;
   link.click();
   URL.revokeObjectURL(link.href);
 };
