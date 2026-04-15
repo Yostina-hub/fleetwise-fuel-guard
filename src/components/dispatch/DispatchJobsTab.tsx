@@ -471,67 +471,22 @@ const DispatchJobsTab = () => {
               </div>
             </div>
             {/* Scheduled Pickup Date & Time */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Scheduled Pickup</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !newJob.scheduled_pickup_at && "text-muted-foreground")}>
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {newJob.scheduled_pickup_at ? format(newJob.scheduled_pickup_at, "MMM dd, yyyy") : "Pick date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={newJob.scheduled_pickup_at}
-                      onSelect={d => setNewJob({...newJob, scheduled_pickup_at: d || undefined})}
-                      initialFocus
-                      className={cn("p-3 pointer-events-auto")}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div>
-                <Label>Pickup Time</Label>
-                <Input
-                  type="time"
-                  value={newJob.scheduled_pickup_time}
-                  onChange={e => setNewJob({...newJob, scheduled_pickup_time: e.target.value})}
-                />
-              </div>
-            </div>
+            <DateTimePicker
+              label="Scheduled Pickup"
+              date={newJob.scheduled_pickup_at}
+              time={newJob.scheduled_pickup_time}
+              onDateChange={d => setNewJob({...newJob, scheduled_pickup_at: d || undefined})}
+              onTimeChange={t => setNewJob({...newJob, scheduled_pickup_time: t})}
+            />
             {/* Scheduled Dropoff Date & Time */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Scheduled Dropoff</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !newJob.scheduled_dropoff_at && "text-muted-foreground")}>
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {newJob.scheduled_dropoff_at ? format(newJob.scheduled_dropoff_at, "MMM dd, yyyy") : "Pick date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={newJob.scheduled_dropoff_at}
-                      onSelect={d => setNewJob({...newJob, scheduled_dropoff_at: d || undefined})}
-                      initialFocus
-                      className={cn("p-3 pointer-events-auto")}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div>
-                <Label>Dropoff Time</Label>
-                <Input
-                  type="time"
-                  value={newJob.scheduled_dropoff_time}
-                  onChange={e => setNewJob({...newJob, scheduled_dropoff_time: e.target.value})}
-                />
-              </div>
-            </div>
+            <DateTimePicker
+              label="Scheduled Dropoff"
+              date={newJob.scheduled_dropoff_at}
+              time={newJob.scheduled_dropoff_time}
+              onDateChange={d => setNewJob({...newJob, scheduled_dropoff_at: d || undefined})}
+              onTimeChange={t => setNewJob({...newJob, scheduled_dropoff_time: t})}
+              minDate={newJob.scheduled_pickup_at}
+            />
             <div>
               <Label>Special Instructions</Label>
               <Textarea 
