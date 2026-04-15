@@ -183,17 +183,17 @@ async function evaluateGeoProximity(config: Record<string, any> | undefined, org
     .from("vehicle_telemetry")
     .select("lat, lng, vehicle_id")
     .eq("organization_id", orgId)
-    .not("lat", "is", null)
+    .not("latitude", "is", null)
     .order("last_communication_at", { ascending: false })
     .limit(1)
-    .maybeSingle();
+    .maybeSingle() as any);
 
   const targetLat = config?.lat ?? 9.02;
   const targetLng = config?.lng ?? 38.75;
   const radius = config?.radius_km ?? 5;
 
-  if (data?.lat && data?.lng) {
-    const dist = haversine(data.lat, data.lng, targetLat, targetLng);
+  if (data?.latitude && data?.longitude) {
+    const dist = haversine(data.latitude, data.longitude, targetLat, targetLng);
     const inside = dist <= radius;
     return {
       success: true, operation: "SELECT", table: "vehicle_telemetry",
@@ -268,17 +268,17 @@ async function createWorkOrder(config: Record<string, any> | undefined, orgId: s
 }
 
 async function checkFuelLevel(config: Record<string, any> | undefined, orgId: string): Promise<ExecutionResult> {
-  const { data } = await supabase
+  const { data } = await (supabase
     .from("vehicle_telemetry")
-    .select("vehicle_id, fuel_level_percent, speed, last_communication_at")
+    .select("vehicle_id, fuel_level_percent, speed_kmh, last_communication_at")
     .eq("organization_id", orgId)
     .not("fuel_level_percent", "is", null)
     .order("last_communication_at", { ascending: false })
-    .limit(5);
+    .limit(5) as any);
 
   if (!data?.length) return { success: true, operation: "SELECT", table: "vehicle_telemetry", message: "No fuel telemetry available", data: { vehicles_checked: 0 } };
 
-  const lowFuel = data.filter((r) => (r.fuel_level_percent ?? 100) < (config?.threshold || 20));
+  const lowFuel = data.filter((r: any) => (r.fuel_level_percent ?? 100) < (config?.threshold || 20));
   return {
     success: true, operation: "SELECT", table: "vehicle_telemetry",
     message: `Fuel check: ${data.length} vehicles scanned, ${lowFuel.length} below threshold`,
