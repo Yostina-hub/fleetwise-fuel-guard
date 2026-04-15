@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
-import { CircleDot, Plus, BarChart3, History, AlertTriangle, TrendingUp } from "lucide-react";
+import { CircleDot, Plus, BarChart3, History, AlertTriangle, TrendingUp, RotateCcw } from "lucide-react";
+import { TireChangeDialog } from "@/components/tire-management/TireChangeDialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -22,6 +23,7 @@ const TireManagement = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("inventory");
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showChangeDialog, setShowChangeDialog] = useState(false);
   const { organizationId } = useOrganization();
   const { vehicles } = useVehicles();
   const queryClient = useQueryClient();
@@ -83,6 +85,22 @@ const TireManagement = () => {
     onError: (err: any) => toast.error(err.message),
   });
 
+  const addTireRetireMutation = useMutation({
+    mutationFn: async (tireId: string) => {
+      const { error } = await supabase.from("tire_inventory").update({
+        status: "retired",
+        retired_date: new Date().toISOString().split("T")[0],
+        retired_reason: "manual_retire",
+      }).eq("id", tireId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Tire retired");
+      queryClient.invalidateQueries({ queryKey: ["tire-inventory"] });
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   const getStatusBadge = (status: string | null) => {
     switch (status) {
       case "active": return <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">{t('common.active', 'Active')}</Badge>;
@@ -114,9 +132,14 @@ const TireManagement = () => {
               <p className="text-muted-foreground text-xs">{t('pages.tire_management.description', 'Track tire inventory, wear, replacements & costs')}</p>
             </div>
           </div>
-          <Button className="gap-2" onClick={() => setShowAddDialog(true)}>
-            <Plus className="w-4 h-4" /> Add Tire
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" className="gap-2" onClick={() => setShowChangeDialog(true)}>
+              <RotateCcw className="w-4 h-4" /> Record Change
+            </Button>
+            <Button className="gap-2" onClick={() => setShowAddDialog(true)}>
+              <Plus className="w-4 h-4" /> Add Tire
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -183,6 +206,11 @@ const TireManagement = () => {
                               />
                             </div>
                             <p className="text-xs text-muted-foreground">{wear}% worn • {tire.purchase_cost ? `${tire.purchase_cost} ETB` : "—"}</p>
+                            {tire.status === "active" && (
+                              <Button size="sm" variant="ghost" className="h-6 text-[10px] text-destructive px-2 mt-1" onClick={() => addTireRetireMutation.mutate(tire.id)}>
+                                Retire
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </CardContent>
@@ -361,6 +389,7 @@ const TireManagement = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        <TireChangeDialog open={showChangeDialog} onOpenChange={setShowChangeDialog} tires={tireInventory} />
       </div>
     </Layout>
   );
