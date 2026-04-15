@@ -96,23 +96,23 @@ export const ReportsDateFilter = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={onExportCSV} className="gap-2 cursor-pointer">
+            <DropdownMenuItem onSelect={onExportCSV} className="gap-2 cursor-pointer">
               <FileSpreadsheet className="w-4 h-4" aria-hidden="true" />
               Export as CSV
             </DropdownMenuItem>
             {onExportExcel && (
-              <DropdownMenuItem onClick={onExportExcel} className="gap-2 cursor-pointer">
+              <DropdownMenuItem onSelect={onExportExcel} className="gap-2 cursor-pointer">
                 <FileSpreadsheet className="w-4 h-4" aria-hidden="true" />
                 Export as Excel (.xls)
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={onExportPDF} className="gap-2 cursor-pointer">
+            <DropdownMenuItem onSelect={onExportPDF} className="gap-2 cursor-pointer">
               <FileText className="w-4 h-4" aria-hidden="true" />
               Export as PDF
             </DropdownMenuItem>
             {onExportWord && (
-              <DropdownMenuItem onClick={onExportWord} className="gap-2 cursor-pointer">
+              <DropdownMenuItem onSelect={onExportWord} className="gap-2 cursor-pointer">
                 <FileType className="w-4 h-4" aria-hidden="true" />
                 Export as Word (.doc)
               </DropdownMenuItem>
@@ -120,7 +120,7 @@ export const ReportsDateFilter = ({
             {onPrint && (
               <>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={onPrint} className="gap-2 cursor-pointer">
+                <DropdownMenuItem onSelect={onPrint} className="gap-2 cursor-pointer">
                   <Printer className="w-4 h-4" aria-hidden="true" />
                   Print Report
                 </DropdownMenuItem>
