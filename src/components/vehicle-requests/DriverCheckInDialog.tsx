@@ -46,12 +46,21 @@ export const DriverCheckInDialog = ({ request, open, onClose }: Props) => {
 
   const checkOutMutation = useMutation({
     mutationFn: async () => {
+      const checkoutOdo = odometer ? parseFloat(odometer) : null;
+      const checkinOdo = request.driver_checkin_odometer;
+      const distanceKm = checkoutOdo && checkinOdo ? checkoutOdo - checkinOdo : null;
+
       const updates: any = {
         driver_checked_out_at: new Date().toISOString(),
-        driver_checkout_odometer: odometer ? parseFloat(odometer) : null,
+        driver_checkout_odometer: checkoutOdo,
         status: "completed",
         completed_at: new Date().toISOString(),
       };
+
+      if (distanceKm && distanceKm > 0) {
+        updates.distance_log_km = distanceKm;
+      }
+
       const { error } = await (supabase as any)
         .from("vehicle_requests")
         .update(updates)
