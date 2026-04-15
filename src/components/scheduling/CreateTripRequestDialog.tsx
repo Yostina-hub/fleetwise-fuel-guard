@@ -29,12 +29,15 @@ import {
 import { useTripRequests } from "@/hooks/useTripRequests";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Calendar, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
+import { DateTimePicker, combineDateAndTime } from "@/components/ui/date-time-picker";
 
 const tripRequestSchema = z.object({
   purpose: z.string().min(5, "Purpose must be at least 5 characters"),
-  pickup_at: z.string().min(1, "Pickup time is required"),
-  return_at: z.string().min(1, "Return time is required"),
+  pickup_date: z.date({ required_error: "Pickup date is required" }),
+  pickup_time: z.string().min(1, "Pickup time is required"),
+  return_date: z.date({ required_error: "Return date is required" }),
+  return_time: z.string().min(1, "Return time is required"),
   pickup_geofence_id: z.string().optional(),
   drop_geofence_id: z.string().optional(),
   passengers: z.coerce.number().min(1).max(50),
@@ -66,10 +69,11 @@ export const CreateTripRequestDialog = ({
     defaultValues: {
       passengers: 1,
       purpose: "",
+      pickup_time: "09:00",
+      return_time: "17:00",
     },
   });
 
-  // Fetch geofences for pickup/drop locations
   const { data: geofences } = useQuery({
     queryKey: ["geofences"],
     queryFn: async () => {
@@ -83,7 +87,6 @@ export const CreateTripRequestDialog = ({
     },
   });
 
-  // Fetch cost centers
   const { data: costCenters } = useQuery({
     queryKey: ["cost-centers"],
     queryFn: async () => {
@@ -97,7 +100,6 @@ export const CreateTripRequestDialog = ({
     },
   });
 
-  // Fetch drivers
   const { data: drivers } = useQuery({
     queryKey: ["drivers"],
     queryFn: async () => {
@@ -114,7 +116,12 @@ export const CreateTripRequestDialog = ({
   const onSubmit = async (data: TripRequestFormData) => {
     setLoading(true);
     try {
-      await createRequest.mutateAsync(data);
+      const { pickup_date, pickup_time, return_date, return_time, ...rest } = data;
+      await createRequest.mutateAsync({
+        ...rest,
+        pickup_at: combineDateAndTime(pickup_date, pickup_time)!,
+        return_at: combineDateAndTime(return_date, return_time)!,
+      });
       form.reset();
       onOpenChange(false);
     } finally {
@@ -146,24 +153,22 @@ export const CreateTripRequestDialog = ({
               )}
             />
 
-            {/* Date & Time */}
+            {/* Date & Time with Calendar Pickers */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="pickup_at"
+                name="pickup_date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Pickup Date & Time *</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          type="datetime-local"
-                          className="pl-10"
-                          {...field}
-                        />
-                      </div>
-                    </FormControl>
+                    <DateTimePicker
+                      label="Pickup Date & Time"
+                      date={field.value}
+                      time={form.watch("pickup_time")}
+                      onDateChange={field.onChange}
+                      onTimeChange={(t) => form.setValue("pickup_time", t)}
+                      required
+                      minDate={new Date()}
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -171,20 +176,18 @@ export const CreateTripRequestDialog = ({
 
               <FormField
                 control={form.control}
-                name="return_at"
+                name="return_date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Return Date & Time *</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          type="datetime-local"
-                          className="pl-10"
-                          {...field}
-                        />
-                      </div>
-                    </FormControl>
+                    <DateTimePicker
+                      label="Return Date & Time"
+                      date={field.value}
+                      time={form.watch("return_time")}
+                      onDateChange={field.onChange}
+                      onTimeChange={(t) => form.setValue("return_time", t)}
+                      required
+                      minDate={form.watch("pickup_date") || new Date()}
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -353,7 +356,7 @@ export const CreateTripRequestDialog = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {costCenters?.map((cc) => (
+                        {costCenters?.map((cc: any) => (
                           <SelectItem key={cc.id} value={cc.id}>
                             {cc.code} - {cc.name}
                           </SelectItem>
