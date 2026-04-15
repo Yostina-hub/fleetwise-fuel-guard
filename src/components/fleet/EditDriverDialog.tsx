@@ -13,13 +13,15 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { Loader2, User, CreditCard, Phone, FileText, Heart, AlertCircle, MapPin, Briefcase, Building2, Edit, Droplets } from "lucide-react";
+import { Loader2, User, CreditCard, FileText, AlertCircle, MapPin, Briefcase, Building2, Edit, Droplets, Paperclip } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { Driver } from "@/hooks/useDrivers";
 import {
   DRIVER_TYPES, ADMIN_REGIONS, ID_TYPES, LICENSE_TYPES, EMPLOYMENT_STATUSES,
   DRIVER_STATUSES, ROUTE_TYPES, BLOOD_TYPES, GENDERS, ASSIGNED_LOCATIONS,
 } from "./formConstants";
+import FileUploadField from "./FileUploadField";
+import { uploadFleetFile } from "./uploadFleetFile";
 
 const nameRegex = /^[\p{L}\s'.-]+$/u;
 
@@ -55,12 +57,21 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
     emergency_contact_relationship: "", blood_type: "",
     notes: "", rfid_tag: "", ibutton_id: "", bluetooth_id: "",
     employee_id: "", medical_certificate_expiry: "",
+    // Existing attachment URLs
+    license_front_url: "", license_back_url: "", national_id_url: "", avatar_url: "",
   });
+
+  // File attachments for new uploads
+  const [licenseFrontFile, setLicenseFrontFile] = useState<File | null>(null);
+  const [licenseBackFile, setLicenseBackFile] = useState<File | null>(null);
+  const [nationalIdFile, setNationalIdFile] = useState<File | null>(null);
+  const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (driver && open) {
-      // Fetch full driver data including new fields
       setLoading(true);
+      setLicenseFrontFile(null); setLicenseBackFile(null);
+      setNationalIdFile(null); setProfilePhotoFile(null);
       supabase.from("drivers").select("*").eq("id", driver.id).single().then(({ data }) => {
         setLoading(false);
         if (data) {
@@ -101,6 +112,10 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
             bluetooth_id: data.bluetooth_id || "",
             employee_id: data.employee_id || "",
             medical_certificate_expiry: data.medical_certificate_expiry || "",
+            license_front_url: (data as any).license_front_url || "",
+            license_back_url: (data as any).license_back_url || "",
+            national_id_url: (data as any).national_id_url || "",
+            avatar_url: data.avatar_url || "",
           });
         }
       });
@@ -112,6 +127,21 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
   const updateMutation = useMutation({
     mutationFn: async (data: any) => {
       if (!driver) throw new Error("No driver selected");
+
+      // Upload new attachments if provided
+      if (licenseFrontFile) {
+        data.license_front_url = await uploadFleetFile("driver-documents", driver.id, "license_front", licenseFrontFile);
+      }
+      if (licenseBackFile) {
+        data.license_back_url = await uploadFleetFile("driver-documents", driver.id, "license_back", licenseBackFile);
+      }
+      if (nationalIdFile) {
+        data.national_id_url = await uploadFleetFile("driver-documents", driver.id, "national_id", nationalIdFile);
+      }
+      if (profilePhotoFile) {
+        data.avatar_url = await uploadFleetFile("driver-documents", driver.id, "profile_photo", profilePhotoFile);
+      }
+
       const { error } = await supabase.from("drivers").update(data).eq("id", driver.id);
       if (error) throw error;
     },
@@ -289,6 +319,41 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
                 </div>
               </Section>
 
+              {/* Driver Attachments */}
+              <Section icon={<Paperclip className="w-5 h-5 text-primary" />} title="Driver Attachments">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FileUploadField
+                    label="Driver's License (Front)"
+                    accept="image/*,.pdf"
+                    currentUrl={formData.license_front_url || null}
+                    selectedFile={licenseFrontFile}
+                    onFileSelect={setLicenseFrontFile}
+                  />
+                  <FileUploadField
+                    label="Driver's License (Back)"
+                    accept="image/*,.pdf"
+                    currentUrl={formData.license_back_url || null}
+                    selectedFile={licenseBackFile}
+                    onFileSelect={setLicenseBackFile}
+                  />
+                  <FileUploadField
+                    label="National ID Card"
+                    accept="image/*,.pdf"
+                    currentUrl={formData.national_id_url || null}
+                    selectedFile={nationalIdFile}
+                    onFileSelect={setNationalIdFile}
+                  />
+                  <FileUploadField
+                    label="Profile Photo"
+                    accept="image/*"
+                    currentUrl={formData.avatar_url || null}
+                    selectedFile={profilePhotoFile}
+                    onFileSelect={setProfilePhotoFile}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">Accepted: Images and PDF. Max size: 5MB per file.</p>
+              </Section>
+
               {/* Employment Details */}
               <Section icon={<Building2 className="w-5 h-5 text-primary" />} title="Employment Details">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -357,13 +422,6 @@ export default function EditDriverDialog({ open, onOpenChange, driver }: EditDri
                       </SelectContent>
                     </Select>
                   </Field>
-                </div>
-              </Section>
-
-              {/* Medical */}
-              <Section icon={<Heart className="w-5 h-5 text-primary" />} title="Medical Information">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Field label="Medical Certificate Expiry"><Input type="date" value={formData.medical_certificate_expiry} onChange={e => set("medical_certificate_expiry", e.target.value)} /></Field>
                 </div>
               </Section>
 

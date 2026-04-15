@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { Loader2, Truck, User, Gauge, FileText, Shield, Settings, MapPin } from "lucide-react";
+import { Loader2, Truck, User, FileText, Shield, Settings, MapPin, Paperclip } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   PLATE_CODES, PLATE_REGIONS, VEHICLE_TYPES_OPTIONS, VEHICLE_GROUPS, DRIVE_TYPES,
@@ -24,6 +24,8 @@ import {
   VEHICLE_STATUSES, OWNER_TYPES, OWNER_STATUSES, ASSIGNED_LOCATIONS,
   ADMIN_REGIONS,
 } from "./formConstants";
+import FileUploadField from "./FileUploadField";
+import { uploadFleetFile } from "./uploadFleetFile";
 
 const vehicleSchema = z.object({
   plate_number: z.string().trim().min(1, "Plate number is required"),
@@ -42,25 +44,18 @@ interface CreateVehicleDialogProps {
 }
 
 const initialForm = {
-  // Plate composite
   plate_code: "3", plate_region: "AA", plate_number_part: "",
-  // Basic
   vehicle_type: "", vehicle_group: "", route_type: "intracity", drive_type: "",
   make: "", model: "", year: new Date().getFullYear(), color: "", vin: "",
   fuel_type: "diesel", vehicle_category: "",
-  // Legal
   registration_cert_no: "", registration_expiry: "",
   insurance_policy_no: "", insurance_expiry: "",
   commercial_permit: "false", permit_expiry: "",
-  // Operational
   capacity_kg: "", capacity_volume: "", temperature_control: "none",
   gps_installed: "false", gps_device_id: "", odometer_km: "", status: "active",
-  // Assignment
   assigned_driver_id: "",
-  // Notes
   notes: "",
   tank_capacity_liters: "",
-  // Owner info
   owner_type: "individual", owner_full_name: "", owner_department: "",
   owner_contact_person: "", owner_phone: "", owner_email: "",
   owner_region: "", owner_zone: "", owner_woreda: "",
@@ -75,6 +70,15 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({ ...initialForm });
 
+  // File attachments
+  const [ownerCertFile, setOwnerCertFile] = useState<File | null>(null);
+  const [insuranceCertFile, setInsuranceCertFile] = useState<File | null>(null);
+  const [taxClearanceFile, setTaxClearanceFile] = useState<File | null>(null);
+  const [photoFrontFile, setPhotoFrontFile] = useState<File | null>(null);
+  const [photoBackFile, setPhotoBackFile] = useState<File | null>(null);
+  const [photoLeftFile, setPhotoLeftFile] = useState<File | null>(null);
+  const [photoRightFile, setPhotoRightFile] = useState<File | null>(null);
+
   const set = (field: string, value: string | number) => setFormData(prev => ({ ...prev, [field]: value }));
   const activeDrivers = drivers.filter(d => d.status === 'active');
 
@@ -85,7 +89,6 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
       if (!canSubmit()) throw new Error("Please wait before submitting again");
       if (!organizationId) throw new Error("Organization required");
 
-      // Check duplicate plate
       const { data: existing } = await supabase.from("vehicles")
         .select("id").eq("organization_id", organizationId).eq("plate_number", data.plate_number).maybeSingle();
       if (existing) throw new Error(`Vehicle with plate ${data.plate_number} already exists`);
@@ -112,17 +115,35 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
         ownerId = owner?.id;
       }
 
-      const { error } = await supabase.from("vehicles").insert({
+      const { data: inserted, error } = await supabase.from("vehicles").insert({
         ...data,
         organization_id: organizationId,
         owner_id: ownerId,
-      });
+      }).select("id").single();
       if (error) throw error;
+
+      // Upload attachments
+      const vehicleId = inserted.id;
+      const updates: Record<string, string> = {};
+
+      if (ownerCertFile) updates.owner_certificate_url = await uploadFleetFile("vehicle-attachments", vehicleId, "owner_cert", ownerCertFile);
+      if (insuranceCertFile) updates.insurance_cert_url = await uploadFleetFile("vehicle-attachments", vehicleId, "insurance_cert", insuranceCertFile);
+      if (taxClearanceFile) updates.tax_clearance_url = await uploadFleetFile("vehicle-attachments", vehicleId, "tax_clearance", taxClearanceFile);
+      if (photoFrontFile) updates.photo_front_url = await uploadFleetFile("vehicle-attachments", vehicleId, "photo_front", photoFrontFile);
+      if (photoBackFile) updates.photo_back_url = await uploadFleetFile("vehicle-attachments", vehicleId, "photo_back", photoBackFile);
+      if (photoLeftFile) updates.photo_left_url = await uploadFleetFile("vehicle-attachments", vehicleId, "photo_left", photoLeftFile);
+      if (photoRightFile) updates.photo_right_url = await uploadFleetFile("vehicle-attachments", vehicleId, "photo_right", photoRightFile);
+
+      if (Object.keys(updates).length > 0) {
+        await supabase.from("vehicles").update(updates).eq("id", vehicleId);
+      }
     },
     onSuccess: () => {
       toast({ title: "Success", description: "Vehicle added successfully" });
       queryClient.invalidateQueries({ queryKey: ["vehicles"] });
       setFormData({ ...initialForm });
+      setOwnerCertFile(null); setInsuranceCertFile(null); setTaxClearanceFile(null);
+      setPhotoFrontFile(null); setPhotoBackFile(null); setPhotoLeftFile(null); setPhotoRightFile(null);
       onOpenChange(false);
     },
     onError: (error: any) => {
@@ -188,7 +209,6 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
             {/* 2.1 Basic Vehicle Information */}
             <Section icon={<Truck className="w-5 h-5 text-primary" />} title="Basic Vehicle Information">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Composite Plate Number */}
                 <div className="md:col-span-3">
                   <Label className="text-sm">Plate Number *</Label>
                   <div className="grid grid-cols-3 gap-2 mt-1.5">
@@ -321,6 +341,20 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
                   </Select>
                 </Field>
               </div>
+            </Section>
+
+            {/* 2.4 Vehicle Attachments */}
+            <Section icon={<Paperclip className="w-5 h-5 text-primary" />} title="Vehicle Attachments">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FileUploadField label="Owner Certificate" accept="image/*,.pdf" selectedFile={ownerCertFile} onFileSelect={setOwnerCertFile} />
+                <FileUploadField label="Renewed 3rd Party Insurance Certificate" accept="image/*,.pdf" selectedFile={insuranceCertFile} onFileSelect={setInsuranceCertFile} />
+                <FileUploadField label="Tax Clearance" accept="image/*,.pdf" selectedFile={taxClearanceFile} onFileSelect={setTaxClearanceFile} />
+                <FileUploadField label="Vehicle Photo — Front" accept="image/*" selectedFile={photoFrontFile} onFileSelect={setPhotoFrontFile} />
+                <FileUploadField label="Vehicle Photo — Back" accept="image/*" selectedFile={photoBackFile} onFileSelect={setPhotoBackFile} />
+                <FileUploadField label="Vehicle Photo — Left Side" accept="image/*" selectedFile={photoLeftFile} onFileSelect={setPhotoLeftFile} />
+                <FileUploadField label="Vehicle Photo — Right Side" accept="image/*" selectedFile={photoRightFile} onFileSelect={setPhotoRightFile} />
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">Accepted: Images and PDF. Max size: 5MB per file.</p>
             </Section>
 
             {/* Driver Assignment */}
