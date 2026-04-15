@@ -1027,25 +1027,33 @@ useEffect(() => {
       previousPositions.current.set(vehicle.id, { lng: vehicle.lng, lat: vehicle.lat });
     });
 
-    // Center on selected vehicle
-    if (selectedVehicleId && vehicles.length > 0) {
-      const selectedVehicle = vehicles.find(v => v.id === selectedVehicleId);
-      if (selectedVehicle) {
-        map.current!.flyTo({
-          center: [selectedVehicle.lng, selectedVehicle.lat],
-          zoom: 15,
-          duration: 1500,
-          essential: true
-        });
-      }
-    } else if (vehicles.length > 0 && !initialBoundsFitted.current) {
-      // Auto-fit bounds only on initial load
+    // Auto-fit bounds only on initial load (never fight user zoom/pan)
+    if (vehicles.length > 0 && !initialBoundsFitted.current) {
       const bounds = new maplibregl.LngLatBounds();
       vehicles.forEach(v => bounds.extend([v.lng, v.lat]));
       map.current!.fitBounds(bounds, { padding: 50, maxZoom: 15 });
       initialBoundsFitted.current = true;
     }
   }, [vehicles, mapLoaded, selectedVehicleId, onVehicleClick, generatePopupHTML]);
+
+  // Fly to selected vehicle ONLY when selection changes (not on every data tick)
+  const prevSelectedRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+    if (selectedVehicleId === prevSelectedRef.current) return;
+    prevSelectedRef.current = selectedVehicleId;
+    if (!selectedVehicleId) return;
+
+    const selectedVehicle = vehicles.find(v => v.id === selectedVehicleId);
+    if (selectedVehicle) {
+      map.current.flyTo({
+        center: [selectedVehicle.lng, selectedVehicle.lat],
+        zoom: 15,
+        duration: 1500,
+        essential: true,
+      });
+    }
+  }, [selectedVehicleId, mapLoaded]);
 
   // Draw vehicle trails on the map with speed-based coloring
   useEffect(() => {
