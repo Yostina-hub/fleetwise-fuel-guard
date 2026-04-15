@@ -201,7 +201,7 @@ export const WorkflowSimulator = ({
       if (abortRef.current) break;
 
       // Wait while paused
-      while (isPaused && !abortRef.current) {
+      while (isPausedRef.current && !abortRef.current) {
         await delay(100);
       }
 
@@ -228,50 +228,35 @@ export const WorkflowSimulator = ({
 
       if (abortRef.current) break;
 
-      // Determine result (90% success for simulation)
-      const isError = Math.random() < 0.08;
       const category = nodeData?.category || "actions";
       const simData = SIMULATION_DATA[category]?.() || {};
 
-      if (isError) {
-        onNodeStatusChange(nodeId, "error");
-        setErrorCount((c) => c + 1);
+      // For condition nodes, show which branch was taken
+      if (category === "conditions") {
+        const branch = simData.branch || "true";
+        onNodeStatusChange(nodeId, "success");
+        setCompletedCount((c) => c + 1);
         addLog({
           nodeId,
           nodeLabel: nodeData?.label || "Unknown",
           nodeIcon: nodeData?.icon || "⚙️",
-          status: "error",
-          message: `Error in ${nodeData?.label}: Connection timeout after ${processingTime}ms`,
+          status: "success",
+          message: `Condition evaluated → ${branch === "true" ? "✓ TRUE branch" : "✗ FALSE branch"} (${processingTime}ms)`,
           duration: processingTime,
-          data: { error: "TIMEOUT", retry_count: 0 },
+          data: simData,
         });
       } else {
-        // For condition nodes, show which branch was taken
-        if (category === "conditions") {
-          const branch = simData.branch || "true";
-          onNodeStatusChange(nodeId, "success");
-          addLog({
-            nodeId,
-            nodeLabel: nodeData?.label || "Unknown",
-            nodeIcon: nodeData?.icon || "⚙️",
-            status: "success",
-            message: `Condition evaluated → ${branch === "true" ? "✓ TRUE branch" : "✗ FALSE branch"} (${processingTime}ms)`,
-            duration: processingTime,
-            data: simData,
-          });
-        } else {
-          onNodeStatusChange(nodeId, "success");
-          setCompletedCount((c) => c + 1);
-          addLog({
-            nodeId,
-            nodeLabel: nodeData?.label || "Unknown",
-            nodeIcon: nodeData?.icon || "⚙️",
-            status: "success",
-            message: `${nodeData?.label} completed in ${processingTime}ms`,
-            duration: processingTime,
-            data: simData,
-          });
-        }
+        onNodeStatusChange(nodeId, "success");
+        setCompletedCount((c) => c + 1);
+        addLog({
+          nodeId,
+          nodeLabel: nodeData?.label || "Unknown",
+          nodeIcon: nodeData?.icon || "⚙️",
+          status: "success",
+          message: `${nodeData?.label} completed in ${processingTime}ms`,
+          duration: processingTime,
+          data: simData,
+        });
       }
 
       await delay(200);
@@ -292,7 +277,7 @@ export const WorkflowSimulator = ({
 
     setIsRunning(false);
     setCurrentNodeIdx(-1);
-  }, [nodes, edges, onNodeStatusChange, getExecutionOrder, addLog, delay, speed, isPaused]);
+  }, [nodes, edges, onNodeStatusChange, getExecutionOrder, addLog]);
 
   const stopSimulation = useCallback(() => {
     abortRef.current = true;
