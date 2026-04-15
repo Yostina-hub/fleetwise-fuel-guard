@@ -531,6 +531,7 @@ const DispatchJobsTab = () => {
                   onChange={e => setNewJob({...newJob, scheduled_dropoff_time: e.target.value})}
                 />
               </div>
+            </div>
             <div>
               <Label>Special Instructions</Label>
               <Textarea 
