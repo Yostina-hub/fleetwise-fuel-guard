@@ -260,7 +260,7 @@ useEffect(() => {
         map.current = null;
       }
     };
-  }, [lematApiKey, lematKeyReady, mapStyle, onMapReady]);
+  }, [mapStyle, onMapReady]);
 
   // Track previous style to only react to actual user-driven changes
   const prevMapStyleRef = useRef(mapStyle);

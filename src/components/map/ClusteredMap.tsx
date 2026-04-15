@@ -304,7 +304,7 @@ const ClusteredMap = ({
       map.current?.remove();
       map.current = null;
     };
-  }, [lematApiKey, lematKeyReady, mapStyle, onMapReady]);
+  }, [mapStyle, onMapReady]);
   // Draw vehicle trails with map matching (snap to roads)
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
