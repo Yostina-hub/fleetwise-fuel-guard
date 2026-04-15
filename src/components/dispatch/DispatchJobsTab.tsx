@@ -121,7 +121,21 @@ const DispatchJobsTab = () => {
   const paginatedJobs = filteredJobs.slice(startIndex, endIndex);
 
   const handleCreateJob = async () => {
-    await createJob(newJob);
+    // Combine date + time into ISO strings
+    const buildDateTime = (date?: Date, time?: string) => {
+      if (!date) return undefined;
+      const [h, m] = (time || '00:00').split(':').map(Number);
+      const d = new Date(date);
+      d.setHours(h, m, 0, 0);
+      return d.toISOString();
+    };
+
+    const { scheduled_pickup_at, scheduled_pickup_time, scheduled_dropoff_at, scheduled_dropoff_time, ...rest } = newJob;
+    await createJob({
+      ...rest,
+      scheduled_pickup_at: buildDateTime(scheduled_pickup_at, scheduled_pickup_time),
+      scheduled_dropoff_at: buildDateTime(scheduled_dropoff_at, scheduled_dropoff_time),
+    } as any);
     setShowCreateDialog(false);
     setNewJob({
       job_type: 'delivery',
@@ -134,6 +148,10 @@ const DispatchJobsTab = () => {
       cargo_description: '',
       cargo_weight_kg: 0,
       special_instructions: '',
+      scheduled_pickup_at: undefined,
+      scheduled_pickup_time: '09:00',
+      scheduled_dropoff_at: undefined,
+      scheduled_dropoff_time: '17:00',
     });
   };
 
