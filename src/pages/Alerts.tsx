@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SOSAlertPanel } from "@/components/alerts/SOSAlertPanel";
 import { FuelAlertsTab } from "@/components/alerts/FuelAlertsTab";
 import { MaintenanceAlertsTab } from "@/components/alerts/MaintenanceAlertsTab";
+import { EVAlertsTab } from "@/components/alerts/EVAlertsTab";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -47,7 +48,8 @@ import {
   CheckCheck,
   FileText,
   Fuel,
-  Wrench
+  Wrench,
+  Zap
 } from "lucide-react";
 import { useAlerts, Alert } from "@/hooks/useAlerts";
 import { useVehicles } from "@/hooks/useVehicles";
@@ -307,7 +309,7 @@ const Alerts = () => {
 
         {/* Main Alert Tabs */}
         <Tabs defaultValue="all" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-flex">
+          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
             <TabsTrigger value="all" className="gap-2">
               <AlertTriangle className="w-4 h-4" />
               All Alerts
@@ -315,6 +317,10 @@ const Alerts = () => {
             <TabsTrigger value="fuel" className="gap-2">
               <Fuel className="w-4 h-4" />
               Fuel Alerts
+            </TabsTrigger>
+            <TabsTrigger value="ev" className="gap-2">
+              <Zap className="w-4 h-4" />
+              EV Alerts
             </TabsTrigger>
             <TabsTrigger value="maintenance" className="gap-2">
               <Wrench className="w-4 h-4" />
@@ -654,6 +660,11 @@ const Alerts = () => {
           {/* Fuel Alerts Tab */}
           <TabsContent value="fuel">
             <FuelAlertsTab />
+          </TabsContent>
+
+          {/* EV Alerts Tab */}
+          <TabsContent value="ev">
+            <EVAlertsTab />
           </TabsContent>
 
           {/* Maintenance Alerts Tab */}
