@@ -1202,6 +1202,12 @@ const Reports = () => {
             return <FuelEventsTable events={fuelEvents} />;
           case "theft":
             return <FuelTheftTable cases={fuelTheftCases} />;
+          case "authorization":
+            return <FuelAuthorizationTable requests={fuelRequests} />;
+          case "consumption":
+            return <FuelConsumptionFullTable transactions={fuelTransactions} fuelEvents={fuelEvents} />;
+          case "fillup_location":
+            return <FuelFillupLocationTable transactions={fuelTransactions} />;
           case "mileage_fuel":
             return <MileageStatisticsTable trips={trips} />;
           case "fuel_speedometer":
@@ -1212,6 +1218,15 @@ const Reports = () => {
             return <FuelDrainReportTable events={fuelEvents} />;
           default:
             return <FuelTransactionsTable transactions={fuelTransactions} />;
+        }
+      case "ev":
+        switch (activeSubTab) {
+          case "charge_state":
+            return <EVChargingReportTable sessions={evChargingSessions} view="state" />;
+          case "ev_cost":
+            return <EVChargingReportTable sessions={evChargingSessions} view="cost" />;
+          default:
+            return <EVChargingReportTable sessions={evChargingSessions} view="sessions" />;
         }
       case "trips":
         switch (activeSubTab) {
