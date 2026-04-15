@@ -591,6 +591,59 @@ export type Database = {
           },
         ]
       }
+      approval_levels: {
+        Row: {
+          auto_approve_below: number | null
+          cost_threshold_max: number | null
+          cost_threshold_min: number | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          level_name: string
+          level_order: number
+          organization_id: string
+          requires_all_prior: boolean | null
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          auto_approve_below?: number | null
+          cost_threshold_max?: number | null
+          cost_threshold_min?: number | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          level_name: string
+          level_order?: number
+          organization_id: string
+          requires_all_prior?: boolean | null
+          role: string
+          updated_at?: string
+        }
+        Update: {
+          auto_approve_below?: number | null
+          cost_threshold_max?: number | null
+          cost_threshold_min?: number | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          level_name?: string
+          level_order?: number
+          organization_id?: string
+          requires_all_prior?: boolean | null
+          role?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_levels_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       approved_fuel_stations: {
         Row: {
           brand: string | null
@@ -1550,6 +1603,77 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "delegation_matrix_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delegation_rules: {
+        Row: {
+          activation_trigger: string | null
+          auto_activate: boolean | null
+          cost_limit: number | null
+          created_at: string
+          created_by: string | null
+          delegate_id: string
+          delegate_name: string
+          delegator_id: string
+          delegator_name: string
+          id: string
+          is_active: boolean | null
+          organization_id: string
+          priority_limit: string | null
+          reason: string | null
+          scope: string
+          updated_at: string
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          activation_trigger?: string | null
+          auto_activate?: boolean | null
+          cost_limit?: number | null
+          created_at?: string
+          created_by?: string | null
+          delegate_id: string
+          delegate_name: string
+          delegator_id: string
+          delegator_name: string
+          id?: string
+          is_active?: boolean | null
+          organization_id: string
+          priority_limit?: string | null
+          reason?: string | null
+          scope?: string
+          updated_at?: string
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Update: {
+          activation_trigger?: string | null
+          auto_activate?: boolean | null
+          cost_limit?: number | null
+          created_at?: string
+          created_by?: string | null
+          delegate_id?: string
+          delegate_name?: string
+          delegator_id?: string
+          delegator_name?: string
+          id?: string
+          is_active?: boolean | null
+          organization_id?: string
+          priority_limit?: string | null
+          reason?: string | null
+          scope?: string
+          updated_at?: string
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delegation_rules_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -15973,6 +16097,93 @@ export type Database = {
           },
         ]
       }
+      work_order_approvals: {
+        Row: {
+          approval_level_id: string
+          approver_id: string | null
+          comments: string | null
+          created_at: string
+          decision_at: string | null
+          delegated_at: string | null
+          delegated_to: string | null
+          escalated: boolean | null
+          escalation_reason: string | null
+          id: string
+          organization_id: string
+          status: string
+          updated_at: string
+          work_order_id: string
+        }
+        Insert: {
+          approval_level_id: string
+          approver_id?: string | null
+          comments?: string | null
+          created_at?: string
+          decision_at?: string | null
+          delegated_at?: string | null
+          delegated_to?: string | null
+          escalated?: boolean | null
+          escalation_reason?: string | null
+          id?: string
+          organization_id: string
+          status?: string
+          updated_at?: string
+          work_order_id: string
+        }
+        Update: {
+          approval_level_id?: string
+          approver_id?: string | null
+          comments?: string | null
+          created_at?: string
+          decision_at?: string | null
+          delegated_at?: string | null
+          delegated_to?: string | null
+          escalated?: boolean | null
+          escalation_reason?: string | null
+          id?: string
+          organization_id?: string
+          status?: string
+          updated_at?: string
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_order_approvals_approval_level_id_fkey"
+            columns: ["approval_level_id"]
+            isOneToOne: false
+            referencedRelation: "approval_levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_order_approvals_approver_id_fkey"
+            columns: ["approver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_order_approvals_delegated_to_fkey"
+            columns: ["delegated_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_order_approvals_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_order_approvals_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       work_order_parts: {
         Row: {
           created_at: string
@@ -16457,6 +16668,10 @@ export type Database = {
         Args: { p_date: string }
         Returns: undefined
       }
+      get_active_delegate: {
+        Args: { p_cost?: number; p_scope?: string; p_user_id: string }
+        Returns: string
+      }
       get_user_organization: { Args: { _user_id: string }; Returns: string }
       get_vehicle_fuel_status: {
         Args: { p_vehicle_ids: string[] }
@@ -16477,6 +16692,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      initiate_work_order_approval: {
+        Args: { p_work_order_id: string }
+        Returns: undefined
       }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       is_vehicle_online: { Args: { vehicle_uuid: string }; Returns: boolean }
