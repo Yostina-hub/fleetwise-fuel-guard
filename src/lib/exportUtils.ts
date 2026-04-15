@@ -351,7 +351,137 @@ export const exportToPDF = (
     drawProfessionalFooter(doc, i, pageCount);
   }
 
-  doc.save(`${filename}_${format(new Date(), "yyyy-MM-dd_HHmm")}.pdf`);
+  doc.save(`ET_Fleet_${filename}_${format(new Date(), "yyyy-MM-dd_HHmm")}.pdf`);
+};
+
+// Professional Print Report utility
+export const printReport = (
+  title: string,
+  data: Record<string, any>[],
+  columns: { key: string; label: string }[],
+  options?: { dateRange?: string; totalRecords?: number }
+) => {
+  const printWindow = window.open("", "_blank", "width=1200,height=800");
+  if (!printWindow) {
+    return false;
+  }
+
+  const dateStr = format(new Date(), "MMMM d, yyyy 'at' h:mm a");
+  const rows = data.map((row, i) =>
+    columns.map(c => `<td style="padding:8px 12px;border:1px solid #e0e0e0;font-size:10pt;${i % 2 === 0 ? "background:#f5f8fc" : "background:#fff"}">${row[c.key] ?? "—"}</td>`).join("")
+  );
+  const headerCells = columns.map(c => `<th style="background:#002244;color:white;padding:10px 12px;border:1px solid #1a3a5c;font-weight:bold;font-size:10pt;text-transform:uppercase;letter-spacing:0.5px">${c.label}</th>`).join("");
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${title} - ethio telecom</title>
+  <style>
+    @page { size: landscape; margin: 15mm; }
+    * { box-sizing: border-box; }
+    body { font-family: Calibri, Arial, sans-serif; margin: 0; padding: 20px; color: #333; position: relative; }
+    
+    /* Watermark */
+    body::before {
+      content: "ethio telecom";
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-35deg);
+      font-size: 80px;
+      font-weight: bold;
+      color: rgba(0, 114, 188, 0.06);
+      z-index: 0;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    body::after {
+      content: "CONFIDENTIAL";
+      position: fixed;
+      top: calc(50% + 50px);
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-35deg);
+      font-size: 36px;
+      font-weight: bold;
+      color: rgba(0, 114, 188, 0.05);
+      z-index: 0;
+      pointer-events: none;
+    }
+    
+    .content { position: relative; z-index: 1; }
+    .header-bar { height: 4px; background: #0072BC; margin-bottom: 0; }
+    .header-bar-green { height: 2px; background: #8DC63F; margin-bottom: 16px; }
+    .brand-area { background: #f5f8fc; padding: 12px 16px; border-radius: 4px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+    .brand-name { font-size: 20px; font-weight: bold; color: #0072BC; margin: 0; }
+    .brand-sub { font-size: 10px; color: #F7941D; margin: 2px 0 0 0; }
+    .report-date { font-size: 9px; color: #888; text-align: right; }
+    .title-bar { background: #002244; color: white; padding: 8px 16px; font-size: 14px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+    .title-accent { height: 2px; background: #8DC63F; margin-bottom: 12px; }
+    .summary { font-size: 9pt; color: #555; margin-bottom: 12px; }
+    table { border-collapse: collapse; width: 100%; page-break-inside: auto; }
+    tr { page-break-inside: avoid; }
+    thead { display: table-header-group; }
+    .footer { border-top: 2px solid #0072BC; margin-top: 20px; padding-top: 8px; display: flex; justify-content: space-between; font-size: 8pt; color: #999; }
+    @media print {
+      .no-print { display: none !important; }
+      body { padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="content">
+    <div class="header-bar"></div>
+    <div class="header-bar-green"></div>
+    
+    <div class="brand-area">
+      <div>
+        <p class="brand-name">ethio telecom</p>
+        <p class="brand-sub">Fleet Management System</p>
+      </div>
+      <div class="report-date">
+        <div>${dateStr}</div>
+        ${options?.dateRange ? `<div>Period: ${options.dateRange}</div>` : ""}
+      </div>
+    </div>
+    
+    <div class="title-bar">${title}</div>
+    <div class="title-accent"></div>
+    
+    <div class="summary">Total Records: ${data.length}${options?.dateRange ? ` | Period: ${options.dateRange}` : ""}</div>
+    
+    ${data.length === 0 
+      ? '<p style="text-align:center;color:#999;padding:40px;font-size:14pt;">No data available for the selected period.</p>'
+      : `<table><thead><tr>${headerCells}</tr></thead><tbody>${rows.map(r => `<tr>${r}</tr>`).join("")}</tbody></table>`
+    }
+    
+    <div class="footer">
+      <span>CONFIDENTIAL — ethio telecom Fleet Management</span>
+      <span>Generated: ${format(new Date(), "yyyy-MM-dd HH:mm:ss")}</span>
+      <span>© ${new Date().getFullYear()} ethio telecom</span>
+    </div>
+    
+    <div class="no-print" style="text-align:center;margin-top:20px;">
+      <button onclick="window.print()" style="padding:10px 30px;background:#0072BC;color:white;border:none;border-radius:4px;font-size:14px;cursor:pointer;margin-right:10px;">
+        🖨️ Print Report
+      </button>
+      <button onclick="window.close()" style="padding:10px 30px;background:#666;color:white;border:none;border-radius:4px;font-size:14px;cursor:pointer;">
+        Close
+      </button>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  printWindow.document.write(html);
+  printWindow.document.close();
+  
+  // Auto-trigger print after load
+  printWindow.onload = () => {
+    setTimeout(() => printWindow.print(), 500);
+  };
+  
+  return true;
 };
 
 // Fleet Report Data Formatter

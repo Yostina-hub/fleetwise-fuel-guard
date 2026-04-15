@@ -8,7 +8,7 @@ import { useDrivers } from "@/hooks/useDrivers";
 import { useReportData } from "@/hooks/useReportData";
 import { format, subDays, parseISO } from "date-fns";
 import { toast } from "sonner";
-import { exportToCSV, exportToPDF, exportToExcel, exportToWord } from "@/lib/exportUtils";
+import { exportToCSV, exportToPDF, exportToExcel, exportToWord, printReport } from "@/lib/exportUtils";
 import { cn } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { TimePeriodOption, getDateRangeFromPeriod } from "@/components/reports/ReportTimePeriodSelect";
