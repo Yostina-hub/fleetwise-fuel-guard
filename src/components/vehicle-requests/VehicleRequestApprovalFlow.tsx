@@ -112,16 +112,45 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
 
   const assignMutation = useMutation({
     mutationFn: async (vehicleId: string) => {
+      const user = (await supabase.auth.getUser()).data.user;
       const mins = Math.round((Date.now() - new Date(request.created_at).getTime()) / 60000);
-      await (supabase as any).from("vehicle_requests").update({
+      const updates: any = {
         status: "assigned",
         assigned_vehicle_id: vehicleId,
         assigned_at: new Date().toISOString(),
         actual_assignment_minutes: mins,
-      }).eq("id", request.id);
+        assigned_by: user!.id,
+      };
+      if (selectedDriver) {
+        updates.assigned_driver_id = selectedDriver;
+      }
+      await (supabase as any).from("vehicle_requests").update(updates).eq("id", request.id);
+
+      // Send SMS to assigned driver
+      if (selectedDriver) {
+        const driver = drivers.find((d: any) => d.id === selectedDriver);
+        if (driver?.phone) {
+          try {
+            await sendDispatchSms({
+              driverPhone: driver.phone,
+              driverName: `${driver.first_name} ${driver.last_name}`,
+              jobNumber: request.request_number,
+              pickupLocation: request.departure_place || "TBD",
+              dropoffLocation: request.destination || "TBD",
+              scheduledTime: format(new Date(request.needed_from), "MMM dd, HH:mm"),
+            });
+            await (supabase as any).from("vehicle_requests").update({
+              sms_notification_sent: true,
+              sms_sent_at: new Date().toISOString(),
+            }).eq("id", request.id);
+          } catch (e) {
+            console.error("SMS failed:", e);
+          }
+        }
+      }
     },
     onSuccess: () => {
-      toast.success("Vehicle assigned");
+      toast.success("Vehicle & driver assigned");
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
       onClose();
     },
