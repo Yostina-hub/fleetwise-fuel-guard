@@ -104,19 +104,18 @@ export const fetchLematMapStyle = async (
       for (const src of Object.values(styleJson.sources) as any[]) {
         if (src.tiles && Array.isArray(src.tiles)) {
           src.tiles = src.tiles.map((tileUrl: string) => {
-            // Convert e.g. https://lemat.goffice.et/tiles/planet/20260401/{z}/{x}/{y}.pbf
-            // to proxy?path=tiles/planet/20260401/{z}/{x}/{y}.pbf
+            // Strip origin, keep path with {z}/{x}/{y} template tokens intact
             const path = tileUrl.replace('https://lemat.goffice.et/', '');
-            return `${proxyBase}?path=${encodeURIComponent(path)}`;
+            return `${proxyBase}?path=${path}`;
           });
         }
       }
     }
 
-    // Rewrite glyph URLs through proxy
+    // Rewrite glyph URLs through proxy (keep {fontstack}/{range} tokens intact)
     if (styleJson.glyphs && typeof styleJson.glyphs === 'string' && styleJson.glyphs.startsWith('https://lemat.goffice.et/')) {
       const glyphPath = styleJson.glyphs.replace('https://lemat.goffice.et/', '');
-      styleJson.glyphs = `${proxyBase}?path=${encodeURIComponent(glyphPath)}`;
+      styleJson.glyphs = `${proxyBase}?path=${glyphPath}`;
     }
 
     return styleJson;
