@@ -662,6 +662,11 @@ const Alerts = () => {
             <FuelAlertsTab />
           </TabsContent>
 
+          {/* EV Alerts Tab */}
+          <TabsContent value="ev">
+            <EVAlertsTab />
+          </TabsContent>
+
           {/* Maintenance Alerts Tab */}
           <TabsContent value="maintenance">
             <MaintenanceAlertsTab />
