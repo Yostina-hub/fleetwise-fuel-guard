@@ -48,7 +48,8 @@ import {
   CheckCheck,
   FileText,
   Fuel,
-  Wrench
+  Wrench,
+  Zap
 } from "lucide-react";
 import { useAlerts, Alert } from "@/hooks/useAlerts";
 import { useVehicles } from "@/hooks/useVehicles";
