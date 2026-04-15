@@ -1,6 +1,138 @@
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 
+// Ethio Telecom brand colors
+const ET_BLUE = [0, 114, 188] as const;    // #0072BC
+const ET_GREEN = [141, 198, 63] as const;  // #8DC63F
+const ET_TEAL = [0, 166, 147] as const;    // #00A693
+const ET_ORANGE = [247, 148, 29] as const; // #F7941D
+const ET_DARK = [0, 34, 68] as const;      // #002244
+
+const drawEthioTelecomWatermark = (doc: jsPDF) => {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const centerX = pageWidth / 2;
+  const centerY = pageHeight / 2;
+
+  // Draw diagonal watermark text
+  doc.saveGraphicsState();
+  // @ts-ignore - jsPDF supports setGState
+  const gState = new (doc as any).GState({ opacity: 0.06 });
+  doc.setGState(gState);
+  doc.setFontSize(60);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...ET_BLUE);
+  
+  // Rotate and draw centered watermark
+  const text = "ethio telecom";
+  doc.text(text, centerX, centerY, { 
+    align: "center", 
+    angle: 35,
+  });
+  
+  doc.setFontSize(28);
+  doc.text("CONFIDENTIAL", centerX, centerY + 25, { 
+    align: "center", 
+    angle: 35,
+  });
+
+  doc.restoreGraphicsState();
+};
+
+const drawProfessionalHeader = (
+  doc: jsPDF, 
+  title: string, 
+  margin: number,
+  pageWidth: number
+) => {
+  let y = margin;
+
+  // Top accent bar
+  doc.setFillColor(...ET_BLUE);
+  doc.rect(0, 0, pageWidth, 4, "F");
+  doc.setFillColor(...ET_GREEN);
+  doc.rect(0, 4, pageWidth, 2, "F");
+
+  y = 14;
+
+  // Company name header area
+  doc.setFillColor(245, 248, 252);
+  doc.rect(margin, y, pageWidth - margin * 2, 22, "F");
+  
+  // Left: Brand text
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...ET_BLUE);
+  doc.text("ethio telecom", margin + 4, y + 10);
+  
+  doc.setFontSize(7);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...ET_ORANGE);
+  doc.text("Fleet Management System", margin + 4, y + 16);
+
+  // Right: Date & report info
+  doc.setFontSize(8);
+  doc.setTextColor(100, 100, 100);
+  const dateStr = format(new Date(), "MMMM d, yyyy");
+  const timeStr = format(new Date(), "h:mm a");
+  doc.text(dateStr, pageWidth - margin - 4, y + 10, { align: "right" });
+  doc.text(timeStr, pageWidth - margin - 4, y + 16, { align: "right" });
+
+  y += 26;
+
+  // Report title bar
+  doc.setFillColor(...ET_DARK);
+  doc.rect(margin, y, pageWidth - margin * 2, 10, "F");
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(255, 255, 255);
+  doc.text(title.toUpperCase(), margin + 4, y + 7);
+
+  // Green accent line under title
+  y += 10;
+  doc.setFillColor(...ET_GREEN);
+  doc.rect(margin, y, pageWidth - margin * 2, 1.5, "F");
+
+  return y + 6;
+};
+
+const drawProfessionalFooter = (doc: jsPDF, pageNum: number, totalPages: number) => {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 14;
+  const footerY = pageHeight - 16;
+
+  // Footer separator
+  doc.setDrawColor(...ET_BLUE);
+  doc.setLineWidth(0.5);
+  doc.line(margin, footerY, pageWidth - margin, footerY);
+
+  doc.setFontSize(7);
+  doc.setFont("helvetica", "normal");
+  
+  // Left: Confidentiality
+  doc.setTextColor(150, 150, 150);
+  doc.text("CONFIDENTIAL - ethio telecom Fleet Management", margin, footerY + 5);
+  
+  // Center: Generated timestamp
+  doc.text(
+    `Generated: ${format(new Date(), "yyyy-MM-dd HH:mm:ss")}`, 
+    pageWidth / 2, footerY + 5, 
+    { align: "center" }
+  );
+  
+  // Right: Page number
+  doc.setTextColor(...ET_BLUE);
+  doc.setFont("helvetica", "bold");
+  doc.text(`Page ${pageNum} of ${totalPages}`, pageWidth - margin, footerY + 5, { align: "right" });
+
+  // Bottom accent bar
+  doc.setFillColor(...ET_BLUE);
+  doc.rect(0, pageHeight - 4, pageWidth, 2, "F");
+  doc.setFillColor(...ET_GREEN);
+  doc.rect(0, pageHeight - 2, pageWidth, 2, "F");
+};
+
 // Excel Export utility (HTML table format, opens in Excel/LibreOffice)
 export const exportToExcel = (
   title: string,
