@@ -273,7 +273,7 @@ useEffect(() => {
         map.current = null;
       }
     };
-  }, [mapStyle, onMapReady]);
+  }, [mapStyle, onMapReady, currentProvider]);
 
   // Track previous style to only react to actual user-driven changes
   const prevMapStyleRef = useRef(mapStyle);
