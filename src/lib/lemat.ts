@@ -62,15 +62,11 @@ export const getPreviewSafeMapStyle = (style: LematMapStyle = 'streets'): maplib
     );
   }
 
-  // OpenStreetMap standard tiles — most detailed raster option
+  // CARTO Voyager — detailed raster tiles with buildings, POIs, and labels
   return getRasterStyle(
-    'OpenStreetMap',
-    [
-      'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    ],
-    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    'CARTO Voyager',
+    ['https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png'],
+    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
   );
 };
 
