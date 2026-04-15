@@ -34,6 +34,7 @@ export type Database = {
           filed_at: string | null
           id: string
           incident_id: string | null
+          incident_type: string
           insurance_id: string | null
           notes: string | null
           organization_id: string
@@ -70,6 +71,7 @@ export type Database = {
           filed_at?: string | null
           id?: string
           incident_id?: string | null
+          incident_type?: string
           insurance_id?: string | null
           notes?: string | null
           organization_id: string
@@ -106,6 +108,7 @@ export type Database = {
           filed_at?: string | null
           id?: string
           incident_id?: string | null
+          incident_type?: string
           insurance_id?: string | null
           notes?: string | null
           organization_id?: string
