@@ -66,6 +66,7 @@ import LanguageSelector from "@/components/settings/LanguageSelector";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationCenter } from "@/components/scheduling/NotificationCenter";
 import { cn } from "@/lib/utils";
+import { isPathAccessible } from "@/config/sidebarAccess";
 import ethioTelecomLogo from "@/assets/ethio-telecom-logo.png";
 import {
   Tooltip,
@@ -226,7 +227,7 @@ const getAdminItems = (t: (key: string) => string) => [
 const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
   const { signOut, user, hasRole: authHasRole } = useAuth();
-  const { isSuperAdmin: permIsSuperAdmin, hasRole: permHasRole } = usePermissions();
+  const { isSuperAdmin: permIsSuperAdmin, hasRole: permHasRole, roles: userRoles } = usePermissions();
   // Use either usePermissions or direct auth role check as fallback for resilience against 503 retries
   const isSuperAdmin = permIsSuperAdmin || authHasRole("super_admin");
   const isOrgAdmin = permHasRole("org_admin") || authHasRole("org_admin");
@@ -238,8 +239,34 @@ const Layout = ({ children }: LayoutProps) => {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   
-  const navItems = useMemo(() => getNavItems(t), [t]);
-  const adminItems = useMemo(() => getAdminItems(t), [t]);
+  const allNavItems = useMemo(() => getNavItems(t), [t]);
+  const allAdminItems = useMemo(() => getAdminItems(t), [t]);
+
+  // RBAC filter: only show nav items the user's roles allow
+  const navItems = useMemo(() => {
+    // If super_admin or roles not loaded yet, show everything
+    if (isSuperAdmin || userRoles.length === 0) return allNavItems;
+
+    return allNavItems
+      .map((item) => {
+        // Top-level item with path
+        if (item.path && !isPathAccessible(item.path, userRoles)) return null;
+
+        // Item with subItems — filter children
+        if (item.subItems) {
+          const filtered = item.subItems.filter((sub) =>
+            isPathAccessible(sub.path, userRoles)
+          );
+          if (filtered.length === 0) return null;
+          return { ...item, subItems: filtered };
+        }
+
+        return item;
+      })
+      .filter(Boolean) as typeof allNavItems;
+  }, [allNavItems, userRoles, isSuperAdmin]);
+
+  const adminItems = useMemo(() => allAdminItems, [allAdminItems]);
   
   const isDark = theme === "dark" || theme === "cyber";
 
