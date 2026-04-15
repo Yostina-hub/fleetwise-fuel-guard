@@ -65,6 +65,7 @@ import { EVChargingReportTable } from "@/components/reports/EVChargingReportTabl
 import { FleetViolationsWidget } from "@/components/reports/FleetViolationsWidget";
 import { VehicleMisuseWidget } from "@/components/reports/VehicleMisuseWidget";
 import { TotalTripsWidget } from "@/components/reports/TotalTripsWidget";
+import { KPISummaryWidget } from "@/components/reports/KPISummaryWidget";
 
 const FAVORITES_STORAGE_KEY = "fleet_report_favorites";
 
@@ -1292,8 +1293,12 @@ const Reports = () => {
   };
 
   const handleRefresh = () => {
-    queryClient.invalidateQueries({ queryKey: ['trips'] });
-    queryClient.invalidateQueries({ queryKey: ['driver-events'] });
+    // Invalidate all report-specific queries
+    queryClient.invalidateQueries({ predicate: (query) => {
+      const key = query.queryKey[0];
+      return typeof key === 'string' && key.startsWith('report-');
+    }});
+    // Also refresh base data
     queryClient.invalidateQueries({ queryKey: ['vehicles'] });
     queryClient.invalidateQueries({ queryKey: ['drivers'] });
     toast.success("Refreshing report data...");
@@ -1550,10 +1555,11 @@ const Reports = () => {
             ) : (
               <>
                 {/* Dashboard Widgets Row - Each with independent filters */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                   <FleetViolationsWidget />
                   <VehicleMisuseWidget />
                   <TotalTripsWidget />
+                  <KPISummaryWidget metrics={metrics} />
                 </div>
 
                 {/* Metric Cards - Context Aware */}
