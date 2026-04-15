@@ -11,6 +11,7 @@ import { VehicleRequestApprovalFlow } from "@/components/vehicle-requests/Vehicl
 import { RequesterFeedbackDialog } from "@/components/vehicle-requests/RequesterFeedbackDialog";
 import { DriverCheckInDialog } from "@/components/vehicle-requests/DriverCheckInDialog";
 import { CrossPoolAssignmentDialog } from "@/components/vehicle-requests/CrossPoolAssignmentDialog";
+import { PoolReviewPanel } from "@/components/vehicle-requests/PoolReviewPanel";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -124,7 +125,11 @@ const VehicleRequests = () => {
 
         <VehicleRequestKPI requests={requests} />
 
-        <Card>
+        {/* Pool Supervisor Review Panel */}
+        {organizationId && (
+          <PoolReviewPanel requests={requests} organizationId={organizationId} />
+        )}
+
           <CardHeader><CardTitle className="text-sm font-semibold">All Requests</CardTitle></CardHeader>
           <CardContent>
             {isLoading ? <div className="animate-pulse h-32" /> : requests.length === 0 ? (
