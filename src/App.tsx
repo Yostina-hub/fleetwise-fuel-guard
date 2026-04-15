@@ -76,6 +76,7 @@ const IoTSensorManagement = lazyWithRetry(() => import("./pages/IoTSensorManagem
 const AccidentInsurance = lazyWithRetry(() => import("./pages/AccidentInsurance"), "AccidentInsurance");
 const DocumentManagement = lazyWithRetry(() => import("./pages/DocumentManagement"), "DocumentManagement");
 const ComplianceCalendar = lazyWithRetry(() => import("./pages/ComplianceCalendar"), "ComplianceCalendar");
+const MaintenanceEnterprise = lazyWithRetry(() => import("./pages/MaintenanceEnterprise"), "MaintenanceEnterprise");
 
 const PartsInventory = lazyWithRetry(() => import("./pages/PartsInventory"), "PartsInventory");
 const VendorManagement = lazyWithRetry(() => import("./pages/VendorManagement"), "VendorManagement");
@@ -187,6 +188,7 @@ const App = () => {
                         <Route path="/document-management" element={<ProtectedRoute><DocumentManagement /></ProtectedRoute>} />
                         <Route path="/compliance-calendar" element={<ProtectedRoute><ComplianceCalendar /></ProtectedRoute>} />
                         
+                        <Route path="/maintenance-enterprise" element={<ProtectedRoute><MaintenanceEnterprise /></ProtectedRoute>} />
                         <Route path="/parts-inventory" element={<ProtectedRoute><PartsInventory /></ProtectedRoute>} />
                         <Route path="/vendor-management" element={<ProtectedRoute><VendorManagement /></ProtectedRoute>} />
                         <Route path="/penalties-fines" element={<ProtectedRoute><PenaltiesFines /></ProtectedRoute>} />
