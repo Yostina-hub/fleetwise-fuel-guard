@@ -5424,27 +5424,47 @@ export type Database = {
       }
       drivers: {
         Row: {
+          address_region: string | null
+          address_specific: string | null
+          address_woreda: string | null
+          address_zone: string | null
           avatar_url: string | null
+          bank_account: string | null
+          bank_name: string | null
+          blood_type: string | null
           bluetooth_id: string | null
           created_at: string
+          date_of_birth: string | null
+          department: string | null
+          driver_type: string | null
           email: string | null
           emergency_contact_name: string | null
           emergency_contact_phone: string | null
           emergency_contact_relationship: string | null
           employee_id: string | null
           employment_type: string | null
+          experience_years: number | null
           first_name: string
+          gender: string | null
+          govt_id_type: string | null
           hire_date: string | null
           ibutton_id: string | null
           id: string
+          joining_date: string | null
           last_name: string
+          license_back_url: string | null
           license_class: string | null
           license_expiry: string | null
+          license_front_url: string | null
+          license_issue_date: string | null
           license_number: string
+          license_type: string | null
           license_verified: boolean | null
           medical_certificate_expiry: string | null
           medical_info: Json | null
+          middle_name: string | null
           national_id: string | null
+          national_id_url: string | null
           national_id_verified: boolean | null
           notes: string | null
           organization_id: string
@@ -5454,6 +5474,7 @@ export type Database = {
           processing_restricted_at: string | null
           processing_restricted_reason: string | null
           rfid_tag: string | null
+          route_type: string | null
           safety_score: number | null
           status: string | null
           total_distance_km: number | null
@@ -5466,27 +5487,47 @@ export type Database = {
           verified_by: string | null
         }
         Insert: {
+          address_region?: string | null
+          address_specific?: string | null
+          address_woreda?: string | null
+          address_zone?: string | null
           avatar_url?: string | null
+          bank_account?: string | null
+          bank_name?: string | null
+          blood_type?: string | null
           bluetooth_id?: string | null
           created_at?: string
+          date_of_birth?: string | null
+          department?: string | null
+          driver_type?: string | null
           email?: string | null
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           emergency_contact_relationship?: string | null
           employee_id?: string | null
           employment_type?: string | null
+          experience_years?: number | null
           first_name: string
+          gender?: string | null
+          govt_id_type?: string | null
           hire_date?: string | null
           ibutton_id?: string | null
           id?: string
+          joining_date?: string | null
           last_name: string
+          license_back_url?: string | null
           license_class?: string | null
           license_expiry?: string | null
+          license_front_url?: string | null
+          license_issue_date?: string | null
           license_number: string
+          license_type?: string | null
           license_verified?: boolean | null
           medical_certificate_expiry?: string | null
           medical_info?: Json | null
+          middle_name?: string | null
           national_id?: string | null
+          national_id_url?: string | null
           national_id_verified?: boolean | null
           notes?: string | null
           organization_id: string
@@ -5496,6 +5537,7 @@ export type Database = {
           processing_restricted_at?: string | null
           processing_restricted_reason?: string | null
           rfid_tag?: string | null
+          route_type?: string | null
           safety_score?: number | null
           status?: string | null
           total_distance_km?: number | null
@@ -5508,27 +5550,47 @@ export type Database = {
           verified_by?: string | null
         }
         Update: {
+          address_region?: string | null
+          address_specific?: string | null
+          address_woreda?: string | null
+          address_zone?: string | null
           avatar_url?: string | null
+          bank_account?: string | null
+          bank_name?: string | null
+          blood_type?: string | null
           bluetooth_id?: string | null
           created_at?: string
+          date_of_birth?: string | null
+          department?: string | null
+          driver_type?: string | null
           email?: string | null
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           emergency_contact_relationship?: string | null
           employee_id?: string | null
           employment_type?: string | null
+          experience_years?: number | null
           first_name?: string
+          gender?: string | null
+          govt_id_type?: string | null
           hire_date?: string | null
           ibutton_id?: string | null
           id?: string
+          joining_date?: string | null
           last_name?: string
+          license_back_url?: string | null
           license_class?: string | null
           license_expiry?: string | null
+          license_front_url?: string | null
+          license_issue_date?: string | null
           license_number?: string
+          license_type?: string | null
           license_verified?: boolean | null
           medical_certificate_expiry?: string | null
           medical_info?: Json | null
+          middle_name?: string | null
           national_id?: string | null
+          national_id_url?: string | null
           national_id_verified?: boolean | null
           notes?: string | null
           organization_id?: string
@@ -5538,6 +5600,7 @@ export type Database = {
           processing_restricted_at?: string | null
           processing_restricted_reason?: string | null
           rfid_tag?: string | null
+          route_type?: string | null
           safety_score?: number | null
           status?: string | null
           total_distance_km?: number | null
@@ -15079,6 +15142,86 @@ export type Database = {
           },
         ]
       }
+      vehicle_owners: {
+        Row: {
+          bank_account: string | null
+          bank_name: string | null
+          contact_person: string | null
+          contract_end_date: string | null
+          contract_start_date: string | null
+          created_at: string
+          department: string | null
+          email: string | null
+          full_name: string | null
+          govt_id_business_reg: string | null
+          id: string
+          organization_id: string
+          owner_type: string
+          phone: string | null
+          region: string | null
+          risk_level: string | null
+          status: string | null
+          tax_id_vat: string | null
+          updated_at: string
+          woreda: string | null
+          zone: string | null
+        }
+        Insert: {
+          bank_account?: string | null
+          bank_name?: string | null
+          contact_person?: string | null
+          contract_end_date?: string | null
+          contract_start_date?: string | null
+          created_at?: string
+          department?: string | null
+          email?: string | null
+          full_name?: string | null
+          govt_id_business_reg?: string | null
+          id?: string
+          organization_id: string
+          owner_type?: string
+          phone?: string | null
+          region?: string | null
+          risk_level?: string | null
+          status?: string | null
+          tax_id_vat?: string | null
+          updated_at?: string
+          woreda?: string | null
+          zone?: string | null
+        }
+        Update: {
+          bank_account?: string | null
+          bank_name?: string | null
+          contact_person?: string | null
+          contract_end_date?: string | null
+          contract_start_date?: string | null
+          created_at?: string
+          department?: string | null
+          email?: string | null
+          full_name?: string | null
+          govt_id_business_reg?: string | null
+          id?: string
+          organization_id?: string
+          owner_type?: string
+          phone?: string | null
+          region?: string | null
+          risk_level?: string | null
+          status?: string | null
+          tax_id_vat?: string | null
+          updated_at?: string
+          woreda?: string | null
+          zone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_owners_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vehicle_recall_status: {
         Row: {
           completed_date: string | null
@@ -15865,37 +16008,61 @@ export type Database = {
           acquisition_cost: number | null
           acquisition_date: string | null
           assigned_driver_id: string | null
+          capacity_kg: number | null
+          capacity_volume: number | null
           color: string | null
+          commercial_permit: boolean | null
           created_at: string
           current_value: number | null
           depot_id: string | null
           depreciation_rate: number | null
+          drive_type: string | null
           engine_hours: number | null
           fuel_type: string
+          gps_device_id: string | null
+          gps_installed: boolean | null
           id: string
+          insurance_cert_url: string | null
+          insurance_expiry: string | null
+          insurance_policy_no: string | null
+          is_active: boolean | null
           lifecycle_stage: string | null
           make: string
           model: string
           notes: string | null
           odometer_km: number | null
           organization_id: string
+          owner_certificate_url: string | null
+          owner_id: string | null
           ownership_type: string | null
+          permit_expiry: string | null
+          photo_back_url: string | null
+          photo_front_url: string | null
+          photo_left_url: string | null
+          photo_right_url: string | null
           plate_number: string
+          registration_cert_no: string | null
+          registration_expiry: string | null
           rental_contract_number: string | null
           rental_daily_rate: number | null
           rental_end_date: string | null
           rental_provider: string | null
           rental_start_date: string | null
+          route_type: string | null
           speed_cutoff_enabled: boolean | null
           speed_cutoff_grace_seconds: number | null
           speed_cutoff_limit_kmh: number | null
           speed_governor_bypass_alert: boolean | null
           status: string
           tank_capacity_liters: number | null
+          tax_clearance_url: string | null
+          temperature_control: string | null
           total_downtime_hours: number | null
           total_fuel_cost: number | null
           total_maintenance_cost: number | null
           updated_at: string
+          vehicle_category: string | null
+          vehicle_group: string | null
           vehicle_type: string | null
           vin: string | null
           year: number
@@ -15904,37 +16071,61 @@ export type Database = {
           acquisition_cost?: number | null
           acquisition_date?: string | null
           assigned_driver_id?: string | null
+          capacity_kg?: number | null
+          capacity_volume?: number | null
           color?: string | null
+          commercial_permit?: boolean | null
           created_at?: string
           current_value?: number | null
           depot_id?: string | null
           depreciation_rate?: number | null
+          drive_type?: string | null
           engine_hours?: number | null
           fuel_type: string
+          gps_device_id?: string | null
+          gps_installed?: boolean | null
           id?: string
+          insurance_cert_url?: string | null
+          insurance_expiry?: string | null
+          insurance_policy_no?: string | null
+          is_active?: boolean | null
           lifecycle_stage?: string | null
           make: string
           model: string
           notes?: string | null
           odometer_km?: number | null
           organization_id: string
+          owner_certificate_url?: string | null
+          owner_id?: string | null
           ownership_type?: string | null
+          permit_expiry?: string | null
+          photo_back_url?: string | null
+          photo_front_url?: string | null
+          photo_left_url?: string | null
+          photo_right_url?: string | null
           plate_number: string
+          registration_cert_no?: string | null
+          registration_expiry?: string | null
           rental_contract_number?: string | null
           rental_daily_rate?: number | null
           rental_end_date?: string | null
           rental_provider?: string | null
           rental_start_date?: string | null
+          route_type?: string | null
           speed_cutoff_enabled?: boolean | null
           speed_cutoff_grace_seconds?: number | null
           speed_cutoff_limit_kmh?: number | null
           speed_governor_bypass_alert?: boolean | null
           status?: string
           tank_capacity_liters?: number | null
+          tax_clearance_url?: string | null
+          temperature_control?: string | null
           total_downtime_hours?: number | null
           total_fuel_cost?: number | null
           total_maintenance_cost?: number | null
           updated_at?: string
+          vehicle_category?: string | null
+          vehicle_group?: string | null
           vehicle_type?: string | null
           vin?: string | null
           year: number
@@ -15943,37 +16134,61 @@ export type Database = {
           acquisition_cost?: number | null
           acquisition_date?: string | null
           assigned_driver_id?: string | null
+          capacity_kg?: number | null
+          capacity_volume?: number | null
           color?: string | null
+          commercial_permit?: boolean | null
           created_at?: string
           current_value?: number | null
           depot_id?: string | null
           depreciation_rate?: number | null
+          drive_type?: string | null
           engine_hours?: number | null
           fuel_type?: string
+          gps_device_id?: string | null
+          gps_installed?: boolean | null
           id?: string
+          insurance_cert_url?: string | null
+          insurance_expiry?: string | null
+          insurance_policy_no?: string | null
+          is_active?: boolean | null
           lifecycle_stage?: string | null
           make?: string
           model?: string
           notes?: string | null
           odometer_km?: number | null
           organization_id?: string
+          owner_certificate_url?: string | null
+          owner_id?: string | null
           ownership_type?: string | null
+          permit_expiry?: string | null
+          photo_back_url?: string | null
+          photo_front_url?: string | null
+          photo_left_url?: string | null
+          photo_right_url?: string | null
           plate_number?: string
+          registration_cert_no?: string | null
+          registration_expiry?: string | null
           rental_contract_number?: string | null
           rental_daily_rate?: number | null
           rental_end_date?: string | null
           rental_provider?: string | null
           rental_start_date?: string | null
+          route_type?: string | null
           speed_cutoff_enabled?: boolean | null
           speed_cutoff_grace_seconds?: number | null
           speed_cutoff_limit_kmh?: number | null
           speed_governor_bypass_alert?: boolean | null
           status?: string
           tank_capacity_liters?: number | null
+          tax_clearance_url?: string | null
+          temperature_control?: string | null
           total_downtime_hours?: number | null
           total_fuel_cost?: number | null
           total_maintenance_cost?: number | null
           updated_at?: string
+          vehicle_category?: string | null
+          vehicle_group?: string | null
           vehicle_type?: string | null
           vin?: string | null
           year?: number
@@ -15998,6 +16213,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicles_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_owners"
             referencedColumns: ["id"]
           },
         ]

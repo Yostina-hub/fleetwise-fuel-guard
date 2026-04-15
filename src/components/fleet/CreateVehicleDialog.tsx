@@ -9,40 +9,31 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { Loader2, Truck, User, Gauge, FileText } from "lucide-react";
+import { Loader2, Truck, User, Gauge, FileText, Shield, Settings, MapPin } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  PLATE_CODES, PLATE_REGIONS, VEHICLE_TYPES_OPTIONS, VEHICLE_GROUPS, DRIVE_TYPES,
+  ROUTE_TYPES, ENERGY_TYPES, VEHICLE_CATEGORIES, TEMPERATURE_CONTROLS,
+  VEHICLE_STATUSES, OWNER_TYPES, OWNER_STATUSES, ASSIGNED_LOCATIONS,
+  ADMIN_REGIONS,
+} from "./formConstants";
 
 const vehicleSchema = z.object({
-  plate_number: z.string().trim().min(1, "Plate number is required").max(20),
-  make: z.string().trim().min(1, "Make is required").max(50),
-  model: z.string().trim().min(1, "Model is required").max(50),
-  year: z.number().min(1900).max(new Date().getFullYear() + 1),
-  vehicle_type: z.string().trim().max(50).nullish(),
-  assigned_driver_id: z.string().uuid().nullish(),
-  vin: z.string().trim().max(17).nullish(),
-  color: z.string().trim().max(30).nullish(),
-  fuel_type: z.enum(["diesel", "petrol", "electric", "hybrid"]),
-  tank_capacity_liters: z.number().min(0).nullish(),
-  odometer_km: z.number().min(0).nullish(),
-  ownership_type: z.enum(["owned", "leased", "rented"]).nullish(),
-  status: z.enum(["active", "maintenance", "inactive"]),
-  notes: z.string().trim().max(500).nullish(),
+  plate_number: z.string().trim().min(1, "Plate number is required"),
+  vehicle_type: z.string().min(1, "Vehicle type is required"),
+  vehicle_group: z.string().min(1, "Group is required"),
+  route_type: z.string().min(1, "Route type is required"),
+  drive_type: z.string().min(1, "Drive type is required"),
+  make: z.string().trim().min(1, "Make is required"),
+  model: z.string().trim().min(1, "Model is required"),
+  year: z.number().min(1900).max(new Date().getFullYear() + 2),
 });
 
 interface CreateVehicleDialogProps {
@@ -50,16 +41,31 @@ interface CreateVehicleDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const VEHICLE_TYPES = [
-  { value: "automobile", label: "Automobile / Car" },
-  { value: "truck", label: "Truck" },
-  { value: "bus", label: "Bus" },
-  { value: "van", label: "Van" },
-  { value: "pickup", label: "Pickup" },
-  { value: "trailer", label: "Trailer" },
-  { value: "motorcycle", label: "Motorcycle" },
-  { value: "heavy_equipment", label: "Heavy Equipment" },
-];
+const initialForm = {
+  // Plate composite
+  plate_code: "3", plate_region: "AA", plate_number_part: "",
+  // Basic
+  vehicle_type: "", vehicle_group: "", route_type: "intracity", drive_type: "",
+  make: "", model: "", year: new Date().getFullYear(), color: "", vin: "",
+  fuel_type: "diesel", vehicle_category: "",
+  // Legal
+  registration_cert_no: "", registration_expiry: "",
+  insurance_policy_no: "", insurance_expiry: "",
+  commercial_permit: "false", permit_expiry: "",
+  // Operational
+  capacity_kg: "", capacity_volume: "", temperature_control: "none",
+  gps_installed: "false", gps_device_id: "", odometer_km: "", status: "active",
+  // Assignment
+  assigned_driver_id: "",
+  // Notes
+  notes: "",
+  tank_capacity_liters: "",
+  // Owner info
+  owner_type: "individual", owner_full_name: "", owner_department: "",
+  owner_contact_person: "", owner_phone: "", owner_email: "",
+  owner_region: "", owner_zone: "", owner_woreda: "",
+  owner_govt_id: "", owner_tax_id: "", owner_status: "active",
+};
 
 export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicleDialogProps) {
   const { organizationId } = useOrganization();
@@ -67,353 +73,360 @@ export default function CreateVehicleDialog({ open, onOpenChange }: CreateVehicl
   const canSubmit = useSubmitThrottle();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [formData, setFormData] = useState({ ...initialForm });
 
-  const [formData, setFormData] = useState({
-    plate_number: "",
-    make: "",
-    model: "",
-    year: new Date().getFullYear(),
-    vehicle_type: "",
-    assigned_driver_id: "",
-    vin: "",
-    color: "",
-    fuel_type: "diesel" as const,
-    tank_capacity_liters: "",
-    odometer_km: "",
-    ownership_type: "owned" as const,
-    status: "active" as const,
-    notes: "",
-  });
+  const set = (field: string, value: string | number) => setFormData(prev => ({ ...prev, [field]: value }));
+  const activeDrivers = drivers.filter(d => d.status === 'active');
+
+  const plateNumber = `${formData.plate_code}-${formData.plate_region}-${formData.plate_number_part}`;
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
       if (!canSubmit()) throw new Error("Please wait before submitting again");
-      // Server-side duplicate plate number check
-      const { data: existingPlate } = await supabase
-        .from("vehicles")
-        .select("id, plate_number")
-        .eq("organization_id", organizationId!)
-        .eq("plate_number", data.plate_number)
-        .maybeSingle();
+      if (!organizationId) throw new Error("Organization required");
 
-      if (existingPlate) {
-        throw new Error(`A vehicle with plate number ${data.plate_number} already exists`);
+      // Check duplicate plate
+      const { data: existing } = await supabase.from("vehicles")
+        .select("id").eq("organization_id", organizationId).eq("plate_number", data.plate_number).maybeSingle();
+      if (existing) throw new Error(`Vehicle with plate ${data.plate_number} already exists`);
+
+      // Create owner first if needed
+      let ownerId = null;
+      if (formData.owner_full_name || formData.owner_type !== "individual") {
+        const { data: owner, error: ownerErr } = await supabase.from("vehicle_owners").insert({
+          organization_id: organizationId,
+          owner_type: formData.owner_type,
+          full_name: formData.owner_full_name || null,
+          department: formData.owner_department || null,
+          contact_person: formData.owner_contact_person || null,
+          phone: formData.owner_phone || null,
+          email: formData.owner_email || null,
+          region: formData.owner_region || null,
+          zone: formData.owner_zone || null,
+          woreda: formData.owner_woreda || null,
+          govt_id_business_reg: formData.owner_govt_id || null,
+          tax_id_vat: formData.owner_tax_id || null,
+          status: formData.owner_status,
+        } as any).select("id").single();
+        if (ownerErr) throw ownerErr;
+        ownerId = owner?.id;
       }
 
       const { error } = await supabase.from("vehicles").insert({
         ...data,
         organization_id: organizationId,
+        owner_id: ownerId,
       });
       if (error) throw error;
     },
     onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Vehicle added successfully",
-      });
+      toast({ title: "Success", description: "Vehicle added successfully" });
       queryClient.invalidateQueries({ queryKey: ["vehicles"] });
-      resetForm();
+      setFormData({ ...initialForm });
       onOpenChange(false);
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to add vehicle",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message || "Failed to add vehicle", variant: "destructive" });
     },
   });
 
-  const resetForm = () => {
-    setFormData({
-      plate_number: "",
-      make: "",
-      model: "",
-      year: new Date().getFullYear(),
-      vehicle_type: "",
-      assigned_driver_id: "",
-      vin: "",
-      color: "",
-      fuel_type: "diesel",
-      tank_capacity_liters: "",
-      odometer_km: "",
-      ownership_type: "owned",
-      status: "active",
-      notes: "",
-    });
-  };
-
   const handleSubmit = () => {
-    try {
-      const cleanData = {
-        plate_number: formData.plate_number,
-        make: formData.make,
-        model: formData.model,
-        year: formData.year,
-        vehicle_type: formData.vehicle_type || null,
-        assigned_driver_id: formData.assigned_driver_id || null,
-        vin: formData.vin || null,
-        color: formData.color || null,
-        fuel_type: formData.fuel_type || "diesel",
-        tank_capacity_liters: formData.tank_capacity_liters ? parseFloat(formData.tank_capacity_liters) : null,
-        odometer_km: formData.odometer_km ? parseFloat(formData.odometer_km) : null,
-        ownership_type: formData.ownership_type || null,
-        status: formData.status,
-        notes: formData.notes || null,
-      };
+    const cleanData: any = {
+      plate_number: plateNumber,
+      vehicle_type: formData.vehicle_type || null,
+      vehicle_group: formData.vehicle_group || null,
+      route_type: formData.route_type,
+      drive_type: formData.drive_type || null,
+      make: formData.make.trim(),
+      model: formData.model.trim(),
+      year: formData.year,
+      color: formData.color.trim() || null,
+      vin: formData.vin.trim() || null,
+      fuel_type: formData.fuel_type || "diesel",
+      vehicle_category: formData.vehicle_category || null,
+      registration_cert_no: formData.registration_cert_no.trim() || null,
+      registration_expiry: formData.registration_expiry || null,
+      insurance_policy_no: formData.insurance_policy_no.trim() || null,
+      insurance_expiry: formData.insurance_expiry || null,
+      commercial_permit: formData.commercial_permit === "true",
+      permit_expiry: formData.permit_expiry || null,
+      capacity_kg: formData.capacity_kg ? parseFloat(formData.capacity_kg) : null,
+      capacity_volume: formData.capacity_volume ? parseFloat(formData.capacity_volume) : null,
+      temperature_control: formData.temperature_control,
+      gps_installed: formData.gps_installed === "true",
+      gps_device_id: formData.gps_device_id.trim() || null,
+      odometer_km: formData.odometer_km ? parseFloat(formData.odometer_km) : null,
+      status: formData.status,
+      assigned_driver_id: formData.assigned_driver_id || null,
+      tank_capacity_liters: formData.tank_capacity_liters ? parseFloat(formData.tank_capacity_liters) : null,
+      notes: formData.notes.trim() || null,
+      is_active: formData.status !== "out_of_service",
+    };
 
-      vehicleSchema.parse(cleanData);
-      createMutation.mutate(cleanData);
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        toast({
-          title: "Validation Error",
-          description: error.errors[0].message,
-          variant: "destructive",
-        });
-      }
+    const validation = vehicleSchema.safeParse(cleanData);
+    if (!validation.success) {
+      toast({ title: "Validation Error", description: validation.error.errors[0].message, variant: "destructive" });
+      return;
     }
+    createMutation.mutate(cleanData);
   };
-
-  const activeDrivers = drivers.filter(d => d.status === 'active');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl w-[95vw] max-h-[95vh] p-0 gap-0">
+      <DialogContent className="max-w-5xl w-[95vw] max-h-[95vh] p-0 gap-0">
         <DialogHeader className="p-6 pb-4 border-b">
           <DialogTitle className="text-2xl flex items-center gap-2">
             <Truck className="w-6 h-6 text-primary" />
-            Add New Vehicle
+            Register New Vehicle
           </DialogTitle>
-          <DialogDescription>
-            Enter the vehicle details to add it to your fleet
-          </DialogDescription>
+          <DialogDescription>Enter vehicle details per the registration specification</DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="max-h-[calc(95vh-180px)]">
           <div className="p-6 space-y-6">
-            {/* Basic Information Section */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
-                <Truck className="w-5 h-5 text-primary" />
-                Basic Information
-              </h3>
+
+            {/* 2.1 Basic Vehicle Information */}
+            <Section icon={<Truck className="w-5 h-5 text-primary" />} title="Basic Vehicle Information">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="plate_number">Plate Number *</Label>
-                  <Input
-                    id="plate_number"
-                    value={formData.plate_number}
-                    onChange={(e) => setFormData({ ...formData, plate_number: e.target.value })}
-                    placeholder="AA-12345"
-                  />
+                {/* Composite Plate Number */}
+                <div className="md:col-span-3">
+                  <Label className="text-sm">Plate Number *</Label>
+                  <div className="grid grid-cols-3 gap-2 mt-1.5">
+                    <Select value={formData.plate_code} onValueChange={v => set("plate_code", v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {PLATE_CODES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <Select value={formData.plate_region} onValueChange={v => set("plate_region", v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {PLATE_REGIONS.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <Input value={formData.plate_number_part} onChange={e => set("plate_number_part", e.target.value.replace(/\D/g, "").slice(0, 5))} placeholder="12345" maxLength={5} />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Preview: {plateNumber}</p>
                 </div>
 
-                <div>
-                  <Label htmlFor="make">Make *</Label>
-                  <Input
-                    id="make"
-                    value={formData.make}
-                    onChange={(e) => setFormData({ ...formData, make: e.target.value })}
-                    placeholder="Toyota, Isuzu, etc."
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="model">Model *</Label>
-                  <Input
-                    id="model"
-                    value={formData.model}
-                    onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                    placeholder="Hilux, D-Max, etc."
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="year">Year *</Label>
-                  <Input
-                    id="year"
-                    type="number"
-                    value={formData.year}
-                    onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) || new Date().getFullYear() })}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="vehicle_type">Vehicle Type</Label>
-                  <Select 
-                    value={formData.vehicle_type} 
-                    onValueChange={(value) => setFormData({ ...formData, vehicle_type: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select type..." />
-                    </SelectTrigger>
+                <Field label="Vehicle Type *">
+                  <Select value={formData.vehicle_type} onValueChange={v => set("vehicle_type", v)}>
+                    <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
                     <SelectContent>
-                      {VEHICLE_TYPES.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
+                      {VEHICLE_TYPES_OPTIONS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="status">Status *</Label>
-                  <Select value={formData.status} onValueChange={(value: any) => setFormData({ ...formData, status: value })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
+                </Field>
+                <Field label="Group *">
+                  <Select value={formData.vehicle_group} onValueChange={v => set("vehicle_group", v)}>
+                    <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="maintenance">Maintenance</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
+                      {VEHICLE_GROUPS.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                </div>
+                </Field>
+                <Field label="Route Type *">
+                  <Select value={formData.route_type} onValueChange={v => set("route_type", v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {ROUTE_TYPES.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Drive Type *">
+                  <Select value={formData.drive_type} onValueChange={v => set("drive_type", v)}>
+                    <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                    <SelectContent>
+                      {DRIVE_TYPES.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Make *"><Input value={formData.make} onChange={e => set("make", e.target.value)} placeholder="e.g. Toyota" /></Field>
+                <Field label="Model *"><Input value={formData.model} onChange={e => set("model", e.target.value)} placeholder="e.g. Hilux" /></Field>
+                <Field label="Manufactured Year *">
+                  <Input type="number" value={formData.year} onChange={e => set("year", parseInt(e.target.value) || new Date().getFullYear())} placeholder="YYYY" />
+                </Field>
+                <Field label="Color"><Input value={formData.color} onChange={e => set("color", e.target.value)} placeholder="e.g. White" /></Field>
+                <Field label="Chassis Number (VIN)"><Input value={formData.vin} onChange={e => set("vin", e.target.value)} maxLength={17} /></Field>
+                <Field label="Energy Type">
+                  <Select value={formData.fuel_type} onValueChange={v => set("fuel_type", v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {ENERGY_TYPES.map(e => <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Vehicle Category">
+                  <Select value={formData.vehicle_category} onValueChange={v => set("vehicle_category", v)}>
+                    <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                    <SelectContent>
+                      {VEHICLE_CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </Field>
               </div>
-            </div>
+            </Section>
 
-            {/* Driver Assignment Section */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
-                <User className="w-5 h-5 text-primary" />
-                Driver Assignment
-              </h3>
+            {/* 2.2 Legal & Compliance */}
+            <Section icon={<Shield className="w-5 h-5 text-primary" />} title="Legal & Compliance">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Field label="Registration Certificate No"><Input value={formData.registration_cert_no} onChange={e => set("registration_cert_no", e.target.value)} /></Field>
+                <Field label="Registration Expiry"><Input type="date" value={formData.registration_expiry} onChange={e => set("registration_expiry", e.target.value)} /></Field>
+                <Field label="Insurance Policy No"><Input value={formData.insurance_policy_no} onChange={e => set("insurance_policy_no", e.target.value)} /></Field>
+                <Field label="Insurance Expiry"><Input type="date" value={formData.insurance_expiry} onChange={e => set("insurance_expiry", e.target.value)} /></Field>
+                <Field label="Commercial Permit">
+                  <Select value={formData.commercial_permit} onValueChange={v => set("commercial_permit", v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="false">No</SelectItem>
+                      <SelectItem value="true">Yes</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Permit Expiry"><Input type="date" value={formData.permit_expiry} onChange={e => set("permit_expiry", e.target.value)} /></Field>
+              </div>
+            </Section>
+
+            {/* 2.3 Operational Details */}
+            <Section icon={<Settings className="w-5 h-5 text-primary" />} title="Operational Details">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Field label="Load Capacity (kg)"><Input type="number" min={0} value={formData.capacity_kg} onChange={e => set("capacity_kg", e.target.value)} /></Field>
+                <Field label="Cargo Volume (m³)"><Input type="number" min={0} step={0.1} value={formData.capacity_volume} onChange={e => set("capacity_volume", e.target.value)} /></Field>
+                <Field label="Temperature Control">
+                  <Select value={formData.temperature_control} onValueChange={v => set("temperature_control", v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {TEMPERATURE_CONTROLS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="GPS Installed">
+                  <Select value={formData.gps_installed} onValueChange={v => set("gps_installed", v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="false">No</SelectItem>
+                      <SelectItem value="true">Yes</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="GPS Device ID"><Input value={formData.gps_device_id} onChange={e => set("gps_device_id", e.target.value)} disabled={formData.gps_installed !== "true"} /></Field>
+                <Field label="Odometer (km)"><Input type="number" min={0} value={formData.odometer_km} onChange={e => set("odometer_km", e.target.value)} /></Field>
+                <Field label="Tank Capacity (L)"><Input type="number" min={0} value={formData.tank_capacity_liters} onChange={e => set("tank_capacity_liters", e.target.value)} /></Field>
+                <Field label="Vehicle Status">
+                  <Select value={formData.status} onValueChange={v => set("status", v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {VEHICLE_STATUSES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </div>
+            </Section>
+
+            {/* Driver Assignment */}
+            <Section icon={<User className="w-5 h-5 text-primary" />} title="Driver Assignment">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="assigned_driver">Assigned Driver</Label>
-                  <Select 
-                    value={formData.assigned_driver_id || "none"} 
-                    onValueChange={(value) => setFormData({ ...formData, assigned_driver_id: value === "none" ? "" : value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select driver..." />
-                    </SelectTrigger>
+                <Field label="Assigned Driver">
+                  <Select value={formData.assigned_driver_id || "none"} onValueChange={v => set("assigned_driver_id", v === "none" ? "" : v)}>
+                    <SelectTrigger><SelectValue placeholder="Select driver..." /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">No driver assigned</SelectItem>
-                      {activeDrivers.map((driver) => (
-                        <SelectItem key={driver.id} value={driver.id}>
-                          {driver.first_name} {driver.last_name} - {driver.license_number}
-                        </SelectItem>
+                      {activeDrivers.map(d => (
+                        <SelectItem key={d.id} value={d.id}>{d.first_name} {d.last_name} - {d.license_number}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="color">Color</Label>
-                  <Input
-                    id="color"
-                    value={formData.color}
-                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                    placeholder="White, Blue, etc."
-                  />
-                </div>
+                </Field>
               </div>
-            </div>
+            </Section>
 
-            {/* Technical Details Section */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
-                <Gauge className="w-5 h-5 text-primary" />
-                Technical Details
-              </h3>
+            {/* 2.5 Vehicle Owner Information */}
+            <Section icon={<MapPin className="w-5 h-5 text-primary" />} title="Vehicle Owner Information">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="vin">VIN</Label>
-                  <Input
-                    id="vin"
-                    value={formData.vin}
-                    onChange={(e) => setFormData({ ...formData, vin: e.target.value })}
-                    placeholder="17-character VIN"
-                    maxLength={17}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="fuel_type">Fuel Type</Label>
-                  <Select value={formData.fuel_type} onValueChange={(value: any) => setFormData({ ...formData, fuel_type: value })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
+                <Field label="Owner Type *">
+                  <Select value={formData.owner_type} onValueChange={v => set("owner_type", v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="diesel">Diesel</SelectItem>
-                      <SelectItem value="petrol">Petrol</SelectItem>
-                      <SelectItem value="electric">Electric</SelectItem>
-                      <SelectItem value="hybrid">Hybrid</SelectItem>
+                      {OWNER_TYPES.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="tank_capacity">Tank Capacity (L)</Label>
-                  <Input
-                    id="tank_capacity"
-                    type="number"
-                    value={formData.tank_capacity_liters}
-                    onChange={(e) => setFormData({ ...formData, tank_capacity_liters: e.target.value })}
-                    placeholder="80"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="odometer">Odometer (km)</Label>
-                  <Input
-                    id="odometer"
-                    type="number"
-                    value={formData.odometer_km}
-                    onChange={(e) => setFormData({ ...formData, odometer_km: e.target.value })}
-                    placeholder="50000"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="ownership_type">Ownership Type</Label>
-                  <Select value={formData.ownership_type} onValueChange={(value: any) => setFormData({ ...formData, ownership_type: value })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
+                </Field>
+                <Field label="Full Name / Company Name"><Input value={formData.owner_full_name} onChange={e => set("owner_full_name", e.target.value)} /></Field>
+                <Field label="Assigned Location *">
+                  <Select value={formData.owner_department} onValueChange={v => set("owner_department", v)}>
+                    <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="owned">Owned</SelectItem>
-                      <SelectItem value="leased">Leased</SelectItem>
-                      <SelectItem value="rented">Rented</SelectItem>
+                      {["Corporate", "Zone", "Region"].map(group => (
+                        <SelectGroup key={group}>
+                          <SelectLabel>{group}</SelectLabel>
+                          {ASSIGNED_LOCATIONS.filter(l => l.group === group).map(l => (
+                            <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+                          ))}
+                        </SelectGroup>
+                      ))}
                     </SelectContent>
                   </Select>
-                </div>
+                </Field>
+                <Field label="Contact Person"><Input value={formData.owner_contact_person} onChange={e => set("owner_contact_person", e.target.value)} /></Field>
+                <Field label="Phone"><Input value={formData.owner_phone} onChange={e => set("owner_phone", e.target.value)} /></Field>
+                <Field label="Email"><Input type="email" value={formData.owner_email} onChange={e => set("owner_email", e.target.value)} /></Field>
+                <Field label="Region">
+                  <Select value={formData.owner_region} onValueChange={v => { set("owner_region", v); set("owner_zone", ""); set("owner_woreda", ""); }}>
+                    <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                    <SelectContent>
+                      {ADMIN_REGIONS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Zone"><Input value={formData.owner_zone} onChange={e => set("owner_zone", e.target.value)} disabled={!formData.owner_region} /></Field>
+                <Field label="Woreda"><Input value={formData.owner_woreda} onChange={e => set("owner_woreda", e.target.value)} disabled={!formData.owner_zone} /></Field>
+                <Field label="Gov't ID / Business Reg No"><Input value={formData.owner_govt_id} onChange={e => set("owner_govt_id", e.target.value)} /></Field>
+                <Field label="Tax ID / VAT Number"><Input value={formData.owner_tax_id} onChange={e => set("owner_tax_id", e.target.value)} /></Field>
+                <Field label="Owner Status">
+                  <Select value={formData.owner_status} onValueChange={v => set("owner_status", v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {OWNER_STATUSES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </Field>
               </div>
-            </div>
+            </Section>
 
-            {/* Notes Section */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
-                <FileText className="w-5 h-5 text-primary" />
-                Additional Information
-              </h3>
-              <div>
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="Additional information about the vehicle..."
-                  rows={4}
-                />
-              </div>
-            </div>
+            {/* Notes */}
+            <Section icon={<FileText className="w-5 h-5 text-primary" />} title="Additional Information">
+              <Textarea value={formData.notes} onChange={e => set("notes", e.target.value)} placeholder="Additional information..." rows={3} />
+            </Section>
+
           </div>
         </ScrollArea>
 
         <DialogFooter className="p-6 pt-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={handleSubmit} disabled={createMutation.isPending} className="min-w-[120px]">
             {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Add Vehicle
+            Register Vehicle
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-4">
+      <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">{icon}{title}</h3>
+      {children}
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-sm">{label}</Label>
+      {children}
+    </div>
   );
 }
