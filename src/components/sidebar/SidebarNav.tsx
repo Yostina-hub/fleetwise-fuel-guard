@@ -67,7 +67,7 @@ const getNavItemKey = (item: NavItem): string => {
   return item.label;
 };
 
-export function SidebarNav({ navItems, adminItems, isSuperAdmin, isOrgAdmin = false, isDark, isCollapsed = false }: SidebarNavProps) {
+export function SidebarNav({ navItems, adminItems, developerItems = [], isSuperAdmin, isOrgAdmin = false, isDark, isCollapsed = false }: SidebarNavProps) {
   const location = useLocation();
 
   // Separate pinned (quick) items from scrollable items
