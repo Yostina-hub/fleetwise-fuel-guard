@@ -17,23 +17,35 @@ import type { UserProfile } from "./UserTable";
 const ROLES = [
   { value: "super_admin", label: "Super Admin" },
   { value: "org_admin", label: "Org Admin" },
-  { value: "operator", label: "Operator" },
+  { value: "fleet_owner", label: "Fleet Owner" },
+  { value: "operations_manager", label: "Ops Manager" },
   { value: "fleet_manager", label: "Fleet Manager" },
+  { value: "dispatcher", label: "Dispatcher" },
+  { value: "fuel_controller", label: "Fuel Controller" },
+  { value: "maintenance_lead", label: "Maintenance Lead" },
+  { value: "operator", label: "Operator" },
   { value: "driver", label: "Driver" },
   { value: "technician", label: "Technician" },
-  { value: "viewer", label: "Viewer" },
   { value: "mechanic", label: "Mechanic" },
+  { value: "auditor", label: "Auditor" },
+  { value: "viewer", label: "Viewer" },
 ];
 
 const ROLE_COLORS: Record<string, string> = {
   super_admin: "bg-destructive/15 text-destructive border-destructive/30",
   org_admin: "bg-primary/15 text-primary border-primary/30",
+  fleet_owner: "bg-violet-500/15 text-violet-400 border-violet-500/30",
+  operations_manager: "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
   fleet_manager: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+  dispatcher: "bg-sky-500/15 text-sky-400 border-sky-500/30",
+  fuel_controller: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
+  maintenance_lead: "bg-orange-500/15 text-orange-400 border-orange-500/30",
   operator: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
   driver: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
   technician: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  viewer: "bg-muted text-muted-foreground border-border",
   mechanic: "bg-orange-500/15 text-orange-400 border-orange-500/30",
+  auditor: "bg-purple-500/15 text-purple-400 border-purple-500/30",
+  viewer: "bg-muted text-muted-foreground border-border",
 };
 
 interface UserDetailDialogProps {
