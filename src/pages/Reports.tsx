@@ -133,6 +133,7 @@ const Reports = () => {
     { id: "driver", label: t('drivers.title', 'Driver'), icon: Users },
     { id: "location", label: t('geofencing.title', 'Location'), icon: MapPin },
     { id: "fuel", label: t('fuel.title', 'Fuel'), icon: Fuel },
+    { id: "ev", label: "EV Charging", icon: Battery },
     { id: "trips", label: t('nav.trips', 'Trips'), icon: Route },
     { id: "maintenance", label: t('maintenance.title', 'Maintenance'), icon: Wrench },
     { id: "dispatch", label: t('dispatch.title', 'Dispatch'), icon: ClipboardList },
@@ -169,10 +170,19 @@ const Reports = () => {
           { id: "transactions", label: "Transactions" },
           { id: "events", label: "Fill/Drain Events" },
           { id: "theft", label: "Theft Cases" },
+          { id: "authorization", label: "Clearance & Authorization" },
+          { id: "consumption", label: "Full Consumption Report" },
+          { id: "fillup_location", label: "Fillup Locations" },
           { id: "mileage_fuel", label: "Daily Mileage & Fuel" },
           { id: "fuel_speedometer", label: "Fuel Mileage Speedometer" },
           { id: "refueling", label: "Refueling Report" },
           { id: "fuel_drain", label: "Fuel Drain Report" },
+        ];
+      case "ev":
+        return [
+          { id: "charging_sessions", label: "Charging Sessions (kW)" },
+          { id: "charge_state", label: "Charge State" },
+          { id: "ev_cost", label: "Cost Analysis" },
         ];
       case "trips":
         return [
