@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,9 +21,22 @@ const Incidents = () => {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "incidents";
+  const [openCreateDialog, setOpenCreateDialog] = useState(false);
 
   const handleTabChange = (value: string) => {
     setSearchParams(value === "incidents" ? {} : { tab: value });
+  };
+
+  const handleReportIncident = () => {
+    // Switch to incidents tab and open create dialog
+    if (activeTab !== "incidents") {
+      handleTabChange("incidents");
+    }
+    setOpenCreateDialog(true);
+  };
+
+  const handleFileClaim = () => {
+    handleTabChange("claims");
   };
 
   return (
@@ -44,7 +58,10 @@ const Incidents = () => {
         <IncidentQuickStats />
 
         {/* Quick Actions */}
-        <IncidentQuickActions />
+        <IncidentQuickActions
+          onCreateIncident={handleReportIncident}
+          onFileClaim={handleFileClaim}
+        />
 
         {/* Insights Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -90,7 +107,10 @@ const Incidents = () => {
           </TabsList>
 
           <TabsContent value="incidents">
-            <IncidentsListTab />
+            <IncidentsListTab
+              externalCreateOpen={openCreateDialog}
+              onExternalCreateClose={() => setOpenCreateDialog(false)}
+            />
           </TabsContent>
 
           <TabsContent value="claims">
