@@ -251,13 +251,21 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
 
             <div className="rounded-lg bg-muted/20 border border-border/30 p-3 space-y-2">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Role Guide</p>
-              <div className="grid gap-1.5 text-xs">
+              <div className="grid gap-1.5 text-xs max-h-40 overflow-y-auto">
                 <div><span className="font-medium text-destructive">Super Admin</span> — Full system access, all organizations</div>
                 <div><span className="font-medium text-primary">Org Admin</span> — Full access within their organization</div>
+                <div><span className="font-medium text-violet-400">Fleet Owner</span> — Owner-level fleet visibility</div>
+                <div><span className="font-medium text-indigo-400">Ops Manager</span> — Day-to-day fleet operations management</div>
                 <div><span className="font-medium text-blue-400">Fleet Manager</span> — Manage vehicles, routes, and schedules</div>
+                <div><span className="font-medium text-sky-400">Dispatcher</span> — Assign jobs and monitor live fleet</div>
+                <div><span className="font-medium text-yellow-400">Fuel Controller</span> — Fuel monitoring and management</div>
+                <div><span className="font-medium text-orange-400">Maintenance Lead</span> — Maintenance and work orders</div>
                 <div><span className="font-medium text-cyan-400">Operator</span> — Day-to-day fleet operations</div>
                 <div><span className="font-medium text-emerald-400">Driver</span> — Trips, logbooks, and incidents</div>
                 <div><span className="font-medium text-amber-400">Technician</span> — Maintenance and inspections</div>
+                <div><span className="font-medium text-orange-400">Mechanic</span> — Hands-on vehicle repairs</div>
+                <div><span className="font-medium text-purple-400">Auditor</span> — Read-only compliance and audit</div>
+                <div><span className="font-medium text-muted-foreground">Viewer</span> — Read-only dashboard access</div>
               </div>
             </div>
           </TabsContent>
