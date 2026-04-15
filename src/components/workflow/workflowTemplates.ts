@@ -846,42 +846,54 @@ const TEMPLATES: WorkflowTemplate[] = [
   // ═══════════════════════════════════════════════════════════════
   // INCIDENT TYPE 2: ETHIO TELECOM FAULT ON THIRD PARTY
   // ═══════════════════════════════════════════════════════════════
+  // INCIDENT TYPE 2: ETHIO TELECOM'S FAULT ON THIRD PARTY
+  // ═══════════════════════════════════════════════════════════════
   {
     id: "tpl_incident_et_fault_third_party",
     name: "Incident: ET Fault on Third Party",
-    description: "Workflow when Ethio Telecom vehicle/driver is at fault and damages a third party. Driver reports → fleet analyzes → insurance notification → third-party damage assessment → negotiate settlement → process insurance claim → repair third-party property → close case.",
+    description: "Ethio Telecom vehicle/driver at fault causing damage to third party. Driver reports to police → fills claim notification with fleet inspector → fleet reviews completeness → sends claim documents → insurance management completes form & sends to insurer → insurance coverage check → deal with third party → inform finance → send notification to fleet management.",
     category: "maintenance",
     icon: "🛡️",
     difficulty: "advanced",
     estimatedSavings: "~30% faster claim resolution",
     tags: ["accident", "insurance", "third-party", "fault", "settlement", "claim", "incident"],
     nodes: [
-      { id: "t1", type: "trigger", position: { x: 300, y: 50 }, data: { label: "Driver Reports Accident", description: "Driver reports accident where ET vehicle caused damage to third party", icon: "📝", category: "triggers", nodeType: "trigger_event", config: { eventType: "accident_report_et_fault" }, status: "idle", isConfigured: true } },
-      { id: "a1", type: "action", position: { x: 300, y: 220 }, data: { label: "Analyze Document & Accident", description: "Fleet Operation reviews accident report, police report, and evidence", icon: "🔍", category: "data", nodeType: "data_lookup", config: { table: "accident_claims", action: "review_et_fault" }, status: "idle", isConfigured: true } },
-      { id: "a2", type: "action", position: { x: 300, y: 390 }, data: { label: "Notify Insurance Company", description: "Notify insurer of ET fault incident with all documentation (ERM-INM 06)", icon: "📞", category: "notifications", nodeType: "notify_email", config: { recipients: "insurance_company", template: "et_fault_notification" }, status: "idle", isConfigured: true } },
-      { id: "a3", type: "action", position: { x: 300, y: 560 }, data: { label: "Assess Third-Party Damage", description: "Evaluate damage to third-party vehicle/property with adjuster", icon: "📋", category: "data", nodeType: "data_log_history", config: { table: "accident_claims", action: "third_party_assessment" }, status: "idle", isConfigured: true } },
-      { id: "c1", type: "condition", position: { x: 300, y: 730 }, data: { label: "Insurance Accepts Liability?", description: "Does insurance company accept the claim for third-party damages?", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "claim.liability_accepted", operator: "equals", rightOperand: "true" }, status: "idle", isConfigured: true } },
-      { id: "a4", type: "action", position: { x: 50, y: 900 }, data: { label: "Insurance Processes Claim", description: "Insurance company processes and pays third-party claim", icon: "💰", category: "data", nodeType: "data_aggregate", config: { operation: "insurance_payout" }, status: "idle", isConfigured: true } },
-      { id: "a5", type: "action", position: { x: 50, y: 1070 }, data: { label: "Negotiate Settlement with Third Party", description: "Coordinate settlement and payment to injured third party", icon: "🤝", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "settlement_negotiation" }, status: "idle", isConfigured: true } },
-      { id: "a6", type: "action", position: { x: 550, y: 900 }, data: { label: "ET Self-Funds Third-Party Repair", description: "Insurance rejected — ET bears repair cost for third-party damage", icon: "🏗️", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "self_fund_repair" }, status: "idle", isConfigured: true } },
-      { id: "c2", type: "condition", position: { x: 550, y: 730 }, data: { label: "Driver Negligence?", description: "Was driver negligence the root cause?", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "investigation.negligence", operator: "equals", rightOperand: "true" }, status: "idle", isConfigured: true } },
-      { id: "a7", type: "action", position: { x: 550, y: 560 }, data: { label: "Employee Discipline Procedure", description: "Initiate disciplinary action against negligent driver", icon: "⚠️", category: "notifications", nodeType: "notify_email", config: { recipients: "hr_department", template: "discipline_action" }, status: "idle", isConfigured: true } },
-      { id: "a8", type: "action", position: { x: 300, y: 1070 }, data: { label: "Repair ET Vehicle (if damaged)", description: "Process repairs for Ethio Telecom vehicle if also damaged", icon: "🔧", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "et_vehicle_repair" }, status: "idle", isConfigured: true } },
-      { id: "a9", type: "action", position: { x: 300, y: 1240 }, data: { label: "Close Case & Archive", description: "Finalize all claims, archive documents, update vehicle/driver records", icon: "📦", category: "data", nodeType: "data_log_history", config: { table: "accident_claims", action: "close_case" }, status: "idle", isConfigured: true } },
+      // Driver lane
+      { id: "t1", type: "trigger", position: { x: 300, y: 50 }, data: { label: "1- Report to Police & Obtain Report", description: "Driver reports to police and obtains police report", icon: "🚔", category: "triggers", nodeType: "trigger_event", config: { eventType: "accident_report_et_fault" }, status: "idle", isConfigured: true } },
+      { id: "a1", type: "action", position: { x: 300, y: 200 }, data: { label: "2- Complete Claim Notification Form", description: "Complete claim notification form with Fleet Inspector & report accident to Fleet Operation (Internal Claim Notification Form, Email, Phone)", icon: "📝", category: "data", nodeType: "data_log_history", config: { table: "accident_claims", action: "fill_claim_form" }, status: "idle", isConfigured: true } },
+      // Fleet Operation lane
+      { id: "a2", type: "action", position: { x: 300, y: 370 }, data: { label: "3- Review Claim for Completeness", description: "Fleet Operation Section reviews the claim notification for completeness", icon: "🔍", category: "data", nodeType: "data_lookup", config: { table: "accident_claims", action: "review_completeness" }, status: "idle", isConfigured: true } },
+      { id: "c1", type: "condition", position: { x: 300, y: 530 }, data: { label: "Complete/Correct?", description: "Is the claim notification complete and correct?", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "claim.is_complete", operator: "equals", rightOperand: "true" }, status: "idle", isConfigured: true } },
+      { id: "a3", type: "action", position: { x: 100, y: 690 }, data: { label: "4- Send the Claim Documents", description: "Fleet Operation sends claim documents to Insurance Management", icon: "📤", category: "notifications", nodeType: "notify_email", config: { recipients: "insurance_management", template: "claim_documents" }, status: "idle", isConfigured: true } },
+      // Insurance Management lane
+      { id: "a4", type: "action", position: { x: 100, y: 860 }, data: { label: "5- Complete & Send to Insurance Co.", description: "Insurance Management completes claim form and sends documents to insurance company (Claim Notification Form)", icon: "📋", category: "data", nodeType: "data_log_history", config: { table: "accident_claims", action: "submit_to_insurer" }, status: "idle", isConfigured: true } },
+      // Insurance Company lane
+      { id: "c2", type: "condition", position: { x: 100, y: 1030 }, data: { label: "Within Insurance Coverage?", description: "Is the damage within the scope of insurance coverage?", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "claim.within_coverage", operator: "equals", rightOperand: "true" }, status: "idle", isConfigured: true } },
+      { id: "a5", type: "action", position: { x: 100, y: 1200 }, data: { label: "6- Deal with the Third Party", description: "Insurance company deals directly with the third party for settlement", icon: "🤝", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "deal_with_third_party" }, status: "idle", isConfigured: true } },
+      // Within limit check
+      { id: "c3", type: "condition", position: { x: 400, y: 1200 }, data: { label: "Within the Limit?", description: "Is the claim amount within the coverage limit?", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "claim.within_limit", operator: "equals", rightOperand: "true" }, status: "idle", isConfigured: true } },
+      // Insurance Management - Finance path
+      { id: "a6", type: "action", position: { x: 400, y: 860 }, data: { label: "7- Inform Finance to Settle", description: "Inform finance to settle payment with necessary documents", icon: "💰", category: "notifications", nodeType: "notify_email", config: { recipients: "finance_department", template: "settle_payment" }, status: "idle", isConfigured: true } },
+      // Account Payable
+      { id: "a7", type: "action", position: { x: 600, y: 690 }, data: { label: "FAM-APY 01 Account Payable", description: "Account Payable and Disbursement Section processes payment", icon: "🏦", category: "data", nodeType: "data_aggregate", config: { operation: "process_payment" }, status: "idle", isConfigured: true } },
+      // Final notification
+      { id: "a8", type: "action", position: { x: 600, y: 860 }, data: { label: "8- Send Notification to Fleet Mgmt", description: "Send notification letter to concerned Fleet Operation Management", icon: "📨", category: "notifications", nodeType: "notify_email", config: { recipients: "fleet_management", template: "case_notification" }, status: "idle", isConfigured: true } },
     ],
     edges: [
       { id: "e1", source: "t1", target: "a1", type: "smoothstep", animated: true },
       { id: "e2", source: "a1", target: "a2", type: "smoothstep", animated: true },
-      { id: "e3", source: "a2", target: "a3", type: "smoothstep", animated: true },
-      { id: "e4", source: "a3", target: "c1", type: "smoothstep", animated: true },
-      { id: "e5", source: "c1", target: "a4", sourceHandle: "true", type: "smoothstep", animated: true, label: "Yes" },
-      { id: "e6", source: "a4", target: "a5", type: "smoothstep", animated: true },
-      { id: "e7", source: "c1", target: "a6", sourceHandle: "false", type: "smoothstep", animated: true, label: "No" },
-      { id: "e8", source: "a6", target: "c2", type: "smoothstep", animated: true },
-      { id: "e9", source: "c2", target: "a7", sourceHandle: "true", type: "smoothstep", animated: true, label: "Yes" },
-      { id: "e10", source: "c2", target: "a8", sourceHandle: "false", type: "smoothstep", animated: true, label: "No" },
-      { id: "e11", source: "a5", target: "a8", type: "smoothstep", animated: true },
-      { id: "e12", source: "a8", target: "a9", type: "smoothstep", animated: true },
+      { id: "e3", source: "a2", target: "c1", type: "smoothstep", animated: true },
+      { id: "e4", source: "c1", target: "a2", sourceHandle: "false", type: "smoothstep", animated: true, label: "No (Return)" },
+      { id: "e5", source: "c1", target: "a3", sourceHandle: "true", type: "smoothstep", animated: true, label: "Yes" },
+      { id: "e6", source: "a3", target: "a4", type: "smoothstep", animated: true },
+      { id: "e7", source: "a4", target: "c2", type: "smoothstep", animated: true },
+      { id: "e8", source: "c2", target: "a5", sourceHandle: "true", type: "smoothstep", animated: true, label: "Yes" },
+      { id: "e9", source: "c2", target: "c3", sourceHandle: "false", type: "smoothstep", animated: true, label: "No" },
+      { id: "e10", source: "a5", target: "a6", type: "smoothstep", animated: true },
+      { id: "e11", source: "c3", target: "a8", sourceHandle: "true", type: "smoothstep", animated: true, label: "Yes (End)" },
+      { id: "e12", source: "c3", target: "a6", sourceHandle: "false", type: "smoothstep", animated: true, label: "No" },
+      { id: "e13", source: "a6", target: "a7", type: "smoothstep", animated: true },
+      { id: "e14", source: "a7", target: "a8", type: "smoothstep", animated: true },
     ],
   },
 
@@ -891,55 +903,84 @@ const TEMPLATES: WorkflowTemplate[] = [
   {
     id: "tpl_incident_third_party_damages_et",
     name: "Incident: Third Party Damages ET Vehicle",
-    description: "Workflow when a third party damages an Ethio Telecom vehicle. Driver reports → fleet analyzes → collect third-party info → file insurance claim against third party → pursue recovery → repair ET vehicle → close case.",
+    description: "Third party damages Ethio Telecom vehicle. Driver reports to police → fills claim notification → insurance management analyzes → coverage check → request quotation from third-party garage → select least price → send vehicle to winner garage → receive & maintain vehicle → follow up → report completion → check maintenance quality → return/collect vehicle → provide receipt to insurance → request compensation → sign copy → collect agreed amount → inform finance → update/archive → legal representation if needed.",
     category: "maintenance",
     icon: "🚗",
     difficulty: "advanced",
     estimatedSavings: "~50% cost recovery rate",
-    tags: ["accident", "insurance", "third-party", "damage", "recovery", "claim", "incident"],
+    tags: ["accident", "insurance", "third-party", "damage", "recovery", "claim", "incident", "legal"],
     nodes: [
-      { id: "t1", type: "trigger", position: { x: 300, y: 50 }, data: { label: "Driver Reports Accident", description: "Driver reports accident where third party damaged ET vehicle", icon: "📝", category: "triggers", nodeType: "trigger_event", config: { eventType: "accident_report_tp_fault" }, status: "idle", isConfigured: true } },
-      { id: "a1", type: "action", position: { x: 300, y: 220 }, data: { label: "Analyze Document & Accident", description: "Fleet Operation reviews accident report, police report, and dashcam evidence", icon: "🔍", category: "data", nodeType: "data_lookup", config: { table: "accident_claims", action: "review_tp_fault" }, status: "idle", isConfigured: true } },
-      { id: "a2", type: "action", position: { x: 300, y: 390 }, data: { label: "Collect Third-Party Information", description: "Record third-party driver details, insurance, license plate, and contact info", icon: "🪪", category: "data", nodeType: "data_log_history", config: { table: "accident_claims", action: "collect_tp_info" }, status: "idle", isConfigured: true } },
-      { id: "c1", type: "condition", position: { x: 300, y: 560 }, data: { label: "Third Party Has Insurance?", description: "Does the at-fault third party have valid insurance?", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "third_party.has_insurance", operator: "equals", rightOperand: "true" }, status: "idle", isConfigured: true } },
-      // Third party insured path
-      { id: "a3", type: "action", position: { x: 50, y: 730 }, data: { label: "File Claim Against TP Insurance", description: "File damage claim against third party's insurance company", icon: "📄", category: "data", nodeType: "data_log_history", config: { table: "accident_claims", action: "file_tp_claim" }, status: "idle", isConfigured: true } },
-      { id: "a4", type: "action", position: { x: 50, y: 900 }, data: { label: "Follow Up on TP Insurance Claim", description: "Track claim progress with third-party insurer", icon: "📞", category: "notifications", nodeType: "notify_email", config: { recipients: "legal_department", template: "tp_claim_followup" }, status: "idle", isConfigured: true } },
-      { id: "c2", type: "condition", position: { x: 50, y: 1070 }, data: { label: "TP Insurance Pays?", description: "Has the third-party insurance approved and paid the claim?", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "tp_claim.paid", operator: "equals", rightOperand: "true" }, status: "idle", isConfigured: true } },
-      { id: "a5", type: "action", position: { x: -200, y: 1070 }, data: { label: "Receive TP Insurance Payment", description: "Process and record insurance payment received from third party", icon: "💰", category: "data", nodeType: "data_aggregate", config: { operation: "receive_tp_payment" }, status: "idle", isConfigured: true } },
-      // Third party uninsured path
-      { id: "a6", type: "action", position: { x: 550, y: 730 }, data: { label: "Initiate Legal Recovery", description: "Pursue legal action or direct recovery from uninsured third party", icon: "⚖️", category: "data", nodeType: "data_log_history", config: { table: "accident_claims", action: "legal_recovery" }, status: "idle", isConfigured: true } },
-      { id: "a7", type: "action", position: { x: 550, y: 900 }, data: { label: "Use ET Insurance (Comprehensive)", description: "File under Ethio Telecom comprehensive coverage for uninsured motorist", icon: "🛡️", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "et_comprehensive_claim" }, status: "idle", isConfigured: true } },
-      // Common repair path
-      { id: "a8", type: "action", position: { x: 300, y: 1240 }, data: { label: "Assess ET Vehicle Damage", description: "Detailed damage assessment and repair cost estimation for ET vehicle", icon: "🔧", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "damage_assessment" }, status: "idle", isConfigured: true } },
-      { id: "c3", type: "condition", position: { x: 300, y: 1410 }, data: { label: "Existing Contract for Repair?", description: "Can repairs be done under existing maintenance contract?", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "contract.exists", operator: "equals", rightOperand: "true" }, status: "idle", isConfigured: true } },
-      { id: "a9", type: "action", position: { x: 50, y: 1410 }, data: { label: "Repair via Contract (FMG-FMG 05)", description: "Execute repairs under existing maintenance contract", icon: "📄", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "contract_repair" }, status: "idle", isConfigured: true } },
-      { id: "a10", type: "action", position: { x: 550, y: 1410 }, data: { label: "Procure Repair Service", description: "Initiate procurement for repair — supplier shortlist, RFQ, and selection", icon: "🛒", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "procurement_repair" }, status: "idle", isConfigured: true } },
-      { id: "a11", type: "action", position: { x: 300, y: 1580 }, data: { label: "Complete Repair & Return Vehicle", description: "Finalize repairs, QA inspection, and return vehicle to active fleet", icon: "✅", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "repair_complete" }, status: "idle", isConfigured: true } },
-      { id: "a12", type: "action", position: { x: 300, y: 1750 }, data: { label: "Close Case & Archive", description: "Finalize all claims, archive documents, update vehicle/driver records", icon: "📦", category: "data", nodeType: "data_log_history", config: { table: "accident_claims", action: "close_case" }, status: "idle", isConfigured: true } },
+      // Fleet Operation / Driver lane
+      { id: "t1", type: "trigger", position: { x: 200, y: 50 }, data: { label: "1- Driver Reports to Police", description: "Driver reports to police and obtains police report", icon: "🚔", category: "triggers", nodeType: "trigger_event", config: { eventType: "accident_report_tp_fault" }, status: "idle", isConfigured: true } },
+      { id: "a1", type: "action", position: { x: 200, y: 200 }, data: { label: "2- Fill Claim Notification", description: "Fill the claim notification with fleet inspector and send the accident report (Internal Claim Notification Form, Email, Phone)", icon: "📝", category: "data", nodeType: "data_log_history", config: { table: "accident_claims", action: "fill_claim_form" }, status: "idle", isConfigured: true } },
+      // Insurance Management lane
+      { id: "a2", type: "action", position: { x: 200, y: 370 }, data: { label: "3- Analyze Claim Notification", description: "Insurance Management analyzes the claim notification", icon: "🔍", category: "data", nodeType: "data_lookup", config: { table: "accident_claims", action: "analyze_claim" }, status: "idle", isConfigured: true } },
+      { id: "c1", type: "condition", position: { x: 200, y: 530 }, data: { label: "Covered by Insurance Policy?", description: "Is the damage covered by an insurance policy?", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "claim.covered_by_insurance", operator: "equals", rightOperand: "true" }, status: "idle", isConfigured: true } },
+      // NOT covered path → FMG-FMG 18
+      { id: "a3", type: "action", position: { x: -100, y: 530 }, data: { label: "FMG-FMG 18: Not Covered", description: "Vehicle Accident Maintenance Management not Covered by Insurance (redirect to not-covered workflow)", icon: "🔄", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "redirect_not_covered" }, status: "idle", isConfigured: true } },
+      // Covered path → Fleet Management / Sourcing
+      { id: "a4", type: "action", position: { x: 200, y: 700 }, data: { label: "4- Request Quotation from Garage", description: "Request quotation from garage recommended by third party or its insurer & customer garage", icon: "📋", category: "data", nodeType: "data_log_history", config: { table: "accident_claims", action: "request_quotation" }, status: "idle", isConfigured: true } },
+      { id: "a5", type: "action", position: { x: 500, y: 700 }, data: { label: "5- Select Least Price Quotation", description: "Select the least price from quotation and send to be communicated (Email)", icon: "💲", category: "data", nodeType: "data_aggregate", config: { operation: "select_least_price" }, status: "idle", isConfigured: true } },
+      { id: "a6", type: "action", position: { x: 500, y: 530 }, data: { label: "SCM-Pro 05: Service/Work Delivery", description: "SCM-Pro 05 Service or Work Delivery Confirmation (PO or Contract) Process", icon: "📄", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "service_delivery_confirmation" }, status: "idle", isConfigured: true } },
+      // Winner garage
+      { id: "a7", type: "action", position: { x: 700, y: 370 }, data: { label: "6a- Inform Winner Garage", description: "Inform the winner garage to conduct the repair with the Third Party/Insurance Company", icon: "🏭", category: "notifications", nodeType: "notify_email", config: { recipients: "winner_garage", template: "repair_order" }, status: "idle", isConfigured: true } },
+      { id: "a8", type: "action", position: { x: 700, y: 200 }, data: { label: "7- Send Vehicle to Winner Garage", description: "Fleet Operation sends vehicle to winner/supplier garage with approved Work Order", icon: "🚛", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "send_to_garage" }, status: "idle", isConfigured: true } },
+      // Selected Supplier Garage lane
+      { id: "a9", type: "action", position: { x: 500, y: 200 }, data: { label: "8- Receive & Maintain Vehicle", description: "Receive the vehicle and maintain as per Work Order and agreement", icon: "🔧", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "perform_maintenance" }, status: "idle", isConfigured: true } },
+      // Fleet Maintenance follow-up
+      { id: "a10", type: "action", position: { x: 350, y: 870 }, data: { label: "9- Follow Up the Maintenance", description: "Fleet Maintenance Section follows up on the maintenance progress", icon: "👀", category: "data", nodeType: "data_lookup", config: { table: "maintenance_tasks", action: "follow_up" }, status: "idle", isConfigured: true } },
+      { id: "a11", type: "action", position: { x: 500, y: 870 }, data: { label: "10- Report Maintenance Complete", description: "Report maintenance completed and request for payment", icon: "✅", category: "data", nodeType: "data_log_history", config: { table: "maintenance_tasks", action: "report_complete" }, status: "idle", isConfigured: true } },
+      { id: "c2", type: "condition", position: { x: 500, y: 1040 }, data: { label: "Maintenance OK per WO?", description: "Check if the maintenance is performed as per Work Order", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "maintenance.quality_ok", operator: "equals", rightOperand: "true" }, status: "idle", isConfigured: true } },
+      { id: "a12", type: "action", position: { x: 700, y: 1040 }, data: { label: "12- Return Vehicle to Garage", description: "Return the vehicle to garage for rework (not OK)", icon: "🔄", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "return_to_garage" }, status: "idle", isConfigured: true } },
+      // Collect vehicle
+      { id: "a13", type: "action", position: { x: 200, y: 1040 }, data: { label: "14- Collect Maintained Vehicle", description: "Collect the maintained vehicle & recovery/salvage from garage and return to third party", icon: "🚗", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "collect_vehicle" }, status: "idle", isConfigured: true } },
+      // Provide receipt
+      { id: "a14", type: "action", position: { x: 200, y: 1210 }, data: { label: "6b- Provide Pro Forma Invoice", description: "Provide required original pro forma invoice to Insurance Management Section", icon: "🧾", category: "data", nodeType: "data_log_history", config: { table: "accident_claims", action: "provide_invoice" }, status: "idle", isConfigured: true } },
+      // Disbursement lane
+      { id: "a15", type: "action", position: { x: 200, y: 1380 }, data: { label: "13a- Provide Original Receipt", description: "Provide original payment receipt to Insurance Management Section/Regional Facilities", icon: "🧾", category: "data", nodeType: "data_log_history", config: { table: "accident_claims", action: "provide_receipt" }, status: "idle", isConfigured: true } },
+      // Insurance Management - Compensation
+      { id: "a16", type: "action", position: { x: 500, y: 1210 }, data: { label: "16- Request Claim Compensation", description: "Request claim compensation from third party or its insurer", icon: "💰", category: "notifications", nodeType: "notify_email", config: { recipients: "third_party_insurer", template: "claim_compensation" }, status: "idle", isConfigured: true } },
+      { id: "c3", type: "condition", position: { x: 500, y: 1380 }, data: { label: "Agreed?", description: "Has the third party/insurer agreed to the compensation amount?", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "compensation.agreed", operator: "equals", rightOperand: "true" }, status: "idle", isConfigured: true } },
+      { id: "a17", type: "action", position: { x: 300, y: 1550 }, data: { label: "15- Sign Copy of Receipt", description: "Sign on copy of receipt and collect original", icon: "✍️", category: "data", nodeType: "data_log_history", config: { table: "accident_claims", action: "sign_receipt" }, status: "idle", isConfigured: true } },
+      { id: "a18", type: "action", position: { x: 300, y: 1720 }, data: { label: "17- Inform Finance to Collect", description: "Inform finance to collect agreed amount", icon: "🏦", category: "notifications", nodeType: "notify_email", config: { recipients: "finance_department", template: "collect_amount" }, status: "idle", isConfigured: true } },
+      { id: "a19", type: "action", position: { x: 500, y: 1550 }, data: { label: "18- Collect Agreed Amount", description: "Collect agreed amount from third party/insurer", icon: "💵", category: "data", nodeType: "data_aggregate", config: { operation: "collect_payment" }, status: "idle", isConfigured: true } },
+      // Fleet Management - Collect vehicle & salvage
+      { id: "a20", type: "action", position: { x: 700, y: 1210 }, data: { label: "13b- Inform to Collect Vehicle", description: "Inform to collect the maintained vehicle & salvage", icon: "📞", category: "notifications", nodeType: "notify_email", config: { recipients: "fleet_management", template: "collect_vehicle" }, status: "idle", isConfigured: true } },
+      // Legal Division
+      { id: "a21", type: "action", position: { x: 700, y: 1550 }, data: { label: "SER-LGM 06: Legal Representation", description: "Represent ET as a Plaintiff (legal recovery path when not agreed)", icon: "⚖️", category: "data", nodeType: "data_log_history", config: { table: "accident_claims", action: "legal_representation" }, status: "idle", isConfigured: true } },
+      { id: "a22", type: "action", position: { x: 700, y: 1720 }, data: { label: "20- Inform Result to Insurance Mgmt", description: "Inform the legal result to Insurance Management Section", icon: "📨", category: "notifications", nodeType: "notify_email", config: { recipients: "insurance_management", template: "legal_result" }, status: "idle", isConfigured: true } },
+      // Archive
+      { id: "a23", type: "action", position: { x: 500, y: 1720 }, data: { label: "19- Update/Archive Document", description: "Update and archive all case documents", icon: "📦", category: "data", nodeType: "data_log_history", config: { table: "accident_claims", action: "archive_case" }, status: "idle", isConfigured: true } },
     ],
     edges: [
       { id: "e1", source: "t1", target: "a1", type: "smoothstep", animated: true },
       { id: "e2", source: "a1", target: "a2", type: "smoothstep", animated: true },
       { id: "e3", source: "a2", target: "c1", type: "smoothstep", animated: true },
-      // TP insured
-      { id: "e4", source: "c1", target: "a3", sourceHandle: "true", type: "smoothstep", animated: true, label: "Yes" },
-      { id: "e5", source: "a3", target: "a4", type: "smoothstep", animated: true },
-      { id: "e6", source: "a4", target: "c2", type: "smoothstep", animated: true },
-      { id: "e7", source: "c2", target: "a5", sourceHandle: "true", type: "smoothstep", animated: true, label: "Yes" },
-      { id: "e8", source: "c2", target: "a8", sourceHandle: "false", type: "smoothstep", animated: true, label: "No" },
-      { id: "e9", source: "a5", target: "a8", type: "smoothstep", animated: true },
-      // TP uninsured
-      { id: "e10", source: "c1", target: "a6", sourceHandle: "false", type: "smoothstep", animated: true, label: "No" },
-      { id: "e11", source: "a6", target: "a7", type: "smoothstep", animated: true },
-      { id: "e12", source: "a7", target: "a8", type: "smoothstep", animated: true },
-      // Common repair path
-      { id: "e13", source: "a8", target: "c3", type: "smoothstep", animated: true },
-      { id: "e14", source: "c3", target: "a9", sourceHandle: "true", type: "smoothstep", animated: true, label: "Yes" },
-      { id: "e15", source: "c3", target: "a10", sourceHandle: "false", type: "smoothstep", animated: true, label: "No" },
-      { id: "e16", source: "a9", target: "a11", type: "smoothstep", animated: true },
-      { id: "e17", source: "a10", target: "a11", type: "smoothstep", animated: true },
-      { id: "e18", source: "a11", target: "a12", type: "smoothstep", animated: true },
+      { id: "e4", source: "c1", target: "a3", sourceHandle: "false", type: "smoothstep", animated: true, label: "No" },
+      { id: "e5", source: "c1", target: "a4", sourceHandle: "true", type: "smoothstep", animated: true, label: "Yes" },
+      { id: "e6", source: "a4", target: "a5", type: "smoothstep", animated: true },
+      { id: "e7", source: "a5", target: "a6", type: "smoothstep", animated: true },
+      { id: "e8", source: "a6", target: "a7", type: "smoothstep", animated: true },
+      { id: "e9", source: "a7", target: "a8", type: "smoothstep", animated: true },
+      { id: "e10", source: "a8", target: "a9", type: "smoothstep", animated: true },
+      { id: "e11", source: "a9", target: "a10", type: "smoothstep", animated: true },
+      { id: "e12", source: "a10", target: "a11", type: "smoothstep", animated: true },
+      { id: "e13", source: "a11", target: "c2", type: "smoothstep", animated: true },
+      { id: "e14", source: "c2", target: "a12", sourceHandle: "false", type: "smoothstep", animated: true, label: "No" },
+      { id: "e15", source: "a12", target: "a9", type: "smoothstep", animated: true },
+      { id: "e16", source: "c2", target: "a13", sourceHandle: "true", type: "smoothstep", animated: true, label: "OK" },
+      { id: "e17", source: "a13", target: "a14", type: "smoothstep", animated: true },
+      { id: "e18", source: "a14", target: "a15", type: "smoothstep", animated: true },
+      { id: "e19", source: "a15", target: "a16", type: "smoothstep", animated: true },
+      { id: "e20", source: "a16", target: "c3", type: "smoothstep", animated: true },
+      { id: "e21", source: "c3", target: "a17", sourceHandle: "true", type: "smoothstep", animated: true, label: "Yes" },
+      { id: "e22", source: "a17", target: "a18", type: "smoothstep", animated: true },
+      { id: "e23", source: "a18", target: "a19", type: "smoothstep", animated: true },
+      { id: "e24", source: "a19", target: "a23", type: "smoothstep", animated: true },
+      { id: "e25", source: "c3", target: "a21", sourceHandle: "false", type: "smoothstep", animated: true, label: "No" },
+      { id: "e26", source: "a21", target: "a22", type: "smoothstep", animated: true },
+      { id: "e27", source: "a22", target: "a23", type: "smoothstep", animated: true },
+      { id: "e28", source: "a13", target: "a20", type: "smoothstep", animated: true },
     ],
   },
 ];
