@@ -7,20 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 import { 
-  Plus, 
-  Search, 
-  Truck, 
-  MapPin, 
-  Clock, 
-  User,
-  Phone,
-  Package,
-  CheckCircle,
-  Loader2,
-  Navigation,
-  Play,
-  Square
+  Plus, Search, Truck, MapPin, Clock, User, Phone, Package,
+  CheckCircle, Loader2, Navigation, Play, Square, CalendarIcon
 } from "lucide-react";
 import { useDispatchJobs } from "@/hooks/useDispatchJobs";
 import { useAvailableVehicles } from "@/hooks/useAvailableVehicles";
@@ -57,6 +49,10 @@ const DispatchJobsTab = () => {
     cargo_description: '',
     cargo_weight_kg: 0,
     special_instructions: '',
+    scheduled_pickup_at: undefined as Date | undefined,
+    scheduled_pickup_time: '09:00',
+    scheduled_dropoff_at: undefined as Date | undefined,
+    scheduled_dropoff_time: '17:00',
   });
 
   const [assignData, setAssignData] = useState({
@@ -125,7 +121,21 @@ const DispatchJobsTab = () => {
   const paginatedJobs = filteredJobs.slice(startIndex, endIndex);
 
   const handleCreateJob = async () => {
-    await createJob(newJob);
+    // Combine date + time into ISO strings
+    const buildDateTime = (date?: Date, time?: string) => {
+      if (!date) return undefined;
+      const [h, m] = (time || '00:00').split(':').map(Number);
+      const d = new Date(date);
+      d.setHours(h, m, 0, 0);
+      return d.toISOString();
+    };
+
+    const { scheduled_pickup_at, scheduled_pickup_time, scheduled_dropoff_at, scheduled_dropoff_time, ...rest } = newJob;
+    await createJob({
+      ...rest,
+      scheduled_pickup_at: buildDateTime(scheduled_pickup_at, scheduled_pickup_time),
+      scheduled_dropoff_at: buildDateTime(scheduled_dropoff_at, scheduled_dropoff_time),
+    } as any);
     setShowCreateDialog(false);
     setNewJob({
       job_type: 'delivery',
@@ -138,6 +148,10 @@ const DispatchJobsTab = () => {
       cargo_description: '',
       cargo_weight_kg: 0,
       special_instructions: '',
+      scheduled_pickup_at: undefined,
+      scheduled_pickup_time: '09:00',
+      scheduled_dropoff_at: undefined,
+      scheduled_dropoff_time: '17:00',
     });
   };
 
@@ -453,6 +467,68 @@ const DispatchJobsTab = () => {
                   type="number"
                   value={newJob.cargo_weight_kg}
                   onChange={e => setNewJob({...newJob, cargo_weight_kg: Number(e.target.value)})}
+                />
+              </div>
+            </div>
+            {/* Scheduled Pickup Date & Time */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Scheduled Pickup</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !newJob.scheduled_pickup_at && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {newJob.scheduled_pickup_at ? format(newJob.scheduled_pickup_at, "MMM dd, yyyy") : "Pick date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={newJob.scheduled_pickup_at}
+                      onSelect={d => setNewJob({...newJob, scheduled_pickup_at: d || undefined})}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div>
+                <Label>Pickup Time</Label>
+                <Input
+                  type="time"
+                  value={newJob.scheduled_pickup_time}
+                  onChange={e => setNewJob({...newJob, scheduled_pickup_time: e.target.value})}
+                />
+              </div>
+            </div>
+            {/* Scheduled Dropoff Date & Time */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Scheduled Dropoff</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !newJob.scheduled_dropoff_at && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {newJob.scheduled_dropoff_at ? format(newJob.scheduled_dropoff_at, "MMM dd, yyyy") : "Pick date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={newJob.scheduled_dropoff_at}
+                      onSelect={d => setNewJob({...newJob, scheduled_dropoff_at: d || undefined})}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div>
+                <Label>Dropoff Time</Label>
+                <Input
+                  type="time"
+                  value={newJob.scheduled_dropoff_time}
+                  onChange={e => setNewJob({...newJob, scheduled_dropoff_time: e.target.value})}
                 />
               </div>
             </div>
