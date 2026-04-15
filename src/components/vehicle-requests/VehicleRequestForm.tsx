@@ -48,6 +48,7 @@ const initialForm = {
   pool_category: "",
   pool_name: "",
   purpose: "",
+  project_number: "",
 };
 
 export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormProps) => {
