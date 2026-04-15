@@ -27,7 +27,12 @@ import { format } from "date-fns";
 
 const ITEMS_PER_PAGE = 10;
 
-const IncidentsListTab = () => {
+interface IncidentsListTabProps {
+  externalCreateOpen?: boolean;
+  onExternalCreateClose?: () => void;
+}
+
+const IncidentsListTab = ({ externalCreateOpen, onExternalCreateClose }: IncidentsListTabProps) => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [severityFilter, setSeverityFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -35,6 +40,17 @@ const IncidentsListTab = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedIncident, setSelectedIncident] = useState<any>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+
+  // Handle external trigger to open dialog
+  const isDialogOpen = showCreateDialog || !!externalCreateOpen;
+  const handleDialogClose = (open: boolean) => {
+    if (!open) {
+      setShowCreateDialog(false);
+      onExternalCreateClose?.();
+    } else {
+      setShowCreateDialog(true);
+    }
+  };
 
   const { incidents, loading, createIncident, updateIncidentStatus } = useIncidentsManagement({
     status: statusFilter !== 'all' ? statusFilter : undefined,
@@ -122,7 +138,7 @@ const IncidentsListTab = () => {
       vehicle_id: newIncident.vehicle_id || undefined,
       driver_id: newIncident.driver_id || undefined,
     });
-    setShowCreateDialog(false);
+    handleDialogClose(false);
     setNewIncident({
       incident_type: 'accident',
       vehicle_id: '',
@@ -299,7 +315,7 @@ const IncidentsListTab = () => {
       )}
 
       {/* Create Incident Dialog */}
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+      <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Report Incident</DialogTitle>
@@ -415,7 +431,7 @@ const IncidentsListTab = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => handleDialogClose(false)}>Cancel</Button>
             <Button onClick={handleCreateIncident} disabled={!newIncident.description}>
               Submit Report
             </Button>
