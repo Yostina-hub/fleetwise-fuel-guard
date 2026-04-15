@@ -70,6 +70,62 @@ export const getPreviewSafeMapStyle = (style: LematMapStyle = 'streets'): maplib
   );
 };
 
+/**
+ * Build the Supabase Edge Function URL used to proxy Lemat tile requests,
+ * working around the duplicate CORS header returned by the origin server.
+ */
+const getProxyTileUrl = (): string => {
+  const supabaseUrl =
+    (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_URL) || '';
+  return `${supabaseUrl}/functions/v1/lemat-tile-proxy`;
+};
+
+/**
+ * Fetch the Lemat style JSON and rewrite tile / glyph URLs so they go through
+ * the tile-proxy Edge Function (avoids the duplicate-CORS-header problem).
+ */
+export const fetchLematMapStyle = async (
+  style: LematMapStyle = 'streets',
+): Promise<maplibregl.StyleSpecification> => {
+  if (style === 'satellite') return getSatelliteRasterStyle();
+
+  const theme: LematTheme = style === 'dark' ? 'dark' : 'light';
+  const styleUrl = getLematStyleUrl(theme);
+
+  try {
+    const res = await fetch(styleUrl);
+    if (!res.ok) throw new Error(`Style fetch failed: ${res.status}`);
+    const styleJson: maplibregl.StyleSpecification = await res.json();
+
+    const proxyBase = getProxyTileUrl();
+
+    // Rewrite vector tile URLs to go through the proxy
+    if (styleJson.sources) {
+      for (const src of Object.values(styleJson.sources) as any[]) {
+        if (src.tiles && Array.isArray(src.tiles)) {
+          src.tiles = src.tiles.map((tileUrl: string) => {
+            // Strip origin, keep path with {z}/{x}/{y} template tokens intact
+            const path = tileUrl.replace('https://lemat.goffice.et/', '');
+            return `${proxyBase}?path=${path}`;
+          });
+        }
+      }
+    }
+
+    // Rewrite glyph URLs through proxy (keep {fontstack}/{range} tokens intact)
+    if (styleJson.glyphs && typeof styleJson.glyphs === 'string' && styleJson.glyphs.startsWith('https://lemat.goffice.et/')) {
+      const glyphPath = styleJson.glyphs.replace('https://lemat.goffice.et/', '');
+      styleJson.glyphs = `${proxyBase}?path=${glyphPath}`;
+    }
+
+    return styleJson;
+  } catch (e) {
+    console.warn('Failed to fetch Lemat style, using fallback:', e);
+    return getPreviewSafeMapStyle(style);
+  }
+};
+
+/** Synchronous version — returns the style URL directly (works when CORS is not an issue). */
 export const getLematMapStyle = (style: LematMapStyle = 'streets'): string | maplibregl.StyleSpecification => {
   if (style === 'satellite') return getSatelliteRasterStyle();
   if (style === 'dark') return getLematStyleUrl('dark');

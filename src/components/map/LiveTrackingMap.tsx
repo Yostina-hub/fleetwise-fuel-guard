@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useLematApiKey } from "@/hooks/useLematApiKey";
-import { createLematTransformRequest, getLematMapStyle } from "@/lib/lemat";
+import { createLematTransformRequest, fetchLematMapStyle } from "@/lib/lemat";
 import { 
   createAnimatedMarkerElement, 
   animatePosition, 
@@ -153,7 +153,7 @@ useEffect(() => {
       if (!mapContainer.current || map.current) return;
 
       try {
-        const initialStyle = getLematMapStyle(mapStyle);
+        const initialStyle = await fetchLematMapStyle(mapStyle);
 
         if (!mapContainer.current || map.current) return;
 
@@ -215,10 +215,10 @@ useEffect(() => {
           if (isStyleFailure && !fallbackTriedRef.current) {
             fallbackTriedRef.current = true;
             setMapLoaded(false);
-            try {
-              map.current?.setStyle(getLematMapStyle(mapStyle));
-              return;
-            } catch {}
+            fetchLematMapStyle(mapStyle).then((s) => {
+              try { map.current?.setStyle(s); } catch {}
+            }).catch(() => {});
+            return;
           }
 
           if (isStyleFailure && fallbackTriedRef.current) {
@@ -270,9 +270,9 @@ useEffect(() => {
     if (prevMapStyleRef.current === mapStyle) return;
     prevMapStyleRef.current = mapStyle;
 
-    const applyStyle = () => {
+    const applyStyle = async () => {
       if (!map.current) return;
-      const targetStyle = getLematMapStyle(mapStyle);
+      const targetStyle = await fetchLematMapStyle(mapStyle);
       setMapLoaded(false);
       setTokenError(null);
       // Clear trail source tracking so they get re-added after style loads
