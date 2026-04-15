@@ -2,9 +2,11 @@ import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, FileText, Receipt, Ticket, User, Users, Lock, Camera } from "lucide-react";
+import { AlertTriangle, FileText, Receipt, Ticket, User, Users, Lock, Camera, Shield, Car } from "lucide-react";
 import IncidentsListTab from "@/components/incidents/IncidentsListTab";
 import InsuranceClaimsTab from "@/components/incidents/InsuranceClaimsTab";
+import InsurancePoliciesTab from "@/components/incidents/InsurancePoliciesTab";
+import AccidentClaimsTab from "@/components/incidents/AccidentClaimsTab";
 import TrafficViolationsTab from "@/components/incidents/TrafficViolationsTab";
 import IncidentTicketsTab from "@/components/incidents/IncidentTicketsTab";
 import ByPersonTab from "@/components/incidents/ByPersonTab";
@@ -76,7 +78,7 @@ const Incidents = () => {
         />
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="flex w-full max-w-5xl overflow-x-auto">
+          <TabsList className="flex w-full max-w-6xl overflow-x-auto">
             <TabsTrigger value="incidents" className="gap-2">
               <AlertTriangle className="w-4 h-4" aria-hidden="true" />
               <span className="hidden sm:inline">Incidents</span>
@@ -84,6 +86,14 @@ const Incidents = () => {
             <TabsTrigger value="claims" className="gap-2">
               <FileText className="w-4 h-4" aria-hidden="true" />
               <span className="hidden sm:inline">Claims</span>
+            </TabsTrigger>
+            <TabsTrigger value="policies" className="gap-2">
+              <Shield className="w-4 h-4" aria-hidden="true" />
+              <span className="hidden sm:inline">Policies</span>
+            </TabsTrigger>
+            <TabsTrigger value="accident-claims" className="gap-2">
+              <Car className="w-4 h-4" aria-hidden="true" />
+              <span className="hidden sm:inline">Accidents</span>
             </TabsTrigger>
             <TabsTrigger value="violations" className="gap-2">
               <Receipt className="w-4 h-4" aria-hidden="true" />
@@ -118,6 +128,8 @@ const Incidents = () => {
             />
           </TabsContent>
           <TabsContent value="claims"><InsuranceClaimsTab /></TabsContent>
+          <TabsContent value="policies"><InsurancePoliciesTab /></TabsContent>
+          <TabsContent value="accident-claims"><AccidentClaimsTab /></TabsContent>
           <TabsContent value="violations"><TrafficViolationsTab /></TabsContent>
           <TabsContent value="tickets"><IncidentTicketsTab /></TabsContent>
           <TabsContent value="by-person"><ByPersonTab /></TabsContent>

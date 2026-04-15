@@ -129,6 +129,7 @@ const RentalVehicles = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="vehicles" className="gap-1.5"><Truck className="w-3.5 h-3.5" /> Vehicles</TabsTrigger>
+            <TabsTrigger value="contracts" className="gap-1.5"><Clock className="w-3.5 h-3.5" /> Contracts</TabsTrigger>
             <TabsTrigger value="providers" className="gap-1.5"><Building2 className="w-3.5 h-3.5" /> Providers</TabsTrigger>
             <TabsTrigger value="costs" className="gap-1.5"><BarChart3 className="w-3.5 h-3.5" /> Cost Analysis</TabsTrigger>
           </TabsList>
@@ -166,6 +167,44 @@ const RentalVehicles = () => {
                     </CardContent>
                   </Card>
                 ))
+              )}
+            </TabsContent>
+
+            <TabsContent value="contracts" className="mt-0 space-y-3">
+              {rentalVehicles.length === 0 ? (
+                <Card><CardContent className="py-12 text-center text-muted-foreground">No contracts to display.</CardContent></Card>
+              ) : (
+                rentalVehicles.sort((a: any, b: any) => new Date(a.contract_end).getTime() - new Date(b.contract_end).getTime()).map((v: any) => {
+                  const daysLeft = Math.ceil((new Date(v.contract_end).getTime() - Date.now()) / 86400000);
+                  const isExpired = daysLeft < 0;
+                  const isExpiring = daysLeft >= 0 && daysLeft <= 30;
+                  return (
+                    <Card key={v.id} className={isExpired ? "border-destructive/50" : isExpiring ? "border-warning/50" : ""}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between flex-wrap gap-3">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold">{v.plate_number}</span>
+                              <Badge variant="outline">{v.provider_name}</Badge>
+                              {isExpired && <Badge variant="destructive">Expired</Badge>}
+                              {isExpiring && <Badge className="bg-warning/10 text-warning">{daysLeft}d left</Badge>}
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {format(new Date(v.contract_start), "MMM dd, yyyy")} → {format(new Date(v.contract_end), "MMM dd, yyyy")}
+                            </p>
+                            <p className="text-xs text-muted-foreground">Driver: {v.driver_name || "N/A"} ({v.driver_type || "own"})</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-bold">{v.monthly_cost?.toLocaleString()} ETB/mo</p>
+                            <p className="text-xs text-muted-foreground">
+                              Total: {v.monthly_cost ? (v.monthly_cost * Math.max(1, Math.ceil((new Date(v.contract_end).getTime() - new Date(v.contract_start).getTime()) / (30 * 86400000)))).toLocaleString() : "—"} ETB
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })
               )}
             </TabsContent>
 

@@ -134,6 +134,7 @@ const getNavItems = (t: (key: string) => string) => [
     subItems: [
       { label: t("nav.routes"), path: "/routes" },
       { label: t("nav.routeHistory"), path: "/route-history" },
+      { label: "Route Planning", path: "/route-planning" },
       { label: t("nav.geofences"), path: "/geofencing" },
     ]
   },
