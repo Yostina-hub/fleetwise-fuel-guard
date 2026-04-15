@@ -354,11 +354,11 @@ export const AIRouteOptimizer = ({ visible, onClose, vehicles, allVehicles, sele
                 <SelectValue placeholder="Select vehicle..." />
               </SelectTrigger>
               <SelectContent>
-                {onlineVehicles.map(v => (
+                {dropdownVehicles.map(v => (
                   <SelectItem key={v.id} value={v.id} className="text-xs">
                     <div className="flex items-center gap-2">
                       <Truck className="w-3 h-3" />
-                      {v.plate} — {v.speed} km/h
+                      {v.plate} {v.speed > 0 ? `— ${v.speed} km/h` : v.status === 'offline' ? '— Offline' : '— Parked'}
                     </div>
                   </SelectItem>
                 ))}
