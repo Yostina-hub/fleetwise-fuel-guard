@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useLematApiKey } from "@/hooks/useLematApiKey";
-import { createLematTransformRequest, getLematMapStyle, getPreviewSafeMapStyle } from "@/lib/lemat";
+import { createLematTransformRequest, getLematMapStyle } from "@/lib/lemat";
 import { 
   createAnimatedMarkerElement, 
   animatePosition, 
@@ -216,7 +216,7 @@ useEffect(() => {
             fallbackTriedRef.current = true;
             setMapLoaded(false);
             try {
-              map.current?.setStyle(getPreviewSafeMapStyle(mapStyle));
+              map.current?.setStyle(getLematMapStyle(mapStyle));
               return;
             } catch {}
           }
