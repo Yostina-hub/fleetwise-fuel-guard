@@ -190,6 +190,7 @@
     "fleetManagement": "Fleet Management",
     "vehicleList": "Vehicle List",
     "hardwareSensorsShort": "Hardware Sensors",
+    "iotSensors": "IoT Sensors",
     "driverHub": "Driver Hub",
     "driversDirectory": "Drivers Directory",
     "scoringBehavior": "Scoring & Behavior",
