@@ -110,39 +110,108 @@ function createDriverInfo(): SimDriverInfo {
   };
 }
 
-// ── Interpolation along polyline ──
+const EARTH_RADIUS_METERS = 6371000;
+const waypointMetricsCache = new WeakMap<[number, number][], { cumulative: number[]; total: number }>();
+
+function toRadians(value: number): number {
+  return (value * Math.PI) / 180;
+}
+
+function distanceBetweenWaypointsMeters(a: [number, number], b: [number, number]): number {
+  const [lng1, lat1] = a;
+  const [lng2, lat2] = b;
+  const dLat = toRadians(lat2 - lat1);
+  const dLng = toRadians(lng2 - lng1);
+  const lat1Rad = toRadians(lat1);
+  const lat2Rad = toRadians(lat2);
+
+  const sinLat = Math.sin(dLat / 2);
+  const sinLng = Math.sin(dLng / 2);
+  const haversine =
+    sinLat * sinLat +
+    Math.cos(lat1Rad) * Math.cos(lat2Rad) * sinLng * sinLng;
+
+  return 2 * EARTH_RADIUS_METERS * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+}
+
+function calculateBearing(a: [number, number], b: [number, number]): number {
+  const [lng1, lat1] = a;
+  const [lng2, lat2] = b;
+  const lat1Rad = toRadians(lat1);
+  const lat2Rad = toRadians(lat2);
+  const dLng = toRadians(lng2 - lng1);
+
+  const y = Math.sin(dLng) * Math.cos(lat2Rad);
+  const x =
+    Math.cos(lat1Rad) * Math.sin(lat2Rad) -
+    Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLng);
+
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+}
+
+function getWaypointMetrics(waypoints: [number, number][]): { cumulative: number[]; total: number } {
+  const cached = waypointMetricsCache.get(waypoints);
+  if (cached) return cached;
+
+  const cumulative: number[] = [0];
+  for (let i = 1; i < waypoints.length; i++) {
+    cumulative.push(cumulative[i - 1] + distanceBetweenWaypointsMeters(waypoints[i - 1], waypoints[i]));
+  }
+
+  const metrics = {
+    cumulative,
+    total: cumulative[cumulative.length - 1] ?? 0,
+  };
+
+  waypointMetricsCache.set(waypoints, metrics);
+  return metrics;
+}
+
+function getSegmentLengthMeters(segment: typeof SEGMENTS[number]): number {
+  const geometricLength = getWaypointMetrics(segment.waypoints).total;
+  return geometricLength > 0 ? geometricLength : Math.max(segment.length ?? 1, 1);
+}
+
+// ── Interpolation along polyline using real geometry distances ──
 function interpolateAlongWaypoints(
   waypoints: [number, number][],
   progress: number
 ): { lng: number; lat: number; heading: number } {
-  if (waypoints.length < 2) return { lng: waypoints[0][0], lat: waypoints[0][1], heading: 0 };
+  if (waypoints.length === 0) return { lng: 0, lat: 0, heading: 0 };
+  if (waypoints.length === 1) return { lng: waypoints[0][0], lat: waypoints[0][1], heading: 0 };
 
-  const dists: number[] = [0];
-  for (let i = 1; i < waypoints.length; i++) {
-    const dx = waypoints[i][0] - waypoints[i - 1][0];
-    const dy = waypoints[i][1] - waypoints[i - 1][1];
-    dists.push(dists[i - 1] + Math.sqrt(dx * dx + dy * dy));
+  const { cumulative, total } = getWaypointMetrics(waypoints);
+  if (total <= 0) {
+    return {
+      lng: waypoints[0][0],
+      lat: waypoints[0][1],
+      heading: calculateBearing(waypoints[0], waypoints[waypoints.length - 1]),
+    };
   }
-  const totalDist = dists[dists.length - 1];
-  const targetDist = progress * totalDist;
 
-  for (let i = 1; i < dists.length; i++) {
-    if (targetDist <= dists[i]) {
-      const segDist = dists[i] - dists[i - 1];
-      const t = segDist > 0 ? (targetDist - dists[i - 1]) / segDist : 0;
+  const clampedProgress = Math.max(0, Math.min(progress, 0.999999));
+  const targetDist = clampedProgress * total;
+
+  for (let i = 1; i < cumulative.length; i++) {
+    if (targetDist <= cumulative[i]) {
+      const segDist = cumulative[i] - cumulative[i - 1];
+      const t = segDist > 0 ? (targetDist - cumulative[i - 1]) / segDist : 0;
       const lng = waypoints[i - 1][0] + t * (waypoints[i][0] - waypoints[i - 1][0]);
       const lat = waypoints[i - 1][1] + t * (waypoints[i][1] - waypoints[i - 1][1]);
-      const heading =
-        (Math.atan2(
-          waypoints[i][0] - waypoints[i - 1][0],
-          waypoints[i][1] - waypoints[i - 1][1]
-        ) * 180) / Math.PI;
-      return { lng, lat, heading: (heading + 360) % 360 };
+      return {
+        lng,
+        lat,
+        heading: calculateBearing(waypoints[i - 1], waypoints[i]),
+      };
     }
   }
 
   const last = waypoints[waypoints.length - 1];
-  return { lng: last[0], lat: last[1], heading: 0 };
+  return {
+    lng: last[0],
+    lat: last[1],
+    heading: calculateBearing(waypoints[waypoints.length - 2], last),
+  };
 }
 
 // ── Segment lookup cache ──
@@ -161,6 +230,53 @@ function buildReturnRoute(routeSegments: string[]): string[] {
     .reverse()
     .map(getReverseSegmentId)
     .filter((segmentId) => segmentById.has(segmentId));
+}
+
+function resolveNextSegment(
+  currentSegment: typeof SEGMENTS[number],
+  routeSegments: string[],
+  routeIndex: number,
+  vehicleType: VehicleType
+): {
+  nextSegment: typeof SEGMENTS[number];
+  nextRouteSegments: string[];
+  nextRouteIndex: number;
+} | null {
+  const nextRouteIdx = routeIndex + 1;
+  if (nextRouteIdx < routeSegments.length) {
+    const nextSegment = getSegment(routeSegments[nextRouteIdx]);
+    if (nextSegment && nextSegment.from === currentSegment.to) {
+      return {
+        nextSegment,
+        nextRouteSegments: routeSegments,
+        nextRouteIndex: nextRouteIdx,
+      };
+    }
+    return null;
+  }
+
+  const destinationNode = currentSegment.to;
+  const nextRoute = selectRouteFromNode(destinationNode, vehicleType);
+  const nextRouteFirstSegment = nextRoute ? getSegment(nextRoute.segments[0]) : undefined;
+  if (nextRoute && nextRouteFirstSegment && nextRouteFirstSegment.from === destinationNode) {
+    return {
+      nextSegment: nextRouteFirstSegment,
+      nextRouteSegments: [...nextRoute.segments],
+      nextRouteIndex: 0,
+    };
+  }
+
+  const returnRoute = buildReturnRoute(routeSegments);
+  const returnSegment = returnRoute[0] ? getSegment(returnRoute[0]) : undefined;
+  if (returnSegment && returnSegment.from === destinationNode) {
+    return {
+      nextSegment: returnSegment,
+      nextRouteSegments: returnRoute,
+      nextRouteIndex: 0,
+    };
+  }
+
+  return null;
 }
 
 // ── Vehicle factory — now uses predefined SUMO routes ──
@@ -290,7 +406,7 @@ export function stepSimulation(state: SimulationState, dtReal: number): Simulati
 
   const vehicles = state.vehicles.map(v => {
     const seg = getSegment(v.segmentId);
-    if (!seg || !seg.length) return v;
+    if (!seg) return v;
 
     const endNode = NODES.find(n => n.id === seg.to);
     const signal = endNode ? signalMap.get(endNode.id) : undefined;
@@ -312,59 +428,49 @@ export function stepSimulation(state: SimulationState, dtReal: number): Simulati
     let newSpeed = Math.max(0, v.speed + accel * dt);
 
     const distMeters = (newSpeed / 3.6) * dt;
-    let newProgress = v.segmentProgress + distMeters / seg.length;
-    let newSegmentId = v.segmentId;
+    let activeSeg = seg;
+    let newProgress = Math.max(0, Math.min(v.segmentProgress, 0.999));
     let newRouteSegments = v.routeSegments;
     let newRouteIndex = v.routeIndex;
-    let newRoadName = v.currentRoadName;
+    let newRoadName = activeSeg.name;
+    let remainingDistance = distMeters;
+    let routeBlocked = false;
 
-    if (newProgress >= 1) {
-      const nextRouteIdx = v.routeIndex + 1;
+    while (remainingDistance > 0) {
+      const activeSegmentLength = getSegmentLengthMeters(activeSeg);
+      if (activeSegmentLength <= 0) break;
 
-      if (nextRouteIdx < v.routeSegments.length) {
-        const nextSegId = v.routeSegments[nextRouteIdx];
-        const nextSeg = getSegment(nextSegId);
+      const remainingOnSegment = Math.max(0, (1 - newProgress) * activeSegmentLength);
 
-        if (nextSeg && nextSeg.from === seg.to) {
-          newSegmentId = nextSegId;
-          newProgress = newProgress - 1;
-          newRouteIndex = nextRouteIdx;
-          newRoadName = nextSeg.name;
-        } else {
-          newProgress = 0.999;
-          newSpeed = 0;
-        }
-      } else {
-        const destNode = seg.to;
-        const nextRoute = selectRouteFromNode(destNode, v.type);
+      if (remainingDistance < remainingOnSegment) {
+        newProgress += remainingDistance / activeSegmentLength;
+        remainingDistance = 0;
+        break;
+      }
 
-        if (nextRoute && getSegment(nextRoute.segments[0])?.from === destNode) {
-          const firstSeg = getSegment(nextRoute.segments[0]);
-          newSegmentId = nextRoute.segments[0];
-          newRouteSegments = [...nextRoute.segments];
-          newRouteIndex = 0;
-          newProgress = 0;
-          newRoadName = firstSeg?.name || v.currentRoadName;
-        } else {
-          const returnRoute = buildReturnRoute(v.routeSegments);
-          const firstReturnSeg = returnRoute[0] ? getSegment(returnRoute[0]) : undefined;
+      remainingDistance = Math.max(0, remainingDistance - remainingOnSegment);
 
-          if (firstReturnSeg && firstReturnSeg.from === destNode) {
-            newSegmentId = firstReturnSeg.id;
-            newRouteSegments = returnRoute;
-            newRouteIndex = 0;
-            newProgress = 0;
-            newRoadName = firstReturnSeg.name;
-          } else {
-            newProgress = 0.999;
-            newSpeed = 0;
-            newRoadName = seg.name;
-          }
-        }
+      const nextState = resolveNextSegment(activeSeg, newRouteSegments, newRouteIndex, v.type);
+      if (!nextState) {
+        newProgress = 0.999;
+        newSpeed = 0;
+        newRoadName = activeSeg.name;
+        routeBlocked = true;
+        break;
+      }
+
+      activeSeg = nextState.nextSegment;
+      newRouteSegments = nextState.nextRouteSegments;
+      newRouteIndex = nextState.nextRouteIndex;
+      newRoadName = activeSeg.name;
+      newProgress = 0;
+
+      if (remainingDistance <= 0.01) {
+        remainingDistance = 0;
+        break;
       }
     }
 
-    const activeSeg = getSegment(newSegmentId) || seg;
     const pos = interpolateAlongWaypoints(activeSeg.waypoints, Math.min(newProgress, 0.999));
     const status: SimVehicle["status"] = newSpeed < 0.5 ? "stopped" : newSpeed < 5 ? "idle" : "moving";
 
@@ -375,7 +481,7 @@ export function stepSimulation(state: SimulationState, dtReal: number): Simulati
 
     return {
       ...v,
-      segmentId: newSegmentId,
+      segmentId: activeSeg.id,
       segmentProgress: Math.min(newProgress, 0.999),
       speed: Math.round(newSpeed * 10) / 10,
       acceleration: accel,
@@ -386,7 +492,7 @@ export function stepSimulation(state: SimulationState, dtReal: number): Simulati
       status,
       routeSegments: newRouteSegments,
       routeIndex: newRouteIndex,
-      currentRoadName: newRoadName,
+      currentRoadName: routeBlocked ? v.currentRoadName : newRoadName,
       odometer: v.odometer + distMeters / 1000,
       engineTemp: Math.round(newEngineTemp * 10) / 10,
       rpm: Math.round(newRpm),
