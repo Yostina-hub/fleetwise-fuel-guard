@@ -365,10 +365,22 @@ export const printReport = (
   columns: { key: string; label: string }[],
   options?: { dateRange?: string; totalRecords?: number }
 ) => {
-  const printWindow = window.open("", "_blank", "width=1200,height=800");
-  if (!printWindow) {
-    return false;
+  const existingFrame = document.getElementById("report-print-frame");
+  if (existingFrame) {
+    existingFrame.remove();
   }
+
+  const printFrame = document.createElement("iframe");
+  printFrame.id = "report-print-frame";
+  printFrame.setAttribute("aria-hidden", "true");
+  printFrame.style.position = "fixed";
+  printFrame.style.right = "0";
+  printFrame.style.bottom = "0";
+  printFrame.style.width = "0";
+  printFrame.style.height = "0";
+  printFrame.style.border = "0";
+  printFrame.style.opacity = "0";
+  printFrame.style.pointerEvents = "none";
 
   const dateStr = format(new Date(), "MMMM d, yyyy 'at' h:mm a");
   const rows = data.map((row, i) =>
@@ -385,8 +397,6 @@ export const printReport = (
     @page { size: landscape; margin: 15mm; }
     * { box-sizing: border-box; }
     body { font-family: Calibri, Arial, sans-serif; margin: 0; padding: 20px; color: #333; position: relative; }
-    
-    /* Watermark */
     body::before {
       content: "ethio telecom";
       position: fixed;
@@ -412,7 +422,6 @@ export const printReport = (
       z-index: 0;
       pointer-events: none;
     }
-    
     .content { position: relative; z-index: 1; }
     .header-bar { height: 4px; background: #0072BC; margin-bottom: 0; }
     .header-bar-green { height: 2px; background: #8DC63F; margin-bottom: 16px; }
@@ -428,7 +437,6 @@ export const printReport = (
     thead { display: table-header-group; }
     .footer { border-top: 2px solid #0072BC; margin-top: 20px; padding-top: 8px; display: flex; justify-content: space-between; font-size: 8pt; color: #999; }
     @media print {
-      .no-print { display: none !important; }
       body { padding: 0; }
     }
   </style>
@@ -437,7 +445,6 @@ export const printReport = (
   <div class="content">
     <div class="header-bar"></div>
     <div class="header-bar-green"></div>
-    
     <div class="brand-area">
       <div>
         <p class="brand-name">ethio telecom</p>
@@ -448,43 +455,54 @@ export const printReport = (
         ${options?.dateRange ? `<div>Period: ${options.dateRange}</div>` : ""}
       </div>
     </div>
-    
     <div class="title-bar">${title}</div>
     <div class="title-accent"></div>
-    
     <div class="summary">Total Records: ${data.length}${options?.dateRange ? ` | Period: ${options.dateRange}` : ""}</div>
-    
-    ${data.length === 0 
+    ${data.length === 0
       ? '<p style="text-align:center;color:#999;padding:40px;font-size:14pt;">No data available for the selected period.</p>'
       : `<table><thead><tr>${headerCells}</tr></thead><tbody>${rows.map(r => `<tr>${r}</tr>`).join("")}</tbody></table>`
     }
-    
     <div class="footer">
       <span>CONFIDENTIAL — ethio telecom Fleet Management</span>
       <span>Generated: ${format(new Date(), "yyyy-MM-dd HH:mm:ss")}</span>
       <span>© ${new Date().getFullYear()} ethio telecom</span>
     </div>
-    
-    <div class="no-print" style="text-align:center;margin-top:20px;">
-      <button onclick="window.print()" style="padding:10px 30px;background:#0072BC;color:white;border:none;border-radius:4px;font-size:14px;cursor:pointer;margin-right:10px;">
-        🖨️ Print Report
-      </button>
-      <button onclick="window.close()" style="padding:10px 30px;background:#666;color:white;border:none;border-radius:4px;font-size:14px;cursor:pointer;">
-        Close
-      </button>
-    </div>
   </div>
 </body>
 </html>`;
 
-  printWindow.document.write(html);
-  printWindow.document.close();
-  
-  // Auto-trigger print after load
-  printWindow.onload = () => {
-    setTimeout(() => printWindow.print(), 500);
+  printFrame.onload = () => {
+    const frameWindow = printFrame.contentWindow;
+    if (!frameWindow) {
+      printFrame.remove();
+      return;
+    }
+
+    const cleanup = () => {
+      window.setTimeout(() => {
+        printFrame.remove();
+      }, 500);
+    };
+
+    frameWindow.onafterprint = cleanup;
+    window.setTimeout(() => {
+      frameWindow.focus();
+      frameWindow.print();
+      window.setTimeout(cleanup, 1500);
+    }, 250);
   };
-  
+
+  document.body.appendChild(printFrame);
+  const frameDoc = printFrame.contentDocument;
+  if (!frameDoc) {
+    printFrame.remove();
+    return false;
+  }
+
+  frameDoc.open();
+  frameDoc.write(html);
+  frameDoc.close();
+
   return true;
 };
 
