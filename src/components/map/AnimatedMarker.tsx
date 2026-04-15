@@ -489,8 +489,23 @@ export function injectMarkerAnimations() {
       animation: popupFadeIn 0.15s ease-out;
     }
 
+    .vehicle-hover-popup .maplibregl-popup-tip,
     .vehicle-hover-popup .mapboxgl-popup-tip {
       border-top-color: white !important;
+    }
+
+    .vehicle-hover-popup {
+      z-index: 1000 !important;
+      pointer-events: auto !important;
+    }
+
+    .animated-vehicle-marker {
+      cursor: pointer;
+      transition: z-index 0s;
+    }
+
+    .animated-vehicle-marker:hover {
+      z-index: 999 !important;
     }
 
     @keyframes popupFadeIn {
