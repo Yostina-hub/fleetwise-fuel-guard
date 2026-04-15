@@ -29,6 +29,7 @@ import { SmartDispatchSuggester } from "@/components/map/SmartDispatchSuggester"
 import { FleetPulseDashboard } from "@/components/map/FleetPulseDashboard";
 import { CommandCenterHUD } from "@/components/map/CommandCenterHUD";
 import { AnomalyMapLayer } from "@/components/map/AnomalyMapLayer";
+import { AIRouteOptimizer } from "@/components/map/AIRouteOptimizer";
 import SumoToggle from "@/components/map/SumoToggle";
 import SumoControlPanel from "@/components/map/SumoControlPanel";
 
@@ -185,6 +186,7 @@ const MapView = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showCommandCenter, setShowCommandCenter] = useState(false);
   const [showAnomalies, setShowAnomalies] = useState(false);
+  const [showRouteOptimizer, setShowRouteOptimizer] = useState(false);
   const [sumoActive, setSumoActive] = useState(false);
   const mapAreaRef = useRef<HTMLDivElement>(null);
 
@@ -683,6 +685,7 @@ const MapView = () => {
                   { key: 'pulse', icon: Activity, label: 'Pulse', active: showFleetPulse, toggle: () => setShowFleetPulse(!showFleetPulse), color: 'text-emerald-500' },
                   { key: 'command', icon: Eye, label: 'Command Center', active: showCommandCenter, toggle: () => setShowCommandCenter(!showCommandCenter), color: 'text-rose-500' },
                   { key: 'anomalies', icon: ShieldAlert, label: 'Anomalies', active: showAnomalies, toggle: () => setShowAnomalies(!showAnomalies), color: 'text-red-600' },
+                  { key: 'routes_ai', icon: Navigation, label: 'AI Routes', active: showRouteOptimizer, toggle: () => setShowRouteOptimizer(!showRouteOptimizer), color: 'text-lime-500' },
                 ].map(tool => (
                   <button
                     key={tool.key}
@@ -747,6 +750,12 @@ const MapView = () => {
           <FleetPulseDashboard visible={showFleetPulse} onClose={() => setShowFleetPulse(false)} vehicles={vehicles} />
           <CommandCenterHUD visible={showCommandCenter} onClose={() => setShowCommandCenter(false)} vehicles={vehicles} />
           <AnomalyMapLayer map={mapInstance} visible={showAnomalies} onClose={() => setShowAnomalies(false)} />
+          <AIRouteOptimizer
+            visible={showRouteOptimizer}
+            onClose={() => setShowRouteOptimizer(false)}
+            vehicles={filteredMapVehicles}
+            map={mapInstance}
+          />
 
           {/* SUMO Control Panel */}
           {sumoActive && sumoState && (
