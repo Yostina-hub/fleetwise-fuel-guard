@@ -80,6 +80,33 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 const CLUSTER_THRESHOLD = 100;
 
+type DisplayVehicle = {
+  id: string;
+  plate: string;
+  status: 'moving' | 'idle' | 'stopped' | 'offline';
+  lat?: number;
+  lng?: number;
+  speed: number;
+  fuel: number;
+  heading?: number;
+  engine_on?: boolean;
+  isOffline?: boolean;
+  lastSeen?: string;
+  gps_signal_strength?: number;
+  gps_satellites_count?: number;
+  gps_hdop?: number;
+  gps_fix_type?: string;
+  speed_limit?: number;
+  driverName?: string;
+  driverPhone?: string;
+  address?: string;
+  make?: string;
+  model?: string;
+  year?: number;
+  type?: string;
+  hasGps?: boolean;
+};
+
 const hasValidCoords = (lat: number | null | undefined, lng: number | null | undefined): lat is number => {
   return (
     typeof lat === 'number' &&
