@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useLematApiKey } from "@/hooks/useLematApiKey";
 import { createLematTransformRequest, fetchLematMapStyle, getPreviewSafeMapStyle } from "@/lib/lemat";
+import { getActiveProvider, getProviderStyle } from "@/lib/mapProviders";
 import { 
   createAnimatedMarkerElement, 
   animatePosition, 
