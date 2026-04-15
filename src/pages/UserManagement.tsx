@@ -1,19 +1,8 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -31,28 +20,28 @@ import {
 } from "@/components/ui/pagination";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { User, UserPlus, Shield, Search, Users } from "lucide-react";
+import { Shield, Search, Users } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import UsersQuickStats from "@/components/users/UsersQuickStats";
 import UsersQuickActions from "@/components/users/UsersQuickActions";
 import InviteUserDialog from "@/components/users/InviteUserDialog";
 import BulkRoleAssignDialog from "@/components/users/BulkRoleAssignDialog";
+import UserTable from "@/components/users/UserTable";
+import UserDetailDialog from "@/components/users/UserDetailDialog";
+import ResetPasswordDialog from "@/components/users/ResetPasswordDialog";
+import ConfirmActionDialog from "@/components/users/ConfirmActionDialog";
+import type { UserProfile } from "@/components/users/UserTable";
 
-const roles = [
-  { value: "super_admin", label: "Super Admin", color: "destructive" },
-  { value: "org_admin", label: "Org Admin", color: "default" },
-  { value: "operator", label: "Operator", color: "default" },
-  { value: "fleet_manager", label: "Fleet Manager", color: "default" },
-  { value: "driver", label: "Driver", color: "default" },
-  { value: "technician", label: "Technician", color: "default" },
+const ROLE_OPTIONS = [
+  { value: "super_admin", label: "Super Admin" },
+  { value: "org_admin", label: "Org Admin" },
+  { value: "operator", label: "Operator" },
+  { value: "fleet_manager", label: "Fleet Manager" },
+  { value: "driver", label: "Driver" },
+  { value: "technician", label: "Technician" },
+  { value: "viewer", label: "Viewer" },
+  { value: "mechanic", label: "Mechanic" },
 ];
-
-interface UserProfile {
-  id: string;
-  email: string;
-  full_name: string | null;
-  user_roles: Array<{ role: string }>;
-}
 
 const UserManagement = () => {
   const { t } = useTranslation();
@@ -60,39 +49,30 @@ const UserManagement = () => {
   const { isSuperAdmin } = usePermissions();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedUser, setSelectedUser] = useState<string | null>(null);
-  const [selectedRole, setSelectedRole] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
-  const itemsPerPage = 10;
+  const [detailUser, setDetailUser] = useState<UserProfile | null>(null);
+  const [resetPwdUser, setResetPwdUser] = useState<UserProfile | null>(null);
+  const [deactivateUser, setDeactivateUser] = useState<UserProfile | null>(null);
+  const [deactivateLoading, setDeactivateLoading] = useState(false);
+  const itemsPerPage = 12;
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
-      // Fetch profiles
-      const { data: profilesData, error: profilesError } = await supabase
-        .from("profiles")
-        .select("id, email, full_name");
+      const [profilesRes, rolesRes] = await Promise.all([
+        supabase.from("profiles").select("id, email, full_name, avatar_url, phone, created_at, organization_id"),
+        supabase.from("user_roles").select("user_id, role"),
+      ]);
 
-      if (profilesError) throw profilesError;
+      if (profilesRes.error) throw profilesRes.error;
+      if (rolesRes.error) throw rolesRes.error;
 
-      // Fetch user roles
-      const { data: rolesData, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("user_id, role");
-
-      if (rolesError) throw rolesError;
-
-      // Merge profiles with their roles
-      const usersWithRoles = (profilesData || []).map((profile) => ({
+      const usersWithRoles: UserProfile[] = (profilesRes.data || []).map((profile) => ({
         ...profile,
-        user_roles: (rolesData || [])
+        user_roles: (rolesRes.data || [])
           .filter((ur) => ur.user_id === profile.id)
           .map((ur) => ({ role: ur.role })),
       }));
@@ -100,194 +80,138 @@ const UserManagement = () => {
       setUsers(usersWithRoles);
     } catch (error) {
       console.error("Error fetching users:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load users",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to load users", variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const assignRole = async () => {
-    if (!selectedUser || !selectedRole) return;
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
-    try {
-      const { error } = await supabase
-        .from("user_roles")
-        .insert({
-          user_id: selectedUser,
-          role: selectedRole as any,
-        } as any);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Role assigned successfully",
-      });
-
-      fetchUsers();
-      setSelectedUser(null);
-      setSelectedRole("");
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to assign role",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const removeRole = async (userId: string, role: string) => {
-    try {
-      const { error } = await supabase
-        .from("user_roles")
-        .delete()
-        .eq("user_id", userId)
-        .eq("role", role as any);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Role removed successfully",
-      });
-
-      fetchUsers();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to remove role",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Filter and search
   const filteredUsers = useMemo(() => {
-    if (!users) return [];
-    
     return users.filter((user) => {
-      const matchesSearch = searchQuery === "" || 
-        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.full_name?.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const matchesRole = roleFilter === "all" || 
+      const q = searchQuery.toLowerCase();
+      const matchesSearch = !q ||
+        user.email.toLowerCase().includes(q) ||
+        user.full_name?.toLowerCase().includes(q) ||
+        user.phone?.toLowerCase().includes(q);
+      const matchesRole = roleFilter === "all" ||
         user.user_roles.some((ur) => ur.role === roleFilter);
-      
       return matchesSearch && matchesRole;
     });
   }, [users, searchQuery, roleFilter]);
 
-  // Pagination
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const paginatedUsers = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
     return filteredUsers.slice(start, start + itemsPerPage);
   }, [filteredUsers, currentPage]);
 
+  const handleExportUsers = useCallback(() => {
+    const headers = ["Name", "Email", "Phone", "Roles", "Joined"];
+    const rows = filteredUsers.map(u => [
+      u.full_name || "",
+      u.email,
+      u.phone || "",
+      u.user_roles.map(r => r.role).join("; "),
+      new Date(u.created_at).toLocaleDateString(),
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `users_export_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "Export Complete", description: `${filteredUsers.length} users exported to CSV` });
+  }, [filteredUsers, toast]);
+
+  const handleDeactivateUser = useCallback(async () => {
+    if (!deactivateUser) return;
+    setDeactivateLoading(true);
+    try {
+      const { error } = await supabase.functions.invoke("manage-user", {
+        body: { action: "deactivate", userId: deactivateUser.id },
+      });
+      if (error) throw error;
+      toast({ title: "User Deactivated", description: `${deactivateUser.email} has been deactivated.` });
+      setDeactivateUser(null);
+      fetchUsers();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to deactivate user", variant: "destructive" });
+    } finally {
+      setDeactivateLoading(false);
+    }
+  }, [deactivateUser, toast, fetchUsers]);
+
   if (!isSuperAdmin) {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <Shield className="w-16 h-16 mx-auto mb-4 text-destructive" aria-hidden="true" />
+            <Shield className="w-16 h-16 mx-auto mb-4 text-destructive" />
             <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
-            <p className="text-muted-foreground">
-              Only Super Admins can access user management
-            </p>
+            <p className="text-muted-foreground">Only Super Admins can access user management</p>
           </div>
         </div>
       </Layout>
     );
   }
 
-  // Calculate stats
   const userStats = {
     totalUsers: users.length,
-    admins: users.filter(u => u.user_roles.some(r => r.role === 'super_admin')).length,
+    admins: users.filter(u => u.user_roles.some(r => r.role === "super_admin")).length,
     activeUsers: users.filter(u => u.user_roles.length > 0).length,
     unassignedUsers: users.filter(u => u.user_roles.length === 0).length,
-  };
-
-  const handleInviteUser = () => {
-    setInviteDialogOpen(true);
-  };
-
-  const handleExportUsers = () => {
-    toast({ title: "Exporting", description: "Exporting user data..." });
-  };
-
-  const handleBulkAssign = () => {
-    setBulkAssignOpen(true);
   };
 
   return (
     <Layout>
       <div className="p-4 md:p-8 space-y-6 animate-fade-in">
+        {/* Header */}
         <div className="flex items-center gap-3 slide-in-left">
           <div className="p-4 rounded-2xl glass-strong glow">
-            <Users className="h-8 w-8 text-primary animate-float" aria-hidden="true" />
+            <Users className="h-8 w-8 text-primary animate-float" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-4xl font-bold gradient-text">{t('users.title')}</h1>
-            <p className="text-muted-foreground mt-1 text-lg">
-              {t('users.permissions')}
-            </p>
+            <h1 className="text-2xl md:text-4xl font-bold gradient-text">{t("users.title")}</h1>
+            <p className="text-muted-foreground mt-1 text-lg">{t("users.permissions")}</p>
           </div>
         </div>
 
-        {/* Quick Stats */}
         <UsersQuickStats {...userStats} />
 
-        {/* Quick Actions */}
         <UsersQuickActions
-          onInviteUser={handleInviteUser}
+          onInviteUser={() => setInviteDialogOpen(true)}
           onRefreshUsers={fetchUsers}
           onExportUsers={handleExportUsers}
-          onBulkAssignRoles={handleBulkAssign}
+          onBulkAssignRoles={() => setBulkAssignOpen(true)}
         />
 
-        <InviteUserDialog
-          open={inviteDialogOpen}
-          onOpenChange={setInviteDialogOpen}
-          onUserCreated={fetchUsers}
-        />
-        <BulkRoleAssignDialog
-          open={bulkAssignOpen}
-          onOpenChange={setBulkAssignOpen}
-          users={users}
-          onComplete={fetchUsers}
-        />
         {/* Search and Filter */}
-        <Card>
+        <Card className="glass-strong">
           <CardContent className="pt-6">
             <div className="flex gap-4">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-                <Input 
-                  placeholder="Search users..." 
-                  className="pl-10" 
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name, email, or phone..."
+                  className="pl-10"
                   value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  aria-label="Search users"
+                  onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                 />
               </div>
-              <Select value={roleFilter} onValueChange={(value) => { setRoleFilter(value); setCurrentPage(1); }}>
+              <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setCurrentPage(1); }}>
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="Filter by role" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Roles</SelectItem>
-                  {roles.map((role) => (
-                    <SelectItem key={role.value} value={role.value}>
-                      {role.label}
-                    </SelectItem>
+                  {ROLE_OPTIONS.map((r) => (
+                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -295,115 +219,25 @@ const UserManagement = () => {
           </CardContent>
         </Card>
 
-        {/* Users List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>All Users ({filteredUsers.length})</CardTitle>
+        {/* Users Table */}
+        <Card className="glass-strong">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center justify-between">
+              <span>All Users</span>
+              <span className="text-sm font-normal text-muted-foreground">
+                {filteredUsers.length} user{filteredUsers.length !== 1 ? "s" : ""}
+              </span>
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="text-center py-8" role="status" aria-label="Loading users">Loading users...</div>
-            ) : paginatedUsers.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground" role="status" aria-label="No users found">No users found</div>
-            ) : (
-              <div className="space-y-4">
-                {paginatedUsers.map((user) => (
-                  <div
-                    key={user.id}
-                    className="flex items-center justify-between p-4 border border-border rounded-lg"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <User className="w-5 h-5 text-primary" aria-hidden="true" />
-                      </div>
-                      <div>
-                        <div className="font-semibold">
-                          {user.full_name || "No name"}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {user.email}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="flex flex-wrap gap-2">
-                        {user.user_roles.map((ur) => {
-                          const roleInfo = roles.find((r) => r.value === ur.role);
-                          return (
-                            <Badge
-                              key={ur.role}
-                              variant={
-                                roleInfo?.color as "default" | "destructive"
-                              }
-                              className="cursor-pointer hover:opacity-80"
-                              onClick={() => removeRole(user.id, ur.role)}
-                            >
-                              {roleInfo?.label} ×
-                            </Badge>
-                          );
-                        })}
-                        {user.user_roles.length === 0 && (
-                          <span className="text-sm text-muted-foreground">
-                            No roles assigned
-                          </span>
-                        )}
-                      </div>
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="gap-2"
-                            onClick={() => setSelectedUser(user.id)}
-                          >
-                            <UserPlus className="w-4 h-4" aria-hidden="true" />
-                            Assign Role
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Assign Role</DialogTitle>
-                            <DialogDescription>
-                              Assign a role to {user.full_name || user.email}
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-4 pt-4">
-                            <div className="space-y-2">
-                              <Label>Select Role</Label>
-                              <Select
-                                value={selectedRole}
-                                onValueChange={setSelectedRole}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Choose a role" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {roles.map((role) => (
-                                    <SelectItem
-                                      key={role.value}
-                                      value={role.value}
-                                    >
-                                      {role.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <Button
-                              onClick={assignRole}
-                              disabled={!selectedRole}
-                              className="w-full"
-                            >
-                              Assign Role
-                            </Button>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+          <CardContent className="px-0 pb-2">
+            <UserTable
+              users={paginatedUsers}
+              loading={loading}
+              onViewUser={setDetailUser}
+              onAssignRole={setDetailUser}
+              onResetPassword={setResetPwdUser}
+              onToggleStatus={setDeactivateUser}
+            />
           </CardContent>
         </Card>
 
@@ -412,24 +246,36 @@ const UserManagement = () => {
           <Pagination>
             <PaginationContent>
               <PaginationItem>
-                <PaginationPrevious 
+                <PaginationPrevious
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                 />
               </PaginationItem>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <PaginationItem key={page}>
-                  <PaginationLink
-                    onClick={() => setCurrentPage(page)}
-                    isActive={currentPage === page}
-                    className="cursor-pointer"
-                  >
-                    {page}
-                  </PaginationLink>
-                </PaginationItem>
-              ))}
+              {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                let page: number;
+                if (totalPages <= 7) {
+                  page = i + 1;
+                } else if (currentPage <= 4) {
+                  page = i + 1;
+                } else if (currentPage >= totalPages - 3) {
+                  page = totalPages - 6 + i;
+                } else {
+                  page = currentPage - 3 + i;
+                }
+                return (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      onClick={() => setCurrentPage(page)}
+                      isActive={currentPage === page}
+                      className="cursor-pointer"
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+              })}
               <PaginationItem>
-                <PaginationNext 
+                <PaginationNext
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                 />
@@ -438,37 +284,20 @@ const UserManagement = () => {
           </Pagination>
         )}
 
-        {/* Role Descriptions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Role Descriptions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {roles.map((role) => (
-                <div key={role.value} className="flex items-start gap-3">
-                  <Badge variant={role.color as "default" | "destructive"}>
-                    {role.label}
-                  </Badge>
-                  <div className="text-sm text-muted-foreground">
-                    {role.value === "super_admin" && "Full system access"}
-                    {role.value === "fleet_owner" && "View dashboards and reports"}
-                    {role.value === "operations_manager" &&
-                      "Manage fleet operations and drivers"}
-                    {role.value === "dispatcher" &&
-                      "Assign jobs and manage deliveries"}
-                    {role.value === "maintenance_lead" &&
-                      "Manage maintenance schedules"}
-                    {role.value === "fuel_controller" &&
-                      "Monitor and manage fuel consumption"}
-                    {role.value === "driver" && "View jobs and submit POD"}
-                    {role.value === "auditor" && "Read-only access to all data"}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        {/* Dialogs */}
+        <InviteUserDialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen} onUserCreated={fetchUsers} />
+        <BulkRoleAssignDialog open={bulkAssignOpen} onOpenChange={setBulkAssignOpen} users={users} onComplete={fetchUsers} />
+        <UserDetailDialog open={!!detailUser} onOpenChange={(o) => !o && setDetailUser(null)} user={detailUser} onUserUpdated={fetchUsers} />
+        <ResetPasswordDialog open={!!resetPwdUser} onOpenChange={(o) => !o && setResetPwdUser(null)} user={resetPwdUser} />
+        <ConfirmActionDialog
+          open={!!deactivateUser}
+          onOpenChange={(o) => !o && setDeactivateUser(null)}
+          title="Deactivate User"
+          description={`Are you sure you want to deactivate ${deactivateUser?.email}? They will no longer be able to sign in.`}
+          confirmLabel="Deactivate"
+          loading={deactivateLoading}
+          onConfirm={handleDeactivateUser}
+        />
       </div>
     </Layout>
   );
