@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Loader2, Truck, User, Gauge, FileText, Shield, Settings, MapPin } from "lucide-react";
+import { Loader2, Truck, User, FileText, Shield, Settings, MapPin, Paperclip } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   PLATE_CODES, PLATE_REGIONS, VEHICLE_TYPES_OPTIONS, VEHICLE_GROUPS, DRIVE_TYPES,
@@ -24,6 +24,8 @@ import {
   VEHICLE_STATUSES, OWNER_TYPES, OWNER_STATUSES, ASSIGNED_LOCATIONS,
   ADMIN_REGIONS,
 } from "./formConstants";
+import FileUploadField from "./FileUploadField";
+import { uploadFleetFile } from "./uploadFleetFile";
 
 const vehicleSchema = z.object({
   plate_number: z.string().trim().min(1, "Plate number is required"),
@@ -68,20 +70,45 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
     capacity_kg: "", capacity_volume: "", temperature_control: "none",
     gps_installed: "false", gps_device_id: "", odometer_km: "", status: "active",
     assigned_driver_id: "", notes: "", tank_capacity_liters: "",
-    ownership_type: "owned",
+    // Existing attachment URLs
+    owner_certificate_url: "", insurance_cert_url: "", tax_clearance_url: "",
+    photo_front_url: "", photo_back_url: "", photo_left_url: "", photo_right_url: "",
+    // Owner info
+    owner_id: "", owner_type: "individual", owner_full_name: "", owner_department: "",
+    owner_contact_person: "", owner_phone: "", owner_email: "",
+    owner_region: "", owner_zone: "", owner_woreda: "",
+    owner_govt_id: "", owner_tax_id: "", owner_status: "active",
   });
+
+  // File attachments
+  const [ownerCertFile, setOwnerCertFile] = useState<File | null>(null);
+  const [insuranceCertFile, setInsuranceCertFile] = useState<File | null>(null);
+  const [taxClearanceFile, setTaxClearanceFile] = useState<File | null>(null);
+  const [photoFrontFile, setPhotoFrontFile] = useState<File | null>(null);
+  const [photoBackFile, setPhotoBackFile] = useState<File | null>(null);
+  const [photoLeftFile, setPhotoLeftFile] = useState<File | null>(null);
+  const [photoRightFile, setPhotoRightFile] = useState<File | null>(null);
 
   const set = (field: string, value: string | number) => setFormData(prev => ({ ...prev, [field]: value }));
 
   useEffect(() => {
     if (open && vehicle?.vehicleId) {
       setFetchingData(true);
-      supabase.from("vehicles").select("*").eq("id", vehicle.vehicleId).single().then(({ data, error }) => {
-        setFetchingData(false);
-        if (error) { toast.error("Failed to load vehicle data"); return; }
+      setOwnerCertFile(null); setInsuranceCertFile(null); setTaxClearanceFile(null);
+      setPhotoFrontFile(null); setPhotoBackFile(null); setPhotoLeftFile(null); setPhotoRightFile(null);
+
+      supabase.from("vehicles").select("*").eq("id", vehicle.vehicleId).single().then(async ({ data, error }) => {
+        if (error) { setFetchingData(false); toast.error("Failed to load vehicle data"); return; }
         if (data) {
-          // Parse composite plate number
           const plateParts = (data.plate_number || "").split("-");
+
+          // Fetch owner data if linked
+          let ownerData: any = null;
+          if ((data as any).owner_id) {
+            const { data: od } = await supabase.from("vehicle_owners").select("*").eq("id", (data as any).owner_id).single();
+            ownerData = od;
+          }
+
           setFormData({
             plate_code: plateParts[0] || "3",
             plate_region: plateParts[1] || "AA",
@@ -113,9 +140,29 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
             assigned_driver_id: data.assigned_driver_id || "",
             notes: data.notes || "",
             tank_capacity_liters: data.tank_capacity_liters?.toString() || "",
-            ownership_type: data.ownership_type || "owned",
+            owner_certificate_url: (data as any).owner_certificate_url || "",
+            insurance_cert_url: (data as any).insurance_cert_url || "",
+            tax_clearance_url: (data as any).tax_clearance_url || "",
+            photo_front_url: (data as any).photo_front_url || "",
+            photo_back_url: (data as any).photo_back_url || "",
+            photo_left_url: (data as any).photo_left_url || "",
+            photo_right_url: (data as any).photo_right_url || "",
+            owner_id: (data as any).owner_id || "",
+            owner_type: ownerData?.owner_type || "individual",
+            owner_full_name: ownerData?.full_name || "",
+            owner_department: ownerData?.department || "",
+            owner_contact_person: ownerData?.contact_person || "",
+            owner_phone: ownerData?.phone || "",
+            owner_email: ownerData?.email || "",
+            owner_region: ownerData?.region || "",
+            owner_zone: ownerData?.zone || "",
+            owner_woreda: ownerData?.woreda || "",
+            owner_govt_id: ownerData?.govt_id_business_reg || "",
+            owner_tax_id: ownerData?.tax_id_vat || "",
+            owner_status: ownerData?.status || "active",
           });
         }
+        setFetchingData(false);
       });
     }
   }, [open, vehicle?.vehicleId]);
@@ -131,6 +178,41 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
         .select("id").eq("organization_id", organizationId)
         .eq("plate_number", data.plate_number).neq("id", vehicle.vehicleId).maybeSingle();
       if (existing) throw new Error(`Plate "${data.plate_number}" already exists`);
+
+      // Upload new attachments
+      const vid = vehicle.vehicleId;
+      if (ownerCertFile) data.owner_certificate_url = await uploadFleetFile("vehicle-attachments", vid, "owner_cert", ownerCertFile);
+      if (insuranceCertFile) data.insurance_cert_url = await uploadFleetFile("vehicle-attachments", vid, "insurance_cert", insuranceCertFile);
+      if (taxClearanceFile) data.tax_clearance_url = await uploadFleetFile("vehicle-attachments", vid, "tax_clearance", taxClearanceFile);
+      if (photoFrontFile) data.photo_front_url = await uploadFleetFile("vehicle-attachments", vid, "photo_front", photoFrontFile);
+      if (photoBackFile) data.photo_back_url = await uploadFleetFile("vehicle-attachments", vid, "photo_back", photoBackFile);
+      if (photoLeftFile) data.photo_left_url = await uploadFleetFile("vehicle-attachments", vid, "photo_left", photoLeftFile);
+      if (photoRightFile) data.photo_right_url = await uploadFleetFile("vehicle-attachments", vid, "photo_right", photoRightFile);
+
+      // Update or create vehicle owner
+      const ownerPayload: any = {
+        organization_id: organizationId,
+        owner_type: formData.owner_type,
+        full_name: formData.owner_full_name || null,
+        department: formData.owner_department || null,
+        contact_person: formData.owner_contact_person || null,
+        phone: formData.owner_phone || null,
+        email: formData.owner_email || null,
+        region: formData.owner_region || null,
+        zone: formData.owner_zone || null,
+        woreda: formData.owner_woreda || null,
+        govt_id_business_reg: formData.owner_govt_id || null,
+        tax_id_vat: formData.owner_tax_id || null,
+        status: formData.owner_status,
+      };
+
+      if (formData.owner_id) {
+        await supabase.from("vehicle_owners").update(ownerPayload).eq("id", formData.owner_id);
+        data.owner_id = formData.owner_id;
+      } else if (formData.owner_full_name || formData.owner_type !== "individual") {
+        const { data: newOwner } = await supabase.from("vehicle_owners").insert(ownerPayload).select("id").single();
+        if (newOwner) data.owner_id = newOwner.id;
+      }
 
       const { error } = await supabase.from("vehicles").update(data)
         .eq("id", vehicle.vehicleId).eq("organization_id", organizationId);
@@ -344,6 +426,20 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
                 </div>
               </Section>
 
+              {/* Vehicle Attachments */}
+              <Section icon={<Paperclip className="w-5 h-5 text-primary" />} title="Vehicle Attachments">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FileUploadField label="Owner Certificate" accept="image/*,.pdf" currentUrl={formData.owner_certificate_url || null} selectedFile={ownerCertFile} onFileSelect={setOwnerCertFile} />
+                  <FileUploadField label="Renewed 3rd Party Insurance Certificate" accept="image/*,.pdf" currentUrl={formData.insurance_cert_url || null} selectedFile={insuranceCertFile} onFileSelect={setInsuranceCertFile} />
+                  <FileUploadField label="Tax Clearance" accept="image/*,.pdf" currentUrl={formData.tax_clearance_url || null} selectedFile={taxClearanceFile} onFileSelect={setTaxClearanceFile} />
+                  <FileUploadField label="Vehicle Photo — Front" accept="image/*" currentUrl={formData.photo_front_url || null} selectedFile={photoFrontFile} onFileSelect={setPhotoFrontFile} />
+                  <FileUploadField label="Vehicle Photo — Back" accept="image/*" currentUrl={formData.photo_back_url || null} selectedFile={photoBackFile} onFileSelect={setPhotoBackFile} />
+                  <FileUploadField label="Vehicle Photo — Left Side" accept="image/*" currentUrl={formData.photo_left_url || null} selectedFile={photoLeftFile} onFileSelect={setPhotoLeftFile} />
+                  <FileUploadField label="Vehicle Photo — Right Side" accept="image/*" currentUrl={formData.photo_right_url || null} selectedFile={photoRightFile} onFileSelect={setPhotoRightFile} />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">Accepted: Images and PDF. Max size: 5MB per file.</p>
+              </Section>
+
               {/* Driver Assignment */}
               <Section icon={<User className="w-5 h-5 text-primary" />} title="Driver Assignment">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -355,6 +451,61 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
                         {activeDrivers.map(d => (
                           <SelectItem key={d.id} value={d.id}>{d.first_name} {d.last_name} - {d.license_number}</SelectItem>
                         ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                </div>
+              </Section>
+
+              {/* Vehicle Owner Information */}
+              <Section icon={<MapPin className="w-5 h-5 text-primary" />} title="Vehicle Owner Information">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Field label="Owner Type">
+                    <Select value={formData.owner_type} onValueChange={v => set("owner_type", v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {OWNER_TYPES.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                  <Field label="Full Name / Company Name"><Input value={formData.owner_full_name} onChange={e => set("owner_full_name", e.target.value)} /></Field>
+                  <Field label="Assigned Location">
+                    <Select value={formData.owner_department || "none"} onValueChange={v => set("owner_department", v === "none" ? "" : v)}>
+                      <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {["Corporate", "Zone", "Region"].map(group => (
+                          <SelectGroup key={group}>
+                            <SelectLabel>{group}</SelectLabel>
+                            {ASSIGNED_LOCATIONS.filter(l => l.group === group).map(l => (
+                              <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+                            ))}
+                          </SelectGroup>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                  <Field label="Contact Person"><Input value={formData.owner_contact_person} onChange={e => set("owner_contact_person", e.target.value)} /></Field>
+                  <Field label="Phone"><Input value={formData.owner_phone} onChange={e => set("owner_phone", e.target.value)} /></Field>
+                  <Field label="Email"><Input type="email" value={formData.owner_email} onChange={e => set("owner_email", e.target.value)} /></Field>
+                  <Field label="Region">
+                    <Select value={formData.owner_region || "none"} onValueChange={v => { set("owner_region", v === "none" ? "" : v); set("owner_zone", ""); set("owner_woreda", ""); }}>
+                      <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {ADMIN_REGIONS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                  <Field label="Zone"><Input value={formData.owner_zone} onChange={e => set("owner_zone", e.target.value)} disabled={!formData.owner_region} /></Field>
+                  <Field label="Woreda"><Input value={formData.owner_woreda} onChange={e => set("owner_woreda", e.target.value)} disabled={!formData.owner_zone} /></Field>
+                  <Field label="Gov't ID / Business Reg No"><Input value={formData.owner_govt_id} onChange={e => set("owner_govt_id", e.target.value)} /></Field>
+                  <Field label="Tax ID / VAT Number"><Input value={formData.owner_tax_id} onChange={e => set("owner_tax_id", e.target.value)} /></Field>
+                  <Field label="Owner Status">
+                    <Select value={formData.owner_status} onValueChange={v => set("owner_status", v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {OWNER_STATUSES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </Field>

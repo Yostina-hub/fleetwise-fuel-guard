@@ -15,12 +15,14 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { Loader2, User, CreditCard, Phone, FileText, Heart, AlertCircle, MapPin, Briefcase, Building2, Key, Copy, RefreshCw, Droplets } from "lucide-react";
+import { Loader2, User, CreditCard, FileText, AlertCircle, MapPin, Briefcase, Building2, Key, Copy, RefreshCw, Droplets, Paperclip } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   DRIVER_TYPES, ADMIN_REGIONS, ID_TYPES, LICENSE_TYPES, EMPLOYMENT_STATUSES,
   DRIVER_STATUSES, ROUTE_TYPES, BLOOD_TYPES, GENDERS, ASSIGNED_LOCATIONS,
 } from "./formConstants";
+import FileUploadField from "./FileUploadField";
+import { uploadFleetFile } from "./uploadFleetFile";
 
 const nameRegex = /^[\p{L}\s'.-]+$/u;
 
@@ -74,21 +76,51 @@ export default function CreateDriverDialog({ open, onOpenChange }: CreateDriverD
   const [formData, setFormData] = useState({ ...initialForm });
   const [showPassword, setShowPassword] = useState(false);
 
+  // File attachments
+  const [licenseFrontFile, setLicenseFrontFile] = useState<File | null>(null);
+  const [licenseBackFile, setLicenseBackFile] = useState<File | null>(null);
+  const [nationalIdFile, setNationalIdFile] = useState<File | null>(null);
+  const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
+
   const set = (field: string, value: string) => setFormData(prev => ({ ...prev, [field]: value }));
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
       if (!canSubmit()) throw new Error("Please wait before submitting again");
-      const { error } = await supabase.from("drivers").insert({
+      const { data: inserted, error } = await supabase.from("drivers").insert({
         ...data,
         organization_id: organizationId,
-      });
+      }).select("id").single();
       if (error) throw error;
+
+      // Upload attachments if provided
+      const driverId = inserted.id;
+      const updates: Record<string, string> = {};
+
+      if (licenseFrontFile) {
+        updates.license_front_url = await uploadFleetFile("driver-documents", driverId, "license_front", licenseFrontFile);
+      }
+      if (licenseBackFile) {
+        updates.license_back_url = await uploadFleetFile("driver-documents", driverId, "license_back", licenseBackFile);
+      }
+      if (nationalIdFile) {
+        updates.national_id_url = await uploadFleetFile("driver-documents", driverId, "national_id", nationalIdFile);
+      }
+      if (profilePhotoFile) {
+        updates.avatar_url = await uploadFleetFile("driver-documents", driverId, "profile_photo", profilePhotoFile);
+      }
+
+      if (Object.keys(updates).length > 0) {
+        const { error: updateErr } = await supabase.from("drivers").update(updates).eq("id", driverId);
+        if (updateErr) console.error("Failed to update attachment URLs:", updateErr);
+      }
     },
     onSuccess: () => {
       toast({ title: "Success", description: "Driver registered successfully" });
       queryClient.invalidateQueries({ queryKey: ["drivers"] });
       setFormData({ ...initialForm });
+      setLicenseFrontFile(null); setLicenseBackFile(null);
+      setNationalIdFile(null); setProfilePhotoFile(null);
       onOpenChange(false);
     },
     onError: (error: any) => {
@@ -282,6 +314,37 @@ export default function CreateDriverDialog({ open, onOpenChange }: CreateDriverD
               </div>
             </Section>
 
+            {/* 1.5 Driver Attachments */}
+            <Section icon={<Paperclip className="w-5 h-5 text-primary" />} title="Driver Attachments">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FileUploadField
+                  label="Driver's License (Front)"
+                  accept="image/*,.pdf"
+                  selectedFile={licenseFrontFile}
+                  onFileSelect={setLicenseFrontFile}
+                />
+                <FileUploadField
+                  label="Driver's License (Back)"
+                  accept="image/*,.pdf"
+                  selectedFile={licenseBackFile}
+                  onFileSelect={setLicenseBackFile}
+                />
+                <FileUploadField
+                  label="National ID Card"
+                  accept="image/*,.pdf"
+                  selectedFile={nationalIdFile}
+                  onFileSelect={setNationalIdFile}
+                />
+                <FileUploadField
+                  label="Profile Photo"
+                  accept="image/*"
+                  selectedFile={profilePhotoFile}
+                  onFileSelect={setProfilePhotoFile}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">Accepted: Images and PDF. Max size: 5MB per file.</p>
+            </Section>
+
             {/* 1.6 Employment Details */}
             <Section icon={<Building2 className="w-5 h-5 text-primary" />} title="Employment Details">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -361,15 +424,6 @@ export default function CreateDriverDialog({ open, onOpenChange }: CreateDriverD
                       {BLOOD_TYPES.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                </Field>
-              </div>
-            </Section>
-
-            {/* Medical */}
-            <Section icon={<Heart className="w-5 h-5 text-primary" />} title="Medical Information">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Field label="Medical Certificate Expiry">
-                  <Input type="date" value={formData.medical_certificate_expiry} onChange={e => set("medical_certificate_expiry", e.target.value)} />
                 </Field>
               </div>
             </Section>
