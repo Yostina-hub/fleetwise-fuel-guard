@@ -179,9 +179,9 @@ async function evaluateCondition(nodeType: string, config: Record<string, any> |
 }
 
 async function evaluateGeoProximity(config: Record<string, any> | undefined, orgId: string): Promise<ExecutionResult> {
-  const { data } = await supabase
+  const { data } = await (supabase
     .from("vehicle_telemetry")
-    .select("lat, lng, vehicle_id")
+    .select("latitude, longitude, vehicle_id")
     .eq("organization_id", orgId)
     .not("latitude", "is", null)
     .order("last_communication_at", { ascending: false })
