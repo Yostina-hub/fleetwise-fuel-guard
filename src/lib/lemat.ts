@@ -54,18 +54,25 @@ const getRasterStyle = (
 export const getPreviewSafeMapStyle = (style: LematMapStyle = 'streets'): maplibregl.StyleSpecification => {
   if (style === 'satellite') return getSatelliteRasterStyle();
 
+  const cartoAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+
   if (style === 'dark') {
     return getRasterStyle(
-      'CARTO Dark',
-      ['https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'],
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      'CARTO Dark Matter',
+      [
+        'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+      ],
+      cartoAttribution,
     );
   }
 
+  // Use CARTO Voyager — much more detailed than Light (shows buildings, POIs, labels)
   return getRasterStyle(
-    'CARTO Light',
-    ['https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'],
-    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    'CARTO Voyager',
+    [
+      'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
+    ],
+    cartoAttribution,
   );
 };
 

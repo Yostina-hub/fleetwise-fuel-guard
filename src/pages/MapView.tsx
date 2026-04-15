@@ -166,7 +166,7 @@ const MapView = () => {
     originLng?: number;
   }>({ open: false, lat: 0, lng: 0, plate: '', type: 'streetview' });
   
-  const [mapStyle, setMapStyle] = useState<'streets' | 'satellite' | 'dark'>('streets');
+  const [mapStyle, setMapStyle] = useState<'streets' | 'satellite' | 'dark'>('dark');
   const [measureFromPoint, setMeasureFromPoint] = useState<[number, number] | null>(null);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [showTimeWarp, setShowTimeWarp] = useState(false);
