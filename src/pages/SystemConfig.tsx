@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Settings2, Radio, Droplet, Mail, MessageSquare, Save, Loader2, Shield, Database, Clock } from "lucide-react";
+import { Settings2, Radio, Droplet, Mail, MessageSquare, Save, Loader2, Shield, Database, Clock, Map } from "lucide-react";
+import { MapProviderSettings } from "@/components/alerts/MapProviderSettings";
 import DeviceProtocolsTab from "@/components/config/DeviceProtocolsTab";
 import FuelDetectionTab from "@/components/config/FuelDetectionTab";
 import EnrichmentTab from "@/components/config/EnrichmentTab";
@@ -118,6 +119,7 @@ const SystemConfig = () => {
             <TabsTrigger value="fuel" className="gap-1.5 text-xs"><Droplet className="h-3.5 w-3.5" /> Fuel</TabsTrigger>
             <TabsTrigger value="smtp" className="gap-1.5 text-xs"><Mail className="h-3.5 w-3.5" /> SMTP</TabsTrigger>
             <TabsTrigger value="sms" className="gap-1.5 text-xs"><MessageSquare className="h-3.5 w-3.5" /> SMS</TabsTrigger>
+            <TabsTrigger value="maps" className="gap-1.5 text-xs"><Map className="h-3.5 w-3.5" /> Maps</TabsTrigger>
           </TabsList>
 
           {/* General Settings */}
@@ -185,6 +187,7 @@ const SystemConfig = () => {
           <TabsContent value="fuel"><Card className="p-6"><FuelDetectionTab /></Card></TabsContent>
           <TabsContent value="smtp"><Card className="p-6"><SmtpConfigTab /></Card></TabsContent>
           <TabsContent value="sms"><Card className="p-6"><SmsGatewayTab /></Card></TabsContent>
+          <TabsContent value="maps"><MapProviderSettings /></TabsContent>
         </Tabs>
       </div>
     </Layout>
