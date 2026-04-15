@@ -18,6 +18,13 @@ import { useTranslation } from "react-i18next";
 
 const Incidents = () => {
   const { t } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "incidents";
+
+  const handleTabChange = (value: string) => {
+    setSearchParams(value === "incidents" ? {} : { tab: value });
+  };
+
   return (
     <Layout>
       <div className="p-4 md:p-8 space-y-6 animate-fade-in">
