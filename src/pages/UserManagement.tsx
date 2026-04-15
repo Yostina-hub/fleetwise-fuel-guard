@@ -190,8 +190,8 @@ const UserManagement = () => {
             <UserTable
               users={paginatedUsers}
               loading={loading}
-              onViewUser={setDetailUser}
-              onAssignRole={setDetailUser}
+              onViewUser={(u) => { setDetailTab("profile"); setDetailUser(u); }}
+              onAssignRole={(u) => { setDetailTab("roles"); setDetailUser(u); }}
               onResetPassword={setResetPwdUser}
               onToggleStatus={setDeactivateUser}
             />
@@ -244,7 +244,7 @@ const UserManagement = () => {
         {/* Dialogs */}
         <InviteUserDialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen} onUserCreated={fetchUsers} />
         <BulkRoleAssignDialog open={bulkAssignOpen} onOpenChange={setBulkAssignOpen} users={users} onComplete={fetchUsers} />
-        <UserDetailDialog open={!!detailUser} onOpenChange={(o) => !o && setDetailUser(null)} user={detailUser} onUserUpdated={fetchUsers} />
+        <UserDetailDialog open={!!detailUser} onOpenChange={(o) => !o && setDetailUser(null)} user={detailUser} onUserUpdated={fetchUsers} initialTab={detailTab} />
         <ResetPasswordDialog open={!!resetPwdUser} onOpenChange={(o) => !o && setResetPwdUser(null)} user={resetPwdUser} />
         <ConfirmActionDialog
           open={!!deactivateUser}
