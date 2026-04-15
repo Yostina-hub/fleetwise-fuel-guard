@@ -4,8 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import EnergyCostRatesManager from "@/components/energy/EnergyCostRatesManager";
-import { supabase } from "@/integrations/supabase/client";
-import { useOrganization } from "@/hooks/useOrganization";
 
 export const EVCostAnalysis = () => {
   const { organizationId } = useOrganization();
