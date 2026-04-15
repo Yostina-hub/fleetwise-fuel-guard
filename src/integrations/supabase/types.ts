@@ -30,6 +30,7 @@ export type Database = {
           driver_id: string | null
           estimated_repair_cost: number | null
           fault_determination: string | null
+          fault_party: string | null
           filed_at: string | null
           id: string
           incident_id: string | null
@@ -65,6 +66,7 @@ export type Database = {
           driver_id?: string | null
           estimated_repair_cost?: number | null
           fault_determination?: string | null
+          fault_party?: string | null
           filed_at?: string | null
           id?: string
           incident_id?: string | null
@@ -100,6 +102,7 @@ export type Database = {
           driver_id?: string | null
           estimated_repair_cost?: number | null
           fault_determination?: string | null
+          fault_party?: string | null
           filed_at?: string | null
           id?: string
           incident_id?: string | null
@@ -7553,13 +7556,120 @@ export type Database = {
         }
         Relationships: []
       }
+      incident_tickets: {
+        Row: {
+          assigned_to: string | null
+          assigned_to_name: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          driver_id: string | null
+          due_date: string | null
+          id: string
+          incident_id: string | null
+          organization_id: string
+          priority: string
+          related_claim_id: string | null
+          related_violation_id: string | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          subject: string
+          ticket_number: string
+          ticket_type: string
+          updated_at: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          assigned_to_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          driver_id?: string | null
+          due_date?: string | null
+          id?: string
+          incident_id?: string | null
+          organization_id: string
+          priority?: string
+          related_claim_id?: string | null
+          related_violation_id?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          subject: string
+          ticket_number: string
+          ticket_type?: string
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          assigned_to_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          driver_id?: string | null
+          due_date?: string | null
+          id?: string
+          incident_id?: string | null
+          organization_id?: string
+          priority?: string
+          related_claim_id?: string | null
+          related_violation_id?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          subject?: string
+          ticket_number?: string
+          ticket_type?: string
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_tickets_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_tickets_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "incidents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_tickets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_tickets_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       incidents: {
         Row: {
           actual_cost: number | null
+          assigned_to: string | null
+          assigned_to_name: string | null
           created_at: string
           description: string
           driver_id: string | null
           estimated_cost: number | null
+          fault_party: string | null
           id: string
           incident_number: string
           incident_time: string
@@ -7576,10 +7686,13 @@ export type Database = {
         }
         Insert: {
           actual_cost?: number | null
+          assigned_to?: string | null
+          assigned_to_name?: string | null
           created_at?: string
           description: string
           driver_id?: string | null
           estimated_cost?: number | null
+          fault_party?: string | null
           id?: string
           incident_number: string
           incident_time: string
@@ -7596,10 +7709,13 @@ export type Database = {
         }
         Update: {
           actual_cost?: number | null
+          assigned_to?: string | null
+          assigned_to_name?: string | null
           created_at?: string
           description?: string
           driver_id?: string | null
           estimated_cost?: number | null
+          fault_party?: string | null
           id?: string
           incident_number?: string
           incident_time?: string
