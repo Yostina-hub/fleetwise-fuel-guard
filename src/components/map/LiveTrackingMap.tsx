@@ -215,10 +215,10 @@ useEffect(() => {
           if (isStyleFailure && !fallbackTriedRef.current) {
             fallbackTriedRef.current = true;
             setMapLoaded(false);
-            try {
-              map.current?.setStyle(getLematMapStyle(mapStyle));
-              return;
-            } catch {}
+            fetchLematMapStyle(mapStyle).then((s) => {
+              try { map.current?.setStyle(s); } catch {}
+            }).catch(() => {});
+            return;
           }
 
           if (isStyleFailure && fallbackTriedRef.current) {
