@@ -7,6 +7,7 @@ import { SOSAlertPanel } from "@/components/alerts/SOSAlertPanel";
 import { FuelAlertsTab } from "@/components/alerts/FuelAlertsTab";
 import { MaintenanceAlertsTab } from "@/components/alerts/MaintenanceAlertsTab";
 import { EVAlertsTab } from "@/components/alerts/EVAlertsTab";
+import { MapProviderSettings } from "@/components/alerts/MapProviderSettings";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
