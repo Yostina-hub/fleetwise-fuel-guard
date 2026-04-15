@@ -4,13 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, XCircle, Clock, AlertTriangle, ArrowRight, Truck, LogIn, Send, Shuffle } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { CheckCircle, XCircle, Clock, AlertTriangle, ArrowRight, Truck, LogIn, Send, Shuffle, UserCheck } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useVehicles } from "@/hooks/useVehicles";
+import { useAvailableVehicles } from "@/hooks/useAvailableVehicles";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
+import { sendDispatchSms } from "@/services/smsNotificationService";
 
 interface Props {
   request: any;
