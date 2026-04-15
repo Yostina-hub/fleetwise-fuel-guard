@@ -93,7 +93,6 @@ export const EVChargingReportTable = ({ sessions, view = "sessions" }: EVChargin
   }, [sessions, view]);
 
   const displayData = view === "sessions" ? sessions : view === "state" ? vehicleStateData : costData;
-  const totalPages = Math.ceil(displayData.length / perPage);
   const paged = displayData.slice((page - 1) * perPage, page * perPage);
 
   const totals = useMemo(() => ({
@@ -227,9 +226,9 @@ export const EVChargingReportTable = ({ sessions, view = "sessions" }: EVChargin
             </table>
           )}
         </div>
-        {totalPages > 1 && (
+        {displayData.length > perPage && (
           <div className="p-4 border-t">
-            <TablePagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+            <TablePagination currentPage={page} totalItems={displayData.length} itemsPerPage={perPage} onPageChange={setPage} />
           </div>
         )}
       </CardContent>

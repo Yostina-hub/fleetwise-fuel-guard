@@ -16,7 +16,6 @@ export const FuelFillupLocationTable = ({ transactions }: FuelFillupLocationTabl
 
   // Only show transactions that have location data
   const withLocation = transactions.filter((t: any) => t.lat && t.lng || t.location_name);
-  const totalPages = Math.ceil(withLocation.length / perPage);
   const paged = withLocation.slice((page - 1) * perPage, page * perPage);
 
   if (withLocation.length === 0) {
@@ -88,9 +87,9 @@ export const FuelFillupLocationTable = ({ transactions }: FuelFillupLocationTabl
             </tbody>
           </table>
         </div>
-        {totalPages > 1 && (
+        {withLocation.length > perPage && (
           <div className="p-4 border-t">
-            <TablePagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+            <TablePagination currentPage={page} totalItems={withLocation.length} itemsPerPage={perPage} onPageChange={setPage} />
           </div>
         )}
       </CardContent>

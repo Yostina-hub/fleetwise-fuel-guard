@@ -12,7 +12,6 @@ interface FuelAuthorizationTableProps {
 export const FuelAuthorizationTable = ({ requests }: FuelAuthorizationTableProps) => {
   const [page, setPage] = useState(1);
   const perPage = 20;
-  const totalPages = Math.ceil(requests.length / perPage);
   const paged = requests.slice((page - 1) * perPage, page * perPage);
 
   const statusColor = (s: string) => {
@@ -82,9 +81,9 @@ export const FuelAuthorizationTable = ({ requests }: FuelAuthorizationTableProps
             </tbody>
           </table>
         </div>
-        {totalPages > 1 && (
+        {requests.length > perPage && (
           <div className="p-4 border-t">
-            <TablePagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+            <TablePagination currentPage={page} totalItems={requests.length} itemsPerPage={perPage} onPageChange={setPage} />
           </div>
         )}
       </CardContent>

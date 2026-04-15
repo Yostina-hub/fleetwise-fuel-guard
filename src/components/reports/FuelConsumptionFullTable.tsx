@@ -73,7 +73,6 @@ export const FuelConsumptionFullTable = ({ transactions, fuelEvents }: FuelConsu
     })).sort((a, b) => b.totalCost - a.totalCost);
   }, [transactions, fuelEvents]);
 
-  const totalPages = Math.ceil(vehicleData.length / perPage);
   const paged = vehicleData.slice((page - 1) * perPage, page * perPage);
 
   const totals = useMemo(() => ({
@@ -150,9 +149,9 @@ export const FuelConsumptionFullTable = ({ transactions, fuelEvents }: FuelConsu
             </tbody>
           </table>
         </div>
-        {totalPages > 1 && (
+        {vehicleData.length > perPage && (
           <div className="p-4 border-t">
-            <TablePagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+            <TablePagination currentPage={page} totalItems={vehicleData.length} itemsPerPage={perPage} onPageChange={setPage} />
           </div>
         )}
       </CardContent>
