@@ -138,7 +138,7 @@ const IncidentsListTab = ({ externalCreateOpen, onExternalCreateClose }: Inciden
       vehicle_id: newIncident.vehicle_id || undefined,
       driver_id: newIncident.driver_id || undefined,
     });
-    setShowCreateDialog(false);
+    handleDialogClose(false);
     setNewIncident({
       incident_type: 'accident',
       vehicle_id: '',
@@ -431,7 +431,7 @@ const IncidentsListTab = ({ externalCreateOpen, onExternalCreateClose }: Inciden
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => handleDialogClose(false)}>Cancel</Button>
             <Button onClick={handleCreateIncident} disabled={!newIncident.description}>
               Submit Report
             </Button>
