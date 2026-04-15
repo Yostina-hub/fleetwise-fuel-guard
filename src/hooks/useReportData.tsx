@@ -446,6 +446,50 @@ export const useReportData = (dateRange: DateRange) => {
     enabled: !!organizationId,
   });
 
+  // Fetch fuel requests (clearance/authorization)
+  const { data: fuelRequests, isLoading: fuelRequestsLoading } = useQuery({
+    queryKey: ['report-fuel-requests', organizationId, dateRange.start.toISOString(), dateRange.end.toISOString()],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data, error } = await supabase
+        .from('fuel_requests')
+        .select(`
+          *,
+          vehicle:vehicle_id (plate_number),
+          driver:driver_id (first_name, last_name)
+        `)
+        .eq('organization_id', organizationId)
+        .gte('requested_at', startOfDay(dateRange.start).toISOString())
+        .lte('requested_at', endOfDay(dateRange.end).toISOString())
+        .order('requested_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId,
+  });
+
+  // Fetch EV charging sessions
+  const { data: evChargingSessions, isLoading: evChargingLoading } = useQuery({
+    queryKey: ['report-ev-charging', organizationId, dateRange.start.toISOString(), dateRange.end.toISOString()],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data, error } = await supabase
+        .from('ev_charging_sessions')
+        .select(`
+          *,
+          vehicle:vehicle_id (plate_number),
+          driver:driver_id (first_name, last_name)
+        `)
+        .eq('organization_id', organizationId)
+        .gte('start_time', startOfDay(dateRange.start).toISOString())
+        .lte('start_time', endOfDay(dateRange.end).toISOString())
+        .order('start_time', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId,
+  });
+
   // Fetch vehicle inspections
   const { data: vehicleInspections, isLoading: inspectionsLoading } = useQuery({
     queryKey: ['report-inspections', organizationId, dateRange.start.toISOString(), dateRange.end.toISOString()],
