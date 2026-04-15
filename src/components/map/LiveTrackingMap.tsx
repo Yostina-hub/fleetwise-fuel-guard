@@ -154,7 +154,8 @@ useEffect(() => {
       if (!mapContainer.current || map.current) return;
 
       try {
-        const initialStyle = await fetchLematMapStyle(mapStyle);
+        const activeProvider = getActiveProvider();
+        const initialStyle = await getProviderStyle(activeProvider, mapStyle);
 
         if (!mapContainer.current || map.current) return;
 
@@ -216,7 +217,7 @@ useEffect(() => {
           if (isStyleFailure && !fallbackTriedRef.current) {
             fallbackTriedRef.current = true;
             setMapLoaded(false);
-            fetchLematMapStyle(mapStyle).then((s) => {
+            getProviderStyle(getActiveProvider(), mapStyle).then((s) => {
               try { map.current?.setStyle(s); } catch {}
             }).catch(() => {});
             return;
@@ -274,7 +275,8 @@ useEffect(() => {
     const applyStyle = async () => {
       if (!map.current) return;
       try {
-        const targetStyle = await fetchLematMapStyle(mapStyle);
+        const activeProvider = getActiveProvider();
+        const targetStyle = await getProviderStyle(activeProvider, mapStyle);
         setMapLoaded(false);
         setTokenError(null);
         // Clear trail source tracking so they get re-added after style loads
