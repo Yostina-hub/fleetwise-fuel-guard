@@ -39,3 +39,44 @@
 5. Rental Vehicle UI enhancements
 6. Route Planning page
 7. Report Export utilities
+
+---
+
+## Phase 4: Enterprise Maintenance Management Suite
+
+### 4.1 — Maintenance Ticket System
+**Tables:** `maintenance_tickets`
+- Ticket lifecycle: open → triaged → assigned → in_progress → pending_parts → resolved → closed
+- Priority levels P1-P4 with auto-SLA deadlines
+- Lead time tracking (response + resolution)
+- Escalation workflows based on SLA breach
+- UI: Kanban board with drag-drop status transitions
+
+### 4.2 — Contractual & SLA Management
+**Tables:** `maintenance_contracts`, `maintenance_cost_tracking`
+- Service agreements with vendors (annual, per-service, warranty, fleet-wide)
+- SLA terms in JSONB (response_hours, resolution_hours, uptime_guarantee)
+- Cost breakdown per ticket: labor, parts, external, transport, disposal
+- Budget vs actual tracking with variance alerts
+- Warranty tracking per vehicle with expiry notifications
+
+### 4.3 — Supplier Portal (iSupplier)
+**Tables:** `supplier_profiles`, `purchase_orders`, `supplier_bids`
+- Supplier directory with performance scoring (on-time %, quality, cost variance)
+- RFQ → Bid Collection → Comparison Matrix → Award workflow
+- PO lifecycle: draft → submitted → approved → sent → acknowledged → fulfilled → invoiced → paid
+- Multi-level approval routing based on cost thresholds
+- Invoice matching and payment tracking
+
+### 4.4 — Work Order Portal (Dual)
+**Tables:** `work_order_portal_access`
+- Internal technician queue with time logging and parts requests
+- External supplier view with status updates and completion photos
+- Portal access management with role-based permissions
+- Completion verification workflow
+
+### 4.5 — ERP Integration Layer
+- Internal approval chains via existing `approval_levels` table
+- Export-ready data for SAP/Oracle/Odoo sync
+- Webhook events for WO status changes (existing webhook infrastructure)
+- Cost center mapping to existing `cost_centers` table
