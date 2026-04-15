@@ -114,6 +114,8 @@ const Reports = () => {
     fuelTransactions,
     fuelEvents,
     fuelTheftCases,
+    fuelRequests,
+    evChargingSessions,
     alerts,
     maintenanceSchedules,
     workOrders,
