@@ -6088,6 +6088,47 @@ export type Database = {
           },
         ]
       }
+      fleet_pools: {
+        Row: {
+          category: string
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          name: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_pools_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fuel_alert_settings: {
         Row: {
           consumption_alert_enabled: boolean | null
@@ -15245,96 +15286,153 @@ export type Database = {
       vehicle_requests: {
         Row: {
           actual_assignment_minutes: number | null
+          approval_routed_to: string | null
+          approval_status: string | null
           assigned_at: string | null
           assigned_by: string | null
           assigned_driver_id: string | null
           assigned_vehicle_id: string | null
+          auto_closed: boolean | null
           cancellation_reason: string | null
           cancelled_at: string | null
+          check_in_at: string | null
+          check_in_by: string | null
           completed_at: string | null
           created_at: string
+          departure_lat: number | null
+          departure_lng: number | null
+          departure_place: string | null
           destination: string | null
+          destination_lat: number | null
+          destination_lng: number | null
           dispatcher_notes: string | null
           distance_estimate_km: number | null
+          end_time: string | null
           id: string
           kpi_target_minutes: number | null
           needed_from: string
           needed_until: string | null
+          num_vehicles: number | null
           organization_id: string
           passengers: number | null
+          pool_category: string | null
           pool_location: string | null
+          pool_name: string | null
           priority: string | null
           purpose: string
+          rejection_reason: string | null
           request_number: string
           request_type: string | null
           requester_feedback: string | null
           requester_id: string
           requester_name: string
           requester_rating: number | null
+          start_time: string | null
           status: string | null
+          trip_duration_days: number | null
+          trip_type: string | null
           updated_at: string
+          vehicle_type: string | null
         }
         Insert: {
           actual_assignment_minutes?: number | null
+          approval_routed_to?: string | null
+          approval_status?: string | null
           assigned_at?: string | null
           assigned_by?: string | null
           assigned_driver_id?: string | null
           assigned_vehicle_id?: string | null
+          auto_closed?: boolean | null
           cancellation_reason?: string | null
           cancelled_at?: string | null
+          check_in_at?: string | null
+          check_in_by?: string | null
           completed_at?: string | null
           created_at?: string
+          departure_lat?: number | null
+          departure_lng?: number | null
+          departure_place?: string | null
           destination?: string | null
+          destination_lat?: number | null
+          destination_lng?: number | null
           dispatcher_notes?: string | null
           distance_estimate_km?: number | null
+          end_time?: string | null
           id?: string
           kpi_target_minutes?: number | null
           needed_from: string
           needed_until?: string | null
+          num_vehicles?: number | null
           organization_id: string
           passengers?: number | null
+          pool_category?: string | null
           pool_location?: string | null
+          pool_name?: string | null
           priority?: string | null
           purpose: string
+          rejection_reason?: string | null
           request_number: string
           request_type?: string | null
           requester_feedback?: string | null
           requester_id: string
           requester_name: string
           requester_rating?: number | null
+          start_time?: string | null
           status?: string | null
+          trip_duration_days?: number | null
+          trip_type?: string | null
           updated_at?: string
+          vehicle_type?: string | null
         }
         Update: {
           actual_assignment_minutes?: number | null
+          approval_routed_to?: string | null
+          approval_status?: string | null
           assigned_at?: string | null
           assigned_by?: string | null
           assigned_driver_id?: string | null
           assigned_vehicle_id?: string | null
+          auto_closed?: boolean | null
           cancellation_reason?: string | null
           cancelled_at?: string | null
+          check_in_at?: string | null
+          check_in_by?: string | null
           completed_at?: string | null
           created_at?: string
+          departure_lat?: number | null
+          departure_lng?: number | null
+          departure_place?: string | null
           destination?: string | null
+          destination_lat?: number | null
+          destination_lng?: number | null
           dispatcher_notes?: string | null
           distance_estimate_km?: number | null
+          end_time?: string | null
           id?: string
           kpi_target_minutes?: number | null
           needed_from?: string
           needed_until?: string | null
+          num_vehicles?: number | null
           organization_id?: string
           passengers?: number | null
+          pool_category?: string | null
           pool_location?: string | null
+          pool_name?: string | null
           priority?: string | null
           purpose?: string
+          rejection_reason?: string | null
           request_number?: string
           request_type?: string | null
           requester_feedback?: string | null
           requester_id?: string
           requester_name?: string
           requester_rating?: number | null
+          start_time?: string | null
           status?: string | null
+          trip_duration_days?: number | null
+          trip_type?: string | null
           updated_at?: string
+          vehicle_type?: string | null
         }
         Relationships: [
           {
@@ -16741,6 +16839,10 @@ export type Database = {
         }[]
       }
       refresh_telemetry_aggregates: { Args: never; Returns: undefined }
+      route_vehicle_request_approval: {
+        Args: { p_request_id: string }
+        Returns: string
+      }
       send_notification: {
         Args: {
           _link?: string

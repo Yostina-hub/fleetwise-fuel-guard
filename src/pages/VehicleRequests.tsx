@@ -3,33 +3,24 @@ import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ClipboardList, Plus, Clock, CheckCircle, XCircle, Truck, Eye, MessageSquare } from "lucide-react";
 import { VehicleRequestKPI } from "@/components/vehicle-requests/VehicleRequestKPI";
+import { VehicleRequestForm } from "@/components/vehicle-requests/VehicleRequestForm";
+import { VehicleRequestApprovalFlow } from "@/components/vehicle-requests/VehicleRequestApprovalFlow";
 import { RequesterFeedbackDialog } from "@/components/vehicle-requests/RequesterFeedbackDialog";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
-import { useVehicles } from "@/hooks/useVehicles";
 import { format } from "date-fns";
-import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
-import { useTranslation } from 'react-i18next';
 const VehicleRequests = () => {
   const { t } = useTranslation();
   const { organizationId } = useOrganization();
-  const { vehicles } = useVehicles();
-  const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [showDetail, setShowDetail] = useState<any>(null);
   const [showFeedback, setShowFeedback] = useState<any>(null);
-  const [form, setForm] = useState({
-    requester_name: "", purpose: "", needed_from: "", needed_until: "", destination: "", priority: "normal", passengers: "", pool_location: "",
-  });
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ["vehicle-requests", organizationId],
@@ -61,62 +52,14 @@ const VehicleRequests = () => {
     enabled: !!organizationId,
   });
 
-  const createMutation = useMutation({
-    mutationFn: async () => {
-      const user = (await supabase.auth.getUser()).data.user;
-      const { error } = await (supabase as any).from("vehicle_requests").insert({
-        organization_id: organizationId!,
-        request_number: `VR-${Date.now().toString(36).toUpperCase()}`,
-        requester_id: user?.id,
-        requester_name: form.requester_name,
-        purpose: form.purpose,
-        needed_from: form.needed_from,
-        needed_until: form.needed_until || null,
-        destination: form.destination || null,
-        priority: form.priority,
-        passengers: form.passengers ? parseInt(form.passengers) : null,
-        pool_location: form.pool_location || null,
-        status: "pending",
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Vehicle request created");
-      queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
-      setShowCreate(false);
-      setForm({ requester_name: "", purpose: "", needed_from: "", needed_until: "", destination: "", priority: "normal", passengers: "", pool_location: "" });
-    },
-    onError: (err: any) => toast.error(err.message),
-  });
-
-  const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status, vehicle_id }: { id: string; status: string; vehicle_id?: string }) => {
-      const updates: any = { status };
-      if (status === "assigned" && vehicle_id) {
-        updates.assigned_vehicle_id = vehicle_id;
-        updates.assigned_at = new Date().toISOString();
-        // Calculate actual_assignment_minutes
-        const req = requests.find((r: any) => r.id === id);
-        if (req) {
-          const mins = Math.round((Date.now() - new Date(req.created_at).getTime()) / 60000);
-          updates.actual_assignment_minutes = mins;
-        }
-      }
-      if (status === "completed") updates.completed_at = new Date().toISOString();
-      if (status === "cancelled") updates.cancelled_at = new Date().toISOString();
-      const { error } = await (supabase as any).from("vehicle_requests").update(updates).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Request updated");
-      queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
-      setShowDetail(null);
-    },
-    onError: (err: any) => toast.error(err.message),
-  });
-
   const statusColors: Record<string, string> = {
     pending: "secondary", approved: "default", assigned: "default", rejected: "destructive", completed: "outline", cancelled: "secondary",
+  };
+
+  const requestTypeLabels: Record<string, string> = {
+    daily_operation: "Daily",
+    project_operation: "Project",
+    field_operation: "Field",
   };
 
   const pending = requests.filter((r: any) => r.status === "pending").length;
@@ -172,11 +115,13 @@ const VehicleRequests = () => {
                 <table className="w-full text-sm">
                   <thead><tr className="border-b text-xs text-muted-foreground">
                     <th className="text-left py-2 px-3">Request #</th>
+                    <th className="text-left py-2 px-3">Type</th>
                     <th className="text-left py-2 px-3">Requester</th>
-                    <th className="text-left py-2 px-3">Purpose</th>
+                    <th className="text-left py-2 px-3">Route</th>
+                    <th className="text-left py-2 px-3">Pool</th>
                     <th className="text-left py-2 px-3">Needed From</th>
                     <th className="text-left py-2 px-3">Vehicle</th>
-                    <th className="text-center py-2 px-3">Priority</th>
+                    <th className="text-center py-2 px-3">Trip</th>
                     <th className="text-center py-2 px-3">Status</th>
                     <th className="text-center py-2 px-3">Actions</th>
                   </tr></thead>
@@ -184,11 +129,27 @@ const VehicleRequests = () => {
                     {requests.map((r: any) => (
                       <tr key={r.id} className="border-b hover:bg-muted/30">
                         <td className="py-2 px-3 font-medium">{r.request_number}</td>
+                        <td className="py-2 px-3">
+                          <Badge variant="outline" className="text-[10px]">
+                            {requestTypeLabels[r.request_type] || r.request_type || "—"}
+                          </Badge>
+                        </td>
                         <td className="py-2 px-3">{r.requester_name}</td>
-                        <td className="py-2 px-3 text-muted-foreground max-w-[200px] truncate">{r.purpose}</td>
+                        <td className="py-2 px-3 text-muted-foreground text-xs max-w-[150px] truncate">
+                          {r.departure_place && r.destination
+                            ? `${r.departure_place} → ${r.destination}`
+                            : r.destination || r.departure_place || "—"}
+                        </td>
+                        <td className="py-2 px-3 text-muted-foreground text-xs">{r.pool_name || "—"}</td>
                         <td className="py-2 px-3 text-muted-foreground">{format(new Date(r.needed_from), "MMM dd, HH:mm")}</td>
                         <td className="py-2 px-3 text-muted-foreground">{r.assigned_vehicle?.plate_number || "—"}</td>
-                        <td className="py-2 px-3 text-center"><Badge variant="outline" className="text-[10px]">{r.priority}</Badge></td>
+                        <td className="py-2 px-3 text-center">
+                          {r.trip_type ? (
+                            <Badge variant="outline" className="text-[10px]">
+                              {r.trip_type === "one_way" ? "One Way" : "Round"}
+                            </Badge>
+                          ) : "—"}
+                        </td>
                         <td className="py-2 px-3 text-center">
                           <Badge variant={(statusColors[r.status] || "secondary") as any} className="text-[10px]">{r.status}</Badge>
                         </td>
@@ -207,107 +168,21 @@ const VehicleRequests = () => {
           </CardContent>
         </Card>
 
-        {/* Create Request Dialog */}
-        <Dialog open={showCreate} onOpenChange={setShowCreate}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>New Vehicle Request</DialogTitle>
-              <DialogDescription>Submit a vehicle request for approval and assignment.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div><Label>Requester Name *</Label><Input value={form.requester_name} onChange={e => setForm(f => ({ ...f, requester_name: e.target.value }))} /></div>
-                <div><Label>{t('common.priority', 'Priority')}</Label>
-                  <Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">{t('common.low', 'Low')}</SelectItem>
-                      <SelectItem value="normal">{t('common.normal', 'Normal')}</SelectItem>
-                      <SelectItem value="high">{t('common.high', 'High')}</SelectItem>
-                      <SelectItem value="urgent">{t('common.urgent', 'Urgent')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div><Label>Purpose *</Label><Textarea value={form.purpose} onChange={e => setForm(f => ({ ...f, purpose: e.target.value }))} placeholder="Describe the purpose..." /></div>
-              <div className="grid grid-cols-2 gap-4">
-                <div><Label>Needed From *</Label><Input type="datetime-local" value={form.needed_from} onChange={e => setForm(f => ({ ...f, needed_from: e.target.value }))} /></div>
-                <div><Label>Needed Until</Label><Input type="datetime-local" value={form.needed_until} onChange={e => setForm(f => ({ ...f, needed_until: e.target.value }))} /></div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div><Label>{t('requests.destination', 'Destination')}</Label><Input value={form.destination} onChange={e => setForm(f => ({ ...f, destination: e.target.value }))} /></div>
-                <div><Label>{t('passengers.passengers', 'Passengers')}</Label><Input type="number" value={form.passengers} onChange={e => setForm(f => ({ ...f, passengers: e.target.value }))} /></div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowCreate(false)}>{t('common.cancel', 'Cancel')}</Button>
-              <Button onClick={() => createMutation.mutate()} disabled={!form.requester_name || !form.purpose || !form.needed_from || createMutation.isPending}>
-                {createMutation.isPending ? "Creating..." : "Submit Request"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {/* Dynamic Request Form */}
+        <VehicleRequestForm open={showCreate} onOpenChange={setShowCreate} />
 
-        {/* Detail / Approve / Assign Dialog */}
+        {/* Detail / Approval Flow */}
         {showDetail && (
           <Dialog open={!!showDetail} onOpenChange={() => setShowDetail(null)}>
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Request {showDetail.request_number}</DialogTitle>
               </DialogHeader>
-              <div className="space-y-3 text-sm">
-                <div className="grid grid-cols-2 gap-2">
-                  <div><span className="text-muted-foreground">Requester:</span> {showDetail.requester_name}</div>
-                  <div><span className="text-muted-foreground">Status:</span> <Badge variant={(statusColors[showDetail.status] || "secondary") as any}>{showDetail.status}</Badge></div>
-                  <div><span className="text-muted-foreground">Priority:</span> {showDetail.priority}</div>
-                  <div><span className="text-muted-foreground">Needed:</span> {format(new Date(showDetail.needed_from), "MMM dd, HH:mm")}</div>
-                </div>
-                <div><span className="text-muted-foreground">Purpose:</span> {showDetail.purpose}</div>
-                {showDetail.destination && <div><span className="text-muted-foreground">Destination:</span> {showDetail.destination}</div>}
-                {showDetail.assigned_vehicle && (
-                  <div><span className="text-muted-foreground">Assigned Vehicle:</span> {showDetail.assigned_vehicle.plate_number}</div>
-                )}
-                {showDetail.assigned_driver && (
-                  <div><span className="text-muted-foreground">Assigned Driver:</span> {showDetail.assigned_driver.first_name} {showDetail.assigned_driver.last_name}</div>
-                )}
-
-                {/* Approval History */}
-                {approvals.filter((a: any) => a.request_id === showDetail.id).length > 0 && (
-                  <div className="border-t pt-3">
-                    <p className="font-medium mb-2">Approval History</p>
-                    {approvals.filter((a: any) => a.request_id === showDetail.id).map((a: any) => (
-                      <div key={a.id} className="flex justify-between text-xs py-1">
-                        <span>{a.approver_name} — <Badge variant={a.decision === "approved" ? "default" : "destructive"} className="text-[10px]">{a.decision}</Badge></span>
-                        <span className="text-muted-foreground">{a.decided_at ? format(new Date(a.decided_at), "MMM dd, HH:mm") : "Pending"}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <DialogFooter className="flex-wrap gap-2">
-                {showDetail.status === "pending" && (
-                  <>
-                    <Button size="sm" onClick={() => updateStatusMutation.mutate({ id: showDetail.id, status: "approved" })}>{t('common.approve', 'Approve')}</Button>
-                    <Button size="sm" variant="destructive" onClick={() => updateStatusMutation.mutate({ id: showDetail.id, status: "rejected" })}>{t('common.reject', 'Reject')}</Button>
-                  </>
-                )}
-                {showDetail.status === "approved" && (
-                  <Select onValueChange={v => updateStatusMutation.mutate({ id: showDetail.id, status: "assigned", vehicle_id: v })}>
-                    <SelectTrigger className="w-48"><SelectValue placeholder="Assign Vehicle" /></SelectTrigger>
-                    <SelectContent>
-                      {vehicles.filter((v: any) => v.status === "active").slice(0, 30).map((v: any) => (
-                        <SelectItem key={v.id} value={v.id}>{v.plate_number}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-                {showDetail.status === "assigned" && (
-                  <Button size="sm" onClick={() => updateStatusMutation.mutate({ id: showDetail.id, status: "completed" })}>Mark Complete</Button>
-                )}
-                {["pending", "approved"].includes(showDetail.status) && (
-                  <Button size="sm" variant="outline" onClick={() => updateStatusMutation.mutate({ id: showDetail.id, status: "cancelled" })}>{t('common.cancel', 'Cancel')}</Button>
-                )}
-              </DialogFooter>
+              <VehicleRequestApprovalFlow
+                request={showDetail}
+                approvals={approvals}
+                onClose={() => setShowDetail(null)}
+              />
             </DialogContent>
           </Dialog>
         )}
