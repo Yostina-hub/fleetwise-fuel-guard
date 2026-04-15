@@ -188,7 +188,7 @@ const EnergyCostRatesManager = ({ filterType = "all", compact = false }: EnergyC
               {filterType === "all" && (
                 <div>
                   <Label>Energy Type</Label>
-                  <Select value={form.energy_type} onValueChange={v => setForm(f => ({ ...f, energy_type: v, unit: v === "ev_charging" ? "kWh" : "liter" }))}>
+                  <Select value={form.energy_type} onValueChange={v => setForm(f => ({ ...f, energy_type: v as "fuel" | "ev_charging", unit: v === "ev_charging" ? "kWh" : "liter" }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {ENERGY_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}

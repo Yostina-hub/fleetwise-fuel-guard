@@ -193,6 +193,18 @@ const MaintenanceCostTab = () => {
           {filtered.length === 0 && <p className="text-center text-muted-foreground py-8">No cost entries found</p>}
         </div>
       )}
+
+      {/* Dynamic Cost Rates */}
+      <Card className="glass-strong">
+        <CardHeader>
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Gauge className="w-4 h-4" /> Dynamic Energy Cost Rates
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <EnergyCostRatesManager filterType="fuel" />
+        </CardContent>
+      </Card>
     </div>
   );
 };
