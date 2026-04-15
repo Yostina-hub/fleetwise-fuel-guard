@@ -36,6 +36,7 @@ const UserManagement = () => {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
   const [detailUser, setDetailUser] = useState<UserProfile | null>(null);
+  const [detailTab, setDetailTab] = useState<"profile" | "roles">("profile");
   const [resetPwdUser, setResetPwdUser] = useState<UserProfile | null>(null);
   const [deactivateUser, setDeactivateUser] = useState<UserProfile | null>(null);
   const [deactivateLoading, setDeactivateLoading] = useState(false);
