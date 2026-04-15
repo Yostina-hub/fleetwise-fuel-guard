@@ -180,6 +180,7 @@ const getNavItems = (t: (key: string) => string) => [
     subItems: [
       { label: t("nav.serviceHistory"), path: "/maintenance" },
       { label: t("nav.workOrders"), path: "/work-orders" },
+      { label: "Enterprise Suite", path: "/maintenance-enterprise" },
       { label: t("nav.predictiveAI"), path: "/predictive-maintenance" },
       { label: t("nav.tireManagement"), path: "/tire-management" },
       { label: t("nav.partsInventory"), path: "/parts-inventory" },
