@@ -1,0 +1,302 @@
+import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useOrganization } from "@/hooks/useOrganization";
+import { useToast } from "@/hooks/use-toast";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, isSameMonth } from "date-fns";
+import { CalendarDays, Clock, LogIn, LogOut, Plane, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+
+interface DriverAttendanceManagementProps {
+  driverId: string;
+  driverName: string;
+}
+
+interface AttendanceRecord {
+  id: string;
+  date: string;
+  check_in_time: string | null;
+  check_out_time: string | null;
+  source: string;
+  shift_type: string;
+  total_hours: number;
+  overtime_hours: number;
+  status: string;
+  notes: string | null;
+}
+
+interface LeaveRequest {
+  id: string;
+  leave_type: string;
+  start_date: string;
+  end_date: string;
+  total_days: number;
+  reason: string | null;
+  status: string;
+  created_at: string;
+}
+
+export const DriverAttendanceManagement = ({ driverId, driverName }: DriverAttendanceManagementProps) => {
+  const { organizationId } = useOrganization();
+  const { toast } = useToast();
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+  const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [showClockDialog, setShowClockDialog] = useState(false);
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+  const [clockForm, setClockForm] = useState({ date: format(new Date(), "yyyy-MM-dd"), check_in: "08:00", check_out: "17:00", shift_type: "morning", notes: "" });
+  const [leaveForm, setLeaveForm] = useState({ leave_type: "annual", start_date: "", end_date: "", reason: "" });
+
+  const fetchData = async () => {
+    if (!organizationId || !driverId) return;
+    setLoading(true);
+    const monthStart = format(startOfMonth(currentMonth), "yyyy-MM-dd");
+    const monthEnd = format(endOfMonth(currentMonth), "yyyy-MM-dd");
+
+    const [attRes, leaveRes] = await Promise.all([
+      supabase.from("driver_attendance").select("*").eq("organization_id", organizationId).eq("driver_id", driverId)
+        .gte("date", monthStart).lte("date", monthEnd).order("date"),
+      supabase.from("driver_leave_requests").select("*").eq("organization_id", organizationId).eq("driver_id", driverId)
+        .order("created_at", { ascending: false }).limit(20)
+    ]);
+    setAttendance((attRes.data as any) || []);
+    setLeaves((leaveRes.data as any) || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchData(); }, [driverId, organizationId, currentMonth]);
+
+  const days = eachDayOfInterval({ start: startOfMonth(currentMonth), end: endOfMonth(currentMonth) });
+  const attendanceMap = new Map(attendance.map(a => [a.date, a]));
+
+  const totalPresent = attendance.filter(a => a.status === "present").length;
+  const totalLate = attendance.filter(a => a.status === "late").length;
+  const totalAbsent = attendance.filter(a => a.status === "absent").length;
+  const totalHours = attendance.reduce((s, a) => s + (a.total_hours || 0), 0);
+  const totalOvertime = attendance.reduce((s, a) => s + (a.overtime_hours || 0), 0);
+
+  const statusColor = (s: string) => {
+    switch (s) {
+      case "present": return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+      case "late": return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+      case "absent": return "bg-red-500/20 text-red-400 border-red-500/30";
+      case "leave": return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+      case "half_day": return "bg-purple-500/20 text-purple-400 border-purple-500/30";
+      default: return "bg-muted text-muted-foreground";
+    }
+  };
+
+  const handleClockIn = async () => {
+    if (!organizationId) return;
+    const checkIn = new Date(`${clockForm.date}T${clockForm.check_in}`);
+    const checkOut = new Date(`${clockForm.date}T${clockForm.check_out}`);
+    const hours = (checkOut.getTime() - checkIn.getTime()) / 3600000;
+
+    const { error } = await supabase.from("driver_attendance").insert({
+      organization_id: organizationId,
+      driver_id: driverId,
+      date: clockForm.date,
+      check_in_time: checkIn.toISOString(),
+      check_out_time: checkOut.toISOString(),
+      source: "manual",
+      shift_type: clockForm.shift_type,
+      total_hours: Math.max(0, hours),
+      overtime_hours: Math.max(0, hours - 8),
+      status: "present",
+      notes: clockForm.notes || null,
+    });
+
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Attendance recorded" });
+      setShowClockDialog(false);
+      fetchData();
+    }
+  };
+
+  const handleLeaveRequest = async () => {
+    if (!organizationId || !leaveForm.start_date || !leaveForm.end_date) return;
+    const days = Math.ceil((new Date(leaveForm.end_date).getTime() - new Date(leaveForm.start_date).getTime()) / 86400000) + 1;
+
+    const { error } = await supabase.from("driver_leave_requests").insert({
+      organization_id: organizationId,
+      driver_id: driverId,
+      leave_type: leaveForm.leave_type,
+      start_date: leaveForm.start_date,
+      end_date: leaveForm.end_date,
+      total_days: days,
+      reason: leaveForm.reason || null,
+    });
+
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Leave request submitted" });
+      setShowLeaveDialog(false);
+      setLeaveForm({ leave_type: "annual", start_date: "", end_date: "", reason: "" });
+      fetchData();
+    }
+  };
+
+  const approveLeave = async (id: string) => {
+    await supabase.from("driver_leave_requests").update({ status: "approved", approved_at: new Date().toISOString() }).eq("id", id);
+    fetchData();
+  };
+
+  const rejectLeave = async (id: string) => {
+    await supabase.from("driver_leave_requests").update({ status: "rejected" }).eq("id", id);
+    fetchData();
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        {[
+          { label: "Present", value: totalPresent, icon: CalendarDays, color: "text-emerald-400" },
+          { label: "Late", value: totalLate, icon: Clock, color: "text-amber-400" },
+          { label: "Absent", value: totalAbsent, icon: CalendarDays, color: "text-red-400" },
+          { label: "Total Hours", value: totalHours.toFixed(1), icon: Clock, color: "text-primary" },
+          { label: "Overtime", value: totalOvertime.toFixed(1) + "h", icon: Clock, color: "text-purple-400" },
+        ].map((s, i) => (
+          <Card key={i}><CardContent className="p-3 text-center">
+            <s.icon className={`w-4 h-4 mx-auto mb-1 ${s.color}`} />
+            <p className="text-xl font-bold">{s.value}</p>
+            <p className="text-[10px] text-muted-foreground">{s.label}</p>
+          </CardContent></Card>
+        ))}
+      </div>
+
+      {/* Calendar Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={() => setCurrentMonth(d => new Date(d.getFullYear(), d.getMonth() - 1))}>
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+          <h3 className="text-sm font-semibold">{format(currentMonth, "MMMM yyyy")}</h3>
+          <Button variant="ghost" size="icon" onClick={() => setCurrentMonth(d => new Date(d.getFullYear(), d.getMonth() + 1))}>
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
+        <div className="flex gap-2">
+          <Dialog open={showClockDialog} onOpenChange={setShowClockDialog}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline"><LogIn className="w-3.5 h-3.5 mr-1" /> Clock In/Out</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Manual Clock In/Out</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <Input type="date" value={clockForm.date} onChange={e => setClockForm(f => ({ ...f, date: e.target.value }))} />
+                <div className="grid grid-cols-2 gap-2">
+                  <div><label className="text-xs text-muted-foreground">Check In</label>
+                    <Input type="time" value={clockForm.check_in} onChange={e => setClockForm(f => ({ ...f, check_in: e.target.value }))} /></div>
+                  <div><label className="text-xs text-muted-foreground">Check Out</label>
+                    <Input type="time" value={clockForm.check_out} onChange={e => setClockForm(f => ({ ...f, check_out: e.target.value }))} /></div>
+                </div>
+                <Select value={clockForm.shift_type} onValueChange={v => setClockForm(f => ({ ...f, shift_type: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {["morning", "afternoon", "night", "split"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Textarea placeholder="Notes..." value={clockForm.notes} onChange={e => setClockForm(f => ({ ...f, notes: e.target.value }))} />
+                <Button className="w-full" onClick={handleClockIn}>Save Attendance</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
+            <DialogTrigger asChild>
+              <Button size="sm"><Plane className="w-3.5 h-3.5 mr-1" /> Request Leave</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Leave Request</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <Select value={leaveForm.leave_type} onValueChange={v => setLeaveForm(f => ({ ...f, leave_type: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {["annual", "sick", "unpaid", "emergency", "maternity", "paternity"].map(t => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <div className="grid grid-cols-2 gap-2">
+                  <div><label className="text-xs text-muted-foreground">Start</label>
+                    <Input type="date" value={leaveForm.start_date} onChange={e => setLeaveForm(f => ({ ...f, start_date: e.target.value }))} /></div>
+                  <div><label className="text-xs text-muted-foreground">End</label>
+                    <Input type="date" value={leaveForm.end_date} onChange={e => setLeaveForm(f => ({ ...f, end_date: e.target.value }))} /></div>
+                </div>
+                <Textarea placeholder="Reason..." value={leaveForm.reason} onChange={e => setLeaveForm(f => ({ ...f, reason: e.target.value }))} />
+                <Button className="w-full" onClick={handleLeaveRequest}>Submit Request</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+
+      {/* Calendar Grid */}
+      <Card>
+        <CardContent className="p-3">
+          <div className="grid grid-cols-7 gap-1 text-center mb-2">
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
+              <div key={d} className="text-[10px] font-medium text-muted-foreground py-1">{d}</div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {Array.from({ length: startOfMonth(currentMonth).getDay() }).map((_, i) => <div key={`e-${i}`} />)}
+            {days.map(day => {
+              const dateStr = format(day, "yyyy-MM-dd");
+              const record = attendanceMap.get(dateStr);
+              const weekend = isWeekend(day);
+              return (
+                <div key={dateStr} className={`rounded-md p-1.5 text-center text-xs border transition-colors ${record ? statusColor(record.status) : weekend ? "bg-muted/30 border-transparent" : "border-transparent hover:bg-muted/50"}`}>
+                  <div className="font-medium">{format(day, "d")}</div>
+                  {record && (
+                    <div className="text-[9px] mt-0.5">
+                      {record.total_hours > 0 ? `${record.total_hours.toFixed(1)}h` : record.status}
+                      {record.source === "auto_trip" && <span className="block text-[8px] opacity-60">auto</span>}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Leave Requests */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2"><Plane className="w-4 h-4 text-primary" /> Leave Requests</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {leaves.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-4">No leave requests</p>
+          ) : leaves.map(l => (
+            <div key={l.id} className="flex items-center justify-between p-2 rounded-lg border text-xs">
+              <div className="flex items-center gap-3">
+                <Badge variant="outline" className="capitalize text-[10px]">{l.leave_type}</Badge>
+                <span>{format(new Date(l.start_date), "MMM d")} — {format(new Date(l.end_date), "MMM d, yyyy")}</span>
+                <span className="text-muted-foreground">({l.total_days}d)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className={statusColor(l.status === "approved" ? "present" : l.status === "rejected" ? "absent" : "late")}>{l.status}</Badge>
+                {l.status === "pending" && (
+                  <>
+                    <Button size="sm" variant="ghost" className="h-6 text-[10px] text-emerald-400" onClick={() => approveLeave(l.id)}>Approve</Button>
+                    <Button size="sm" variant="ghost" className="h-6 text-[10px] text-red-400" onClick={() => rejectLeave(l.id)}>Reject</Button>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
