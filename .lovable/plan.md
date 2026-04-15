@@ -1,41 +1,41 @@
 
-## RFP Gap Closure — Mandatory Features Implementation Plan
+## Phase 3: Module Enhancement & Gap Closure Plan
 
-### Phase 1: Database Schema (Migration)
-Add tables for:
-1. **ev_vehicles** — EV-specific data (battery capacity, charging type, SoC)
-2. **ev_charging_sessions** — Charging session logs with cost, kW, duration
-3. **ev_charging_stations** — Charging station locations and availability
-4. **vehicle_requests** — Full request/assignment workflow with approval states
-5. **vehicle_request_approvals** — Approval chain with delegation matrix
-6. **vehicle_insurance** — Insurance policies, claims, third-party details
-7. **accident_claims** — Claims history linked to incidents
-8. **tire_inventory** — Tire tracking with km, cost, change history per vehicle
-9. **tire_changes** — History of tire changes per vehicle
-10. **route_plans** — Route planning with waypoints and optimization params
-11. **cold_chain_readings** — Temperature sensor data for refrigerated vehicles
-12. **rental_vehicles** — Own vs rental vehicle classification + 3rd party driver tracking
+### 3.1 — Accident & Insurance Management Enhancement
+- **Insurance Policy Management**: New tab — view/manage active policies per vehicle (vehicle_insurance table), expiry tracking
+- **Accident Claims Workflow**: Use accident_claims table with full repair tracking (vendor, dates, costs)
+- **Third-Party Details**: Structured third-party info (name, vehicle, insurance, contact)
+- **Claims Timeline**: Visual lifecycle (filed → reviewed → approved → settled)
 
-### Phase 2: UI Modules
-- EV Charging Management Module
-- Vehicle Request & Assignment Workflow
-- Accident & Insurance Management
-- Tire Management Module
-- Enhanced Report Export (Excel/CSV/Word)
-- Route Planning & Optimization
-- Speed Limiter / Remote Control UI
-- Cold Chain Monitoring
-- Rental/Outsource Vehicle Management
+### 3.2 — Tire Management Enhancement
+- **Tire Lifecycle Dashboard**: Wear indicator (km/max km), cost-per-km
+- **Tire Change Workflow**: Rotation/replacement with position tracking (FL, FR, RL, RR, spare)
+- **Vehicle Tire Map**: Visual tire position diagram
 
-### Implementation Order:
-1. Database migration (all tables)
-2. EV Charging Module
-3. Vehicle Request & Assignment Workflow
-4. Accident/Insurance Management
-5. Tire Management
-6. Report Export
-7. Route Planning
-8. Speed Limiter/Remote Control
-9. Cold Chain Monitoring
-10. Rental Vehicle Management
-11. Navigation updates
+### 3.3 — Cold Chain Monitoring Enhancement
+- **Compliance Report**: Temperature compliance % per vehicle over date range
+- **Door Events**: Track door status alongside temperature
+- **Threshold Configuration**: Per-vehicle min/max settings
+
+### 3.4 — Rental/Outsource Vehicle Enhancement
+- **Contract Management**: Start/end, auto-renew, cost breakdown
+- **Cost Analytics**: Monthly trends, own vs rental cost-per-km
+- **Expiry Alerts**: Visual warnings for expiring contracts
+
+### 3.5 — Route Planning Module (NEW)
+- DB: Create route_plans table
+- Route Creator with origin, destination, waypoints
+- Vehicle/Driver assignment to routes
+- Distance & ETA estimation
+
+### 3.6 — Enhanced Report Export
+- Multi-format: XLSX, CSV, Word export across all data tables
+
+### Execution Order:
+1. Route Plans DB migration
+2. Accident/Insurance UI enhancements
+3. Tire Management UI enhancements
+4. Cold Chain UI enhancements
+5. Rental Vehicle UI enhancements
+6. Route Planning page
+7. Report Export utilities
