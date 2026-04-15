@@ -126,11 +126,6 @@ const DispatchJobsTab = () => {
       scheduled_pickup_at: combineDateAndTime(scheduled_pickup_at, scheduled_pickup_time),
       scheduled_dropoff_at: combineDateAndTime(scheduled_dropoff_at, scheduled_dropoff_time),
     } as any);
-    await createJob({
-      ...rest,
-      scheduled_pickup_at: buildDateTime(scheduled_pickup_at, scheduled_pickup_time),
-      scheduled_dropoff_at: buildDateTime(scheduled_dropoff_at, scheduled_dropoff_time),
-    } as any);
     setShowCreateDialog(false);
     setNewJob({
       job_type: 'delivery',
