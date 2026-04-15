@@ -952,6 +952,9 @@ useEffect(() => {
             `)
             .addTo(map.current!);
 
+          // Track zoom/pan to keep popup anchored to vehicle
+          map.current?.on('move', updatePopupPosition);
+
           // Bind popup listeners ONCE (avoid stacking handlers on repeated hover)
           const popupEl = popup.getElement() as (HTMLElement & { __lovBound?: boolean }) | null;
           if (popupEl && !popupEl.__lovBound) {
