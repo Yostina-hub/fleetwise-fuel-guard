@@ -9413,6 +9413,216 @@ export type Database = {
           },
         ]
       }
+      maintenance_contracts: {
+        Row: {
+          auto_renew: boolean | null
+          contract_number: string
+          contract_type: string
+          covered_service_types: string[] | null
+          covered_vehicles: string[] | null
+          created_at: string
+          currency: string | null
+          description: string | null
+          documents: string[] | null
+          end_date: string | null
+          id: string
+          notes: string | null
+          organization_id: string
+          payment_terms: string | null
+          renewal_notice_days: number | null
+          sla_terms: Json | null
+          start_date: string
+          status: string | null
+          total_value: number | null
+          updated_at: string
+          vendor_id: string | null
+          vendor_name: string
+          warranty_terms: string | null
+        }
+        Insert: {
+          auto_renew?: boolean | null
+          contract_number: string
+          contract_type?: string
+          covered_service_types?: string[] | null
+          covered_vehicles?: string[] | null
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          documents?: string[] | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          payment_terms?: string | null
+          renewal_notice_days?: number | null
+          sla_terms?: Json | null
+          start_date: string
+          status?: string | null
+          total_value?: number | null
+          updated_at?: string
+          vendor_id?: string | null
+          vendor_name: string
+          warranty_terms?: string | null
+        }
+        Update: {
+          auto_renew?: boolean | null
+          contract_number?: string
+          contract_type?: string
+          covered_service_types?: string[] | null
+          covered_vehicles?: string[] | null
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          documents?: string[] | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          payment_terms?: string | null
+          renewal_notice_days?: number | null
+          sla_terms?: Json | null
+          start_date?: string
+          status?: string | null
+          total_value?: number | null
+          updated_at?: string
+          vendor_id?: string | null
+          vendor_name?: string
+          warranty_terms?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_contracts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maintenance_cost_tracking: {
+        Row: {
+          amount: number
+          approved_at: string | null
+          approved_by: string | null
+          budget_amount: number | null
+          contract_id: string | null
+          cost_center_id: string | null
+          cost_type: string
+          created_at: string
+          currency: string | null
+          description: string | null
+          id: string
+          invoice_date: string | null
+          invoice_number: string | null
+          invoice_status: string | null
+          notes: string | null
+          organization_id: string
+          period_month: number | null
+          period_year: number | null
+          ticket_id: string | null
+          updated_at: string
+          variance: number | null
+          vehicle_id: string | null
+          vendor_id: string | null
+          work_order_id: string | null
+        }
+        Insert: {
+          amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          budget_amount?: number | null
+          contract_id?: string | null
+          cost_center_id?: string | null
+          cost_type?: string
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          id?: string
+          invoice_date?: string | null
+          invoice_number?: string | null
+          invoice_status?: string | null
+          notes?: string | null
+          organization_id: string
+          period_month?: number | null
+          period_year?: number | null
+          ticket_id?: string | null
+          updated_at?: string
+          variance?: number | null
+          vehicle_id?: string | null
+          vendor_id?: string | null
+          work_order_id?: string | null
+        }
+        Update: {
+          amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          budget_amount?: number | null
+          contract_id?: string | null
+          cost_center_id?: string | null
+          cost_type?: string
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          id?: string
+          invoice_date?: string | null
+          invoice_number?: string | null
+          invoice_status?: string | null
+          notes?: string | null
+          organization_id?: string
+          period_month?: number | null
+          period_year?: number | null
+          ticket_id?: string | null
+          updated_at?: string
+          variance?: number | null
+          vehicle_id?: string | null
+          vendor_id?: string | null
+          work_order_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_cost_tracking_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_cost_tracking_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_cost_tracking_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_cost_tracking_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_cost_tracking_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_cost_tracking_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maintenance_costs: {
         Row: {
           amount: number
@@ -9574,6 +9784,153 @@ export type Database = {
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maintenance_tickets: {
+        Row: {
+          assigned_to: string | null
+          assigned_to_user_id: string | null
+          attachments: string[] | null
+          category: string | null
+          closed_at: string | null
+          contract_id: string | null
+          created_at: string
+          description: string | null
+          escalated_to: string | null
+          escalation_level: number | null
+          escalation_reason: string | null
+          id: string
+          notes: string | null
+          organization_id: string
+          priority: string
+          reported_by: string | null
+          reported_by_user_id: string | null
+          resolution_time_minutes: number | null
+          resolved_at: string | null
+          response_time_minutes: number | null
+          sla_resolution_breached: boolean | null
+          sla_resolution_deadline: string | null
+          sla_resolution_hours: number | null
+          sla_response_breached: boolean | null
+          sla_response_deadline: string | null
+          sla_response_hours: number | null
+          status: string
+          tags: string[] | null
+          ticket_number: string
+          title: string
+          updated_at: string
+          vehicle_id: string | null
+          vendor_id: string | null
+          work_order_id: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          assigned_to_user_id?: string | null
+          attachments?: string[] | null
+          category?: string | null
+          closed_at?: string | null
+          contract_id?: string | null
+          created_at?: string
+          description?: string | null
+          escalated_to?: string | null
+          escalation_level?: number | null
+          escalation_reason?: string | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          priority?: string
+          reported_by?: string | null
+          reported_by_user_id?: string | null
+          resolution_time_minutes?: number | null
+          resolved_at?: string | null
+          response_time_minutes?: number | null
+          sla_resolution_breached?: boolean | null
+          sla_resolution_deadline?: string | null
+          sla_resolution_hours?: number | null
+          sla_response_breached?: boolean | null
+          sla_response_deadline?: string | null
+          sla_response_hours?: number | null
+          status?: string
+          tags?: string[] | null
+          ticket_number: string
+          title: string
+          updated_at?: string
+          vehicle_id?: string | null
+          vendor_id?: string | null
+          work_order_id?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          assigned_to_user_id?: string | null
+          attachments?: string[] | null
+          category?: string | null
+          closed_at?: string | null
+          contract_id?: string | null
+          created_at?: string
+          description?: string | null
+          escalated_to?: string | null
+          escalation_level?: number | null
+          escalation_reason?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          priority?: string
+          reported_by?: string | null
+          reported_by_user_id?: string | null
+          resolution_time_minutes?: number | null
+          resolved_at?: string | null
+          response_time_minutes?: number | null
+          sla_resolution_breached?: boolean | null
+          sla_resolution_deadline?: string | null
+          sla_resolution_hours?: number | null
+          sla_response_breached?: boolean | null
+          sla_response_deadline?: string | null
+          sla_response_hours?: number | null
+          status?: string
+          tags?: string[] | null
+          ticket_number?: string
+          title?: string
+          updated_at?: string
+          vehicle_id?: string | null
+          vendor_id?: string | null
+          work_order_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_tickets_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_tickets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_tickets_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_tickets_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_tickets_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
             referencedColumns: ["id"]
           },
         ]
@@ -10851,6 +11208,150 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_orders: {
+        Row: {
+          acknowledged_at: string | null
+          actual_delivery_date: string | null
+          approval_level: number | null
+          approved_at: string | null
+          approved_by: string | null
+          attachments: string[] | null
+          contract_id: string | null
+          created_at: string
+          created_by: string | null
+          currency: string | null
+          delivery_address: string | null
+          expected_delivery_date: string | null
+          fulfilled_at: string | null
+          id: string
+          invoice_number: string | null
+          invoiced_at: string | null
+          line_items: Json | null
+          notes: string | null
+          organization_id: string
+          paid_at: string | null
+          payment_terms: string | null
+          po_number: string
+          priority: string | null
+          sent_at: string | null
+          shipping_cost: number | null
+          status: string
+          subtotal: number | null
+          supplier_id: string | null
+          tax_amount: number | null
+          ticket_id: string | null
+          total_amount: number | null
+          updated_at: string
+          work_order_id: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          actual_delivery_date?: string | null
+          approval_level?: number | null
+          approved_at?: string | null
+          approved_by?: string | null
+          attachments?: string[] | null
+          contract_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string | null
+          delivery_address?: string | null
+          expected_delivery_date?: string | null
+          fulfilled_at?: string | null
+          id?: string
+          invoice_number?: string | null
+          invoiced_at?: string | null
+          line_items?: Json | null
+          notes?: string | null
+          organization_id: string
+          paid_at?: string | null
+          payment_terms?: string | null
+          po_number: string
+          priority?: string | null
+          sent_at?: string | null
+          shipping_cost?: number | null
+          status?: string
+          subtotal?: number | null
+          supplier_id?: string | null
+          tax_amount?: number | null
+          ticket_id?: string | null
+          total_amount?: number | null
+          updated_at?: string
+          work_order_id?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          actual_delivery_date?: string | null
+          approval_level?: number | null
+          approved_at?: string | null
+          approved_by?: string | null
+          attachments?: string[] | null
+          contract_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string | null
+          delivery_address?: string | null
+          expected_delivery_date?: string | null
+          fulfilled_at?: string | null
+          id?: string
+          invoice_number?: string | null
+          invoiced_at?: string | null
+          line_items?: Json | null
+          notes?: string | null
+          organization_id?: string
+          paid_at?: string | null
+          payment_terms?: string | null
+          po_number?: string
+          priority?: string | null
+          sent_at?: string | null
+          shipping_cost?: number | null
+          status?: string
+          subtotal?: number | null
+          supplier_id?: string | null
+          tax_amount?: number | null
+          ticket_id?: string | null
+          total_amount?: number | null
+          updated_at?: string
+          work_order_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_orders_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
             referencedColumns: ["id"]
           },
         ]
@@ -12725,6 +13226,215 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "sso_configurations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_bids: {
+        Row: {
+          attachments: string[] | null
+          awarded_at: string | null
+          awarded_by: string | null
+          bid_amount: number | null
+          bid_status: string | null
+          commercial_score: number | null
+          comparison_notes: string | null
+          created_at: string
+          id: string
+          is_awarded: boolean | null
+          lead_time_days: number | null
+          notes: string | null
+          organization_id: string
+          overall_score: number | null
+          quantity: number | null
+          rfq_deadline: string | null
+          rfq_description: string | null
+          rfq_number: string
+          rfq_status: string | null
+          rfq_title: string
+          supplier_id: string | null
+          technical_score: number | null
+          unit_price: number | null
+          updated_at: string
+          warranty_terms: string | null
+        }
+        Insert: {
+          attachments?: string[] | null
+          awarded_at?: string | null
+          awarded_by?: string | null
+          bid_amount?: number | null
+          bid_status?: string | null
+          commercial_score?: number | null
+          comparison_notes?: string | null
+          created_at?: string
+          id?: string
+          is_awarded?: boolean | null
+          lead_time_days?: number | null
+          notes?: string | null
+          organization_id: string
+          overall_score?: number | null
+          quantity?: number | null
+          rfq_deadline?: string | null
+          rfq_description?: string | null
+          rfq_number: string
+          rfq_status?: string | null
+          rfq_title: string
+          supplier_id?: string | null
+          technical_score?: number | null
+          unit_price?: number | null
+          updated_at?: string
+          warranty_terms?: string | null
+        }
+        Update: {
+          attachments?: string[] | null
+          awarded_at?: string | null
+          awarded_by?: string | null
+          bid_amount?: number | null
+          bid_status?: string | null
+          commercial_score?: number | null
+          comparison_notes?: string | null
+          created_at?: string
+          id?: string
+          is_awarded?: boolean | null
+          lead_time_days?: number | null
+          notes?: string | null
+          organization_id?: string
+          overall_score?: number | null
+          quantity?: number | null
+          rfq_deadline?: string | null
+          rfq_description?: string | null
+          rfq_number?: string
+          rfq_status?: string | null
+          rfq_title?: string
+          supplier_id?: string | null
+          technical_score?: number | null
+          unit_price?: number | null
+          updated_at?: string
+          warranty_terms?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_bids_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_bids_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_profiles: {
+        Row: {
+          address: string | null
+          approved_at: string | null
+          approved_by: string | null
+          average_lead_days: number | null
+          bank_details: Json | null
+          business_license: string | null
+          certifications: string[] | null
+          city: string | null
+          company_name: string
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          cost_variance_percentage: number | null
+          country: string | null
+          created_at: string
+          documents: string[] | null
+          id: string
+          is_active: boolean | null
+          is_approved: boolean | null
+          notes: string | null
+          on_time_percentage: number | null
+          organization_id: string
+          payment_terms: string | null
+          preferred_currency: string | null
+          quality_rating: number | null
+          service_categories: string[] | null
+          supplier_code: string
+          tax_id: string | null
+          total_orders: number | null
+          total_spend: number | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          average_lead_days?: number | null
+          bank_details?: Json | null
+          business_license?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          company_name: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          cost_variance_percentage?: number | null
+          country?: string | null
+          created_at?: string
+          documents?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          is_approved?: boolean | null
+          notes?: string | null
+          on_time_percentage?: number | null
+          organization_id: string
+          payment_terms?: string | null
+          preferred_currency?: string | null
+          quality_rating?: number | null
+          service_categories?: string[] | null
+          supplier_code: string
+          tax_id?: string | null
+          total_orders?: number | null
+          total_spend?: number | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          average_lead_days?: number | null
+          bank_details?: Json | null
+          business_license?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          company_name?: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          cost_variance_percentage?: number | null
+          country?: string | null
+          created_at?: string
+          documents?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          is_approved?: boolean | null
+          notes?: string | null
+          on_time_percentage?: number | null
+          organization_id?: string
+          payment_terms?: string | null
+          preferred_currency?: string | null
+          quality_rating?: number | null
+          service_categories?: string[] | null
+          supplier_code?: string
+          tax_id?: string | null
+          total_orders?: number | null
+          total_spend?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_profiles_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -17080,6 +17790,100 @@ export type Database = {
           },
           {
             foreignKeyName: "work_order_parts_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_order_portal_access: {
+        Row: {
+          access_email: string | null
+          access_name: string
+          access_role: string | null
+          access_token_hash: string | null
+          completion_notes: string | null
+          completion_photos: string[] | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          last_accessed_at: string | null
+          organization_id: string
+          parts_requested: Json | null
+          permissions: Json | null
+          portal_type: string
+          status_updates: Json | null
+          supplier_id: string | null
+          time_logged_minutes: number | null
+          updated_at: string
+          user_id: string | null
+          work_order_id: string
+        }
+        Insert: {
+          access_email?: string | null
+          access_name: string
+          access_role?: string | null
+          access_token_hash?: string | null
+          completion_notes?: string | null
+          completion_photos?: string[] | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_accessed_at?: string | null
+          organization_id: string
+          parts_requested?: Json | null
+          permissions?: Json | null
+          portal_type?: string
+          status_updates?: Json | null
+          supplier_id?: string | null
+          time_logged_minutes?: number | null
+          updated_at?: string
+          user_id?: string | null
+          work_order_id: string
+        }
+        Update: {
+          access_email?: string | null
+          access_name?: string
+          access_role?: string | null
+          access_token_hash?: string | null
+          completion_notes?: string | null
+          completion_photos?: string[] | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_accessed_at?: string | null
+          organization_id?: string
+          parts_requested?: Json | null
+          permissions?: Json | null
+          portal_type?: string
+          status_updates?: Json | null
+          supplier_id?: string | null
+          time_logged_minutes?: number | null
+          updated_at?: string
+          user_id?: string | null
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_order_portal_access_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_order_portal_access_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_order_portal_access_work_order_id_fkey"
             columns: ["work_order_id"]
             isOneToOne: false
             referencedRelation: "work_orders"
