@@ -25,6 +25,7 @@ export type AdminItem = {
 interface SidebarNavProps {
   navItems: NavItem[];
   adminItems: AdminItem[];
+  developerItems?: AdminItem[];
   isSuperAdmin: boolean;
   isOrgAdmin?: boolean;
   isDark: boolean;
