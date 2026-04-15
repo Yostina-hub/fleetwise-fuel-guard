@@ -8,7 +8,7 @@ export function useSumoSimulation(active: boolean, vehicleCount = 120) {
   const lastTimeRef = useRef<number>(0);
   const stateRef = useRef<SimulationState | null>(null);
 
-  // Init / teardown
+  // Init / teardown — only depends on `active`, NOT vehicleCount
   useEffect(() => {
     if (active) {
       const initial = createInitialState(vehicleCount);
@@ -24,7 +24,8 @@ export function useSumoSimulation(active: boolean, vehicleCount = 120) {
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [active, vehicleCount]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active]);
 
   // Animation loop
   useEffect(() => {
@@ -32,12 +33,11 @@ export function useSumoSimulation(active: boolean, vehicleCount = 120) {
 
     let frameCount = 0;
     const loop = (now: number) => {
-      const dtSeconds = Math.min((now - lastTimeRef.current) / 1000, 0.1); // cap at 100ms
+      const dtSeconds = Math.min((now - lastTimeRef.current) / 1000, 0.1);
       lastTimeRef.current = now;
       if (stateRef.current) {
         stateRef.current = stepSimulation(stateRef.current, dtSeconds);
         frameCount++;
-        // Update React state every 3 frames (~20fps) for performance
         if (frameCount % 3 === 0) {
           setState({ ...stateRef.current });
         }
