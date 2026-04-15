@@ -43,6 +43,20 @@ interface AIRouteOptimizerProps {
     make?: string;
     model?: string;
   }>;
+  allVehicles?: Array<{
+    id: string;
+    plate: string;
+    lat?: number;
+    lng?: number;
+    speed: number;
+    fuel: number;
+    status: string;
+    type?: string;
+    make?: string;
+    model?: string;
+    isOffline?: boolean;
+  }>;
+  selectedVehicleId?: string;
   onRouteSelect?: (route: RouteOption, vehicleId: string) => void;
   map?: maplibregl.Map | null;
 }
