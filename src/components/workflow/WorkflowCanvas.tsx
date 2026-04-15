@@ -204,31 +204,30 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
     try {
       const serializedNodes = JSON.parse(JSON.stringify(nodes));
       const serializedEdges = JSON.parse(JSON.stringify(edges));
-      const workflowPayload = {
-        organization_id: organizationId,
-        name: workflowName,
-        description: `Workflow with ${nodes.length} nodes and ${edges.length} connections`,
-        nodes: serializedNodes,
-        edges: serializedEdges,
-        status: workflowStatus,
-      };
-        name: workflowName,
-        description: `Workflow with ${nodes.length} nodes and ${edges.length} connections`,
-        nodes: JSON.parse(JSON.stringify(nodes)),
-        edges: JSON.parse(JSON.stringify(edges)),
-        status: workflowStatus,
-      };
       if (workflowId) {
         const { error } = await supabase
           .from("workflows")
-          .update(workflowData)
+          .update({
+            name: workflowName,
+            description: `Workflow with ${nodes.length} nodes and ${edges.length} connections`,
+            nodes: serializedNodes,
+            edges: serializedEdges,
+            status: workflowStatus,
+          })
           .eq("id", workflowId);
         if (error) throw error;
       } else {
-        workflowData.created_by = user?.id;
         const { data, error } = await supabase
           .from("workflows")
-          .insert(workflowData)
+          .insert({
+            organization_id: organizationId,
+            name: workflowName,
+            description: `Workflow with ${nodes.length} nodes and ${edges.length} connections`,
+            nodes: serializedNodes,
+            edges: serializedEdges,
+            status: workflowStatus,
+            created_by: user?.id,
+          })
           .select("id")
           .single();
         if (error) throw error;
