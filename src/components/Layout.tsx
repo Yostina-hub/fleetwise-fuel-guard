@@ -65,6 +65,7 @@ import { MobileHeader } from "@/components/mobile/MobileHeader";
 import LanguageSelector from "@/components/settings/LanguageSelector";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationCenter } from "@/components/scheduling/NotificationCenter";
+import { HeaderAlertBell } from "@/components/alerts/HeaderAlertBell";
 import { cn } from "@/lib/utils";
 import { isPathAccessible } from "@/config/sidebarAccess";
 import ethioTelecomLogo from "@/assets/ethio-telecom-logo.png";
@@ -433,6 +434,7 @@ const Layout = ({ children }: LayoutProps) => {
             
             <div className="hidden sm:block h-5 w-px bg-[#2a3a4d]" />
             
+            <HeaderAlertBell />
             <NotificationCenter />
             <ThemeToggle />
             
