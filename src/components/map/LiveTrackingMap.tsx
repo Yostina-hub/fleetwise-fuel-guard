@@ -89,6 +89,7 @@ const trailAnimationMarkers = useRef<Map<string, maplibregl.Marker>>(new Map());
 const trailAnimationFrames = useRef<Map<string, number>>(new Map());
 const [mapLoaded, setMapLoaded] = useState(false);
 const [tokenError, setTokenError] = useState<string | null>(null);
+const [currentProvider, setCurrentProvider] = useState(getActiveProvider());
 const fallbackTriedRef = useRef(false);
 const retriedInvalidRef = useRef(false);
 const [vehicleAddresses, setVehicleAddresses] = useState<Map<string, string>>(new Map());
