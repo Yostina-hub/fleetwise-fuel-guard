@@ -886,8 +886,17 @@ useEffect(() => {
 
         let hideTimeout: ReturnType<typeof setTimeout> | null = null;
         let isHoveringPopup = false;
+        let isHoveringMarker = false;
+
+        // Keep popup positioned on the vehicle during zoom/pan
+        const updatePopupPosition = () => {
+          if (!popup.isOpen()) return;
+          const vNow = vehiclesByIdRef.current.get(vehicle.id);
+          if (vNow) popup.setLngLat([vNow.lng, vNow.lat]);
+        };
 
         const showPopup = () => {
+          isHoveringMarker = true;
           if (hideTimeout) {
             clearTimeout(hideTimeout);
             hideTimeout = null;
