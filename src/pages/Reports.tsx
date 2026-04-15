@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Truck, Users, MapPin, Route, Fuel, Wrench, DollarSign, Bell, ClipboardList, FileText } from "lucide-react";
+import { Loader2, Truck, Users, MapPin, Route, Fuel, Wrench, DollarSign, Bell, ClipboardList, FileText, Zap, Battery } from "lucide-react";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
 import { useReportData } from "@/hooks/useReportData";
@@ -56,6 +56,10 @@ import { FuelDrainReportTable } from "@/components/reports/FuelDrainReportTable"
 import { AlarmStatisticsTable } from "@/components/reports/AlarmStatisticsTable";
 import RestrictedHoursReportTable from "@/components/reports/RestrictedHoursReportTable";
 import CustomReportTemplates from "@/components/reports/CustomReportTemplates";
+import { FuelAuthorizationTable } from "@/components/reports/FuelAuthorizationTable";
+import { FuelFillupLocationTable } from "@/components/reports/FuelFillupLocationTable";
+import { FuelConsumptionFullTable } from "@/components/reports/FuelConsumptionFullTable";
+import { EVChargingReportTable } from "@/components/reports/EVChargingReportTable";
 
 // Dashboard Widgets
 import { FleetViolationsWidget } from "@/components/reports/FleetViolationsWidget";
