@@ -4,13 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, XCircle, Clock, AlertTriangle, ArrowRight, Truck, LogIn, Send, Shuffle } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { CheckCircle, XCircle, Clock, AlertTriangle, ArrowRight, Truck, LogIn, Send, Shuffle, UserCheck } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useVehicles } from "@/hooks/useVehicles";
+import { useAvailableVehicles } from "@/hooks/useAvailableVehicles";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
+import { sendDispatchSms } from "@/services/smsNotificationService";
 
 interface Props {
   request: any;
@@ -22,11 +24,28 @@ interface Props {
 
 export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onCheckIn, onCrossPool }: Props) => {
   const { t } = useTranslation();
-  const { vehicles } = useVehicles();
+  const { available } = useAvailableVehicles();
   const queryClient = useQueryClient();
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState("");
+  const [selectedVehicleId, setSelectedVehicleId] = useState("");
+
+  // Fetch drivers for assignment
+  const { data: drivers = [] } = useQuery({
+    queryKey: ["drivers-for-assignment", request.organization_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("drivers")
+        .select("id, first_name, last_name, phone")
+        .eq("organization_id", request.organization_id)
+        .eq("status", "active")
+        .order("first_name")
+        .limit(50);
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   const requestApprovals = approvals.filter((a: any) => a.request_id === request.id);
 
@@ -93,16 +112,45 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
 
   const assignMutation = useMutation({
     mutationFn: async (vehicleId: string) => {
+      const user = (await supabase.auth.getUser()).data.user;
       const mins = Math.round((Date.now() - new Date(request.created_at).getTime()) / 60000);
-      await (supabase as any).from("vehicle_requests").update({
+      const updates: any = {
         status: "assigned",
         assigned_vehicle_id: vehicleId,
         assigned_at: new Date().toISOString(),
         actual_assignment_minutes: mins,
-      }).eq("id", request.id);
+        assigned_by: user!.id,
+      };
+      if (selectedDriver) {
+        updates.assigned_driver_id = selectedDriver;
+      }
+      await (supabase as any).from("vehicle_requests").update(updates).eq("id", request.id);
+
+      // Send SMS to assigned driver
+      if (selectedDriver) {
+        const driver = drivers.find((d: any) => d.id === selectedDriver);
+        if (driver?.phone) {
+          try {
+            await sendDispatchSms({
+              driverPhone: driver.phone,
+              driverName: `${driver.first_name} ${driver.last_name}`,
+              jobNumber: request.request_number,
+              pickupLocation: request.departure_place || "TBD",
+              dropoffLocation: request.destination || "TBD",
+              scheduledTime: format(new Date(request.needed_from), "MMM dd, HH:mm"),
+            });
+            await (supabase as any).from("vehicle_requests").update({
+              sms_notification_sent: true,
+              sms_sent_at: new Date().toISOString(),
+            }).eq("id", request.id);
+          } catch (e) {
+            console.error("SMS failed:", e);
+          }
+        }
+      }
     },
     onSuccess: () => {
-      toast.success("Vehicle assigned");
+      toast.success("Vehicle & driver assigned");
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
       onClose();
     },
@@ -163,6 +211,8 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
         {request.num_vehicles && <div><span className="text-muted-foreground">Vehicles:</span> {request.num_vehicles}</div>}
         {request.passengers && <div><span className="text-muted-foreground">Passengers:</span> {request.passengers}</div>}
         {request.trip_duration_days && <div><span className="text-muted-foreground">Duration:</span> {request.trip_duration_days} days</div>}
+        {request.project_number && <div><span className="text-muted-foreground">Project #:</span> {request.project_number}</div>}
+        {request.distance_log_km && <div><span className="text-muted-foreground">Distance:</span> {request.distance_log_km} km</div>}
       </div>
 
       {request.purpose && (
@@ -305,21 +355,42 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
           </>
         )}
         {request.status === "approved" && (
-          <>
-            <Select onValueChange={v => assignMutation.mutate(v)}>
-              <SelectTrigger className="w-48"><SelectValue placeholder="Assign Vehicle..." /></SelectTrigger>
-              <SelectContent>
-                {vehicles.filter((v: any) => v.status === "active").slice(0, 30).map((v: any) => (
-                  <SelectItem key={v.id} value={v.id}>{v.plate_number} - {v.make} {v.model}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {onCrossPool && (
-              <Button size="sm" variant="outline" onClick={onCrossPool}>
-                <Shuffle className="w-3.5 h-3.5 mr-1" /> Cross-Pool
+          <div className="space-y-2 w-full">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs flex items-center gap-1 mb-1"><Truck className="w-3 h-3" /> Vehicle</Label>
+                <Select value={selectedVehicleId} onValueChange={setSelectedVehicleId}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select vehicle..." /></SelectTrigger>
+                  <SelectContent>
+                    {available.slice(0, 30).map((v) => (
+                      <SelectItem key={v.id} value={v.id} className="text-xs">{v.plate_number} - {v.make} {v.model}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs flex items-center gap-1 mb-1"><UserCheck className="w-3 h-3" /> Driver</Label>
+                <Select value={selectedDriver} onValueChange={setSelectedDriver}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select driver..." /></SelectTrigger>
+                  <SelectContent>
+                    {drivers.map((d: any) => (
+                      <SelectItem key={d.id} value={d.id} className="text-xs">{d.first_name} {d.last_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" disabled={!selectedVehicleId || assignMutation.isPending} onClick={() => assignMutation.mutate(selectedVehicleId)}>
+                <CheckCircle className="w-3.5 h-3.5 mr-1" /> {assignMutation.isPending ? "Assigning..." : "Assign"}
               </Button>
-            )}
-          </>
+              {onCrossPool && (
+                <Button size="sm" variant="outline" onClick={onCrossPool}>
+                  <Shuffle className="w-3.5 h-3.5 mr-1" /> Cross-Pool
+                </Button>
+              )}
+            </div>
+          </div>
         )}
         {request.status === "assigned" && (
           <>

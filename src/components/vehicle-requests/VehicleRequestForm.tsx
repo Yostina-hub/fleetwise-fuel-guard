@@ -48,6 +48,7 @@ const initialForm = {
   pool_category: "",
   pool_name: "",
   purpose: "",
+  project_number: "",
 };
 
 export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormProps) => {
@@ -113,6 +114,7 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
         pool_name: form.pool_name || null,
         start_time: form.start_time || null,
         end_time: form.end_time || null,
+        project_number: form.request_type === "project_operation" ? (form.project_number || null) : null,
         status: "pending",
       };
 
@@ -211,7 +213,18 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
             </div>
           )}
 
-          {/* Departure & Destination */}
+          {/* Project Number - only for project operations */}
+          {form.request_type === "project_operation" && (
+            <div>
+              <Label className="text-primary font-medium">Project Number</Label>
+              <Input
+                value={form.project_number}
+                onChange={e => update("project_number", e.target.value)}
+                placeholder="Enter project number (e.g. PRJ-2026-001)"
+              />
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label className="text-primary font-medium flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> Departure Place</Label>
