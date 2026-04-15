@@ -22,11 +22,28 @@ import { useQueryClient } from "@tanstack/react-query";
 const VehicleRequests = () => {
   const { t } = useTranslation();
   const { organizationId } = useOrganization();
+  const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [showDetail, setShowDetail] = useState<any>(null);
   const [showFeedback, setShowFeedback] = useState<any>(null);
   const [showCheckIn, setShowCheckIn] = useState<any>(null);
   const [showCrossPool, setShowCrossPool] = useState<any>(null);
+
+  // Realtime subscription for vehicle_requests
+  useEffect(() => {
+    const channel = supabase
+      .channel("vehicle-requests-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "vehicle_requests" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["vehicle-requests", organizationId] });
+          queryClient.invalidateQueries({ queryKey: ["vehicle-request-approvals", organizationId] });
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient, organizationId]);
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ["vehicle-requests", organizationId],
