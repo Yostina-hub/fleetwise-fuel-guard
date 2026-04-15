@@ -145,9 +145,9 @@ useEffect(() => {
   };
 }, [onTripReplay, onManageAsset]);
 
-  // Fetch token from backend (organization settings or edge function)
+  // Initialize map — don't block on API key (tiles are public, key is only for data endpoints)
   useEffect(() => {
-    if (!mapContainer.current || map.current || !lematKeyReady || !lematApiKey) return;
+    if (!mapContainer.current || map.current) return;
 
     const initMap = async () => {
       if (!mapContainer.current || map.current) return;
@@ -260,12 +260,12 @@ useEffect(() => {
         map.current = null;
       }
     };
-  }, [lematApiKey, lematKeyReady, mapStyle, onMapReady]);
+  }, [mapStyle, onMapReady]);
 
   // Track previous style to only react to actual user-driven changes
   const prevMapStyleRef = useRef(mapStyle);
   useEffect(() => {
-    if (!map.current || !lematApiKey) return;
+    if (!map.current) return;
     // Skip if mapStyle hasn't changed from last applied value
     if (prevMapStyleRef.current === mapStyle) return;
     prevMapStyleRef.current = mapStyle;
@@ -1352,16 +1352,6 @@ useEffect(() => {
     );
   }
 
-  if (!lematKeyReady) {
-    return (
-      <div className="h-full w-full flex items-center justify-center bg-muted">
-        <div className="text-center space-y-2">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-sm text-muted-foreground">Loading map…</p>
-        </div>
-      </div>
-    );
-  }
 
   if (tokenError === 'style') {
     return (

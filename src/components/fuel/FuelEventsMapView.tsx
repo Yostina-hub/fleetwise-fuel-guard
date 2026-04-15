@@ -87,7 +87,7 @@ const FuelEventsMapView = ({
 
   // Initialize map
   useEffect(() => {
-    if (!mapContainer.current || !lematKeyReady || map.current) return;
+    if (!mapContainer.current || map.current) return;
 
     const initMap = async () => {
       if (!mapContainer.current || map.current) return;
@@ -117,7 +117,7 @@ const FuelEventsMapView = ({
       map.current?.remove();
       map.current = null;
     };
-  }, [lematApiKey, lematKeyReady]);
+  }, []);
 
   // Update markers when events change
   useEffect(() => {
@@ -242,13 +242,6 @@ const FuelEventsMapView = ({
     }
   }, [selectedEventId, eventsWithCoords]);
 
-  if (!lematKeyReady) {
-    return (
-      <Card className="h-[500px] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </Card>
-    );
-  }
 
   return (
     <div className="space-y-3">

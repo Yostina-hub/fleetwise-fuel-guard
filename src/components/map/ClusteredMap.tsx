@@ -239,7 +239,7 @@ const ClusteredMap = ({
 
   // Initialize map
   useEffect(() => {
-    if (!mapContainer.current || !lematKeyReady || !lematApiKey || map.current) return;
+    if (!mapContainer.current || map.current) return;
 
     setMapLoaded(false);
     setStyleError(false);
@@ -304,7 +304,7 @@ const ClusteredMap = ({
       map.current?.remove();
       map.current = null;
     };
-  }, [lematApiKey, lematKeyReady, mapStyle, onMapReady]);
+  }, [mapStyle, onMapReady]);
   // Draw vehicle trails with map matching (snap to roads)
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
@@ -797,16 +797,6 @@ const ClusteredMap = ({
     hasFitBounds.current = true;
   }, [vehicles, mapLoaded]);
 
-  if (!lematKeyReady) {
-    return (
-      <div className="h-full w-full flex items-center justify-center bg-muted">
-        <div className="text-center space-y-2">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-sm text-muted-foreground">Loading map...</p>
-        </div>
-      </div>
-    );
-  }
 
   if (styleError) {
     return (
