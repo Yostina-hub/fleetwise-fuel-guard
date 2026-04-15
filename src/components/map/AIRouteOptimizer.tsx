@@ -232,14 +232,13 @@ export const AIRouteOptimizer = ({ visible, onClose, vehicles, onRouteSelect, ma
       try {
         const { data: geofences } = await supabase
           .from('geofences')
-          .select('name, lat, lng, radius_meters, geofence_type')
-          .eq('organization_id', vehicle.id.slice(0, 36)) // Will work with org context
-          .in('geofence_type', ['restricted', 'no_entry']);
+          .select('name, center_lat, center_lng, radius_meters')
+          .limit(100);
         
         if (geofences && geofences.length > 0) {
           routeOptions.forEach(r => {
-            geofences.forEach(g => {
-              const dist = haversineKm(dLat, dLng, g.lat, g.lng);
+            geofences.forEach((g: any) => {
+              const dist = haversineKm(dLat, dLng, g.center_lat, g.center_lng);
               if (dist < (g.radius_meters || 500) / 1000) {
                 r.restrictions.push(`Near restricted zone: ${g.name}`);
               }
@@ -247,58 +246,6 @@ export const AIRouteOptimizer = ({ visible, onClose, vehicles, onRouteSelect, ma
           });
         }
       } catch { /* non-critical */ }
-
-      setRoutes(routeOptions);
-      setSelectedRouteId('fastest');
-      toast.success(`${routeOptions.length} route options generated`);
-    } catch (err: any) {
-      toast.error('Route generation failed');
-      console.error('Route optimization error:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedVehicleId, destLat, destLng, vehicles, vehicleProfile]);
-
-  const handleSelectRoute = useCallback((route: RouteOption) => {
-    setSelectedRouteId(route.id);
-    onRouteSelect?.(route, selectedVehicleId);
-
-    // Draw route on map if available
-    if (map && route.coordinates.length > 1) {
-      const sourceId = 'ai-route-preview';
-      const layerId = 'ai-route-line';
-
-      if (map.getLayer(layerId)) map.removeLayer(layerId);
-      if (map.getSource(sourceId)) map.removeSource(sourceId);
-
-      map.addSource(sourceId, {
-        type: 'geojson',
-        data: {
-          type: 'Feature',
-          properties: {},
-          geometry: { type: 'LineString', coordinates: route.coordinates },
-        },
-      });
-
-      map.addLayer({
-        id: layerId,
-        type: 'line',
-        source: sourceId,
-        paint: {
-          'line-color': route.type === 'eco' ? '#10b981' : route.type === 'fastest' ? '#3b82f6' : '#f59e0b',
-          'line-width': 4,
-          'line-opacity': 0.8,
-          'line-dasharray': route.type === 'avoid_restrictions' ? [2, 1] : [1, 0],
-        },
-      });
-
-      // Fit map to route bounds
-      const bounds = route.coordinates.reduce(
-        (b, coord) => b.extend(coord as [number, number]),
-        new (map as any).constructor.prototype.constructor.LngLatBounds
-          ? undefined
-          : { extend: () => {} }
-      );
     }
   }, [map, onRouteSelect, selectedVehicleId]);
 
