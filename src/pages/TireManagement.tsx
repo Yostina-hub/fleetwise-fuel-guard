@@ -206,6 +206,11 @@ const TireManagement = () => {
                               />
                             </div>
                             <p className="text-xs text-muted-foreground">{wear}% worn • {tire.purchase_cost ? `${tire.purchase_cost} ETB` : "—"}</p>
+                            {tire.status === "active" && (
+                              <Button size="sm" variant="ghost" className="h-6 text-[10px] text-destructive px-2 mt-1" onClick={() => addTireRetireMutation.mutate(tire.id)}>
+                                Retire
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </CardContent>
