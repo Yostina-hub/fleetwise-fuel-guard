@@ -2,13 +2,15 @@ import { useState } from "react";
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { ClipboardList, Package } from "lucide-react";
+import { ClipboardList, Package, ShieldCheck, Users } from "lucide-react";
 import WorkOrdersTab from "@/components/workorders/WorkOrdersTab";
 import InventoryTab from "@/components/workorders/InventoryTab";
 import WorkOrdersQuickStats from "@/components/workorders/WorkOrdersQuickStats";
 import WorkOrdersQuickActions from "@/components/workorders/WorkOrdersQuickActions";
 import WorkOrdersInsightsCard from "@/components/workorders/WorkOrdersInsightsCard";
 import WorkOrdersTrendChart from "@/components/workorders/WorkOrdersTrendChart";
+import ApprovalLevelsConfig from "@/components/workorders/ApprovalLevelsConfig";
+import DelegationRulesConfig from "@/components/workorders/DelegationRulesConfig";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
@@ -16,7 +18,6 @@ const WorkOrders = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("orders");
 
-  // Mock stats - in production, these would come from hooks
   const stats = {
     openOrders: 12,
     completedThisMonth: 28,
@@ -65,10 +66,8 @@ const WorkOrders = () => {
           </div>
         </div>
 
-        {/* Quick Stats */}
         <WorkOrdersQuickStats {...stats} />
 
-        {/* Quick Actions */}
         <WorkOrdersQuickActions
           onCreateOrder={handleCreateOrder}
           onOrderParts={handleOrderParts}
@@ -76,21 +75,28 @@ const WorkOrders = () => {
           onExportReport={handleExportReport}
         />
 
-        {/* Insights and Trend */}
         <div className="grid lg:grid-cols-2 gap-6">
           <WorkOrdersInsightsCard {...insights} />
           <WorkOrdersTrendChart />
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 glass p-1 h-14">
+          <TabsList className="grid w-full grid-cols-4 glass p-1 h-14">
             <TabsTrigger value="orders" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg">
               <ClipboardList className="h-5 w-5" aria-hidden="true" />
-              <span className="font-semibold">Work Orders</span>
+              <span className="font-semibold hidden sm:inline">Work Orders</span>
             </TabsTrigger>
             <TabsTrigger value="inventory" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg">
               <Package className="h-5 w-5" aria-hidden="true" />
-              <span className="font-semibold">Inventory</span>
+              <span className="font-semibold hidden sm:inline">Inventory</span>
+            </TabsTrigger>
+            <TabsTrigger value="approvals" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg">
+              <ShieldCheck className="h-5 w-5" aria-hidden="true" />
+              <span className="font-semibold hidden sm:inline">Approvals</span>
+            </TabsTrigger>
+            <TabsTrigger value="delegation" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg">
+              <Users className="h-5 w-5" aria-hidden="true" />
+              <span className="font-semibold hidden sm:inline">Delegation</span>
             </TabsTrigger>
           </TabsList>
 
@@ -103,6 +109,18 @@ const WorkOrders = () => {
           <TabsContent value="inventory" className="animate-bounce-in">
             <Card className="p-6 glass-strong border-2 hover:border-primary/50 transition-all duration-300 card-premium">
               <InventoryTab />
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="approvals" className="animate-bounce-in">
+            <Card className="p-6 glass-strong border-2 hover:border-primary/50 transition-all duration-300 card-premium">
+              <ApprovalLevelsConfig />
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="delegation" className="animate-bounce-in">
+            <Card className="p-6 glass-strong border-2 hover:border-primary/50 transition-all duration-300 card-premium">
+              <DelegationRulesConfig />
             </Card>
           </TabsContent>
         </Tabs>
