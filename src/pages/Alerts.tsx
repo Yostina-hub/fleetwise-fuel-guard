@@ -309,7 +309,7 @@ const Alerts = () => {
 
         {/* Main Alert Tabs */}
         <Tabs defaultValue="all" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-flex">
+          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
             <TabsTrigger value="all" className="gap-2">
               <AlertTriangle className="w-4 h-4" />
               All Alerts
@@ -317,6 +317,10 @@ const Alerts = () => {
             <TabsTrigger value="fuel" className="gap-2">
               <Fuel className="w-4 h-4" />
               Fuel Alerts
+            </TabsTrigger>
+            <TabsTrigger value="ev" className="gap-2">
+              <Zap className="w-4 h-4" />
+              EV Alerts
             </TabsTrigger>
             <TabsTrigger value="maintenance" className="gap-2">
               <Wrench className="w-4 h-4" />
