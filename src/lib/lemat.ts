@@ -71,7 +71,6 @@ export const getPreviewSafeMapStyle = (style: LematMapStyle = 'streets'): maplib
 };
 
 export const getLematMapStyle = (style: LematMapStyle = 'streets'): string | maplibregl.StyleSpecification => {
-  if (shouldUsePreviewSafeMapStyle()) return getPreviewSafeMapStyle(style);
   if (style === 'satellite') return getSatelliteRasterStyle();
   if (style === 'dark') return getLematStyleUrl('dark');
   return getLematStyleUrl('light');
