@@ -2489,6 +2489,89 @@ export type Database = {
           },
         ]
       }
+      door_sensor_events: {
+        Row: {
+          alert_triggered: boolean | null
+          created_at: string
+          door_label: string | null
+          duration_seconds: number | null
+          event_time: string
+          event_type: string
+          geofence_id: string | null
+          id: string
+          in_approved_zone: boolean | null
+          lat: number | null
+          lng: number | null
+          notes: string | null
+          organization_id: string
+          sensor_id: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          alert_triggered?: boolean | null
+          created_at?: string
+          door_label?: string | null
+          duration_seconds?: number | null
+          event_time?: string
+          event_type: string
+          geofence_id?: string | null
+          id?: string
+          in_approved_zone?: boolean | null
+          lat?: number | null
+          lng?: number | null
+          notes?: string | null
+          organization_id: string
+          sensor_id?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          alert_triggered?: boolean | null
+          created_at?: string
+          door_label?: string | null
+          duration_seconds?: number | null
+          event_time?: string
+          event_type?: string
+          geofence_id?: string | null
+          id?: string
+          in_approved_zone?: boolean | null
+          lat?: number | null
+          lng?: number | null
+          notes?: string | null
+          organization_id?: string
+          sensor_id?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "door_sensor_events_geofence_id_fkey"
+            columns: ["geofence_id"]
+            isOneToOne: false
+            referencedRelation: "geofences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "door_sensor_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "door_sensor_events_sensor_id_fkey"
+            columns: ["sensor_id"]
+            isOneToOne: false
+            referencedRelation: "iot_sensors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "door_sensor_events_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_achievements: {
         Row: {
           badge_color: string | null
@@ -3979,6 +4062,86 @@ export type Database = {
           },
           {
             foreignKeyName: "driver_hos_logs_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_id_events: {
+        Row: {
+          auth_method: string
+          authenticated: boolean | null
+          created_at: string
+          driver_id: string | null
+          event_time: string
+          event_type: string
+          id: string
+          lat: number | null
+          lng: number | null
+          notes: string | null
+          organization_id: string
+          sensor_id: string | null
+          tag_id: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          auth_method: string
+          authenticated?: boolean | null
+          created_at?: string
+          driver_id?: string | null
+          event_time?: string
+          event_type?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          notes?: string | null
+          organization_id: string
+          sensor_id?: string | null
+          tag_id?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          auth_method?: string
+          authenticated?: boolean | null
+          created_at?: string
+          driver_id?: string | null
+          event_time?: string
+          event_type?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          notes?: string | null
+          organization_id?: string
+          sensor_id?: string | null
+          tag_id?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_id_events_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_id_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_id_events_sensor_id_fkey"
+            columns: ["sensor_id"]
+            isOneToOne: false
+            referencedRelation: "iot_sensors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_id_events_vehicle_id_fkey"
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
@@ -8552,6 +8715,94 @@ export type Database = {
           },
         ]
       }
+      iot_sensors: {
+        Row: {
+          config: Json | null
+          created_at: string
+          device_id: string | null
+          firmware_version: string | null
+          id: string
+          installation_date: string | null
+          last_calibration_date: string | null
+          manufacturer: string | null
+          next_calibration_date: string | null
+          notes: string | null
+          organization_id: string
+          position_label: string | null
+          protocol: string | null
+          sensor_model: string
+          sensor_serial: string | null
+          sensor_type: string
+          status: string
+          updated_at: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string
+          device_id?: string | null
+          firmware_version?: string | null
+          id?: string
+          installation_date?: string | null
+          last_calibration_date?: string | null
+          manufacturer?: string | null
+          next_calibration_date?: string | null
+          notes?: string | null
+          organization_id: string
+          position_label?: string | null
+          protocol?: string | null
+          sensor_model: string
+          sensor_serial?: string | null
+          sensor_type: string
+          status?: string
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string
+          device_id?: string | null
+          firmware_version?: string | null
+          id?: string
+          installation_date?: string | null
+          last_calibration_date?: string | null
+          manufacturer?: string | null
+          next_calibration_date?: string | null
+          notes?: string | null
+          organization_id?: string
+          position_label?: string | null
+          protocol?: string | null
+          sensor_model?: string
+          sensor_serial?: string | null
+          sensor_type?: string
+          status?: string
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iot_sensors_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "iot_sensors_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "iot_sensors_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ip_allowlists: {
         Row: {
           applies_to: string
@@ -9925,6 +10176,104 @@ export type Database = {
           },
           {
             foreignKeyName: "overspeed_cutoff_events_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      panic_button_events: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          activation_type: string | null
+          created_at: string
+          driver_id: string | null
+          event_time: string
+          id: string
+          lat: number | null
+          lng: number | null
+          notifications_sent: Json | null
+          organization_id: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          response_time_seconds: number | null
+          sensor_id: string | null
+          speed_kmh: number | null
+          status: string
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          activation_type?: string | null
+          created_at?: string
+          driver_id?: string | null
+          event_time?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          notifications_sent?: Json | null
+          organization_id: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          response_time_seconds?: number | null
+          sensor_id?: string | null
+          speed_kmh?: number | null
+          status?: string
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          activation_type?: string | null
+          created_at?: string
+          driver_id?: string | null
+          event_time?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          notifications_sent?: Json | null
+          organization_id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          response_time_seconds?: number | null
+          sensor_id?: string | null
+          speed_kmh?: number | null
+          status?: string
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "panic_button_events_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "panic_button_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "panic_button_events_sensor_id_fkey"
+            columns: ["sensor_id"]
+            isOneToOne: false
+            referencedRelation: "iot_sensors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "panic_button_events_vehicle_id_fkey"
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
@@ -14047,6 +14396,76 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tpms_readings: {
+        Row: {
+          alarm_type: string | null
+          battery_percent: number | null
+          created_at: string
+          id: string
+          is_alarm: boolean | null
+          organization_id: string
+          pressure_bar: number | null
+          pressure_psi: number | null
+          recorded_at: string
+          sensor_id: string | null
+          temperature_celsius: number | null
+          tire_position: string
+          vehicle_id: string
+        }
+        Insert: {
+          alarm_type?: string | null
+          battery_percent?: number | null
+          created_at?: string
+          id?: string
+          is_alarm?: boolean | null
+          organization_id: string
+          pressure_bar?: number | null
+          pressure_psi?: number | null
+          recorded_at?: string
+          sensor_id?: string | null
+          temperature_celsius?: number | null
+          tire_position: string
+          vehicle_id: string
+        }
+        Update: {
+          alarm_type?: string | null
+          battery_percent?: number | null
+          created_at?: string
+          id?: string
+          is_alarm?: boolean | null
+          organization_id?: string
+          pressure_bar?: number | null
+          pressure_psi?: number | null
+          recorded_at?: string
+          sensor_id?: string | null
+          temperature_celsius?: number | null
+          tire_position?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tpms_readings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tpms_readings_sensor_id_fkey"
+            columns: ["sensor_id"]
+            isOneToOne: false
+            referencedRelation: "iot_sensors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tpms_readings_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
             referencedColumns: ["id"]
           },
         ]
