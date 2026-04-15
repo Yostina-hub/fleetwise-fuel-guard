@@ -691,6 +691,8 @@ export const useReportData = (dateRange: DateRange) => {
     fuelTransactions: fuelTransactions || [],
     fuelEvents: fuelEvents || [],
     fuelTheftCases: fuelTheftCases || [],
+    fuelRequests: fuelRequests || [],
+    evChargingSessions: evChargingSessions || [],
     alerts: alerts || [],
     maintenanceSchedules: maintenanceSchedules || [],
     workOrders: workOrders || [],
@@ -702,6 +704,6 @@ export const useReportData = (dateRange: DateRange) => {
     loading: tripsLoading || eventsLoading || geofenceLoading || incidentsLoading || 
              violationsLoading || fuelLoading || alertsLoading || maintenanceLoading ||
              workOrdersLoading || costsLoading || scoresLoading || dispatchLoading || 
-             inspectionsLoading || documentsLoading,
+             inspectionsLoading || documentsLoading || fuelRequestsLoading || evChargingLoading,
   };
 };
