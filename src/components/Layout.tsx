@@ -66,6 +66,7 @@ import LanguageSelector from "@/components/settings/LanguageSelector";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationCenter } from "@/components/scheduling/NotificationCenter";
 import { cn } from "@/lib/utils";
+import { isPathAccessible } from "@/config/sidebarAccess";
 import ethioTelecomLogo from "@/assets/ethio-telecom-logo.png";
 import {
   Tooltip,
