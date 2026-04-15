@@ -47,7 +47,7 @@ function getNodeTypeForCategory(category: string) {
 
 let nodeIdCounter = 0;
 
-function WorkflowCanvasInner() {
+function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | null }) {
   const { toast } = useToast();
   const { organizationId } = useOrganization();
   const { user } = useAuth();
@@ -60,9 +60,36 @@ function WorkflowCanvasInner() {
   const [workflowName, setWorkflowName] = useState("Untitled Workflow");
   const [workflowStatus, setWorkflowStatus] = useState("draft");
   const [isSaving, setIsSaving] = useState(false);
-  const [workflowId, setWorkflowId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [workflowId, setWorkflowId] = useState<string | null>(editWorkflowId || null);
   const [showSimulator, setShowSimulator] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+
+  // Load existing workflow when editing
+  const loadedRef = useRef(false);
+  useEffect(() => {
+    if (!editWorkflowId || loadedRef.current) return;
+    loadedRef.current = true;
+    setIsLoading(true);
+    supabase
+      .from("workflows")
+      .select("*")
+      .eq("id", editWorkflowId)
+      .single()
+      .then(({ data, error }) => {
+        setIsLoading(false);
+        if (error || !data) {
+          toast({ title: "Error", description: "Failed to load workflow", variant: "destructive" });
+          return;
+        }
+        setWorkflowName(data.name);
+        setWorkflowStatus(data.status);
+        setWorkflowId(data.id);
+        if (Array.isArray(data.nodes)) setNodes(data.nodes as any);
+        if (Array.isArray(data.edges)) setEdges(data.edges as any);
+        setTimeout(() => fitView({ padding: 0.2 }), 200);
+      });
+  }, [editWorkflowId, toast, setNodes, setEdges, fitView]);
 
   // History for undo/redo
   const [history, setHistory] = useState<Array<{ nodes: any[]; edges: any[] }>>([]);
