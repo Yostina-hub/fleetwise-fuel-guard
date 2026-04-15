@@ -23,6 +23,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useState } from "react";
+import AlertMiniMap from "@/components/alerts/AlertMiniMap";
 
 interface AlertData {
   id: string;
