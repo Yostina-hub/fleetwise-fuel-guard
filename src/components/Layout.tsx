@@ -213,6 +213,7 @@ const getNavItems = (t: (key: string) => string) => [
 const getAdminItems = (t: (key: string) => string) => [
   { label: t("nav.organizations"), path: "/organizations", icon: Building2 },
   { label: t("nav.users"), path: "/users", icon: Users },
+  { label: "Roles & Permissions", path: "/rbac", icon: ShieldCheck },
   { label: t("nav.security"), path: "/security", icon: Shield },
   { label: t("nav.securityDashboard"), path: "/security-dashboard", icon: ShieldCheck },
   { label: t("nav.integrations"), path: "/integrations", icon: Plug },
