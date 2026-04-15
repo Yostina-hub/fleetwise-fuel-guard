@@ -233,26 +233,27 @@ export const exportToPDF = (
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 14;
-  let yPosition = margin;
+  const maxContentY = pageHeight - 22; // Leave space for footer
 
-  // Header
-  doc.setFontSize(18);
-  doc.setFont("helvetica", "bold");
-  doc.text(title, margin, yPosition);
-  yPosition += 8;
+  // --- Page 1: Header + Watermark ---
+  drawEthioTelecomWatermark(doc);
+  let yPosition = drawProfessionalHeader(doc, title, margin, pageWidth);
 
-  // Subtitle with date
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(100);
-  doc.text(`Generated on ${format(new Date(), "MMMM d, yyyy 'at' h:mm a")}`, margin, yPosition);
-  yPosition += 10;
-
-  // Reset text color
-  doc.setTextColor(0);
+  // Summary stats row
+  if (data.length > 0) {
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(80, 80, 80);
+    doc.text(`Total Records: ${data.length}`, margin, yPosition);
+    doc.text(`Report Period: ${format(new Date(), "MMM yyyy")}`, margin + 60, yPosition);
+    yPosition += 6;
+  }
 
   if (data.length === 0) {
-    doc.text("No data available", margin, yPosition);
+    doc.setFontSize(11);
+    doc.setTextColor(150, 150, 150);
+    doc.text("No data available for the selected period.", margin, yPosition + 10);
+    drawProfessionalFooter(doc, 1, 1);
     doc.save(`${filename}_${format(new Date(), "yyyy-MM-dd_HHmm")}.pdf`);
     return;
   }
@@ -263,36 +264,59 @@ export const exportToPDF = (
   const columnWidths = columns.map((col) => col.width || defaultWidth);
 
   // Table header
-  doc.setFillColor(30, 41, 59); // slate-800
-  doc.rect(margin, yPosition, totalWidth, 8, "F");
-  doc.setTextColor(255);
-  doc.setFontSize(8);
+  doc.setFillColor(...ET_DARK);
+  doc.rect(margin, yPosition, totalWidth, 9, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(7.5);
   doc.setFont("helvetica", "bold");
 
   let xPosition = margin + 2;
   columns.forEach((col, index) => {
-    doc.text(col.label.toUpperCase(), xPosition, yPosition + 5.5, { maxWidth: columnWidths[index] - 4 });
+    doc.text(col.label.toUpperCase(), xPosition, yPosition + 6, { maxWidth: columnWidths[index] - 4 });
     xPosition += columnWidths[index];
   });
-  yPosition += 8;
+  yPosition += 9;
 
   // Table rows
-  doc.setTextColor(0);
   doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
 
   data.forEach((row, rowIndex) => {
-    // Check if we need a new page
-    if (yPosition > pageHeight - 20) {
+    if (yPosition > maxContentY) {
       doc.addPage();
-      yPosition = margin;
+      drawEthioTelecomWatermark(doc);
+      yPosition = margin + 8;
+      
+      // Repeat table header on new page
+      doc.setFillColor(...ET_DARK);
+      doc.rect(margin, yPosition, totalWidth, 9, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(7.5);
+      doc.setFont("helvetica", "bold");
+      xPosition = margin + 2;
+      columns.forEach((col, index) => {
+        doc.text(col.label.toUpperCase(), xPosition, yPosition + 6, { maxWidth: columnWidths[index] - 4 });
+        xPosition += columnWidths[index];
+      });
+      yPosition += 9;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
     }
 
     // Alternating row colors
     if (rowIndex % 2 === 0) {
-      doc.setFillColor(248, 250, 252); // slate-50
-      doc.rect(margin, yPosition, totalWidth, 7, "F");
+      doc.setFillColor(245, 248, 252);
+    } else {
+      doc.setFillColor(255, 255, 255);
     }
+    doc.rect(margin, yPosition, totalWidth, 7, "F");
 
+    // Row border
+    doc.setDrawColor(230, 230, 230);
+    doc.setLineWidth(0.2);
+    doc.line(margin, yPosition + 7, margin + totalWidth, yPosition + 7);
+
+    doc.setTextColor(30, 41, 59);
     xPosition = margin + 2;
     columns.forEach((col, index) => {
       const value = String(row[col.key] ?? "-");
@@ -302,13 +326,11 @@ export const exportToPDF = (
     yPosition += 7;
   });
 
-  // Footer
+  // Apply footers & watermarks to all pages
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
-    doc.setFontSize(8);
-    doc.setTextColor(100);
-    doc.text(`Page ${i} of ${pageCount}`, pageWidth - margin - 20, pageHeight - 10);
+    drawProfessionalFooter(doc, i, pageCount);
   }
 
   doc.save(`${filename}_${format(new Date(), "yyyy-MM-dd_HHmm")}.pdf`);
