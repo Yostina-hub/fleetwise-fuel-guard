@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState, useMemo, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import TEMPLATES from "./workflowTemplates";
 import {
@@ -192,6 +193,8 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
     [setNodes, setEdges, pushHistory]
   );
 
+  const queryClient = useQueryClient();
+
   const handleSave = useCallback(async () => {
     if (!organizationId) {
       toast({ title: "Error", description: "Organization not found", variant: "destructive" });
@@ -199,29 +202,38 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
     }
     setIsSaving(true);
     try {
-      const workflowData = {
+      const workflowData: Record<string, any> = {
         organization_id: organizationId,
         name: workflowName,
+        description: `Workflow with ${nodes.length} nodes and ${edges.length} connections`,
         nodes: JSON.parse(JSON.stringify(nodes)),
         edges: JSON.parse(JSON.stringify(edges)),
         status: workflowStatus,
-        created_by: user?.id,
       };
       if (workflowId) {
-        const { error } = await supabase.from("workflows").update(workflowData).eq("id", workflowId);
+        const { error } = await supabase
+          .from("workflows")
+          .update(workflowData)
+          .eq("id", workflowId);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase.from("workflows").insert(workflowData).select("id").single();
+        workflowData.created_by = user?.id;
+        const { data, error } = await supabase
+          .from("workflows")
+          .insert(workflowData)
+          .select("id")
+          .single();
         if (error) throw error;
         setWorkflowId(data.id);
       }
+      queryClient.invalidateQueries({ queryKey: ["workflows"] });
       toast({ title: "Saved!", description: "Workflow saved successfully" });
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
-  }, [organizationId, workflowName, nodes, edges, workflowStatus, workflowId, user, toast]);
+  }, [organizationId, workflowName, nodes, edges, workflowStatus, workflowId, user, toast, queryClient]);
 
   const handleUndo = useCallback(() => {
     if (historyIndex <= 0) return;
