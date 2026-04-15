@@ -65,6 +65,7 @@ const UserManagement = () => {
       setDetailUser(prev => prev ? usersWithRoles.find(u => u.id === prev.id) || null : null);
       setResetPwdUser(prev => prev ? usersWithRoles.find(u => u.id === prev.id) || null : null);
       setDeactivateUser(prev => prev ? usersWithRoles.find(u => u.id === prev.id) || null : null);
+    } catch (error) {
       console.error("Error fetching users:", error);
       toast({ title: "Error", description: "Failed to load users", variant: "destructive" });
     } finally {
