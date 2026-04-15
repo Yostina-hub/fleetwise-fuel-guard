@@ -265,7 +265,7 @@ useEffect(() => {
   // Track previous style to only react to actual user-driven changes
   const prevMapStyleRef = useRef(mapStyle);
   useEffect(() => {
-    if (!map.current || !lematApiKey) return;
+    if (!map.current) return;
     // Skip if mapStyle hasn't changed from last applied value
     if (prevMapStyleRef.current === mapStyle) return;
     prevMapStyleRef.current = mapStyle;
