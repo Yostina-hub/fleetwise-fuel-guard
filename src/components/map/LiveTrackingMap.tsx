@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useLematApiKey } from "@/hooks/useLematApiKey";
 import { createLematTransformRequest, fetchLematMapStyle, getPreviewSafeMapStyle } from "@/lib/lemat";
+import { getActiveProvider, getProviderStyle } from "@/lib/mapProviders";
 import { 
   createAnimatedMarkerElement, 
   animatePosition, 
@@ -88,6 +89,7 @@ const trailAnimationMarkers = useRef<Map<string, maplibregl.Marker>>(new Map());
 const trailAnimationFrames = useRef<Map<string, number>>(new Map());
 const [mapLoaded, setMapLoaded] = useState(false);
 const [tokenError, setTokenError] = useState<string | null>(null);
+const [currentProvider, setCurrentProvider] = useState(getActiveProvider());
 const fallbackTriedRef = useRef(false);
 const retriedInvalidRef = useRef(false);
 const [vehicleAddresses, setVehicleAddresses] = useState<Map<string, string>>(new Map());
@@ -116,6 +118,16 @@ useEffect(() => {
 useEffect(() => {
   vehicleRoadInfoRef.current = vehicleRoadInfo;
 }, [vehicleRoadInfo]);
+
+// Listen for provider changes from MapProviderSettings
+useEffect(() => {
+  const handler = () => {
+    const newProvider = getActiveProvider();
+    setCurrentProvider(newProvider);
+  };
+  window.addEventListener('map-provider-changed', handler);
+  return () => window.removeEventListener('map-provider-changed', handler);
+}, []);
 
 // Inject marker animations on mount
 useEffect(() => {
@@ -153,7 +165,8 @@ useEffect(() => {
       if (!mapContainer.current || map.current) return;
 
       try {
-        const initialStyle = await fetchLematMapStyle(mapStyle);
+        const activeProvider = getActiveProvider();
+        const initialStyle = await getProviderStyle(activeProvider, mapStyle);
 
         if (!mapContainer.current || map.current) return;
 
@@ -215,7 +228,7 @@ useEffect(() => {
           if (isStyleFailure && !fallbackTriedRef.current) {
             fallbackTriedRef.current = true;
             setMapLoaded(false);
-            fetchLematMapStyle(mapStyle).then((s) => {
+            getProviderStyle(getActiveProvider(), mapStyle).then((s) => {
               try { map.current?.setStyle(s); } catch {}
             }).catch(() => {});
             return;
@@ -260,7 +273,7 @@ useEffect(() => {
         map.current = null;
       }
     };
-  }, [mapStyle, onMapReady]);
+  }, [mapStyle, onMapReady, currentProvider]);
 
   // Track previous style to only react to actual user-driven changes
   const prevMapStyleRef = useRef(mapStyle);
@@ -273,7 +286,8 @@ useEffect(() => {
     const applyStyle = async () => {
       if (!map.current) return;
       try {
-        const targetStyle = await fetchLematMapStyle(mapStyle);
+        const activeProvider = getActiveProvider();
+        const targetStyle = await getProviderStyle(activeProvider, mapStyle);
         setMapLoaded(false);
         setTokenError(null);
         // Clear trail source tracking so they get re-added after style loads
