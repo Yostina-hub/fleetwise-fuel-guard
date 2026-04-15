@@ -2,14 +2,6 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Pagination,
   PaginationContent,
@@ -20,7 +12,7 @@ import {
 } from "@/components/ui/pagination";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Search, Users } from "lucide-react";
+import { Shield, Users } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import UsersQuickStats from "@/components/users/UsersQuickStats";
 import UsersQuickActions from "@/components/users/UsersQuickActions";
@@ -30,27 +22,16 @@ import UserTable from "@/components/users/UserTable";
 import UserDetailDialog from "@/components/users/UserDetailDialog";
 import ResetPasswordDialog from "@/components/users/ResetPasswordDialog";
 import ConfirmActionDialog from "@/components/users/ConfirmActionDialog";
+import UserFilters from "@/components/users/UserFilters";
 import type { UserProfile } from "@/components/users/UserTable";
-
-const ROLE_OPTIONS = [
-  { value: "super_admin", label: "Super Admin" },
-  { value: "org_admin", label: "Org Admin" },
-  { value: "operator", label: "Operator" },
-  { value: "fleet_manager", label: "Fleet Manager" },
-  { value: "driver", label: "Driver" },
-  { value: "technician", label: "Technician" },
-  { value: "viewer", label: "Viewer" },
-  { value: "mechanic", label: "Mechanic" },
-];
 
 const UserManagement = () => {
   const { t } = useTranslation();
   const { toast } = useToast();
   const { isSuperAdmin } = usePermissions();
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
@@ -90,18 +71,9 @@ const UserManagement = () => {
     fetchUsers();
   }, [fetchUsers]);
 
-  const filteredUsers = useMemo(() => {
-    return users.filter((user) => {
-      const q = searchQuery.toLowerCase();
-      const matchesSearch = !q ||
-        user.email.toLowerCase().includes(q) ||
-        user.full_name?.toLowerCase().includes(q) ||
-        user.phone?.toLowerCase().includes(q);
-      const matchesRole = roleFilter === "all" ||
-        user.user_roles.some((ur) => ur.role === roleFilter);
-      return matchesSearch && matchesRole;
-    });
-  }, [users, searchQuery, roleFilter]);
+  const handleFilteredUsersChange = useCallback((filtered: UserProfile[]) => {
+    setFilteredUsers(filtered);
+  }, []);
 
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const paginatedUsers = useMemo(() => {
