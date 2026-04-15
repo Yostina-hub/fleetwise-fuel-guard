@@ -1590,6 +1590,7 @@ const Reports = () => {
                    onExportPDF={handleExportPDF}
                    onExportExcel={handleExportExcel}
                    onExportWord={handleExportWord}
+                   onPrint={handlePrint}
                   onRefresh={handleRefresh}
                   isLoading={loading}
                   timePeriod={timePeriod}
