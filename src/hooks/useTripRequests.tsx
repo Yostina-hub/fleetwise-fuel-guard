@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -5,6 +6,21 @@ import { useToast } from "@/hooks/use-toast";
 export const useTripRequests = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Realtime subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel("trip-requests-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "trip_requests" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["trip-requests"] });
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
 
   const { data: requests, isLoading: loading } = useQuery({
     queryKey: ["trip-requests"],
@@ -27,7 +43,6 @@ export const useTripRequests = () => {
 
   const createRequest = useMutation({
     mutationFn: async (request: any) => {
-      // Generate request number
       const { data: orgData } = await supabase
         .from("profiles")
         .select("organization_id")
@@ -36,14 +51,32 @@ export const useTripRequests = () => {
 
       const requestNumber = `TR-${Date.now().toString().slice(-8)}`;
 
+      // Map form field names to DB column names
+      const payload: any = {
+        organization_id: orgData?.organization_id,
+        requester_id: (await supabase.auth.getUser()).data.user?.id,
+        request_number: requestNumber,
+        purpose: request.purpose,
+        pickup_at: request.pickup_at,
+        return_at: request.return_at,
+        pickup_geofence_id: request.pickup_geofence_id || null,
+        drop_geofence_id: request.drop_geofence_id || null,
+        passenger_count: request.passengers || request.passenger_count || 1,
+        preferred_driver_id: request.preferred_driver_id || null,
+        cost_center_id: request.cost_center_id || null,
+        priority: request.priority || "normal",
+        special_requirements: request.special_requirements || null,
+        cargo_weight_kg: request.cargo_weight_kg || null,
+        cargo_volume_m3: request.cargo_volume_m3 || null,
+        cargo_description: request.cargo_description || null,
+        required_class: request.required_class || null,
+        notes: request.notes || null,
+        status: "draft",
+      };
+
       const { data, error } = await supabase
         .from("trip_requests" as any)
-        .insert({
-          ...request,
-          organization_id: orgData?.organization_id,
-          requester_id: (await supabase.auth.getUser()).data.user?.id,
-          request_number: requestNumber,
-        })
+        .insert(payload)
         .select()
         .single();
 
@@ -68,13 +101,12 @@ export const useTripRequests = () => {
 
   const submitRequest = useMutation({
     mutationFn: async (requestId: string) => {
-      // Update request status
       const { data: request, error } = await supabase
         .from("trip_requests" as any)
         .update({
           status: "submitted",
           submitted_at: new Date().toISOString(),
-          sla_deadline_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24h SLA
+          sla_deadline_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         })
         .eq("id", requestId)
         .select()
@@ -82,7 +114,6 @@ export const useTripRequests = () => {
 
       if (error) throw error;
 
-      // Get organization users with approval roles
       const { data: orgData } = await supabase
         .from("profiles")
         .select("organization_id")
@@ -91,7 +122,6 @@ export const useTripRequests = () => {
 
       if (!orgData?.organization_id) throw new Error("Organization not found");
 
-      // Find users with operations_manager role
       const { data: approvers } = await supabase
         .from("user_roles")
         .select("user_id")
@@ -99,7 +129,6 @@ export const useTripRequests = () => {
         .eq("role", "operations_manager")
         .limit(1);
 
-      // Create approval record for first step
       if (approvers && approvers.length > 0) {
         const { error: approvalError } = await supabase
           .from("trip_approvals" as any)
