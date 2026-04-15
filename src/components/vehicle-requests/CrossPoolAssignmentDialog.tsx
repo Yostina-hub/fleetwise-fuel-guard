@@ -1,0 +1,152 @@
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { AlertTriangle, ArrowRight, Truck } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useOrganization } from "@/hooks/useOrganization";
+import { useVehicles } from "@/hooks/useVehicles";
+import { toast } from "sonner";
+
+interface Props {
+  request: any;
+  open: boolean;
+  onClose: () => void;
+}
+
+export const CrossPoolAssignmentDialog = ({ request, open, onClose }: Props) => {
+  const { organizationId } = useOrganization();
+  const { vehicles } = useVehicles();
+  const queryClient = useQueryClient();
+  const [selectedVehicle, setSelectedVehicle] = useState("");
+  const [reason, setReason] = useState("");
+  const [targetPool, setTargetPool] = useState("");
+
+  const { data: pools = [] } = useQuery({
+    queryKey: ["fleet-pools", organizationId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("fleet_pools")
+        .select("*")
+        .eq("organization_id", organizationId!)
+        .eq("is_active", true);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId && open,
+  });
+
+  const assignMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedVehicle) throw new Error("Select a vehicle");
+      if (!reason.trim()) throw new Error("Please provide a reason for cross-pool assignment");
+
+      const mins = Math.round((Date.now() - new Date(request.created_at).getTime()) / 60000);
+      const { error } = await (supabase as any)
+        .from("vehicle_requests")
+        .update({
+          status: "assigned",
+          assigned_vehicle_id: selectedVehicle,
+          assigned_at: new Date().toISOString(),
+          actual_assignment_minutes: mins,
+          cross_pool_assignment: true,
+          original_pool_name: request.pool_name || null,
+          pool_name: targetPool || request.pool_name,
+          purpose: (request.purpose || "") + `\n[Cross-pool: ${reason}]`,
+        })
+        .eq("id", request.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Cross-pool vehicle assigned successfully");
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
+      onClose();
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const otherPoolVehicles = vehicles.filter((v: any) => v.status === "active");
+
+  return (
+    <Dialog open={open} onOpenChange={() => onClose()}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <ArrowRight className="w-5 h-5 text-amber-500" />
+            Cross-Pool Assignment
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="bg-amber-500/10 rounded-lg p-3 flex items-start gap-2 text-sm">
+            <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5" />
+            <div>
+              <p className="font-medium">Temporary Cross-Pool Assignment</p>
+              <p className="text-muted-foreground text-xs mt-0.5">
+                This assigns a vehicle from a different pool. The vehicle will be temporarily reassigned and should be returned to its original pool after the trip.
+              </p>
+            </div>
+          </div>
+
+          {request.pool_name && (
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">Original Pool:</span>
+              <Badge variant="outline">{request.pool_category} / {request.pool_name}</Badge>
+            </div>
+          )}
+
+          <div>
+            <Label>Target Pool</Label>
+            <Select value={targetPool} onValueChange={setTargetPool}>
+              <SelectTrigger><SelectValue placeholder="Select target pool" /></SelectTrigger>
+              <SelectContent>
+                {pools.filter((p: any) => p.name !== request.pool_name).map((p: any) => (
+                  <SelectItem key={p.id} value={p.name}>{p.category} / {p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label className="flex items-center gap-1"><Truck className="w-3.5 h-3.5" /> Vehicle</Label>
+            <Select value={selectedVehicle} onValueChange={setSelectedVehicle}>
+              <SelectTrigger><SelectValue placeholder="Select vehicle from another pool" /></SelectTrigger>
+              <SelectContent>
+                {otherPoolVehicles.slice(0, 30).map((v: any) => (
+                  <SelectItem key={v.id} value={v.id}>
+                    {v.plate_number} - {v.make} {v.model}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>Reason for Cross-Pool Assignment *</Label>
+            <Textarea
+              value={reason}
+              onChange={e => setReason(e.target.value)}
+              placeholder="Explain why a vehicle from another pool is needed..."
+              rows={2}
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button
+            onClick={() => assignMutation.mutate()}
+            disabled={!selectedVehicle || !reason.trim() || assignMutation.isPending}
+            className="bg-amber-600 hover:bg-amber-700"
+          >
+            {assignMutation.isPending ? "Assigning..." : "Assign Cross-Pool"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
