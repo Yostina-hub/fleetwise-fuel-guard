@@ -66,21 +66,22 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
   const [showSimulator, setShowSimulator] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
 
-  // Load existing workflow when editing
-  const loadedRef = useRef(false);
+  // Load existing workflow when editing — scoped to organization
+  const loadedRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!editWorkflowId || loadedRef.current) return;
-    loadedRef.current = true;
+    if (!editWorkflowId || !organizationId || loadedRef.current === editWorkflowId) return;
+    loadedRef.current = editWorkflowId;
     setIsLoading(true);
     supabase
       .from("workflows")
       .select("*")
       .eq("id", editWorkflowId)
+      .eq("organization_id", organizationId)
       .single()
       .then(({ data, error }) => {
         setIsLoading(false);
         if (error || !data) {
-          toast({ title: "Error", description: "Failed to load workflow", variant: "destructive" });
+          toast({ title: "Error", description: "Workflow not found in this organization", variant: "destructive" });
           return;
         }
         setWorkflowName(data.name);
@@ -90,7 +91,7 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
         if (Array.isArray(data.edges)) setEdges(data.edges as any);
         setTimeout(() => fitView({ padding: 0.2 }), 200);
       });
-  }, [editWorkflowId, toast, setNodes, setEdges, fitView]);
+  }, [editWorkflowId, organizationId, toast, setNodes, setEdges, fitView]);
 
   // History for undo/redo
   const [history, setHistory] = useState<Array<{ nodes: any[]; edges: any[] }>>([]);
