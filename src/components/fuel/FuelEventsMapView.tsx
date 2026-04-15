@@ -117,7 +117,7 @@ const FuelEventsMapView = ({
       map.current?.remove();
       map.current = null;
     };
-  }, [lematApiKey, lematKeyReady]);
+  }, []);
 
   // Update markers when events change
   useEffect(() => {
