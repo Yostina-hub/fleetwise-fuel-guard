@@ -1,4 +1,4 @@
-import { Download, FileSpreadsheet, FileText, RefreshCw, Search, FileType } from "lucide-react";
+import { Download, FileSpreadsheet, FileText, RefreshCw, Search, FileType, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -23,6 +23,7 @@ interface ReportsDateFilterProps {
   onExportPDF: () => void;
   onExportExcel?: () => void;
   onExportWord?: () => void;
+  onPrint?: () => void;
   onRefresh: () => void;
   isLoading?: boolean;
   timePeriod: TimePeriodOption;
@@ -38,6 +39,7 @@ export const ReportsDateFilter = ({
   onExportPDF,
   onExportExcel,
   onExportWord,
+  onPrint,
   onRefresh,
   isLoading,
   timePeriod,
@@ -114,6 +116,15 @@ export const ReportsDateFilter = ({
                 <FileType className="w-4 h-4" aria-hidden="true" />
                 Export as Word (.doc)
               </DropdownMenuItem>
+            )}
+            {onPrint && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={onPrint} className="gap-2 cursor-pointer">
+                  <Printer className="w-4 h-4" aria-hidden="true" />
+                  Print Report
+                </DropdownMenuItem>
+              </>
             )}
           </DropdownMenuContent>
         </DropdownMenu>
