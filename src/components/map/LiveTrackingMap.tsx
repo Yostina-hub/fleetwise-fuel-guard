@@ -1352,16 +1352,6 @@ useEffect(() => {
     );
   }
 
-  if (!lematKeyReady) {
-    return (
-      <div className="h-full w-full flex items-center justify-center bg-muted">
-        <div className="text-center space-y-2">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-sm text-muted-foreground">Loading map…</p>
-        </div>
-      </div>
-    );
-  }
 
   if (tokenError === 'style') {
     return (
