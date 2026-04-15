@@ -15308,20 +15308,29 @@ export type Database = {
           assigned_driver_id: string | null
           assigned_vehicle_id: string | null
           auto_closed: boolean | null
+          auto_closed_at: string | null
           cancellation_reason: string | null
           cancelled_at: string | null
           check_in_at: string | null
           check_in_by: string | null
           completed_at: string | null
           created_at: string
+          cross_pool_assignment: boolean | null
           departure_lat: number | null
           departure_lng: number | null
           departure_place: string | null
           destination: string | null
+          destination_geofence_id: string | null
           destination_lat: number | null
           destination_lng: number | null
           dispatcher_notes: string | null
           distance_estimate_km: number | null
+          distance_log_km: number | null
+          driver_checked_in_at: string | null
+          driver_checked_out_at: string | null
+          driver_checkin_notes: string | null
+          driver_checkin_odometer: number | null
+          driver_checkout_odometer: number | null
           end_time: string | null
           id: string
           kpi_target_minutes: number | null
@@ -15329,11 +15338,16 @@ export type Database = {
           needed_until: string | null
           num_vehicles: number | null
           organization_id: string
+          original_pool_name: string | null
           passengers: number | null
           pool_category: string | null
           pool_location: string | null
           pool_name: string | null
+          pool_review_status: string | null
+          pool_reviewed_at: string | null
+          pool_reviewer_id: string | null
           priority: string | null
+          project_number: string | null
           purpose: string
           rejection_reason: string | null
           request_number: string
@@ -15342,6 +15356,8 @@ export type Database = {
           requester_id: string
           requester_name: string
           requester_rating: number | null
+          sms_notification_sent: boolean | null
+          sms_sent_at: string | null
           start_time: string | null
           status: string | null
           trip_duration_days: number | null
@@ -15358,20 +15374,29 @@ export type Database = {
           assigned_driver_id?: string | null
           assigned_vehicle_id?: string | null
           auto_closed?: boolean | null
+          auto_closed_at?: string | null
           cancellation_reason?: string | null
           cancelled_at?: string | null
           check_in_at?: string | null
           check_in_by?: string | null
           completed_at?: string | null
           created_at?: string
+          cross_pool_assignment?: boolean | null
           departure_lat?: number | null
           departure_lng?: number | null
           departure_place?: string | null
           destination?: string | null
+          destination_geofence_id?: string | null
           destination_lat?: number | null
           destination_lng?: number | null
           dispatcher_notes?: string | null
           distance_estimate_km?: number | null
+          distance_log_km?: number | null
+          driver_checked_in_at?: string | null
+          driver_checked_out_at?: string | null
+          driver_checkin_notes?: string | null
+          driver_checkin_odometer?: number | null
+          driver_checkout_odometer?: number | null
           end_time?: string | null
           id?: string
           kpi_target_minutes?: number | null
@@ -15379,11 +15404,16 @@ export type Database = {
           needed_until?: string | null
           num_vehicles?: number | null
           organization_id: string
+          original_pool_name?: string | null
           passengers?: number | null
           pool_category?: string | null
           pool_location?: string | null
           pool_name?: string | null
+          pool_review_status?: string | null
+          pool_reviewed_at?: string | null
+          pool_reviewer_id?: string | null
           priority?: string | null
+          project_number?: string | null
           purpose: string
           rejection_reason?: string | null
           request_number: string
@@ -15392,6 +15422,8 @@ export type Database = {
           requester_id: string
           requester_name: string
           requester_rating?: number | null
+          sms_notification_sent?: boolean | null
+          sms_sent_at?: string | null
           start_time?: string | null
           status?: string | null
           trip_duration_days?: number | null
@@ -15408,20 +15440,29 @@ export type Database = {
           assigned_driver_id?: string | null
           assigned_vehicle_id?: string | null
           auto_closed?: boolean | null
+          auto_closed_at?: string | null
           cancellation_reason?: string | null
           cancelled_at?: string | null
           check_in_at?: string | null
           check_in_by?: string | null
           completed_at?: string | null
           created_at?: string
+          cross_pool_assignment?: boolean | null
           departure_lat?: number | null
           departure_lng?: number | null
           departure_place?: string | null
           destination?: string | null
+          destination_geofence_id?: string | null
           destination_lat?: number | null
           destination_lng?: number | null
           dispatcher_notes?: string | null
           distance_estimate_km?: number | null
+          distance_log_km?: number | null
+          driver_checked_in_at?: string | null
+          driver_checked_out_at?: string | null
+          driver_checkin_notes?: string | null
+          driver_checkin_odometer?: number | null
+          driver_checkout_odometer?: number | null
           end_time?: string | null
           id?: string
           kpi_target_minutes?: number | null
@@ -15429,11 +15470,16 @@ export type Database = {
           needed_until?: string | null
           num_vehicles?: number | null
           organization_id?: string
+          original_pool_name?: string | null
           passengers?: number | null
           pool_category?: string | null
           pool_location?: string | null
           pool_name?: string | null
+          pool_review_status?: string | null
+          pool_reviewed_at?: string | null
+          pool_reviewer_id?: string | null
           priority?: string | null
+          project_number?: string | null
           purpose?: string
           rejection_reason?: string | null
           request_number?: string
@@ -15442,6 +15488,8 @@ export type Database = {
           requester_id?: string
           requester_name?: string
           requester_rating?: number | null
+          sms_notification_sent?: boolean | null
+          sms_sent_at?: string | null
           start_time?: string | null
           status?: string | null
           trip_duration_days?: number | null
@@ -15462,6 +15510,13 @@ export type Database = {
             columns: ["assigned_vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_requests_destination_geofence_id_fkey"
+            columns: ["destination_geofence_id"]
+            isOneToOne: false
+            referencedRelation: "geofences"
             referencedColumns: ["id"]
           },
           {
