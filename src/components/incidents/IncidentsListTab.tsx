@@ -25,6 +25,8 @@ import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
 import { format } from "date-fns";
 
+const ITEMS_PER_PAGE = 10;
+
 interface IncidentsListTabProps {
   externalCreateOpen?: boolean;
   onExternalCreateClose?: () => void;
