@@ -207,7 +207,7 @@ export const NotificationCenter = () => {
                 variant="ghost"
                 className="w-full"
                 onClick={() => {
-                  navigate("/fleet-scheduling");
+                  navigate("/alerts");
                   setOpen(false);
                 }}
               >

@@ -434,6 +434,7 @@ const Layout = ({ children }: LayoutProps) => {
             
             <div className="hidden sm:block h-5 w-px bg-[#2a3a4d]" />
             
+            <HeaderAlertBell />
             <NotificationCenter />
             <ThemeToggle />
             
