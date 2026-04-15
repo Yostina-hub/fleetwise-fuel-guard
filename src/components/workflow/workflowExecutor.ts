@@ -136,12 +136,12 @@ export async function executeNode(
 // ── Helper functions ──────────────────────────────
 
 async function readLatest(table: string, orgId: string, limit: number, successMsg: string): Promise<ExecutionResult> {
-  const { data, error, count } = await supabase
-    .from(table)
+  const { data, error, count } = await (supabase
+    .from(table as any)
     .select("*", { count: "exact" })
     .eq("organization_id", orgId)
     .order("created_at", { ascending: false })
-    .limit(limit);
+    .limit(limit) as any);
 
   if (error) return { success: false, operation: "SELECT", table, message: `Read failed: ${error.message}`, error: error.message };
 
