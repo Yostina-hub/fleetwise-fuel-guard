@@ -389,6 +389,7 @@ const TireManagement = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        <TireChangeDialog open={showChangeDialog} onOpenChange={setShowChangeDialog} tires={tireInventory} />
       </div>
     </Layout>
   );
