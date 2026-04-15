@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { DateTimePicker, combineDateAndTime } from "@/components/ui/date-time-picker";
 import { 
   Plus, Search, Truck, MapPin, Clock, User, Phone, Package,
-  CheckCircle, Loader2, Navigation, Play, Square, CalendarIcon
+  CheckCircle, Loader2, Navigation, Play, Square
 } from "lucide-react";
 import { useDispatchJobs } from "@/hooks/useDispatchJobs";
 import { useAvailableVehicles } from "@/hooks/useAvailableVehicles";
@@ -120,16 +120,12 @@ const DispatchJobsTab = () => {
   const paginatedJobs = filteredJobs.slice(startIndex, endIndex);
 
   const handleCreateJob = async () => {
-    // Combine date + time into ISO strings
-    const buildDateTime = (date?: Date, time?: string) => {
-      if (!date) return undefined;
-      const [h, m] = (time || '00:00').split(':').map(Number);
-      const d = new Date(date);
-      d.setHours(h, m, 0, 0);
-      return d.toISOString();
-    };
-
     const { scheduled_pickup_at, scheduled_pickup_time, scheduled_dropoff_at, scheduled_dropoff_time, ...rest } = newJob;
+    await createJob({
+      ...rest,
+      scheduled_pickup_at: combineDateAndTime(scheduled_pickup_at, scheduled_pickup_time),
+      scheduled_dropoff_at: combineDateAndTime(scheduled_dropoff_at, scheduled_dropoff_time),
+    } as any);
     await createJob({
       ...rest,
       scheduled_pickup_at: buildDateTime(scheduled_pickup_at, scheduled_pickup_time),
