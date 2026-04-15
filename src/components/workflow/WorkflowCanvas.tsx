@@ -202,8 +202,16 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
     }
     setIsSaving(true);
     try {
-      const workflowData: Record<string, any> = {
+      const serializedNodes = JSON.parse(JSON.stringify(nodes));
+      const serializedEdges = JSON.parse(JSON.stringify(edges));
+      const workflowPayload = {
         organization_id: organizationId,
+        name: workflowName,
+        description: `Workflow with ${nodes.length} nodes and ${edges.length} connections`,
+        nodes: serializedNodes,
+        edges: serializedEdges,
+        status: workflowStatus,
+      };
         name: workflowName,
         description: `Workflow with ${nodes.length} nodes and ${edges.length} connections`,
         nodes: JSON.parse(JSON.stringify(nodes)),
