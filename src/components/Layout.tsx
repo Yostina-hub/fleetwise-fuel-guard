@@ -339,6 +339,7 @@ const Layout = ({ children }: LayoutProps) => {
         <SidebarNav 
           navItems={navItems} 
           adminItems={adminItems} 
+          developerItems={developerItems}
           isSuperAdmin={isSuperAdmin} 
           isOrgAdmin={isOrgAdmin}
           isDark={true} 
