@@ -919,6 +919,14 @@ const WorkOrdersTab = () => {
                 </div>
               )}
 
+              {/* Approval Chain */}
+              <div className="border-t pt-4">
+                <WorkOrderApprovalFlow
+                  workOrderId={selectedWorkOrder.id}
+                  totalCost={selectedWorkOrder.total_cost || (costFormData.parts_cost + costFormData.labor_cost) || undefined}
+                />
+              </div>
+
               <DialogFooter className="gap-2">
                 {selectedWorkOrder.status !== 'completed' && selectedWorkOrder.status !== 'cancelled' && (
                   <>
