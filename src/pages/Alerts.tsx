@@ -7,6 +7,7 @@ import { SOSAlertPanel } from "@/components/alerts/SOSAlertPanel";
 import { FuelAlertsTab } from "@/components/alerts/FuelAlertsTab";
 import { MaintenanceAlertsTab } from "@/components/alerts/MaintenanceAlertsTab";
 import { EVAlertsTab } from "@/components/alerts/EVAlertsTab";
+import { MapProviderSettings } from "@/components/alerts/MapProviderSettings";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -49,7 +50,8 @@ import {
   FileText,
   Fuel,
   Wrench,
-  Zap
+  Zap,
+  Map
 } from "lucide-react";
 import { useAlerts, Alert } from "@/hooks/useAlerts";
 import { useVehicles } from "@/hooks/useVehicles";
@@ -309,7 +311,7 @@ const Alerts = () => {
 
         {/* Main Alert Tabs */}
         <Tabs defaultValue="all" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
+          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
             <TabsTrigger value="all" className="gap-2">
               <AlertTriangle className="w-4 h-4" />
               All Alerts
@@ -325,6 +327,10 @@ const Alerts = () => {
             <TabsTrigger value="maintenance" className="gap-2">
               <Wrench className="w-4 h-4" />
               Maintenance
+            </TabsTrigger>
+            <TabsTrigger value="map-settings" className="gap-2">
+              <Map className="w-4 h-4" />
+              Map Config
             </TabsTrigger>
           </TabsList>
 
@@ -670,6 +676,11 @@ const Alerts = () => {
           {/* Maintenance Alerts Tab */}
           <TabsContent value="maintenance">
             <MaintenanceAlertsTab />
+          </TabsContent>
+
+          {/* Map Provider Settings */}
+          <TabsContent value="map-settings">
+            <MapProviderSettings />
           </TabsContent>
         </Tabs>
       </div>

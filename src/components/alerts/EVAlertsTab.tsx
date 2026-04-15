@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -20,11 +21,17 @@ import {
   ThermometerSun,
   Gauge,
   CheckCircle,
+  MapPin,
+  Navigation,
 } from "lucide-react";
 import { useAlerts, Alert } from "@/hooks/useAlerts";
 import { useVehicles } from "@/hooks/useVehicles";
+import { supabase } from "@/integrations/supabase/client";
+import { useOrganization } from "@/hooks/useOrganization";
 import { formatDistanceToNow } from "date-fns";
 import { useTranslation } from "react-i18next";
+import { toast } from "@/hooks/use-toast";
+import AlertMiniMap from "./AlertMiniMap";
 
 const EV_ALERT_TYPES = [
   "low_battery",
@@ -39,12 +46,57 @@ const EV_ALERT_TYPES = [
 
 export function EVAlertsTab() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { organizationId } = useOrganization();
   const [searchQuery, setSearchQuery] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [expandedAlert, setExpandedAlert] = useState<string | null>(null);
 
-  const { alerts, loading, acknowledgeAlert, resolveAlert } = useAlerts();
+  const { alerts, loading, acknowledgeAlert, resolveAlert, refetch } = useAlerts();
   const { vehicles } = useVehicles();
+
+  // Realtime subscription for EV alerts
+  useEffect(() => {
+    if (!organizationId) return;
+
+    let debounce: ReturnType<typeof setTimeout>;
+    const channel = supabase
+      .channel(`ev-alerts-${organizationId.slice(0, 8)}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'alerts',
+          filter: `organization_id=eq.${organizationId}`,
+        },
+        (payload) => {
+          clearTimeout(debounce);
+          debounce = setTimeout(() => {
+            refetch();
+            // Toast for new EV alerts
+            if (payload.eventType === 'INSERT') {
+              const newAlert = payload.new as any;
+              const isEV = EV_ALERT_TYPES.some(t => newAlert.alert_type?.includes(t));
+              if (isEV) {
+                toast({
+                  title: `⚡ EV Alert: ${newAlert.title || newAlert.alert_type}`,
+                  description: newAlert.message?.slice(0, 100),
+                  variant: newAlert.severity === 'critical' ? 'destructive' : 'default',
+                });
+              }
+            }
+          }, 300);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      clearTimeout(debounce);
+      supabase.removeChannel(channel);
+    };
+  }, [organizationId, refetch]);
 
   // Filter to only EV-related alerts or alerts for electric vehicles
   const evAlerts = useMemo(() => {
@@ -113,6 +165,12 @@ export function EVAlertsTab() {
     unresolved: evAlerts.filter((a) => a.status !== "resolved").length,
     resolved: evAlerts.filter((a) => a.status === "resolved").length,
   }), [evAlerts]);
+
+  const handleViewOnMap = useCallback((alert: Alert) => {
+    if (alert.lat && alert.lng) {
+      navigate(`/map?lat=${alert.lat}&lng=${alert.lng}&alertId=${alert.id}`);
+    }
+  }, [navigate]);
 
   return (
     <div className="space-y-6">
@@ -208,6 +266,10 @@ export function EVAlertsTab() {
             {stats.unresolved > 0 && (
               <Badge variant="destructive">{stats.unresolved} Active</Badge>
             )}
+            <Badge variant="outline" className="text-xs ml-auto">
+              <span className="w-2 h-2 rounded-full bg-green-500 inline-block mr-1.5 animate-pulse" />
+              Real-time
+            </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -218,44 +280,82 @@ export function EVAlertsTab() {
               <Zap className="w-12 h-12 mx-auto text-muted-foreground/30 mb-4" />
               <h3 className="text-lg font-medium mb-2">No EV alerts found</h3>
               <p className="text-muted-foreground">
-                Electric vehicle alerts for battery, charging, and range issues will appear here.
+                Electric vehicle alerts for battery, charging, and range issues will appear here in real-time.
               </p>
             </div>
           ) : (
             <div className="space-y-3">
               {filteredAlerts.map((alert) => (
-                <div
-                  key={alert.id}
-                  className="flex items-start gap-4 p-4 rounded-xl border bg-card/50 hover:bg-card/80 transition-colors"
-                >
-                  <div className="mt-1">{getTypeIcon(alert.alert_type)}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold">{alert.title}</span>
-                      {getSeverityBadge(alert.severity)}
-                      <Badge variant="outline" className="text-xs">
-                        {alert.alert_type?.replace(/_/g, " ")}
-                      </Badge>
+                <div key={alert.id}>
+                  <div
+                    className={`flex items-start gap-4 p-4 rounded-xl border bg-card/50 hover:bg-card/80 transition-colors cursor-pointer ${
+                      expandedAlert === alert.id ? 'border-primary/40' : ''
+                    }`}
+                    onClick={() => setExpandedAlert(expandedAlert === alert.id ? null : alert.id)}
+                  >
+                    <div className="mt-1">{getTypeIcon(alert.alert_type)}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold">{alert.title}</span>
+                        {getSeverityBadge(alert.severity)}
+                        <Badge variant="outline" className="text-xs">
+                          {alert.alert_type?.replace(/_/g, " ")}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">{alert.message}</p>
+                      <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                        <span>Vehicle: <span className="font-medium text-foreground">{getVehiclePlate(alert.vehicle_id)}</span></span>
+                        <span>{formatDistanceToNow(new Date(alert.alert_time), { addSuffix: true })}</span>
+                        {alert.lat && alert.lng && (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            {alert.lat.toFixed(4)}, {alert.lng.toFixed(4)}
+                          </span>
+                        )}
+                        <Badge variant={alert.status === "resolved" ? "secondary" : "outline"} className="text-xs">
+                          {alert.status}
+                        </Badge>
+                      </div>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">{alert.message}</p>
-                    <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                      <span>Vehicle: <span className="font-medium text-foreground">{getVehiclePlate(alert.vehicle_id)}</span></span>
-                      <span>{formatDistanceToNow(new Date(alert.alert_time), { addSuffix: true })}</span>
-                      <Badge variant={alert.status === "resolved" ? "secondary" : "outline"} className="text-xs">
-                        {alert.status}
-                      </Badge>
-                    </div>
-                  </div>
-                  {alert.status !== "resolved" && (
-                    <div className="flex gap-2 shrink-0">
-                      {alert.status === "unacknowledged" && (
-                        <Button size="sm" variant="outline" onClick={() => acknowledgeAlert(alert.id)}>
-                          Acknowledge
+                    {alert.status !== "resolved" && (
+                      <div className="flex gap-2 shrink-0">
+                        {alert.status === "unacknowledged" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              acknowledgeAlert(alert.id);
+                            }}
+                          >
+                            Acknowledge
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            resolveAlert(alert.id);
+                          }}
+                        >
+                          Resolve
                         </Button>
-                      )}
-                      <Button size="sm" variant="outline" onClick={() => resolveAlert(alert.id)}>
-                        Resolve
-                      </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Expanded: Mini Map */}
+                  {expandedAlert === alert.id && (
+                    <div className="mt-2 ml-12 animate-fade-in">
+                      <AlertMiniMap
+                        lat={alert.lat}
+                        lng={alert.lng}
+                        severity={alert.severity}
+                        title={getVehiclePlate(alert.vehicle_id)}
+                        height="180px"
+                        onNavigate={alert.lat && alert.lng ? () => handleViewOnMap(alert) : undefined}
+                      />
                     </div>
                   )}
                 </div>

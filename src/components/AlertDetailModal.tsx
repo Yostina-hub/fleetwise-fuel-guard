@@ -23,6 +23,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useState } from "react";
+import AlertMiniMap from "@/components/alerts/AlertMiniMap";
 
 interface AlertData {
   id: string;
@@ -196,6 +197,24 @@ const AlertDetailModal = ({
               )}
             </div>
           </div>
+
+          {/* Alert Location Map */}
+          {(alert.lat || alert.lng) && (
+            <div>
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-primary" />
+                Alert Location
+              </h3>
+              <AlertMiniMap
+                lat={alert.lat}
+                lng={alert.lng}
+                severity={alert.severity}
+                title={alert.vehiclePlate}
+                height="200px"
+                onNavigate={onViewOnMap ? () => onViewOnMap(alert) : undefined}
+              />
+            </div>
+          )}
 
           <Separator />
 
