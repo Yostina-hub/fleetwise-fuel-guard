@@ -15,13 +15,69 @@ export const LEMAT_DEFAULT_ZOOM = 12;
 export const getLematStyleUrl = (theme: LematTheme = 'light'): string =>
   `${LEMAT_API_BASE}/tiles/style?theme=${theme}`;
 
+const isLovablePreviewHost = (hostname: string): boolean => {
+  const normalizedHost = hostname.toLowerCase();
+  return normalizedHost.endsWith('.lovableproject.com') || /--[a-f0-9-]+\.lovable\.app$/.test(normalizedHost);
+};
+
+export const shouldUsePreviewSafeMapStyle = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  return isLovablePreviewHost(window.location.hostname);
+};
+
+const getRasterStyle = (
+  name: string,
+  tiles: string[],
+  attribution: string,
+): maplibregl.StyleSpecification => ({
+  version: 8,
+  name,
+  sources: {
+    raster: {
+      type: 'raster',
+      tiles,
+      tileSize: 256,
+      attribution,
+    },
+  },
+  layers: [
+    {
+      id: `${name.toLowerCase().replace(/\s+/g, '-')}-layer`,
+      type: 'raster',
+      source: 'raster',
+      minzoom: 0,
+      maxzoom: 20,
+    },
+  ],
+});
+
+export const getPreviewSafeMapStyle = (style: LematMapStyle = 'streets'): maplibregl.StyleSpecification => {
+  if (style === 'satellite') return getSatelliteRasterStyle();
+
+  if (style === 'dark') {
+    return getRasterStyle(
+      'CARTO Dark',
+      ['https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'],
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    );
+  }
+
+  return getRasterStyle(
+    'CARTO Light',
+    ['https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'],
+    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  );
+};
+
 export const getLematMapStyle = (style: LematMapStyle = 'streets'): string | maplibregl.StyleSpecification => {
+  if (shouldUsePreviewSafeMapStyle()) return getPreviewSafeMapStyle(style);
   if (style === 'satellite') return getSatelliteRasterStyle();
   if (style === 'dark') return getLematStyleUrl('dark');
   return getLematStyleUrl('light');
 };
 
-export const getLematFallbackMapStyle = (): string | maplibregl.StyleSpecification => getOsmFallbackStyle();
+export const getLematFallbackMapStyle = (): string | maplibregl.StyleSpecification =>
+  shouldUsePreviewSafeMapStyle() ? getPreviewSafeMapStyle('streets') : getOsmFallbackStyle();
 
 /**
  * OpenStreetMap raster tile style for use when the Lemat tile server is completely unreachable.
