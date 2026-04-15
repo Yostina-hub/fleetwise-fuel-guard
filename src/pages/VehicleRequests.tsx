@@ -4,11 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ClipboardList, Plus, Clock, CheckCircle, XCircle, Truck, Eye, MessageSquare } from "lucide-react";
+import { ClipboardList, Plus, Clock, CheckCircle, XCircle, Truck, Eye, MessageSquare, LogIn, Shuffle } from "lucide-react";
 import { VehicleRequestKPI } from "@/components/vehicle-requests/VehicleRequestKPI";
 import { VehicleRequestForm } from "@/components/vehicle-requests/VehicleRequestForm";
 import { VehicleRequestApprovalFlow } from "@/components/vehicle-requests/VehicleRequestApprovalFlow";
 import { RequesterFeedbackDialog } from "@/components/vehicle-requests/RequesterFeedbackDialog";
+import { DriverCheckInDialog } from "@/components/vehicle-requests/DriverCheckInDialog";
+import { CrossPoolAssignmentDialog } from "@/components/vehicle-requests/CrossPoolAssignmentDialog";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -21,6 +23,8 @@ const VehicleRequests = () => {
   const [showCreate, setShowCreate] = useState(false);
   const [showDetail, setShowDetail] = useState<any>(null);
   const [showFeedback, setShowFeedback] = useState<any>(null);
+  const [showCheckIn, setShowCheckIn] = useState<any>(null);
+  const [showCrossPool, setShowCrossPool] = useState<any>(null);
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ["vehicle-requests", organizationId],
@@ -122,6 +126,7 @@ const VehicleRequests = () => {
                     <th className="text-left py-2 px-3">Needed From</th>
                     <th className="text-left py-2 px-3">Vehicle</th>
                     <th className="text-center py-2 px-3">Trip</th>
+                    <th className="text-center py-2 px-3">Check-in</th>
                     <th className="text-center py-2 px-3">Status</th>
                     <th className="text-center py-2 px-3">Actions</th>
                   </tr></thead>
@@ -140,7 +145,13 @@ const VehicleRequests = () => {
                             ? `${r.departure_place} → ${r.destination}`
                             : r.destination || r.departure_place || "—"}
                         </td>
-                        <td className="py-2 px-3 text-muted-foreground text-xs">{r.pool_name || "—"}</td>
+                        <td className="py-2 px-3 text-muted-foreground text-xs">
+                          {r.cross_pool_assignment ? (
+                            <Badge variant="outline" className="text-[10px] border-amber-500/50 text-amber-500">
+                              <Shuffle className="w-2.5 h-2.5 mr-0.5" /> {r.pool_name || "—"}
+                            </Badge>
+                          ) : (r.pool_name || "—")}
+                        </td>
                         <td className="py-2 px-3 text-muted-foreground">{format(new Date(r.needed_from), "MMM dd, HH:mm")}</td>
                         <td className="py-2 px-3 text-muted-foreground">{r.assigned_vehicle?.plate_number || "—"}</td>
                         <td className="py-2 px-3 text-center">
@@ -151,7 +162,21 @@ const VehicleRequests = () => {
                           ) : "—"}
                         </td>
                         <td className="py-2 px-3 text-center">
-                          <Badge variant={(statusColors[r.status] || "secondary") as any} className="text-[10px]">{r.status}</Badge>
+                          {r.driver_checked_in_at ? (
+                            <Badge variant="default" className="text-[10px] bg-green-600">
+                              {r.driver_checked_out_at ? "Out" : "In"}
+                            </Badge>
+                          ) : r.status === "assigned" ? (
+                            <Button size="sm" variant="ghost" className="h-6 px-1.5" onClick={() => setShowCheckIn(r)}>
+                              <LogIn className="w-3 h-3" />
+                            </Button>
+                          ) : "—"}
+                        </td>
+                        <td className="py-2 px-3 text-center">
+                          <Badge variant={(statusColors[r.status] || "secondary") as any} className="text-[10px]">
+                            {r.status}
+                            {r.auto_closed && " ⚡"}
+                          </Badge>
                         </td>
                         <td className="py-2 px-3 text-center">
                           <Button size="sm" variant="ghost" onClick={() => setShowDetail(r)}><Eye className="w-3.5 h-3.5" /></Button>
@@ -168,10 +193,8 @@ const VehicleRequests = () => {
           </CardContent>
         </Card>
 
-        {/* Dynamic Request Form */}
         <VehicleRequestForm open={showCreate} onOpenChange={setShowCreate} />
 
-        {/* Detail / Approval Flow */}
         {showDetail && (
           <Dialog open={!!showDetail} onOpenChange={() => setShowDetail(null)}>
             <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
@@ -182,6 +205,8 @@ const VehicleRequests = () => {
                 request={showDetail}
                 approvals={approvals}
                 onClose={() => setShowDetail(null)}
+                onCheckIn={() => { setShowDetail(null); setShowCheckIn(showDetail); }}
+                onCrossPool={() => { setShowDetail(null); setShowCrossPool(showDetail); }}
               />
             </DialogContent>
           </Dialog>
@@ -192,6 +217,22 @@ const VehicleRequests = () => {
             request={showFeedback}
             open={!!showFeedback}
             onClose={() => setShowFeedback(null)}
+          />
+        )}
+
+        {showCheckIn && (
+          <DriverCheckInDialog
+            request={showCheckIn}
+            open={!!showCheckIn}
+            onClose={() => setShowCheckIn(null)}
+          />
+        )}
+
+        {showCrossPool && (
+          <CrossPoolAssignmentDialog
+            request={showCrossPool}
+            open={!!showCrossPool}
+            onClose={() => setShowCrossPool(null)}
           />
         )}
       </div>

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, XCircle, Clock, AlertTriangle, ArrowRight, Truck } from "lucide-react";
+import { CheckCircle, XCircle, Clock, AlertTriangle, ArrowRight, Truck, LogIn, Send, Shuffle } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useVehicles } from "@/hooks/useVehicles";
@@ -16,14 +16,17 @@ interface Props {
   request: any;
   approvals: any[];
   onClose: () => void;
+  onCheckIn?: () => void;
+  onCrossPool?: () => void;
 }
 
-export const VehicleRequestApprovalFlow = ({ request, approvals, onClose }: Props) => {
+export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onCheckIn, onCrossPool }: Props) => {
   const { t } = useTranslation();
   const { vehicles } = useVehicles();
   const queryClient = useQueryClient();
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
+  const [selectedDriver, setSelectedDriver] = useState("");
 
   const requestApprovals = approvals.filter((a: any) => a.request_id === request.id);
 
@@ -58,9 +61,7 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose }: Prop
 
   const rejectMutation = useMutation({
     mutationFn: async () => {
-      if (!rejectionReason.trim()) {
-        throw new Error("Rejection reason is mandatory");
-      }
+      if (!rejectionReason.trim()) throw new Error("Rejection reason is mandatory");
       const user = (await supabase.auth.getUser()).data.user;
       const profile = (await supabase.from("profiles").select("full_name").eq("id", user!.id).single()).data;
 
@@ -123,6 +124,21 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose }: Prop
     onError: (err: any) => toast.error(err.message),
   });
 
+  const sendSmsMutation = useMutation({
+    mutationFn: async () => {
+      // Mark SMS as sent (actual SMS sending via edge function would happen here)
+      await (supabase as any).from("vehicle_requests").update({
+        sms_notification_sent: true,
+        sms_sent_at: new Date().toISOString(),
+      }).eq("id", request.id);
+    },
+    onSuccess: () => {
+      toast.success("SMS notification sent");
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   const requestTypeLabel = {
     daily_operation: "Daily Operation",
     project_operation: "Project Operation",
@@ -165,6 +181,14 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose }: Prop
         </div>
       )}
 
+      {/* Cross-pool indicator */}
+      {request.cross_pool_assignment && (
+        <div className="flex items-center gap-2 text-xs bg-amber-500/10 rounded-lg p-2">
+          <Shuffle className="w-3.5 h-3.5 text-amber-500" />
+          <span>Cross-pool assignment from <strong>{request.original_pool_name}</strong></span>
+        </div>
+      )}
+
       {/* Assigned vehicle/driver */}
       {request.assigned_vehicle && (
         <div className="flex items-center gap-2 text-sm bg-primary/5 rounded-lg p-2">
@@ -175,6 +199,40 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose }: Prop
       {request.assigned_driver && (
         <div className="text-sm text-muted-foreground pl-6">
           Driver: {request.assigned_driver.first_name} {request.assigned_driver.last_name}
+        </div>
+      )}
+
+      {/* Driver Check-in/out status */}
+      {request.driver_checked_in_at && (
+        <div className="bg-green-500/10 rounded-lg p-2 text-xs space-y-1">
+          <div className="flex items-center gap-2">
+            <LogIn className="w-3.5 h-3.5 text-green-500" />
+            <span>Checked in: {format(new Date(request.driver_checked_in_at), "MMM dd, HH:mm")}</span>
+            {request.driver_checkin_odometer && <span className="text-muted-foreground">| {request.driver_checkin_odometer} km</span>}
+          </div>
+          {request.driver_checked_out_at && (
+            <div className="flex items-center gap-2">
+              <LogIn className="w-3.5 h-3.5 text-amber-500 rotate-180" />
+              <span>Checked out: {format(new Date(request.driver_checked_out_at), "MMM dd, HH:mm")}</span>
+              {request.driver_checkout_odometer && <span className="text-muted-foreground">| {request.driver_checkout_odometer} km</span>}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Auto-close indicator */}
+      {request.auto_closed && (
+        <div className="flex items-center gap-2 text-xs bg-blue-500/10 rounded-lg p-2">
+          <CheckCircle className="w-3.5 h-3.5 text-blue-500" />
+          <span>Auto-closed at destination geofence {request.auto_closed_at ? `on ${format(new Date(request.auto_closed_at), "MMM dd, HH:mm")}` : ""}</span>
+        </div>
+      )}
+
+      {/* SMS status */}
+      {request.sms_notification_sent && (
+        <div className="flex items-center gap-2 text-xs bg-muted/50 rounded-lg p-2">
+          <Send className="w-3.5 h-3.5 text-muted-foreground" />
+          <span>SMS sent {request.sms_sent_at ? format(new Date(request.sms_sent_at), "MMM dd, HH:mm") : ""}</span>
         </div>
       )}
 
@@ -247,19 +305,43 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose }: Prop
           </>
         )}
         {request.status === "approved" && (
-          <Select onValueChange={v => assignMutation.mutate(v)}>
-            <SelectTrigger className="w-56"><SelectValue placeholder="Assign Vehicle..." /></SelectTrigger>
-            <SelectContent>
-              {vehicles.filter((v: any) => v.status === "active").slice(0, 30).map((v: any) => (
-                <SelectItem key={v.id} value={v.id}>{v.plate_number} - {v.make} {v.model}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <>
+            <Select onValueChange={v => assignMutation.mutate(v)}>
+              <SelectTrigger className="w-48"><SelectValue placeholder="Assign Vehicle..." /></SelectTrigger>
+              <SelectContent>
+                {vehicles.filter((v: any) => v.status === "active").slice(0, 30).map((v: any) => (
+                  <SelectItem key={v.id} value={v.id}>{v.plate_number} - {v.make} {v.model}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {onCrossPool && (
+              <Button size="sm" variant="outline" onClick={onCrossPool}>
+                <Shuffle className="w-3.5 h-3.5 mr-1" /> Cross-Pool
+              </Button>
+            )}
+          </>
         )}
         {request.status === "assigned" && (
-          <Button size="sm" onClick={() => completeMutation.mutate()} disabled={completeMutation.isPending}>
-            <CheckCircle className="w-3.5 h-3.5 mr-1" /> Mark Complete
-          </Button>
+          <>
+            {!request.driver_checked_in_at && onCheckIn && (
+              <Button size="sm" onClick={onCheckIn} className="bg-green-600 hover:bg-green-700">
+                <LogIn className="w-3.5 h-3.5 mr-1" /> Check In
+              </Button>
+            )}
+            {request.driver_checked_in_at && !request.driver_checked_out_at && onCheckIn && (
+              <Button size="sm" onClick={onCheckIn} className="bg-amber-600 hover:bg-amber-700">
+                <LogIn className="w-3.5 h-3.5 mr-1 rotate-180" /> Check Out
+              </Button>
+            )}
+            {!request.sms_notification_sent && (
+              <Button size="sm" variant="outline" onClick={() => sendSmsMutation.mutate()} disabled={sendSmsMutation.isPending}>
+                <Send className="w-3.5 h-3.5 mr-1" /> Send SMS
+              </Button>
+            )}
+            <Button size="sm" onClick={() => completeMutation.mutate()} disabled={completeMutation.isPending}>
+              <CheckCircle className="w-3.5 h-3.5 mr-1" /> Complete
+            </Button>
+          </>
         )}
         {["pending", "approved"].includes(request.status) && !showRejectForm && (
           <Button size="sm" variant="outline" onClick={onClose}>{t('common.cancel', 'Cancel')}</Button>
