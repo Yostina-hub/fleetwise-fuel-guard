@@ -130,6 +130,7 @@ const VehicleRequests = () => {
           <PoolReviewPanel requests={requests} organizationId={organizationId} />
         )}
 
+        <Card>
           <CardHeader><CardTitle className="text-sm font-semibold">All Requests</CardTitle></CardHeader>
           <CardContent>
             {isLoading ? <div className="animate-pulse h-32" /> : requests.length === 0 ? (
