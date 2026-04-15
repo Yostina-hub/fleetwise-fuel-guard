@@ -1292,6 +1292,18 @@ const Reports = () => {
     toast.success("Report exported to Word");
   };
 
+  const handlePrint = () => {
+    const { data, columns, title } = getExportData();
+    const dateRangeStr = `${format(dateRange.from, "MMM d")} - ${format(dateRange.to, "MMM d, yyyy")}`;
+    const success = printReport(title, data, columns, { 
+      dateRange: dateRangeStr, 
+      totalRecords: data.length 
+    });
+    if (!success) {
+      toast.error("Pop-up blocked. Please allow pop-ups to print reports.");
+    }
+  };
+
   const handleRefresh = () => {
     // Invalidate all report-specific queries
     queryClient.invalidateQueries({ predicate: (query) => {
