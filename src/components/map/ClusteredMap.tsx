@@ -12,7 +12,7 @@ import {
 } from "./AnimatedMarker";
 import { useMapMatching } from "@/hooks/useMapMatching";
 import { useLematApiKey } from "@/hooks/useLematApiKey";
-import { createLematTransformRequest, getLematMapStyle, getPreviewSafeMapStyle } from "@/lib/lemat";
+import { createLematTransformRequest, getLematMapStyle } from "@/lib/lemat";
 
 interface VehiclePoint {
   id: string;
@@ -281,7 +281,7 @@ const ClusteredMap = ({
           fallbackTriedRef.current = true;
           setMapLoaded(false);
           try {
-            map.current?.setStyle(getPreviewSafeMapStyle(mapStyle));
+            map.current?.setStyle(getLematMapStyle(mapStyle));
             return;
           } catch {}
         }
