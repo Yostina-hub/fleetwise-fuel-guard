@@ -589,6 +589,80 @@ const Reports = () => {
               ],
               title: "Fuel Theft Cases Report",
             };
+          case "authorization":
+            return {
+              data: fuelRequests.map(r => ({
+                request_number: r.request_number,
+                date: format(new Date(r.requested_at), "yyyy-MM-dd HH:mm"),
+                vehicle: r.vehicle?.plate_number || "—",
+                driver: r.driver ? `${r.driver.first_name} ${r.driver.last_name}` : "—",
+                liters_requested: r.liters_requested,
+                liters_approved: r.liters_approved || "—",
+                estimated_cost: r.estimated_cost || "—",
+                fuel_type: r.fuel_type || "—",
+                purpose: r.purpose || "—",
+                status: r.status,
+              })),
+              filename: "fuel_authorization_report",
+              columns: [
+                { key: "request_number", label: "Request #", width: 35 },
+                { key: "date", label: "Date", width: 40 },
+                { key: "vehicle", label: "Vehicle", width: 35 },
+                { key: "driver", label: "Driver", width: 40 },
+                { key: "liters_requested", label: "Requested (L)", width: 35 },
+                { key: "liters_approved", label: "Approved (L)", width: 35 },
+                { key: "status", label: "Status", width: 30 },
+              ],
+              title: "Fuel Clearance & Authorization Report",
+            };
+          case "consumption":
+            return {
+              data: fuelTransactions.map(t => ({
+                date: format(new Date(t.transaction_date), "yyyy-MM-dd"),
+                vehicle: t.vehicle?.plate_number || "Unknown",
+                liters: t.fuel_amount_liters || 0,
+                cost: t.fuel_cost || 0,
+                price_per_l: t.fuel_price_per_liter || 0,
+                odometer: t.odometer_km || "—",
+                vendor: t.vendor_name || "—",
+                location: t.location_name || "—",
+                receipt: t.receipt_number || "—",
+              })),
+              filename: "fuel_consumption_full_report",
+              columns: [
+                { key: "date", label: "Date", width: 35 },
+                { key: "vehicle", label: "Vehicle", width: 35 },
+                { key: "liters", label: "Liters", width: 25 },
+                { key: "cost", label: "Cost", width: 30 },
+                { key: "price_per_l", label: "Price/L", width: 25 },
+                { key: "odometer", label: "Odometer", width: 30 },
+                { key: "vendor", label: "Vendor", width: 35 },
+              ],
+              title: "Comprehensive Fuel Consumption Report",
+            };
+          case "fillup_location":
+            return {
+              data: fuelTransactions.filter(t => t.lat || t.location_name).map(t => ({
+                date: format(new Date(t.transaction_date), "yyyy-MM-dd HH:mm"),
+                vehicle: t.vehicle?.plate_number || "Unknown",
+                location: t.location_name || "—",
+                lat: t.lat || "—",
+                lng: t.lng || "—",
+                liters: t.fuel_amount_liters || 0,
+                cost: t.fuel_cost || 0,
+                vendor: t.vendor_name || "—",
+              })),
+              filename: "fuel_fillup_location_report",
+              columns: [
+                { key: "date", label: "Date", width: 40 },
+                { key: "vehicle", label: "Vehicle", width: 35 },
+                { key: "location", label: "Location", width: 50 },
+                { key: "liters", label: "Liters", width: 25 },
+                { key: "cost", label: "Cost", width: 30 },
+                { key: "vendor", label: "Vendor", width: 35 },
+              ],
+              title: "Fuel Fillup Locations Report",
+            };
           case "mileage_fuel":
             return {
               data: trips.map(t => ({
