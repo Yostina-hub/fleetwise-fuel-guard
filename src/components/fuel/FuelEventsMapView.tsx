@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useLematApiKey } from "@/hooks/useLematApiKey";
-import { createLematTransformRequest, getLematMapStyle, getOsmFallbackStyle } from "@/lib/lemat";
+import { createLematTransformRequest, fetchLematMapStyle } from "@/lib/lemat";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Loader2, Droplet, AlertTriangle, Fuel } from "lucide-react";
 import { format } from "date-fns";
@@ -92,9 +92,11 @@ const FuelEventsMapView = ({
     const initMap = async () => {
       if (!mapContainer.current || map.current) return;
 
+      const initialStyle = await fetchLematMapStyle('streets');
+
       map.current = new maplibregl.Map({
         container: mapContainer.current,
-        style: getLematMapStyle('streets'),
+        style: initialStyle,
         center: [38.7578, 9.0054],
         zoom: 10,
         transformRequest: createLematTransformRequest(lematApiKey),

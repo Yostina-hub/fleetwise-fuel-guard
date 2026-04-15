@@ -12,7 +12,7 @@ import {
 } from "./AnimatedMarker";
 import { useMapMatching } from "@/hooks/useMapMatching";
 import { useLematApiKey } from "@/hooks/useLematApiKey";
-import { createLematTransformRequest, getLematMapStyle } from "@/lib/lemat";
+import { createLematTransformRequest, fetchLematMapStyle, getLematMapStyle } from "@/lib/lemat";
 
 interface VehiclePoint {
   id: string;
@@ -249,9 +249,11 @@ const ClusteredMap = ({
 
       if (!mapContainer.current || map.current) return;
 
+      const initialStyle = await fetchLematMapStyle(mapStyle);
+
       map.current = new maplibregl.Map({
         container: mapContainer.current,
-        style: getLematMapStyle(mapStyle),
+        style: initialStyle,
         center: [38.75, 9.02],
         zoom: 10,
         transformRequest: createLematTransformRequest(lematApiKey),

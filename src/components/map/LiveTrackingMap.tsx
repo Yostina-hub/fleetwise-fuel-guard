@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useLematApiKey } from "@/hooks/useLematApiKey";
-import { createLematTransformRequest, getLematMapStyle } from "@/lib/lemat";
+import { createLematTransformRequest, fetchLematMapStyle, getLematMapStyle } from "@/lib/lemat";
 import { 
   createAnimatedMarkerElement, 
   animatePosition, 
@@ -153,7 +153,7 @@ useEffect(() => {
       if (!mapContainer.current || map.current) return;
 
       try {
-        const initialStyle = getLematMapStyle(mapStyle);
+        const initialStyle = await fetchLematMapStyle(mapStyle);
 
         if (!mapContainer.current || map.current) return;
 
