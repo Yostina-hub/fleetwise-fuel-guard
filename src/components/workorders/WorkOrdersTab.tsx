@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
-import { Search, Eye, Trash2, CheckCircle, X, Download, Package, Plus } from "lucide-react";
+import { Search, Eye, Trash2, CheckCircle, X, Download, Package, Plus, ShieldCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -49,6 +49,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { z } from "zod";
 import WorkOrderPartsDialog from "./WorkOrderPartsDialog";
+import WorkOrderApprovalFlow from "./WorkOrderApprovalFlow";
 
 const workOrderSchema = z.object({
   vehicle_id: z.string().uuid("Please select a vehicle"),
