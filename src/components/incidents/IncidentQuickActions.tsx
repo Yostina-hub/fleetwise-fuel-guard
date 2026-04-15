@@ -13,11 +13,13 @@ import { toast } from "sonner";
 interface IncidentQuickActionsProps {
   onCreateIncident?: () => void;
   onExportReport?: () => void;
+  onFileClaim?: () => void;
 }
 
 export const IncidentQuickActions = ({
   onCreateIncident,
-  onExportReport
+  onExportReport,
+  onFileClaim,
 }: IncidentQuickActionsProps) => {
   const actions = [
     {
@@ -58,7 +60,7 @@ export const IncidentQuickActions = ({
     {
       label: "File Claim",
       icon: FileText,
-      onClick: () => toast.info("Insurance claims module coming soon"),
+      onClick: onFileClaim || (() => toast.info("Switch to Claims tab to file a claim")),
       variant: "ghost" as const,
       description: "Start insurance process"
     }
