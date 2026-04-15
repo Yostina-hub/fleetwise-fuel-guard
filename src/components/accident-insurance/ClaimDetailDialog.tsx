@@ -20,11 +20,19 @@ const STEPS = [
 
 const STATUS_ORDER: Record<string, number> = { filed: 0, under_review: 1, approved: 2, settled: 3, denied: -1 };
 
+const INCIDENT_TYPE_LABELS: Record<string, { label: string; color: string; icon: any }> = {
+  not_covered_by_insurance: { label: "Not Covered by Insurance", color: "bg-red-500/10 text-red-600 border-red-500/20", icon: AlertTriangle },
+  et_fault_on_third_party: { label: "ET Fault on Third Party", color: "bg-amber-500/10 text-amber-600 border-amber-500/20", icon: Shield },
+  third_party_damage_on_et: { label: "Third Party Damage on ET Vehicle", color: "bg-blue-500/10 text-blue-600 border-blue-500/20", icon: Car },
+};
+
 export const ClaimDetailDialog = ({ open, onOpenChange, claim }: Props) => {
   if (!claim) return null;
 
   const currentStep = STATUS_ORDER[claim.status] ?? 0;
   const isDenied = claim.status === "denied";
+  const incidentInfo = INCIDENT_TYPE_LABELS[claim.incident_type] || INCIDENT_TYPE_LABELS.not_covered_by_insurance;
+  const IncidentIcon = incidentInfo.icon;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -37,6 +45,14 @@ export const ClaimDetailDialog = ({ open, onOpenChange, claim }: Props) => {
             </Badge>
           </DialogTitle>
         </DialogHeader>
+
+        {/* Incident Type Badge */}
+        <div className="flex items-center gap-2">
+          <Badge className={`${incidentInfo.color} gap-1.5`}>
+            <IncidentIcon className="w-3 h-3" />
+            {incidentInfo.label}
+          </Badge>
+        </div>
 
         {/* Timeline */}
         <div className="py-4">

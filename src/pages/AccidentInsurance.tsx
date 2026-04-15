@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, FileText, AlertTriangle, DollarSign, Search, Plus } from "lucide-react";
+import { Shield, FileText, AlertTriangle, DollarSign, Search, Plus, Car } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format, differenceInDays } from "date-fns";
@@ -15,6 +15,12 @@ import { useTranslation } from 'react-i18next';
 import { NewClaimDialog } from "@/components/accident-insurance/NewClaimDialog";
 import { ClaimDetailDialog } from "@/components/accident-insurance/ClaimDetailDialog";
 import { NewPolicyDialog } from "@/components/accident-insurance/NewPolicyDialog";
+
+const INCIDENT_TYPE_CONFIG: Record<string, { label: string; shortLabel: string; color: string; icon: any }> = {
+  not_covered_by_insurance: { label: "Not Covered by Insurance", shortLabel: "Not Insured", color: "bg-red-500/10 text-red-600 border-red-500/20", icon: AlertTriangle },
+  et_fault_on_third_party: { label: "ET Fault on Third Party", shortLabel: "ET Fault", color: "bg-amber-500/10 text-amber-600 border-amber-500/20", icon: Shield },
+  third_party_damage_on_et: { label: "Third Party Damage on ET", shortLabel: "TP Damage", color: "bg-blue-500/10 text-blue-600 border-blue-500/20", icon: Car },
+};
 
 const AccidentInsurance = () => {
   const { t } = useTranslation();
@@ -24,6 +30,7 @@ const AccidentInsurance = () => {
   const [showNewPolicy, setShowNewPolicy] = useState(false);
   const [selectedClaim, setSelectedClaim] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("claims");
+  const [incidentFilter, setIncidentFilter] = useState<string>("all");
 
   const { data: claims = [], isLoading: claimsLoading } = useQuery({
     queryKey: ["accident-claims", organizationId],
@@ -64,11 +71,19 @@ const AccidentInsurance = () => {
     return days >= 0 && days <= 30;
   });
 
+  // Count by incident type
+  const countByType = (type: string) => claims.filter((c: any) => c.incident_type === type).length;
+
   const statusColor = (s: string) => {
     switch (s) { case "filed": return "outline"; case "under_review": return "secondary"; case "approved": return "default"; case "settled": return "default"; case "denied": return "destructive"; default: return "outline"; }
   };
 
-  const filteredClaims = claims.filter((c: any) => !search || c.claim_number?.toLowerCase().includes(search.toLowerCase()) || c.vehicles?.plate_number?.toLowerCase().includes(search.toLowerCase()));
+  const filteredClaims = claims.filter((c: any) => {
+    const matchSearch = !search || c.claim_number?.toLowerCase().includes(search.toLowerCase()) || c.vehicles?.plate_number?.toLowerCase().includes(search.toLowerCase());
+    const matchType = incidentFilter === "all" || c.incident_type === incidentFilter;
+    return matchSearch && matchType;
+  });
+
   const filteredPolicies = policies.filter((p: any) => !search || p.policy_number?.toLowerCase().includes(search.toLowerCase()) || p.vehicles?.plate_number?.toLowerCase().includes(search.toLowerCase()) || p.provider?.toLowerCase().includes(search.toLowerCase()));
 
   return (
@@ -90,6 +105,7 @@ const AccidentInsurance = () => {
           </div>
         </div>
 
+        {/* Summary Stats */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {[
             { label: "Active Policies", value: activePolicies.length, icon: Shield, color: "text-primary" },
@@ -108,6 +124,7 @@ const AccidentInsurance = () => {
           ))}
         </div>
 
+        {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Search claims or policies..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
@@ -120,27 +137,60 @@ const AccidentInsurance = () => {
           </TabsList>
 
           <TabsContent value="claims">
+            {/* Incident Type Filter Chips */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              <Button
+                variant={incidentFilter === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setIncidentFilter("all")}
+              >
+                All Types ({claims.length})
+              </Button>
+              {Object.entries(INCIDENT_TYPE_CONFIG).map(([key, config]) => {
+                const Icon = config.icon;
+                const count = countByType(key);
+                return (
+                  <Button
+                    key={key}
+                    variant={incidentFilter === key ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setIncidentFilter(key)}
+                    className="gap-1.5"
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    {config.shortLabel} ({count})
+                  </Button>
+                );
+              })}
+            </div>
+
             <Card><Table>
               <TableHeader><TableRow>
-                <TableHead>Claim #</TableHead><TableHead>Date</TableHead><TableHead>Vehicle</TableHead><TableHead>Location</TableHead><TableHead>Amount</TableHead><TableHead>Fault</TableHead><TableHead>Status</TableHead>
+                <TableHead>Claim #</TableHead><TableHead>Type</TableHead><TableHead>Date</TableHead><TableHead>Vehicle</TableHead><TableHead>Location</TableHead><TableHead>Amount</TableHead><TableHead>Fault</TableHead><TableHead>Status</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {claimsLoading ? (
-                  <TableRow><TableCell colSpan={7} className="text-center py-8">Loading...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center py-8">Loading...</TableCell></TableRow>
                 ) : filteredClaims.length === 0 ? (
-                  <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No claims recorded</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No claims recorded</TableCell></TableRow>
                 ) : (
-                  filteredClaims.map((c: any) => (
-                    <TableRow key={c.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedClaim(c)}>
-                      <TableCell className="font-mono">{c.claim_number}</TableCell>
-                      <TableCell>{format(new Date(c.accident_date), "MMM dd, yyyy")}</TableCell>
-                      <TableCell className="font-medium">{c.vehicles?.plate_number || "—"}</TableCell>
-                      <TableCell>{c.accident_location || "—"}</TableCell>
-                      <TableCell>{c.claim_amount ? `${c.claim_amount.toLocaleString()} ETB` : "—"}</TableCell>
-                      <TableCell className="capitalize">{c.fault_determination?.replace(/_/g, " ") || "—"}</TableCell>
-                      <TableCell><Badge variant={statusColor(c.status)}>{c.status?.replace(/_/g, " ")}</Badge></TableCell>
-                    </TableRow>
-                  ))
+                  filteredClaims.map((c: any) => {
+                    const typeConfig = INCIDENT_TYPE_CONFIG[c.incident_type] || INCIDENT_TYPE_CONFIG.not_covered_by_insurance;
+                    return (
+                      <TableRow key={c.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedClaim(c)}>
+                        <TableCell className="font-mono">{c.claim_number}</TableCell>
+                        <TableCell>
+                          <Badge className={`${typeConfig.color} text-[10px]`}>{typeConfig.shortLabel}</Badge>
+                        </TableCell>
+                        <TableCell>{format(new Date(c.accident_date), "MMM dd, yyyy")}</TableCell>
+                        <TableCell className="font-medium">{c.vehicles?.plate_number || "—"}</TableCell>
+                        <TableCell>{c.accident_location || "—"}</TableCell>
+                        <TableCell>{c.claim_amount ? `${c.claim_amount.toLocaleString()} ETB` : "—"}</TableCell>
+                        <TableCell className="capitalize">{c.fault_determination?.replace(/_/g, " ") || "—"}</TableCell>
+                        <TableCell><Badge variant={statusColor(c.status) as any}>{c.status?.replace(/_/g, " ")}</Badge></TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table></Card>
