@@ -153,6 +153,7 @@ const getNavItems = (t: (key: string) => string) => [
     subItems: [
       { label: t("nav.speedGovernor"), path: "/speed-governor" },
       { label: t("nav.incidents"), path: "/incidents" },
+      { label: "Accident Management", path: "/incidents?tab=third-party" },
       { label: t("nav.accidentInsurance"), path: "/accident-insurance" },
       { label: t("nav.roadsideAssistance"), path: "/roadside-assistance" },
       { label: t("nav.driverLogbook"), path: "/driver-logbook" },
