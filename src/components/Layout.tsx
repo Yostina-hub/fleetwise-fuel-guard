@@ -248,6 +248,8 @@ const Layout = ({ children }: LayoutProps) => {
   
   const allNavItems = useMemo(() => getNavItems(t), [t]);
   const allAdminItems = useMemo(() => getAdminItems(t), [t]);
+  const isDeveloper = DEVELOPER_EMAILS.includes(user?.email || "");
+  const developerItems = useMemo(() => isDeveloper ? getDeveloperItems() : [], [isDeveloper]);
 
   // RBAC filter: only show nav items the user's roles allow
   const navItems = useMemo(() => {
