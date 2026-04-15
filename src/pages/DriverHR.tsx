@@ -8,18 +8,26 @@ import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Briefcase, DollarSign, Car, Gift, UserCircle, Search,
+  CalendarDays, BarChart3, Wallet, Handshake,
 } from "lucide-react";
 
 import { DriverContractManagement } from "@/components/drivers/DriverContractManagement";
 import { DriverCostAllocation } from "@/components/drivers/DriverCostAllocation";
 import { DriverVehicleHistory } from "@/components/drivers/DriverVehicleHistory";
 import { DriverRewardsRecognition } from "@/components/drivers/DriverRewardsRecognition";
-
+import { DriverAttendanceManagement } from "@/components/drivers/DriverAttendanceManagement";
+import { DriverPerformanceKPIs } from "@/components/drivers/DriverPerformanceKPIs";
+import { DriverPayrollManagement } from "@/components/drivers/DriverPayrollManagement";
+import { OutsourceContractManagement } from "@/components/drivers/OutsourceContractManagement";
 import { useTranslation } from 'react-i18next';
 const tabs = [
   { key: "contracts", label: "Contracts", icon: Briefcase, needsDriver: true },
   { key: "costs", label: "Cost Allocation", icon: DollarSign, needsDriver: true },
   { key: "vehicles", label: "Vehicle History", icon: Car, needsDriver: true },
+  { key: "attendance", label: "Attendance", icon: CalendarDays, needsDriver: true },
+  { key: "performance", label: "Performance", icon: BarChart3, needsDriver: true },
+  { key: "payroll", label: "Payroll", icon: Wallet, needsDriver: true },
+  { key: "outsource", label: "Outsource", icon: Handshake },
   { key: "rewards", label: "Rewards", icon: Gift },
 ];
 
@@ -63,6 +71,10 @@ const DriverHR = () => {
       contracts: <DriverContractManagement driverId={selectedDriverId} driverName={driverName} />,
       costs: <DriverCostAllocation driverId={selectedDriverId} driverName={driverName} />,
       vehicles: <DriverVehicleHistory driverId={selectedDriverId} driverName={driverName} />,
+      attendance: <DriverAttendanceManagement driverId={selectedDriverId} driverName={driverName} />,
+      performance: <DriverPerformanceKPIs driverId={selectedDriverId} driverName={driverName} />,
+      payroll: <DriverPayrollManagement driverId={selectedDriverId} driverName={driverName} />,
+      outsource: <OutsourceContractManagement />,
       rewards: <DriverRewardsRecognition />,
     };
     return map[activeTab] || null;
