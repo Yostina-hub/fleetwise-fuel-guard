@@ -156,18 +156,17 @@ async function readLatest(table: string, orgId: string, limit: number, successMs
 }
 
 async function evaluateCondition(nodeType: string, config: Record<string, any> | undefined, orgId: string): Promise<ExecutionResult> {
-  // Read a real value to evaluate against
-  const { data } = await supabase
+  const { data } = await (supabase
     .from("vehicle_telemetry")
-    .select("speed, fuel_level_percent, vehicle_id")
+    .select("speed_kmh, fuel_level_percent, vehicle_id")
     .eq("organization_id", orgId)
     .order("last_communication_at", { ascending: false })
     .limit(1)
-    .maybeSingle();
+    .maybeSingle() as any);
 
   const threshold = config?.threshold ?? 80;
-  const field = config?.field || "speed";
-  const value = data?.[field as keyof typeof data] ?? 0;
+  const field = config?.field || "speed_kmh";
+  const value = data?.[field] ?? 0;
   const result = Number(value) > threshold;
 
   return {
