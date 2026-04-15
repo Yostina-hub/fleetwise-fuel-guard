@@ -1000,16 +1000,18 @@ useEffect(() => {
         const scheduleHide = () => {
           if (hideTimeout) clearTimeout(hideTimeout);
           hideTimeout = setTimeout(() => {
-            if (!isHoveringPopup) {
+            if (!isHoveringPopup && !isHoveringMarker) {
               popup.remove();
+              map.current?.off('move', updatePopupPosition);
             }
-          }, 300); // 300ms delay before hiding
+          }, 300);
         };
 
         // Hover to show info popup
         el.addEventListener('mouseenter', showPopup);
 
         el.addEventListener('mouseleave', () => {
+          isHoveringMarker = false;
           scheduleHide();
         });
 
