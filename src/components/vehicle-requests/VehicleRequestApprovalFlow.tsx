@@ -353,21 +353,42 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
           </>
         )}
         {request.status === "approved" && (
-          <>
-            <Select onValueChange={v => assignMutation.mutate(v)}>
-              <SelectTrigger className="w-48"><SelectValue placeholder="Assign Vehicle..." /></SelectTrigger>
-              <SelectContent>
-                {vehicles.filter((v: any) => v.status === "active").slice(0, 30).map((v: any) => (
-                  <SelectItem key={v.id} value={v.id}>{v.plate_number} - {v.make} {v.model}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {onCrossPool && (
-              <Button size="sm" variant="outline" onClick={onCrossPool}>
-                <Shuffle className="w-3.5 h-3.5 mr-1" /> Cross-Pool
+          <div className="space-y-2 w-full">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs flex items-center gap-1 mb-1"><Truck className="w-3 h-3" /> Vehicle</Label>
+                <Select value={selectedVehicleId} onValueChange={setSelectedVehicleId}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select vehicle..." /></SelectTrigger>
+                  <SelectContent>
+                    {available.slice(0, 30).map((v) => (
+                      <SelectItem key={v.id} value={v.id} className="text-xs">{v.plate_number} - {v.make} {v.model}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs flex items-center gap-1 mb-1"><UserCheck className="w-3 h-3" /> Driver</Label>
+                <Select value={selectedDriver} onValueChange={setSelectedDriver}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select driver..." /></SelectTrigger>
+                  <SelectContent>
+                    {drivers.map((d: any) => (
+                      <SelectItem key={d.id} value={d.id} className="text-xs">{d.first_name} {d.last_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" disabled={!selectedVehicleId || assignMutation.isPending} onClick={() => assignMutation.mutate(selectedVehicleId)}>
+                <CheckCircle className="w-3.5 h-3.5 mr-1" /> {assignMutation.isPending ? "Assigning..." : "Assign"}
               </Button>
-            )}
-          </>
+              {onCrossPool && (
+                <Button size="sm" variant="outline" onClick={onCrossPool}>
+                  <Shuffle className="w-3.5 h-3.5 mr-1" /> Cross-Pool
+                </Button>
+              )}
+            </div>
+          </div>
         )}
         {request.status === "assigned" && (
           <>
