@@ -25,9 +25,12 @@ import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
 import { format } from "date-fns";
 
-const ITEMS_PER_PAGE = 10;
+interface IncidentsListTabProps {
+  externalCreateOpen?: boolean;
+  onExternalCreateClose?: () => void;
+}
 
-const IncidentsListTab = () => {
+const IncidentsListTab = ({ externalCreateOpen, onExternalCreateClose }: IncidentsListTabProps) => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [severityFilter, setSeverityFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -35,6 +38,17 @@ const IncidentsListTab = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedIncident, setSelectedIncident] = useState<any>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+
+  // Handle external trigger to open dialog
+  const isDialogOpen = showCreateDialog || !!externalCreateOpen;
+  const handleDialogClose = (open: boolean) => {
+    if (!open) {
+      setShowCreateDialog(false);
+      onExternalCreateClose?.();
+    } else {
+      setShowCreateDialog(true);
+    }
+  };
 
   const { incidents, loading, createIncident, updateIncidentStatus } = useIncidentsManagement({
     status: statusFilter !== 'all' ? statusFilter : undefined,
