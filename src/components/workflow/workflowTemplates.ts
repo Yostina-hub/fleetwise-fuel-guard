@@ -790,6 +790,81 @@ const TEMPLATES: WorkflowTemplate[] = [
       { id: "e5", source: "c1", target: "a4", sourceHandle: "false", type: "smoothstep", animated: true },
     ],
   },
+
+  // ═══════════════════════════════════════════════════════════════
+  // VEHICLE ACCIDENT MAINTENANCE — NOT COVERED BY INSURANCE
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "tpl_accident_maint_no_insurance",
+    name: "Accident Maintenance (Not Insured)",
+    description: "End-to-end workflow for vehicle accident maintenance when the damage is not covered by insurance. Covers driver reporting, fleet analysis, negligence check, parts sourcing, procurement, repair follow-up, and delivery confirmation.",
+    category: "maintenance",
+    icon: "🔧",
+    difficulty: "advanced",
+    estimatedSavings: "~40% faster repair turnaround",
+    tags: ["accident", "maintenance", "insurance", "procurement", "negligence", "repair", "sourcing"],
+    nodes: [
+      // — Eligible Driver lane —
+      { id: "t1", type: "trigger", position: { x: 80, y: 50 }, data: { label: "Driver Reports Accident", description: "Driver reports vehicle accident via written document to immediate supervisor", icon: "📝", category: "triggers", nodeType: "trigger_event", config: { eventType: "accident_report_submitted" }, status: "idle", isConfigured: true } },
+
+      // — Fleet Operation Section lane —
+      { id: "a1", type: "action", position: { x: 80, y: 220 }, data: { label: "Analyze Document & Accident", description: "Fleet Operation Section reviews the accident report and supporting documents", icon: "🔍", category: "data", nodeType: "data_lookup", config: { table: "accident_claims", action: "review" }, status: "idle", isConfigured: true } },
+      { id: "c1", type: "condition", position: { x: 80, y: 400 }, data: { label: "Covered by Insurance?", description: "Determine if the accident is covered by an existing insurance policy", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "claim.insurance_covered", operator: "equals", rightOperand: "true" }, status: "idle", isConfigured: true } },
+      { id: "a2", type: "action", position: { x: -200, y: 570 }, data: { label: "Process via Insurance (ERM-INM 06)", description: "Fault on Third Party / Comprehensive Coverage — route to insurance claim workflow", icon: "🛡️", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "insurance_claim_route" }, status: "idle", isConfigured: true } },
+      { id: "c2", type: "condition", position: { x: 350, y: 400 }, data: { label: "Driver Negligence?", description: "Check if driver negligence caused the accident", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "investigation.negligence", operator: "equals", rightOperand: "true" }, status: "idle", isConfigured: true } },
+      { id: "a3", type: "action", position: { x: 600, y: 400 }, data: { label: "Employee Discipline Procedure", description: "Initiate employee disciplinary action for negligent driver", icon: "⚠️", category: "notifications", nodeType: "notify_email", config: { recipients: "hr_department", template: "discipline_action_{{driver.name}}" }, status: "idle", isConfigured: true } },
+      { id: "a4", type: "action", position: { x: 350, y: 570 }, data: { label: "Consolidate Information", description: "State that accident is not covered by insurance and compile maintenance requirements", icon: "📋", category: "data", nodeType: "data_log_history", config: { table: "accident_claims", action: "consolidate_uninsured" }, status: "idle", isConfigured: true } },
+
+      // — Fleet Maintenance Section lane —
+      { id: "c3", type: "condition", position: { x: 350, y: 740 }, data: { label: "Existing Contract Agreement?", description: "Check if damaged parts can be maintained under an existing contract agreement", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "contract.exists", operator: "equals", rightOperand: "true" }, status: "idle", isConfigured: true } },
+      { id: "a5", type: "action", position: { x: 80, y: 740 }, data: { label: "Manage via Contract (FMG-FMG 05)", description: "Request for vehicle maintenance under existing contract agreement", icon: "📄", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "contract_maintenance" }, status: "idle", isConfigured: true } },
+      { id: "a6", type: "action", position: { x: 80, y: 910 }, data: { label: "Request Maintenance Procurement", description: "No existing contract — initiate procurement for maintenance service", icon: "🛒", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "procurement_request" }, status: "idle", isConfigured: true } },
+
+      // — Sourcing Department lane —
+      { id: "a7", type: "action", position: { x: -200, y: 910 }, data: { label: "Supplier Partner Shortlist (SCM-SPR 01)", description: "Sourcing department creates a shortlist of qualified suppliers/partners", icon: "📊", category: "data", nodeType: "data_aggregate", config: { operation: "supplier_shortlist" }, status: "idle", isConfigured: true } },
+      { id: "a8", type: "action", position: { x: -200, y: 1080 }, data: { label: "Procurement Management (SCM-PRO 01)", description: "Manage procurement process — RFQ, evaluation, and selection", icon: "💰", category: "data", nodeType: "data_aggregate", config: { operation: "procurement_manage" }, status: "idle", isConfigured: true } },
+      { id: "a9", type: "action", position: { x: 350, y: 910 }, data: { label: "Notify Selected Supplier", description: "Notify the selected supplier/partner of the awarded maintenance job", icon: "📧", category: "notifications", nodeType: "notify_email", config: { recipients: "selected_supplier", template: "maintenance_award_notification" }, status: "idle", isConfigured: true } },
+      { id: "a10", type: "action", position: { x: 350, y: 1080 }, data: { label: "Follow-up Maintenance per PO", description: "Track and follow up on maintenance execution as per purchase order", icon: "🔧", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "maintenance_followup" }, status: "idle", isConfigured: true } },
+      { id: "c4", type: "condition", position: { x: 600, y: 1080 }, data: { label: "Repair Complete?", description: "Verify if the maintenance/repair work is complete", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "repair.status", operator: "equals", rightOperand: "complete" }, status: "idle", isConfigured: true } },
+      { id: "a11", type: "action", position: { x: 600, y: 910 }, data: { label: "Confirm to SCD", description: "Provide completion confirmation to Supply Chain Department", icon: "✅", category: "data", nodeType: "data_log_history", config: { table: "maintenance_records", action: "completion_confirm" }, status: "idle", isConfigured: true } },
+      { id: "a12", type: "action", position: { x: 600, y: 740 }, data: { label: "Service Delivery Confirmation (SCM-PRO 05)", description: "Final service/work delivery confirmation — PO or contract closeout", icon: "📦", category: "data", nodeType: "data_log_history", config: { table: "procurement_records", action: "delivery_confirmed" }, status: "idle", isConfigured: true } },
+    ],
+    edges: [
+      // Driver → Fleet Operation
+      { id: "e1", source: "t1", target: "a1", type: "smoothstep", animated: true },
+      { id: "e2", source: "a1", target: "c1", type: "smoothstep", animated: true },
+      // Insurance covered → end via insurance
+      { id: "e3", source: "c1", target: "a2", sourceHandle: "true", type: "smoothstep", animated: true, label: "Yes" },
+      // Not covered → negligence check
+      { id: "e4", source: "c1", target: "c2", sourceHandle: "false", type: "smoothstep", animated: true, label: "No" },
+      // Negligent → discipline
+      { id: "e5", source: "c2", target: "a3", sourceHandle: "true", type: "smoothstep", animated: true, label: "Yes" },
+      // Not negligent → consolidate
+      { id: "e6", source: "c2", target: "a4", sourceHandle: "false", type: "smoothstep", animated: true, label: "No" },
+      // Consolidate → contract check
+      { id: "e7", source: "a4", target: "c3", type: "smoothstep", animated: true },
+      // Existing contract → manage via contract (end)
+      { id: "e8", source: "c3", target: "a5", sourceHandle: "true", type: "smoothstep", animated: true, label: "Yes" },
+      // No contract → procurement request
+      { id: "e9", source: "c3", target: "a6", sourceHandle: "false", type: "smoothstep", animated: true, label: "No" },
+      // Procurement → supplier shortlist
+      { id: "e10", source: "a6", target: "a7", type: "smoothstep", animated: true },
+      // Shortlist → procurement management
+      { id: "e11", source: "a7", target: "a8", type: "smoothstep", animated: true },
+      // Procurement → notify supplier
+      { id: "e12", source: "a8", target: "a9", type: "smoothstep", animated: true },
+      // Notify → follow-up maintenance
+      { id: "e13", source: "a9", target: "a10", type: "smoothstep", animated: true },
+      // Follow-up → complete check
+      { id: "e14", source: "a10", target: "c4", type: "smoothstep", animated: true },
+      // Not complete → loop back to follow-up
+      { id: "e15", source: "c4", target: "a10", sourceHandle: "false", type: "smoothstep", animated: true, label: "No" },
+      // Complete → confirm to SCD
+      { id: "e16", source: "c4", target: "a11", sourceHandle: "true", type: "smoothstep", animated: true, label: "Yes" },
+      // Confirm → delivery confirmation (end)
+      { id: "e17", source: "a11", target: "a12", type: "smoothstep", animated: true },
+    ],
+  },
 ];
 
 export default TEMPLATES;
