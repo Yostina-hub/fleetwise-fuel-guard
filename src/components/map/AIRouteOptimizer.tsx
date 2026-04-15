@@ -86,7 +86,7 @@ const haversineKm = (lat1: number, lng1: number, lat2: number, lng2: number): nu
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
-export const AIRouteOptimizer = ({ visible, onClose, vehicles, onRouteSelect, map }: AIRouteOptimizerProps) => {
+export const AIRouteOptimizer = ({ visible, onClose, vehicles, allVehicles, selectedVehicleId: preSelectedId, onRouteSelect, map }: AIRouteOptimizerProps) => {
   const [selectedVehicleId, setSelectedVehicleId] = useState('');
   const [destLat, setDestLat] = useState('');
   const [destLng, setDestLng] = useState('');
@@ -100,14 +100,22 @@ export const AIRouteOptimizer = ({ visible, onClose, vehicles, onRouteSelect, ma
   const [avoidUnpaved, setAvoidUnpaved] = useState(false);
   const [avoidHighways, setAvoidHighways] = useState(false);
 
-  const onlineVehicles = useMemo(() => 
-    vehicles.filter(v => v.status !== 'offline'), 
-    [vehicles]
-  );
+  // Use allVehicles for dropdown (includes those without GPS), fall back to vehicles with coords
+  const dropdownVehicles = useMemo(() => {
+    const list = allVehicles || vehicles;
+    return list.filter(v => v.status !== 'offline' || (v.lat && v.lng));
+  }, [allVehicles, vehicles]);
+
+  // Auto-select the vehicle currently selected on the map
+  useState(() => {
+    if (preSelectedId && !selectedVehicleId) {
+      setSelectedVehicleId(preSelectedId);
+    }
+  });
 
   const selectedVehicle = useMemo(() => 
-    vehicles.find(v => v.id === selectedVehicleId), 
-    [vehicles, selectedVehicleId]
+    [...vehicles, ...(allVehicles || [])].find(v => v.id === selectedVehicleId), 
+    [vehicles, allVehicles, selectedVehicleId]
   );
 
   const generateRoutes = useCallback(async () => {
