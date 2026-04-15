@@ -142,6 +142,7 @@ const TireManagement = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="inventory" className="gap-1.5"><CircleDot className="w-3.5 h-3.5" /> Inventory</TabsTrigger>
+            <TabsTrigger value="positions" className="gap-1.5"><CircleDot className="w-3.5 h-3.5" /> Positions</TabsTrigger>
             <TabsTrigger value="changes" className="gap-1.5"><History className="w-3.5 h-3.5" /> Change History</TabsTrigger>
             <TabsTrigger value="costs" className="gap-1.5"><BarChart3 className="w-3.5 h-3.5" /> Cost Analysis</TabsTrigger>
           </TabsList>
