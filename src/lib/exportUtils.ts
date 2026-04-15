@@ -1,6 +1,22 @@
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 
+// Reliable download trigger that works in iframes and all browsers
+const triggerDownload = (blob: Blob, filename: string) => {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  // Cleanup after a short delay to ensure download starts
+  setTimeout(() => {
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, 100);
+};
+
 // Ethio Telecom brand colors
 const ET_BLUE = [0, 114, 188] as const;    // #0072BC
 const ET_GREEN = [141, 198, 63] as const;  // #8DC63F
@@ -174,11 +190,7 @@ export const exportToExcel = (
     </body></html>
   `;
   const blob = new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = `ET_Fleet_${filename}_${format(new Date(), "yyyy-MM-dd_HHmm")}.xls`;
-  link.click();
-  URL.revokeObjectURL(link.href);
+  triggerDownload(blob, `ET_Fleet_${filename}_${format(new Date(), "yyyy-MM-dd_HHmm")}.xls`);
 };
 
 // Word Export utility (HTML format, opens in Word/LibreOffice Writer)
@@ -204,11 +216,7 @@ export const exportToWord = (
     </body></html>
   `;
   const blob = new Blob([html], { type: "application/msword;charset=utf-8" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = `ET_Fleet_${filename}_${format(new Date(), "yyyy-MM-dd_HHmm")}.doc`;
-  link.click();
-  URL.revokeObjectURL(link.href);
+  triggerDownload(blob, `ET_Fleet_${filename}_${format(new Date(), "yyyy-MM-dd_HHmm")}.doc`);
 };
 
 // CSV Export utility
@@ -233,11 +241,7 @@ export const exportToCSV = (data: Record<string, any>[], filename: string) => {
   ].join("\n");
 
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = `${filename}_${format(new Date(), "yyyy-MM-dd_HHmm")}.csv`;
-  link.click();
-  URL.revokeObjectURL(link.href);
+  triggerDownload(blob, `${filename}_${format(new Date(), "yyyy-MM-dd_HHmm")}.csv`);
 };
 
 // PDF Export utility
