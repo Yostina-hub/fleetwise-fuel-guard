@@ -456,8 +456,8 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
   );
 }
 
-export const WorkflowCanvas = () => (
+export const WorkflowCanvas = ({ editWorkflowId }: { editWorkflowId?: string | null }) => (
   <ReactFlowProvider>
-    <WorkflowCanvasInner />
+    <WorkflowCanvasInner editWorkflowId={editWorkflowId} />
   </ReactFlowProvider>
 );
