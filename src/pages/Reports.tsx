@@ -8,7 +8,7 @@ import { useDrivers } from "@/hooks/useDrivers";
 import { useReportData } from "@/hooks/useReportData";
 import { format, subDays, parseISO } from "date-fns";
 import { toast } from "sonner";
-import { exportToCSV, exportToPDF, exportToExcel, exportToWord } from "@/lib/exportUtils";
+import { exportToCSV, exportToPDF, exportToExcel, exportToWord, printReport } from "@/lib/exportUtils";
 import { cn } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { TimePeriodOption, getDateRangeFromPeriod } from "@/components/reports/ReportTimePeriodSelect";
@@ -1292,6 +1292,18 @@ const Reports = () => {
     toast.success("Report exported to Word");
   };
 
+  const handlePrint = () => {
+    const { data, columns, title } = getExportData();
+    const dateRangeStr = `${format(dateRange.from, "MMM d")} - ${format(dateRange.to, "MMM d, yyyy")}`;
+    const success = printReport(title, data, columns, { 
+      dateRange: dateRangeStr, 
+      totalRecords: data.length 
+    });
+    if (!success) {
+      toast.error("Pop-up blocked. Please allow pop-ups to print reports.");
+    }
+  };
+
   const handleRefresh = () => {
     // Invalidate all report-specific queries
     queryClient.invalidateQueries({ predicate: (query) => {
@@ -1578,6 +1590,7 @@ const Reports = () => {
                    onExportPDF={handleExportPDF}
                    onExportExcel={handleExportExcel}
                    onExportWord={handleExportWord}
+                   onPrint={handlePrint}
                   onRefresh={handleRefresh}
                   isLoading={loading}
                   timePeriod={timePeriod}
