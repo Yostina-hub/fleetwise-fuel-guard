@@ -119,6 +119,16 @@ useEffect(() => {
   vehicleRoadInfoRef.current = vehicleRoadInfo;
 }, [vehicleRoadInfo]);
 
+// Listen for provider changes from MapProviderSettings
+useEffect(() => {
+  const handler = () => {
+    const newProvider = getActiveProvider();
+    setCurrentProvider(newProvider);
+  };
+  window.addEventListener('map-provider-changed', handler);
+  return () => window.removeEventListener('map-provider-changed', handler);
+}, []);
+
 // Inject marker animations on mount
 useEffect(() => {
   injectMarkerAnimations();
