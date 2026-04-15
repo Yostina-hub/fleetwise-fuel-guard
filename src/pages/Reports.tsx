@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Truck, Users, MapPin, Route, Fuel, Wrench, DollarSign, Bell, ClipboardList, FileText } from "lucide-react";
+import { Loader2, Truck, Users, MapPin, Route, Fuel, Wrench, DollarSign, Bell, ClipboardList, FileText, Zap, Battery } from "lucide-react";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
 import { useReportData } from "@/hooks/useReportData";
@@ -56,6 +56,10 @@ import { FuelDrainReportTable } from "@/components/reports/FuelDrainReportTable"
 import { AlarmStatisticsTable } from "@/components/reports/AlarmStatisticsTable";
 import RestrictedHoursReportTable from "@/components/reports/RestrictedHoursReportTable";
 import CustomReportTemplates from "@/components/reports/CustomReportTemplates";
+import { FuelAuthorizationTable } from "@/components/reports/FuelAuthorizationTable";
+import { FuelFillupLocationTable } from "@/components/reports/FuelFillupLocationTable";
+import { FuelConsumptionFullTable } from "@/components/reports/FuelConsumptionFullTable";
+import { EVChargingReportTable } from "@/components/reports/EVChargingReportTable";
 
 // Dashboard Widgets
 import { FleetViolationsWidget } from "@/components/reports/FleetViolationsWidget";
@@ -110,6 +114,8 @@ const Reports = () => {
     fuelTransactions,
     fuelEvents,
     fuelTheftCases,
+    fuelRequests,
+    evChargingSessions,
     alerts,
     maintenanceSchedules,
     workOrders,
@@ -127,6 +133,7 @@ const Reports = () => {
     { id: "driver", label: t('drivers.title', 'Driver'), icon: Users },
     { id: "location", label: t('geofencing.title', 'Location'), icon: MapPin },
     { id: "fuel", label: t('fuel.title', 'Fuel'), icon: Fuel },
+    { id: "ev", label: "EV Charging", icon: Battery },
     { id: "trips", label: t('nav.trips', 'Trips'), icon: Route },
     { id: "maintenance", label: t('maintenance.title', 'Maintenance'), icon: Wrench },
     { id: "dispatch", label: t('dispatch.title', 'Dispatch'), icon: ClipboardList },
@@ -163,10 +170,19 @@ const Reports = () => {
           { id: "transactions", label: "Transactions" },
           { id: "events", label: "Fill/Drain Events" },
           { id: "theft", label: "Theft Cases" },
+          { id: "authorization", label: "Clearance & Authorization" },
+          { id: "consumption", label: "Full Consumption Report" },
+          { id: "fillup_location", label: "Fillup Locations" },
           { id: "mileage_fuel", label: "Daily Mileage & Fuel" },
           { id: "fuel_speedometer", label: "Fuel Mileage Speedometer" },
           { id: "refueling", label: "Refueling Report" },
           { id: "fuel_drain", label: "Fuel Drain Report" },
+        ];
+      case "ev":
+        return [
+          { id: "charging_sessions", label: "Charging Sessions (kW)" },
+          { id: "charge_state", label: "Charge State" },
+          { id: "ev_cost", label: "Cost Analysis" },
         ];
       case "trips":
         return [
@@ -226,7 +242,9 @@ const Reports = () => {
       case "location":
         return [{ id: "geofence", label: "Geofence Events" }, { id: "speeding", label: "Speeding by Location" }];
       case "fuel":
-        return [{ id: "transactions", label: "Transactions" }, { id: "events", label: "Fill/Drain Events" }, { id: "theft", label: "Theft Cases" }, { id: "mileage_fuel", label: "Daily Mileage & Fuel" }, { id: "fuel_speedometer", label: "Fuel Mileage Speedometer" }, { id: "refueling", label: "Refueling Report" }, { id: "fuel_drain", label: "Fuel Drain Report" }];
+        return [{ id: "transactions", label: "Transactions" }, { id: "events", label: "Fill/Drain Events" }, { id: "theft", label: "Theft Cases" }, { id: "authorization", label: "Clearance & Authorization" }, { id: "consumption", label: "Full Consumption Report" }, { id: "fillup_location", label: "Fillup Locations" }, { id: "mileage_fuel", label: "Daily Mileage & Fuel" }, { id: "fuel_speedometer", label: "Fuel Mileage Speedometer" }, { id: "refueling", label: "Refueling Report" }, { id: "fuel_drain", label: "Fuel Drain Report" }];
+      case "ev":
+        return [{ id: "charging_sessions", label: "Charging Sessions (kW)" }, { id: "charge_state", label: "Charge State" }, { id: "ev_cost", label: "Cost Analysis" }];
       case "trips":
         return [{ id: "all_trips", label: "All Trips" }, { id: "idle_time", label: "Idle Time Analysis" }, { id: "stop_statistics", label: "Stop Statistics" }, { id: "ignition", label: "Ignition Statistics" }, { id: "mileage", label: "Mileage Statistics" }, { id: "total_mileage", label: "Total Mileage" }, { id: "speed_report", label: "Speed Report" }, { id: "restricted_hours", label: "Restricted Hours" }];
       case "maintenance":
@@ -571,6 +589,80 @@ const Reports = () => {
               ],
               title: "Fuel Theft Cases Report",
             };
+          case "authorization":
+            return {
+              data: fuelRequests.map(r => ({
+                request_number: r.request_number,
+                date: format(new Date(r.requested_at), "yyyy-MM-dd HH:mm"),
+                vehicle: r.vehicle?.plate_number || "—",
+                driver: r.driver ? `${r.driver.first_name} ${r.driver.last_name}` : "—",
+                liters_requested: r.liters_requested,
+                liters_approved: r.liters_approved || "—",
+                estimated_cost: r.estimated_cost || "—",
+                fuel_type: r.fuel_type || "—",
+                purpose: r.purpose || "—",
+                status: r.status,
+              })),
+              filename: "fuel_authorization_report",
+              columns: [
+                { key: "request_number", label: "Request #", width: 35 },
+                { key: "date", label: "Date", width: 40 },
+                { key: "vehicle", label: "Vehicle", width: 35 },
+                { key: "driver", label: "Driver", width: 40 },
+                { key: "liters_requested", label: "Requested (L)", width: 35 },
+                { key: "liters_approved", label: "Approved (L)", width: 35 },
+                { key: "status", label: "Status", width: 30 },
+              ],
+              title: "Fuel Clearance & Authorization Report",
+            };
+          case "consumption":
+            return {
+              data: fuelTransactions.map(t => ({
+                date: format(new Date(t.transaction_date), "yyyy-MM-dd"),
+                vehicle: t.vehicle?.plate_number || "Unknown",
+                liters: t.fuel_amount_liters || 0,
+                cost: t.fuel_cost || 0,
+                price_per_l: t.fuel_price_per_liter || 0,
+                odometer: t.odometer_km || "—",
+                vendor: t.vendor_name || "—",
+                location: t.location_name || "—",
+                receipt: t.receipt_number || "—",
+              })),
+              filename: "fuel_consumption_full_report",
+              columns: [
+                { key: "date", label: "Date", width: 35 },
+                { key: "vehicle", label: "Vehicle", width: 35 },
+                { key: "liters", label: "Liters", width: 25 },
+                { key: "cost", label: "Cost", width: 30 },
+                { key: "price_per_l", label: "Price/L", width: 25 },
+                { key: "odometer", label: "Odometer", width: 30 },
+                { key: "vendor", label: "Vendor", width: 35 },
+              ],
+              title: "Comprehensive Fuel Consumption Report",
+            };
+          case "fillup_location":
+            return {
+              data: fuelTransactions.filter(t => t.lat || t.location_name).map(t => ({
+                date: format(new Date(t.transaction_date), "yyyy-MM-dd HH:mm"),
+                vehicle: t.vehicle?.plate_number || "Unknown",
+                location: t.location_name || "—",
+                lat: t.lat || "—",
+                lng: t.lng || "—",
+                liters: t.fuel_amount_liters || 0,
+                cost: t.fuel_cost || 0,
+                vendor: t.vendor_name || "—",
+              })),
+              filename: "fuel_fillup_location_report",
+              columns: [
+                { key: "date", label: "Date", width: 40 },
+                { key: "vehicle", label: "Vehicle", width: 35 },
+                { key: "location", label: "Location", width: 50 },
+                { key: "liters", label: "Liters", width: 25 },
+                { key: "cost", label: "Cost", width: 30 },
+                { key: "vendor", label: "Vendor", width: 35 },
+              ],
+              title: "Fuel Fillup Locations Report",
+            };
           case "mileage_fuel":
             return {
               data: trips.map(t => ({
@@ -685,6 +777,79 @@ const Reports = () => {
                 { key: "location", label: "Location", width: 55 },
               ],
               title: "Fuel Transactions Report",
+            };
+        }
+
+      case "ev":
+        switch (activeSubTab) {
+          case "charge_state":
+            return {
+              data: evChargingSessions.map(s => ({
+                vehicle: s.vehicle?.plate_number || "Unknown",
+                date: format(new Date(s.start_time), "yyyy-MM-dd HH:mm"),
+                soc_start: s.soc_start_percent != null ? `${s.soc_start_percent}%` : "—",
+                soc_end: s.soc_end_percent != null ? `${s.soc_end_percent}%` : "—",
+                kwh: s.energy_consumed_kwh?.toFixed(1) || "—",
+                station: s.station_name || "—",
+                type: s.charging_type || "—",
+              })),
+              filename: "ev_charge_state_report",
+              columns: [
+                { key: "vehicle", label: "Vehicle", width: 40 },
+                { key: "date", label: "Date", width: 45 },
+                { key: "soc_start", label: "SOC Start", width: 30 },
+                { key: "soc_end", label: "SOC End", width: 30 },
+                { key: "kwh", label: "kWh", width: 25 },
+                { key: "station", label: "Station", width: 40 },
+              ],
+              title: "EV Charge State Report",
+            };
+          case "ev_cost":
+            return {
+              data: evChargingSessions.map(s => ({
+                vehicle: s.vehicle?.plate_number || "Unknown",
+                date: format(new Date(s.start_time), "yyyy-MM-dd"),
+                kwh: s.energy_consumed_kwh?.toFixed(1) || "—",
+                cost_per_kwh: s.cost_per_kwh?.toFixed(2) || "—",
+                total_cost: s.total_cost?.toFixed(2) || "—",
+                station: s.station_name || "—",
+              })),
+              filename: "ev_cost_analysis_report",
+              columns: [
+                { key: "vehicle", label: "Vehicle", width: 40 },
+                { key: "date", label: "Date", width: 40 },
+                { key: "kwh", label: "kWh", width: 25 },
+                { key: "cost_per_kwh", label: "Cost/kWh", width: 30 },
+                { key: "total_cost", label: "Total Cost", width: 30 },
+                { key: "station", label: "Station", width: 45 },
+              ],
+              title: "EV Charging Cost Analysis Report",
+            };
+          default:
+            return {
+              data: evChargingSessions.map(s => ({
+                date: format(new Date(s.start_time), "yyyy-MM-dd HH:mm"),
+                vehicle: s.vehicle?.plate_number || "Unknown",
+                station: s.station_name || "—",
+                type: s.charging_type || "—",
+                kwh: s.energy_consumed_kwh?.toFixed(1) || "—",
+                soc_start: s.soc_start_percent != null ? `${s.soc_start_percent}%` : "—",
+                soc_end: s.soc_end_percent != null ? `${s.soc_end_percent}%` : "—",
+                cost: s.total_cost?.toFixed(2) || "—",
+                status: s.status || "—",
+              })),
+              filename: "ev_charging_sessions_report",
+              columns: [
+                { key: "date", label: "Date", width: 40 },
+                { key: "vehicle", label: "Vehicle", width: 35 },
+                { key: "station", label: "Station", width: 40 },
+                { key: "kwh", label: "kWh", width: 25 },
+                { key: "soc_start", label: "SOC Start", width: 30 },
+                { key: "soc_end", label: "SOC End", width: 30 },
+                { key: "cost", label: "Cost", width: 30 },
+                { key: "status", label: "Status", width: 25 },
+              ],
+              title: "EV Charging Sessions Report",
             };
         }
 
@@ -1184,6 +1349,12 @@ const Reports = () => {
             return <FuelEventsTable events={fuelEvents} />;
           case "theft":
             return <FuelTheftTable cases={fuelTheftCases} />;
+          case "authorization":
+            return <FuelAuthorizationTable requests={fuelRequests} />;
+          case "consumption":
+            return <FuelConsumptionFullTable transactions={fuelTransactions} fuelEvents={fuelEvents} />;
+          case "fillup_location":
+            return <FuelFillupLocationTable transactions={fuelTransactions} />;
           case "mileage_fuel":
             return <MileageStatisticsTable trips={trips} />;
           case "fuel_speedometer":
@@ -1194,6 +1365,15 @@ const Reports = () => {
             return <FuelDrainReportTable events={fuelEvents} />;
           default:
             return <FuelTransactionsTable transactions={fuelTransactions} />;
+        }
+      case "ev":
+        switch (activeSubTab) {
+          case "charge_state":
+            return <EVChargingReportTable sessions={evChargingSessions} view="state" />;
+          case "ev_cost":
+            return <EVChargingReportTable sessions={evChargingSessions} view="cost" />;
+          default:
+            return <EVChargingReportTable sessions={evChargingSessions} view="sessions" />;
         }
       case "trips":
         switch (activeSubTab) {
