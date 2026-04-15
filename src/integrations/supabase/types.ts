@@ -281,6 +281,61 @@ export type Database = {
           },
         ]
       }
+      alert_dashcam_links: {
+        Row: {
+          alert_id: string
+          created_at: string
+          dashcam_event_id: string
+          id: string
+          link_type: string
+          linked_by: string | null
+          notes: string | null
+          organization_id: string
+        }
+        Insert: {
+          alert_id: string
+          created_at?: string
+          dashcam_event_id: string
+          id?: string
+          link_type?: string
+          linked_by?: string | null
+          notes?: string | null
+          organization_id: string
+        }
+        Update: {
+          alert_id?: string
+          created_at?: string
+          dashcam_event_id?: string
+          id?: string
+          link_type?: string
+          linked_by?: string | null
+          notes?: string | null
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alert_dashcam_links_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "alerts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alert_dashcam_links_dashcam_event_id_fkey"
+            columns: ["dashcam_event_id"]
+            isOneToOne: false
+            referencedRelation: "dash_cam_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alert_dashcam_links_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       alert_rules: {
         Row: {
           conditions: Json
@@ -7474,6 +7529,171 @@ export type Database = {
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      immobilization_sequences: {
+        Row: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          completed_at: string | null
+          created_at: string
+          current_step_index: number
+          geofence_id: string | null
+          id: string
+          initiated_at: string
+          initiated_by: string | null
+          notes: string | null
+          organization_id: string
+          sequence_status: string
+          speed_steps: Json
+          step_interval_seconds: number
+          trigger_alert_id: string | null
+          trigger_type: string
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          completed_at?: string | null
+          created_at?: string
+          current_step_index?: number
+          geofence_id?: string | null
+          id?: string
+          initiated_at?: string
+          initiated_by?: string | null
+          notes?: string | null
+          organization_id: string
+          sequence_status?: string
+          speed_steps?: Json
+          step_interval_seconds?: number
+          trigger_alert_id?: string | null
+          trigger_type: string
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          completed_at?: string | null
+          created_at?: string
+          current_step_index?: number
+          geofence_id?: string | null
+          id?: string
+          initiated_at?: string
+          initiated_by?: string | null
+          notes?: string | null
+          organization_id?: string
+          sequence_status?: string
+          speed_steps?: Json
+          step_interval_seconds?: number
+          trigger_alert_id?: string | null
+          trigger_type?: string
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "immobilization_sequences_geofence_id_fkey"
+            columns: ["geofence_id"]
+            isOneToOne: false
+            referencedRelation: "geofences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "immobilization_sequences_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "immobilization_sequences_trigger_alert_id_fkey"
+            columns: ["trigger_alert_id"]
+            isOneToOne: false
+            referencedRelation: "alerts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "immobilization_sequences_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      immobilization_steps: {
+        Row: {
+          acknowledged_at: string | null
+          created_at: string
+          device_command_id: string | null
+          error_message: string | null
+          id: string
+          organization_id: string
+          scheduled_at: string | null
+          sent_at: string | null
+          sequence_id: string
+          status: string
+          step_number: number
+          target_speed_kmh: number
+          updated_at: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          created_at?: string
+          device_command_id?: string | null
+          error_message?: string | null
+          id?: string
+          organization_id: string
+          scheduled_at?: string | null
+          sent_at?: string | null
+          sequence_id: string
+          status?: string
+          step_number: number
+          target_speed_kmh: number
+          updated_at?: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          created_at?: string
+          device_command_id?: string | null
+          error_message?: string | null
+          id?: string
+          organization_id?: string
+          scheduled_at?: string | null
+          sent_at?: string | null
+          sequence_id?: string
+          status?: string
+          step_number?: number
+          target_speed_kmh?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "immobilization_steps_device_command_id_fkey"
+            columns: ["device_command_id"]
+            isOneToOne: false
+            referencedRelation: "device_commands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "immobilization_steps_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "immobilization_steps_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "immobilization_sequences"
             referencedColumns: ["id"]
           },
         ]

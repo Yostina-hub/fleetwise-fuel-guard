@@ -2,13 +2,15 @@ import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, FileText, Receipt, Ticket, User, Users } from "lucide-react";
+import { AlertTriangle, FileText, Receipt, Ticket, User, Users, Lock, Camera } from "lucide-react";
 import IncidentsListTab from "@/components/incidents/IncidentsListTab";
 import InsuranceClaimsTab from "@/components/incidents/InsuranceClaimsTab";
 import TrafficViolationsTab from "@/components/incidents/TrafficViolationsTab";
 import IncidentTicketsTab from "@/components/incidents/IncidentTicketsTab";
 import ByPersonTab from "@/components/incidents/ByPersonTab";
 import ThirdPartyTab from "@/components/incidents/ThirdPartyTab";
+import ImmobilizationTab from "@/components/incidents/ImmobilizationTab";
+import DashcamAlertsTab from "@/components/incidents/DashcamAlertsTab";
 import { IncidentQuickStats } from "@/components/incidents/IncidentQuickStats";
 import { IncidentQuickActions } from "@/components/incidents/IncidentQuickActions";
 import { WorkflowAutomationPanel } from "@/components/workflow/WorkflowAutomationPanel";
@@ -28,7 +30,6 @@ const Incidents = () => {
   };
 
   const handleReportIncident = () => {
-    // Switch to incidents tab and open create dialog
     if (activeTab !== "incidents") {
       handleTabChange("incidents");
     }
@@ -54,23 +55,19 @@ const Incidents = () => {
           </div>
         </div>
 
-        {/* Quick Stats */}
         <IncidentQuickStats />
 
-        {/* Quick Actions */}
         <IncidentQuickActions
           onCreateIncident={handleReportIncident}
           onFileClaim={handleFileClaim}
         />
 
-        {/* Insights Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <IncidentInsightsCard />
           <IncidentTrendChart />
           <RecentIncidentsCard />
         </div>
 
-        {/* Incident & Safety Automations */}
         <WorkflowAutomationPanel
           categories={["safety", "sensors"]}
           title="Incident Response Automations"
@@ -79,7 +76,7 @@ const Incidents = () => {
         />
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid w-full max-w-4xl grid-cols-6">
+          <TabsList className="flex w-full max-w-5xl overflow-x-auto">
             <TabsTrigger value="incidents" className="gap-2">
               <AlertTriangle className="w-4 h-4" aria-hidden="true" />
               <span className="hidden sm:inline">Incidents</span>
@@ -104,6 +101,14 @@ const Incidents = () => {
               <Users className="w-4 h-4" aria-hidden="true" />
               <span className="hidden sm:inline">3rd Party</span>
             </TabsTrigger>
+            <TabsTrigger value="immobilization" className="gap-2">
+              <Lock className="w-4 h-4" aria-hidden="true" />
+              <span className="hidden sm:inline">Immobilizer</span>
+            </TabsTrigger>
+            <TabsTrigger value="dashcam" className="gap-2">
+              <Camera className="w-4 h-4" aria-hidden="true" />
+              <span className="hidden sm:inline">Dashcam</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="incidents">
@@ -112,26 +117,13 @@ const Incidents = () => {
               onExternalCreateClose={() => setOpenCreateDialog(false)}
             />
           </TabsContent>
-
-          <TabsContent value="claims">
-            <InsuranceClaimsTab />
-          </TabsContent>
-
-          <TabsContent value="violations">
-            <TrafficViolationsTab />
-          </TabsContent>
-
-          <TabsContent value="tickets">
-            <IncidentTicketsTab />
-          </TabsContent>
-
-          <TabsContent value="by-person">
-            <ByPersonTab />
-          </TabsContent>
-
-          <TabsContent value="third-party">
-            <ThirdPartyTab />
-          </TabsContent>
+          <TabsContent value="claims"><InsuranceClaimsTab /></TabsContent>
+          <TabsContent value="violations"><TrafficViolationsTab /></TabsContent>
+          <TabsContent value="tickets"><IncidentTicketsTab /></TabsContent>
+          <TabsContent value="by-person"><ByPersonTab /></TabsContent>
+          <TabsContent value="third-party"><ThirdPartyTab /></TabsContent>
+          <TabsContent value="immobilization"><ImmobilizationTab /></TabsContent>
+          <TabsContent value="dashcam"><DashcamAlertsTab /></TabsContent>
         </Tabs>
       </div>
     </Layout>
