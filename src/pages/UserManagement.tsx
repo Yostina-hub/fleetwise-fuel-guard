@@ -163,33 +163,12 @@ const UserManagement = () => {
           onBulkAssignRoles={() => setBulkAssignOpen(true)}
         />
 
-        {/* Search and Filter */}
-        <Card className="glass-strong">
-          <CardContent className="pt-6">
-            <div className="flex gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by name, email, or phone..."
-                  className="pl-10"
-                  value={searchQuery}
-                  onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                />
-              </div>
-              <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setCurrentPage(1); }}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Filter by role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Roles</SelectItem>
-                  {ROLE_OPTIONS.map((r) => (
-                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Filters */}
+        <UserFilters
+          users={users}
+          onFilteredUsersChange={handleFilteredUsersChange}
+          onPageReset={() => setCurrentPage(1)}
+        />
 
         {/* Users Table */}
         <Card className="glass-strong">
