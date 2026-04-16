@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Briefcase, DollarSign, Car, Gift, UserCircle, Search,
-  CalendarDays, BarChart3, Wallet, Handshake,
+  CalendarDays, BarChart3, Wallet, Handshake, LayoutDashboard,
 } from "lucide-react";
 
+import { HRFinanceDashboard } from "@/components/drivers/HRFinanceDashboard";
 import { DriverContractManagement } from "@/components/drivers/DriverContractManagement";
 import { DriverCostAllocation } from "@/components/drivers/DriverCostAllocation";
 import { DriverVehicleHistory } from "@/components/drivers/DriverVehicleHistory";
@@ -21,6 +22,7 @@ import { DriverPayrollManagement } from "@/components/drivers/DriverPayrollManag
 import { OutsourceContractManagement } from "@/components/drivers/OutsourceContractManagement";
 import { useTranslation } from 'react-i18next';
 const tabs = [
+  { key: "overview", label: "Overview", icon: LayoutDashboard },
   { key: "contracts", label: "Contracts", icon: Briefcase, needsDriver: true },
   { key: "costs", label: "Cost Allocation", icon: DollarSign, needsDriver: true },
   { key: "vehicles", label: "Vehicle History", icon: Car, needsDriver: true },
@@ -34,7 +36,7 @@ const tabs = [
 const DriverHR = () => {
   const { t } = useTranslation();
   const { drivers } = useDrivers();
-  const [activeTab, setActiveTab] = useState("contracts");
+  const [activeTab, setActiveTab] = useState("overview");
   const [selectedDriverId, setSelectedDriverId] = useState("");
   const [driverSearch, setDriverSearch] = useState("");
 
@@ -68,6 +70,7 @@ const DriverHR = () => {
     }
 
     const map: Record<string, JSX.Element> = {
+      overview: <HRFinanceDashboard />,
       contracts: <DriverContractManagement driverId={selectedDriverId} driverName={driverName} />,
       costs: <DriverCostAllocation driverId={selectedDriverId} driverName={driverName} />,
       vehicles: <DriverVehicleHistory driverId={selectedDriverId} driverName={driverName} />,
