@@ -59,20 +59,59 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
   const { organizationId, isSuperAdmin } = useOrganization();
   const queryClient = useQueryClient();
   const [form, setForm] = useState(initialForm);
-  // Super-admin only: file the request on behalf of another user
-  const [onBehalfOf, setOnBehalfOf] = useState<{ id: string; name: string; email: string } | null>(null);
+  // Super-admin only: file the request on behalf of another user or driver
+  const [onBehalfOf, setOnBehalfOf] = useState<{ id: string; name: string; email: string; type: "user" | "driver"; driverId?: string } | null>(null);
   const [userPickerOpen, setUserPickerOpen] = useState(false);
 
-  const { data: orgUsers = [] } = useQuery({
-    queryKey: ["vr-org-users", organizationId],
+  // Fetch both users and drivers for the combined picker
+  const { data: orgPeople = [] } = useQuery({
+    queryKey: ["vr-org-people", organizationId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, email")
-        .eq("organization_id", organizationId!)
-        .order("full_name");
-      if (error) throw error;
-      return data || [];
+      const [usersRes, driversRes] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .eq("organization_id", organizationId!)
+          .order("full_name"),
+        supabase
+          .from("drivers")
+          .select("id, first_name, last_name, email, phone, license_number, user_id, status")
+          .eq("organization_id", organizationId!)
+          .order("last_name"),
+      ]);
+      if (usersRes.error) throw usersRes.error;
+      if (driversRes.error) throw driversRes.error;
+
+      // Build a Set of user IDs that have a driver record (to tag them)
+      const driverUserIds = new Set(
+        (driversRes.data || []).filter((d: any) => d.user_id).map((d: any) => d.user_id)
+      );
+
+      const userItems = (usersRes.data || []).map((u: any) => ({
+        id: u.id,
+        name: u.full_name || u.email || "Unknown",
+        email: u.email || "",
+        type: "user" as const,
+        isAlsoDriver: driverUserIds.has(u.id),
+        driverId: (driversRes.data || []).find((d: any) => d.user_id === u.id)?.id,
+        searchStr: `${u.full_name || ""} ${u.email || ""}`.toLowerCase(),
+      }));
+
+      // Drivers without linked user accounts
+      const driversOnly = (driversRes.data || [])
+        .filter((d: any) => !d.user_id)
+        .map((d: any) => ({
+          id: d.id,
+          name: `${d.first_name} ${d.last_name}`.trim(),
+          email: d.email || d.phone || d.license_number || "",
+          type: "driver" as const,
+          isAlsoDriver: true,
+          driverId: d.id,
+          status: d.status,
+          searchStr: `${d.first_name} ${d.last_name} ${d.email || ""} ${d.license_number}`.toLowerCase(),
+        }));
+
+      return [...userItems, ...driversOnly];
     },
     enabled: !!organizationId && open && isSuperAdmin,
   });
