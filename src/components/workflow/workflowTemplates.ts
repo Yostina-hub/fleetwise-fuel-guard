@@ -983,6 +983,105 @@ const TEMPLATES: WorkflowTemplate[] = [
       { id: "e28", source: "a13", target: "a20", type: "smoothstep", animated: true },
     ],
   },
+
+  // ═══════════════════════════════════════════════════════════════
+  // FUEL REQUEST & CLEARANCE WORKFLOW
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "tpl_fuel_request_clearance",
+    name: "Fuel Request & Clearance Workflow",
+    description: "End-to-end fuel request lifecycle: auto-trigger on low fuel, request submission (vehicle/generator), delegation-based approval, fuel work order creation, e-money transfer to driver wallet, dispensing with deviation detection, and clearance with justification workflow.",
+    category: "fuel",
+    icon: "⛽",
+    difficulty: "advanced",
+    estimatedSavings: "~25% fuel cost reduction",
+    tags: ["fuel", "clearance", "approval", "e-money", "deviation", "work-order", "delegation", "generator", "wallet"],
+    nodes: [
+      // Trigger: Low fuel or manual request
+      { id: "ft1", type: "trigger", position: { x: 400, y: 50 }, data: { label: "Fuel Level Low / Manual Request", description: "Auto-triggers when fuel drops below configurable km/L threshold, or driver/ops submits manual request", icon: "⛽", category: "triggers", nodeType: "trigger_event", config: { eventType: "fuel_level_low", threshold_km_per_liter: 5 }, status: "idle", isConfigured: true } },
+
+      // Condition: Vehicle or Generator?
+      { id: "fc1", type: "condition", position: { x: 400, y: 200 }, data: { label: "Vehicle or Generator?", description: "Route based on request type", icon: "🔀", category: "conditions", nodeType: "condition_threshold", config: { leftOperand: "request.request_type", operator: "equals", rightOperand: "vehicle" }, status: "idle", isConfigured: true } },
+
+      // Vehicle path: Generate clearance report
+      { id: "fa1", type: "action", position: { x: 150, y: 350 }, data: { label: "Generate Clearance Report", description: "Pull previous refill history, odometer, efficiency data for this vehicle", icon: "📋", category: "data", nodeType: "data_lookup", config: { table: "fuel_requests", filter: "vehicle_id, status=fulfilled", limit: 5 }, status: "idle", isConfigured: true } },
+
+      // Generator path
+      { id: "fa2", type: "action", position: { x: 650, y: 350 }, data: { label: "Check Generator Status", description: "Verify generator is active and get current fuel level", icon: "🔋", category: "data", nodeType: "data_lookup", config: { table: "generators", filter: "status=active" }, status: "idle", isConfigured: true } },
+
+      // Merge: Submit fuel request
+      { id: "fa3", type: "action", position: { x: 400, y: 500 }, data: { label: "Submit Fuel Request", description: "Create fuel request with type, liters, cost estimate, station, and clearance data", icon: "📝", category: "data", nodeType: "data_transform", config: { action: "insert", table: "fuel_requests", include_clearance: true }, status: "idle", isConfigured: true } },
+
+      // Route to approval
+      { id: "fa4", type: "action", position: { x: 400, y: 650 }, data: { label: "Route to Delegation Approval", description: "Route request to fleet_manager or operations_manager based on cost threshold via delegation matrix", icon: "🔄", category: "fleet", nodeType: "fleet_assign_driver", config: { rpc: "route_fuel_request_approval", delegation_scope: "fuel_requests" }, status: "idle", isConfigured: true } },
+
+      // Approval decision
+      { id: "fc2", type: "condition", position: { x: 400, y: 800 }, data: { label: "Approved?", description: "Check if all required approvers have approved", icon: "✅", category: "conditions", nodeType: "condition_threshold", config: { leftOperand: "request.status", operator: "equals", rightOperand: "approved" }, status: "idle", isConfigured: true } },
+
+      // Rejected path
+      { id: "fa5", type: "action", position: { x: 700, y: 950 }, data: { label: "Notify Rejection", description: "Send rejection notification with reason to requester", icon: "❌", category: "notifications", nodeType: "notify_push", config: { recipients: "requester", template: "Fuel request {{request_number}} rejected: {{rejected_reason}}" }, status: "idle", isConfigured: true } },
+
+      // Approved: Create work order
+      { id: "fa6", type: "action", position: { x: 200, y: 950 }, data: { label: "Create Fuel Work Order", description: "Auto-generate FWO with approved amount. Triggers DB function create_fuel_work_order_on_approval", icon: "📄", category: "data", nodeType: "data_transform", config: { table: "fuel_work_orders", trigger: "auto_on_approval" }, status: "idle", isConfigured: true } },
+
+      // Approve work order per delegation
+      { id: "fa7", type: "action", position: { x: 200, y: 1100 }, data: { label: "WO Delegation Approval", description: "Work order approved as per delegation matrix", icon: "✅", category: "fleet", nodeType: "fleet_assign_driver", config: { delegation_scope: "fuel_work_orders" }, status: "idle", isConfigured: true } },
+
+      // Initiate e-money
+      { id: "fa8", type: "action", position: { x: 200, y: 1250 }, data: { label: "Initiate E-Money Transfer", description: "Initiate electronic money transfer to driver or on-site fuel admin", icon: "💳", category: "integrations", nodeType: "integration_webhook", config: { action: "emoney_initiate", amount_source: "estimated_cost" }, status: "idle", isConfigured: true } },
+
+      // Approve e-money
+      { id: "fa9", type: "action", position: { x: 200, y: 1400 }, data: { label: "E-Money Approval (Delegation)", description: "E-money transfer approved by authorized delegate", icon: "🔐", category: "fleet", nodeType: "fleet_assign_driver", config: { delegation_scope: "emoney_transfer" }, status: "idle", isConfigured: true } },
+
+      // Transfer to wallet
+      { id: "fa10", type: "action", position: { x: 200, y: 1550 }, data: { label: "Transfer to Driver Wallet", description: "E-money transferred to driver's wallet account for fuel purchase", icon: "👛", category: "integrations", nodeType: "integration_webhook", config: { action: "wallet_transfer", target: "driver_wallet" }, status: "idle", isConfigured: true } },
+
+      // Show nearby stations
+      { id: "fa11", type: "action", position: { x: 200, y: 1700 }, data: { label: "Show Nearby Stations", description: "Display approved fuel stations with availability on driver's app", icon: "🗺️", category: "notifications", nodeType: "notify_push", config: { recipients: "driver", template: "Your fuel request is ready. View nearby stations.", include_map: true }, status: "idle", isConfigured: true } },
+
+      // Record dispensing
+      { id: "fa12", type: "action", position: { x: 200, y: 1850 }, data: { label: "Record Fuel Dispensing", description: "Driver/station records actual liters dispensed and cost. Transaction visible to fleet & fuel management", icon: "⛽", category: "data", nodeType: "data_transform", config: { action: "update", table: "fuel_requests", fields: ["actual_liters", "actual_cost", "status=fulfilled"] }, status: "idle", isConfigured: true } },
+
+      // Deviation check
+      { id: "fc3", type: "condition", position: { x: 200, y: 2000 }, data: { label: "Deviation > 5%?", description: "Auto-detect if actual vs approved differs by more than 5%. Triggered by detect_fuel_deviation DB function", icon: "⚠️", category: "conditions", nodeType: "condition_threshold", config: { leftOperand: "abs(deviation_percent)", operator: "greater_than", rightOperand: "5" }, status: "idle", isConfigured: true } },
+
+      // No deviation: Clear
+      { id: "fa13", type: "action", position: { x: 450, y: 2150 }, data: { label: "Auto-Clear Transaction", description: "No significant deviation — clearance status set to 'cleared'", icon: "✅", category: "data", nodeType: "data_transform", config: { action: "update", table: "fuel_requests", clearance_status: "cleared" }, status: "idle", isConfigured: true } },
+
+      // Deviation detected: Request justification
+      { id: "fa14", type: "action", position: { x: 50, y: 2150 }, data: { label: "Request Justification", description: "Send justification request to fleet operations team for the deviation", icon: "📨", category: "notifications", nodeType: "notify_email", config: { recipients: "fleet_operations", template: "Fuel deviation of {{deviation_percent}}% detected on {{request_number}}. Justification required." }, status: "idle", isConfigured: true } },
+
+      // Review justification
+      { id: "fa15", type: "action", position: { x: 50, y: 2300 }, data: { label: "Review & Resolve", description: "Fuel management team reviews justification and completes or escalates", icon: "🔍", category: "fleet", nodeType: "fleet_assign_driver", config: { action: "review_justification", escalation: "fuel_management" }, status: "idle", isConfigured: true } },
+
+      // End
+      { id: "fa16", type: "action", position: { x: 250, y: 2450 }, data: { label: "Workflow Complete", description: "Fuel request lifecycle complete — all clearance data archived", icon: "🏁", category: "data", nodeType: "data_aggregate", config: { action: "archive", table: "fuel_requests" }, status: "idle", isConfigured: true } },
+    ],
+    edges: [
+      { id: "fe1", source: "ft1", target: "fc1", type: "smoothstep", animated: true },
+      { id: "fe2", source: "fc1", target: "fa1", sourceHandle: "true", type: "smoothstep", animated: true, label: "Vehicle" },
+      { id: "fe3", source: "fc1", target: "fa2", sourceHandle: "false", type: "smoothstep", animated: true, label: "Generator" },
+      { id: "fe4", source: "fa1", target: "fa3", type: "smoothstep", animated: true },
+      { id: "fe5", source: "fa2", target: "fa3", type: "smoothstep", animated: true },
+      { id: "fe6", source: "fa3", target: "fa4", type: "smoothstep", animated: true },
+      { id: "fe7", source: "fa4", target: "fc2", type: "smoothstep", animated: true },
+      { id: "fe8", source: "fc2", target: "fa6", sourceHandle: "true", type: "smoothstep", animated: true, label: "Yes" },
+      { id: "fe9", source: "fc2", target: "fa5", sourceHandle: "false", type: "smoothstep", animated: true, label: "No" },
+      { id: "fe10", source: "fa6", target: "fa7", type: "smoothstep", animated: true },
+      { id: "fe11", source: "fa7", target: "fa8", type: "smoothstep", animated: true },
+      { id: "fe12", source: "fa8", target: "fa9", type: "smoothstep", animated: true },
+      { id: "fe13", source: "fa9", target: "fa10", type: "smoothstep", animated: true },
+      { id: "fe14", source: "fa10", target: "fa11", type: "smoothstep", animated: true },
+      { id: "fe15", source: "fa11", target: "fa12", type: "smoothstep", animated: true },
+      { id: "fe16", source: "fa12", target: "fc3", type: "smoothstep", animated: true },
+      { id: "fe17", source: "fc3", target: "fa14", sourceHandle: "true", type: "smoothstep", animated: true, label: "Deviation" },
+      { id: "fe18", source: "fc3", target: "fa13", sourceHandle: "false", type: "smoothstep", animated: true, label: "OK" },
+      { id: "fe19", source: "fa14", target: "fa15", type: "smoothstep", animated: true },
+      { id: "fe20", source: "fa15", target: "fa16", type: "smoothstep", animated: true },
+      { id: "fe21", source: "fa13", target: "fa16", type: "smoothstep", animated: true },
+      { id: "fe22", source: "fa5", target: "fa16", type: "smoothstep", animated: true },
+    ],
+  },
 ];
 
 export default TEMPLATES;
