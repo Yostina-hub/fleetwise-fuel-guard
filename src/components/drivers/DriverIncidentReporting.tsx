@@ -80,7 +80,7 @@ export const DriverIncidentReporting = () => {
       .eq("organization_id", organizationId)
       .order("incident_date", { ascending: false })
       .limit(200);
-    setIncidents((data as any) || []);
+    setIncidents((data as Incident[]) || []);
     setLoading(false);
   };
 
@@ -184,7 +184,7 @@ export const DriverIncidentReporting = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Driver *</Label>
-                  <Select value={form.driver_id} onValueChange={v => setForm(p => ({ ...p, driver_id: v }))}>
+                  <Select value={form.driver_id || undefined} onValueChange={v => setForm(p => ({ ...p, driver_id: v }))}>
                     <SelectTrigger><SelectValue placeholder="Select driver" /></SelectTrigger>
                     <SelectContent>{drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.first_name} {d.last_name}</SelectItem>)}</SelectContent>
                   </Select>
