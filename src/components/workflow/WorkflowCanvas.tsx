@@ -90,6 +90,7 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
         setWorkflowName(data.name);
         setWorkflowStatus(data.status);
         setWorkflowId(data.id);
+        setCronExpression((data as any).cron_expression || "");
         if (Array.isArray(data.nodes)) setNodes(data.nodes as any);
         if (Array.isArray(data.edges)) setEdges(data.edges as any);
         setTimeout(() => fitView({ padding: 0.2 }), 200);
