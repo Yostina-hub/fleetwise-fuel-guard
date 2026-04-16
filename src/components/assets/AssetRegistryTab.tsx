@@ -208,11 +208,15 @@ export default function AssetRegistryTab() {
     setSelectedVehicles(prev => prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]);
   };
 
+  const toggleDevice = (id: string) => {
+    setSelectedDevices(prev => prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]);
+  };
+
   const toggleAll = () => {
-    if (selectedVehicles.length === unlinkededVehicles.length) {
-      setSelectedVehicles([]);
+    if (importType === "devices") {
+      setSelectedDevices(prev => prev.length === unlinkedDevices.length ? [] : unlinkedDevices.map((d: any) => d.id));
     } else {
-      setSelectedVehicles(unlinkededVehicles.map(v => v.id));
+      setSelectedVehicles(prev => prev.length === unlinkededVehicles.length ? [] : unlinkededVehicles.map(v => v.id));
     }
   };
 
