@@ -16,6 +16,7 @@ import { BarChart3, TrendingUp, Target, Award, Shield, Clock, Fuel, AlertTriangl
 interface DriverPerformanceKPIsProps {
   driverId: string;
   driverName: string;
+  employeeId?: string;
 }
 
 interface KPI {

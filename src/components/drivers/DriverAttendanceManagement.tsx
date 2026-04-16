@@ -15,6 +15,7 @@ import { CalendarDays, Clock, LogIn, LogOut, Plane, ChevronLeft, ChevronRight, P
 interface DriverAttendanceManagementProps {
   driverId: string;
   driverName: string;
+  employeeId?: string;
 }
 
 interface AttendanceRecord {

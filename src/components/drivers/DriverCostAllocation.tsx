@@ -24,6 +24,7 @@ interface CostAllocation {
 interface DriverCostAllocationProps {
   driverId: string;
   driverName: string;
+  employeeId?: string;
 }
 
 export const DriverCostAllocation = ({ driverId, driverName }: DriverCostAllocationProps) => {
