@@ -480,9 +480,19 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
           </ReactFlow>
         </div>
 
-        {/* Right panel - Config or Simulator */}
+        {/* Right panel - Config, Simulator, or AI Chat */}
         <AnimatePresence mode="wait">
-          {showSimulator && (
+          {showAICommandBar && (
+            <WorkflowAICommandBar
+              key="ai-chat"
+              open={showAICommandBar}
+              onClose={() => setShowAICommandBar(false)}
+              nodes={nodes}
+              edges={edges}
+              onApplyResult={handleAIResult}
+            />
+          )}
+          {showSimulator && !showAICommandBar && (
             <WorkflowSimulator
               key="simulator"
               nodes={nodes}
@@ -495,7 +505,7 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
               }}
             />
           )}
-          {selectedNode && !showSimulator && (
+          {selectedNode && !showSimulator && !showAICommandBar && (
             <WorkflowNodeConfig
               key="config"
               node={selectedNode}
@@ -505,26 +515,6 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
             />
           )}
         </AnimatePresence>
-      </div>
-
-      {/* Template Gallery Modal */}
-      <AnimatePresence>
-        {showTemplates && (
-          <WorkflowTemplateGallery
-            onSelectTemplate={handleLoadTemplate}
-            onClose={() => setShowTemplates(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* AI Command Bar */}
-      <WorkflowAICommandBar
-        open={showAICommandBar}
-        onClose={() => setShowAICommandBar(false)}
-        nodes={nodes}
-        edges={edges}
-        onApplyResult={handleAIResult}
-      />
     </div>
   );
 }
