@@ -1,6 +1,6 @@
 import { Suspense, useRef, useState, useMemo, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, ContactShadows, Text, RoundedBox, Center } from "@react-three/drei";
+import { OrbitControls, ContactShadows, RoundedBox, Center } from "@react-three/drei";
 import * as THREE from "three";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -224,22 +224,16 @@ function BusBody({ bodyColor, statusColor }: { bodyColor: string; statusColor: s
 
 // ---------- Plate label ----------
 
-function PlateLabel({ text, position }: { text: string; position: [number, number, number] }) {
+function PlateLabel({ position }: { position: [number, number, number] }) {
   return (
     <group position={position}>
       <RoundedBox args={[0.6, 0.15, 0.01]} radius={0.02}>
         <meshStandardMaterial color="#ffffff" />
       </RoundedBox>
-      <Text
-        position={[0, 0, 0.01]}
-        fontSize={0.06}
-        color="#111111"
-        anchorX="center"
-        anchorY="middle"
-        font="/fonts/inter-v12-latin-700.woff"
-      >
-        {text}
-      </Text>
+      <mesh position={[0, 0, 0.012]}>
+        <planeGeometry args={[0.5, 0.06]} />
+        <meshStandardMaterial color="#111111" />
+      </mesh>
     </group>
   );
 }
@@ -302,7 +296,7 @@ function VehicleScene({ vehicleType, color, status, plate, autoRotate }: {
       <group ref={groupRef}>
         <Center>
           <VehicleComponent bodyColor={bodyColor} statusColor={statusColor} />
-          <PlateLabel text={plate} position={platePosition} />
+          <PlateLabel position={platePosition} />
         </Center>
       </group>
 
