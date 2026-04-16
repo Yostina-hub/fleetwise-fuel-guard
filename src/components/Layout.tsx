@@ -68,6 +68,7 @@ import { NotificationCenter } from "@/components/scheduling/NotificationCenter";
 import { HeaderAlertBell } from "@/components/alerts/HeaderAlertBell";
 import { cn } from "@/lib/utils";
 import { isPathAccessible } from "@/config/sidebarAccess";
+import { getRoleSpecificNav } from "@/config/roleNavTemplates";
 import ethioTelecomLogo from "@/assets/ethio-telecom-logo.png";
 import {
   Tooltip,
@@ -263,10 +264,15 @@ const Layout = ({ children }: LayoutProps) => {
   const isDeveloper = DEVELOPER_EMAILS.includes(user?.email || "");
   const developerItems = useMemo(() => isDeveloper ? getDeveloperItems() : [], [isDeveloper]);
 
-  // RBAC filter: only show nav items the user's roles allow
+  // RBAC filter: only show nav items the user's roles allow.
+  // Single-purpose roles (driver / technician / auditor) get a curated tree.
   const navItems = useMemo(() => {
     // If super_admin or roles not loaded yet, show everything
     if (isSuperAdmin || userRoles.length === 0) return allNavItems;
+
+    // Curated layout for focused roles
+    const roleSpecific = getRoleSpecificNav(userRoles, t);
+    if (roleSpecific) return roleSpecific;
 
     return allNavItems
       .map((item) => {
@@ -285,7 +291,7 @@ const Layout = ({ children }: LayoutProps) => {
         return item;
       })
       .filter(Boolean) as typeof allNavItems;
-  }, [allNavItems, userRoles, isSuperAdmin]);
+  }, [allNavItems, userRoles, isSuperAdmin, t]);
 
   const adminItems = useMemo(() => allAdminItems, [allAdminItems]);
   
