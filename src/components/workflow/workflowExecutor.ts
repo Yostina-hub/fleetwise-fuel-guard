@@ -125,6 +125,30 @@ export async function executeNode(
       case "hw_ev_charger":
         return { success: true, operation: "SELECT", message: "EV charger status read", data: { charging: true, soc_percent: Math.floor(Math.random() * 60 + 30) } };
 
+      // ── AI Intelligence (Read + Analyze) ────────
+      case "ai_decision":
+        return await aiSmartDecision(config, organizationId);
+      case "ai_predict_maintenance":
+        return await aiPredictMaintenance(organizationId);
+      case "ai_anomaly_detect":
+        return await aiAnomalyDetect(organizationId);
+      case "ai_route_optimize":
+        return await aiRouteOptimize(organizationId);
+      case "ai_fuel_forecast":
+        return await aiFuelForecast(organizationId);
+      case "ai_driver_scoring":
+        return await aiDriverScoring(organizationId);
+
+      // ── Fuel Request Workflow ───────────────────
+      case "fuel_request_submit":
+        return await fuelRequestSubmit(config, organizationId);
+      case "fuel_request_approve":
+        return await fuelRequestApprove(config, organizationId);
+      case "fuel_deviation_check":
+        return await fuelDeviationCheck(organizationId);
+      case "fuel_emoney_transfer":
+        return await fuelEmoneyTransfer(config, organizationId);
+
       default:
         return { success: true, operation: "SELECT", message: `Node '${nodeType}' executed (no specific handler)`, data: {} };
     }

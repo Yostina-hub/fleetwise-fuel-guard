@@ -78,7 +78,7 @@ export const WorkflowTemplateGallery = ({
       <motion.div
         initial={{ y: 20 }}
         animate={{ y: 0 }}
-        className="w-full max-w-5xl max-h-[85vh] bg-card rounded-2xl border border-border shadow-2xl flex flex-col overflow-hidden"
+        className="w-full max-w-5xl h-[85vh] bg-card rounded-2xl border border-border shadow-2xl flex flex-col"
       >
         {/* Header */}
         <div className="p-5 border-b border-border">
@@ -140,7 +140,7 @@ export const WorkflowTemplateGallery = ({
         </div>
 
         {/* Grid */}
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 overflow-hidden">
           <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             <AnimatePresence mode="popLayout">
               {filtered.map((template, idx) => {
