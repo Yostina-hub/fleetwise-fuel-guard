@@ -43,6 +43,34 @@ export const useDeviceCompatibility = () => {
     enabled: !!organizationId,
   });
 
+  // Auto-seed profiles if none exist for this org
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (!isLoading && profiles && profiles.length === 0 && organizationId && !seededRef.current) {
+      seededRef.current = true;
+      const rows = compatibilityProfileSeeds.map((s) => ({
+        organization_id: organizationId,
+        vendor: s.vendor,
+        model_name: s.model_name,
+        protocol_name: s.protocol_name,
+        supported_commands: s.supported_commands,
+        capabilities: s.capabilities as Json,
+        telemetry_fields: s.telemetry_fields,
+        setup_config: s.setup_config as Json,
+        command_templates: s.command_templates as Json,
+        is_active: true,
+      }));
+      supabase
+        .from("device_compatibility_profiles")
+        .upsert(rows, { onConflict: "organization_id,vendor,model_name", ignoreDuplicates: true })
+        .then(({ error }) => {
+          if (!error) {
+            queryClient.invalidateQueries({ queryKey: ["device_compatibility_profiles"] });
+          }
+        });
+    }
+  }, [isLoading, profiles, organizationId]);
+
   // Seed all built-in profiles for this org (idempotent)
   const seedProfiles = useMutation({
     mutationFn: async () => {
