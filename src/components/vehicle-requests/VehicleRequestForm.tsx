@@ -56,9 +56,26 @@ const initialForm = {
 
 export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormProps) => {
   const { t } = useTranslation();
-  const { organizationId } = useOrganization();
+  const { organizationId, isSuperAdmin } = useOrganization();
   const queryClient = useQueryClient();
   const [form, setForm] = useState(initialForm);
+  // Super-admin only: file the request on behalf of another user
+  const [onBehalfOf, setOnBehalfOf] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [userPickerOpen, setUserPickerOpen] = useState(false);
+
+  const { data: orgUsers = [] } = useQuery({
+    queryKey: ["vr-org-users", organizationId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .eq("organization_id", organizationId!)
+        .order("full_name");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId && open && isSuperAdmin,
+  });
 
   const { data: pools = [] } = useQuery({
     queryKey: ["fleet-pools", organizationId],
