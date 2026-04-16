@@ -170,12 +170,29 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
       }
       await (supabase as any).from("vehicle_requests").update(updates).eq("id", request.id);
 
+      // Update vehicle status to in_use
+      await (supabase as any).from("vehicles").update({
+        status: "in_use",
+        updated_at: new Date().toISOString(),
+      }).eq("id", vehicleId);
+
+      // Update driver status to on_trip
+      if (selectedDriver) {
+        await (supabase as any).from("drivers").update({
+          status: "on_trip",
+          updated_at: new Date().toISOString(),
+        }).eq("id", selectedDriver);
+      }
+
       // Get assigned vehicle plate
       const { data: vehicle } = await (supabase as any)
         .from("vehicles")
         .select("plate_number")
         .eq("id", vehicleId)
         .single();
+
+      // Send in-app notifications
+      await sendInAppNotifications(vehicleId);
 
       // Send SMS to driver AND requester
       if (selectedDriver) {
@@ -220,6 +237,53 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
     },
     onError: (err: any) => toast.error(err.message),
   });
+
+  // Send in-app notifications on assignment
+  const sendInAppNotifications = async (vehicleId: string) => {
+    try {
+      const { data: vehicle } = await (supabase as any)
+        .from("vehicles")
+        .select("plate_number")
+        .eq("id", vehicleId)
+        .single();
+
+      // Notify requester in-app
+      if (request.requester_id) {
+        await supabase.rpc("send_notification", {
+          _user_id: request.requester_id,
+          _type: "vehicle_assigned",
+          _title: "Vehicle Assigned",
+          _message: `Vehicle ${vehicle?.plate_number || "N/A"} has been assigned to your request ${request.request_number}`,
+          _link: "/vehicle-requests",
+        });
+      }
+
+      // Notify driver in-app (find user_id from driver profile)
+      if (selectedDriver) {
+        const driver = drivers.find((d: any) => d.id === selectedDriver);
+        if (driver) {
+          const { data: driverProfile } = await supabase
+            .from("profiles")
+            .select("id")
+            .ilike("full_name", `%${driver.first_name}%`)
+            .eq("organization_id", request.organization_id)
+            .limit(1)
+            .maybeSingle();
+          if (driverProfile?.id) {
+            await supabase.rpc("send_notification", {
+              _user_id: driverProfile.id,
+              _type: "driver_assignment",
+              _title: "New Assignment",
+              _message: `You've been assigned to request ${request.request_number}. Vehicle: ${vehicle?.plate_number || "N/A"}, Route: ${request.departure_place || "TBD"} → ${request.destination || "TBD"}`,
+              _link: "/vehicle-requests",
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.error("In-app notification error:", e);
+    }
+  };
 
   const completeMutation = useMutation({
     mutationFn: async () => {
