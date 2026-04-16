@@ -232,6 +232,11 @@ const DriverPortal = () => {
           queryClient.invalidateQueries({ queryKey: ["driver-portal-submissions"] });
           queryClient.invalidateQueries({ queryKey: ["driver-portal-requests"] });
         })
+      .on("postgres_changes", { event: "*", schema: "public", table: "vehicle_requests", filter: `assigned_driver_id=eq.${driverId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["driver-portal-self"] });
+          queryClient.invalidateQueries({ queryKey: ["driver-portal-submissions"] });
+        })
       .on("postgres_changes", { event: "*", schema: "public", table: "vehicle_requests", filter: `organization_id=eq.${organizationId}` },
         () => queryClient.invalidateQueries({ queryKey: ["driver-portal-submissions"] }))
       .subscribe();
