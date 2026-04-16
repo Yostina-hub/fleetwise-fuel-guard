@@ -33,6 +33,8 @@ const ColdChainTab = ({ organizationId }: ColdChainTabProps) => {
   const [activeTab, setActiveTab] = useState("live");
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const [showLogDialog, setShowLogDialog] = useState(false);
+  const [readingForm, setReadingForm] = useState(emptyReadingForm);
 
   const [complianceRange, setComplianceRange] = useState({
     start: format(subDays(new Date(), 7), "yyyy-MM-dd"),
@@ -40,6 +42,60 @@ const ColdChainTab = ({ organizationId }: ColdChainTabProps) => {
   });
 
   const [thresholds, setThresholds] = useState<Record<string, { min: string; max: string }>>({});
+
+  const { data: vehicles = [] } = useQuery({
+    queryKey: ["vehicles-cold-chain", organizationId],
+    queryFn: async () => {
+      const { data } = await supabase.from("vehicles").select("id, plate_number").eq("organization_id", organizationId).order("plate_number");
+      return data || [];
+    },
+    enabled: !!organizationId,
+  });
+
+  const logReadingMutation = useMutation({
+    mutationFn: async () => {
+      const temp = parseFloat(readingForm.temperature_celsius);
+      if (isNaN(temp)) throw new Error("Temperature is required");
+      const minT = parseFloat(readingForm.min_threshold);
+      const maxT = parseFloat(readingForm.max_threshold);
+      const isAlarm = temp < minT || temp > maxT;
+      const { error } = await (supabase as any).from("cold_chain_readings").insert([{
+        organization_id: organizationId,
+        vehicle_id: readingForm.vehicle_id,
+        temperature_celsius: temp,
+        humidity_percent: readingForm.humidity_percent ? parseFloat(readingForm.humidity_percent) : null,
+        door_status: readingForm.door_status,
+        compressor_status: readingForm.compressor_status,
+        sensor_id: readingForm.sensor_id || null,
+        min_threshold: minT,
+        max_threshold: maxT,
+        is_alarm: isAlarm,
+        alarm_type: isAlarm ? (temp < minT ? "low_temp" : "high_temp") : null,
+      }]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cold-chain-latest"] });
+      queryClient.invalidateQueries({ queryKey: ["cold-chain-alarms"] });
+      setShowLogDialog(false);
+      setReadingForm(emptyReadingForm);
+      toast.success("Cold chain reading logged");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const deleteReadingMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await (supabase as any).from("cold_chain_readings").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cold-chain-latest"] });
+      queryClient.invalidateQueries({ queryKey: ["cold-chain-alarms"] });
+      toast.success("Reading deleted");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   const { data: latestReadings = [], isLoading } = useQuery({
     queryKey: ["cold-chain-latest", organizationId],
