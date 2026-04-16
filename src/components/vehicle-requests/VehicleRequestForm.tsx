@@ -89,7 +89,7 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
 
       if (form.request_type === "daily_operation") {
         neededFrom = combineDateAndTime(form.date, form.start_time) || new Date().toISOString();
-        neededUntil = combineDateAndTime(form.date, form.end_time) || null;
+        neededUntil = combineDateAndTime(form.end_date || form.date, form.end_time) || null;
       } else {
         neededFrom = combineDateAndTime(form.start_date, form.start_date_time) || new Date().toISOString();
         neededUntil = combineDateAndTime(form.end_date, form.end_date_time) || null;
@@ -186,17 +186,14 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
                 required
                 minDate={new Date()}
               />
-              <div className="space-y-1.5">
-                <Label className="text-sm font-medium flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5" /> End Time
-                </Label>
-                <Input
-                  type="time"
-                  value={form.end_time}
-                  onChange={e => update("end_time", e.target.value)}
-                  className="w-full"
-                />
-              </div>
+              <DateTimePicker
+                label="End Date & Time"
+                date={form.end_date}
+                time={form.end_time}
+                onDateChange={d => update("end_date", d)}
+                onTimeChange={t => update("end_time", t)}
+                minDate={form.date}
+              />
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
