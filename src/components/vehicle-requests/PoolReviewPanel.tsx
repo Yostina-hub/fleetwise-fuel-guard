@@ -131,6 +131,32 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
       updates.assigned_by = user!.id;
 
       await (supabase as any).from("vehicle_requests").update(updates).eq("id", requestId);
+
+      // Set vehicle to in_use
+      await (supabase as any).from("vehicles").update({
+        status: "in_use", updated_at: new Date().toISOString(),
+      }).eq("id", vehicleId);
+
+      // Set driver to on_trip
+      if (driverId) {
+        await (supabase as any).from("drivers").update({
+          status: "on_trip", updated_at: new Date().toISOString(),
+        }).eq("id", driverId);
+      }
+
+      // Send in-app notification to requester
+      if (request?.requester_id) {
+        const { data: vehicle } = await (supabase as any).from("vehicles").select("plate_number").eq("id", vehicleId).single();
+        try {
+          await supabase.rpc("send_notification", {
+            _user_id: request.requester_id,
+            _type: "vehicle_assigned",
+            _title: "Vehicle Assigned",
+            _message: `Vehicle ${vehicle?.plate_number || "N/A"} assigned to request ${request.request_number}`,
+            _link: "/vehicle-requests",
+          });
+        } catch (e) { console.error("In-app notification error:", e); }
+      }
     },
     onSuccess: () => {
       toast.success("Vehicle assigned from pool");
@@ -162,6 +188,15 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
         };
         if (driverId) updates.assigned_driver_id = driverId;
         await (supabase as any).from("vehicle_requests").update(updates).eq("id", requestId);
+      }
+      // Set vehicle to in_use for batch
+      await (supabase as any).from("vehicles").update({
+        status: "in_use", updated_at: new Date().toISOString(),
+      }).eq("id", vehicleId);
+      if (driverId) {
+        await (supabase as any).from("drivers").update({
+          status: "on_trip", updated_at: new Date().toISOString(),
+        }).eq("id", driverId);
       }
     },
     onSuccess: () => {
