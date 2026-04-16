@@ -41,7 +41,7 @@ export const DriverPredictiveRiskScoring = () => {
         .eq("organization_id", organizationId)
         .order("score_date", { ascending: false })
         .limit(500);
-      setScores((data as any) || []);
+      setScores((data as RiskScore[]) || []);
       setLoading(false);
     };
     fetch();

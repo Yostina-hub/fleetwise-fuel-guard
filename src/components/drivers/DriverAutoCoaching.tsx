@@ -38,7 +38,7 @@ export const DriverAutoCoaching = () => {
         .eq("organization_id", organizationId)
         .order("created_at", { ascending: false })
         .limit(100);
-      setWorkflows((data as any) || []);
+      setWorkflows((data as CoachingWorkflow[]) || []);
       setLoading(false);
     };
     fetch();
