@@ -176,6 +176,9 @@ Type options: risk_prediction, coaching_tip, performance_trend, fuel_optimizatio
           Generate AI Insights
         </Button>
       </div>
+
+      {/* AI Insights Alert */}
+      {unacknowledgedInsights.length > 0 && (
         <Card className={cn(
           "glass-strong border-2",
           getSeverityColor(unacknowledgedInsights[0].severity)
