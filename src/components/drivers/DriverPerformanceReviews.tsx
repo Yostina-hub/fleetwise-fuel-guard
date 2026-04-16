@@ -45,7 +45,7 @@ export const DriverPerformanceReviews = ({ driverId, driverName }: DriverPerform
         .eq("organization_id", organizationId)
         .eq("driver_id", driverId)
         .order("review_period_end", { ascending: false });
-      setReviews((data as any) || []);
+      setReviews((data as Review[]) || []);
       setLoading(false);
     };
     fetch();
