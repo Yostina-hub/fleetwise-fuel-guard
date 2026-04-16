@@ -48,20 +48,13 @@ export default function AssignDriverDialog({ open, onOpenChange, vehicle }: Assi
     mutationFn: async (driverId: string | null) => {
       if (!vehicle?.vehicleId || !organizationId) throw new Error("Missing vehicle or organization");
 
-      // Create a trip assignment to link driver to vehicle
-      if (driverId) {
-        const { error } = await supabase
-          .from("trips")
-          .insert({
-            organization_id: organizationId,
-            vehicle_id: vehicle.vehicleId,
-            driver_id: driverId,
-            start_time: new Date().toISOString(),
-            status: "assigned",
-            notes: "Driver assigned to vehicle",
-          });
-        if (error) throw error;
-      }
+      // Update the vehicle's assigned driver
+      const { error } = await supabase
+        .from("vehicles")
+        .update({ assigned_driver_id: driverId })
+        .eq("id", vehicle.vehicleId)
+        .eq("organization_id", organizationId);
+      if (error) throw error;
     },
     onSuccess: () => {
       toast({
