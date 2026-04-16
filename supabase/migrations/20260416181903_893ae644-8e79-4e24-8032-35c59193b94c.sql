@@ -1,0 +1,1 @@
+UPDATE public.drivers SET user_id='ad4facd8-73f9-4472-bff0-2283d0766b89', updated_at=now() WHERE id='5e72baf2-8f9a-4037-a8cb-591b979204a6' AND organization_id='00000000-0000-0000-0000-000000000001';
