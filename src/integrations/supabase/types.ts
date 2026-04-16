@@ -9195,103 +9195,232 @@ export type Database = {
       }
       fuel_work_orders: {
         Row: {
+          activity_cause: string | null
+          activity_source: string | null
+          activity_type: string | null
+          additional_description: string | null
+          agreement_number: string | null
           amount_remaining: number | null
           amount_used: number | null
           approved_at: string | null
           approved_by: string | null
+          asset_activity: string | null
+          asset_group: string | null
+          asset_number: string | null
           assigned_to: string | null
+          context: string | null
           created_at: string
+          created_by_user_id: string | null
+          department: string | null
+          department_description: string | null
+          description: string | null
           driver_wallet_id: string | null
+          duration: number | null
           emoney_amount: number | null
           emoney_approved_at: string | null
           emoney_approved_by: string | null
           emoney_initiated: boolean
           emoney_transfer_ref: string | null
           emoney_transfer_status: string | null
+          enable_material_issue_request: boolean | null
+          failure_cause: string | null
+          failure_code: string | null
+          firm: boolean | null
           fuel_request_id: string
           id: string
           notes: string | null
+          notification_required: boolean | null
           organization_id: string
           pin_confirmation_ref: string | null
           pin_confirmed_at: string | null
+          planned: boolean | null
+          planner_id: string | null
+          planner_name: string | null
+          priority: string | null
+          project: string | null
           pullback_amount: number | null
           pullback_completed_at: string | null
           pullback_initiated_at: string | null
           pullback_ref: string | null
+          rebuild_parent: string | null
+          remark1: string | null
+          remark2: string | null
+          remark3: string | null
+          remark4: string | null
+          request_number: string | null
+          resolution: string | null
+          scheduled_completion_date: string | null
+          scheduled_start_date: string | null
+          shutdown_type: string | null
           sms_receipt_sent_at: string | null
           sms_receipt_text: string | null
           station_id: string | null
           status: string
+          supplier_name: string | null
+          tagout_required: boolean | null
+          task: string | null
           telebirr_provider: string | null
           telebirr_request_id: string | null
           updated_at: string
+          warranty_active: boolean | null
+          warranty_expiration_date: string | null
+          warranty_status: string | null
+          wip_accounting_class: string | null
+          wo_status: string | null
           work_order_number: string
+          work_order_type: string | null
         }
         Insert: {
+          activity_cause?: string | null
+          activity_source?: string | null
+          activity_type?: string | null
+          additional_description?: string | null
+          agreement_number?: string | null
           amount_remaining?: number | null
           amount_used?: number | null
           approved_at?: string | null
           approved_by?: string | null
+          asset_activity?: string | null
+          asset_group?: string | null
+          asset_number?: string | null
           assigned_to?: string | null
+          context?: string | null
           created_at?: string
+          created_by_user_id?: string | null
+          department?: string | null
+          department_description?: string | null
+          description?: string | null
           driver_wallet_id?: string | null
+          duration?: number | null
           emoney_amount?: number | null
           emoney_approved_at?: string | null
           emoney_approved_by?: string | null
           emoney_initiated?: boolean
           emoney_transfer_ref?: string | null
           emoney_transfer_status?: string | null
+          enable_material_issue_request?: boolean | null
+          failure_cause?: string | null
+          failure_code?: string | null
+          firm?: boolean | null
           fuel_request_id: string
           id?: string
           notes?: string | null
+          notification_required?: boolean | null
           organization_id: string
           pin_confirmation_ref?: string | null
           pin_confirmed_at?: string | null
+          planned?: boolean | null
+          planner_id?: string | null
+          planner_name?: string | null
+          priority?: string | null
+          project?: string | null
           pullback_amount?: number | null
           pullback_completed_at?: string | null
           pullback_initiated_at?: string | null
           pullback_ref?: string | null
+          rebuild_parent?: string | null
+          remark1?: string | null
+          remark2?: string | null
+          remark3?: string | null
+          remark4?: string | null
+          request_number?: string | null
+          resolution?: string | null
+          scheduled_completion_date?: string | null
+          scheduled_start_date?: string | null
+          shutdown_type?: string | null
           sms_receipt_sent_at?: string | null
           sms_receipt_text?: string | null
           station_id?: string | null
           status?: string
+          supplier_name?: string | null
+          tagout_required?: boolean | null
+          task?: string | null
           telebirr_provider?: string | null
           telebirr_request_id?: string | null
           updated_at?: string
+          warranty_active?: boolean | null
+          warranty_expiration_date?: string | null
+          warranty_status?: string | null
+          wip_accounting_class?: string | null
+          wo_status?: string | null
           work_order_number: string
+          work_order_type?: string | null
         }
         Update: {
+          activity_cause?: string | null
+          activity_source?: string | null
+          activity_type?: string | null
+          additional_description?: string | null
+          agreement_number?: string | null
           amount_remaining?: number | null
           amount_used?: number | null
           approved_at?: string | null
           approved_by?: string | null
+          asset_activity?: string | null
+          asset_group?: string | null
+          asset_number?: string | null
           assigned_to?: string | null
+          context?: string | null
           created_at?: string
+          created_by_user_id?: string | null
+          department?: string | null
+          department_description?: string | null
+          description?: string | null
           driver_wallet_id?: string | null
+          duration?: number | null
           emoney_amount?: number | null
           emoney_approved_at?: string | null
           emoney_approved_by?: string | null
           emoney_initiated?: boolean
           emoney_transfer_ref?: string | null
           emoney_transfer_status?: string | null
+          enable_material_issue_request?: boolean | null
+          failure_cause?: string | null
+          failure_code?: string | null
+          firm?: boolean | null
           fuel_request_id?: string
           id?: string
           notes?: string | null
+          notification_required?: boolean | null
           organization_id?: string
           pin_confirmation_ref?: string | null
           pin_confirmed_at?: string | null
+          planned?: boolean | null
+          planner_id?: string | null
+          planner_name?: string | null
+          priority?: string | null
+          project?: string | null
           pullback_amount?: number | null
           pullback_completed_at?: string | null
           pullback_initiated_at?: string | null
           pullback_ref?: string | null
+          rebuild_parent?: string | null
+          remark1?: string | null
+          remark2?: string | null
+          remark3?: string | null
+          remark4?: string | null
+          request_number?: string | null
+          resolution?: string | null
+          scheduled_completion_date?: string | null
+          scheduled_start_date?: string | null
+          shutdown_type?: string | null
           sms_receipt_sent_at?: string | null
           sms_receipt_text?: string | null
           station_id?: string | null
           status?: string
+          supplier_name?: string | null
+          tagout_required?: boolean | null
+          task?: string | null
           telebirr_provider?: string | null
           telebirr_request_id?: string | null
           updated_at?: string
+          warranty_active?: boolean | null
+          warranty_expiration_date?: string | null
+          warranty_status?: string | null
+          wip_accounting_class?: string | null
+          wo_status?: string | null
           work_order_number?: string
+          work_order_type?: string | null
         }
         Relationships: [
           {
@@ -21714,6 +21843,10 @@ export type Database = {
       }
     }
     Functions: {
+      action_fuel_approval: {
+        Args: { p_action: string; p_approval_id: string; p_comment?: string }
+        Returns: Json
+      }
       check_account_lockout: {
         Args: { p_email: string }
         Returns: {
@@ -21825,6 +21958,25 @@ export type Database = {
           schedule_id: string
           service_type: string
           vehicle_id: string
+        }[]
+      }
+      get_my_pending_fuel_approvals: {
+        Args: never
+        Returns: {
+          approval_id: string
+          approver_role: string
+          created_at: string
+          estimated_cost: number
+          fuel_request_id: string
+          generator_name: string
+          is_delegated: boolean
+          liters_requested: number
+          original_approver_name: string
+          priority: string
+          request_number: string
+          requested_by_name: string
+          step: number
+          vehicle_plate: string
         }[]
       }
       get_user_organization: { Args: { _user_id: string }; Returns: string }
