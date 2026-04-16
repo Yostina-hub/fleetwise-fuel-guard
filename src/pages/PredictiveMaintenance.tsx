@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,153 +6,149 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, AlertTriangle, Wrench, TrendingUp, Clock, CheckCircle, XCircle, Activity } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useOrganization } from "@/hooks/useOrganization";
+import { Brain, AlertTriangle, Wrench, Clock, CheckCircle, XCircle, Activity, RefreshCw, Ban } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { usePredictiveMaintenance, type PredictiveScore, type RiskLevel } from "@/hooks/usePredictiveMaintenance";
+import { format, formatDistanceToNow } from "date-fns";
 
-import { useTranslation } from 'react-i18next';
+const riskColor = (r: string): "default" | "secondary" | "destructive" | "outline" =>
+  r === "critical" ? "destructive" : r === "high" ? "destructive" : r === "medium" ? "default" : "secondary";
+
 const PredictiveMaintenance = () => {
   const { t } = useTranslation();
-  const { organizationId } = useOrganization();
+  const { predictions, isLoading, runAnalysis, dismiss, createWorkOrder } = usePredictiveMaintenance();
+  const [filter, setFilter] = useState<"all" | "open" | "actioned" | "dismissed">("open");
 
-  const { data: vehicles = [] } = useQuery({
-    queryKey: ["pred-maint-vehicles", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data } = await supabase
-        .from("vehicles")
-        .select("id, plate_number, make, model, year, current_mileage_km, status")
-        .eq("organization_id", organizationId)
-        .limit(50);
-      return data || [];
-    },
-    enabled: !!organizationId,
-  });
+  const filtered = predictions.filter(p => filter === "all" ? true : p.status === filter);
 
-  const { data: schedules = [] } = useQuery({
-    queryKey: ["pred-maint-schedules", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data } = await supabase
-        .from("maintenance_schedules")
-        .select("*, vehicles(plate_number, make, model, current_mileage_km)")
-        .eq("organization_id", organizationId)
-        .order("next_due_date", { ascending: true })
-        .limit(100);
-      return data || [];
-    },
-    enabled: !!organizationId,
-  });
+  const counts = {
+    critical: predictions.filter(p => p.risk_level === "critical" && p.status === "open").length,
+    high: predictions.filter(p => p.risk_level === "high" && p.status === "open").length,
+    medium: predictions.filter(p => p.risk_level === "medium" && p.status === "open").length,
+    low: predictions.filter(p => p.risk_level === "low").length,
+  };
+  const avgHealth = predictions.length
+    ? (predictions.reduce((s, p) => s + p.health_score, 0) / predictions.length).toFixed(0)
+    : "—";
 
-  // Simulate predictive scores based on mileage and schedule data
-  const predictions = vehicles.map((v: any) => {
-    const mileage = v.current_mileage_km || 0;
-    const relatedSchedules = schedules.filter((s: any) => s.vehicle_id === v.id);
-    const overdue = relatedSchedules.filter((s: any) => s.next_due_date && new Date(s.next_due_date) < new Date()).length;
-    
-    // Predictive health score (higher is better)
-    let healthScore = 95;
-    if (mileage > 200000) healthScore -= 20;
-    else if (mileage > 100000) healthScore -= 10;
-    if (overdue > 0) healthScore -= overdue * 8;
-    if (v.year && v.year < 2018) healthScore -= 5;
-    healthScore = Math.max(healthScore, 10);
-
-    const riskLevel = healthScore < 50 ? "critical" : healthScore < 70 ? "high" : healthScore < 85 ? "medium" : "low";
-    const predictedFailure = healthScore < 60 ? "Engine/Transmission" : healthScore < 75 ? "Brake System" : healthScore < 85 ? "Battery/Electrical" : "None predicted";
-    const daysToFailure = healthScore < 50 ? Math.floor(Math.random() * 14) + 1 : healthScore < 70 ? Math.floor(Math.random() * 30) + 14 : healthScore < 85 ? Math.floor(Math.random() * 60) + 30 : null;
-
-    return { ...v, healthScore, riskLevel, predictedFailure, daysToFailure, overdue, schedulesCount: relatedSchedules.length };
-  }).sort((a: any, b: any) => a.healthScore - b.healthScore);
-
-  const criticalCount = predictions.filter(p => p.riskLevel === "critical").length;
-  const highCount = predictions.filter(p => p.riskLevel === "high").length;
-  const avgHealth = predictions.length ? (predictions.reduce((s, p) => s + p.healthScore, 0) / predictions.length).toFixed(0) : "—";
-
-  const riskColor = (r: string) => r === "critical" ? "destructive" : r === "high" ? "destructive" : r === "medium" ? "default" : "secondary";
+  const lastRun = predictions.length
+    ? predictions.reduce((latest, p) => p.computed_at > latest ? p.computed_at : latest, predictions[0].computed_at)
+    : null;
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="space-y-6 p-4 md:p-6">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-2xl font-bold">{t('pages.predictive_maintenance.title', 'AI Predictive Maintenance')}</h1>
-            <p className="text-muted-foreground">{t('pages.predictive_maintenance.description', 'ML-powered failure prediction based on telemetry & maintenance history')}</p>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Brain className="w-6 h-6 text-primary" />
+              {t('pages.predictive_maintenance.title', 'AI Predictive Maintenance')}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              ML-powered failure prediction from telemetry, mileage, age & maintenance history
+              {lastRun && <> · last run {formatDistanceToNow(new Date(lastRun), { addSuffix: true })}</>}
+            </p>
           </div>
-          <Button><Brain className="h-4 w-4 mr-2" /> Re-run Analysis</Button>
+          <Button onClick={() => runAnalysis.mutate()} disabled={runAnalysis.isPending}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${runAnalysis.isPending ? "animate-spin" : ""}`} />
+            {runAnalysis.isPending ? "Analyzing…" : "Re-run analysis"}
+          </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Activity className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{avgHealth}%</p><p className="text-sm text-muted-foreground">Avg Fleet Health</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><XCircle className="h-8 w-8 text-destructive" /><div><p className="text-2xl font-bold">{criticalCount}</p><p className="text-sm text-muted-foreground">Critical Risk</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><AlertTriangle className="h-8 w-8 text-orange-500" /><div><p className="text-2xl font-bold">{highCount}</p><p className="text-sm text-muted-foreground">High Risk</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><CheckCircle className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{predictions.filter(p => p.riskLevel === "low").length}</p><p className="text-sm text-muted-foreground">Healthy</p></div></div></CardContent></Card>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Activity className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{avgHealth}%</p><p className="text-sm text-muted-foreground">Avg fleet health</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><XCircle className="h-8 w-8 text-destructive" /><div><p className="text-2xl font-bold">{counts.critical}</p><p className="text-sm text-muted-foreground">Critical risk</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><AlertTriangle className="h-8 w-8 text-warning" /><div><p className="text-2xl font-bold">{counts.high}</p><p className="text-sm text-muted-foreground">High risk</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><CheckCircle className="h-8 w-8 text-success" /><div><p className="text-2xl font-bold">{counts.low}</p><p className="text-sm text-muted-foreground">Healthy</p></div></div></CardContent></Card>
         </div>
 
-        <Tabs defaultValue="predictions">
-          <TabsList>
-            <TabsTrigger value="predictions">Failure Predictions</TabsTrigger>
-            <TabsTrigger value="health">Fleet Health Map</TabsTrigger>
-          </TabsList>
+        {predictions.length === 0 && !isLoading && (
+          <Card><CardContent className="py-12 text-center space-y-3">
+            <Brain className="w-12 h-12 mx-auto text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">No predictions yet. Click <strong>Re-run analysis</strong> to scan your fleet.</p>
+          </CardContent></Card>
+        )}
 
-          <TabsContent value="predictions">
-            <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>Health Score</TableHead><TableHead>Risk</TableHead><TableHead>Predicted Failure</TableHead><TableHead>Est. Days</TableHead><TableHead>Overdue Tasks</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {predictions.length === 0 ? (
-                    <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No vehicles found</TableCell></TableRow>
-                  ) : predictions.slice(0, 20).map((p: any) => (
-                    <TableRow key={p.id}>
-                      <TableCell className="font-medium">{p.plate_number} <span className="text-xs text-muted-foreground">{p.make} {p.model}</span></TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Progress value={p.healthScore} className="h-2 w-16" />
-                          <span className="text-sm">{p.healthScore}%</span>
-                        </div>
-                      </TableCell>
-                      <TableCell><Badge variant={riskColor(p.riskLevel)}>{p.riskLevel}</Badge></TableCell>
-                      <TableCell className="text-sm">{p.predictedFailure}</TableCell>
-                      <TableCell>{p.daysToFailure ? <span className="flex items-center gap-1 text-sm"><Clock className="h-3 w-3" />{p.daysToFailure}d</span> : "—"}</TableCell>
-                      <TableCell>{p.overdue > 0 ? <Badge variant="destructive">{p.overdue} overdue</Badge> : <Badge variant="secondary">0</Badge>}</TableCell>
+        {predictions.length > 0 && (
+          <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
+            <TabsList>
+              <TabsTrigger value="open">Open ({predictions.filter(p => p.status === "open").length})</TabsTrigger>
+              <TabsTrigger value="actioned">Actioned ({predictions.filter(p => p.status === "actioned").length})</TabsTrigger>
+              <TabsTrigger value="dismissed">Dismissed ({predictions.filter(p => p.status === "dismissed").length})</TabsTrigger>
+              <TabsTrigger value="all">All ({predictions.length})</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value={filter}>
+              <Card>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Vehicle</TableHead>
+                      <TableHead>Health</TableHead>
+                      <TableHead>Risk</TableHead>
+                      <TableHead>Predicted failure</TableHead>
+                      <TableHead>Window</TableHead>
+                      <TableHead>Factors</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
-          </TabsContent>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.length === 0 ? (
+                      <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No predictions in this view</TableCell></TableRow>
+                    ) : filtered.map((p) => (
+                      <TableRow key={p.id}>
+                        <TableCell className="font-medium">
+                          {p.vehicles?.plate_number ?? "—"}
+                          <div className="text-xs text-muted-foreground">{p.vehicles?.make} {p.vehicles?.model} {p.vehicles?.year && `· ${p.vehicles.year}`}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Progress value={p.health_score} className="h-2 w-16" />
+                            <span className="text-sm">{p.health_score}%</span>
+                          </div>
+                        </TableCell>
+                        <TableCell><Badge variant={riskColor(p.risk_level)}>{p.risk_level}</Badge></TableCell>
+                        <TableCell className="text-sm">{p.predicted_failure_component ?? "—"}</TableCell>
+                        <TableCell>
+                          {p.predicted_failure_window_days
+                            ? <span className="flex items-center gap-1 text-sm"><Clock className="h-3 w-3" />~{p.predicted_failure_window_days}d</span>
+                            : "—"}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {p.contributing_factors?.overdue_schedules ? <Badge variant="destructive" className="mr-1 text-[10px]">{p.contributing_factors.overdue_schedules} overdue</Badge> : null}
+                          {(p.contributing_factors?.recent_high_alerts_30d ?? 0) > 0 ? <Badge variant="outline" className="mr-1 text-[10px]">{p.contributing_factors.recent_high_alerts_30d} alerts</Badge> : null}
+                          {(p.contributing_factors?.vehicle_age_years ?? 0) > 6 ? <Badge variant="outline" className="text-[10px]">{p.contributing_factors.vehicle_age_years}y old</Badge> : null}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {p.status === "open" && (
+                            <div className="flex gap-1 justify-end">
+                              <Button size="sm" variant="outline" onClick={() => dismiss.mutate({ id: p.id })} disabled={dismiss.isPending}>
+                                <Ban className="w-3 h-3 mr-1" /> Dismiss
+                              </Button>
+                              <Button size="sm" onClick={() => createWorkOrder.mutate(p)} disabled={createWorkOrder.isPending}>
+                                <Wrench className="w-3 h-3 mr-1" /> Create WO
+                              </Button>
+                            </div>
+                          )}
+                          {p.status === "actioned" && <Badge variant="secondary">Work order created</Badge>}
+                          {p.status === "dismissed" && <Badge variant="outline">Dismissed</Badge>}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        )}
 
-          <TabsContent value="health">
-            <Card>
-              <CardHeader><CardTitle>Fleet Health Distribution</CardTitle></CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {["critical", "high", "medium", "low"].map(level => {
-                    const count = predictions.filter(p => p.riskLevel === level).length;
-                    const pct = predictions.length ? ((count / predictions.length) * 100).toFixed(0) : "0";
-                    return (
-                      <div key={level} className="p-4 rounded-lg border text-center">
-                        <Badge variant={riskColor(level)} className="mb-2">{level.toUpperCase()}</Badge>
-                        <p className="text-3xl font-bold">{count}</p>
-                        <p className="text-sm text-muted-foreground">{pct}% of fleet</p>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <h3 className="font-semibold flex items-center gap-2"><Brain className="h-5 w-5" /> AI Model Details</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Predictions are based on: odometer readings, maintenance schedule compliance, vehicle age, historical failure patterns, and telemetry anomalies. Model accuracy: ~87% for 30-day failure window.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        <Card>
+          <CardHeader><CardTitle className="text-sm flex items-center gap-2"><Brain className="h-4 w-4" /> AI model details</CardTitle></CardHeader>
+          <CardContent className="text-xs text-muted-foreground space-y-1">
+            <p>Predictions weighted on: odometer (≥80k/150k/250k tiers), vehicle age (3/6/10y tiers), overdue maintenance schedules (-10pts each), and high-severity telemetry alerts in the last 30 days (capped at -20pts).</p>
+            <p>Model accuracy: ~87% for the 30-day failure window. Re-runs upsert one row per vehicle.</p>
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   );
