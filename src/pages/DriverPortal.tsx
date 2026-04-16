@@ -231,7 +231,7 @@ const DriverPortal = () => {
     <Layout>
       <div className="p-4 md:p-8 space-y-6 animate-fade-in">
         {/* Header */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <Shield className="h-8 w-8 text-primary" aria-hidden="true" />
           <div>
             <h1 className="text-3xl font-bold">Driver Portal</h1>
@@ -239,11 +239,16 @@ const DriverPortal = () => {
               {driver ? `Welcome, ${driver.first_name} ${driver.last_name}` : "Your assignments, requests & compliance hub"}
             </p>
           </div>
-          {driver?.status && (
-            <Badge variant="outline" className="capitalize ml-auto">
-              {driver.status}
-            </Badge>
-          )}
+          <div className="ml-auto flex items-center gap-2 flex-wrap">
+            {driver?.status && (
+              <Badge variant="outline" className="capitalize">
+                {driver.status}
+              </Badge>
+            )}
+            {isSuperAdmin && (
+              <SuperAdminDriverPicker viewingDriverName={driverName} />
+            )}
+          </div>
         </div>
 
         {!driver && (
@@ -251,8 +256,16 @@ const DriverPortal = () => {
             <CardContent className="p-6 flex items-center gap-3">
               <AlertTriangle className="w-6 h-6 text-warning" aria-hidden="true" />
               <div>
-                <p className="font-medium">No driver profile linked to your account</p>
-                <p className="text-sm text-muted-foreground">Contact Fleet Operations to link your driver record.</p>
+                <p className="font-medium">
+                  {isSuperAdmin
+                    ? (overrideDriverId ? "Driver not found" : "No driver profile linked to your account")
+                    : "No driver profile linked to your account"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {isSuperAdmin
+                    ? "Use the \"View as Driver\" picker above to inspect any driver's portal."
+                    : "Contact Fleet Operations to link your driver record."}
+                </p>
               </div>
             </CardContent>
           </Card>
