@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useDevices } from "@/hooks/useDevices";
 import { useDeviceCommands } from "@/hooks/useDeviceCommands";
+import { DeviceDetailDialog } from "@/components/devices/DeviceDetailDialog";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useDeviceProtocols } from "@/hooks/useDeviceProtocols";
 import { useDeviceFuelStatus } from "@/hooks/useDeviceFuelStatus";
@@ -93,6 +94,7 @@ export const DeviceManagementTab = () => {
   const [tokenDeviceId, setTokenDeviceId] = useState<string | null>(null);
   const [generatingToken, setGeneratingToken] = useState(false);
   const [sendingLocationCommand, setSendingLocationCommand] = useState<string | null>(null);
+  const [detailDevice, setDetailDevice] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     vehicle_id: "",
@@ -854,6 +856,31 @@ export const DeviceManagementTab = () => {
                 {selectedDevices.length} device(s) selected
               </span>
               <div className="flex items-center gap-2">
+                <Select
+                  onValueChange={async (newStatus) => {
+                    try {
+                      await Promise.all(
+                        selectedDevices.map(id =>
+                          supabase.from("devices").update({ status: newStatus }).eq("id", id)
+                        )
+                      );
+                      queryClient.invalidateQueries({ queryKey: ["devices"] });
+                      toast({ title: "Status Updated", description: `${selectedDevices.length} devices set to ${newStatus}` });
+                      setSelectedDevices([]);
+                    } catch {
+                      toast({ title: "Error", description: "Failed to update status", variant: "destructive" });
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-[160px] h-8 text-xs">
+                    <SelectValue placeholder="Change Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Set Active</SelectItem>
+                    <SelectItem value="inactive">Set Inactive</SelectItem>
+                    <SelectItem value="maintenance">Set Maintenance</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button
                   variant="destructive"
                   size="sm"
@@ -992,7 +1019,12 @@ export const DeviceManagementTab = () => {
                     )}
                   </TableCell>
                   <TableCell className="font-mono text-sm">
-                    {device.imei}
+                    <button
+                      className="hover:text-primary hover:underline cursor-pointer transition-colors text-left"
+                      onClick={() => setDetailDevice(device)}
+                    >
+                      {device.imei}
+                    </button>
                   </TableCell>
                   <TableCell>{device.tracker_model}</TableCell>
                   <TableCell>
@@ -1611,6 +1643,13 @@ export const DeviceManagementTab = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Device Detail Dialog */}
+      <DeviceDetailDialog
+        device={detailDevice}
+        open={!!detailDevice}
+        onOpenChange={(open) => { if (!open) setDetailDevice(null); }}
+      />
     </div>
   );
 };
