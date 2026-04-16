@@ -383,10 +383,20 @@ const TripManagement = () => {
         open={detailOpen}
         onOpenChange={setDetailOpen}
         onSubmit={(id) => submitRequest.mutate(id)}
+        onAssign={(trip) => {
+          setDetailOpen(false);
+          setSelectedTrip(trip);
+          setAssignOpen(true);
+        }}
+        onCancel={(id) => {
+          cancelRequest.mutate(id);
+          setDetailOpen(false);
+        }}
       />
 
       <ExportScheduleDialog open={exportOpen} onOpenChange={setExportOpen} />
       <CreateTripRequestDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <CreateAssignmentDialog open={assignOpen} onOpenChange={setAssignOpen} />
     </Layout>
   );
 };
