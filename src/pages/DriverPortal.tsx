@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/Layout";
+import SuperAdminDriverPicker from "@/components/driver-portal/SuperAdminDriverPicker";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +28,9 @@ import DriverSubmissionsTab from "@/components/driver-portal/DriverSubmissionsTa
 const DriverPortal = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { organizationId } = useOrganization();
+  const { organizationId, isSuperAdmin } = useOrganization();
+  const [searchParams] = useSearchParams();
+  const overrideDriverId = isSuperAdmin ? searchParams.get("driverId") : null;
   const [activeTab, setActiveTab] = useState("assignments");
 
   // Dialog states
@@ -37,21 +40,33 @@ const DriverPortal = () => {
   const [showInspection, setShowInspection] = useState(false);
 
   // Driver self info + assigned vehicle + auth user id
+  // Super admins can override via ?driverId= to view the portal as that driver.
   const { data: driverData, isLoading: driverLoading } = useQuery({
-    queryKey: ["driver-portal-self", organizationId],
+    queryKey: ["driver-portal-self", organizationId, overrideDriverId],
     queryFn: async () => {
       if (!organizationId) return null;
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) return null;
-
-      const { data: driver } = await supabase
-        .from("drivers")
-        .select("id, first_name, last_name, license_number, license_expiry, status, total_trips, total_distance_km, avatar_url, phone")
-        .eq("organization_id", organizationId)
-        .eq("user_id", userData.user.id)
-        .maybeSingle();
-
       const userId = userData.user.id;
+
+      let driver: any = null;
+      if (overrideDriverId) {
+        const { data } = await supabase
+          .from("drivers")
+          .select("id, first_name, last_name, license_number, license_expiry, status, total_trips, total_distance_km, avatar_url, phone")
+          .eq("id", overrideDriverId)
+          .maybeSingle();
+        driver = data;
+      } else {
+        const { data } = await supabase
+          .from("drivers")
+          .select("id, first_name, last_name, license_number, license_expiry, status, total_trips, total_distance_km, avatar_url, phone")
+          .eq("organization_id", organizationId)
+          .eq("user_id", userId)
+          .maybeSingle();
+        driver = data;
+      }
+
       if (!driver) return { driver: null, vehicle: null, userId };
 
       const { data: vehicle } = await supabase
@@ -216,7 +231,7 @@ const DriverPortal = () => {
     <Layout>
       <div className="p-4 md:p-8 space-y-6 animate-fade-in">
         {/* Header */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <Shield className="h-8 w-8 text-primary" aria-hidden="true" />
           <div>
             <h1 className="text-3xl font-bold">Driver Portal</h1>
@@ -224,11 +239,16 @@ const DriverPortal = () => {
               {driver ? `Welcome, ${driver.first_name} ${driver.last_name}` : "Your assignments, requests & compliance hub"}
             </p>
           </div>
-          {driver?.status && (
-            <Badge variant="outline" className="capitalize ml-auto">
-              {driver.status}
-            </Badge>
-          )}
+          <div className="ml-auto flex items-center gap-2 flex-wrap">
+            {driver?.status && (
+              <Badge variant="outline" className="capitalize">
+                {driver.status}
+              </Badge>
+            )}
+            {isSuperAdmin && (
+              <SuperAdminDriverPicker viewingDriverName={driverName} />
+            )}
+          </div>
         </div>
 
         {!driver && (
@@ -236,8 +256,16 @@ const DriverPortal = () => {
             <CardContent className="p-6 flex items-center gap-3">
               <AlertTriangle className="w-6 h-6 text-warning" aria-hidden="true" />
               <div>
-                <p className="font-medium">No driver profile linked to your account</p>
-                <p className="text-sm text-muted-foreground">Contact Fleet Operations to link your driver record.</p>
+                <p className="font-medium">
+                  {isSuperAdmin
+                    ? (overrideDriverId ? "Driver not found" : "No driver profile linked to your account")
+                    : "No driver profile linked to your account"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {isSuperAdmin
+                    ? "Use the \"View as Driver\" picker above to inspect any driver's portal."
+                    : "Contact Fleet Operations to link your driver record."}
+                </p>
               </div>
             </CardContent>
           </Card>
