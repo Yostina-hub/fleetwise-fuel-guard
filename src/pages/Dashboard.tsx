@@ -317,207 +317,231 @@ const Dashboard = () => {
 
           {/* Executive Tab */}
           <TabsContent value="executive" className="text-foreground space-y-6 mt-6">
-            {/* Violations, Misuse & Trips Row - With Independent Filters */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <FleetViolationsDonut />
-              <VehicleMisuseDonut />
-              <TotalTripsCard />
-            </div>
+            {/* Violations, Misuse & Trips Row */}
+            {(wv("fleet_violations") || wv("vehicle_misuse") || wv("total_trips")) && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {wv("fleet_violations") && <FleetViolationsDonut />}
+                {wv("vehicle_misuse") && <VehicleMisuseDonut />}
+                {wv("total_trips") && <TotalTripsCard />}
+              </div>
+            )}
 
-            {/* Quick Metrics Row - Real-time data */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <QuickMetricCard 
-                title="Total Distance" 
-                value={`${tripMetrics.totalDistanceKm.toFixed(1)} km`}
-                badge="Live"
-                badgeVariant="secondary"
-                icon={<Car className="w-5 h-5" />}
-              />
-              <QuickMetricCard 
-                title="Avg Distance/Vehicle" 
-                value={`${dbVehicles.length > 0 ? (tripMetrics.totalDistanceKm / dbVehicles.length).toFixed(1) : 0} km`}
-                badge="Live"
-                badgeVariant="secondary"
-                icon={<Gauge className="w-5 h-5" />}
-              />
-              <QuickMetricCard 
-                title="Active Trips" 
-                value={tripMetrics.inProgressTrips}
-                badge="Live"
-                badgeVariant="secondary"
-                icon={<Route className="w-5 h-5" />}
-              />
-              <ConnectionStatus isConnected={true} lastUpdate={new Date().toLocaleTimeString()} />
-            </div>
+            {/* Quick Metrics Row */}
+            {wv("quick_metrics") && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <QuickMetricCard 
+                  title="Total Distance" 
+                  value={`${tripMetrics.totalDistanceKm.toFixed(1)} km`}
+                  badge="Live"
+                  badgeVariant="secondary"
+                  icon={<Car className="w-5 h-5" />}
+                />
+                <QuickMetricCard 
+                  title="Avg Distance/Vehicle" 
+                  value={`${dbVehicles.length > 0 ? (tripMetrics.totalDistanceKm / dbVehicles.length).toFixed(1) : 0} km`}
+                  badge="Live"
+                  badgeVariant="secondary"
+                  icon={<Gauge className="w-5 h-5" />}
+                />
+                <QuickMetricCard 
+                  title="Active Trips" 
+                  value={tripMetrics.inProgressTrips}
+                  badge="Live"
+                  badgeVariant="secondary"
+                  icon={<Route className="w-5 h-5" />}
+                />
+                <ConnectionStatus isConnected={true} lastUpdate={new Date().toLocaleTimeString()} />
+              </div>
+            )}
 
             {/* Fleet Status, Distance Chart, Idle Time Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              <FleetStatusCard 
-                totalAssets={dbVehicles.length}
-                statuses={[
-                  { status: 'Active', count: dbVehicles.filter(v => v.status === 'active').length, percentage: dbVehicles.length > 0 ? (dbVehicles.filter(v => v.status === 'active').length / dbVehicles.length) * 100 : 0, color: 'hsl(var(--success))' },
-                  { status: 'Stop/Idle', count: dbVehicles.filter(v => v.status === 'maintenance').length, percentage: dbVehicles.length > 0 ? (dbVehicles.filter(v => v.status === 'maintenance').length / dbVehicles.length) * 100 : 0, color: 'hsl(var(--warning))' },
-                  { status: 'Inactive', count: dbVehicles.filter(v => v.status === 'inactive').length, percentage: dbVehicles.length > 0 ? (dbVehicles.filter(v => v.status === 'inactive').length / dbVehicles.length) * 100 : 0, color: 'hsl(var(--destructive))' },
-                ]}
-                loading={execLoading}
-              />
-              <DistanceByGroupChart 
-                data={useMemo(() => {
-                  // Generate hourly distance data from trips
-                  const hours = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'];
-                  const activeCount = dbVehicles.filter(v => v.status === 'active').length;
-                  const idleCount = dbVehicles.filter(v => v.status === 'maintenance').length;
-                  return hours.map((time, i) => ({
-                    time,
-                    'Active Fleet': Math.max(0, (tripMetrics.totalDistanceKm / 9) * (1 + Math.sin(i * 0.5)) * (activeCount / Math.max(dbVehicles.length, 1))),
-                    'Idle Fleet': Math.max(0, (tripMetrics.totalDistanceKm / 18) * Math.cos(i * 0.3) * (idleCount / Math.max(dbVehicles.length, 1))),
-                  }));
-                }, [tripMetrics, dbVehicles])}
-                groups={[
-                  { name: 'Active Fleet', color: 'hsl(var(--success))' },
-                  { name: 'Idle Fleet', color: 'hsl(var(--warning))' },
-                ]}
-                loading={execLoading}
-              />
-              <IdleTimeDonut 
-                totalIdleTime={`${Math.floor(dbVehicles.filter(v => v.status === 'maintenance').length * 0.35)}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}`}
-                idlePercentage={dbVehicles.length > 0 ? (dbVehicles.filter(v => v.status !== 'active').length / dbVehicles.length) * 100 : 0}
-                groups={[
-                  { 
-                    name: 'Maintenance', 
-                    total: `${dbVehicles.filter(v => v.status === 'maintenance').length}`, 
-                    idlePercent: dbVehicles.length > 0 ? (dbVehicles.filter(v => v.status === 'maintenance').length / dbVehicles.length) * 100 : 0, 
-                    color: 'hsl(var(--warning))' 
-                  },
-                  { 
-                    name: 'Inactive', 
-                    total: `${dbVehicles.filter(v => v.status === 'inactive').length}`, 
-                    idlePercent: dbVehicles.length > 0 ? (dbVehicles.filter(v => v.status === 'inactive').length / dbVehicles.length) * 100 : 0, 
-                    color: 'hsl(var(--destructive))' 
-                  },
-                ]}
-                loading={execLoading}
-              />
-            </div>
+            {(wv("fleet_status_card") || wv("distance_by_group") || wv("idle_time")) && (
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                {wv("fleet_status_card") && (
+                  <FleetStatusCard 
+                    totalAssets={dbVehicles.length}
+                    statuses={[
+                      { status: 'Active', count: dbVehicles.filter(v => v.status === 'active').length, percentage: dbVehicles.length > 0 ? (dbVehicles.filter(v => v.status === 'active').length / dbVehicles.length) * 100 : 0, color: 'hsl(var(--success))' },
+                      { status: 'Stop/Idle', count: dbVehicles.filter(v => v.status === 'maintenance').length, percentage: dbVehicles.length > 0 ? (dbVehicles.filter(v => v.status === 'maintenance').length / dbVehicles.length) * 100 : 0, color: 'hsl(var(--warning))' },
+                      { status: 'Inactive', count: dbVehicles.filter(v => v.status === 'inactive').length, percentage: dbVehicles.length > 0 ? (dbVehicles.filter(v => v.status === 'inactive').length / dbVehicles.length) * 100 : 0, color: 'hsl(var(--destructive))' },
+                    ]}
+                    loading={execLoading}
+                  />
+                )}
+                {wv("distance_by_group") && (
+                  <DistanceByGroupChart 
+                    data={useMemo(() => {
+                      const hours = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'];
+                      const activeCount = dbVehicles.filter(v => v.status === 'active').length;
+                      const idleCount = dbVehicles.filter(v => v.status === 'maintenance').length;
+                      return hours.map((time, i) => ({
+                        time,
+                        'Active Fleet': Math.max(0, (tripMetrics.totalDistanceKm / 9) * (1 + Math.sin(i * 0.5)) * (activeCount / Math.max(dbVehicles.length, 1))),
+                        'Idle Fleet': Math.max(0, (tripMetrics.totalDistanceKm / 18) * Math.cos(i * 0.3) * (idleCount / Math.max(dbVehicles.length, 1))),
+                      }));
+                    }, [tripMetrics, dbVehicles])}
+                    groups={[
+                      { name: 'Active Fleet', color: 'hsl(var(--success))' },
+                      { name: 'Idle Fleet', color: 'hsl(var(--warning))' },
+                    ]}
+                    loading={execLoading}
+                  />
+                )}
+                {wv("idle_time") && (
+                  <IdleTimeDonut 
+                    totalIdleTime={`${Math.floor(dbVehicles.filter(v => v.status === 'maintenance').length * 0.35)}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}`}
+                    idlePercentage={dbVehicles.length > 0 ? (dbVehicles.filter(v => v.status !== 'active').length / dbVehicles.length) * 100 : 0}
+                    groups={[
+                      { name: 'Maintenance', total: `${dbVehicles.filter(v => v.status === 'maintenance').length}`, idlePercent: dbVehicles.length > 0 ? (dbVehicles.filter(v => v.status === 'maintenance').length / dbVehicles.length) * 100 : 0, color: 'hsl(var(--warning))' },
+                      { name: 'Inactive', total: `${dbVehicles.filter(v => v.status === 'inactive').length}`, idlePercent: dbVehicles.length > 0 ? (dbVehicles.filter(v => v.status === 'inactive').length / dbVehicles.length) * 100 : 0, color: 'hsl(var(--destructive))' },
+                    ]}
+                    loading={execLoading}
+                  />
+                )}
+              </div>
+            )}
 
+            {(wv("fleet_usage") || wv("driver_safety") || wv("risk_safety")) && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {wv("fleet_usage") && (
+                  <FleetUsageChart
+                    data={useMemo(() => {
+                      const baseTrips = Math.max(1, Math.floor(tripMetrics.totalTrips / 30));
+                      return Array.from({ length: 30 }, (_, i) => ({
+                        date: `${i + 1}`,
+                        trips: Math.max(0, baseTrips + Math.floor(Math.sin(i * 0.3) * baseTrips * 0.5)),
+                      }));
+                    }, [tripMetrics.totalTrips])}
+                    dateRange="Live - This Month"
+                    loading={execLoading}
+                  />
+                )}
+                {wv("driver_safety") && (
+                  <DriverSafetyScorecard 
+                    categories={useMemo(() => {
+                      const highRisk = driverRankings.filter(d => d.safetyScore < 20).length;
+                      const medHighRisk = driverRankings.filter(d => d.safetyScore >= 20 && d.safetyScore < 40).length;
+                      const medRisk = driverRankings.filter(d => d.safetyScore >= 40 && d.safetyScore < 60).length;
+                      const lowRisk = driverRankings.filter(d => d.safetyScore >= 60 && d.safetyScore < 80).length;
+                      const noRisk = driverRankings.filter(d => d.safetyScore >= 80).length;
+                      return [
+                        { label: 'High Risk (0-20)', count: highRisk, color: 'hsl(var(--destructive))', range: 'Score 0-20' },
+                        { label: 'Med-High Risk (21-40)', count: medHighRisk, color: 'hsl(var(--warning))', range: 'Score 21-40' },
+                        { label: 'Medium Risk (41-60)', count: medRisk, color: 'hsl(var(--chart-3))', range: 'Score 41-60' },
+                        { label: 'Low Risk (61-80)', count: lowRisk, color: 'hsl(var(--chart-2))', range: 'Score 61-80' },
+                        { label: 'No Risk (81-100)', count: noRisk, color: 'hsl(var(--success))', range: 'Score 81-100' },
+                      ];
+                    }, [driverRankings])}
+                    loading={execLoading}
+                  />
+                )}
+                {wv("risk_safety") && (
+                  <RiskSafetyReportsChart 
+                    data={useMemo(() => {
+                      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+                      const baseAlerts = Math.max(1, dbAlerts.length);
+                      return months.map((month, i) => ({
+                        month,
+                        speeding: Math.floor(baseAlerts * (0.3 + Math.sin(i) * 0.1)),
+                        harshAcceleration: Math.floor(baseAlerts * (0.15 + Math.cos(i) * 0.05)),
+                        harshBraking: Math.floor(baseAlerts * (0.2 + Math.sin(i * 0.5) * 0.08)),
+                        excessiveIdle: Math.floor(baseAlerts * (0.1 + Math.cos(i * 0.3) * 0.03)),
+                        harshCornering: Math.floor(baseAlerts * (0.08 + Math.sin(i * 0.7) * 0.02)),
+                      }));
+                    }, [dbAlerts.length])}
+                    loading={execLoading}
+                  />
+                )}
+              </div>
+            )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <FleetUsageChart
-                data={useMemo(() => {
-                  // Generate last 30 days trip data from actual metrics
-                  const baseTrips = Math.max(1, Math.floor(tripMetrics.totalTrips / 30));
-                  return Array.from({ length: 30 }, (_, i) => ({
-                    date: `${i + 1}`,
-                    trips: Math.max(0, baseTrips + Math.floor(Math.sin(i * 0.3) * baseTrips * 0.5)),
-                  }));
-                }, [tripMetrics.totalTrips])}
-                dateRange="Live - This Month"
-                loading={execLoading}
-              />
-              <DriverSafetyScorecard 
-                categories={useMemo(() => {
-                  const total = Math.max(1, driverRankings.length);
-                  const highRisk = driverRankings.filter(d => d.safetyScore < 20).length;
-                  const medHighRisk = driverRankings.filter(d => d.safetyScore >= 20 && d.safetyScore < 40).length;
-                  const medRisk = driverRankings.filter(d => d.safetyScore >= 40 && d.safetyScore < 60).length;
-                  const lowRisk = driverRankings.filter(d => d.safetyScore >= 60 && d.safetyScore < 80).length;
-                  const noRisk = driverRankings.filter(d => d.safetyScore >= 80).length;
-                  return [
-                    { label: 'High Risk (0-20)', count: highRisk, color: 'hsl(var(--destructive))', range: 'Score 0-20' },
-                    { label: 'Med-High Risk (21-40)', count: medHighRisk, color: 'hsl(var(--warning))', range: 'Score 21-40' },
-                    { label: 'Medium Risk (41-60)', count: medRisk, color: 'hsl(var(--chart-3))', range: 'Score 41-60' },
-                    { label: 'Low Risk (61-80)', count: lowRisk, color: 'hsl(var(--chart-2))', range: 'Score 61-80' },
-                    { label: 'No Risk (81-100)', count: noRisk, color: 'hsl(var(--success))', range: 'Score 81-100' },
-                  ];
-                }, [driverRankings])}
-                loading={execLoading}
-              />
-              <RiskSafetyReportsChart 
-                data={useMemo(() => {
-                  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-                  const baseAlerts = Math.max(1, dbAlerts.length);
-                  return months.map((month, i) => ({
-                    month,
-                    speeding: Math.floor(baseAlerts * (0.3 + Math.sin(i) * 0.1)),
-                    harshAcceleration: Math.floor(baseAlerts * (0.15 + Math.cos(i) * 0.05)),
-                    harshBraking: Math.floor(baseAlerts * (0.2 + Math.sin(i * 0.5) * 0.08)),
-                    excessiveIdle: Math.floor(baseAlerts * (0.1 + Math.cos(i * 0.3) * 0.03)),
-                    harshCornering: Math.floor(baseAlerts * (0.08 + Math.sin(i * 0.7) * 0.02)),
-                  }));
-                }, [dbAlerts.length])}
-                loading={execLoading}
-              />
-            </div>
+            {/* Fleet Savings & Fuel */}
+            {(wv("fleet_savings") || wv("fuel_trend")) && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {wv("fleet_savings") && (
+                  <FleetSavingsChart 
+                    data={useMemo(() => {
+                      const baseSavings = financialMetrics.costSavings || 10000;
+                      return [
+                        { category: 'Total Estimated Savings', actual: Math.round(baseSavings), potential: Math.round(baseSavings * 1.5) },
+                        { category: 'Productivity Savings', actual: Math.round(baseSavings * 0.35), potential: Math.round(baseSavings * 0.5) },
+                        { category: 'Maintenance Savings', actual: Math.round(baseSavings * 0.25), potential: Math.round(baseSavings * 0.35) },
+                        { category: 'Fuel Savings', actual: Math.round(baseSavings * 0.3), potential: Math.round(baseSavings * 0.45) },
+                        { category: 'Safety Savings', actual: Math.round(baseSavings * 0.1), potential: Math.round(baseSavings * 0.2) },
+                      ];
+                    }, [financialMetrics.costSavings])}
+                    loading={execLoading}
+                  />
+                )}
+                {wv("fuel_trend") && (
+                  <FuelTrendChart 
+                    data={financialMetrics.monthlyTrend.slice(-3).map(m => ({
+                      month: m.month,
+                      consumption: Math.round(m.costs / 50),
+                      cost: m.costs,
+                    }))}
+                    trend={financialMetrics.monthlyTrend.length > 1 
+                      ? (financialMetrics.monthlyTrend[financialMetrics.monthlyTrend.length - 1].costs < 
+                         financialMetrics.monthlyTrend[financialMetrics.monthlyTrend.length - 2].costs ? 'down' : 'up')
+                      : 'stable'}
+                    trendPercentage={Math.abs(((financialMetrics.monthlyTrend[financialMetrics.monthlyTrend.length - 1]?.costs || 0) - 
+                      (financialMetrics.monthlyTrend[financialMetrics.monthlyTrend.length - 2]?.costs || 1)) / 
+                      Math.max(1, financialMetrics.monthlyTrend[financialMetrics.monthlyTrend.length - 2]?.costs || 1) * 100)}
+                    loading={execLoading}
+                  />
+                )}
+              </div>
+            )}
 
-            {/* Fleet Savings & Fuel - Real data from financial metrics */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <FleetSavingsChart 
-                data={useMemo(() => {
-                  const baseSavings = financialMetrics.costSavings || 10000;
-                  return [
-                    { category: 'Total Estimated Savings', actual: Math.round(baseSavings), potential: Math.round(baseSavings * 1.5) },
-                    { category: 'Productivity Savings', actual: Math.round(baseSavings * 0.35), potential: Math.round(baseSavings * 0.5) },
-                    { category: 'Maintenance Savings', actual: Math.round(baseSavings * 0.25), potential: Math.round(baseSavings * 0.35) },
-                    { category: 'Fuel Savings', actual: Math.round(baseSavings * 0.3), potential: Math.round(baseSavings * 0.45) },
-                    { category: 'Safety Savings', actual: Math.round(baseSavings * 0.1), potential: Math.round(baseSavings * 0.2) },
-                  ];
-                }, [financialMetrics.costSavings])}
-                loading={execLoading}
-              />
-              <FuelTrendChart 
-                data={financialMetrics.monthlyTrend.slice(-3).map(m => ({
-                  month: m.month,
-                  consumption: Math.round(m.costs / 50),
-                  cost: m.costs,
-                }))}
-                trend={financialMetrics.monthlyTrend.length > 1 
-                  ? (financialMetrics.monthlyTrend[financialMetrics.monthlyTrend.length - 1].costs < 
-                     financialMetrics.monthlyTrend[financialMetrics.monthlyTrend.length - 2].costs ? 'down' : 'up')
-                  : 'stable'}
-                trendPercentage={Math.abs(((financialMetrics.monthlyTrend[financialMetrics.monthlyTrend.length - 1]?.costs || 0) - 
-                  (financialMetrics.monthlyTrend[financialMetrics.monthlyTrend.length - 2]?.costs || 1)) / 
-                  Math.max(1, financialMetrics.monthlyTrend[financialMetrics.monthlyTrend.length - 2]?.costs || 1) * 100)}
-                loading={execLoading}
-              />
-            </div>
-
-            {/* Stops Analysis - Real data */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <StopsAnalysisChart 
-                data={useMemo(() => {
-                  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-                  const baseStops = Math.max(5, Math.floor(tripMetrics.totalTrips / 7));
-                  return days.map((day, i) => ({
-                    day,
-                    shortStops: Math.floor(baseStops * (0.5 + Math.sin(i) * 0.2)),
-                    mediumStops: Math.floor(baseStops * (0.3 + Math.cos(i) * 0.1)),
-                    longStops: Math.floor(baseStops * (0.1 + Math.sin(i * 0.5) * 0.05)),
-                  }));
-                }, [tripMetrics.totalTrips])}
-                loading={execLoading}
-              />
-              <RadarPerformanceChart 
-                data={{ vehicles: dbVehicles, drivers: driverRankings, trips: [], alerts: dbAlerts }}
-                loading={execLoading}
-              />
-            </div>
+            {/* Stops Analysis */}
+            {(wv("stops_analysis") || wv("radar_performance")) && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {wv("stops_analysis") && (
+                  <StopsAnalysisChart 
+                    data={useMemo(() => {
+                      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                      const baseStops = Math.max(5, Math.floor(tripMetrics.totalTrips / 7));
+                      return days.map((day, i) => ({
+                        day,
+                        shortStops: Math.floor(baseStops * (0.5 + Math.sin(i) * 0.2)),
+                        mediumStops: Math.floor(baseStops * (0.3 + Math.cos(i) * 0.1)),
+                        longStops: Math.floor(baseStops * (0.1 + Math.sin(i * 0.5) * 0.05)),
+                      }));
+                    }, [tripMetrics.totalTrips])}
+                    loading={execLoading}
+                  />
+                )}
+                {wv("radar_performance") && (
+                  <RadarPerformanceChart 
+                    data={{ vehicles: dbVehicles, drivers: driverRankings, trips: [], alerts: dbAlerts }}
+                    loading={execLoading}
+                  />
+                )}
+              </div>
+            )}
 
             {/* Financial & Compliance Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <FinancialTrendCard metrics={financialMetrics} loading={execLoading} />
-              <ComplianceGauges items={complianceItems} loading={execLoading} />
-              <LiveActivityTimeline 
-                activities={recentActivities} 
-                geofenceActivities={geofenceActivities}
-                loading={execLoading} 
-              />
-            </div>
+            {(wv("financial_trend") || wv("compliance_gauges") || wv("live_activity")) && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {wv("financial_trend") && <FinancialTrendCard metrics={financialMetrics} loading={execLoading} />}
+                {wv("compliance_gauges") && <ComplianceGauges items={complianceItems} loading={execLoading} />}
+                {wv("live_activity") && (
+                  <LiveActivityTimeline 
+                    activities={recentActivities} 
+                    geofenceActivities={geofenceActivities}
+                    loading={execLoading} 
+                  />
+                )}
+              </div>
+            )}
 
             {/* Driver Performance */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <DriverPerformanceCard rankings={driverRankings} loading={execLoading} />
-              <ExecutiveKPIGrid kpis={kpis} loading={execLoading} />
-            </div>
+            {(wv("driver_performance") || wv("executive_kpis")) && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {wv("driver_performance") && <DriverPerformanceCard rankings={driverRankings} loading={execLoading} />}
+                {wv("executive_kpis") && <ExecutiveKPIGrid kpis={kpis} loading={execLoading} />}
+              </div>
+            )}
           </TabsContent>
 
           {/* Overview Tab */}
