@@ -85,6 +85,12 @@ interface FuelRequestFormData {
   email: string;
   notify_user: boolean;
   contact_preference: string;
+  // Generator-specific descriptive fields
+  technician_name: string;
+  technician_employee_id: string;
+  security_name: string;
+  route: string;
+  running_hours: string;
 }
 
 const initialForm: FuelRequestFormData = {
