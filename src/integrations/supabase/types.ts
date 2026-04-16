@@ -16292,6 +16292,436 @@ export type Database = {
           },
         ]
       }
+      tpl_invoices: {
+        Row: {
+          created_at: string
+          currency: string | null
+          document_url: string | null
+          due_date: string | null
+          id: string
+          invoice_number: string
+          issue_date: string
+          line_items: Json | null
+          notes: string | null
+          organization_id: string
+          partner_id: string
+          payment_date: string | null
+          payment_reference: string | null
+          status: string
+          subtotal: number | null
+          tax_amount: number | null
+          total_amount: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string | null
+          document_url?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_number: string
+          issue_date?: string
+          line_items?: Json | null
+          notes?: string | null
+          organization_id: string
+          partner_id: string
+          payment_date?: string | null
+          payment_reference?: string | null
+          status?: string
+          subtotal?: number | null
+          tax_amount?: number | null
+          total_amount?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string | null
+          document_url?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          issue_date?: string
+          line_items?: Json | null
+          notes?: string | null
+          organization_id?: string
+          partner_id?: string
+          payment_date?: string | null
+          payment_reference?: string | null
+          status?: string
+          subtotal?: number | null
+          tax_amount?: number | null
+          total_amount?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tpl_invoices_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tpl_invoices_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "tpl_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tpl_partners: {
+        Row: {
+          address: string | null
+          code: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          contract_end: string | null
+          contract_start: string | null
+          contract_value: number | null
+          coverage_areas: string[] | null
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          organization_id: string
+          payment_terms: string | null
+          rating: number | null
+          service_types: string[] | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          code?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          contract_end?: string | null
+          contract_start?: string | null
+          contract_value?: number | null
+          coverage_areas?: string[] | null
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          organization_id: string
+          payment_terms?: string | null
+          rating?: number | null
+          service_types?: string[] | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          code?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          contract_end?: string | null
+          contract_start?: string | null
+          contract_value?: number | null
+          coverage_areas?: string[] | null
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          organization_id?: string
+          payment_terms?: string | null
+          rating?: number | null
+          service_types?: string[] | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tpl_partners_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tpl_performance_metrics: {
+        Row: {
+          avg_transit_hours: number | null
+          cost_per_shipment: number | null
+          created_at: string
+          customer_complaints: number | null
+          damage_rate: number | null
+          damaged_shipments: number | null
+          id: string
+          late_deliveries: number | null
+          lost_shipments: number | null
+          notes: string | null
+          on_time_deliveries: number | null
+          on_time_percentage: number | null
+          organization_id: string
+          overall_score: number | null
+          partner_id: string
+          period_end: string
+          period_start: string
+          total_cost: number | null
+          total_shipments: number | null
+          updated_at: string
+        }
+        Insert: {
+          avg_transit_hours?: number | null
+          cost_per_shipment?: number | null
+          created_at?: string
+          customer_complaints?: number | null
+          damage_rate?: number | null
+          damaged_shipments?: number | null
+          id?: string
+          late_deliveries?: number | null
+          lost_shipments?: number | null
+          notes?: string | null
+          on_time_deliveries?: number | null
+          on_time_percentage?: number | null
+          organization_id: string
+          overall_score?: number | null
+          partner_id: string
+          period_end: string
+          period_start: string
+          total_cost?: number | null
+          total_shipments?: number | null
+          updated_at?: string
+        }
+        Update: {
+          avg_transit_hours?: number | null
+          cost_per_shipment?: number | null
+          created_at?: string
+          customer_complaints?: number | null
+          damage_rate?: number | null
+          damaged_shipments?: number | null
+          id?: string
+          late_deliveries?: number | null
+          lost_shipments?: number | null
+          notes?: string | null
+          on_time_deliveries?: number | null
+          on_time_percentage?: number | null
+          organization_id?: string
+          overall_score?: number | null
+          partner_id?: string
+          period_end?: string
+          period_start?: string
+          total_cost?: number | null
+          total_shipments?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tpl_performance_metrics_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tpl_performance_metrics_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "tpl_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tpl_rate_cards: {
+        Row: {
+          created_at: string
+          currency: string | null
+          destination_zone: string | null
+          effective_from: string | null
+          effective_until: string | null
+          flat_rate: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          organization_id: string
+          origin_zone: string | null
+          partner_id: string
+          rate_per_kg: number | null
+          service_type: string | null
+          updated_at: string
+          weight_max_kg: number | null
+          weight_min_kg: number | null
+        }
+        Insert: {
+          created_at?: string
+          currency?: string | null
+          destination_zone?: string | null
+          effective_from?: string | null
+          effective_until?: string | null
+          flat_rate?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          organization_id: string
+          origin_zone?: string | null
+          partner_id: string
+          rate_per_kg?: number | null
+          service_type?: string | null
+          updated_at?: string
+          weight_max_kg?: number | null
+          weight_min_kg?: number | null
+        }
+        Update: {
+          created_at?: string
+          currency?: string | null
+          destination_zone?: string | null
+          effective_from?: string | null
+          effective_until?: string | null
+          flat_rate?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          organization_id?: string
+          origin_zone?: string | null
+          partner_id?: string
+          rate_per_kg?: number | null
+          service_type?: string | null
+          updated_at?: string
+          weight_max_kg?: number | null
+          weight_min_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tpl_rate_cards_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tpl_rate_cards_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "tpl_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tpl_shipments: {
+        Row: {
+          actual_cost: number | null
+          cargo_description: string | null
+          created_at: string
+          created_by: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          delivery_actual_at: string | null
+          delivery_scheduled_at: string | null
+          destination_address: string | null
+          dispatch_job_id: string | null
+          estimated_cost: number | null
+          id: string
+          notes: string | null
+          organization_id: string
+          origin_address: string | null
+          partner_id: string
+          partner_reference: string | null
+          partner_tracking_number: string | null
+          pickup_actual_at: string | null
+          pickup_scheduled_at: string | null
+          proof_of_delivery_url: string | null
+          rate_card_id: string | null
+          shipment_number: string
+          special_instructions: string | null
+          status: string
+          updated_at: string
+          weight_kg: number | null
+        }
+        Insert: {
+          actual_cost?: number | null
+          cargo_description?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          delivery_actual_at?: string | null
+          delivery_scheduled_at?: string | null
+          destination_address?: string | null
+          dispatch_job_id?: string | null
+          estimated_cost?: number | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          origin_address?: string | null
+          partner_id: string
+          partner_reference?: string | null
+          partner_tracking_number?: string | null
+          pickup_actual_at?: string | null
+          pickup_scheduled_at?: string | null
+          proof_of_delivery_url?: string | null
+          rate_card_id?: string | null
+          shipment_number: string
+          special_instructions?: string | null
+          status?: string
+          updated_at?: string
+          weight_kg?: number | null
+        }
+        Update: {
+          actual_cost?: number | null
+          cargo_description?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          delivery_actual_at?: string | null
+          delivery_scheduled_at?: string | null
+          destination_address?: string | null
+          dispatch_job_id?: string | null
+          estimated_cost?: number | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          origin_address?: string | null
+          partner_id?: string
+          partner_reference?: string | null
+          partner_tracking_number?: string | null
+          pickup_actual_at?: string | null
+          pickup_scheduled_at?: string | null
+          proof_of_delivery_url?: string | null
+          rate_card_id?: string | null
+          shipment_number?: string
+          special_instructions?: string | null
+          status?: string
+          updated_at?: string
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tpl_shipments_dispatch_job_id_fkey"
+            columns: ["dispatch_job_id"]
+            isOneToOne: false
+            referencedRelation: "dispatch_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tpl_shipments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tpl_shipments_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "tpl_partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tpl_shipments_rate_card_id_fkey"
+            columns: ["rate_card_id"]
+            isOneToOne: false
+            referencedRelation: "tpl_rate_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tpms_readings: {
         Row: {
           alarm_type: string | null

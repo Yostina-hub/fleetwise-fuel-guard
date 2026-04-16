@@ -208,6 +208,9 @@ const getNavItems = (t: (key: string) => string) => [
     { label: t("nav.contracts"), path: "/contract-management" },
   ]},
 
+  // ── 3PL / Outsource ──
+  { icon: Package, label: "3PL Management", path: "/3pl" },
+
   // ── Tools & Automation ──
   { icon: Workflow, label: t("nav.workflowBuilder"), path: "/workflow-builder", highlight: true },
   { icon: GitBranch, label: t("nav.delegationMatrix"), path: "/delegation-matrix" },
