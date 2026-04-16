@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Loader2, AlertCircle, Wrench, MapPin, Calendar } from "lucide-react";
+import { Loader2, AlertCircle, Wrench, Calendar } from "lucide-react";
 import { format } from "date-fns";
+import { WorkOrderMessageThread } from "@/components/maintenance-enterprise/WorkOrderMessageThread";
+import { SupplierPaymentRequestForm } from "@/components/maintenance-enterprise/SupplierPaymentRequestForm";
 
 export default function SupplierWorkOrderView() {
   const { token } = useParams<{ token: string }>();
@@ -88,15 +88,22 @@ export default function SupplierWorkOrderView() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader><CardTitle>Update Status</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">Once you've completed the work, contact the fleet team to confirm completion. A magic link does not allow direct status changes — for full editing, request a supplier portal account.</p>
-            <div className="text-xs bg-muted/40 p-3 rounded">
-              <strong>POR:</strong> {wo.por_number || "Pending"} · <strong>POR Status:</strong> {wo.por_status || "—"}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="text-xs bg-muted/40 p-3 rounded">
+          <strong>POR:</strong> {wo.por_number || "Pending"} · <strong>POR Status:</strong> {wo.por_status || "—"}
+        </div>
+
+        <WorkOrderMessageThread
+          workOrderId={wo.id}
+          organizationId={wo.organization_id}
+          portalToken={token}
+          senderType="supplier"
+        />
+
+        <SupplierPaymentRequestForm
+          workOrderId={wo.id}
+          organizationId={wo.organization_id}
+          portalToken={token}
+        />
 
         <p className="text-xs text-center text-muted-foreground">Powered by Lovable Cloud Fleet Management</p>
       </div>
