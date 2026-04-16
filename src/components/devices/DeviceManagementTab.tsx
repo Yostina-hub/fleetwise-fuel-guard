@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useDevices } from "@/hooks/useDevices";
+import { useDeviceCommands } from "@/hooks/useDeviceCommands";
 import { DeviceDetailDialog } from "@/components/devices/DeviceDetailDialog";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useDeviceProtocols } from "@/hooks/useDeviceProtocols";
