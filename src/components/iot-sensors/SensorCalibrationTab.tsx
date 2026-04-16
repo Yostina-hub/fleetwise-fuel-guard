@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Loader2, Wrench } from "lucide-react";
+import { Plus, Loader2, Wrench, Edit2, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -17,10 +17,13 @@ interface Props {
   organizationId: string;
 }
 
+const emptyForm = { vehicle_id: "", sensor_type: "tpms", sensor_id: "", calibrated_by: "", notes: "", status: "active" };
+
 const SensorCalibrationTab = ({ organizationId }: Props) => {
   const queryClient = useQueryClient();
   const [showDialog, setShowDialog] = useState(false);
-  const [form, setForm] = useState({ vehicle_id: "", sensor_type: "tpms", sensor_id: "", calibrated_by: "", notes: "" });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState(emptyForm);
 
   const { data: calibrations = [], isLoading } = useQuery({
     queryKey: ["sensor-calibrations", organizationId],
@@ -45,32 +48,68 @@ const SensorCalibrationTab = ({ organizationId }: Props) => {
     enabled: !!organizationId,
   });
 
-  const addMutation = useMutation({
+  const saveMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("sensor_calibrations").insert({
+      const payload = {
         organization_id: organizationId,
         vehicle_id: form.vehicle_id,
         sensor_type: form.sensor_type,
         sensor_id: form.sensor_id || null,
         calibrated_by: form.calibrated_by || null,
         notes: form.notes || null,
-        status: "active",
-      });
-      if (error) throw error;
+        status: form.status,
+      };
+      if (editingId) {
+        const { error } = await supabase.from("sensor_calibrations").update(payload).eq("id", editingId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("sensor_calibrations").insert(payload);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sensor-calibrations"] });
-      setShowDialog(false);
-      setForm({ vehicle_id: "", sensor_type: "tpms", sensor_id: "", calibrated_by: "", notes: "" });
-      toast.success("Calibration recorded");
+      closeDialog();
+      toast.success(editingId ? "Calibration updated" : "Calibration recorded");
     },
     onError: (e: any) => toast.error(e.message),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("sensor_calibrations").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sensor-calibrations"] });
+      toast.success("Calibration deleted");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const closeDialog = () => {
+    setShowDialog(false);
+    setEditingId(null);
+    setForm(emptyForm);
+  };
+
+  const openEdit = (c: any) => {
+    setEditingId(c.id);
+    setForm({
+      vehicle_id: c.vehicle_id || "",
+      sensor_type: c.sensor_type || "tpms",
+      sensor_id: c.sensor_id || "",
+      calibrated_by: c.calibrated_by || "",
+      notes: c.notes || "",
+      status: c.status || "active",
+    });
+    setShowDialog(true);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Button onClick={() => setShowDialog(true)}><Plus className="h-4 w-4 mr-2" /> Add Calibration</Button>
+        <Button onClick={() => { setEditingId(null); setForm(emptyForm); setShowDialog(true); }}><Plus className="h-4 w-4 mr-2" /> Add Calibration</Button>
       </div>
       <Card>
         <Table>
@@ -83,13 +122,14 @@ const SensorCalibrationTab = ({ organizationId }: Props) => {
               <TableHead>Calibrated By</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Notes</TableHead>
+              <TableHead className="w-[80px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-8"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center py-8"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></TableCell></TableRow>
             ) : calibrations.length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No calibration records. Add one to start tracking.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No calibration records. Add one to start tracking.</TableCell></TableRow>
             ) : calibrations.map((c: any) => (
               <TableRow key={c.id}>
                 <TableCell className="font-medium">{c.vehicles?.plate_number || "—"}</TableCell>
@@ -99,15 +139,21 @@ const SensorCalibrationTab = ({ organizationId }: Props) => {
                 <TableCell>{c.calibrated_by || "—"}</TableCell>
                 <TableCell><Badge variant={c.status === "active" ? "default" : "secondary"}>{c.status}</Badge></TableCell>
                 <TableCell className="text-sm truncate max-w-[200px]">{c.notes || "—"}</TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(c)}><Edit2 className="h-3.5 w-3.5" /></Button>
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => { if (confirm("Delete this calibration?")) deleteMutation.mutate(c.id); }}><Trash2 className="h-3.5 w-3.5" /></Button>
+                  </div>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </Card>
 
-      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+      <Dialog open={showDialog} onOpenChange={v => { if (!v) closeDialog(); }}>
         <DialogContent>
-          <DialogHeader><DialogTitle className="flex items-center gap-2"><Wrench className="h-5 w-5" /> Add Sensor Calibration</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Wrench className="h-5 w-5" /> {editingId ? "Edit Calibration" : "Add Sensor Calibration"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>
               <Label>Vehicle</Label>
@@ -131,12 +177,25 @@ const SensorCalibrationTab = ({ organizationId }: Props) => {
             </div>
             <div><Label>Sensor ID</Label><Input value={form.sensor_id} onChange={e => setForm(p => ({ ...p, sensor_id: e.target.value }))} placeholder="e.g. TPMS-FL-001" /></div>
             <div><Label>Calibrated By</Label><Input value={form.calibrated_by} onChange={e => setForm(p => ({ ...p, calibrated_by: e.target.value }))} placeholder="Technician name" /></div>
+            {editingId && (
+              <div>
+                <Label>Status</Label>
+                <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="expired">Expired</SelectItem>
+                    <SelectItem value="voided">Voided</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div><Label>Notes</Label><Input value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} placeholder="Calibration notes..." /></div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-            <Button onClick={() => addMutation.mutate()} disabled={!form.vehicle_id || addMutation.isPending}>
-              {addMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Save
+            <Button variant="outline" onClick={closeDialog}>Cancel</Button>
+            <Button onClick={() => saveMutation.mutate()} disabled={!form.vehicle_id || saveMutation.isPending}>
+              {saveMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} {editingId ? "Update" : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>
