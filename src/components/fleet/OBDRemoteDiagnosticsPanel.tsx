@@ -137,7 +137,7 @@ const OBDRemoteDiagnosticsPanel = () => {
   });
 
   const latestReadingsRaw = obdData[0]?.readings;
-  const latestReading: OBDReading = typeof latestReadingsRaw === "object" && latestReadingsRaw !== null ? latestReadingsRaw : {};
+  const latestReading: OBDReading = (typeof latestReadingsRaw === "object" && latestReadingsRaw !== null && !Array.isArray(latestReadingsRaw) ? latestReadingsRaw : {}) as OBDReading;
   const dtcCodes: string[] = Array.isArray(latestReading.dtc_codes) ? latestReading.dtc_codes : [];
 
   return (
