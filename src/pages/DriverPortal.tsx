@@ -28,7 +28,9 @@ import DriverSubmissionsTab from "@/components/driver-portal/DriverSubmissionsTa
 const DriverPortal = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { organizationId } = useOrganization();
+  const { organizationId, isSuperAdmin } = useOrganization();
+  const [searchParams] = useSearchParams();
+  const overrideDriverId = isSuperAdmin ? searchParams.get("driverId") : null;
   const [activeTab, setActiveTab] = useState("assignments");
 
   // Dialog states
@@ -38,21 +40,33 @@ const DriverPortal = () => {
   const [showInspection, setShowInspection] = useState(false);
 
   // Driver self info + assigned vehicle + auth user id
+  // Super admins can override via ?driverId= to view the portal as that driver.
   const { data: driverData, isLoading: driverLoading } = useQuery({
-    queryKey: ["driver-portal-self", organizationId],
+    queryKey: ["driver-portal-self", organizationId, overrideDriverId],
     queryFn: async () => {
       if (!organizationId) return null;
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) return null;
-
-      const { data: driver } = await supabase
-        .from("drivers")
-        .select("id, first_name, last_name, license_number, license_expiry, status, total_trips, total_distance_km, avatar_url, phone")
-        .eq("organization_id", organizationId)
-        .eq("user_id", userData.user.id)
-        .maybeSingle();
-
       const userId = userData.user.id;
+
+      let driver: any = null;
+      if (overrideDriverId) {
+        const { data } = await supabase
+          .from("drivers")
+          .select("id, first_name, last_name, license_number, license_expiry, status, total_trips, total_distance_km, avatar_url, phone")
+          .eq("id", overrideDriverId)
+          .maybeSingle();
+        driver = data;
+      } else {
+        const { data } = await supabase
+          .from("drivers")
+          .select("id, first_name, last_name, license_number, license_expiry, status, total_trips, total_distance_km, avatar_url, phone")
+          .eq("organization_id", organizationId)
+          .eq("user_id", userId)
+          .maybeSingle();
+        driver = data;
+      }
+
       if (!driver) return { driver: null, vehicle: null, userId };
 
       const { data: vehicle } = await supabase
