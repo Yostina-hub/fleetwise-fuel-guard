@@ -339,7 +339,7 @@ const Auth = () => {
   ];
 
   return (
-    <div className="min-h-screen relative overflow-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+    <div className="h-screen relative overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
       {/* Theme-based backgrounds */}
       {theme === 'cyber' ? (
         <>
