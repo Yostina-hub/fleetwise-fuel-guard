@@ -156,25 +156,32 @@ export const useUnifiedPeople = () => {
 
       // 1) System users (profiles) — always have a login
       profiles.forEach((p) => {
-        const driver = driverByUser.get(p.id) ?? null;
-        const employee = employeeByUser.get(p.id) ?? null;
+        // Prefer linked records, fall back to user_id reverse lookup
+        const driver = (p.linked_driver_id ? drivers.find((d) => d.id === p.linked_driver_id) : null) ?? driverByUser.get(p.id) ?? null;
+        const employee = (p.linked_employee_id ? employees.find((e) => e.id === p.linked_employee_id) : null) ?? employeeByUser.get(p.id) ?? null;
+        const composedName =
+          [p.first_name, p.middle_name, p.last_name].filter(Boolean).join(" ").trim() ||
+          p.full_name ||
+          (employee ? `${employee.first_name} ${employee.last_name}` : "") ||
+          (driver ? `${driver.first_name} ${driver.last_name}` : "") ||
+          "Unnamed User";
         merged.push({
           key: `user:${p.id}`,
           recordId: p.id,
           source: "user",
           userId: p.id,
-          driverId: driver?.id ?? null,
-          employeeId: employee?.id ?? null,
-          fullName: p.full_name || (employee ? `${employee.first_name} ${employee.last_name}` : "") || (driver ? `${driver.first_name} ${driver.last_name}` : "") || "Unnamed User",
+          driverId: driver?.id ?? p.linked_driver_id ?? null,
+          employeeId: employee?.id ?? p.linked_employee_id ?? null,
+          fullName: composedName,
           email: p.email,
           phone: p.phone || employee?.phone || driver?.phone || null,
           avatarUrl: p.avatar_url || employee?.avatar_url || driver?.avatar_url || null,
           organizationId: p.organization_id,
           createdAt: p.created_at,
           roles: rolesByUser.get(p.id) ?? [],
-          employeeType: employee?.employee_type ?? (driver ? "driver" : null),
-          jobTitle: employee?.job_title ?? employee?.department ?? (driver ? "Driver" : null),
-          hrStatus: employee?.status ?? driver?.status ?? null,
+          employeeType: p.employee_type ?? employee?.employee_type ?? (driver ? "driver" : null),
+          jobTitle: p.job_title ?? employee?.job_title ?? p.department ?? employee?.department ?? (driver ? "Driver" : null),
+          hrStatus: p.status ?? employee?.status ?? driver?.status ?? null,
           hasLogin: true,
         });
       });
