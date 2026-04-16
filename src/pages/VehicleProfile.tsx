@@ -86,7 +86,7 @@ const VehicleProfile = () => {
   const { organizationId } = useOrganization();
   const [search, setSearch] = useState("");
   const [filterOwnership, setFilterOwnership] = useState("all");
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("status");
 
   // Fetch all vehicles for the selector
   const { data: vehicles = [], isLoading: loadingList } = useQuery({
