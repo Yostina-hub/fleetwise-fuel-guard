@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Sparkles,
   Wand2,
@@ -15,16 +14,19 @@ import {
   Wrench,
   Brain,
   Loader2,
-  ArrowRight,
-  Zap,
-  BarChart3,
+  Send,
+  X,
+  Bot,
+  User,
   Shield,
+  ChevronDown,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import ReactMarkdown from "react-markdown";
 import type { WorkflowNode, WorkflowEdge } from "./types";
 
-interface WorkflowAICommandBarProps {
+interface WorkflowAIChatPanelProps {
   open: boolean;
   onClose: () => void;
   nodes: WorkflowNode[];
@@ -41,64 +43,34 @@ export interface AIWorkflowResult {
   suggestions?: Array<{ title: string; description: string; prompt: string }>;
 }
 
-const QUICK_ACTIONS = [
-  {
-    id: "generate",
-    label: "Generate Workflow",
-    description: "Create a complete workflow from description",
-    icon: Wand2,
-    color: "text-primary",
-    placeholder: "Describe the workflow you want to create...",
-  },
-  {
-    id: "add_nodes",
-    label: "Add Nodes",
-    description: "Add new nodes to current workflow",
-    icon: Plus,
-    color: "text-emerald-500",
-    placeholder: "What nodes do you want to add?",
-  },
-  {
-    id: "modify",
-    label: "Modify Workflow",
-    description: "Edit existing nodes or connections",
-    icon: Edit3,
-    color: "text-amber-500",
-    placeholder: "How should I modify the workflow?",
-  },
-  {
-    id: "delete",
-    label: "Remove Nodes",
-    description: "Remove specific nodes by description",
-    icon: Trash2,
-    color: "text-destructive",
-    placeholder: "Which nodes should I remove?",
-  },
-  {
-    id: "auto_maintenance",
-    label: "Auto Maintenance Workflow",
-    description: "AI-powered predictive maintenance pipeline",
-    icon: Wrench,
-    color: "text-orange-500",
-    placeholder: "Describe your maintenance requirements...",
-  },
-  {
-    id: "smart_decision",
-    label: "Smart Decision Workflow",
-    description: "AI-driven decision-making automation",
-    icon: Brain,
-    color: "text-violet-500",
-    placeholder: "What decisions should be automated?",
-  },
-  {
-    id: "suggest",
-    label: "Get Suggestions",
-    description: "AI recommends workflow improvements",
-    icon: Lightbulb,
-    color: "text-yellow-500",
-    placeholder: "What area needs improvement?",
-  },
+interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+  result?: AIWorkflowResult | null;
+  isLoading?: boolean;
+}
+
+const QUICK_PROMPTS = [
+  { icon: "🔧", text: "Create a predictive maintenance workflow" },
+  { icon: "⛽", text: "Alert when fuel drops below 10%" },
+  { icon: "🚨", text: "Speed violation escalation chain" },
+  { icon: "📊", text: "Daily fleet health report via email" },
+  { icon: "🧠", text: "Auto-assign nearest driver to trips" },
+  { icon: "🔍", text: "Detect suspicious fuel patterns" },
 ];
+
+function detectAction(prompt: string, hasExistingNodes: boolean): string {
+  const lower = prompt.toLowerCase();
+  if (lower.includes("delete") || lower.includes("remove")) return "delete";
+  if (lower.includes("modify") || lower.includes("change") || lower.includes("update") || lower.includes("edit")) return "modify";
+  if (lower.includes("add") || lower.includes("insert")) return hasExistingNodes ? "add_nodes" : "generate";
+  if (lower.includes("suggest") || lower.includes("recommend") || lower.includes("improve")) return "suggest";
+  if (lower.includes("maintenance") || lower.includes("predictive")) return "auto_maintenance";
+  if (lower.includes("decision") || lower.includes("smart") || lower.includes("auto-assign")) return "smart_decision";
+  return hasExistingNodes ? "add_nodes" : "generate";
+}
 
 export const WorkflowAICommandBar = ({
   open,
@@ -106,49 +78,66 @@ export const WorkflowAICommandBar = ({
   nodes,
   edges,
   onApplyResult,
-}: WorkflowAICommandBarProps) => {
+}: WorkflowAIChatPanelProps) => {
   const { toast } = useToast();
-  const [selectedAction, setSelectedAction] = useState<string | null>(null);
-  const [prompt, setPrompt] = useState("");
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<AIWorkflowResult | null>(null);
-  const [suggestions, setSuggestions] = useState<Array<{ title: string; description: string; prompt: string }>>([]);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Auto-scroll to bottom
   useEffect(() => {
-    if (open) {
-      setSelectedAction(null);
-      setPrompt("");
-      setResult(null);
-      setSuggestions([]);
-      setTimeout(() => inputRef.current?.focus(), 100);
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  // Focus on open
+  useEffect(() => {
+    if (open) setTimeout(() => textareaRef.current?.focus(), 150);
+  }, [open]);
+
+  // Welcome message
+  useEffect(() => {
+    if (open && messages.length === 0) {
+      setMessages([{
+        id: "welcome",
+        role: "assistant",
+        content: "Hey! I'm your **AI Workflow Assistant**. Tell me what you want to automate and I'll build the workflow for you.\n\nYou can ask me to:\n- 🔨 **Generate** complete workflows from descriptions\n- ➕ **Add** nodes to your current workflow\n- ✏️ **Modify** existing nodes or connections\n- 🗑️ **Delete** specific nodes\n- 🔧 Create **predictive maintenance** pipelines\n- 🧠 Build **smart decision** automations\n- 💡 **Suggest** improvements",
+        timestamp: new Date(),
+      }]);
     }
   }, [open]);
 
-  // Keyboard shortcut
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        if (!open) {
-          // Parent handles opening
-        }
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [open]);
+  const sendMessage = useCallback(async (text: string) => {
+    if (!text.trim() || loading) return;
 
-  const executeAction = useCallback(async (action: string, userPrompt: string) => {
-    if (!userPrompt.trim()) return;
+    const userMsg: ChatMessage = {
+      id: `user_${Date.now()}`,
+      role: "user",
+      content: text,
+      timestamp: new Date(),
+    };
+
+    const loadingMsg: ChatMessage = {
+      id: `loading_${Date.now()}`,
+      role: "assistant",
+      content: "",
+      timestamp: new Date(),
+      isLoading: true,
+    };
+
+    setMessages((prev) => [...prev, userMsg, loadingMsg]);
+    setInput("");
     setLoading(true);
-    setResult(null);
-    setSuggestions([]);
+
+    const action = detectAction(text, nodes.length > 0);
 
     try {
       const { data, error } = await supabase.functions.invoke("ai-workflow", {
         body: {
-          prompt: userPrompt,
+          prompt: text,
           action,
           currentNodes: nodes,
           currentEdges: edges,
@@ -157,255 +146,237 @@ export const WorkflowAICommandBar = ({
 
       if (error) throw new Error(error.message);
       if (data?.error) {
-        if (data.error.includes("Rate limit")) {
-          toast({ title: "Rate Limited", description: "Please try again in a moment.", variant: "destructive" });
-        } else if (data.error.includes("credits")) {
-          toast({ title: "Credits Exhausted", description: "Please add credits to continue.", variant: "destructive" });
-        } else {
-          toast({ title: "Error", description: data.error, variant: "destructive" });
-        }
+        const errorContent = data.error.includes("Rate limit")
+          ? "⏳ Rate limited — please try again in a moment."
+          : data.error.includes("credits")
+          ? "💳 AI credits exhausted. Please add credits to continue."
+          : `❌ ${data.error}`;
+
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === loadingMsg.id
+              ? { ...m, content: errorContent, isLoading: false }
+              : m
+          )
+        );
         return;
       }
 
       const aiResult = data?.result;
       if (!aiResult) throw new Error("No result from AI");
 
+      let responseContent = "";
+      let result: AIWorkflowResult | null = null;
+
       if (aiResult.suggestions) {
-        setSuggestions(aiResult.suggestions);
+        responseContent = "Here are my suggestions:\n\n" +
+          aiResult.suggestions.map((s: any, i: number) => `**${i + 1}. ${s.title}**\n${s.description}`).join("\n\n");
+        result = { action, suggestions: aiResult.suggestions };
       } else {
-        setResult({ action, ...aiResult });
+        const nodeCount = aiResult.nodes?.length || 0;
+        const edgeCount = aiResult.edges?.length || 0;
+        const deleteCount = aiResult.nodesToDelete?.length || 0;
+
+        if (action === "delete") {
+          responseContent = `I've prepared **${deleteCount} node(s)** for removal. Click **Apply** to remove them from your canvas.`;
+        } else if (action === "modify") {
+          responseContent = `I've updated the workflow with **${nodeCount} node(s)** and **${edgeCount} connection(s)**. Click **Apply** to update your canvas.`;
+        } else if (action === "add_nodes") {
+          responseContent = `I've created **${nodeCount} new node(s)** with **${edgeCount} connection(s)** to add to your workflow. Click **Apply** to add them.`;
+        } else {
+          responseContent = `I've generated a workflow with **${nodeCount} node(s)** and **${edgeCount} connection(s)**. Here's what I built:\n\n` +
+            (aiResult.nodes || []).map((n: any) => `- ${n.data?.icon || "•"} **${n.data?.label}** — ${n.data?.description || n.data?.nodeType}`).join("\n") +
+            "\n\nClick **Apply** to load it onto your canvas.";
+        }
+        result = { action, ...aiResult };
       }
+
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === loadingMsg.id
+            ? { ...m, content: responseContent, isLoading: false, result }
+            : m
+        )
+      );
     } catch (err) {
-      toast({
-        title: "AI Error",
-        description: err instanceof Error ? err.message : "Failed to process request",
-        variant: "destructive",
-      });
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === loadingMsg.id
+            ? { ...m, content: `❌ ${err instanceof Error ? err.message : "Something went wrong"}`, isLoading: false }
+            : m
+        )
+      );
     } finally {
       setLoading(false);
     }
-  }, [nodes, edges, toast]);
+  }, [nodes, edges, loading]);
 
-  const handleSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedAction || !prompt.trim()) return;
-    executeAction(selectedAction, prompt);
-  }, [selectedAction, prompt, executeAction]);
-
-  const handleApply = useCallback(() => {
-    if (!result) return;
+  const handleApply = useCallback((result: AIWorkflowResult) => {
     onApplyResult(result);
-    toast({ title: "Applied!", description: "AI changes applied to workflow" });
-    onClose();
-  }, [result, onApplyResult, onClose, toast]);
+    toast({ title: "Applied!", description: "AI changes applied to workflow canvas" });
 
-  const handleSuggestionClick = useCallback((suggestion: { prompt: string }) => {
-    setPrompt(suggestion.prompt);
-    setSelectedAction("generate");
-    executeAction("generate", suggestion.prompt);
-  }, [executeAction]);
+    setMessages((prev) => [...prev, {
+      id: `system_${Date.now()}`,
+      role: "assistant",
+      content: "✅ Changes applied successfully! What else would you like to do?",
+      timestamp: new Date(),
+    }]);
+  }, [onApplyResult, toast]);
 
-  const activeAction = QUICK_ACTIONS.find((a) => a.id === selectedAction);
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(input);
+    }
+  }, [input, sendMessage]);
+
+  if (!open) return null;
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-[640px] p-0 gap-0 bg-card/95 backdrop-blur-xl border-primary/20 overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50">
-          <Sparkles className="h-5 w-5 text-primary" />
-          <span className="text-sm font-semibold text-foreground">AI Workflow Assistant</span>
-          <Badge variant="secondary" className="text-[10px] ml-auto">
-            ⌘K
-          </Badge>
+    <motion.div
+      initial={{ width: 0, opacity: 0 }}
+      animate={{ width: 380, opacity: 1 }}
+      exit={{ width: 0, opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="flex flex-col h-full border-l border-border bg-card overflow-hidden"
+    >
+      {/* Header */}
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-card/80 backdrop-blur-sm flex-shrink-0">
+        <div className="flex items-center gap-2 flex-1">
+          <div className="h-7 w-7 rounded-lg bg-violet-500/15 flex items-center justify-center">
+            <Sparkles className="h-4 w-4 text-violet-400" />
+          </div>
+          <div>
+            <span className="text-sm font-semibold text-foreground">AI Assistant</span>
+            <Badge variant="secondary" className="text-[9px] ml-2 py-0">⌘K</Badge>
+          </div>
         </div>
+        <Button size="sm" variant="ghost" onClick={onClose} className="h-7 w-7 p-0">
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
 
-        {/* Action selector or prompt */}
-        {!selectedAction ? (
-          <ScrollArea className="max-h-[400px]">
-            <div className="p-2 space-y-1">
-              {QUICK_ACTIONS.map((action) => (
-                <button
-                  key={action.id}
-                  onClick={() => {
-                    setSelectedAction(action.id);
-                    setTimeout(() => inputRef.current?.focus(), 50);
-                  }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-colors text-left group"
-                >
-                  <action.icon className={`h-5 w-5 ${action.color} flex-shrink-0`} />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-foreground">{action.label}</div>
-                    <div className="text-xs text-muted-foreground">{action.description}</div>
-                  </div>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                </button>
-              ))}
-            </div>
-          </ScrollArea>
-        ) : (
-          <div className="p-4 space-y-4">
-            {/* Back to actions */}
-            <button
-              onClick={() => {
-                setSelectedAction(null);
-                setResult(null);
-                setSuggestions([]);
-                setPrompt("");
-              }}
-              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
-            >
-              ← Back to actions
-            </button>
-
-            {/* Active action header */}
-            <div className="flex items-center gap-2">
-              {activeAction && <activeAction.icon className={`h-5 w-5 ${activeAction.color}`} />}
-              <span className="text-sm font-semibold">{activeAction?.label}</span>
-            </div>
-
-            {/* Input */}
-            <form onSubmit={handleSubmit} className="flex gap-2">
-              <Input
-                ref={inputRef}
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder={activeAction?.placeholder}
-                className="flex-1 text-sm"
-                disabled={loading}
-              />
-              <Button type="submit" size="sm" disabled={loading || !prompt.trim()}>
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
-              </Button>
-            </form>
-
-            {/* Loading */}
-            {loading && (
+      {/* Messages */}
+      <ScrollArea className="flex-1 p-3" ref={scrollRef as any}>
+        <div className="space-y-4">
+          <AnimatePresence initial={false}>
+            {messages.map((msg) => (
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex items-center gap-2 text-sm text-muted-foreground"
-              >
-                <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                AI is building your workflow...
-              </motion.div>
-            )}
-
-            {/* Result preview */}
-            {result && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
+                key={msg.id}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="space-y-3"
+                transition={{ duration: 0.2 }}
+                className={`flex gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
               >
-                <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Shield className="h-4 w-4 text-emerald-500" />
-                    <span className="text-sm font-medium text-emerald-400">AI Result Ready</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground space-y-1">
-                    {result.nodes && <p>• {result.nodes.length} node(s) to add</p>}
-                    {result.edges && <p>• {result.edges.length} connection(s)</p>}
-                    {result.nodesToDelete && <p>• {result.nodesToDelete.length} node(s) to remove</p>}
-                  </div>
+                {/* Avatar */}
+                <div className={`h-7 w-7 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  msg.role === "user" ? "bg-primary/15" : "bg-violet-500/15"
+                }`}>
+                  {msg.role === "user" ? (
+                    <User className="h-3.5 w-3.5 text-primary" />
+                  ) : (
+                    <Bot className="h-3.5 w-3.5 text-violet-400" />
+                  )}
                 </div>
 
-                {/* Node preview */}
-                {result.nodes && result.nodes.length > 0 && (
-                  <div className="space-y-1">
-                    <span className="text-xs font-medium text-muted-foreground">Nodes:</span>
-                    <div className="flex flex-wrap gap-1">
-                      {result.nodes.map((n: any, i: number) => (
-                        <Badge key={i} variant="outline" className="text-[10px]">
-                          {n.data?.icon} {n.data?.label}
-                        </Badge>
+                {/* Bubble */}
+                <div className={`max-w-[85%] space-y-2 ${msg.role === "user" ? "items-end" : ""}`}>
+                  <div className={`rounded-xl px-3 py-2 text-sm ${
+                    msg.role === "user"
+                      ? "bg-primary/10 text-foreground ml-auto"
+                      : "bg-muted/50 text-foreground"
+                  }`}>
+                    {msg.isLoading ? (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <span className="text-xs">Building workflow...</span>
+                      </div>
+                    ) : (
+                      <div className="prose prose-sm prose-invert max-w-none [&_p]:mb-1 [&_p]:mt-0 [&_ul]:my-1 [&_li]:my-0 text-[13px] leading-relaxed">
+                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Apply button for results */}
+                  {msg.result && !msg.result.suggestions && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                      <Button
+                        size="sm"
+                        onClick={() => handleApply(msg.result!)}
+                        className="h-7 gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700"
+                      >
+                        <Shield className="h-3 w-3" />
+                        Apply to Canvas
+                      </Button>
+                    </motion.div>
+                  )}
+
+                  {/* Suggestion chips */}
+                  {msg.result?.suggestions && (
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {msg.result.suggestions.map((s, i) => (
+                        <button
+                          key={i}
+                          onClick={() => sendMessage(s.prompt)}
+                          className="text-[11px] px-2.5 py-1 rounded-full bg-violet-500/10 hover:bg-violet-500/20 text-violet-300 transition-colors"
+                        >
+                          {s.title}
+                        </button>
                       ))}
                     </div>
-                  </div>
-                )}
-
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={handleApply} className="flex-1 gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Apply to Canvas
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => setResult(null)}>
-                    Discard
-                  </Button>
+                  )}
                 </div>
               </motion.div>
-            )}
+            ))}
+          </AnimatePresence>
+        </div>
+      </ScrollArea>
 
-            {/* Suggestions */}
-            {suggestions.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="space-y-2"
+      {/* Quick prompts (only shown when no user messages yet) */}
+      {messages.length <= 1 && (
+        <div className="px-3 pb-2">
+          <div className="flex flex-wrap gap-1.5">
+            {QUICK_PROMPTS.map((qp, i) => (
+              <button
+                key={i}
+                onClick={() => sendMessage(qp.text)}
+                className="text-[11px] px-2.5 py-1.5 rounded-lg bg-muted/40 hover:bg-muted/70 text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
               >
-                <span className="text-xs font-medium text-muted-foreground">Suggestions:</span>
-                {suggestions.map((s, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleSuggestionClick(s)}
-                    className="w-full text-left p-3 rounded-lg bg-accent/30 hover:bg-accent/50 transition-colors"
-                  >
-                    <div className="text-sm font-medium">{s.title}</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">{s.description}</div>
-                  </button>
-                ))}
-              </motion.div>
-            )}
-
-            {/* Quick prompts */}
-            {!result && !loading && suggestions.length === 0 && (
-              <div className="space-y-2">
-                <span className="text-xs text-muted-foreground">Quick prompts:</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {selectedAction === "auto_maintenance" && (
-                    <>
-                      <QuickPrompt text="Predictive oil change based on mileage" onClick={setPrompt} />
-                      <QuickPrompt text="Tire wear monitoring with auto scheduling" onClick={setPrompt} />
-                      <QuickPrompt text="Engine health check every 5000km" onClick={setPrompt} />
-                    </>
-                  )}
-                  {selectedAction === "smart_decision" && (
-                    <>
-                      <QuickPrompt text="Auto-assign nearest driver to trip request" onClick={setPrompt} />
-                      <QuickPrompt text="Route vehicles away from high-traffic zones" onClick={setPrompt} />
-                      <QuickPrompt text="Flag suspicious fuel consumption patterns" onClick={setPrompt} />
-                    </>
-                  )}
-                  {selectedAction === "generate" && (
-                    <>
-                      <QuickPrompt text="Alert when vehicle enters restricted zone" onClick={setPrompt} />
-                      <QuickPrompt text="Daily fleet health report via email" onClick={setPrompt} />
-                      <QuickPrompt text="Speed violation escalation chain" onClick={setPrompt} />
-                    </>
-                  )}
-                  {selectedAction === "suggest" && (
-                    <>
-                      <QuickPrompt text="How can I optimize fuel usage?" onClick={setPrompt} />
-                      <QuickPrompt text="Suggest safety improvements" onClick={setPrompt} />
-                      <QuickPrompt text="What automations am I missing?" onClick={setPrompt} />
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
+                <span>{qp.icon}</span>
+                <span>{qp.text}</span>
+              </button>
+            ))}
           </div>
-        )}
-      </DialogContent>
-    </Dialog>
+        </div>
+      )}
+
+      {/* Input */}
+      <div className="p-3 border-t border-border bg-card/80 flex-shrink-0">
+        <div className="flex gap-2 items-end">
+          <Textarea
+            ref={textareaRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Describe what you want to automate..."
+            className="min-h-[40px] max-h-[120px] text-sm resize-none flex-1"
+            rows={1}
+            disabled={loading}
+          />
+          <Button
+            size="sm"
+            onClick={() => sendMessage(input)}
+            disabled={loading || !input.trim()}
+            className="h-10 w-10 p-0 flex-shrink-0"
+          >
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          </Button>
+        </div>
+        <div className="text-[10px] text-muted-foreground mt-1.5 text-center">
+          Press Enter to send · Shift+Enter for new line
+        </div>
+      </div>
+    </motion.div>
   );
 };
-
-function QuickPrompt({ text, onClick }: { text: string; onClick: (t: string) => void }) {
-  return (
-    <button
-      onClick={() => onClick(text)}
-      className="text-[11px] px-2.5 py-1 rounded-full bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-    >
-      {text}
-    </button>
-  );
-}
