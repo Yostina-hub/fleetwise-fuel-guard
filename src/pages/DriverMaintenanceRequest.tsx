@@ -20,6 +20,8 @@ import MaintenanceWorkflowProgress from "@/components/maintenance-enterprise/Mai
 import MaintenanceWorkflowTimeline from "@/components/maintenance-enterprise/MaintenanceWorkflowTimeline";
 import DriverWorkflowActions from "@/components/maintenance-enterprise/DriverWorkflowActions";
 import DuePreventiveSchedules from "@/components/maintenance-enterprise/DuePreventiveSchedules";
+import CreateWorkRequestForm from "@/components/maintenance-enterprise/CreateWorkRequestForm";
+import { useQueryClient } from "@tanstack/react-query";
 
 const statusColors: Record<string, string> = {
   submitted: "bg-blue-500/20 text-blue-400",
