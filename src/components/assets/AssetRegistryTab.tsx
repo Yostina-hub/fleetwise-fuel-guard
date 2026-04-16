@@ -263,8 +263,11 @@ export default function AssetRegistryTab() {
             {STAGES.map(s => <SelectItem key={s} value={s} className="capitalize">{s.replace("_", " ")}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Button variant="outline" onClick={() => setShowImport(true)} className="gap-1.5 h-9">
-          <Download className="w-4 h-4" />Import Vehicles ({unlinkededVehicles.length})
+        <Button variant="outline" onClick={() => { setImportType("vehicles"); setShowImport(true); }} className="gap-1.5 h-9">
+          <Truck className="w-4 h-4" />Import Vehicles ({unlinkededVehicles.length})
+        </Button>
+        <Button variant="outline" onClick={() => { setImportType("devices"); setShowImport(true); }} className="gap-1.5 h-9">
+          <Radio className="w-4 h-4" />Import Devices ({unlinkedDevices.length})
         </Button>
         <Button onClick={() => setShowAdd(true)} className="gap-1.5 h-9"><Plus className="w-4 h-4" />Add Asset</Button>
       </div>
