@@ -915,6 +915,15 @@ export const FuelRequestWorkflow = () => {
                                     <Fuel className="w-4 h-4" />
                                   </Button>
                                 )}
+                                {r.fuel_work_order_id && (
+                                  <TooltipProvider>
+                                    <Tooltip><TooltipTrigger asChild>
+                                      <Button variant="ghost" size="sm" className="text-primary" onClick={() => setShowWoDialog({ id: r.fuel_work_order_id, frId: r.id })}>
+                                        <FileText className="w-4 h-4" />
+                                      </Button>
+                                    </TooltipTrigger><TooltipContent>Edit Work Order</TooltipContent></Tooltip>
+                                  </TooltipProvider>
+                                )}
                               </div>
                             </TableCell>
                           </TableRow>
