@@ -22,8 +22,23 @@ import PostMaintenanceTab from "@/components/maintenance-enterprise/PostMaintena
 
 const MaintenanceEnterprise = () => {
   const { organizationId, loading: orgLoading } = useOrganization();
+  const { hasAnyRole, isSuperAdmin, loading: permsLoading } = usePermissions();
   const [activeTab, setActiveTab] = useState("requests");
   const tabsRef = useRef<HTMLDivElement>(null);
+
+  // Roles allowed to see the full enterprise suite (tickets, contracts, POs, suppliers, etc.)
+  const canManageEnterprise =
+    isSuperAdmin ||
+    hasAnyRole([
+      "org_admin",
+      "fleet_owner",
+      "operations_manager",
+      "fleet_manager",
+      "maintenance_lead",
+      "technician",
+      "mechanic",
+      "auditor",
+    ]);
 
   if (orgLoading) {
     return (
