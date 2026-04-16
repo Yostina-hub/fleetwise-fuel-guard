@@ -113,6 +113,8 @@ const Auth = () => {
       // If pre-check fails, proceed with login attempt
     }
 
+    // Set flag to prevent auto-redirect while we check 2FA
+    checking2FARef.current = true;
     const { error } = await signIn(email, password);
 
     if (error) {
