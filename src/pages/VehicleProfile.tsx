@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
 import Layout from "@/components/Layout";
 import VehicleStatusTab from "@/components/fleet/VehicleStatusTab";
+import { lazy } from "react";
+const Vehicle3DViewer = lazy(() => import("@/components/fleet/Vehicle3DViewer"));
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
