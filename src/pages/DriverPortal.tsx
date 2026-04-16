@@ -79,7 +79,7 @@ const DriverPortal = () => {
       if (!driverId) return { active: [], upcoming: [], recent: [] };
 
       const [{ data: active }, { data: upcoming }, { data: recent }] = await Promise.all([
-        supabase.from("dispatch_jobs").select("id, job_number, status, priority, pickup_location_name, dropoff_location_name, scheduled_pickup_at, actual_pickup_at, actual_dropoff_at")
+        (supabase as any).from("dispatch_jobs").select("id, job_number, status, priority, pickup_location_name, dropoff_location_name, scheduled_pickup_at, actual_pickup_at, actual_dropoff_at, odometer_start, odometer_end, distance_traveled_km")
           .eq("driver_id", driverId).in("status", ["assigned", "dispatched", "in_progress"])
           .order("scheduled_pickup_at", { ascending: true }).limit(10),
         supabase.from("dispatch_jobs").select("id, job_number, scheduled_pickup_at, pickup_location_name, dropoff_location_name, status, priority")
