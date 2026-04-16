@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useTPLShipments, useTPLPartners } from "@/hooks/use3PL";
+import { useTPLShipments, useTPLPartners, useTPLRateCards } from "@/hooks/use3PL";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,11 +21,13 @@ const emptyForm = {
   partner_id: "", origin_address: "", destination_address: "",
   weight_kg: "", cargo_description: "", customer_name: "", customer_phone: "",
   pickup_scheduled_at: "", delivery_scheduled_at: "", special_instructions: "", notes: "", status: "pending",
+  estimated_cost: "", actual_cost: "", partner_tracking_number: "", partner_reference: "", rate_card_id: "",
 };
 
 export function TPLShipmentsTab() {
   const { shipments, isLoading, createShipment, updateShipment, deleteShipment } = useTPLShipments();
   const { partners } = useTPLPartners();
+  const { rateCards } = useTPLRateCards();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showDialog, setShowDialog] = useState(false);
@@ -49,6 +51,9 @@ export function TPLShipmentsTab() {
       pickup_scheduled_at: s.pickup_scheduled_at?.slice(0, 16) || "",
       delivery_scheduled_at: s.delivery_scheduled_at?.slice(0, 16) || "",
       special_instructions: s.special_instructions || "", notes: s.notes || "", status: s.status,
+      estimated_cost: s.estimated_cost?.toString() || "", actual_cost: s.actual_cost?.toString() || "",
+      partner_tracking_number: s.partner_tracking_number || "", partner_reference: s.partner_reference || "",
+      rate_card_id: s.rate_card_id || "",
     });
     setEditId(s.id);
     setShowDialog(true);
@@ -59,8 +64,13 @@ export function TPLShipmentsTab() {
     const payload = {
       ...form,
       weight_kg: form.weight_kg ? parseFloat(form.weight_kg) : null,
+      estimated_cost: form.estimated_cost ? parseFloat(form.estimated_cost) : null,
+      actual_cost: form.actual_cost ? parseFloat(form.actual_cost) : null,
       pickup_scheduled_at: form.pickup_scheduled_at || null,
       delivery_scheduled_at: form.delivery_scheduled_at || null,
+      partner_tracking_number: form.partner_tracking_number || null,
+      partner_reference: form.partner_reference || null,
+      rate_card_id: form.rate_card_id || null,
     };
     if (editId) {
       updateShipment.mutate({ id: editId, ...payload }, { onSuccess: () => setShowDialog(false) });
@@ -185,6 +195,30 @@ export function TPLShipmentsTab() {
               <div><Label>Pickup Scheduled</Label><Input type="datetime-local" value={form.pickup_scheduled_at} onChange={e => setForm({...form, pickup_scheduled_at: e.target.value})} /></div>
               <div><Label>Delivery Scheduled</Label><Input type="datetime-local" value={form.delivery_scheduled_at} onChange={e => setForm({...form, delivery_scheduled_at: e.target.value})} /></div>
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div><Label>Estimated Cost (ETB)</Label><Input type="number" value={form.estimated_cost} onChange={e => setForm({...form, estimated_cost: e.target.value})} /></div>
+              <div><Label>Actual Cost (ETB)</Label><Input type="number" value={form.actual_cost} onChange={e => setForm({...form, actual_cost: e.target.value})} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div><Label>Partner Tracking #</Label><Input value={form.partner_tracking_number} onChange={e => setForm({...form, partner_tracking_number: e.target.value})} placeholder="External tracking" /></div>
+              <div><Label>Partner Reference</Label><Input value={form.partner_reference} onChange={e => setForm({...form, partner_reference: e.target.value})} /></div>
+            </div>
+            {rateCards.filter(rc => rc.partner_id === form.partner_id).length > 0 && (
+              <div><Label>Rate Card</Label>
+                <Select value={form.rate_card_id} onValueChange={v => {
+                  const rc = rateCards.find(r => r.id === v);
+                  const est = rc?.flat_rate ? rc.flat_rate.toString() : form.estimated_cost;
+                  setForm({...form, rate_card_id: v, estimated_cost: est});
+                }}>
+                  <SelectTrigger><SelectValue placeholder="Select rate card" /></SelectTrigger>
+                  <SelectContent>
+                    {rateCards.filter(rc => rc.partner_id === form.partner_id && rc.is_active).map(rc => (
+                      <SelectItem key={rc.id} value={rc.id}>{rc.name} {rc.flat_rate ? `(${rc.flat_rate} ETB)` : rc.rate_per_kg ? `(${rc.rate_per_kg}/kg)` : ""}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div><Label>Special Instructions</Label><Textarea value={form.special_instructions} onChange={e => setForm({...form, special_instructions: e.target.value})} rows={2} /></div>
           </div>
           <DialogFooter>
