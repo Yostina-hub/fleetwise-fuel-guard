@@ -244,14 +244,56 @@ const AssignRouteDialog = ({ vehicleId, vehiclePlate, trigger }: AssignRouteDial
                 <MapPin className="h-3.5 w-3.5 text-success" />
                 Pickup Location
               </Label>
-              <Input
-                id="pickup_location_name"
-                value={formData.pickup_location_name}
-                onChange={(e) =>
-                  setFormData({ ...formData, pickup_location_name: e.target.value })
-                }
-                placeholder="Enter pickup address"
-              />
+              {geofences && geofences.length > 0 ? (
+                <div className="space-y-2">
+                  <Select
+                    value={geofences.find(g => g.name === formData.pickup_location_name) ? formData.pickup_location_name : "__custom__"}
+                    onValueChange={(value) => {
+                      if (value !== "__custom__") {
+                        setFormData({ ...formData, pickup_location_name: value });
+                      } else {
+                        setFormData({ ...formData, pickup_location_name: "" });
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a saved location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {geofences.map((g) => (
+                        <SelectItem key={g.id} value={g.name}>
+                          <span className="flex items-center gap-2">
+                            <MapPin className="h-3 w-3 text-success" />
+                            {g.name}
+                          </span>
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="__custom__">
+                        <span className="text-muted-foreground">✏️ Type custom address</span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {!geofences.find(g => g.name === formData.pickup_location_name) && (
+                    <Input
+                      id="pickup_location_name"
+                      value={formData.pickup_location_name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, pickup_location_name: e.target.value })
+                      }
+                      placeholder="Enter custom pickup address"
+                    />
+                  )}
+                </div>
+              ) : (
+                <Input
+                  id="pickup_location_name"
+                  value={formData.pickup_location_name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, pickup_location_name: e.target.value })
+                  }
+                  placeholder="Enter pickup address"
+                />
+              )}
             </div>
 
             {/* Dropoff Location */}
@@ -260,14 +302,56 @@ const AssignRouteDialog = ({ vehicleId, vehiclePlate, trigger }: AssignRouteDial
                 <MapPin className="h-3.5 w-3.5 text-destructive" />
                 Dropoff Location
               </Label>
-              <Input
-                id="dropoff_location_name"
-                value={formData.dropoff_location_name}
-                onChange={(e) =>
-                  setFormData({ ...formData, dropoff_location_name: e.target.value })
-                }
-                placeholder="Enter dropoff address"
-              />
+              {geofences && geofences.length > 0 ? (
+                <div className="space-y-2">
+                  <Select
+                    value={geofences.find(g => g.name === formData.dropoff_location_name) ? formData.dropoff_location_name : "__custom__"}
+                    onValueChange={(value) => {
+                      if (value !== "__custom__") {
+                        setFormData({ ...formData, dropoff_location_name: value });
+                      } else {
+                        setFormData({ ...formData, dropoff_location_name: "" });
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a saved location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {geofences.map((g) => (
+                        <SelectItem key={g.id} value={g.name}>
+                          <span className="flex items-center gap-2">
+                            <MapPin className="h-3 w-3 text-destructive" />
+                            {g.name}
+                          </span>
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="__custom__">
+                        <span className="text-muted-foreground">✏️ Type custom address</span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {!geofences.find(g => g.name === formData.dropoff_location_name) && (
+                    <Input
+                      id="dropoff_location_name"
+                      value={formData.dropoff_location_name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, dropoff_location_name: e.target.value })
+                      }
+                      placeholder="Enter custom dropoff address"
+                    />
+                  )}
+                </div>
+              ) : (
+                <Input
+                  id="dropoff_location_name"
+                  value={formData.dropoff_location_name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, dropoff_location_name: e.target.value })
+                  }
+                  placeholder="Enter dropoff address"
+                />
+              )}
             </div>
 
             {/* Scheduled Time */}
