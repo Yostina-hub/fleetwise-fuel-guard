@@ -271,11 +271,18 @@ export const VehicleTableView = ({
                       <WifiOff className="w-3 h-3 text-muted-foreground" />
                     )}
                   </div>
-                  {vehicle.vehicleType && (
-                    <Badge variant="outline" className="text-xs w-fit mt-1 capitalize">
-                      {vehicle.vehicleType.replace('_', ' ')}
-                    </Badge>
-                  )}
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {vehicle.vehicleType && (
+                      <Badge variant="outline" className="text-xs w-fit capitalize">
+                        {vehicle.vehicleType.replace('_', ' ')}
+                      </Badge>
+                    )}
+                    {vehicle.fuelType && (
+                      <Badge variant="secondary" className="text-xs w-fit capitalize">
+                        {vehicle.fuelType.replace('_', ' ')}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </TableCell>
               <TableCell>
