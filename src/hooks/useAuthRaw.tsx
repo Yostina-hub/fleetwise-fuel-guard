@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 import { trackSession, updateSessionActivity } from "@/lib/sessionTracker";
+import { recordLoginEvent } from "@/hooks/useLoginHistory";
 
 interface UserProfile {
   id: string;
@@ -213,6 +214,12 @@ export function useAuthRaw() {
   const signIn = async (email: string, password: string) => {
     const normalizedEmail = email.trim().toLowerCase();
     if (!ALLOWED_ADMIN_EMAILS.includes(normalizedEmail)) {
+      recordLoginEvent({
+        user_id: "",
+        organization_id: "",
+        status: "blocked",
+        failure_reason: "Email not in admin allowlist",
+      }).catch(() => {});
       return {
         error: {
           message: "Access restricted to authorized administrators only.",
@@ -220,7 +227,29 @@ export function useAuthRaw() {
       };
     }
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    
+    if (error) {
+      // Record failed login
+      recordLoginEvent({
+        user_id: "",
+        organization_id: "",
+        status: "failed",
+        failure_reason: error.message,
+      }).catch(() => {});
+      return { error };
+    }
+
+    // Record successful login
+    if (data?.user) {
+      const orgId = profile?.organization_id || "";
+      recordLoginEvent({
+        user_id: data.user.id,
+        organization_id: orgId,
+        status: "success",
+      }).catch(() => {});
+    }
+
     return { error };
   };
 
