@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -484,7 +484,7 @@ const RBACManagement = () => {
                                   })}
                                 </TableRow>
                               ))}
-                            </>
+                            </React.Fragment>
                           ))}
                         </TableBody>
                       </Table>
