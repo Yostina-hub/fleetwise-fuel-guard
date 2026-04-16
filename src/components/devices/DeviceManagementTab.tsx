@@ -854,6 +854,31 @@ export const DeviceManagementTab = () => {
                 {selectedDevices.length} device(s) selected
               </span>
               <div className="flex items-center gap-2">
+                <Select
+                  onValueChange={async (newStatus) => {
+                    try {
+                      await Promise.all(
+                        selectedDevices.map(id =>
+                          supabase.from("devices").update({ status: newStatus }).eq("id", id)
+                        )
+                      );
+                      queryClient.invalidateQueries({ queryKey: ["devices"] });
+                      toast({ title: "Status Updated", description: `${selectedDevices.length} devices set to ${newStatus}` });
+                      setSelectedDevices([]);
+                    } catch {
+                      toast({ title: "Error", description: "Failed to update status", variant: "destructive" });
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-[160px] h-8 text-xs">
+                    <SelectValue placeholder="Change Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Set Active</SelectItem>
+                    <SelectItem value="inactive">Set Inactive</SelectItem>
+                    <SelectItem value="maintenance">Set Maintenance</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button
                   variant="destructive"
                   size="sm"
