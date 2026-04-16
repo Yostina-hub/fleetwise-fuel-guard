@@ -42,7 +42,7 @@ export const DriverCostAllocation = ({ driverId, driverName }: DriverCostAllocat
         .eq("driver_id", driverId)
         .order("period_start", { ascending: false })
         .limit(12);
-      setCosts((data as any) || []);
+      setCosts((data as CostAllocation[]) || []);
       setLoading(false);
     };
     fetch();
@@ -53,7 +53,7 @@ export const DriverCostAllocation = ({ driverId, driverName }: DriverCostAllocat
   const totalFuel = costs.reduce((s, c) => s + (c.fuel_cost || 0), 0);
   const totalMaint = costs.reduce((s, c) => s + (c.maintenance_cost || 0), 0);
 
-  const fmt = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+  const fmt = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB", maximumFractionDigits: 0 }).format(n);
 
   return (
     <div className="space-y-4">

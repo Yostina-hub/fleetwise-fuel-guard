@@ -45,7 +45,7 @@ export const DriverContractManagement = ({ driverId, driverName }: DriverContrac
         .eq("organization_id", organizationId)
         .eq("driver_id", driverId)
         .order("start_date", { ascending: false });
-      setContracts((data as any) || []);
+      setContracts((data as Contract[]) || []);
       setLoading(false);
     };
     fetch();

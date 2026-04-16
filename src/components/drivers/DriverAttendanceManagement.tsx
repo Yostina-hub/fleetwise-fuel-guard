@@ -65,8 +65,8 @@ export const DriverAttendanceManagement = ({ driverId, driverName }: DriverAtten
       supabase.from("driver_leave_requests").select("*").eq("organization_id", organizationId).eq("driver_id", driverId)
         .order("created_at", { ascending: false }).limit(20)
     ]);
-    setAttendance((attRes.data as any) || []);
-    setLeaves((leaveRes.data as any) || []);
+    setAttendance((attRes.data as AttendanceRecord[]) || []);
+    setLeaves((leaveRes.data as LeaveRequest[]) || []);
     setLoading(false);
   };
 

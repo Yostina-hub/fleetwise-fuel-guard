@@ -37,7 +37,7 @@ export const DriverVehicleHistory = ({ driverId, driverName }: DriverVehicleHist
         .eq("organization_id", organizationId)
         .order("assigned_at", { ascending: false });
 
-      const items = (data as any) || [];
+      const items = (data as VehicleAssignment[]) || [];
       setAssignments(items);
 
       // Fetch vehicle details
