@@ -210,13 +210,12 @@ const DriverMaintenanceRequest = () => {
           </Card>
         </div>
 
-        {/* Preventive maintenance — schedules currently due for this driver's vehicle */}
-        {driverInfo?.vehicle && (
-          <DuePreventiveSchedules
-            vehicleId={driverInfo.vehicle.id}
-            driverId={driverInfo.driver?.id}
-          />
-        )}
+        {/* Preventive maintenance — always render so the section is discoverable.
+            The component handles empty/no-vehicle states internally. */}
+        <DuePreventiveSchedules
+          vehicleId={driverInfo?.vehicle?.id}
+          driverId={driverInfo?.driver?.id}
+        />
 
         {/* How it works */}
         <Card className="glass-strong">
