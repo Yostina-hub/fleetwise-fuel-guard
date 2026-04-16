@@ -113,6 +113,32 @@ export default function VehicleStatusTab({ vehicle, vehicleId }: Props) {
     enabled: !!vehicleId,
   });
 
+  // Fetch assigned device
+  const { data: assignedDevice } = useQuery({
+    queryKey: ["vehicle-assigned-device", vehicleId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("devices")
+        .select("*")
+        .eq("vehicle_id", vehicleId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!vehicleId,
+  });
+
+  const { profiles: compatibilityProfiles } = useDeviceCompatibility();
+
+  // Match device to compatibility profile
+  const deviceProfile = assignedDevice?.tracker_model
+    ? compatibilityProfiles?.find(
+        (p) =>
+          assignedDevice.tracker_model.toLowerCase().includes(p.model_name.toLowerCase()) ||
+          `${p.vendor} ${p.model_name}`.toLowerCase() === assignedDevice.tracker_model.toLowerCase()
+      )
+    : null;
+
   const isOnline = telemetry?.device_connected && telemetry?.last_communication_at &&
     (new Date().getTime() - new Date(telemetry.last_communication_at).getTime()) < 5 * 60 * 1000;
   const batteryLow = telemetry?.battery_voltage != null && telemetry.battery_voltage < 11.5;
