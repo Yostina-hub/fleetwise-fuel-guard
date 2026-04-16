@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -17,11 +18,17 @@ import {
   Sparkles,
   Trophy,
   Loader2,
-  ChevronRight
+  ChevronRight,
+  Wand2
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { CreateGoalDialog } from "./CreateGoalDialog";
+import { IssueRewardDialog } from "./IssueRewardDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useOrganization } from "@/hooks/useOrganization";
+import { useToast } from "@/hooks/use-toast";
 
 interface DriverInsightsPanelProps {
   driverId: string;
@@ -59,6 +66,9 @@ const getRewardTypeIcon = (type: string) => {
 };
 
 export const DriverInsightsPanel = ({ driverId }: DriverInsightsPanelProps) => {
+  const { organizationId } = useOrganization();
+  const { toast } = useToast();
+  const [generating, setGenerating] = useState(false);
   const { 
     insights,
     unacknowledgedInsights,
@@ -67,8 +77,31 @@ export const DriverInsightsPanel = ({ driverId }: DriverInsightsPanelProps) => {
     rewards,
     trends,
     isLoading,
-    acknowledgeInsight
+    acknowledgeInsight,
+    createGoal,
+    issueReward,
   } = useDriverInsights(driverId);
+
+  const handleGenerateInsights = async () => {
+    if (!organizationId || !driverId) return;
+    setGenerating(true);
+    try {
+      const response = await supabase.functions.invoke("ai-driver-insights", {
+        body: { driver_id: driverId, organization_id: organizationId },
+      });
+
+      if (response.error) throw response.error;
+      if (response.data?.error) throw new Error(response.data.error);
+
+      toast({ title: `${response.data?.count || 0} AI insights generated!` });
+      // Force refetch
+      window.location.reload();
+    } catch (err: any) {
+      toast({ title: "Failed to generate insights", description: err.message, variant: "destructive" });
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -90,6 +123,15 @@ export const DriverInsightsPanel = ({ driverId }: DriverInsightsPanelProps) => {
 
   return (
     <div className="space-y-6">
+      {/* Generate AI Insights Button */}
+      <div className="flex items-center justify-between">
+        <div />
+        <Button size="sm" onClick={handleGenerateInsights} disabled={generating} className="gap-1.5">
+          {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+          Generate AI Insights
+        </Button>
+      </div>
+
       {/* AI Insights Alert */}
       {unacknowledgedInsights.length > 0 && (
         <Card className={cn(
@@ -282,9 +324,12 @@ export const DriverInsightsPanel = ({ driverId }: DriverInsightsPanelProps) => {
         {/* Active Goals */}
         <Card className="glass">
           <CardHeader>
-            <div className="flex items-center gap-2">
-              <Target className="w-5 h-5 text-primary" />
-              <CardTitle>Active Goals</CardTitle>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Target className="w-5 h-5 text-primary" />
+                <CardTitle>Active Goals</CardTitle>
+              </div>
+              <CreateGoalDialog driverId={driverId} onSubmit={async (goal) => { await createGoal.mutateAsync(goal); }} />
             </div>
           </CardHeader>
           <CardContent>
@@ -326,9 +371,12 @@ export const DriverInsightsPanel = ({ driverId }: DriverInsightsPanelProps) => {
         {/* Recent Rewards */}
         <Card className="glass">
           <CardHeader>
-            <div className="flex items-center gap-2">
-              <Gift className="w-5 h-5 text-primary" />
-              <CardTitle>Rewards & Recognition</CardTitle>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Gift className="w-5 h-5 text-primary" />
+                <CardTitle>Rewards & Recognition</CardTitle>
+              </div>
+              <IssueRewardDialog driverId={driverId} onSubmit={async (reward) => { await issueReward.mutateAsync(reward); }} />
             </div>
           </CardHeader>
           <CardContent>

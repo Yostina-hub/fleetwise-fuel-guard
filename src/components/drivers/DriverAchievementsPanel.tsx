@@ -54,6 +54,8 @@ export const DriverAchievementsPanel = ({ driverId, driverName }: DriverAchievem
     stats, 
     xpHistory,
     isLoading,
+    awardXP,
+    awardAchievement,
   } = useDriverGamification(driverId);
 
   if (isLoading) {
@@ -162,8 +164,13 @@ export const DriverAchievementsPanel = ({ driverId, driverName }: DriverAchievem
                           "relative p-4 rounded-xl border-2 text-center transition-all cursor-pointer hover:scale-105",
                           isEarned 
                             ? "bg-gradient-to-b from-yellow-500/10 to-transparent border-yellow-500/40 shadow-lg shadow-yellow-500/10" 
-                            : "bg-muted/30 border-muted-foreground/20 opacity-60 grayscale"
+                            : "bg-muted/30 border-muted-foreground/20 opacity-80 hover:opacity-100"
                         )}
+                        onClick={() => {
+                          if (!isEarned) {
+                            awardAchievement.mutate({ driverId, achievementId: achievement.id });
+                          }
+                        }}
                       >
                         {isEarned && (
                           <div className="absolute -top-2 -right-2">
