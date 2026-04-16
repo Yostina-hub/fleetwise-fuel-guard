@@ -1,0 +1,130 @@
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertTriangle, Loader2, Car } from "lucide-react";
+import { useMaintenanceRequests } from "@/hooks/useMaintenanceRequests";
+import { useQueryClient } from "@tanstack/react-query";
+
+interface Props {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  driverId?: string;
+  vehicleId?: string;
+  vehiclePlate?: string;
+  vehicleMakeModel?: string;
+}
+
+const DriverMaintenanceDialog = ({ open, onOpenChange, driverId, vehicleId, vehiclePlate, vehicleMakeModel }: Props) => {
+  const queryClient = useQueryClient();
+  const { createRequest } = useMaintenanceRequests();
+  const [form, setForm] = useState({
+    request_type: "corrective",
+    priority: "medium",
+    km_reading: "",
+    description: "",
+    notes: "",
+  });
+
+  const handleSubmit = async () => {
+    if (!vehicleId || !driverId) return;
+    if (!form.description.trim()) return;
+    await createRequest.mutateAsync({
+      vehicle_id: vehicleId,
+      driver_id: driverId,
+      request_type: form.request_type,
+      trigger_source: "manual",
+      priority: form.priority,
+      km_reading: form.km_reading ? Number(form.km_reading) : undefined,
+      description: form.description,
+      notes: form.notes || undefined,
+    });
+    queryClient.invalidateQueries({ queryKey: ["driver-portal-submissions"] });
+    queryClient.invalidateQueries({ queryKey: ["driver-portal-requests"] });
+    onOpenChange(false);
+    setForm({ request_type: "corrective", priority: "medium", km_reading: "", description: "", notes: "" });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-warning" /> Report Vehicle Issue
+          </DialogTitle>
+          <DialogDescription>
+            {vehiclePlate ? `Reporting for ${vehiclePlate}${vehicleMakeModel ? ` (${vehicleMakeModel})` : ""}` : "No vehicle assigned"}
+          </DialogDescription>
+        </DialogHeader>
+
+        {vehicleId ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Issue Type *</Label>
+                <Select value={form.request_type} onValueChange={v => setForm(f => ({ ...f, request_type: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="corrective">Something is broken</SelectItem>
+                    <SelectItem value="preventive">Scheduled service</SelectItem>
+                    <SelectItem value="breakdown">Vehicle won't start/move</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>How urgent?</Label>
+                <Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Can wait</SelectItem>
+                    <SelectItem value="medium">Soon</SelectItem>
+                    <SelectItem value="high">Urgent</SelectItem>
+                    <SelectItem value="critical">Vehicle unsafe</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div>
+              <Label>Current Odometer (km)</Label>
+              <Input type="number" value={form.km_reading}
+                onChange={e => setForm(f => ({ ...f, km_reading: e.target.value }))} placeholder="Enter current km" />
+            </div>
+
+            <div>
+              <Label>What's the problem? *</Label>
+              <Textarea value={form.description} rows={4}
+                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                placeholder="Describe what's wrong with the vehicle..." />
+            </div>
+
+            <div>
+              <Label>Additional notes</Label>
+              <Textarea value={form.notes} rows={2}
+                onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                placeholder="e.g. noise from the engine, warning light on dashboard..." />
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button onClick={handleSubmit} disabled={createRequest.isPending || !form.description.trim()}>
+                {createRequest.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" aria-hidden="true" />}
+                Submit Request
+              </Button>
+            </DialogFooter>
+          </div>
+        ) : (
+          <div className="text-center py-6 text-muted-foreground">
+            <Car className="w-10 h-10 mx-auto mb-2 opacity-50" />
+            <p>No vehicle assigned to you.</p>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default DriverMaintenanceDialog;
