@@ -41,25 +41,35 @@ export function MapLocationPickerDialog({
   }, [open, initialLat, initialLng]);
 
   useEffect(() => {
-    if (!open || !mapContainer.current) return;
+    if (!open) return;
 
+    // Wait for dialog DOM to be fully rendered and container to have dimensions
     const timer = setTimeout(() => {
-      if (!mapContainer.current) return;
+      const container = mapContainer.current;
+      if (!container) return;
+
+      // Force explicit dimensions to ensure MapLibre can render
+      container.style.width = "100%";
+      container.style.height = "350px";
 
       const style = getPreviewSafeMapStyle("streets");
 
       const map = new maplibregl.Map({
-        container: mapContainer.current,
+        container,
         style,
-        center: [lng, lat],
+        center: [initialLng, initialLat],
         zoom: 12,
         attributionControl: false,
+      });
+
+      map.on("load", () => {
+        map.resize();
       });
 
       map.addControl(new maplibregl.NavigationControl(), "top-right");
 
       const marker = new maplibregl.Marker({ color: "#ef4444", draggable: true })
-        .setLngLat([lng, lat])
+        .setLngLat([initialLng, initialLat])
         .addTo(map);
 
       marker.on("dragend", () => {
@@ -79,7 +89,7 @@ export function MapLocationPickerDialog({
 
       mapRef.current = map;
       markerRef.current = marker;
-    }, 100);
+    }, 300);
 
     return () => {
       clearTimeout(timer);
@@ -88,7 +98,7 @@ export function MapLocationPickerDialog({
       mapRef.current = null;
       markerRef.current = null;
     };
-  }, [open]);
+  }, [open, initialLat, initialLng]);
 
   // Sync marker when lat/lng inputs change manually
   useEffect(() => {
