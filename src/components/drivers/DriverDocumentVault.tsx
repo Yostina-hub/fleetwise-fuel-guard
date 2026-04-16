@@ -1,16 +1,23 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
-import { FileText, AlertTriangle, CheckCircle2, Clock, FolderOpen } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { FileText, AlertTriangle, CheckCircle2, Clock, FolderOpen, Plus, Upload, Loader2, ShieldCheck } from "lucide-react";
 import { format, differenceInDays, isPast } from "date-fns";
+import { toast } from "sonner";
 
 interface Document {
   id: string;
   document_type: string;
   file_name: string;
+  file_url: string;
   expiry_date: string | null;
   is_verified: boolean;
   created_at: string;
@@ -26,6 +33,17 @@ const DOC_CATEGORIES = [
   { key: "other", label: "Other Documents", types: [] },
 ];
 
+const DOC_TYPES = [
+  { value: "drivers_license", label: "Driver's License" },
+  { value: "medical_certificate", label: "Medical Certificate" },
+  { value: "training_certificate", label: "Training Certificate" },
+  { value: "contract", label: "Employment Contract" },
+  { value: "id_card", label: "ID Card" },
+  { value: "insurance", label: "Insurance" },
+  { value: "nda", label: "NDA" },
+  { value: "other", label: "Other" },
+];
+
 interface DriverDocumentVaultProps {
   driverId: string;
   driverName: string;
@@ -33,25 +51,33 @@ interface DriverDocumentVaultProps {
 
 export const DriverDocumentVault = ({ driverId, driverName }: DriverDocumentVaultProps) => {
   const { organizationId } = useOrganization();
+  const { user } = useAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showUpload, setShowUpload] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [form, setForm] = useState({
+    document_type: "drivers_license",
+    document_number: "",
+    expiry_date: "",
+  });
 
-  useEffect(() => {
+  const fetchDocs = useCallback(async () => {
     if (!organizationId || !driverId) return;
-    const fetch = async () => {
-      setLoading(true);
-      const { data } = await supabase
-        .from("documents")
-        .select("*")
-        .eq("organization_id", organizationId)
-        .eq("entity_type", "driver")
-        .eq("entity_id", driverId)
-        .order("created_at", { ascending: false });
-      setDocuments((data as Document[]) || []);
-      setLoading(false);
-    };
-    fetch();
+    setLoading(true);
+    const { data } = await supabase
+      .from("documents")
+      .select("*")
+      .eq("organization_id", organizationId)
+      .eq("entity_type", "driver")
+      .eq("entity_id", driverId)
+      .order("created_at", { ascending: false });
+    setDocuments((data as Document[]) || []);
+    setLoading(false);
   }, [driverId, organizationId]);
+
+  useEffect(() => { fetchDocs(); }, [fetchDocs]);
 
   const categorize = (doc: Document) => {
     const cat = DOC_CATEGORIES.find(c => c.types.some(t => doc.document_type.toLowerCase().includes(t)));
@@ -72,38 +98,70 @@ export const DriverDocumentVault = ({ driverId, driverName }: DriverDocumentVaul
     return s && s.days <= 90;
   }).length;
 
+  const handleUpload = async () => {
+    if (!organizationId || !driverId || !file) return;
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `${organizationId}/${driverId}/${Date.now()}.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from("driver-documents").upload(path, file);
+      if (uploadErr) throw uploadErr;
+
+      const { data: urlData } = supabase.storage.from("driver-documents").getPublicUrl(path);
+
+      const { error: insertErr } = await supabase.from("documents").insert({
+        organization_id: organizationId,
+        entity_type: "driver",
+        entity_id: driverId,
+        document_type: form.document_type,
+        file_name: file.name,
+        file_url: urlData.publicUrl || path,
+        file_size_bytes: file.size,
+        mime_type: file.type,
+        document_number: form.document_number || null,
+        expiry_date: form.expiry_date || null,
+        created_by: user?.id || null,
+      });
+      if (insertErr) throw insertErr;
+
+      toast.success("Document uploaded");
+      setShowUpload(false);
+      setFile(null);
+      setForm({ document_type: "drivers_license", document_number: "", expiry_date: "" });
+      fetchDocs();
+    } catch (err: any) {
+      toast.error(err.message || "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const verifyDoc = async (id: string) => {
+    await supabase.from("documents").update({
+      is_verified: true,
+      verified_by: user?.id,
+      verified_at: new Date().toISOString(),
+    }).eq("id", id);
+    toast.success("Document verified");
+    fetchDocs();
+  };
+
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">Document Vault — {driverName}</h3>
+          <p className="text-sm text-muted-foreground">Manage driver documents and certifications</p>
+        </div>
+        <Button className="gap-2" onClick={() => setShowUpload(true)}><Upload className="w-4 h-4" />Upload Document</Button>
+      </div>
+
       {/* Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card>
-          <CardContent className="p-3 text-center">
-            <FileText className="w-5 h-5 mx-auto mb-1 text-primary" />
-            <p className="text-2xl font-bold">{documents.length}</p>
-            <p className="text-[10px] text-muted-foreground">Total Documents</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3 text-center">
-            <CheckCircle2 className="w-5 h-5 mx-auto mb-1 text-emerald-400" />
-            <p className="text-2xl font-bold">{documents.filter(d => d.is_verified).length}</p>
-            <p className="text-[10px] text-muted-foreground">Verified</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3 text-center">
-            <AlertTriangle className="w-5 h-5 mx-auto mb-1 text-amber-400" />
-            <p className="text-2xl font-bold">{expiringCount}</p>
-            <p className="text-[10px] text-muted-foreground">Expiring Soon</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3 text-center">
-            <Clock className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
-            <p className="text-2xl font-bold">{documents.filter(d => !d.is_verified).length}</p>
-            <p className="text-[10px] text-muted-foreground">Pending Review</p>
-          </CardContent>
-        </Card>
+        <Card><CardContent className="p-3 text-center"><FileText className="w-5 h-5 mx-auto mb-1 text-primary" /><p className="text-2xl font-bold">{documents.length}</p><p className="text-[10px] text-muted-foreground">Total Documents</p></CardContent></Card>
+        <Card><CardContent className="p-3 text-center"><CheckCircle2 className="w-5 h-5 mx-auto mb-1 text-emerald-400" /><p className="text-2xl font-bold">{documents.filter(d => d.is_verified).length}</p><p className="text-[10px] text-muted-foreground">Verified</p></CardContent></Card>
+        <Card><CardContent className="p-3 text-center"><AlertTriangle className="w-5 h-5 mx-auto mb-1 text-amber-400" /><p className="text-2xl font-bold">{expiringCount}</p><p className="text-[10px] text-muted-foreground">Expiring Soon</p></CardContent></Card>
+        <Card><CardContent className="p-3 text-center"><Clock className="w-5 h-5 mx-auto mb-1 text-muted-foreground" /><p className="text-2xl font-bold">{documents.filter(d => !d.is_verified).length}</p><p className="text-[10px] text-muted-foreground">Pending Review</p></CardContent></Card>
       </div>
 
       {/* Document Categories */}
@@ -114,8 +172,7 @@ export const DriverDocumentVault = ({ driverId, driverName }: DriverDocumentVaul
           <Card key={cat.key}>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <FolderOpen className="w-4 h-4 text-primary" />
-                {cat.label}
+                <FolderOpen className="w-4 h-4 text-primary" />{cat.label}
                 <Badge variant="secondary" className="ml-auto">{catDocs.length}</Badge>
               </CardTitle>
             </CardHeader>
@@ -136,7 +193,9 @@ export const DriverDocumentVault = ({ driverId, driverName }: DriverDocumentVaul
                       {doc.is_verified ? (
                         <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-400 border-emerald-500/30">Verified</Badge>
                       ) : (
-                        <Badge variant="outline" className="text-[10px]">Pending</Badge>
+                        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => verifyDoc(doc.id)}>
+                          <ShieldCheck className="w-3.5 h-3.5" />Verify
+                        </Button>
                       )}
                       {expiry && <Badge variant={expiry.variant} className="text-[10px]">{expiry.label}</Badge>}
                     </div>
@@ -153,10 +212,50 @@ export const DriverDocumentVault = ({ driverId, driverName }: DriverDocumentVaul
           <CardContent className="py-12 text-center text-muted-foreground">
             <FolderOpen className="w-12 h-12 mx-auto mb-3 opacity-40" />
             <p>No documents found for {driverName}</p>
-            <p className="text-xs mt-1">Upload documents from the Documents module to populate this vault.</p>
+            <p className="text-xs mt-1">Click "Upload Document" to add files.</p>
           </CardContent>
         </Card>
       )}
+
+      {/* Upload Dialog */}
+      <Dialog open={showUpload} onOpenChange={setShowUpload}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Upload Document</DialogTitle>
+            <DialogDescription>Upload a document for {driverName}.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Document Type</Label>
+              <Select value={form.document_type} onValueChange={v => setForm(f => ({ ...f, document_type: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{DOC_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>File *</Label>
+              <Input type="file" onChange={e => setFile(e.target.files?.[0] || null)} accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Document Number</Label>
+                <Input value={form.document_number} onChange={e => setForm(f => ({ ...f, document_number: e.target.value }))} placeholder="Optional" />
+              </div>
+              <div>
+                <Label>Expiry Date</Label>
+                <Input type="date" value={form.expiry_date} onChange={e => setForm(f => ({ ...f, expiry_date: e.target.value }))} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowUpload(false)}>Cancel</Button>
+            <Button onClick={handleUpload} disabled={uploading || !file}>
+              {uploading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {uploading ? "Uploading..." : "Upload"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

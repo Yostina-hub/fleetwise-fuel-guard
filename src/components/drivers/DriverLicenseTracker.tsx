@@ -1,11 +1,17 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useDrivers, Driver } from "@/hooks/useDrivers";
-import { AlertTriangle, CheckCircle2, XCircle, Clock, ShieldAlert, CreditCard } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { AlertTriangle, CheckCircle2, XCircle, Clock, ShieldAlert, CreditCard, Edit, Loader2 } from "lucide-react";
 import { differenceInDays, isPast, format } from "date-fns";
+import { toast } from "sonner";
 
 const getExpiryInfo = (date?: string) => {
   if (!date) return { status: "unknown", days: null, label: "No expiry set", color: "text-muted-foreground" };
@@ -17,7 +23,10 @@ const getExpiryInfo = (date?: string) => {
 };
 
 export const DriverLicenseTracker = () => {
-  const { drivers, loading } = useDrivers();
+  const { drivers, loading, refetch } = useDrivers();
+  const [editDriver, setEditDriver] = useState<Driver | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ license_expiry: "", medical_certificate_expiry: "", license_class: "" });
 
   const { expired, critical, warning, ok, unknown } = useMemo(() => {
     const groups = { expired: [] as Driver[], critical: [] as Driver[], warning: [] as Driver[], ok: [] as Driver[], unknown: [] as Driver[] };
@@ -31,6 +40,30 @@ export const DriverLicenseTracker = () => {
   const complianceRate = drivers.length > 0
     ? Math.round(((ok.length + warning.length) / drivers.length) * 100)
     : 0;
+
+  const openEdit = (driver: Driver) => {
+    setEditDriver(driver);
+    setForm({
+      license_expiry: driver.license_expiry || "",
+      medical_certificate_expiry: driver.medical_certificate_expiry || "",
+      license_class: driver.license_class || "",
+    });
+  };
+
+  const handleUpdate = async () => {
+    if (!editDriver) return;
+    setSaving(true);
+    const { error } = await supabase.from("drivers").update({
+      license_expiry: form.license_expiry || null,
+      medical_certificate_expiry: form.medical_certificate_expiry || null,
+      license_class: form.license_class || null,
+    }).eq("id", editDriver.id);
+    setSaving(false);
+    if (error) { toast.error("Failed to update"); return; }
+    toast.success("License info updated");
+    setEditDriver(null);
+    refetch();
+  };
 
   return (
     <div className="space-y-6">
@@ -89,13 +122,13 @@ export const DriverLicenseTracker = () => {
                     <p className="text-sm font-medium">{driver.first_name} {driver.last_name}</p>
                     <p className="text-[10px] text-muted-foreground">License: {driver.license_number} · Class: {driver.license_class || "N/A"}</p>
                   </div>
-                  <div className="text-right shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
                     <Badge variant="destructive" className="text-[10px]">
                       {info.status === "expired" ? "EXPIRED" : `${info.days}d left`}
                     </Badge>
-                    {driver.license_expiry && (
-                      <p className="text-[10px] text-muted-foreground mt-0.5">{format(new Date(driver.license_expiry), "MMM d, yyyy")}</p>
-                    )}
+                    <Button variant="ghost" size="sm" className="h-7" onClick={() => openEdit(driver)}>
+                      <Edit className="w-3.5 h-3.5" />
+                    </Button>
                   </div>
                 </div>
               );
@@ -115,6 +148,7 @@ export const DriverLicenseTracker = () => {
         <CardContent className="space-y-2">
           {drivers.map(driver => {
             const info = getExpiryInfo(driver.license_expiry);
+            const medInfo = getExpiryInfo(driver.medical_certificate_expiry);
             return (
               <div key={driver.id} className="flex items-center gap-3 p-2 rounded-lg border hover:bg-accent/50 transition-colors">
                 <Avatar className="h-8 w-8">
@@ -128,12 +162,51 @@ export const DriverLicenseTracker = () => {
                   <p className="text-[10px] text-muted-foreground">{driver.license_number}</p>
                 </div>
                 <span className="text-[10px] text-muted-foreground">{driver.license_class || "—"}</span>
-                <span className={`text-xs font-medium ${info.color}`}>{info.label}</span>
+                <div className="text-right">
+                  <span className={`text-xs font-medium ${info.color}`}>{info.label}</span>
+                  {driver.medical_certificate_expiry && (
+                    <p className={`text-[10px] ${medInfo.color}`}>Med: {medInfo.label}</p>
+                  )}
+                </div>
+                <Button variant="ghost" size="sm" className="h-7 shrink-0" onClick={() => openEdit(driver)}>
+                  <Edit className="w-3.5 h-3.5" />
+                </Button>
               </div>
             );
           })}
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editDriver} onOpenChange={open => !open && setEditDriver(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update License Info</DialogTitle>
+            <DialogDescription>{editDriver ? `${editDriver.first_name} ${editDriver.last_name}` : ""}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>License Expiry Date</Label>
+              <Input type="date" value={form.license_expiry} onChange={e => setForm(f => ({ ...f, license_expiry: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Medical Certificate Expiry</Label>
+              <Input type="date" value={form.medical_certificate_expiry} onChange={e => setForm(f => ({ ...f, medical_certificate_expiry: e.target.value }))} />
+            </div>
+            <div>
+              <Label>License Class</Label>
+              <Input value={form.license_class} onChange={e => setForm(f => ({ ...f, license_class: e.target.value }))} placeholder="e.g., Class A, B, CDL" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDriver(null)}>Cancel</Button>
+            <Button onClick={handleUpdate} disabled={saving}>
+              {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {saving ? "Updating..." : "Update"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
