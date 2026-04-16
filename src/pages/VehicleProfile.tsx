@@ -281,7 +281,8 @@ const VehicleProfile = () => {
               </div>
 
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid grid-cols-6 w-full">
+                <TabsList className="grid grid-cols-7 w-full">
+                  <TabsTrigger value="status" className="gap-1 text-xs"><Zap className="w-3 h-3" />Status</TabsTrigger>
                   <TabsTrigger value="overview" className="gap-1 text-xs"><Info className="w-3 h-3" />Overview</TabsTrigger>
                   <TabsTrigger value="specifications" className="gap-1 text-xs"><Gauge className="w-3 h-3" />Specs</TabsTrigger>
                   <TabsTrigger value="ownership" className="gap-1 text-xs"><Key className="w-3 h-3" />Ownership</TabsTrigger>
@@ -289,6 +290,11 @@ const VehicleProfile = () => {
                   <TabsTrigger value="compliance" className="gap-1 text-xs"><FileText className="w-3 h-3" />Compliance</TabsTrigger>
                   <TabsTrigger value="financials" className="gap-1 text-xs"><DollarSign className="w-3 h-3" />Financials</TabsTrigger>
                 </TabsList>
+
+                {/* STATUS TAB */}
+                <TabsContent value="status">
+                  <VehicleStatusTab vehicle={v} vehicleId={selectedId!} />
+                </TabsContent>
 
                 {/* OVERVIEW TAB */}
                 <TabsContent value="overview" className="space-y-4 mt-4">
