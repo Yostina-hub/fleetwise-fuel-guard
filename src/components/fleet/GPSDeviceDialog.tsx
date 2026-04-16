@@ -53,6 +53,7 @@ export const GPSDeviceDialog = ({
   onSuccess,
 }: GPSDeviceDialogProps) => {
   const { organizationId } = useOrganization();
+  const { profiles: compatibilityProfiles } = useDeviceCompatibility();
   const [devices, setDevices] = useState<Device[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>("");
   const [loading, setLoading] = useState(false);
