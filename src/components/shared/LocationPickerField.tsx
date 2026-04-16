@@ -1,15 +1,18 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapPin } from "lucide-react";
+import { MapPin, Map } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { MapLocationPickerDialog } from "./MapLocationPickerDialog";
 
 interface LocationPickerFieldProps {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  onCoordsChange?: (lat: number, lng: number) => void;
   placeholder?: string;
   iconColor?: string;
   required?: boolean;
@@ -19,10 +22,13 @@ export function LocationPickerField({
   label,
   value,
   onChange,
+  onCoordsChange,
   placeholder = "Enter address",
   iconColor = "text-primary",
   required = false,
 }: LocationPickerFieldProps) {
+  const [showMap, setShowMap] = useState(false);
+
   const { data: geofences } = useQuery({
     queryKey: ["geofences-location-picker"],
     queryFn: async () => {
@@ -39,6 +45,24 @@ export function LocationPickerField({
 
   const isGeofenceMatch = geofences?.some((g) => g.name === value);
 
+  const handleMapSelect = (location: { name: string; lat: number; lng: number }) => {
+    onChange(location.name);
+    onCoordsChange?.(location.lat, location.lng);
+  };
+
+  const mapButton = (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className="h-8 gap-1 text-xs"
+      onClick={() => setShowMap(true)}
+    >
+      <Map className="h-3.5 w-3.5" />
+      Pick on Map
+    </Button>
+  );
+
   if (!geofences || geofences.length === 0) {
     return (
       <div>
@@ -46,7 +70,16 @@ export function LocationPickerField({
           <MapPin className={`h-3.5 w-3.5 ${iconColor}`} />
           {label} {required && "*"}
         </Label>
-        <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
+        <div className="flex gap-2">
+          <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="flex-1" />
+          {mapButton}
+        </div>
+        <MapLocationPickerDialog
+          open={showMap}
+          onClose={() => setShowMap(false)}
+          onSelect={handleMapSelect}
+          title={`Select ${label}`}
+        />
       </div>
     );
   }
@@ -58,33 +91,36 @@ export function LocationPickerField({
         {label} {required && "*"}
       </Label>
       <div className="space-y-2">
-        <Select
-          value={isGeofenceMatch ? value : "__custom__"}
-          onValueChange={(v) => {
-            if (v !== "__custom__") {
-              onChange(v);
-            } else {
-              onChange("");
-            }
-          }}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select a saved location" />
-          </SelectTrigger>
-          <SelectContent>
-            {geofences.map((g) => (
-              <SelectItem key={g.id} value={g.name}>
-                <span className="flex items-center gap-2">
-                  <MapPin className={`h-3 w-3 ${iconColor}`} />
-                  {g.name}
-                </span>
+        <div className="flex gap-2">
+          <Select
+            value={isGeofenceMatch ? value : "__custom__"}
+            onValueChange={(v) => {
+              if (v !== "__custom__") {
+                onChange(v);
+              } else {
+                onChange("");
+              }
+            }}
+          >
+            <SelectTrigger className="flex-1">
+              <SelectValue placeholder="Select a saved location" />
+            </SelectTrigger>
+            <SelectContent>
+              {geofences.map((g) => (
+                <SelectItem key={g.id} value={g.name}>
+                  <span className="flex items-center gap-2">
+                    <MapPin className={`h-3 w-3 ${iconColor}`} />
+                    {g.name}
+                  </span>
+                </SelectItem>
+              ))}
+              <SelectItem value="__custom__">
+                <span className="text-muted-foreground">✏️ Type custom address</span>
               </SelectItem>
-            ))}
-            <SelectItem value="__custom__">
-              <span className="text-muted-foreground">✏️ Type custom address</span>
-            </SelectItem>
-          </SelectContent>
-        </Select>
+            </SelectContent>
+          </Select>
+          {mapButton}
+        </div>
         {!isGeofenceMatch && (
           <Input
             value={value}
@@ -93,6 +129,12 @@ export function LocationPickerField({
           />
         )}
       </div>
+      <MapLocationPickerDialog
+        open={showMap}
+        onClose={() => setShowMap(false)}
+        onSelect={handleMapSelect}
+        title={`Select ${label}`}
+      />
     </div>
   );
 }
