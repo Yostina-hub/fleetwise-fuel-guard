@@ -23,6 +23,9 @@ export type Database = {
           approved_at: string | null
           claim_amount: number | null
           claim_number: string
+          completeness_check: string | null
+          completeness_checked_at: string | null
+          completeness_checked_by: string | null
           created_at: string
           damage_description: string | null
           description: string | null
@@ -32,11 +35,18 @@ export type Database = {
           fault_determination: string | null
           fault_party: string | null
           filed_at: string | null
+          finance_notified_at: string | null
+          finance_notified_by: string | null
+          forwarded_to_insurance_at: string | null
+          forwarded_to_insurance_by: string | null
           id: string
           incident_id: string | null
           incident_type: string
           insurance_id: string | null
           notes: string | null
+          notification_letter_sent_at: string | null
+          notification_letter_sent_by: string | null
+          notification_letter_url: string | null
           organization_id: string
           photos: string[] | null
           police_report_number: string | null
@@ -44,13 +54,19 @@ export type Database = {
           repair_start_date: string | null
           repair_vendor: string | null
           settled_at: string | null
+          settlement_amount: number | null
+          settlement_reference: string | null
           status: string | null
           third_party_contact: string | null
+          third_party_dealt_at: string | null
           third_party_insurance: string | null
           third_party_name: string | null
           third_party_vehicle: string | null
           updated_at: string
           vehicle_id: string
+          within_insurance_coverage: boolean | null
+          within_limit: boolean | null
+          workflow_stage: string
         }
         Insert: {
           accident_date: string
@@ -60,6 +76,9 @@ export type Database = {
           approved_at?: string | null
           claim_amount?: number | null
           claim_number: string
+          completeness_check?: string | null
+          completeness_checked_at?: string | null
+          completeness_checked_by?: string | null
           created_at?: string
           damage_description?: string | null
           description?: string | null
@@ -69,11 +88,18 @@ export type Database = {
           fault_determination?: string | null
           fault_party?: string | null
           filed_at?: string | null
+          finance_notified_at?: string | null
+          finance_notified_by?: string | null
+          forwarded_to_insurance_at?: string | null
+          forwarded_to_insurance_by?: string | null
           id?: string
           incident_id?: string | null
           incident_type?: string
           insurance_id?: string | null
           notes?: string | null
+          notification_letter_sent_at?: string | null
+          notification_letter_sent_by?: string | null
+          notification_letter_url?: string | null
           organization_id: string
           photos?: string[] | null
           police_report_number?: string | null
@@ -81,13 +107,19 @@ export type Database = {
           repair_start_date?: string | null
           repair_vendor?: string | null
           settled_at?: string | null
+          settlement_amount?: number | null
+          settlement_reference?: string | null
           status?: string | null
           third_party_contact?: string | null
+          third_party_dealt_at?: string | null
           third_party_insurance?: string | null
           third_party_name?: string | null
           third_party_vehicle?: string | null
           updated_at?: string
           vehicle_id: string
+          within_insurance_coverage?: boolean | null
+          within_limit?: boolean | null
+          workflow_stage?: string
         }
         Update: {
           accident_date?: string
@@ -97,6 +129,9 @@ export type Database = {
           approved_at?: string | null
           claim_amount?: number | null
           claim_number?: string
+          completeness_check?: string | null
+          completeness_checked_at?: string | null
+          completeness_checked_by?: string | null
           created_at?: string
           damage_description?: string | null
           description?: string | null
@@ -106,11 +141,18 @@ export type Database = {
           fault_determination?: string | null
           fault_party?: string | null
           filed_at?: string | null
+          finance_notified_at?: string | null
+          finance_notified_by?: string | null
+          forwarded_to_insurance_at?: string | null
+          forwarded_to_insurance_by?: string | null
           id?: string
           incident_id?: string | null
           incident_type?: string
           insurance_id?: string | null
           notes?: string | null
+          notification_letter_sent_at?: string | null
+          notification_letter_sent_by?: string | null
+          notification_letter_url?: string | null
           organization_id?: string
           photos?: string[] | null
           police_report_number?: string | null
@@ -118,13 +160,19 @@ export type Database = {
           repair_start_date?: string | null
           repair_vendor?: string | null
           settled_at?: string | null
+          settlement_amount?: number | null
+          settlement_reference?: string | null
           status?: string | null
           third_party_contact?: string | null
+          third_party_dealt_at?: string | null
           third_party_insurance?: string | null
           third_party_name?: string | null
           third_party_vehicle?: string | null
           updated_at?: string
           vehicle_id?: string
+          within_insurance_coverage?: boolean | null
+          within_limit?: boolean | null
+          workflow_stage?: string
         }
         Relationships: [
           {
@@ -1376,6 +1424,63 @@ export type Database = {
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      claim_workflow_transitions: {
+        Row: {
+          claim_id: string
+          created_at: string
+          decision: string | null
+          from_stage: string | null
+          id: string
+          metadata: Json | null
+          notes: string | null
+          organization_id: string
+          performed_by: string | null
+          performed_by_name: string | null
+          to_stage: string
+        }
+        Insert: {
+          claim_id: string
+          created_at?: string
+          decision?: string | null
+          from_stage?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          organization_id: string
+          performed_by?: string | null
+          performed_by_name?: string | null
+          to_stage: string
+        }
+        Update: {
+          claim_id?: string
+          created_at?: string
+          decision?: string | null
+          from_stage?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          organization_id?: string
+          performed_by?: string | null
+          performed_by_name?: string | null
+          to_stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claim_workflow_transitions_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "accident_claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_workflow_transitions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
