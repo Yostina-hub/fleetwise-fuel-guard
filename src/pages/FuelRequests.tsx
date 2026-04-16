@@ -18,6 +18,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
 import { useOrganizationSettings } from "@/hooks/useOrganizationSettings";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { TablePagination, usePagination } from "@/components/reports/TablePagination";
@@ -25,7 +26,7 @@ import { useTranslation } from "react-i18next";
 
 const ITEMS_PER_PAGE = 15;
 
-const FuelRequestsTable = ({ data, isLoading, getPlate, getDriverName, formatFuel, formatCurrency, statusBadge, setShowDetail, setShowApprove, setShowReject, setApprovedLiters, fulfillMutation }: any) => {
+const FuelRequestsTable = ({ data, isLoading, getPlate, getDriverName, formatFuel, formatCurrency, statusBadge, setShowDetail, setShowApprove, setShowReject, setApprovedLiters, fulfillMutation, canApprove }: any) => {
   const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(data.length, ITEMS_PER_PAGE);
   const paged = data.slice(startIndex, endIndex);
 
@@ -72,7 +73,7 @@ const FuelRequestsTable = ({ data, isLoading, getPlate, getDriverName, formatFue
                             <Button variant="ghost" size="sm" onClick={() => setShowDetail(r)}><Eye className="w-4 h-4" /></Button>
                           </TooltipTrigger><TooltipContent>View details</TooltipContent></Tooltip>
                         </TooltipProvider>
-                        {r.status === "pending" && (
+                        {r.status === "pending" && canApprove && (
                           <>
                             <Button variant="ghost" size="sm" className="text-success" onClick={() => { setShowApprove(r); setApprovedLiters(String(r.liters_requested)); }}>
                               <Check className="w-4 h-4" />
@@ -82,7 +83,7 @@ const FuelRequestsTable = ({ data, isLoading, getPlate, getDriverName, formatFue
                             </Button>
                           </>
                         )}
-                        {r.status === "approved" && (
+                        {r.status === "approved" && canApprove && (
                           <Button variant="ghost" size="sm" className="text-primary" onClick={() => fulfillMutation.mutate(r.id)}>
                             <CheckCircle className="w-4 h-4" />
                           </Button>
@@ -101,12 +102,16 @@ const FuelRequestsTable = ({ data, isLoading, getPlate, getDriverName, formatFue
   );
 };
 
+const APPROVER_ROLES = ["fleet_manager", "operations_manager", "org_admin", "super_admin", "fleet_owner"];
+
 const FuelRequests = () => {
   const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const { vehicles } = useVehicles();
   const { drivers } = useDrivers();
   const { formatCurrency, formatFuel, settings } = useOrganizationSettings();
+  const { hasRole } = useAuthContext();
+  const canApprove = APPROVER_ROLES.some(r => hasRole(r));
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
@@ -159,7 +164,7 @@ const FuelRequests = () => {
       const reqNum = `FR-${Date.now().toString(36).toUpperCase()}`;
       const { data: user } = await supabase.auth.getUser();
 
-      const { error } = await supabase.from("fuel_requests").insert({
+      const { data: inserted, error } = await supabase.from("fuel_requests").insert({
         organization_id: organizationId,
         vehicle_id: form.vehicle_id,
         driver_id: form.driver_id || null,
@@ -172,8 +177,13 @@ const FuelRequests = () => {
         current_odometer: form.current_odometer ? parseFloat(form.current_odometer) : null,
         notes: form.notes || null,
         status: "pending",
-      });
+      }).select("id").single();
       if (error) throw error;
+
+      // Route to approval workflow
+      if (inserted?.id) {
+        await supabase.rpc("route_fuel_request_approval", { p_fuel_request_id: inserted.id });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fuel-requests"] });
@@ -277,7 +287,7 @@ const FuelRequests = () => {
     toast.success("Exported");
   };
 
-  const tableProps = { isLoading, getPlate, getDriverName, formatFuel, formatCurrency, statusBadge, setShowDetail, setShowApprove, setShowReject, setApprovedLiters, fulfillMutation };
+  const tableProps = { isLoading, getPlate, getDriverName, formatFuel, formatCurrency, statusBadge, setShowDetail, setShowApprove, setShowReject, setApprovedLiters, fulfillMutation, canApprove };
 
   return (
     <Layout>

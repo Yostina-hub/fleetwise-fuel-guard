@@ -8103,6 +8103,63 @@ export type Database = {
           },
         ]
       }
+      fuel_request_approvals: {
+        Row: {
+          acted_at: string | null
+          action: string
+          approver_id: string
+          approver_role: string
+          comment: string | null
+          created_at: string
+          fuel_request_id: string
+          id: string
+          organization_id: string
+          step: number
+          updated_at: string
+        }
+        Insert: {
+          acted_at?: string | null
+          action?: string
+          approver_id: string
+          approver_role?: string
+          comment?: string | null
+          created_at?: string
+          fuel_request_id: string
+          id?: string
+          organization_id: string
+          step?: number
+          updated_at?: string
+        }
+        Update: {
+          acted_at?: string | null
+          action?: string
+          approver_id?: string
+          approver_role?: string
+          comment?: string | null
+          created_at?: string
+          fuel_request_id?: string
+          id?: string
+          organization_id?: string
+          step?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_request_approvals_fuel_request_id_fkey"
+            columns: ["fuel_request_id"]
+            isOneToOne: false
+            referencedRelation: "fuel_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_request_approvals_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fuel_requests: {
         Row: {
           actual_cost: number | null
@@ -19402,6 +19459,10 @@ export type Database = {
         }[]
       }
       refresh_telemetry_aggregates: { Args: never; Returns: undefined }
+      route_fuel_request_approval: {
+        Args: { p_fuel_request_id: string }
+        Returns: string
+      }
       route_vehicle_request_approval: {
         Args: { p_request_id: string }
         Returns: string
