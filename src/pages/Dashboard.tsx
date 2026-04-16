@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -62,6 +62,7 @@ import DateRangeFilter from "@/components/dashboard/DateRangeFilter";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { startOfMonth } from "date-fns";
 import { useTranslation } from "react-i18next";
+import { useDashboardLayout } from "@/hooks/useDashboardLayout";
 
 // Executive Dashboard Components
 import ExecutiveKPIGrid from "@/components/dashboard/executive/ExecutiveKPIGrid";
@@ -127,7 +128,7 @@ const Dashboard = () => {
   const { formatCurrency, formatDistance, settings } = useOrganizationSettings();
   const { metrics: tripMetrics, refetch: refetchTrips } = useTripMetrics(dateRange);
   const { kpis, driverRankings, complianceItems, financialMetrics, recentActivities, geofenceActivities, loading: execLoading, refetch: refetchExec } = useExecutiveMetrics();
-
+  const { isWidgetVisible: wv } = useDashboardLayout();
   // Real-time subscriptions for live dashboard updates
   useEffect(() => {
     if (!organizationId) return;
@@ -251,6 +252,76 @@ const Dashboard = () => {
 
   // formatCurrency is now provided by useOrganizationSettings
 
+  // Pre-compute executive widget data at top level (hooks can't be conditional)
+  const distanceByGroupData = useMemo(() => {
+    const hours = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'];
+    const activeCount = dbVehicles.filter(v => v.status === 'active').length;
+    const idleCount = dbVehicles.filter(v => v.status === 'maintenance').length;
+    return hours.map((time, i) => ({
+      time,
+      'Active Fleet': Math.max(0, (tripMetrics.totalDistanceKm / 9) * (1 + Math.sin(i * 0.5)) * (activeCount / Math.max(dbVehicles.length, 1))),
+      'Idle Fleet': Math.max(0, (tripMetrics.totalDistanceKm / 18) * Math.cos(i * 0.3) * (idleCount / Math.max(dbVehicles.length, 1))),
+    }));
+  }, [tripMetrics, dbVehicles]);
+
+  const fleetUsageData = useMemo(() => {
+    const baseTrips = Math.max(1, Math.floor(tripMetrics.totalTrips / 30));
+    return Array.from({ length: 30 }, (_, i) => ({
+      date: `${i + 1}`,
+      trips: Math.max(0, baseTrips + Math.floor(Math.sin(i * 0.3) * baseTrips * 0.5)),
+    }));
+  }, [tripMetrics.totalTrips]);
+
+  const driverSafetyCategories = useMemo(() => {
+    const highRisk = driverRankings.filter(d => d.safetyScore < 20).length;
+    const medHighRisk = driverRankings.filter(d => d.safetyScore >= 20 && d.safetyScore < 40).length;
+    const medRisk = driverRankings.filter(d => d.safetyScore >= 40 && d.safetyScore < 60).length;
+    const lowRisk = driverRankings.filter(d => d.safetyScore >= 60 && d.safetyScore < 80).length;
+    const noRisk = driverRankings.filter(d => d.safetyScore >= 80).length;
+    return [
+      { label: 'High Risk (0-20)', count: highRisk, color: 'hsl(var(--destructive))', range: 'Score 0-20' },
+      { label: 'Med-High Risk (21-40)', count: medHighRisk, color: 'hsl(var(--warning))', range: 'Score 21-40' },
+      { label: 'Medium Risk (41-60)', count: medRisk, color: 'hsl(var(--chart-3))', range: 'Score 41-60' },
+      { label: 'Low Risk (61-80)', count: lowRisk, color: 'hsl(var(--chart-2))', range: 'Score 61-80' },
+      { label: 'No Risk (81-100)', count: noRisk, color: 'hsl(var(--success))', range: 'Score 81-100' },
+    ];
+  }, [driverRankings]);
+
+  const riskSafetyData = useMemo(() => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+    const baseAlerts = Math.max(1, dbAlerts.length);
+    return months.map((month, i) => ({
+      month,
+      speeding: Math.floor(baseAlerts * (0.3 + Math.sin(i) * 0.1)),
+      harshAcceleration: Math.floor(baseAlerts * (0.15 + Math.cos(i) * 0.05)),
+      harshBraking: Math.floor(baseAlerts * (0.2 + Math.sin(i * 0.5) * 0.08)),
+      excessiveIdle: Math.floor(baseAlerts * (0.1 + Math.cos(i * 0.3) * 0.03)),
+      harshCornering: Math.floor(baseAlerts * (0.08 + Math.sin(i * 0.7) * 0.02)),
+    }));
+  }, [dbAlerts.length]);
+
+  const fleetSavingsData = useMemo(() => {
+    const baseSavings = financialMetrics.costSavings || 10000;
+    return [
+      { category: 'Total Estimated Savings', actual: Math.round(baseSavings), potential: Math.round(baseSavings * 1.5) },
+      { category: 'Productivity Savings', actual: Math.round(baseSavings * 0.35), potential: Math.round(baseSavings * 0.5) },
+      { category: 'Maintenance Savings', actual: Math.round(baseSavings * 0.25), potential: Math.round(baseSavings * 0.35) },
+      { category: 'Fuel Savings', actual: Math.round(baseSavings * 0.3), potential: Math.round(baseSavings * 0.45) },
+      { category: 'Safety Savings', actual: Math.round(baseSavings * 0.1), potential: Math.round(baseSavings * 0.2) },
+    ];
+  }, [financialMetrics.costSavings]);
+
+  const stopsAnalysisData = useMemo(() => {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const baseStops = Math.max(5, Math.floor(tripMetrics.totalTrips / 7));
+    return days.map((day, i) => ({
+      day,
+      shortStops: Math.floor(baseStops * (0.5 + Math.sin(i) * 0.2)),
+      mediumStops: Math.floor(baseStops * (0.3 + Math.cos(i) * 0.1)),
+      longStops: Math.floor(baseStops * (0.1 + Math.sin(i * 0.5) * 0.05)),
+    }));
+  }, [tripMetrics.totalTrips]);
+
   // Mobile supervisor dashboard (RFP Items 31-42)
   if (isMobile) {
     return (
@@ -316,495 +387,368 @@ const Dashboard = () => {
 
           {/* Executive Tab */}
           <TabsContent value="executive" className="text-foreground space-y-6 mt-6">
-            {/* Violations, Misuse & Trips Row - With Independent Filters */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <FleetViolationsDonut />
-              <VehicleMisuseDonut />
-              <TotalTripsCard />
-            </div>
+            {/* Violations, Misuse & Trips Row */}
+            {(wv("fleet_violations") || wv("vehicle_misuse") || wv("total_trips")) && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {wv("fleet_violations") && <FleetViolationsDonut />}
+                {wv("vehicle_misuse") && <VehicleMisuseDonut />}
+                {wv("total_trips") && <TotalTripsCard />}
+              </div>
+            )}
 
-            {/* Quick Metrics Row - Real-time data */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <QuickMetricCard 
-                title="Total Distance" 
-                value={`${tripMetrics.totalDistanceKm.toFixed(1)} km`}
-                badge="Live"
-                badgeVariant="secondary"
-                icon={<Car className="w-5 h-5" />}
-              />
-              <QuickMetricCard 
-                title="Avg Distance/Vehicle" 
-                value={`${dbVehicles.length > 0 ? (tripMetrics.totalDistanceKm / dbVehicles.length).toFixed(1) : 0} km`}
-                badge="Live"
-                badgeVariant="secondary"
-                icon={<Gauge className="w-5 h-5" />}
-              />
-              <QuickMetricCard 
-                title="Active Trips" 
-                value={tripMetrics.inProgressTrips}
-                badge="Live"
-                badgeVariant="secondary"
-                icon={<Route className="w-5 h-5" />}
-              />
-              <ConnectionStatus isConnected={true} lastUpdate={new Date().toLocaleTimeString()} />
-            </div>
+            {/* Quick Metrics Row */}
+            {wv("quick_metrics") && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <QuickMetricCard 
+                  title="Total Distance" 
+                  value={`${tripMetrics.totalDistanceKm.toFixed(1)} km`}
+                  badge="Live"
+                  badgeVariant="secondary"
+                  icon={<Car className="w-5 h-5" />}
+                />
+                <QuickMetricCard 
+                  title="Avg Distance/Vehicle" 
+                  value={`${dbVehicles.length > 0 ? (tripMetrics.totalDistanceKm / dbVehicles.length).toFixed(1) : 0} km`}
+                  badge="Live"
+                  badgeVariant="secondary"
+                  icon={<Gauge className="w-5 h-5" />}
+                />
+                <QuickMetricCard 
+                  title="Active Trips" 
+                  value={tripMetrics.inProgressTrips}
+                  badge="Live"
+                  badgeVariant="secondary"
+                  icon={<Route className="w-5 h-5" />}
+                />
+                <ConnectionStatus isConnected={true} lastUpdate={new Date().toLocaleTimeString()} />
+              </div>
+            )}
 
             {/* Fleet Status, Distance Chart, Idle Time Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              <FleetStatusCard 
-                totalAssets={dbVehicles.length}
-                statuses={[
-                  { status: 'Active', count: dbVehicles.filter(v => v.status === 'active').length, percentage: dbVehicles.length > 0 ? (dbVehicles.filter(v => v.status === 'active').length / dbVehicles.length) * 100 : 0, color: 'hsl(var(--success))' },
-                  { status: 'Stop/Idle', count: dbVehicles.filter(v => v.status === 'maintenance').length, percentage: dbVehicles.length > 0 ? (dbVehicles.filter(v => v.status === 'maintenance').length / dbVehicles.length) * 100 : 0, color: 'hsl(var(--warning))' },
-                  { status: 'Inactive', count: dbVehicles.filter(v => v.status === 'inactive').length, percentage: dbVehicles.length > 0 ? (dbVehicles.filter(v => v.status === 'inactive').length / dbVehicles.length) * 100 : 0, color: 'hsl(var(--destructive))' },
-                ]}
-                loading={execLoading}
-              />
-              <DistanceByGroupChart 
-                data={useMemo(() => {
-                  // Generate hourly distance data from trips
-                  const hours = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'];
-                  const activeCount = dbVehicles.filter(v => v.status === 'active').length;
-                  const idleCount = dbVehicles.filter(v => v.status === 'maintenance').length;
-                  return hours.map((time, i) => ({
-                    time,
-                    'Active Fleet': Math.max(0, (tripMetrics.totalDistanceKm / 9) * (1 + Math.sin(i * 0.5)) * (activeCount / Math.max(dbVehicles.length, 1))),
-                    'Idle Fleet': Math.max(0, (tripMetrics.totalDistanceKm / 18) * Math.cos(i * 0.3) * (idleCount / Math.max(dbVehicles.length, 1))),
-                  }));
-                }, [tripMetrics, dbVehicles])}
-                groups={[
-                  { name: 'Active Fleet', color: 'hsl(var(--success))' },
-                  { name: 'Idle Fleet', color: 'hsl(var(--warning))' },
-                ]}
-                loading={execLoading}
-              />
-              <IdleTimeDonut 
-                totalIdleTime={`${Math.floor(dbVehicles.filter(v => v.status === 'maintenance').length * 0.35)}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}`}
-                idlePercentage={dbVehicles.length > 0 ? (dbVehicles.filter(v => v.status !== 'active').length / dbVehicles.length) * 100 : 0}
-                groups={[
-                  { 
-                    name: 'Maintenance', 
-                    total: `${dbVehicles.filter(v => v.status === 'maintenance').length}`, 
-                    idlePercent: dbVehicles.length > 0 ? (dbVehicles.filter(v => v.status === 'maintenance').length / dbVehicles.length) * 100 : 0, 
-                    color: 'hsl(var(--warning))' 
-                  },
-                  { 
-                    name: 'Inactive', 
-                    total: `${dbVehicles.filter(v => v.status === 'inactive').length}`, 
-                    idlePercent: dbVehicles.length > 0 ? (dbVehicles.filter(v => v.status === 'inactive').length / dbVehicles.length) * 100 : 0, 
-                    color: 'hsl(var(--destructive))' 
-                  },
-                ]}
-                loading={execLoading}
-              />
-            </div>
+            {(wv("fleet_status_card") || wv("distance_by_group") || wv("idle_time")) && (
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                {wv("fleet_status_card") && (
+                  <FleetStatusCard 
+                    totalAssets={dbVehicles.length}
+                    statuses={[
+                      { status: 'Active', count: dbVehicles.filter(v => v.status === 'active').length, percentage: dbVehicles.length > 0 ? (dbVehicles.filter(v => v.status === 'active').length / dbVehicles.length) * 100 : 0, color: 'hsl(var(--success))' },
+                      { status: 'Stop/Idle', count: dbVehicles.filter(v => v.status === 'maintenance').length, percentage: dbVehicles.length > 0 ? (dbVehicles.filter(v => v.status === 'maintenance').length / dbVehicles.length) * 100 : 0, color: 'hsl(var(--warning))' },
+                      { status: 'Inactive', count: dbVehicles.filter(v => v.status === 'inactive').length, percentage: dbVehicles.length > 0 ? (dbVehicles.filter(v => v.status === 'inactive').length / dbVehicles.length) * 100 : 0, color: 'hsl(var(--destructive))' },
+                    ]}
+                    loading={execLoading}
+                  />
+                )}
+                {wv("distance_by_group") && (
+                  <DistanceByGroupChart 
+                    data={distanceByGroupData}
+                    groups={[
+                      { name: 'Active Fleet', color: 'hsl(var(--success))' },
+                      { name: 'Idle Fleet', color: 'hsl(var(--warning))' },
+                    ]}
+                    loading={execLoading}
+                  />
+                )}
+                {wv("idle_time") && (
+                  <IdleTimeDonut 
+                    totalIdleTime={`${Math.floor(dbVehicles.filter(v => v.status === 'maintenance').length * 0.35)}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}`}
+                    idlePercentage={dbVehicles.length > 0 ? (dbVehicles.filter(v => v.status !== 'active').length / dbVehicles.length) * 100 : 0}
+                    groups={[
+                      { name: 'Maintenance', total: `${dbVehicles.filter(v => v.status === 'maintenance').length}`, idlePercent: dbVehicles.length > 0 ? (dbVehicles.filter(v => v.status === 'maintenance').length / dbVehicles.length) * 100 : 0, color: 'hsl(var(--warning))' },
+                      { name: 'Inactive', total: `${dbVehicles.filter(v => v.status === 'inactive').length}`, idlePercent: dbVehicles.length > 0 ? (dbVehicles.filter(v => v.status === 'inactive').length / dbVehicles.length) * 100 : 0, color: 'hsl(var(--destructive))' },
+                    ]}
+                    loading={execLoading}
+                  />
+                )}
+              </div>
+            )}
 
+            {(wv("fleet_usage") || wv("driver_safety") || wv("risk_safety")) && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {wv("fleet_usage") && (
+                  <FleetUsageChart
+                    data={fleetUsageData}
+                    dateRange="Live - This Month"
+                    loading={execLoading}
+                  />
+                )}
+                {wv("driver_safety") && (
+                  <DriverSafetyScorecard 
+                    categories={driverSafetyCategories}
+                    loading={execLoading}
+                  />
+                )}
+                {wv("risk_safety") && (
+                  <RiskSafetyReportsChart 
+                    data={riskSafetyData}
+                    loading={execLoading}
+                  />
+                )}
+              </div>
+            )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <FleetUsageChart
-                data={useMemo(() => {
-                  // Generate last 30 days trip data from actual metrics
-                  const baseTrips = Math.max(1, Math.floor(tripMetrics.totalTrips / 30));
-                  return Array.from({ length: 30 }, (_, i) => ({
-                    date: `${i + 1}`,
-                    trips: Math.max(0, baseTrips + Math.floor(Math.sin(i * 0.3) * baseTrips * 0.5)),
-                  }));
-                }, [tripMetrics.totalTrips])}
-                dateRange="Live - This Month"
-                loading={execLoading}
-              />
-              <DriverSafetyScorecard 
-                categories={useMemo(() => {
-                  const total = Math.max(1, driverRankings.length);
-                  const highRisk = driverRankings.filter(d => d.safetyScore < 20).length;
-                  const medHighRisk = driverRankings.filter(d => d.safetyScore >= 20 && d.safetyScore < 40).length;
-                  const medRisk = driverRankings.filter(d => d.safetyScore >= 40 && d.safetyScore < 60).length;
-                  const lowRisk = driverRankings.filter(d => d.safetyScore >= 60 && d.safetyScore < 80).length;
-                  const noRisk = driverRankings.filter(d => d.safetyScore >= 80).length;
-                  return [
-                    { label: 'High Risk (0-20)', count: highRisk, color: 'hsl(var(--destructive))', range: 'Score 0-20' },
-                    { label: 'Med-High Risk (21-40)', count: medHighRisk, color: 'hsl(var(--warning))', range: 'Score 21-40' },
-                    { label: 'Medium Risk (41-60)', count: medRisk, color: 'hsl(var(--chart-3))', range: 'Score 41-60' },
-                    { label: 'Low Risk (61-80)', count: lowRisk, color: 'hsl(var(--chart-2))', range: 'Score 61-80' },
-                    { label: 'No Risk (81-100)', count: noRisk, color: 'hsl(var(--success))', range: 'Score 81-100' },
-                  ];
-                }, [driverRankings])}
-                loading={execLoading}
-              />
-              <RiskSafetyReportsChart 
-                data={useMemo(() => {
-                  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-                  const baseAlerts = Math.max(1, dbAlerts.length);
-                  return months.map((month, i) => ({
-                    month,
-                    speeding: Math.floor(baseAlerts * (0.3 + Math.sin(i) * 0.1)),
-                    harshAcceleration: Math.floor(baseAlerts * (0.15 + Math.cos(i) * 0.05)),
-                    harshBraking: Math.floor(baseAlerts * (0.2 + Math.sin(i * 0.5) * 0.08)),
-                    excessiveIdle: Math.floor(baseAlerts * (0.1 + Math.cos(i * 0.3) * 0.03)),
-                    harshCornering: Math.floor(baseAlerts * (0.08 + Math.sin(i * 0.7) * 0.02)),
-                  }));
-                }, [dbAlerts.length])}
-                loading={execLoading}
-              />
-            </div>
+            {/* Fleet Savings & Fuel */}
+            {(wv("fleet_savings") || wv("fuel_trend")) && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {wv("fleet_savings") && (
+                  <FleetSavingsChart 
+                    data={fleetSavingsData}
+                    loading={execLoading}
+                  />
+                )}
+                {wv("fuel_trend") && (
+                  <FuelTrendChart 
+                    data={financialMetrics.monthlyTrend.slice(-3).map(m => ({
+                      month: m.month,
+                      consumption: Math.round(m.costs / 50),
+                      cost: m.costs,
+                    }))}
+                    trend={financialMetrics.monthlyTrend.length > 1 
+                      ? (financialMetrics.monthlyTrend[financialMetrics.monthlyTrend.length - 1].costs < 
+                         financialMetrics.monthlyTrend[financialMetrics.monthlyTrend.length - 2].costs ? 'down' : 'up')
+                      : 'stable'}
+                    trendPercentage={Math.abs(((financialMetrics.monthlyTrend[financialMetrics.monthlyTrend.length - 1]?.costs || 0) - 
+                      (financialMetrics.monthlyTrend[financialMetrics.monthlyTrend.length - 2]?.costs || 1)) / 
+                      Math.max(1, financialMetrics.monthlyTrend[financialMetrics.monthlyTrend.length - 2]?.costs || 1) * 100)}
+                    loading={execLoading}
+                  />
+                )}
+              </div>
+            )}
 
-            {/* Fleet Savings & Fuel - Real data from financial metrics */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <FleetSavingsChart 
-                data={useMemo(() => {
-                  const baseSavings = financialMetrics.costSavings || 10000;
-                  return [
-                    { category: 'Total Estimated Savings', actual: Math.round(baseSavings), potential: Math.round(baseSavings * 1.5) },
-                    { category: 'Productivity Savings', actual: Math.round(baseSavings * 0.35), potential: Math.round(baseSavings * 0.5) },
-                    { category: 'Maintenance Savings', actual: Math.round(baseSavings * 0.25), potential: Math.round(baseSavings * 0.35) },
-                    { category: 'Fuel Savings', actual: Math.round(baseSavings * 0.3), potential: Math.round(baseSavings * 0.45) },
-                    { category: 'Safety Savings', actual: Math.round(baseSavings * 0.1), potential: Math.round(baseSavings * 0.2) },
-                  ];
-                }, [financialMetrics.costSavings])}
-                loading={execLoading}
-              />
-              <FuelTrendChart 
-                data={financialMetrics.monthlyTrend.slice(-3).map(m => ({
-                  month: m.month,
-                  consumption: Math.round(m.costs / 50),
-                  cost: m.costs,
-                }))}
-                trend={financialMetrics.monthlyTrend.length > 1 
-                  ? (financialMetrics.monthlyTrend[financialMetrics.monthlyTrend.length - 1].costs < 
-                     financialMetrics.monthlyTrend[financialMetrics.monthlyTrend.length - 2].costs ? 'down' : 'up')
-                  : 'stable'}
-                trendPercentage={Math.abs(((financialMetrics.monthlyTrend[financialMetrics.monthlyTrend.length - 1]?.costs || 0) - 
-                  (financialMetrics.monthlyTrend[financialMetrics.monthlyTrend.length - 2]?.costs || 1)) / 
-                  Math.max(1, financialMetrics.monthlyTrend[financialMetrics.monthlyTrend.length - 2]?.costs || 1) * 100)}
-                loading={execLoading}
-              />
-            </div>
-
-            {/* Stops Analysis - Real data */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <StopsAnalysisChart 
-                data={useMemo(() => {
-                  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-                  const baseStops = Math.max(5, Math.floor(tripMetrics.totalTrips / 7));
-                  return days.map((day, i) => ({
-                    day,
-                    shortStops: Math.floor(baseStops * (0.5 + Math.sin(i) * 0.2)),
-                    mediumStops: Math.floor(baseStops * (0.3 + Math.cos(i) * 0.1)),
-                    longStops: Math.floor(baseStops * (0.1 + Math.sin(i * 0.5) * 0.05)),
-                  }));
-                }, [tripMetrics.totalTrips])}
-                loading={execLoading}
-              />
-              <RadarPerformanceChart 
-                data={{ vehicles: dbVehicles, drivers: driverRankings, trips: [], alerts: dbAlerts }}
-                loading={execLoading}
-              />
-            </div>
+            {/* Stops Analysis */}
+            {(wv("stops_analysis") || wv("radar_performance")) && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {wv("stops_analysis") && (
+                  <StopsAnalysisChart 
+                    data={stopsAnalysisData}
+                    loading={execLoading}
+                  />
+                )}
+                {wv("radar_performance") && (
+                  <RadarPerformanceChart 
+                    data={{ vehicles: dbVehicles, drivers: driverRankings, trips: [], alerts: dbAlerts }}
+                    loading={execLoading}
+                  />
+                )}
+              </div>
+            )}
 
             {/* Financial & Compliance Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <FinancialTrendCard metrics={financialMetrics} loading={execLoading} />
-              <ComplianceGauges items={complianceItems} loading={execLoading} />
-              <LiveActivityTimeline 
-                activities={recentActivities} 
-                geofenceActivities={geofenceActivities}
-                loading={execLoading} 
-              />
-            </div>
+            {(wv("financial_trend") || wv("compliance_gauges") || wv("live_activity")) && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {wv("financial_trend") && <FinancialTrendCard metrics={financialMetrics} loading={execLoading} />}
+                {wv("compliance_gauges") && <ComplianceGauges items={complianceItems} loading={execLoading} />}
+                {wv("live_activity") && (
+                  <LiveActivityTimeline 
+                    activities={recentActivities} 
+                    geofenceActivities={geofenceActivities}
+                    loading={execLoading} 
+                  />
+                )}
+              </div>
+            )}
 
             {/* Driver Performance */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <DriverPerformanceCard rankings={driverRankings} loading={execLoading} />
-              <ExecutiveKPIGrid kpis={kpis} loading={execLoading} />
-            </div>
+            {(wv("driver_performance") || wv("executive_kpis")) && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {wv("driver_performance") && <DriverPerformanceCard rankings={driverRankings} loading={execLoading} />}
+                {wv("executive_kpis") && <ExecutiveKPIGrid kpis={kpis} loading={execLoading} />}
+              </div>
+            )}
           </TabsContent>
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6 mt-6">
             {/* Quick Stats KPIs */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {isLoading && dbVehicles.length === 0 ? (
-                <>
-                  {[1, 2, 3, 4].map((i) => (
-                    <StatCardSkeleton key={i} />
-                  ))}
-                </>
-              ) : (
-                <>
-                  <KPICard
-                    title="Active Vehicles"
-                    value={dbVehicles.filter(v => v.status === 'active').length}
-                    subtitle={`of ${dbVehicles.length} total`}
-                    icon={<Truck className="w-5 h-5" />}
-                    variant="default"
-                    animationDelay={0}
-                  />
-                  <KPICard
-                    title="Fleet Utilization"
-                    value={`${analytics.utilization.utilizationRate.toFixed(0)}%`}
-                    subtitle="vehicles in use"
-                    icon={<Activity className="w-5 h-5" />}
-                    variant="success"
-                    animationDelay={100}
-                  />
-                  <KPICard
-                    title="Monthly TCO"
-                    value={formatCurrency(analytics.tco.totalCost)}
-                    subtitle={`${formatCurrency(analytics.tco.costPerVehicle)}/vehicle`}
-                    icon={<DollarSign className="w-5 h-5" />}
-                    variant="default"
-                    animationDelay={200}
-                  />
-                  <KPICard
-                    title="Active Alerts"
-                    value={dbAlerts.length}
-                    subtitle={`${dbAlerts.filter(a => a.severity === 'critical').length} critical`}
-                    icon={<AlertTriangle className="w-5 h-5" />}
-                    variant="warning"
-                    animationDelay={300}
-                  />
-                </>
-              )}
-            </div>
+            {wv("kpi_cards") && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {isLoading && dbVehicles.length === 0 ? (
+                  <>{[1, 2, 3, 4].map((i) => <StatCardSkeleton key={i} />)}</>
+                ) : (
+                  <>
+                    <KPICard title="Active Vehicles" value={dbVehicles.filter(v => v.status === 'active').length} subtitle={`of ${dbVehicles.length} total`} icon={<Truck className="w-5 h-5" />} variant="default" animationDelay={0} />
+                    <KPICard title="Fleet Utilization" value={`${analytics.utilization.utilizationRate.toFixed(0)}%`} subtitle="vehicles in use" icon={<Activity className="w-5 h-5" />} variant="success" animationDelay={100} />
+                    <KPICard title="Monthly TCO" value={formatCurrency(analytics.tco.totalCost)} subtitle={`${formatCurrency(analytics.tco.costPerVehicle)}/vehicle`} icon={<DollarSign className="w-5 h-5" />} variant="default" animationDelay={200} />
+                    <KPICard title="Active Alerts" value={dbAlerts.length} subtitle={`${dbAlerts.filter(a => a.severity === 'critical').length} critical`} icon={<AlertTriangle className="w-5 h-5" />} variant="warning" animationDelay={300} />
+                  </>
+                )}
+              </div>
+            )}
 
             {/* Ford Pro Style Dashboard Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FleetVehicleSummaryCard vehicles={dbVehicles} />
-              <VehicleHealthStatusCard vehicles={dbVehicles} />
-              <GeofenceCategoriesCard />
-              <VehicleUtilizationCard vehicles={dbVehicles} telemetryMap={telemetryMap} />
-            </div>
+            {(wv("fleet_vehicle_summary") || wv("vehicle_health") || wv("geofence_categories") || wv("vehicle_utilization")) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {wv("fleet_vehicle_summary") && <FleetVehicleSummaryCard vehicles={dbVehicles} />}
+                {wv("vehicle_health") && <VehicleHealthStatusCard vehicles={dbVehicles} />}
+                {wv("geofence_categories") && <GeofenceCategoriesCard />}
+                {wv("vehicle_utilization") && <VehicleUtilizationCard vehicles={dbVehicles} telemetryMap={telemetryMap} />}
+              </div>
+            )}
 
             {/* Quick Analytics Preview */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <MetricCard
-                title="Utilization"
-                value={`${analytics.utilization.utilizationRate.toFixed(0)}%`}
-                subtitle={`${analytics.utilization.activeVehicles} of ${dbVehicles.length} vehicles`}
-                icon={<Activity className="w-5 h-5" />}
-                trend={analytics.utilization.trend}
-                trendValue={`${analytics.utilization.trendPercentage.toFixed(1)}%`}
-                variant="primary"
-              />
-              <MetricCard
-                title="Monthly TCO"
-                value={formatCurrency(analytics.tco.totalCost)}
-                subtitle={`${formatCurrency(analytics.tco.costPerKm)}/${settings.distance_unit}`}
-                icon={<DollarSign className="w-5 h-5" />}
-                trend={analytics.tco.trend}
-                trendValue={`${analytics.tco.trendPercentage.toFixed(1)}%`}
-                trendPositive={analytics.tco.trend === 'down'}
-                variant="default"
-              />
-              <MetricCard
-                title="Carbon Emissions"
-                value={`${(analytics.carbon.totalCO2Kg / 1000).toFixed(1)}t`}
-                subtitle={`${analytics.carbon.averagePerVehicle.toFixed(0)} kg/vehicle`}
-                icon={<TrendingUp className="w-5 h-5" />}
-                trend={analytics.carbon.trend}
-                trendValue={`${analytics.carbon.trendPercentage.toFixed(1)}%`}
-                trendPositive={analytics.carbon.trend === 'down'}
-                variant="success"
-              />
-              <MetricCard
-                title="Safety Score"
-                value={analytics.safety.averageScore.toFixed(0)}
-                subtitle={`${analytics.safety.incidentsThisMonth} incidents`}
-                icon={<AlertTriangle className="w-5 h-5" />}
-                trend={analytics.safety.trend}
-                trendValue={`${analytics.safety.trendPercentage.toFixed(1)}%`}
-                variant={analytics.safety.averageScore >= 80 ? "success" : "warning"}
-              />
-            </div>
+            {wv("metric_cards") && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <MetricCard title="Utilization" value={`${analytics.utilization.utilizationRate.toFixed(0)}%`} subtitle={`${analytics.utilization.activeVehicles} of ${dbVehicles.length} vehicles`} icon={<Activity className="w-5 h-5" />} trend={analytics.utilization.trend} trendValue={`${analytics.utilization.trendPercentage.toFixed(1)}%`} variant="primary" />
+                <MetricCard title="Monthly TCO" value={formatCurrency(analytics.tco.totalCost)} subtitle={`${formatCurrency(analytics.tco.costPerKm)}/${settings.distance_unit}`} icon={<DollarSign className="w-5 h-5" />} trend={analytics.tco.trend} trendValue={`${analytics.tco.trendPercentage.toFixed(1)}%`} trendPositive={analytics.tco.trend === 'down'} variant="default" />
+                <MetricCard title="Carbon Emissions" value={`${(analytics.carbon.totalCO2Kg / 1000).toFixed(1)}t`} subtitle={`${analytics.carbon.averagePerVehicle.toFixed(0)} kg/vehicle`} icon={<TrendingUp className="w-5 h-5" />} trend={analytics.carbon.trend} trendValue={`${analytics.carbon.trendPercentage.toFixed(1)}%`} trendPositive={analytics.carbon.trend === 'down'} variant="success" />
+                <MetricCard title="Safety Score" value={analytics.safety.averageScore.toFixed(0)} subtitle={`${analytics.safety.incidentsThisMonth} incidents`} icon={<AlertTriangle className="w-5 h-5" />} trend={analytics.safety.trend} trendValue={`${analytics.safety.trendPercentage.toFixed(1)}%`} variant={analytics.safety.averageScore >= 80 ? "success" : "warning"} />
+              </div>
+            )}
 
             {/* Charts Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Vehicle Status Distribution */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-primary" />
-                    Fleet Status
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div role="img" aria-label={`Fleet status chart: ${vehicleStatusData.map(d => `${d.name}: ${d.value}`).join(', ')}`}>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <PieChart>
-                        <Pie
-                          data={vehicleStatusData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={50}
-                          outerRadius={75}
-                          paddingAngle={5}
-                          dataKey="value"
-                        >
-                          {vehicleStatusData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 mt-2">
-                    {vehicleStatusData.map((item, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <div 
-                          className="w-2 h-2 rounded-full" 
-                          style={{ backgroundColor: item.color }}
-                        />
-                        <div className="text-xs">
-                          <span className="text-muted-foreground">{item.name}</span>
-                          <span className="font-medium ml-1">{item.value}</span>
-                        </div>
+            {(wv("fleet_status_pie") || wv("fuel_consumption_trend")) && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {wv("fleet_status_pie") && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Activity className="w-5 h-5 text-primary" />
+                        Fleet Status
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div role="img" aria-label={`Fleet status chart: ${vehicleStatusData.map(d => `${d.name}: ${d.value}`).join(', ')}`}>
+                        <ResponsiveContainer width="100%" height={200}>
+                          <PieChart>
+                            <Pie data={vehicleStatusData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={5} dataKey="value">
+                              {vehicleStatusData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip />
+                          </PieChart>
+                        </ResponsiveContainer>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Fuel Consumption Trend */}
-              <Card className="lg:col-span-2">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-primary" />
-                    Fuel Consumption Trend
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div role="img" aria-label={`Fuel consumption trend chart showing daily consumption: ${fuelTrendData.map(d => `${d.day}: ${d.consumption}L`).join(', ')}`}>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <LineChart data={fuelTrendData}>
-                        <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                        <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: "hsl(var(--card))", 
-                            border: "1px solid hsl(var(--border))",
-                            borderRadius: "8px"
-                          }}
-                        />
-                        <Line 
-                          type="monotone" 
-                          dataKey="consumption" 
-                          stroke="hsl(var(--primary))" 
-                          strokeWidth={2}
-                          dot={{ fill: "hsl(var(--primary))", r: 4 }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        {vehicleStatusData.map((item, index) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+                            <div className="text-xs">
+                              <span className="text-muted-foreground">{item.name}</span>
+                              <span className="font-medium ml-1">{item.value}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                {wv("fuel_consumption_trend") && (
+                  <Card className="lg:col-span-2">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <TrendingUp className="w-5 h-5 text-primary" />
+                        Fuel Consumption Trend
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div role="img" aria-label={`Fuel consumption trend`}>
+                        <ResponsiveContainer width="100%" height={200}>
+                          <LineChart data={fuelTrendData}>
+                            <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                            <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                            <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
+                            <Line type="monotone" dataKey="consumption" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ fill: "hsl(var(--primary))", r: 4 }} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
 
             {/* Bottom Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Vehicle Status */}
-              <Card className="lg:col-span-2">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Live Vehicle Status</CardTitle>
-                  <Button variant="ghost" size="sm" className="gap-2" onClick={() => navigate('/fleet')}>
-                    View All <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {vehicles.map((vehicle) => (
-                      <div 
-                        key={vehicle.id} 
-                        role="button"
-                        tabIndex={0}
-                        aria-label={`View details for vehicle ${vehicle.plate}`}
-                        className="group flex items-center justify-between p-3 border border-border rounded-lg hover:shadow-md hover:border-primary/50 transition-all cursor-pointer bg-gradient-to-r hover:from-primary/5 hover:to-transparent focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                        onClick={() => setSelectedVehicle(vehicle)}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedVehicle(vehicle); } }}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg group-hover:scale-110 transition-transform">
-                            <Truck className="w-4 h-4 text-primary" />
-                          </div>
-                          <div>
-                            <div className="font-semibold text-sm">{vehicle.plate}</div>
-                            <div className="text-xs text-muted-foreground flex items-center gap-1">
-                              <MapPin className="w-3 h-3" />
-                              {vehicle.location}
+            {(wv("vehicle_table") || wv("alerts_list")) && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {wv("vehicle_table") && (
+                  <Card className="lg:col-span-2">
+                    <CardHeader className="flex flex-row items-center justify-between">
+                      <CardTitle>Live Vehicle Status</CardTitle>
+                      <Button variant="ghost" size="sm" className="gap-2" onClick={() => navigate('/fleet')}>
+                        View All <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {vehicles.map((vehicle) => (
+                          <div key={vehicle.id} role="button" tabIndex={0} aria-label={`View details for vehicle ${vehicle.plate}`}
+                            className="group flex items-center justify-between p-3 border border-border rounded-lg hover:shadow-md hover:border-primary/50 transition-all cursor-pointer bg-gradient-to-r hover:from-primary/5 hover:to-transparent focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                            onClick={() => setSelectedVehicle(vehicle)}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedVehicle(vehicle); } }}>
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg group-hover:scale-110 transition-transform">
+                                <Truck className="w-4 h-4 text-primary" />
+                              </div>
+                              <div>
+                                <div className="font-semibold text-sm">{vehicle.plate}</div>
+                                <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                  <MapPin className="w-3 h-3" />{vehicle.location}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="text-right">
+                                <div className="flex items-center gap-1">
+                                  <div className={`w-2 h-2 rounded-full ${vehicle.fuel > 60 ? 'bg-success' : vehicle.fuel > 30 ? 'bg-warning' : 'bg-destructive'} animate-pulse`}></div>
+                                  <span className="text-xs font-medium">{vehicle.fuel}%</span>
+                                </div>
+                              </div>
+                              <StatusBadge status={vehicle.status} />
                             </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="text-right">
-                            <div className="flex items-center gap-1">
-                              <div className={`w-2 h-2 rounded-full ${
-                                vehicle.fuel > 60 ? 'bg-success' : 
-                                vehicle.fuel > 30 ? 'bg-warning' : 
-                                'bg-destructive'
-                              } animate-pulse`}></div>
-                              <span className="text-xs font-medium">{vehicle.fuel}%</span>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                {wv("alerts_list") && (
+                  <Card className="border-warning/20">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center gap-2 text-base">
+                          <div className="p-2 rounded-md bg-warning/10"><AlertTriangle className="w-4 h-4 text-warning" /></div>
+                          Recent Alerts
+                        </CardTitle>
+                        <Button variant="ghost" size="sm" onClick={() => navigate('/alerts')}>View All</Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {recentAlerts.map((alert) => (
+                          <div key={alert.id} role="button" tabIndex={0}
+                            aria-label={`${alert.type === 'critical' ? 'Critical' : 'Warning'} alert: ${alert.message}`}
+                            className={`p-3 border rounded-lg hover:shadow-md transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${alert.type === 'critical' ? 'border-destructive/30 bg-destructive/5' : 'border-warning/30 bg-warning/5'}`}
+                            onClick={() => navigate('/alerts')}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/alerts'); } }}>
+                            <div className="flex items-start gap-2">
+                              <AlertTriangle className={`w-4 h-4 mt-0.5 ${alert.type === 'critical' ? 'text-destructive animate-pulse' : 'text-warning'}`} />
+                              <div className="flex-1">
+                                <p className="text-xs font-medium">{alert.message}</p>
+                                <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                                  <Clock className="w-3 h-3" />{alert.time}
+                                </div>
+                              </div>
                             </div>
                           </div>
-                          <StatusBadge status={vehicle.status} />
-                        </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Recent Alerts */}
-              <Card className="border-warning/20">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <div className="p-2 rounded-md bg-warning/10">
-                        <AlertTriangle className="w-4 h-4 text-warning" />
-                      </div>
-                      Recent Alerts
-                    </CardTitle>
-                    <Button variant="ghost" size="sm" onClick={() => navigate('/alerts')}>View All</Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {recentAlerts.map((alert) => (
-                      <div 
-                        key={alert.id}
-                        role="button"
-                        tabIndex={0}
-                        aria-label={`${alert.type === 'critical' ? 'Critical' : 'Warning'} alert: ${alert.message}`}
-                        className={`p-3 border rounded-lg hover:shadow-md transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
-                          alert.type === 'critical' ? 'border-destructive/30 bg-destructive/5' : 'border-warning/30 bg-warning/5'
-                        }`}
-                        onClick={() => navigate('/alerts')}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/alerts'); } }}
-                      >
-                        <div className="flex items-start gap-2">
-                          <AlertTriangle className={`w-4 h-4 mt-0.5 ${alert.type === 'critical' ? 'text-destructive animate-pulse' : 'text-warning'}`} />
-                          <div className="flex-1">
-                            <p className="text-xs font-medium">{alert.message}</p>
-                            <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                              <Clock className="w-3 h-3" />
-                              {alert.time}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
 
             {/* Additional Widgets Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              <QuickActionsCard />
-              <TripsOverviewCard />
-              <DriversOverviewCard />
-              <MaintenanceDueCard />
-              <ComplianceAlertsCard />
-            </div>
+            {wv("quick_actions") && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                <QuickActionsCard />
+                <TripsOverviewCard />
+                <DriversOverviewCard />
+                <MaintenanceDueCard />
+                <ComplianceAlertsCard />
+              </div>
+            )}
           </TabsContent>
 
           {/* Analytics Tab */}
