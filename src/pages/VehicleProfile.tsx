@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, Suspense } from "react";
 import Layout from "@/components/Layout";
 import VehicleStatusTab from "@/components/fleet/VehicleStatusTab";
 import { lazy } from "react";
