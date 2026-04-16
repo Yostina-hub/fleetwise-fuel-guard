@@ -63,6 +63,7 @@ import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { startOfMonth } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { useDashboardLayout } from "@/hooks/useDashboardLayout";
+import DashboardWidgetRenderer from "@/components/dashboard/DashboardWidgetRenderer";
 
 // Executive Dashboard Components
 import ExecutiveKPIGrid from "@/components/dashboard/executive/ExecutiveKPIGrid";
