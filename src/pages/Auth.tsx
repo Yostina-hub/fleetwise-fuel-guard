@@ -62,6 +62,7 @@ const Auth = () => {
   const [totpCode, setTotpCode] = useState("");
   const [pending2FAUserId, setPending2FAUserId] = useState<string | null>(null);
   const [verifying2FA, setVerifying2FA] = useState(false);
+  const [pending2FACredentials, setPending2FACredentials] = useState<{ email: string; password: string } | null>(null);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -154,8 +155,8 @@ const Auth = () => {
             await supabase.auth.signOut();
             setPending2FA(true);
             setPending2FAUserId(userId);
+            setPending2FACredentials({ email, password });
             setTotpCode("");
-            setLoading(false);
             toast({
               title: "2FA Required",
               description: "Enter your authenticator code to continue.",
@@ -187,10 +188,7 @@ const Auth = () => {
     try {
       // Get the stored secret for this user
       // We need to sign back in first to access the data
-      const emailEl = document.getElementById('signin-email') as HTMLInputElement;
-      const pwdEl = document.getElementById('signin-password') as HTMLInputElement;
-      
-      if (!emailEl?.value || !pwdEl?.value) {
+      if (!pending2FACredentials) {
         toast({ title: "Session expired", description: "Please sign in again.", variant: "destructive" });
         setPending2FA(false);
         setVerifying2FA(false);
@@ -199,8 +197,8 @@ const Auth = () => {
 
       // Re-authenticate
       const { error: reAuthError } = await supabase.auth.signInWithPassword({
-        email: emailEl.value,
-        password: pwdEl.value,
+        email: pending2FACredentials.email,
+        password: pending2FACredentials.password,
       });
 
       if (reAuthError) {
@@ -255,6 +253,7 @@ const Auth = () => {
         }
 
         setPending2FA(false);
+        setPending2FACredentials(null);
         toast({
           title: "Welcome back!",
           description: usedBackupCode
@@ -519,7 +518,7 @@ const Auth = () => {
 
                     <button
                       type="button"
-                      onClick={() => { setPending2FA(false); setTotpCode(""); }}
+                      onClick={() => { setPending2FA(false); setTotpCode(""); setPending2FACredentials(null); }}
                       className="w-full text-center text-sm text-white/50 hover:text-white/80 transition-colors flex items-center justify-center gap-2"
                     >
                       <ArrowLeft className="w-4 h-4" />
