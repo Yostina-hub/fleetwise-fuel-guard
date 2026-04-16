@@ -104,26 +104,29 @@ const initialForm: FuelRequestFormData = {
   context_value: "Fuel request for vehicle",
 };
 
-// Previous Clearance Report
-const PreviousClearanceReport = ({ vehicleId, organizationId, formatFuel, formatCurrency }: any) => {
+// Previous Clearance Report (supports both vehicles and generators)
+const PreviousClearanceReport = ({ vehicleId, generatorId, organizationId, formatFuel, formatCurrency }: any) => {
+  const targetId = vehicleId || generatorId;
+  const targetType = vehicleId ? "vehicle" : "generator";
   const { data: history = [] } = useQuery({
-    queryKey: ["fuel-clearance-history", vehicleId],
+    queryKey: ["fuel-clearance-history", targetType, targetId],
     queryFn: async () => {
-      if (!vehicleId || !organizationId) return [];
-      const { data } = await supabase
+      if (!targetId || !organizationId) return [];
+      let q = supabase
         .from("fuel_requests")
         .select("*")
         .eq("organization_id", organizationId)
-        .eq("vehicle_id", vehicleId)
         .in("status", ["fulfilled", "cleared", "deviation_detected"])
         .order("created_at", { ascending: false })
         .limit(5);
+      q = vehicleId ? q.eq("vehicle_id", vehicleId) : q.eq("generator_id", generatorId);
+      const { data } = await q;
       return data || [];
     },
-    enabled: !!vehicleId && !!organizationId,
+    enabled: !!targetId && !!organizationId,
   });
 
-  if (!vehicleId || history.length === 0) return null;
+  if (!targetId || history.length === 0) return null;
 
   return (
     <Card className="border-dashed border-muted-foreground/30">
