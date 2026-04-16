@@ -156,18 +156,19 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
 
   const assignMutation = useMutation({
     mutationFn: async (vehicleId: string) => {
+      if (!selectedDriver) {
+        throw new Error("Please select a driver — required so the request shows in the Driver Portal.");
+      }
       const user = (await supabase.auth.getUser()).data.user;
       const mins = Math.round((Date.now() - new Date(request.created_at).getTime()) / 60000);
       const updates: any = {
         status: "assigned",
         assigned_vehicle_id: vehicleId,
+        assigned_driver_id: selectedDriver,
         assigned_at: new Date().toISOString(),
         actual_assignment_minutes: mins,
         assigned_by: user!.id,
       };
-      if (selectedDriver) {
-        updates.assigned_driver_id = selectedDriver;
-      }
       await (supabase as any).from("vehicle_requests").update(updates).eq("id", request.id);
 
       // Update vehicle status to in_use
@@ -511,7 +512,7 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
               </div>
             </div>
             <div className="flex gap-2">
-              <Button size="sm" disabled={!selectedVehicleId || assignMutation.isPending} onClick={() => assignMutation.mutate(selectedVehicleId)}>
+              <Button size="sm" disabled={!selectedVehicleId || !selectedDriver || assignMutation.isPending} onClick={() => assignMutation.mutate(selectedVehicleId)}>
                 <CheckCircle className="w-3.5 h-3.5 mr-1" /> {assignMutation.isPending ? "Assigning..." : "Assign"}
               </Button>
               {onCrossPool && (
