@@ -112,7 +112,7 @@ const UserManagement = () => {
   const [provisionPerson, setProvisionPerson] = useState<UnifiedPerson | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [detailUser, setDetailUser] = useState<UserProfile | null>(null);
-  const [detailTab, setDetailTab] = useState<"profile" | "roles">("profile");
+  const [detailTab, setDetailTab] = useState<"profile" | "hr" | "roles">("profile");
   const [resetPwdUser, setResetPwdUser] = useState<UserProfile | null>(null);
   const [statusActionUser, setStatusActionUser] = useState<UserProfile | null>(null);
   const [statusActionLoading, setStatusActionLoading] = useState(false);

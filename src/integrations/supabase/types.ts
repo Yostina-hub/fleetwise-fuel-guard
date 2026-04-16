@@ -13093,34 +13093,90 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          department: string | null
           email: string
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          emergency_contact_relationship: string | null
+          employee_code: string | null
+          employee_type: string | null
+          first_name: string | null
           full_name: string | null
+          hire_date: string | null
           id: string
+          job_title: string | null
+          last_name: string | null
+          linked_driver_id: string | null
+          linked_employee_id: string | null
+          middle_name: string | null
           organization_id: string | null
           phone: string | null
+          status: string
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          department?: string | null
           email: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
+          employee_code?: string | null
+          employee_type?: string | null
+          first_name?: string | null
           full_name?: string | null
+          hire_date?: string | null
           id: string
+          job_title?: string | null
+          last_name?: string | null
+          linked_driver_id?: string | null
+          linked_employee_id?: string | null
+          middle_name?: string | null
           organization_id?: string | null
           phone?: string | null
+          status?: string
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
+          department?: string | null
           email?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
+          employee_code?: string | null
+          employee_type?: string | null
+          first_name?: string | null
           full_name?: string | null
+          hire_date?: string | null
           id?: string
+          job_title?: string | null
+          last_name?: string | null
+          linked_driver_id?: string | null
+          linked_employee_id?: string | null
+          middle_name?: string | null
           organization_id?: string | null
           phone?: string | null
+          status?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_linked_driver_id_fkey"
+            columns: ["linked_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_linked_employee_id_fkey"
+            columns: ["linked_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_organization_id_fkey"
             columns: ["organization_id"]

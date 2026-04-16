@@ -10,9 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Trash2, Plus, Save, Loader2, Mail, Phone, Calendar, Building } from "lucide-react";
+import { Shield, Trash2, Plus, Save, Loader2, Mail, Phone, Calendar, Building, IdCard, Briefcase, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import type { UserProfile } from "./UserTable";
+import { Link } from "react-router-dom";
 
 const ROLES = [
   { value: "super_admin", label: "Super Admin" },
@@ -29,6 +30,23 @@ const ROLES = [
   { value: "mechanic", label: "Mechanic" },
   { value: "auditor", label: "Auditor" },
   { value: "viewer", label: "Viewer" },
+];
+
+const EMPLOYEE_TYPES = [
+  { value: "driver", label: "Driver" },
+  { value: "mechanic", label: "Mechanic" },
+  { value: "technician", label: "Technician" },
+  { value: "dispatcher", label: "Dispatcher" },
+  { value: "manager", label: "Manager" },
+  { value: "coordinator", label: "Coordinator" },
+  { value: "office_staff", label: "Office Staff" },
+  { value: "other", label: "Other" },
+];
+
+const STATUS_OPTIONS = [
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
+  { value: "suspended", label: "Suspended" },
 ];
 
 const ROLE_COLORS: Record<string, string> = {
@@ -53,27 +71,100 @@ interface UserDetailDialogProps {
   onOpenChange: (open: boolean) => void;
   user: UserProfile | null;
   onUserUpdated: () => void;
-  initialTab?: "profile" | "roles";
+  initialTab?: "profile" | "hr" | "roles";
+}
+
+interface ProfileExtras {
+  first_name: string | null;
+  last_name: string | null;
+  middle_name: string | null;
+  employee_code: string | null;
+  department: string | null;
+  job_title: string | null;
+  hire_date: string | null;
+  status: string | null;
+  employee_type: string | null;
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
+  emergency_contact_relationship: string | null;
+  linked_driver_id: string | null;
+  linked_employee_id: string | null;
 }
 
 const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab = "profile" }: UserDetailDialogProps) => {
   const { toast } = useToast();
+
+  // Identity
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [middleName, setMiddleName] = useState("");
+  const [lastName, setLastName] = useState("");
+
+  // HR
+  const [employeeCode, setEmployeeCode] = useState("");
+  const [department, setDepartment] = useState("");
+  const [jobTitle, setJobTitle] = useState("");
+  const [hireDate, setHireDate] = useState("");
+  const [status, setStatus] = useState("active");
+  const [employeeType, setEmployeeType] = useState<string>("");
+  const [emergencyName, setEmergencyName] = useState("");
+  const [emergencyPhone, setEmergencyPhone] = useState("");
+  const [emergencyRel, setEmergencyRel] = useState("");
+
+  const [linkedDriverId, setLinkedDriverId] = useState<string | null>(null);
+  const [linkedEmployeeId, setLinkedEmployeeId] = useState<string | null>(null);
+
+  const [loadingExtras, setLoadingExtras] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savingHR, setSavingHR] = useState(false);
   const [newRole, setNewRole] = useState("");
   const [roleLoading, setRoleLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState(initialTab);
+  const [activeTab, setActiveTab] = useState<"profile" | "hr" | "roles">(initialTab);
 
-  // Sync local state whenever user or open state changes
+  // Load profile extras from DB whenever the dialog opens for a user
   useEffect(() => {
-    if (open && user) {
-      setEditName(user.full_name || "");
-      setEditPhone(user.phone || "");
-      setActiveTab(initialTab);
-      setNewRole("");
-    }
-  }, [open, user, initialTab]);
+    if (!open || !user) return;
+
+    setEditName(user.full_name || "");
+    setEditPhone(user.phone || "");
+    setActiveTab(initialTab);
+    setNewRole("");
+
+    let cancelled = false;
+    (async () => {
+      setLoadingExtras(true);
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("first_name, last_name, middle_name, employee_code, department, job_title, hire_date, status, employee_type, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, linked_driver_id, linked_employee_id")
+          .eq("id", user.id)
+          .maybeSingle<ProfileExtras>();
+        if (cancelled) return;
+        if (error) throw error;
+        setFirstName(data?.first_name || "");
+        setMiddleName(data?.middle_name || "");
+        setLastName(data?.last_name || "");
+        setEmployeeCode(data?.employee_code || "");
+        setDepartment(data?.department || "");
+        setJobTitle(data?.job_title || "");
+        setHireDate(data?.hire_date || "");
+        setStatus(data?.status || "active");
+        setEmployeeType(data?.employee_type || "");
+        setEmergencyName(data?.emergency_contact_name || "");
+        setEmergencyPhone(data?.emergency_contact_phone || "");
+        setEmergencyRel(data?.emergency_contact_relationship || "");
+        setLinkedDriverId(data?.linked_driver_id || null);
+        setLinkedEmployeeId(data?.linked_employee_id || null);
+      } catch (err: any) {
+        if (!cancelled) toast({ title: "Failed to load HR fields", description: err.message, variant: "destructive" });
+      } finally {
+        if (!cancelled) setLoadingExtras(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [open, user, initialTab, toast]);
 
   const handleSaveProfile = async () => {
     if (!user) return;
@@ -81,7 +172,13 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
     try {
       const { error } = await supabase
         .from("profiles")
-        .update({ full_name: editName.trim() || null, phone: editPhone.trim() || null })
+        .update({
+          full_name: editName.trim() || null,
+          phone: editPhone.trim() || null,
+          first_name: firstName.trim() || null,
+          middle_name: middleName.trim() || null,
+          last_name: lastName.trim() || null,
+        })
         .eq("id", user.id);
       if (error) throw error;
       toast({ title: "Profile Updated", description: "User profile saved successfully." });
@@ -93,15 +190,49 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
     }
   };
 
+  const handleSaveHR = async () => {
+    if (!user) return;
+    setSavingHR(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          employee_code: employeeCode.trim() || null,
+          department: department.trim() || null,
+          job_title: jobTitle.trim() || null,
+          hire_date: hireDate || null,
+          status,
+          employee_type: employeeType || null,
+          emergency_contact_name: emergencyName.trim() || null,
+          emergency_contact_phone: emergencyPhone.trim() || null,
+          emergency_contact_relationship: emergencyRel.trim() || null,
+        })
+        .eq("id", user.id);
+      if (error) throw error;
+      toast({ title: "HR Details Saved", description: "Employment information updated." });
+      onUserUpdated();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingHR(false);
+    }
+  };
+
   const handleAddRole = async () => {
     if (!user || !newRole) return;
     setRoleLoading(true);
     try {
       const { error } = await supabase
         .from("user_roles")
-        .insert({ user_id: user.id, role: newRole as any } as any);
+        .insert({ user_id: user.id, role: newRole as any, organization_id: user.organization_id } as any);
       if (error) throw error;
-      toast({ title: "Role Added", description: `${ROLES.find(r => r.value === newRole)?.label} assigned successfully.` });
+      const isDriver = newRole === "driver";
+      toast({
+        title: "Role Added",
+        description: isDriver
+          ? "Driver role assigned. A driver record was auto-created and is now visible in the Drivers list."
+          : `${ROLES.find(r => r.value === newRole)?.label} assigned successfully.`,
+      });
       setNewRole("");
       onUserUpdated();
     } catch (err: any) {
@@ -138,28 +269,43 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
     ? user.full_name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
     : user.email[0].toUpperCase();
 
+  const isDriver = existingRoles.includes("driver");
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-4">
             <Avatar className="h-14 w-14 border-2 border-primary/30">
               <AvatarImage src={user.avatar_url || undefined} />
               <AvatarFallback className="bg-primary/10 text-primary text-lg font-bold">{initials}</AvatarFallback>
             </Avatar>
-            <div>
-              <DialogTitle className="text-xl">{user.full_name || "Unnamed User"}</DialogTitle>
-              <DialogDescription className="flex items-center gap-1">
-                <Mail className="w-3 h-3" /> {user.email}
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="text-xl truncate">{user.full_name || "Unnamed User"}</DialogTitle>
+              <DialogDescription className="flex items-center gap-1 truncate">
+                <Mail className="w-3 h-3 shrink-0" /> <span className="truncate">{user.email}</span>
               </DialogDescription>
+              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                {linkedDriverId && (
+                  <Link to="/drivers" className="text-[10px] inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20">
+                    <IdCard className="w-3 h-3" /> Linked Driver
+                  </Link>
+                )}
+                {linkedEmployeeId && (
+                  <span className="text-[10px] inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-400">
+                    <Briefcase className="w-3 h-3" /> Linked Employee
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "profile" | "roles")} className="mt-2">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="roles">Roles & Permissions</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "profile" | "hr" | "roles")} className="mt-2">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="profile">Identity</TabsTrigger>
+            <TabsTrigger value="hr">Employment</TabsTrigger>
+            <TabsTrigger value="roles">Roles</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile" className="space-y-4 mt-4">
@@ -183,10 +329,26 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
             <Separator />
 
             <div className="space-y-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="detail-name">Full Name</Label>
-                <Input id="detail-name" value={editName} onChange={e => setEditName(e.target.value)} placeholder="Enter name" />
+              <div className="grid grid-cols-3 gap-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="first-name">First Name</Label>
+                  <Input id="first-name" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="First" disabled={loadingExtras} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="middle-name">Middle</Label>
+                  <Input id="middle-name" value={middleName} onChange={e => setMiddleName(e.target.value)} placeholder="(optional)" disabled={loadingExtras} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="last-name">Last Name</Label>
+                  <Input id="last-name" value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Last" disabled={loadingExtras} />
+                </div>
               </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="detail-name">Display Name</Label>
+                <Input id="detail-name" value={editName} onChange={e => setEditName(e.target.value)} placeholder="Display name" />
+              </div>
+
               <div className="space-y-1.5">
                 <Label htmlFor="detail-phone">Phone</Label>
                 <div className="relative">
@@ -194,14 +356,104 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
                   <Input id="detail-phone" value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="+251..." className="pl-10" />
                 </div>
               </div>
-              <Button onClick={handleSaveProfile} disabled={saving} className="w-full gap-2">
+
+              <Button onClick={handleSaveProfile} disabled={saving || loadingExtras} className="w-full gap-2">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                Save Changes
+                Save Identity
               </Button>
             </div>
           </TabsContent>
 
+          <TabsContent value="hr" className="space-y-4 mt-4">
+            {loadingExtras ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="emp-code">Employee ID</Label>
+                    <Input id="emp-code" value={employeeCode} onChange={e => setEmployeeCode(e.target.value)} placeholder="EMP-0001" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="emp-type">Employee Type</Label>
+                    <Select value={employeeType} onValueChange={setEmployeeType}>
+                      <SelectTrigger id="emp-type"><SelectValue placeholder="Select type" /></SelectTrigger>
+                      <SelectContent>
+                        {EMPLOYEE_TYPES.map(t => (
+                          <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="department">Department</Label>
+                    <Input id="department" value={department} onChange={e => setDepartment(e.target.value)} placeholder="Operations" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="job-title">Job Title</Label>
+                    <Input id="job-title" value={jobTitle} onChange={e => setJobTitle(e.target.value)} placeholder="Senior Driver" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="hire-date">Hire Date</Label>
+                    <Input id="hire-date" type="date" value={hireDate} onChange={e => setHireDate(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="status">Status</Label>
+                    <Select value={status} onValueChange={setStatus}>
+                      <SelectTrigger id="status"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {STATUS_OPTIONS.map(s => (
+                          <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Emergency Contact</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ec-name">Name</Label>
+                    <Input id="ec-name" value={emergencyName} onChange={e => setEmergencyName(e.target.value)} placeholder="Contact name" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ec-phone">Phone</Label>
+                    <Input id="ec-phone" value={emergencyPhone} onChange={e => setEmergencyPhone(e.target.value)} placeholder="+251..." />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="ec-rel">Relationship</Label>
+                  <Input id="ec-rel" value={emergencyRel} onChange={e => setEmergencyRel(e.target.value)} placeholder="Spouse, Parent, Sibling..." />
+                </div>
+
+                <Button onClick={handleSaveHR} disabled={savingHR} className="w-full gap-2">
+                  {savingHR ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Save Employment Details
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+
           <TabsContent value="roles" className="space-y-4 mt-4">
+            {isDriver && (
+              <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-3 flex items-start gap-2">
+                <IdCard className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                <div className="text-xs text-emerald-200">
+                  This user has the <span className="font-semibold">Driver</span> role. A driver record is auto-maintained — view it in the <Link to="/drivers" className="underline font-medium">Drivers list</Link>.
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label className="text-sm font-medium">Current Roles</Label>
               {existingRoles.length === 0 ? (
@@ -247,26 +499,12 @@ const UserDetailDialog = ({ open, onOpenChange, user, onUserUpdated, initialTab 
                   {roleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                 </Button>
               </div>
-            </div>
-
-            <div className="rounded-lg bg-muted/20 border border-border/30 p-3 space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Role Guide</p>
-              <div className="grid gap-1.5 text-xs max-h-40 overflow-y-auto">
-                <div><span className="font-medium text-destructive">Super Admin</span> — Full system access, all organizations</div>
-                <div><span className="font-medium text-primary">Org Admin</span> — Full access within their organization</div>
-                <div><span className="font-medium text-violet-400">Fleet Owner</span> — Owner-level fleet visibility</div>
-                <div><span className="font-medium text-indigo-400">Ops Manager</span> — Day-to-day fleet operations management</div>
-                <div><span className="font-medium text-blue-400">Fleet Manager</span> — Manage vehicles, routes, and schedules</div>
-                <div><span className="font-medium text-sky-400">Dispatcher</span> — Assign jobs and monitor live fleet</div>
-                <div><span className="font-medium text-yellow-400">Fuel Controller</span> — Fuel monitoring and management</div>
-                <div><span className="font-medium text-orange-400">Maintenance Lead</span> — Maintenance and work orders</div>
-                <div><span className="font-medium text-cyan-400">Operator</span> — Day-to-day fleet operations</div>
-                <div><span className="font-medium text-emerald-400">Driver</span> — Trips, logbooks, and incidents</div>
-                <div><span className="font-medium text-amber-400">Technician</span> — Maintenance and inspections</div>
-                <div><span className="font-medium text-orange-400">Mechanic</span> — Hands-on vehicle repairs</div>
-                <div><span className="font-medium text-purple-400">Auditor</span> — Read-only compliance and audit</div>
-                <div><span className="font-medium text-muted-foreground">Viewer</span> — Read-only dashboard access</div>
-              </div>
+              {newRole === "driver" && (
+                <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-2 flex items-start gap-2 text-[11px] text-amber-200">
+                  <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
+                  Assigning <span className="font-semibold">Driver</span> will auto-create a stub record in the Drivers list. Complete the license number afterwards.
+                </div>
+              )}
             </div>
           </TabsContent>
         </Tabs>
