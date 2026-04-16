@@ -16762,6 +16762,56 @@ export type Database = {
           },
         ]
       }
+      two_factor_settings: {
+        Row: {
+          backup_codes: Json | null
+          created_at: string
+          id: string
+          is_enabled: boolean
+          last_used_at: string | null
+          method: string
+          organization_id: string
+          secret_encrypted: string | null
+          updated_at: string
+          user_id: string
+          verified_at: string | null
+        }
+        Insert: {
+          backup_codes?: Json | null
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          last_used_at?: string | null
+          method?: string
+          organization_id: string
+          secret_encrypted?: string | null
+          updated_at?: string
+          user_id: string
+          verified_at?: string | null
+        }
+        Update: {
+          backup_codes?: Json | null
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          last_used_at?: string | null
+          method?: string
+          organization_id?: string
+          secret_encrypted?: string | null
+          updated_at?: string
+          user_id?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "two_factor_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_2fa_settings: {
         Row: {
           backup_codes: string[] | null

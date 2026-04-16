@@ -28,7 +28,7 @@ export const useEmailReports = () => {
     queryKey: ["email-report-configs", organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("email_report_configs" as any)
+        .from("email_report_configs")
         .select("*")
         .eq("organization_id", organizationId!)
         .order("created_at", { ascending: false });
@@ -46,12 +46,12 @@ export const useEmailReports = () => {
       if (!organizationId) throw new Error("Organization not found");
 
       const { data, error } = await supabase
-        .from("email_report_configs" as any)
+        .from("email_report_configs")
         .insert({
           ...config,
           created_by: user.id,
           organization_id: organizationId,
-        })
+        } as any)
         .select()
         .single();
 
@@ -77,8 +77,8 @@ export const useEmailReports = () => {
   const updateReportConfig = useMutation({
     mutationFn: async ({ id, ...config }: Partial<EmailReportConfig> & { id: string }) => {
       const { data, error } = await supabase
-        .from("email_report_configs" as any)
-        .update(config)
+        .from("email_report_configs")
+        .update(config as any)
         .eq("id", id)
         .select()
         .single();
@@ -105,7 +105,7 @@ export const useEmailReports = () => {
   const deleteReportConfig = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from("email_report_configs" as any)
+        .from("email_report_configs")
         .delete()
         .eq("id", id);
 
