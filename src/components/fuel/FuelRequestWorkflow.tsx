@@ -432,6 +432,7 @@ export const FuelRequestWorkflow = () => {
   const [showReject, setShowReject] = useState<any>(null);
   const [showFulfill, setShowFulfill] = useState<any>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showWoDialog, setShowWoDialog] = useState<{ id: string | null; frId: string | null } | null>(null);
   const [form, setForm] = useState<FuelRequestFormData>(initialForm);
   const [rejectReason, setRejectReason] = useState("");
   const [approvedLiters, setApprovedLiters] = useState("");
