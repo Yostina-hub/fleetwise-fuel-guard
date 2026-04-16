@@ -57,6 +57,9 @@ export const TripRequestsList = ({ requests, loading }: TripRequestsListProps) =
   const { submitRequest } = useTripRequests();
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const safeRequests = requests || [];
+  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(safeRequests.length, 10);
+  const paginatedRequests = safeRequests.slice(startIndex, endIndex);
 
   const openDetails = (request: any) => {
     setSelectedRequest(request);
@@ -83,7 +86,7 @@ export const TripRequestsList = ({ requests, loading }: TripRequestsListProps) =
     );
   }
 
-  if (!requests || requests.length === 0) {
+  if (safeRequests.length === 0) {
     return (
       <Card>
         <CardContent className="pt-6">
@@ -94,9 +97,6 @@ export const TripRequestsList = ({ requests, loading }: TripRequestsListProps) =
       </Card>
     );
   }
-
-  const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(requests.length, 10);
-  const paginatedRequests = requests.slice(startIndex, endIndex);
 
   return (
     <>
