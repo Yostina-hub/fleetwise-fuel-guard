@@ -179,7 +179,7 @@ export const VehicleRequestsPanel = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {requests.map((r: any) => (
+                  {filteredRequests.map((r: any) => (
                     <tr key={r.id} className="border-b hover:bg-muted/30">
                       <td className="py-2 px-3 font-medium">{r.request_number}</td>
                       <td className="py-2 px-3">
