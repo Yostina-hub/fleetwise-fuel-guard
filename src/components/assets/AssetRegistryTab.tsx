@@ -54,7 +54,9 @@ export default function AssetRegistryTab() {
   const [filterStage, setFilterStage] = useState("all");
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [importType, setImportType] = useState<"vehicles" | "devices">("vehicles");
   const [selectedVehicles, setSelectedVehicles] = useState<string[]>([]);
+  const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
   const [form, setForm] = useState({
     asset_code: "", name: "", category: "equipment", sub_category: "",
     serial_number: "", manufacturer: "", model: "", purchase_date: "",
@@ -65,6 +67,19 @@ export default function AssetRegistryTab() {
   });
 
   const { vehicles } = useVehicles();
+
+  const { data: devices = [] } = useQuery({
+    queryKey: ["devices-for-assets", organizationId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("devices")
+        .select("*, vehicles:vehicle_id(plate_number)")
+        .eq("organization_id", organizationId!);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId,
+  });
 
   const { data: assets = [], isLoading } = useQuery({
     queryKey: ["fleet-assets", organizationId],
@@ -83,6 +98,10 @@ export default function AssetRegistryTab() {
   // Vehicles not yet linked as assets
   const linkedVehicleIds = new Set(assets.filter((a: any) => a.vehicle_id).map((a: any) => a.vehicle_id));
   const unlinkededVehicles = vehicles.filter(v => !linkedVehicleIds.has(v.id));
+
+  // Devices not yet linked as assets
+  const linkedDeviceSerials = new Set(assets.filter((a: any) => a.category === "gps_tracker" || a.category === "iot_sensor").map((a: any) => a.serial_number));
+  const unlinkedDevices = devices.filter((d: any) => !linkedDeviceSerials.has(d.imei));
 
   const addMutation = useMutation({
     mutationFn: async () => {
@@ -155,15 +174,49 @@ export default function AssetRegistryTab() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const importDevicesMutation = useMutation({
+    mutationFn: async () => {
+      const toImport = devices.filter((d: any) => selectedDevices.includes(d.id));
+      const rows = toImport.map((d: any) => ({
+        organization_id: organizationId,
+        asset_code: `DEV-${d.imei?.slice(-6) || d.id.slice(0, 6)}`,
+        name: `${d.tracker_model} (${d.imei})`,
+        category: "gps_tracker",
+        sub_category: d.tracker_model || null,
+        serial_number: d.imei,
+        manufacturer: d.tracker_model?.split(" ")[0] || null,
+        model: d.tracker_model || null,
+        purchase_date: d.install_date || null,
+        lifecycle_stage: d.status === "active" ? "in_service" : d.status === "inactive" ? "idle" : "acquired",
+        condition: d.status === "active" ? "good" : "fair",
+        location: d.vehicles?.plate_number ? `Vehicle: ${d.vehicles.plate_number}` : null,
+        vehicle_id: d.vehicle_id || null,
+      }));
+      const { error } = await (supabase as any).from("fleet_assets").insert(rows);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(`${selectedDevices.length} devices imported as assets`);
+      queryClient.invalidateQueries({ queryKey: ["fleet-assets"] });
+      setShowImport(false);
+      setSelectedDevices([]);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const toggleVehicle = (id: string) => {
     setSelectedVehicles(prev => prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]);
   };
 
+  const toggleDevice = (id: string) => {
+    setSelectedDevices(prev => prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]);
+  };
+
   const toggleAll = () => {
-    if (selectedVehicles.length === unlinkededVehicles.length) {
-      setSelectedVehicles([]);
+    if (importType === "devices") {
+      setSelectedDevices(prev => prev.length === unlinkedDevices.length ? [] : unlinkedDevices.map((d: any) => d.id));
     } else {
-      setSelectedVehicles(unlinkededVehicles.map(v => v.id));
+      setSelectedVehicles(prev => prev.length === unlinkededVehicles.length ? [] : unlinkededVehicles.map(v => v.id));
     }
   };
 
@@ -210,8 +263,11 @@ export default function AssetRegistryTab() {
             {STAGES.map(s => <SelectItem key={s} value={s} className="capitalize">{s.replace("_", " ")}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Button variant="outline" onClick={() => setShowImport(true)} className="gap-1.5 h-9">
-          <Download className="w-4 h-4" />Import Vehicles ({unlinkededVehicles.length})
+        <Button variant="outline" onClick={() => { setImportType("vehicles"); setShowImport(true); }} className="gap-1.5 h-9">
+          <Truck className="w-4 h-4" />Import Vehicles ({unlinkededVehicles.length})
+        </Button>
+        <Button variant="outline" onClick={() => { setImportType("devices"); setShowImport(true); }} className="gap-1.5 h-9">
+          <Radio className="w-4 h-4" />Import Devices ({unlinkedDevices.length})
         </Button>
         <Button onClick={() => setShowAdd(true)} className="gap-1.5 h-9"><Plus className="w-4 h-4" />Add Asset</Button>
       </div>
@@ -306,69 +362,125 @@ export default function AssetRegistryTab() {
         </div>
       </Card>
 
-      {/* Import Vehicles Dialog */}
+      {/* Import Assets Dialog */}
       <Dialog open={showImport} onOpenChange={setShowImport}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Truck className="w-5 h-5" />Import Vehicles as Assets</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              {importType === "vehicles" ? <Truck className="w-5 h-5" /> : <Radio className="w-5 h-5" />}
+              Import {importType === "vehicles" ? "Vehicles" : "Devices"} as Assets
+            </DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Select vehicles to automatically register as fleet assets. Already-linked vehicles are excluded.
+            Select {importType === "vehicles" ? "vehicles" : "GPS trackers/IoT devices"} to register as fleet assets. Already-linked items are excluded.
           </p>
-          {unlinkededVehicles.length === 0 ? (
-            <p className="text-center py-8 text-muted-foreground">All vehicles are already linked as assets.</p>
-          ) : (
-            <ScrollArea className="max-h-[400px]">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-10">
-                      <Checkbox
-                        checked={selectedVehicles.length === unlinkededVehicles.length && unlinkededVehicles.length > 0}
-                        onCheckedChange={toggleAll}
-                      />
-                    </TableHead>
-                    <TableHead>Plate</TableHead>
-                    <TableHead>Make / Model</TableHead>
-                    <TableHead>Year</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Acq. Cost</TableHead>
-                    <TableHead>Depot</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {unlinkededVehicles.map(v => (
-                    <TableRow key={v.id} className="cursor-pointer" onClick={() => toggleVehicle(v.id)}>
-                      <TableCell>
-                        <Checkbox checked={selectedVehicles.includes(v.id)} onCheckedChange={() => toggleVehicle(v.id)} />
-                      </TableCell>
-                      <TableCell className="font-medium">{v.plate_number}</TableCell>
-                      <TableCell>{v.make} {v.model}</TableCell>
-                      <TableCell>{v.year}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={cn("capitalize text-xs",
-                          v.status === "active" ? "bg-success/10 text-success" :
-                          v.status === "maintenance" ? "bg-warning/10 text-warning" : "bg-muted text-muted-foreground"
-                        )}>{v.status}</Badge>
-                      </TableCell>
-                      <TableCell>{v.acquisition_cost ? `${v.acquisition_cost.toLocaleString()} ETB` : "—"}</TableCell>
-                      <TableCell className="text-sm">{v.depot?.name || "—"}</TableCell>
+
+          {importType === "vehicles" ? (
+            unlinkededVehicles.length === 0 ? (
+              <p className="text-center py-8 text-muted-foreground">All vehicles are already linked as assets.</p>
+            ) : (
+              <ScrollArea className="max-h-[400px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10">
+                        <Checkbox
+                          checked={selectedVehicles.length === unlinkededVehicles.length && unlinkededVehicles.length > 0}
+                          onCheckedChange={toggleAll}
+                        />
+                      </TableHead>
+                      <TableHead>Plate</TableHead>
+                      <TableHead>Make / Model</TableHead>
+                      <TableHead>Year</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Acq. Cost</TableHead>
+                      <TableHead>Depot</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </ScrollArea>
+                  </TableHeader>
+                  <TableBody>
+                    {unlinkededVehicles.map(v => (
+                      <TableRow key={v.id} className="cursor-pointer" onClick={() => toggleVehicle(v.id)}>
+                        <TableCell><Checkbox checked={selectedVehicles.includes(v.id)} onCheckedChange={() => toggleVehicle(v.id)} /></TableCell>
+                        <TableCell className="font-medium">{v.plate_number}</TableCell>
+                        <TableCell>{v.make} {v.model}</TableCell>
+                        <TableCell>{v.year}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={cn("capitalize text-xs",
+                            v.status === "active" ? "bg-success/10 text-success" :
+                            v.status === "maintenance" ? "bg-warning/10 text-warning" : "bg-muted text-muted-foreground"
+                          )}>{v.status}</Badge>
+                        </TableCell>
+                        <TableCell>{v.acquisition_cost ? `${v.acquisition_cost.toLocaleString()} ETB` : "—"}</TableCell>
+                        <TableCell className="text-sm">{v.depot?.name || "—"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            )
+          ) : (
+            unlinkedDevices.length === 0 ? (
+              <p className="text-center py-8 text-muted-foreground">All devices are already linked as assets.</p>
+            ) : (
+              <ScrollArea className="max-h-[400px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10">
+                        <Checkbox
+                          checked={selectedDevices.length === unlinkedDevices.length && unlinkedDevices.length > 0}
+                          onCheckedChange={toggleAll}
+                        />
+                      </TableHead>
+                      <TableHead>IMEI</TableHead>
+                      <TableHead>Model</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Vehicle</TableHead>
+                      <TableHead>Installed</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {unlinkedDevices.map((d: any) => (
+                      <TableRow key={d.id} className="cursor-pointer" onClick={() => toggleDevice(d.id)}>
+                        <TableCell><Checkbox checked={selectedDevices.includes(d.id)} onCheckedChange={() => toggleDevice(d.id)} /></TableCell>
+                        <TableCell className="font-mono text-xs">{d.imei}</TableCell>
+                        <TableCell>{d.tracker_model}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={cn("capitalize text-xs",
+                            d.status === "active" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
+                          )}>{d.status}</Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">{d.vehicles?.plate_number || "—"}</TableCell>
+                        <TableCell className="text-sm">{d.install_date || "—"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            )
           )}
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowImport(false)}>Cancel</Button>
-            <Button
-              onClick={() => importMutation.mutate()}
-              disabled={selectedVehicles.length === 0 || importMutation.isPending}
-              className="gap-1.5"
-            >
-              <Download className="w-4 h-4" />
-              {importMutation.isPending ? "Importing..." : `Import ${selectedVehicles.length} Vehicle${selectedVehicles.length !== 1 ? "s" : ""}`}
-            </Button>
+            {importType === "vehicles" ? (
+              <Button
+                onClick={() => importMutation.mutate()}
+                disabled={selectedVehicles.length === 0 || importMutation.isPending}
+                className="gap-1.5"
+              >
+                <Download className="w-4 h-4" />
+                {importMutation.isPending ? "Importing..." : `Import ${selectedVehicles.length} Vehicle${selectedVehicles.length !== 1 ? "s" : ""}`}
+              </Button>
+            ) : (
+              <Button
+                onClick={() => importDevicesMutation.mutate()}
+                disabled={selectedDevices.length === 0 || importDevicesMutation.isPending}
+                className="gap-1.5"
+              >
+                <Download className="w-4 h-4" />
+                {importDevicesMutation.isPending ? "Importing..." : `Import ${selectedDevices.length} Device${selectedDevices.length !== 1 ? "s" : ""}`}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -387,10 +499,10 @@ export default function AssetRegistryTab() {
               </Select>
             </div>
             <div><Label>Link Vehicle (optional)</Label>
-              <Select value={form.vehicle_id} onValueChange={v => setForm(p => ({ ...p, vehicle_id: v }))}>
+              <Select value={form.vehicle_id || "none"} onValueChange={v => setForm(p => ({ ...p, vehicle_id: v === "none" ? "" : v }))}>
                 <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {unlinkededVehicles.map(v => (
                     <SelectItem key={v.id} value={v.id}>{v.plate_number} - {v.make} {v.model}</SelectItem>
                   ))}
