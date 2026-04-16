@@ -10,6 +10,7 @@ import { TripRequestsList } from "@/components/scheduling/TripRequestsList";
 import { ExportScheduleDialog } from "@/components/scheduling/ExportScheduleDialog";
 import { AvailabilityMatrix } from "@/components/scheduling/AvailabilityMatrix";
 import { ApprovalsInbox } from "@/components/scheduling/ApprovalsInbox";
+import { FuelApprovalsInbox } from "@/components/scheduling/FuelApprovalsInbox";
 import { ApprovalChainConfig } from "@/components/scheduling/ApprovalChainConfig";
 import { ApprovalHistory } from "@/components/scheduling/ApprovalHistory";
 import { SchedulingAssistant } from "@/components/scheduling/SchedulingAssistant";
@@ -168,6 +169,7 @@ const FleetScheduling = () => {
           {canApprove && (
             <TabsContent value="approvals" className="space-y-4">
               <ApprovalsInbox />
+              <FuelApprovalsInbox />
               <ApprovalHistory />
             </TabsContent>
           )}

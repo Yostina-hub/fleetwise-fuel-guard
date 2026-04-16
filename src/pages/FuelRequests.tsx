@@ -18,6 +18,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
 import { useOrganizationSettings } from "@/hooks/useOrganizationSettings";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { TablePagination, usePagination } from "@/components/reports/TablePagination";
@@ -101,12 +102,16 @@ const FuelRequestsTable = ({ data, isLoading, getPlate, getDriverName, formatFue
   );
 };
 
+const APPROVER_ROLES = ["fleet_manager", "operations_manager", "org_admin", "super_admin", "fleet_owner"];
+
 const FuelRequests = () => {
   const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const { vehicles } = useVehicles();
   const { drivers } = useDrivers();
   const { formatCurrency, formatFuel, settings } = useOrganizationSettings();
+  const { hasRole } = useAuthContext();
+  const canApprove = APPROVER_ROLES.some(r => hasRole(r));
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
