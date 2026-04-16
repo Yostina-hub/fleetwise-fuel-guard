@@ -233,6 +233,61 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
           <DialogDescription>Submit a vehicle request. Fields adapt based on operation type.</DialogDescription>
         </DialogHeader>
 
+        {/* Super-admin: file on behalf of any user */}
+        {isSuperAdmin && (
+          <div className="rounded-md border border-dashed border-primary/30 bg-primary/5 p-3 flex items-center gap-2 flex-wrap">
+            <UserCog className="w-4 h-4 text-primary shrink-0" />
+            <span className="text-sm font-medium">Request on behalf of:</span>
+            {onBehalfOf ? (
+              <>
+                <Badge variant="secondary" className="gap-1">
+                  {onBehalfOf.name}
+                </Badge>
+                <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => setOnBehalfOf(null)}>
+                  <X className="w-3.5 h-3.5" /> Clear
+                </Button>
+              </>
+            ) : (
+              <Popover open={userPickerOpen} onOpenChange={setUserPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7">Select user…</Button>
+                </PopoverTrigger>
+                <PopoverContent className="p-0 w-80" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search users by name or email…" />
+                    <CommandList>
+                      <CommandEmpty>No users found.</CommandEmpty>
+                      <CommandGroup>
+                        {orgUsers.map((u: any) => (
+                          <CommandItem
+                            key={u.id}
+                            value={`${u.full_name || ""} ${u.email || ""}`}
+                            onSelect={() => {
+                              setOnBehalfOf({ id: u.id, name: u.full_name || u.email, email: u.email });
+                              setUserPickerOpen(false);
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <div className="flex flex-col">
+                              <span className="text-sm">{u.full_name || u.email}</span>
+                              {u.full_name && (
+                                <span className="text-xs text-muted-foreground">{u.email}</span>
+                              )}
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            )}
+            <span className="text-xs text-muted-foreground ml-auto">
+              {onBehalfOf ? "Approval routing will use this user's role." : "Leave empty to file as yourself."}
+            </span>
+          </div>
+        )}
+
         <div className="space-y-5">
           {/* Vehicle Request Type */}
           <div>
