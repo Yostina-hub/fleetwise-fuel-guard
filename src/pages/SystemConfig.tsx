@@ -8,13 +8,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Settings2, Radio, Droplet, Mail, MessageSquare, Save, Loader2, Shield, Database, Clock, Map } from "lucide-react";
+import { Settings2, Radio, Droplet, Mail, MessageSquare, Save, Loader2, Shield, Database, Clock, Map, Globe, Bell, LayoutDashboard } from "lucide-react";
 import { MapProviderSettings } from "@/components/alerts/MapProviderSettings";
 import DeviceProtocolsTab from "@/components/config/DeviceProtocolsTab";
 import FuelDetectionTab from "@/components/config/FuelDetectionTab";
 import EnrichmentTab from "@/components/config/EnrichmentTab";
 import SmtpConfigTab from "@/components/config/SmtpConfigTab";
 import SmsGatewayTab from "@/components/config/SmsGatewayTab";
+import LanguageSettingsTab from "@/components/config/LanguageSettingsTab";
+import NotificationSettingsTab from "@/components/config/NotificationSettingsTab";
+import DashboardCustomizationTab from "@/components/config/DashboardCustomizationTab";
 import ConfigQuickStats from "@/components/config/ConfigQuickStats";
 import ConfigQuickActions from "@/components/config/ConfigQuickActions";
 import { supabase } from "@/integrations/supabase/client";
@@ -110,11 +113,13 @@ const SystemConfig = () => {
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="flex w-full overflow-x-auto p-1 h-12">
+          <TabsList className="flex flex-wrap h-auto w-full gap-1 p-1">
             <TabsTrigger value="general" className="gap-1.5 text-xs"><Settings2 className="h-3.5 w-3.5" /> General</TabsTrigger>
+            <TabsTrigger value="language" className="gap-1.5 text-xs"><Globe className="h-3.5 w-3.5" /> Language</TabsTrigger>
+            <TabsTrigger value="notifications" className="gap-1.5 text-xs"><Bell className="h-3.5 w-3.5" /> Notifications</TabsTrigger>
+            <TabsTrigger value="dashboard" className="gap-1.5 text-xs"><LayoutDashboard className="h-3.5 w-3.5" /> Dashboard</TabsTrigger>
             <TabsTrigger value="security" className="gap-1.5 text-xs"><Shield className="h-3.5 w-3.5" /> Security</TabsTrigger>
             <TabsTrigger value="telemetry" className="gap-1.5 text-xs"><Database className="h-3.5 w-3.5" /> Telemetry</TabsTrigger>
-            <TabsTrigger value="notifications" className="gap-1.5 text-xs"><Mail className="h-3.5 w-3.5" /> Notifications</TabsTrigger>
             <TabsTrigger value="protocols" className="gap-1.5 text-xs"><Radio className="h-3.5 w-3.5" /> Protocols</TabsTrigger>
             <TabsTrigger value="fuel" className="gap-1.5 text-xs"><Droplet className="h-3.5 w-3.5" /> Fuel</TabsTrigger>
             <TabsTrigger value="smtp" className="gap-1.5 text-xs"><Mail className="h-3.5 w-3.5" /> SMTP</TabsTrigger>
@@ -143,6 +148,21 @@ const SystemConfig = () => {
             </Card>
           </TabsContent>
 
+          {/* Language & Localization */}
+          <TabsContent value="language">
+            <LanguageSettingsTab getVal={getVal} saveSetting={saveSetting} />
+          </TabsContent>
+
+          {/* Notification Settings */}
+          <TabsContent value="notifications">
+            <NotificationSettingsTab getVal={getVal} saveSetting={saveSetting} />
+          </TabsContent>
+
+          {/* Dashboard Customization */}
+          <TabsContent value="dashboard">
+            <DashboardCustomizationTab getVal={getVal} saveSetting={saveSetting} />
+          </TabsContent>
+
           {/* Security Settings */}
           <TabsContent value="security">
             <Card>
@@ -166,19 +186,6 @@ const SystemConfig = () => {
                 <div className="flex items-center gap-4"><Label className="w-48">Telemetry Interval (sec)</Label><Input type="number" defaultValue={getVal("telemetry", "telemetry_interval_seconds")} onBlur={e => saveSetting("telemetry", "telemetry_interval_seconds", +e.target.value)} className="flex-1" /></div>
                 <div className="flex items-center gap-4"><Label className="w-48">Data Retention (months)</Label><Input type="number" defaultValue={getVal("telemetry", "data_retention_months")} onBlur={e => saveSetting("telemetry", "data_retention_months", +e.target.value)} className="flex-1" /></div>
                 <div className="flex items-center gap-4"><Label className="w-48">Batch Insert Size</Label><Input type="number" defaultValue={getVal("telemetry", "batch_size")} onBlur={e => saveSetting("telemetry", "batch_size", +e.target.value)} className="flex-1" /></div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Notification Settings */}
-          <TabsContent value="notifications">
-            <Card>
-              <CardHeader><CardTitle>Notification Settings</CardTitle></CardHeader>
-              <CardContent className="space-y-4 max-w-lg">
-                <div className="flex items-center justify-between"><Label>Email Notifications</Label><Switch checked={getVal("notifications", "email_enabled")} onCheckedChange={v => saveSetting("notifications", "email_enabled", v)} /></div>
-                <div className="flex items-center justify-between"><Label>SMS Notifications</Label><Switch checked={getVal("notifications", "sms_enabled")} onCheckedChange={v => saveSetting("notifications", "sms_enabled", v)} /></div>
-                <div className="flex items-center justify-between"><Label>Push Notifications</Label><Switch checked={getVal("notifications", "push_enabled")} onCheckedChange={v => saveSetting("notifications", "push_enabled", v)} /></div>
-                <div className="flex items-center gap-4"><Label className="w-40">Alert Digest</Label><Input defaultValue={getVal("notifications", "alert_digest_interval")} onBlur={e => saveSetting("notifications", "alert_digest_interval", e.target.value)} className="flex-1" /></div>
               </CardContent>
             </Card>
           </TabsContent>
