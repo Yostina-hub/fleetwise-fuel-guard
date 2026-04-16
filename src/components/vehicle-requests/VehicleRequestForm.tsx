@@ -127,10 +127,10 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
       const payload = {
         organization_id: organizationId!,
         request_number: `VR-${Date.now().toString(36).toUpperCase()}`,
-        requester_id: user!.id,
-        requester_name: profile?.full_name || user!.email || "Unknown",
+        requester_id: requesterId,
+        requester_name: requesterName,
         request_type: form.request_type,
-        purpose: form.purpose,
+        purpose: form.purpose + filedOnBehalfNote,
         needed_from: neededFrom,
         needed_until: neededUntil,
         departure_place: form.departure_place || null,
