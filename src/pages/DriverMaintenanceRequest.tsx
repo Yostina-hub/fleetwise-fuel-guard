@@ -112,37 +112,6 @@ const DriverMaintenanceRequest = () => {
     driverInfo?.driver?.id ? r.driver_id === driverInfo.driver.id : false
   );
 
-  const [form, setForm] = useState({
-    request_type: "corrective",
-    priority: "medium",
-    km_reading: "",
-    description: "",
-    notes: "",
-  });
-
-  const handleCreate = async () => {
-    if (!driverInfo?.vehicle) {
-      toast.error("No vehicle assigned to you");
-      return;
-    }
-    if (!form.description.trim()) {
-      toast.error("Please describe the issue");
-      return;
-    }
-    await createRequest.mutateAsync({
-      vehicle_id: driverInfo.vehicle.id,
-      driver_id: driverInfo.driver.id,
-      request_type: form.request_type,
-      trigger_source: "manual",
-      priority: form.priority,
-      km_reading: form.km_reading ? Number(form.km_reading) : undefined,
-      description: form.description,
-      notes: form.notes || undefined,
-    });
-    setShowCreate(false);
-    setForm({ request_type: "corrective", priority: "medium", km_reading: "", description: "", notes: "" });
-  };
-
   if (isLoading) {
     return (
       <Layout>
