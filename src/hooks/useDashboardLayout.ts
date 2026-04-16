@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -177,6 +178,26 @@ export function useDashboardLayout() {
     },
   });
 
+  // Inline reorder: swap two widget positions and auto-save
+  const reorderWidgets = useCallback((fromType: string, toType: string, section?: string) => {
+    if (!activeLayout) return;
+    const allWidgets = [...(activeLayout.widgets as unknown as DashboardWidgetConfig[])];
+    const fromIdx = allWidgets.findIndex(w => w.type === fromType);
+    const toIdx = allWidgets.findIndex(w => w.type === toType);
+    if (fromIdx === -1 || toIdx === -1) return;
+
+    // Swap positions
+    const temp = allWidgets[fromIdx].position;
+    allWidgets[fromIdx] = { ...allWidgets[fromIdx], position: allWidgets[toIdx].position };
+    allWidgets[toIdx] = { ...allWidgets[toIdx], position: temp };
+
+    saveMutation.mutate({
+      layoutId: activeLayout.id,
+      name: activeLayout.name,
+      widgets: allWidgets,
+    });
+  }, [activeLayout, saveMutation]);
+
   return {
     layouts,
     activeLayout,
@@ -190,5 +211,6 @@ export function useDashboardLayout() {
     saving: saveMutation.isPending,
     setDefault: setDefaultMutation.mutate,
     deleteLayout: deleteMutation.mutate,
+    reorderWidgets,
   };
 }
