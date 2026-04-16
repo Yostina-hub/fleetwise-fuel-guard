@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, Loader2, Car } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { toast } from "sonner";
@@ -34,8 +34,48 @@ const DriverMaintenanceDialog = ({ open, onOpenChange, driverId, vehicleId, vehi
   });
   const [photos, setPhotos] = useState<string[]>([]);
 
+  // Fallback: if no vehicleId passed but we have driverId + open, look up the assigned vehicle directly.
+  // This guarantees the dialog never shows "No vehicle assigned" when one actually exists.
+  const { data: fallbackVehicle, isLoading: loadingFallback } = useQuery({
+    queryKey: ["driver-maintenance-assigned-vehicle", driverId, organizationId],
+    enabled: open && !vehicleId && !!driverId && !!organizationId,
+    queryFn: async () => {
+      // 1) Active vehicle request assignment
+      const { data: req } = await (supabase as any)
+        .from("vehicle_requests")
+        .select(`assigned_vehicle_id, assigned_vehicle:assigned_vehicle_id(id, plate_number, make, model)`)
+        .eq("organization_id", organizationId)
+        .eq("assigned_driver_id", driverId)
+        .in("status", ["assigned", "approved", "in_progress"])
+        .order("assigned_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (req?.assigned_vehicle) return req.assigned_vehicle;
+
+      // 2) Permanent assignment
+      const { data: v } = await supabase
+        .from("vehicles")
+        .select("id, plate_number, make, model")
+        .eq("organization_id", organizationId)
+        .eq("assigned_driver_id", driverId)
+        .maybeSingle();
+      return v || null;
+    },
+  });
+
+  const effectiveVehicleId = vehicleId || fallbackVehicle?.id;
+  const effectivePlate = vehiclePlate || fallbackVehicle?.plate_number;
+  const effectiveMakeModel = vehicleMakeModel || (fallbackVehicle ? `${fallbackVehicle.make} ${fallbackVehicle.model}` : undefined);
+
+  useEffect(() => {
+    if (!open) {
+      setForm({ request_type: "corrective", priority: "medium", km_reading: "", description: "", notes: "" });
+      setPhotos([]);
+    }
+  }, [open]);
+
   const handleSubmit = async () => {
-    if (!vehicleId || !driverId || !organizationId) return;
+    if (!effectiveVehicleId || !driverId || !organizationId) return;
     if (!form.description.trim()) return;
     setSubmitting(true);
     try {
@@ -45,7 +85,7 @@ const DriverMaintenanceDialog = ({ open, onOpenChange, driverId, vehicleId, vehi
         organization_id: organizationId,
         request_number: reqNumber,
         requested_by: userData.user?.id,
-        vehicle_id: vehicleId,
+        vehicle_id: effectiveVehicleId,
         driver_id: driverId,
         request_type: form.request_type,
         trigger_source: "manual",
@@ -63,14 +103,14 @@ const DriverMaintenanceDialog = ({ open, onOpenChange, driverId, vehicleId, vehi
       queryClient.invalidateQueries({ queryKey: ["driver-portal-requests"] });
       queryClient.invalidateQueries({ queryKey: ["maintenance-requests"] });
       onOpenChange(false);
-      setForm({ request_type: "corrective", priority: "medium", km_reading: "", description: "", notes: "" });
-      setPhotos([]);
     } catch (e: any) {
       toast.error(e.message || "Failed to submit request");
     } finally {
       setSubmitting(false);
     }
   };
+
+  const showEmpty = !effectiveVehicleId && !loadingFallback;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -80,11 +120,15 @@ const DriverMaintenanceDialog = ({ open, onOpenChange, driverId, vehicleId, vehi
             <AlertTriangle className="w-5 h-5 text-warning" /> Report Vehicle Issue
           </DialogTitle>
           <DialogDescription>
-            {vehiclePlate ? `Reporting for ${vehiclePlate}${vehicleMakeModel ? ` (${vehicleMakeModel})` : ""}` : "No vehicle assigned"}
+            {effectivePlate ? `Reporting for ${effectivePlate}${effectiveMakeModel ? ` (${effectiveMakeModel})` : ""}` : (loadingFallback ? "Loading assigned vehicle..." : "No vehicle assigned")}
           </DialogDescription>
         </DialogHeader>
 
-        {vehicleId ? (
+        {loadingFallback && !effectiveVehicleId ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" aria-hidden="true" />
+          </div>
+        ) : effectiveVehicleId ? (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -135,7 +179,7 @@ const DriverMaintenanceDialog = ({ open, onOpenChange, driverId, vehicleId, vehi
             <div>
               <Label>Photos of the issue (optional)</Label>
               <PhotoUploader
-                pathPrefix={`maintenance/${vehicleId}`}
+                pathPrefix={`maintenance/${effectiveVehicleId}`}
                 value={photos}
                 onChange={setPhotos}
                 max={5}
