@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useDrivers } from "@/hooks/useDrivers";
@@ -33,6 +33,7 @@ interface AssignDriverDialogProps {
     make: string;
     model: string;
     assignedDriver?: string;
+    driverId?: string | null;
   } | null;
 }
 
@@ -44,24 +45,24 @@ export default function AssignDriverDialog({ open, onOpenChange, vehicle }: Assi
 
   const [selectedDriverId, setSelectedDriverId] = useState<string>("none");
 
+  // Initialize selected driver when dialog opens
+  useEffect(() => {
+    if (open && vehicle) {
+      setSelectedDriverId(vehicle.driverId || "none");
+    }
+  }, [open, vehicle]);
+
   const assignMutation = useMutation({
     mutationFn: async (driverId: string | null) => {
       if (!vehicle?.vehicleId || !organizationId) throw new Error("Missing vehicle or organization");
 
-      // Create a trip assignment to link driver to vehicle
-      if (driverId) {
-        const { error } = await supabase
-          .from("trips")
-          .insert({
-            organization_id: organizationId,
-            vehicle_id: vehicle.vehicleId,
-            driver_id: driverId,
-            start_time: new Date().toISOString(),
-            status: "assigned",
-            notes: "Driver assigned to vehicle",
-          });
-        if (error) throw error;
-      }
+      // Update the vehicle's assigned driver
+      const { error } = await supabase
+        .from("vehicles")
+        .update({ assigned_driver_id: driverId })
+        .eq("id", vehicle.vehicleId)
+        .eq("organization_id", organizationId);
+      if (error) throw error;
     },
     onSuccess: () => {
       toast({
@@ -71,7 +72,7 @@ export default function AssignDriverDialog({ open, onOpenChange, vehicle }: Assi
           : "Driver assigned to vehicle successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["vehicles"] });
-      queryClient.invalidateQueries({ queryKey: ["trips"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicle-profile"] });
       onOpenChange(false);
     },
     onError: (error: any) => {
