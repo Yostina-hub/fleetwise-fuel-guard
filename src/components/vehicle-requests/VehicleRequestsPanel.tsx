@@ -31,6 +31,9 @@ export const VehicleRequestsPanel = () => {
   const [showDetail, setShowDetail] = useState<any>(null);
   const [showCheckIn, setShowCheckIn] = useState<any>(null);
   const [showCrossPool, setShowCrossPool] = useState<any>(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [showCrossPool, setShowCrossPool] = useState<any>(null);
 
   useEffect(() => {
     if (!organizationId) return;
