@@ -443,14 +443,6 @@ const Fleet = () => {
           avgFuelLevel={0}
         />
 
-        {/* Fleet Quick Actions */}
-        <FleetQuickActions
-          onAddVehicle={() => setCreateDialogOpen(true)}
-          onImport={() => setImportDialogOpen(true)}
-          onExport={handleExportAll}
-          onViewMap={() => navigate("/map")}
-          onScheduleMaintenance={() => navigate("/maintenance")}
-        />
 
         {/* Fleet Workflow Automations */}
         <WorkflowAutomationPanel
