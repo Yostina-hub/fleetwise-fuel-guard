@@ -23,6 +23,7 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose }: Props) => 
   const { vehicles } = useVehicles();
   const queryClient = useQueryClient();
   const [selectedVehicle, setSelectedVehicle] = useState("");
+  const [selectedDriver, setSelectedDriver] = useState("");
   const [reason, setReason] = useState("");
   const [targetPool, setTargetPool] = useState("");
 
@@ -40,9 +41,26 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose }: Props) => 
     enabled: !!organizationId && open,
   });
 
+  const { data: drivers = [] } = useQuery({
+    queryKey: ["drivers-cross-pool", organizationId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("drivers")
+        .select("id, first_name, last_name")
+        .eq("organization_id", organizationId!)
+        .eq("status", "active")
+        .order("first_name")
+        .limit(50);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId && open,
+  });
+
   const assignMutation = useMutation({
     mutationFn: async () => {
       if (!selectedVehicle) throw new Error("Select a vehicle");
+      if (!selectedDriver) throw new Error("Select a driver — required so the request shows in the Driver Portal.");
       if (!reason.trim()) throw new Error("Please provide a reason for cross-pool assignment");
 
       const mins = Math.round((Date.now() - new Date(request.created_at).getTime()) / 60000);
@@ -51,6 +69,7 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose }: Props) => 
         .update({
           status: "assigned",
           assigned_vehicle_id: selectedVehicle,
+          assigned_driver_id: selectedDriver,
           assigned_at: new Date().toISOString(),
           actual_assignment_minutes: mins,
           cross_pool_assignment: true,
@@ -127,6 +146,20 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose }: Props) => 
           </div>
 
           <div>
+            <Label>Driver *</Label>
+            <Select value={selectedDriver} onValueChange={setSelectedDriver}>
+              <SelectTrigger><SelectValue placeholder="Select driver" /></SelectTrigger>
+              <SelectContent>
+                {drivers.map((d: any) => (
+                  <SelectItem key={d.id} value={d.id}>
+                    {d.first_name} {d.last_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
             <Label>Reason for Cross-Pool Assignment *</Label>
             <Textarea
               value={reason}
@@ -141,7 +174,7 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose }: Props) => 
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button
             onClick={() => assignMutation.mutate()}
-            disabled={!selectedVehicle || !reason.trim() || assignMutation.isPending}
+            disabled={!selectedVehicle || !selectedDriver || !reason.trim() || assignMutation.isPending}
             className="bg-amber-600 hover:bg-amber-700"
           >
             {assignMutation.isPending ? "Assigning..." : "Assign Cross-Pool"}
