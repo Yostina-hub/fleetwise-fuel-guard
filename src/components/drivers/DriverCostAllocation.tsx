@@ -1,14 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
-import { DollarSign, TrendingUp, Fuel, Wrench } from "lucide-react";
+import { DollarSign, TrendingUp, Fuel, Wrench, Search, Users } from "lucide-react";
 import { format } from "date-fns";
+import { type Employee, EMPLOYEE_TYPE_LABELS, EMPLOYEE_TYPE_COLORS } from "@/hooks/useEmployees";
 
 interface CostAllocation {
   id: string;
   driver_id: string;
+  employee_id: string | null;
   period_start: string;
   period_end: string;
   fuel_cost: number;
@@ -25,29 +28,50 @@ interface DriverCostAllocationProps {
   driverId: string;
   driverName: string;
   employeeId?: string;
+  employees?: Employee[];
 }
 
-export const DriverCostAllocation = ({ driverId, driverName }: DriverCostAllocationProps) => {
+export const DriverCostAllocation = ({ driverId, driverName, employeeId, employees = [] }: DriverCostAllocationProps) => {
   const { organizationId } = useOrganization();
   const [costs, setCosts] = useState<CostAllocation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  const isAllMode = !employeeId && !driverId;
 
   useEffect(() => {
-    if (!organizationId || !driverId) return;
+    if (!organizationId) return;
     const fetch = async () => {
       setLoading(true);
-      const { data } = await supabase
+      let query = supabase
         .from("driver_cost_allocations")
         .select("*")
         .eq("organization_id", organizationId)
-        .eq("driver_id", driverId)
         .order("period_start", { ascending: false })
-        .limit(12);
+        .limit(isAllMode ? 200 : 12);
+
+      if (driverId) {
+        query = query.eq("driver_id", driverId);
+      }
+
+      const { data } = await query;
       setCosts((data as CostAllocation[]) || []);
       setLoading(false);
     };
     fetch();
-  }, [driverId, organizationId]);
+  }, [driverId, employeeId, organizationId]);
+
+  const getEmpName = (c: CostAllocation) => {
+    if (!isAllMode) return driverName;
+    const emp = employees.find(e => e.id === c.employee_id || e.driver_id === c.driver_id);
+    return emp ? `${emp.first_name} ${emp.last_name}` : "Unknown";
+  };
+
+  const filtered = useMemo(() => {
+    if (!search) return costs;
+    const q = search.toLowerCase();
+    return costs.filter(c => getEmpName(c).toLowerCase().includes(q));
+  }, [costs, search, employees]);
 
   const totalAllTime = costs.reduce((s, c) => s + (c.total_cost || 0), 0);
   const avgMonthly = costs.length > 0 ? totalAllTime / costs.length : 0;
@@ -81,40 +105,59 @@ export const DriverCostAllocation = ({ driverId, driverName }: DriverCostAllocat
         </CardContent></Card>
       </div>
 
+      {/* Search bar for all mode */}
+      {isAllMode && (
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+          <Input placeholder="Search by employee name..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8 h-9 text-sm" />
+        </div>
+      )}
+
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm">Cost History — {driverName}</CardTitle>
+          <CardTitle className="text-sm">Cost History{!isAllMode && ` — ${driverName}`}</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
             <p className="text-center text-muted-foreground py-8">Loading...</p>
-          ) : costs.length === 0 ? (
+          ) : filtered.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <DollarSign className="w-12 h-12 mx-auto mb-3 opacity-40" />
-              <p>No cost data for {driverName}</p>
+              <p>No cost data found</p>
             </div>
           ) : (
             <div className="space-y-2">
-              {costs.map(c => (
-                <div key={c.id} className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent/50 transition-colors">
-                  <DollarSign className="w-4 h-4 text-primary shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">
-                      {format(new Date(c.period_start), "MMM yyyy")} — {format(new Date(c.period_end), "MMM yyyy")}
-                    </p>
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      {c.fuel_cost > 0 && <span className="text-[10px] text-muted-foreground">Fuel: {fmt(c.fuel_cost)}</span>}
-                      {c.maintenance_cost > 0 && <span className="text-[10px] text-muted-foreground">Maint: {fmt(c.maintenance_cost)}</span>}
-                      {c.toll_cost > 0 && <span className="text-[10px] text-muted-foreground">Tolls: {fmt(c.toll_cost)}</span>}
-                      {c.fine_cost > 0 && <span className="text-[10px] text-muted-foreground">Fines: {fmt(c.fine_cost)}</span>}
+              {filtered.map(c => {
+                const empType = employees.find(e => e.id === c.employee_id || e.driver_id === c.driver_id)?.employee_type || "other";
+                return (
+                  <div key={c.id} className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent/50 transition-colors">
+                    <DollarSign className="w-4 h-4 text-primary shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      {isAllMode && (
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-sm font-semibold">{getEmpName(c)}</span>
+                          <Badge variant="outline" className={`text-[8px] px-1 py-0 ${EMPLOYEE_TYPE_COLORS[empType]}`}>
+                            {EMPLOYEE_TYPE_LABELS[empType]}
+                          </Badge>
+                        </div>
+                      )}
+                      <p className="text-sm font-medium">
+                        {format(new Date(c.period_start), "MMM yyyy")} — {format(new Date(c.period_end), "MMM yyyy")}
+                      </p>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {c.fuel_cost > 0 && <span className="text-[10px] text-muted-foreground">Fuel: {fmt(c.fuel_cost)}</span>}
+                        {c.maintenance_cost > 0 && <span className="text-[10px] text-muted-foreground">Maint: {fmt(c.maintenance_cost)}</span>}
+                        {c.toll_cost > 0 && <span className="text-[10px] text-muted-foreground">Tolls: {fmt(c.toll_cost)}</span>}
+                        {c.fine_cost > 0 && <span className="text-[10px] text-muted-foreground">Fines: {fmt(c.fine_cost)}</span>}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-bold">{fmt(c.total_cost)}</p>
+                      {c.cost_per_km && <p className="text-[10px] text-muted-foreground">{c.cost_per_km.toFixed(2)}/km</p>}
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-sm font-bold">{fmt(c.total_cost)}</p>
-                    {c.cost_per_km && <p className="text-[10px] text-muted-foreground">{c.cost_per_km.toFixed(2)}/km</p>}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
