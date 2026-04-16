@@ -462,6 +462,73 @@ const Auth = () => {
               {/* Card glow effect */}
               <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-[#8DC63F]/5 pointer-events-none" />
               
+              {pending2FA ? (
+                <>
+                  <CardHeader className="space-y-1 pb-6 relative">
+                    <div className="flex justify-center mb-4">
+                      <div className="p-4 bg-gradient-to-br from-[#8DC63F] to-[#6ba32d] rounded-2xl shadow-lg shadow-[#8DC63F]/30">
+                        <KeyRound className="w-8 h-8 text-white" />
+                      </div>
+                    </div>
+                    <CardTitle className="text-2xl text-center font-bold text-white">
+                      Two-Factor Authentication
+                    </CardTitle>
+                    <CardDescription className="text-center text-base text-white/60">
+                      Enter the 6-digit code from your authenticator app
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="relative space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="totp-code" className="text-sm font-medium text-white/80">
+                        Verification Code
+                      </Label>
+                      <Input
+                        id="totp-code"
+                        value={totpCode}
+                        onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                        placeholder="000000"
+                        className="h-14 text-center text-2xl font-mono tracking-[0.5em] bg-white/5 border-white/20 text-white placeholder:text-white/30 focus:border-[#8DC63F] focus:ring-2 focus:ring-[#8DC63F]/20"
+                        maxLength={6}
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && totpCode.length === 6) handle2FAVerify();
+                        }}
+                      />
+                      <p className="text-xs text-white/40 text-center mt-2">
+                        You can also enter a backup recovery code
+                      </p>
+                    </div>
+
+                    <Button
+                      onClick={handle2FAVerify}
+                      className="w-full h-12 gap-2 text-base font-semibold bg-gradient-to-r from-[#8DC63F] to-[#6ba32d] hover:from-[#7ab534] hover:to-[#5a9226] text-white shadow-lg shadow-[#8DC63F]/25"
+                      disabled={totpCode.length !== 6 || verifying2FA}
+                    >
+                      {verifying2FA ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Verifying...
+                        </>
+                      ) : (
+                        <>
+                          <Shield className="w-5 h-5" />
+                          Verify & Sign In
+                        </>
+                      )}
+                    </Button>
+
+                    <button
+                      type="button"
+                      onClick={() => { setPending2FA(false); setTotpCode(""); }}
+                      className="w-full text-center text-sm text-white/50 hover:text-white/80 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      Back to sign in
+                    </button>
+                  </CardContent>
+                </>
+              ) : (
+                <>
               <CardHeader className="space-y-1 pb-6 relative">
                 {/* Mobile branding */}
                 <div className="flex lg:hidden items-center justify-center gap-3 mb-4">
@@ -514,8 +581,6 @@ const Auth = () => {
                                 });
                                 return;
                               }
-                              // Rate limit: prevent rapid password reset requests (Finding #2: enumeration prevention)
-                              // Server-side rate limit via DB function
                               const { data: rlData } = await supabase.rpc("check_rate_limit", {
                                 p_client_id: email,
                                 p_function_name: "password_reset",
@@ -531,18 +596,15 @@ const Auth = () => {
                                 });
                                 return;
                               }
-                              // GAP FIX: Only allow password reset for whitelisted admin emails
                               const ALLOWED_RESET_EMAILS = ["abel.birara@gmail.com", "eshibel@gmail.com"];
                               const normalizedResetEmail = email.trim().toLowerCase();
                               if (!ALLOWED_RESET_EMAILS.includes(normalizedResetEmail)) {
-                                // Show same generic message to prevent enumeration
                                 toast({
                                   title: "Password Reset Email Sent",
                                   description: "If an account exists with this email, you will receive a reset link.",
                                 });
                                 return;
                               }
-                              // Fire-and-forget: always show success to prevent user enumeration
                               supabase.auth.resetPasswordForEmail(email, {
                                 redirectTo: `${window.location.origin}/auth`,
                               }).catch(() => {});
@@ -598,6 +660,8 @@ const Auth = () => {
                   {/* Signup tab removed - admin-only system (Finding #1 & #10) */}
                 </Tabs>
               </CardContent>
+                </>
+              )}
             </Card>
 
             {/* Keyboard shortcut hint */}
