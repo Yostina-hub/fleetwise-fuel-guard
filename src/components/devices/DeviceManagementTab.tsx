@@ -1643,6 +1643,13 @@ export const DeviceManagementTab = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Device Detail Dialog */}
+      <DeviceDetailDialog
+        device={detailDevice}
+        open={!!detailDevice}
+        onOpenChange={(open) => { if (!open) setDetailDevice(null); }}
+      />
     </div>
   );
 };
