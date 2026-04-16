@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ClipboardList, Plus, Clock, CheckCircle, Truck, Eye, LogIn, Shuffle } from "lucide-react";
+import { ClipboardList, Plus, Clock, CheckCircle, Truck, Eye, LogIn, Shuffle, Search } from "lucide-react";
 import { VehicleRequestForm } from "@/components/vehicle-requests/VehicleRequestForm";
 import { VehicleRequestApprovalFlow } from "@/components/vehicle-requests/VehicleRequestApprovalFlow";
 import { DriverCheckInDialog } from "@/components/vehicle-requests/DriverCheckInDialog";
@@ -29,7 +31,8 @@ export const VehicleRequestsPanel = () => {
   const [showDetail, setShowDetail] = useState<any>(null);
   const [showCheckIn, setShowCheckIn] = useState<any>(null);
   const [showCrossPool, setShowCrossPool] = useState<any>(null);
-
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   useEffect(() => {
     if (!organizationId) return;
     const channel = supabase
@@ -73,6 +76,26 @@ export const VehicleRequestsPanel = () => {
     enabled: !!organizationId,
   });
 
+  const filteredRequests = useMemo(() => {
+    let filtered = requests;
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((r: any) => r.status === statusFilter);
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      filtered = filtered.filter((r: any) =>
+        r.request_number?.toLowerCase().includes(q) ||
+        r.requester_name?.toLowerCase().includes(q) ||
+        r.departure_place?.toLowerCase().includes(q) ||
+        r.destination?.toLowerCase().includes(q) ||
+        r.assigned_vehicle?.plate_number?.toLowerCase().includes(q) ||
+        r.pool_name?.toLowerCase().includes(q) ||
+        r.purpose?.toLowerCase().includes(q)
+      );
+    }
+    return filtered;
+  }, [requests, search, statusFilter]);
+
   const pending = requests.filter((r: any) => r.status === "pending").length;
   const assigned = requests.filter((r: any) => r.status === "assigned").length;
   const completed = requests.filter((r: any) => r.status === "completed").length;
@@ -103,15 +126,42 @@ export const VehicleRequestsPanel = () => {
         </Button>
       </div>
 
+      {/* Search & Filter */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search by request #, requester, route, plate, pool..."
+            className="pl-8 h-8 text-sm"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[140px] h-8 text-xs">
+            <SelectValue placeholder="All Statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="approved">Approved</SelectItem>
+            <SelectItem value="assigned">Assigned</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+            <SelectItem value="rejected">Rejected</SelectItem>
+            <SelectItem value="cancelled">Cancelled</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Requests Table */}
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
             <div className="p-6 text-center text-muted-foreground text-sm">Loading...</div>
-          ) : requests.length === 0 ? (
+          ) : filteredRequests.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <ClipboardList className="w-10 h-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">No vehicle requests yet</p>
+              <p className="text-sm">{search || statusFilter !== "all" ? "No matching requests" : "No vehicle requests yet"}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -129,7 +179,7 @@ export const VehicleRequestsPanel = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {requests.map((r: any) => (
+                  {filteredRequests.map((r: any) => (
                     <tr key={r.id} className="border-b hover:bg-muted/30">
                       <td className="py-2 px-3 font-medium">{r.request_number}</td>
                       <td className="py-2 px-3">
