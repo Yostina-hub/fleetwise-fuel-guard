@@ -43,6 +43,7 @@ interface WorkflowToolbarProps {
   onImport: () => void;
   onDuplicate: () => void;
   onOpenTemplates?: () => void;
+  onOpenAI?: () => void;
   isSaving: boolean;
   isSimulating?: boolean;
   canUndo: boolean;
@@ -68,6 +69,7 @@ export const WorkflowToolbar = ({
   onImport,
   onDuplicate,
   onOpenTemplates,
+  onOpenAI,
   isSaving,
   isSimulating,
   canUndo,
@@ -109,6 +111,20 @@ export const WorkflowToolbar = ({
         >
           <Sparkles className="h-3.5 w-3.5" />
           Templates
+        </Button>
+      )}
+
+      {/* AI Assistant */}
+      {onOpenAI && (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onOpenAI}
+          className="h-8 gap-1.5 text-xs border-violet-500/30 text-violet-400 hover:bg-violet-500/10"
+        >
+          <Sparkles className="h-3.5 w-3.5" />
+          AI Assistant
+          <span className="text-[10px] text-muted-foreground ml-1">⌘K</span>
         </Button>
       )}
 

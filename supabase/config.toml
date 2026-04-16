@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.send-whatsapp]
 verify_jwt = false
+
+[functions.ai-workflow]
+verify_jwt = false

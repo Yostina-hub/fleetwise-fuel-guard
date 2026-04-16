@@ -10,7 +10,8 @@ export type NodeCategory =
   | "data"
   | "timing"
   | "sensors"
-  | "safety_hardware";
+  | "safety_hardware"
+  | "ai_intelligence";
 
 // Custom node data types
 export interface WorkflowNodeData {
@@ -122,6 +123,14 @@ export const PALETTE_ITEMS: PaletteItem[] = [
   { type: "hw_panic_button", label: "Panic Button", description: "Physical emergency panic button", icon: "🔴", category: "safety_hardware" },
   { type: "hw_tamper_detect", label: "Tamper Detection", description: "GPS antenna/power tamper alert", icon: "⚠️", category: "safety_hardware" },
   { type: "hw_ev_charger", label: "EV Charger", description: "EV charging station integration", icon: "🔋", category: "safety_hardware" },
+  
+  // AI Intelligence
+  { type: "ai_decision", label: "AI Smart Decision", description: "AI-powered conditional logic based on fleet data patterns", icon: "🧠", category: "ai_intelligence" },
+  { type: "ai_predict_maintenance", label: "AI Predictive Maintenance", description: "Predict maintenance needs from sensor data & history", icon: "🔮", category: "ai_intelligence" },
+  { type: "ai_anomaly_detect", label: "AI Anomaly Detection", description: "Detect unusual patterns in fuel, speed, routes", icon: "🔍", category: "ai_intelligence" },
+  { type: "ai_route_optimize", label: "AI Route Optimizer", description: "Optimize routes using traffic, weather, load data", icon: "🛣️", category: "ai_intelligence" },
+  { type: "ai_fuel_forecast", label: "AI Fuel Forecast", description: "Predict fuel consumption and cost projections", icon: "📊", category: "ai_intelligence" },
+  { type: "ai_driver_scoring", label: "AI Driver Scoring", description: "Real-time driver behavior analysis and scoring", icon: "⭐", category: "ai_intelligence" },
 ];
 
 export const CATEGORY_LABELS: Record<NodeCategory, { label: string; color: string }> = {
@@ -134,4 +143,5 @@ export const CATEGORY_LABELS: Record<NodeCategory, { label: string; color: strin
   timing: { label: "Timing & Delays", color: "hsl(var(--muted-foreground))" },
   sensors: { label: "Sensors & IoT", color: "#06b6d4" },
   safety_hardware: { label: "Safety Hardware", color: "#dc2626" },
+  ai_intelligence: { label: "AI Intelligence", color: "#8b5cf6" },
 };
