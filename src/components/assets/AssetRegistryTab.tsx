@@ -99,6 +99,10 @@ export default function AssetRegistryTab() {
   const linkedVehicleIds = new Set(assets.filter((a: any) => a.vehicle_id).map((a: any) => a.vehicle_id));
   const unlinkededVehicles = vehicles.filter(v => !linkedVehicleIds.has(v.id));
 
+  // Devices not yet linked as assets
+  const linkedDeviceSerials = new Set(assets.filter((a: any) => a.category === "gps_tracker" || a.category === "iot_sensor").map((a: any) => a.serial_number));
+  const unlinkedDevices = devices.filter((d: any) => !linkedDeviceSerials.has(d.imei));
+
   const addMutation = useMutation({
     mutationFn: async () => {
       const { error } = await (supabase as any).from("fleet_assets").insert({
@@ -166,6 +170,36 @@ export default function AssetRegistryTab() {
       queryClient.invalidateQueries({ queryKey: ["fleet-assets"] });
       setShowImport(false);
       setSelectedVehicles([]);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const importDevicesMutation = useMutation({
+    mutationFn: async () => {
+      const toImport = devices.filter((d: any) => selectedDevices.includes(d.id));
+      const rows = toImport.map((d: any) => ({
+        organization_id: organizationId,
+        asset_code: `DEV-${d.imei?.slice(-6) || d.id.slice(0, 6)}`,
+        name: `${d.tracker_model} (${d.imei})`,
+        category: "gps_tracker",
+        sub_category: d.tracker_model || null,
+        serial_number: d.imei,
+        manufacturer: d.tracker_model?.split(" ")[0] || null,
+        model: d.tracker_model || null,
+        purchase_date: d.install_date || null,
+        lifecycle_stage: d.status === "active" ? "in_service" : d.status === "inactive" ? "idle" : "acquired",
+        condition: d.status === "active" ? "good" : "fair",
+        location: d.vehicles?.plate_number ? `Vehicle: ${d.vehicles.plate_number}` : null,
+        vehicle_id: d.vehicle_id || null,
+      }));
+      const { error } = await (supabase as any).from("fleet_assets").insert(rows);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(`${selectedDevices.length} devices imported as assets`);
+      queryClient.invalidateQueries({ queryKey: ["fleet-assets"] });
+      setShowImport(false);
+      setSelectedDevices([]);
     },
     onError: (e: any) => toast.error(e.message),
   });
