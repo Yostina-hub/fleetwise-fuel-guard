@@ -18,6 +18,7 @@ import { TripStatsBar } from "@/components/trips/TripStatsBar";
 import { TripDetailPanel } from "@/components/trips/TripDetailPanel";
 import { TripCard } from "@/components/trips/TripCard";
 import { ActiveAssignments } from "@/components/scheduling/ActiveAssignments";
+import { CreateAssignmentDialog } from "@/components/scheduling/CreateAssignmentDialog";
 import { ApprovalHistory } from "@/components/scheduling/ApprovalHistory";
 import { CalendarView } from "@/components/scheduling/CalendarView";
 import { TimelineView } from "@/components/scheduling/TimelineView";
