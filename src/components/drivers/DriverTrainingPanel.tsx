@@ -238,6 +238,9 @@ export const DriverTrainingPanel = ({ driverId }: DriverTrainingPanelProps) => {
 
                               <div className="flex flex-col items-end gap-2">
                                 {getStatusBadge(progress?.status || 'not_started')}
+                                <Button size="sm" variant="outline" className="gap-1" onClick={() => setShowMaterials({ id: course.id, title: course.title })}>
+                                  <Paperclip className="w-3 h-3" />Materials
+                                </Button>
                                 {isInProgress && (
                                   <Button size="sm" onClick={() => { setScore([80]); setShowComplete(course.id); }}>
                                     <GraduationCap className="w-3 h-3 mr-1" />Complete
