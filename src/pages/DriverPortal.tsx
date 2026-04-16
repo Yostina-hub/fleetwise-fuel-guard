@@ -67,16 +67,36 @@ const DriverPortal = () => {
         driver = data;
       }
 
-      if (!driver) return { driver: null, vehicle: null, userId };
+      if (!driver) return { driver: null, vehicle: null, activeRequest: null, userId };
 
-      const { data: vehicle } = await supabase
+      // 1) Permanent vehicle assignment (vehicles.assigned_driver_id)
+      const { data: permanentVehicle } = await supabase
         .from("vehicles")
         .select("id, plate_number, make, model, year, fuel_type, status")
         .eq("organization_id", organizationId)
         .eq("assigned_driver_id", driver.id)
         .maybeSingle();
 
-      return { driver, vehicle, userId };
+      // 2) Active vehicle request assignment (trip-based) — takes precedence if present
+      const { data: activeRequest } = await (supabase as any)
+        .from("vehicle_requests")
+        .select(`
+          id, request_number, status, approval_status, purpose, destination,
+          needed_from, needed_until, assigned_at, driver_checked_in_at, driver_checked_out_at,
+          assigned_vehicle_id,
+          assigned_vehicle:assigned_vehicle_id(id, plate_number, make, model, year, fuel_type, status)
+        `)
+        .eq("organization_id", organizationId)
+        .eq("assigned_driver_id", driver.id)
+        .in("status", ["assigned", "approved", "in_progress"])
+        .order("assigned_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const requestVehicle = activeRequest?.assigned_vehicle || null;
+      const vehicle = requestVehicle || permanentVehicle || null;
+
+      return { driver, vehicle, activeRequest, userId };
     },
     enabled: !!organizationId,
   });
