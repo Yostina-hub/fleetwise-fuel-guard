@@ -188,10 +188,7 @@ const Auth = () => {
     try {
       // Get the stored secret for this user
       // We need to sign back in first to access the data
-      const emailEl = document.getElementById('signin-email') as HTMLInputElement;
-      const pwdEl = document.getElementById('signin-password') as HTMLInputElement;
-      
-      if (!emailEl?.value || !pwdEl?.value) {
+      if (!pending2FACredentials) {
         toast({ title: "Session expired", description: "Please sign in again.", variant: "destructive" });
         setPending2FA(false);
         setVerifying2FA(false);
