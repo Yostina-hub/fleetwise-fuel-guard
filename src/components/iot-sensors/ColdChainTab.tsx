@@ -456,6 +456,58 @@ const ColdChainTab = ({ organizationId }: ColdChainTabProps) => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Log Reading Dialog */}
+      <Dialog open={showLogDialog} onOpenChange={setShowLogDialog}>
+        <DialogContent>
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Thermometer className="h-5 w-5" /> Log Cold Chain Reading</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Vehicle *</Label>
+              <Select value={readingForm.vehicle_id || undefined} onValueChange={v => setReadingForm(p => ({ ...p, vehicle_id: v }))}>
+                <SelectTrigger><SelectValue placeholder="Select vehicle" /></SelectTrigger>
+                <SelectContent>{vehicles.filter((v: any) => v.id).map((v: any) => <SelectItem key={v.id} value={v.id}>{v.plate_number}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Temperature (°C) *</Label><Input value={readingForm.temperature_celsius} onChange={e => setReadingForm(p => ({ ...p, temperature_celsius: e.target.value }))} placeholder="-18.5" /></div>
+              <div><Label>Humidity (%)</Label><Input value={readingForm.humidity_percent} onChange={e => setReadingForm(p => ({ ...p, humidity_percent: e.target.value }))} placeholder="45" /></div>
+              <div><Label>Min Threshold (°C)</Label><Input value={readingForm.min_threshold} onChange={e => setReadingForm(p => ({ ...p, min_threshold: e.target.value }))} /></div>
+              <div><Label>Max Threshold (°C)</Label><Input value={readingForm.max_threshold} onChange={e => setReadingForm(p => ({ ...p, max_threshold: e.target.value }))} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Door Status</Label>
+                <Select value={readingForm.door_status} onValueChange={v => setReadingForm(p => ({ ...p, door_status: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="closed">Closed</SelectItem>
+                    <SelectItem value="open">Open</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Compressor</Label>
+                <Select value={readingForm.compressor_status} onValueChange={v => setReadingForm(p => ({ ...p, compressor_status: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="running">Running</SelectItem>
+                    <SelectItem value="off">Off</SelectItem>
+                    <SelectItem value="standby">Standby</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div><Label>Sensor ID</Label><Input value={readingForm.sensor_id} onChange={e => setReadingForm(p => ({ ...p, sensor_id: e.target.value }))} placeholder="TEMP-001" /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowLogDialog(false)}>Cancel</Button>
+            <Button onClick={() => logReadingMutation.mutate()} disabled={!readingForm.vehicle_id || !readingForm.temperature_celsius || logReadingMutation.isPending}>
+              {logReadingMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Log Reading
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
