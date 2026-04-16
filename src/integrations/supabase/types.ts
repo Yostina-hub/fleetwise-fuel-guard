@@ -2034,6 +2034,65 @@ export type Database = {
           },
         ]
       }
+      device_compatibility_profiles: {
+        Row: {
+          capabilities: Json | null
+          command_templates: Json | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          model_name: string
+          notes: string | null
+          organization_id: string
+          protocol_name: string
+          setup_config: Json | null
+          supported_commands: string[] | null
+          telemetry_fields: string[] | null
+          updated_at: string
+          vendor: string
+        }
+        Insert: {
+          capabilities?: Json | null
+          command_templates?: Json | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          model_name: string
+          notes?: string | null
+          organization_id: string
+          protocol_name: string
+          setup_config?: Json | null
+          supported_commands?: string[] | null
+          telemetry_fields?: string[] | null
+          updated_at?: string
+          vendor: string
+        }
+        Update: {
+          capabilities?: Json | null
+          command_templates?: Json | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          model_name?: string
+          notes?: string | null
+          organization_id?: string
+          protocol_name?: string
+          setup_config?: Json | null
+          supported_commands?: string[] | null
+          telemetry_fields?: string[] | null
+          updated_at?: string
+          vendor?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_compatibility_profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       device_offline_alerts: {
         Row: {
           created_at: string | null
@@ -2325,6 +2384,7 @@ export type Database = {
           apn: string | null
           auth_token: string | null
           auth_token_created_at: string | null
+          compatibility_profile_id: string | null
           created_at: string
           firmware_version: string | null
           id: string
@@ -2348,6 +2408,7 @@ export type Database = {
           apn?: string | null
           auth_token?: string | null
           auth_token_created_at?: string | null
+          compatibility_profile_id?: string | null
           created_at?: string
           firmware_version?: string | null
           id?: string
@@ -2371,6 +2432,7 @@ export type Database = {
           apn?: string | null
           auth_token?: string | null
           auth_token_created_at?: string | null
+          compatibility_profile_id?: string | null
           created_at?: string
           firmware_version?: string | null
           id?: string
@@ -2391,6 +2453,13 @@ export type Database = {
           vehicle_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "devices_compatibility_profile_id_fkey"
+            columns: ["compatibility_profile_id"]
+            isOneToOne: false
+            referencedRelation: "device_compatibility_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "devices_organization_id_fkey"
             columns: ["organization_id"]
