@@ -40,7 +40,7 @@ const MaintenanceEnterprise = () => {
       "auditor",
     ]);
 
-  if (orgLoading) {
+  if (orgLoading || permsLoading) {
     return (
       <Layout>
         <div className="p-4 md:p-8 flex items-center justify-center min-h-[400px]">
@@ -48,6 +48,30 @@ const MaintenanceEnterprise = () => {
             <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
             <p className="text-muted-foreground">Loading enterprise maintenance...</p>
           </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Restricted view: drivers and other limited roles only see Maintenance Requests
+  if (!canManageEnterprise) {
+    return (
+      <Layout>
+        <div className="p-4 md:p-8 space-y-6 animate-fade-in">
+          <div className="flex items-center gap-4 slide-in-right">
+            <div className="p-4 rounded-2xl glass-strong glow">
+              <FileText className="w-8 h-8 text-primary float-animation" />
+            </div>
+            <div>
+              <h1 className="text-2xl md:text-4xl font-bold gradient-text">
+                Maintenance Requests
+              </h1>
+              <p className="text-muted-foreground mt-1 text-lg">
+                Submit and track maintenance requests for your assigned vehicle
+              </p>
+            </div>
+          </div>
+          <MaintenanceRequestsTab />
         </div>
       </Layout>
     );
