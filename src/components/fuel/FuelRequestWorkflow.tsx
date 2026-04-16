@@ -73,6 +73,18 @@ interface FuelRequestFormData {
   asset_criticality: string;
   additional_description: string;
   context_value: string;
+  // Enterprise work-request header fields
+  assigned_department: string;
+  request_by_start_date: string;
+  request_by_completion_date: string;
+  requested_for: string;
+  work_request_type: string;
+  priority: string;
+  // Creation information
+  phone_number: string;
+  email: string;
+  notify_user: boolean;
+  contact_preference: string;
 }
 
 const initialForm: FuelRequestFormData = {
@@ -102,6 +114,16 @@ const initialForm: FuelRequestFormData = {
   asset_criticality: "",
   additional_description: "",
   context_value: "Fuel request for vehicle",
+  assigned_department: "",
+  request_by_start_date: new Date().toISOString().slice(0, 16),
+  request_by_completion_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
+  requested_for: "",
+  work_request_type: "",
+  priority: "medium",
+  phone_number: "",
+  email: "",
+  notify_user: false,
+  contact_preference: "",
 };
 
 // Previous Clearance Report (supports both vehicles and generators)
@@ -545,6 +567,17 @@ export const FuelRequestWorkflow = () => {
         asset_criticality: form.asset_criticality || null,
         additional_description: form.additional_description || null,
         context_value: form.context_value || "Fuel request for vehicle",
+        // Enterprise header fields
+        assigned_department: form.assigned_department || null,
+        request_by_start_date: form.request_by_start_date ? new Date(form.request_by_start_date).toISOString() : null,
+        request_by_completion_date: form.request_by_completion_date ? new Date(form.request_by_completion_date).toISOString() : null,
+        requested_for: form.requested_for || null,
+        work_request_type: form.work_request_type || null,
+        priority: form.priority || "medium",
+        phone_number: form.phone_number || null,
+        email: form.email || null,
+        notify_user: form.notify_user,
+        contact_preference: form.contact_preference || null,
       };
 
       const { data: inserted, error } = await supabase.from("fuel_requests").insert(insertData).select("id").single();
@@ -870,6 +903,125 @@ export const FuelRequestWorkflow = () => {
           </DialogHeader>
           <ScrollArea className="max-h-[75vh] pr-2">
             <div className="space-y-4">
+              {/* === ENTERPRISE HEADER: Work Request Info === */}
+              <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
+                <div className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-primary" /> Work Request Information
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Asset Number *</Label>
+                    {form.request_type === "vehicle" ? (
+                      <Select value={form.vehicle_id} onValueChange={v => setForm(f => ({ ...f, vehicle_id: v }))}>
+                        <SelectTrigger><SelectValue placeholder="Select asset" /></SelectTrigger>
+                        <SelectContent>{vehicles.map(v => <SelectItem key={v.id} value={v.id}>{v.plate_number} — {v.make} {v.model}</SelectItem>)}</SelectContent>
+                      </Select>
+                    ) : (
+                      <Select value={form.generator_id} onValueChange={v => setForm(f => ({ ...f, generator_id: v }))}>
+                        <SelectTrigger><SelectValue placeholder="Select generator" /></SelectTrigger>
+                        <SelectContent>{generators.map((g: any) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                  <div>
+                    <Label>Work Request Type</Label>
+                    <Select value={form.work_request_type} onValueChange={v => setForm(f => ({ ...f, work_request_type: v }))}>
+                      <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fuel_request">Fuel Request</SelectItem>
+                        <SelectItem value="maintenance">Maintenance</SelectItem>
+                        <SelectItem value="emergency">Emergency</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Assigned Department *</Label>
+                    <Select value={form.assigned_department} onValueChange={v => setForm(f => ({ ...f, assigned_department: v }))}>
+                      <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
+                      <SelectContent>
+                        {departments.map((d: any) => (<SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>))}
+                        {departments.length === 0 && <SelectItem value="default">Default Department</SelectItem>}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Priority *</Label>
+                    <Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="critical">Critical</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="low">Low</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Request By Start Date *</Label>
+                    <Input type="datetime-local" value={form.request_by_start_date} onChange={e => setForm(f => ({ ...f, request_by_start_date: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label>Request By Completion Date *</Label>
+                    <Input type="datetime-local" value={form.request_by_completion_date} onChange={e => setForm(f => ({ ...f, request_by_completion_date: e.target.value }))} />
+                  </div>
+                </div>
+                <div>
+                  <Label>Requested For</Label>
+                  <Input value={form.requested_for} onChange={e => setForm(f => ({ ...f, requested_for: e.target.value }))} placeholder="e.g. ETHIO7146" />
+                </div>
+              </div>
+
+              {/* === CREATION INFORMATION === */}
+              <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
+                <div className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Send className="h-4 w-4 text-primary" /> Creation Information
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Phone Number</Label>
+                    <Input value={form.phone_number} onChange={e => setForm(f => ({ ...f, phone_number: e.target.value }))} placeholder="+251..." />
+                  </div>
+                  <div>
+                    <Label>Email</Label>
+                    <Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="user@example.com" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Notify User</Label>
+                    <Select value={form.notify_user ? "yes" : "no"} onValueChange={v => setForm(f => ({ ...f, notify_user: v === "yes" }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="yes">Yes</SelectItem>
+                        <SelectItem value="no">No</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Contact Preference</Label>
+                    <Select value={form.contact_preference} onValueChange={v => setForm(f => ({ ...f, contact_preference: v }))}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="email">Email</SelectItem>
+                        <SelectItem value="phone">Phone</SelectItem>
+                        <SelectItem value="sms">SMS</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* === DESCRIPTIVE INFORMATION === */}
+              <div className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <ClipboardCheck className="h-4 w-4 text-primary" /> Descriptive Information
+              </div>
+
               {/* Request Type Tabs */}
               <Tabs value={form.request_type} onValueChange={v => setForm(f => ({ ...f, request_type: v, vehicle_id: "", generator_id: "", context_value: v === "vehicle" ? "Fuel request for vehicle" : "Fuel request for generator" }))}>
                 <TabsList className="w-full">
