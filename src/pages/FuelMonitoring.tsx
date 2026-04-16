@@ -1,7 +1,7 @@
 import { useMemo, useState, useRef } from "react";
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Fuel, AlertTriangle, Loader2, Warehouse, FileText, Droplet, MapPin } from "lucide-react";
+import { Fuel, AlertTriangle, Loader2, Warehouse, FileText, Droplet, MapPin, BarChart3 } from "lucide-react";
 import { useFuelEvents } from "@/hooks/useFuelEvents";
 import { useFuelTransactions } from "@/hooks/useFuelTransactions";
 import { useVehicles } from "@/hooks/useVehicles";
@@ -26,6 +26,7 @@ import FuelCostBreakdown from "@/components/fuel/FuelCostBreakdown";
 import FuelBudgetTracker from "@/components/fuel/FuelBudgetTracker";
 import { FuelPageContext } from "@/contexts/FuelPageContext";
 import { useTranslation } from "react-i18next";
+import FuelComprehensiveReportsTab from "@/components/fuel/FuelComprehensiveReportsTab";
 
 const FuelMonitoring = () => {
   const { t } = useTranslation();
@@ -293,6 +294,10 @@ const FuelMonitoring = () => {
                   <MapPin className="w-4 h-4" aria-hidden="true" />
                   Stations
                 </TabsTrigger>
+                <TabsTrigger value="reports" className="gap-2">
+                  <BarChart3 className="w-4 h-4" aria-hidden="true" />
+                  <span className="hidden sm:inline">Full</span> Reports
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="events">
@@ -309,6 +314,9 @@ const FuelMonitoring = () => {
               </TabsContent>
               <TabsContent value="stations">
                 <ApprovedFuelStationsTab />
+              </TabsContent>
+              <TabsContent value="reports">
+                <FuelComprehensiveReportsTab />
               </TabsContent>
             </Tabs>
           </div>
