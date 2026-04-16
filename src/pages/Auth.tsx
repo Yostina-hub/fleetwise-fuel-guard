@@ -62,6 +62,7 @@ const Auth = () => {
   const [totpCode, setTotpCode] = useState("");
   const [pending2FAUserId, setPending2FAUserId] = useState<string | null>(null);
   const [verifying2FA, setVerifying2FA] = useState(false);
+  const [pending2FACredentials, setPending2FACredentials] = useState<{ email: string; password: string } | null>(null);
 
   // Redirect if already logged in
   useEffect(() => {
