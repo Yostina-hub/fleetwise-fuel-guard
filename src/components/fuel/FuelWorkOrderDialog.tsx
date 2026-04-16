@@ -69,7 +69,7 @@ const DEFAULT_FORM = {
 
 export const FuelWorkOrderDialog = ({ open, onOpenChange, workOrderId, fuelRequestId }: Props) => {
   const queryClient = useQueryClient();
-  const { organization } = useOrganization();
+  const { organizationId } = useOrganization();
   const [form, setForm] = useState({ ...DEFAULT_FORM });
 
   // Load existing WO if editing
@@ -137,10 +137,10 @@ export const FuelWorkOrderDialog = ({ open, onOpenChange, workOrderId, fuelReque
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (!organization?.id) throw new Error("Organization not loaded");
+      if (!organizationId) throw new Error("Organization not loaded");
       const { data: user } = await supabase.auth.getUser();
       const payload: any = {
-        organization_id: organization.id,
+        organization_id: organizationId,
         fuel_request_id: fuelRequestId || existingWO?.fuel_request_id || null,
         work_order_number: form.work_order_number,
         asset_number: form.asset_number || null,
