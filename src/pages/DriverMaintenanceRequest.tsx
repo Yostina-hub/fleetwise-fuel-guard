@@ -74,7 +74,7 @@ const DriverMaintenanceRequest = () => {
       // Find assigned vehicle
       const { data: vehicle } = await supabase
         .from("vehicles")
-        .select("id, plate_number, make, model, current_mileage")
+        .select("id, plate_number, make, model")
         .eq("organization_id", organizationId)
         .eq("assigned_driver_id", driver.id)
         .maybeSingle();
