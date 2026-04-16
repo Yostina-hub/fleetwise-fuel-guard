@@ -34,7 +34,7 @@ export function LocationPickerField({
     queryFn: async () => {
       const { data } = await supabase
         .from("geofences")
-        .select("id, name")
+        .select("id, name, center_lat, center_lng")
         .eq("is_active", true)
         .order("name")
         .limit(50);
@@ -97,6 +97,10 @@ export function LocationPickerField({
             onValueChange={(v) => {
               if (v !== "__custom__") {
                 onChange(v);
+                const geo = geofences?.find((g) => g.name === v);
+                if (geo?.center_lat != null && geo?.center_lng != null) {
+                  onCoordsChange?.(geo.center_lat, geo.center_lng);
+                }
               } else {
                 onChange("");
               }
