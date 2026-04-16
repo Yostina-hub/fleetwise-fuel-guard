@@ -383,6 +383,14 @@ export const DriverTrainingPanel = ({ driverId }: DriverTrainingPanelProps) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {showMaterials && (
+        <CourseMaterialsPanel
+          courseId={showMaterials.id}
+          courseTitle={showMaterials.title}
+          open={!!showMaterials}
+          onOpenChange={(open) => !open && setShowMaterials(null)}
+        />
+      )}
     </div>
   );
 };
