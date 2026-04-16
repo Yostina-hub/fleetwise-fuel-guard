@@ -11199,14 +11199,21 @@ export type Database = {
       }
       maintenance_requests: {
         Row: {
+          additional_description: string | null
           approved_at: string | null
           approved_by: string | null
+          asset_criticality: string | null
           assigned_to_role: string | null
+          attachments: Json | null
           auto_trigger_actual_value: number | null
           auto_trigger_reason: string | null
           auto_trigger_threshold_type: string | null
           auto_trigger_threshold_value: number | null
           auto_triggered_at: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          contact_preference: string | null
+          context_value: string | null
           correction_notes: string | null
           created_at: string
           delivery_acceptable: boolean | null
@@ -11227,6 +11234,7 @@ export type Database = {
           maintenance_accepted_by: string | null
           needs_maintenance: boolean | null
           notes: string | null
+          notify_user: boolean | null
           organization_id: string
           pdr_number: string | null
           photo_urls: string[] | null
@@ -11240,7 +11248,10 @@ export type Database = {
           pre_inspection_notes: string | null
           priority: string | null
           rejection_reason: string | null
+          remark: string | null
+          request_by_completion_date: string | null
           request_number: string
+          request_start_date: string | null
           request_type: string
           requested_by: string | null
           requested_completion_date: string | null
@@ -11276,14 +11287,21 @@ export type Database = {
           workflow_stage: string | null
         }
         Insert: {
+          additional_description?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          asset_criticality?: string | null
           assigned_to_role?: string | null
+          attachments?: Json | null
           auto_trigger_actual_value?: number | null
           auto_trigger_reason?: string | null
           auto_trigger_threshold_type?: string | null
           auto_trigger_threshold_value?: number | null
           auto_triggered_at?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          contact_preference?: string | null
+          context_value?: string | null
           correction_notes?: string | null
           created_at?: string
           delivery_acceptable?: boolean | null
@@ -11304,6 +11322,7 @@ export type Database = {
           maintenance_accepted_by?: string | null
           needs_maintenance?: boolean | null
           notes?: string | null
+          notify_user?: boolean | null
           organization_id: string
           pdr_number?: string | null
           photo_urls?: string[] | null
@@ -11317,7 +11336,10 @@ export type Database = {
           pre_inspection_notes?: string | null
           priority?: string | null
           rejection_reason?: string | null
+          remark?: string | null
+          request_by_completion_date?: string | null
           request_number: string
+          request_start_date?: string | null
           request_type?: string
           requested_by?: string | null
           requested_completion_date?: string | null
@@ -11353,14 +11375,21 @@ export type Database = {
           workflow_stage?: string | null
         }
         Update: {
+          additional_description?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          asset_criticality?: string | null
           assigned_to_role?: string | null
+          attachments?: Json | null
           auto_trigger_actual_value?: number | null
           auto_trigger_reason?: string | null
           auto_trigger_threshold_type?: string | null
           auto_trigger_threshold_value?: number | null
           auto_triggered_at?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          contact_preference?: string | null
+          context_value?: string | null
           correction_notes?: string | null
           created_at?: string
           delivery_acceptable?: boolean | null
@@ -11381,6 +11410,7 @@ export type Database = {
           maintenance_accepted_by?: string | null
           needs_maintenance?: boolean | null
           notes?: string | null
+          notify_user?: boolean | null
           organization_id?: string
           pdr_number?: string | null
           photo_urls?: string[] | null
@@ -11394,7 +11424,10 @@ export type Database = {
           pre_inspection_notes?: string | null
           priority?: string | null
           rejection_reason?: string | null
+          remark?: string | null
+          request_by_completion_date?: string | null
           request_number?: string
+          request_start_date?: string | null
           request_type?: string
           requested_by?: string | null
           requested_completion_date?: string | null
