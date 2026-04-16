@@ -11,8 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, DollarSign, Wrench, Fuel, Shield, TrendingDown } from "lucide-react";
+import { Plus, DollarSign, Wrench, Fuel, Shield, TrendingDown, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -27,13 +29,17 @@ const COST_TYPES = [
   { value: "other", label: "Other", icon: DollarSign },
 ];
 
+const emptyForm = { asset_id: "", cost_type: "preventive_maintenance", amount: "", description: "", recorded_by: "", recorded_date: new Date().toISOString().split("T")[0] };
+
 export default function AssetCostTab() {
   const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
   const [filterType, setFilterType] = useState("all");
   const [filterAsset, setFilterAsset] = useState("all");
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ asset_id: "", cost_type: "preventive_maintenance", amount: "", description: "", recorded_by: "", recorded_date: new Date().toISOString().split("T")[0] });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [form, setForm] = useState(emptyForm);
 
   const { data: assets = [] } = useQuery({
     queryKey: ["fleet-assets", organizationId],
@@ -58,46 +64,69 @@ export default function AssetCostTab() {
     enabled: !!organizationId,
   });
 
-  // Auto-aggregate fuel costs from fuel_transactions for linked assets
   const { data: fuelCostAgg = { total: 0, count: 0 } } = useQuery({
     queryKey: ["asset-fuel-cost-agg", organizationId],
     queryFn: async () => {
-      // Get vehicle IDs linked to fleet_assets
-      const { data: linkedAssets } = await (supabase as any)
-        .from("fleet_assets")
-        .select("vehicle_id")
-        .eq("organization_id", organizationId!)
-        .not("vehicle_id", "is", null);
+      const { data: linkedAssets } = await (supabase as any).from("fleet_assets").select("vehicle_id").eq("organization_id", organizationId!).not("vehicle_id", "is", null);
       const vids = (linkedAssets || []).map((a: any) => a.vehicle_id).filter(Boolean);
       if (!vids.length) return { total: 0, count: 0 };
-      const { data: txns } = await supabase
-        .from("fuel_transactions")
-        .select("fuel_cost")
-        .eq("organization_id", organizationId!)
-        .in("vehicle_id", vids);
+      const { data: txns } = await supabase.from("fuel_transactions").select("fuel_cost").eq("organization_id", organizationId!).in("vehicle_id", vids);
       const total = (txns || []).reduce((s, t: any) => s + (t.fuel_cost || 0), 0);
       return { total, count: txns?.length || 0 };
     },
     enabled: !!organizationId,
   });
 
-  const addMutation = useMutation({
+  const openEdit = (c: any) => {
+    setEditingId(c.id);
+    setForm({
+      asset_id: c.asset_id,
+      cost_type: c.cost_type || "other",
+      amount: c.amount?.toString() || "",
+      description: c.description || "",
+      recorded_by: c.recorded_by || "",
+      recorded_date: c.recorded_date || new Date().toISOString().split("T")[0],
+    });
+    setShowAdd(true);
+  };
+
+  const saveMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await (supabase as any).from("asset_cost_records").insert({
-        organization_id: organizationId,
+      const payload = {
         asset_id: form.asset_id,
         cost_type: form.cost_type,
         amount: parseFloat(form.amount) || 0,
         description: form.description || null,
         recorded_by: form.recorded_by || null,
         recorded_date: form.recorded_date,
-      });
+      };
+      if (editingId) {
+        const { error } = await (supabase as any).from("asset_cost_records").update(payload).eq("id", editingId);
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any).from("asset_cost_records").insert({ ...payload, organization_id: organizationId });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success(editingId ? "Cost updated" : "Cost recorded");
+      queryClient.invalidateQueries({ queryKey: ["asset-costs"] });
+      setShowAdd(false);
+      setEditingId(null);
+      setForm(emptyForm);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await (supabase as any).from("asset_cost_records").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Cost recorded");
+      toast.success("Cost record deleted");
       queryClient.invalidateQueries({ queryKey: ["asset-costs"] });
-      setShowAdd(false);
+      setDeleteId(null);
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -145,7 +174,7 @@ export default function AssetCostTab() {
             {COST_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Button onClick={() => setShowAdd(true)} className="gap-1.5 h-9"><Plus className="w-4 h-4" />Record Cost</Button>
+        <Button onClick={() => { setEditingId(null); setForm(emptyForm); setShowAdd(true); }} className="gap-1.5 h-9"><Plus className="w-4 h-4" />Record Cost</Button>
       </div>
 
       <Card>
@@ -159,13 +188,14 @@ export default function AssetCostTab() {
                 <TableHead>Amount</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Recorded By</TableHead>
+                <TableHead className="w-10"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8">Loading...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-8">Loading...</TableCell></TableRow>
               ) : costs.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No cost records</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No cost records</TableCell></TableRow>
               ) : (
                 costs.map((c: any) => (
                   <TableRow key={c.id}>
@@ -182,6 +212,15 @@ export default function AssetCostTab() {
                     <TableCell className="font-semibold">{c.amount?.toLocaleString()} ETB</TableCell>
                     <TableCell className="text-sm max-w-[200px] truncate">{c.description || "—"}</TableCell>
                     <TableCell className="text-sm">{c.recorded_by || "—"}</TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEdit(c)}><Pencil className="h-3.5 w-3.5 mr-2" />Edit</DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(c.id)}><Trash2 className="h-3.5 w-3.5 mr-2" />Delete</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -190,9 +229,24 @@ export default function AssetCostTab() {
         </ScrollArea>
       </Card>
 
-      <Dialog open={showAdd} onOpenChange={setShowAdd}>
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={o => !o && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Cost Record</AlertDialogTitle>
+            <AlertDialogDescription>This will permanently remove this cost record.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteId && deleteMutation.mutate(deleteId)}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Add/Edit Cost Dialog */}
+      <Dialog open={showAdd} onOpenChange={o => { if (!o) { setShowAdd(false); setEditingId(null); setForm(emptyForm); } }}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Record Cost</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingId ? "Edit Cost Record" : "Record Cost"}</DialogTitle></DialogHeader>
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2"><Label>Asset *</Label>
               <Select value={form.asset_id} onValueChange={v => setForm(p => ({ ...p, asset_id: v }))}>
@@ -212,8 +266,10 @@ export default function AssetCostTab() {
             <div className="col-span-2"><Label>Description</Label><Input value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} /></div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
-            <Button onClick={() => addMutation.mutate()} disabled={!form.asset_id || !form.amount || addMutation.isPending}>Record</Button>
+            <Button variant="outline" onClick={() => { setShowAdd(false); setEditingId(null); setForm(emptyForm); }}>Cancel</Button>
+            <Button onClick={() => saveMutation.mutate()} disabled={!form.asset_id || !form.amount || saveMutation.isPending}>
+              {saveMutation.isPending ? "Saving..." : editingId ? "Update" : "Record"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

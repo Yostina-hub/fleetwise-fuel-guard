@@ -14,8 +14,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Search, Package, Truck, Wrench, CircleDot, Battery, Box, Download, Radio, Cpu } from "lucide-react";
+import { Plus, Search, Package, Truck, Wrench, CircleDot, Battery, Box, Download, Radio, Cpu, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import LicenseExpiryBadge from "@/components/fleet/LicenseExpiryBadge";
 
@@ -46,6 +48,15 @@ const stageBadge = (stage: string) => {
   return colors[stage] || "";
 };
 
+const emptyForm = {
+  asset_code: "", name: "", category: "equipment", sub_category: "",
+  serial_number: "", manufacturer: "", model: "", purchase_date: "",
+  purchase_cost: "", current_value: "", depreciation_method: "straight_line",
+  depreciation_rate: "", salvage_value: "", useful_life_years: "",
+  lifecycle_stage: "acquired", condition: "new", location: "",
+  warranty_expiry: "", notes: "", vehicle_id: "",
+};
+
 export default function AssetRegistryTab() {
   const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
@@ -57,14 +68,9 @@ export default function AssetRegistryTab() {
   const [importType, setImportType] = useState<"vehicles" | "devices">("vehicles");
   const [selectedVehicles, setSelectedVehicles] = useState<string[]>([]);
   const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
-  const [form, setForm] = useState({
-    asset_code: "", name: "", category: "equipment", sub_category: "",
-    serial_number: "", manufacturer: "", model: "", purchase_date: "",
-    purchase_cost: "", current_value: "", depreciation_method: "straight_line",
-    depreciation_rate: "", salvage_value: "", useful_life_years: "",
-    lifecycle_stage: "acquired", condition: "new", location: "",
-    warranty_expiry: "", notes: "", vehicle_id: "",
-  });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [form, setForm] = useState(emptyForm);
 
   const { vehicles } = useVehicles();
 
@@ -95,18 +101,41 @@ export default function AssetRegistryTab() {
     enabled: !!organizationId,
   });
 
-  // Vehicles not yet linked as assets
   const linkedVehicleIds = new Set(assets.filter((a: any) => a.vehicle_id).map((a: any) => a.vehicle_id));
   const unlinkededVehicles = vehicles.filter(v => !linkedVehicleIds.has(v.id));
-
-  // Devices not yet linked as assets
   const linkedDeviceSerials = new Set(assets.filter((a: any) => a.category === "gps_tracker" || a.category === "iot_sensor").map((a: any) => a.serial_number));
   const unlinkedDevices = devices.filter((d: any) => !linkedDeviceSerials.has(d.imei));
 
-  const addMutation = useMutation({
+  const openEdit = (a: any) => {
+    setEditingId(a.id);
+    setForm({
+      asset_code: a.asset_code || "",
+      name: a.name || "",
+      category: a.category || "equipment",
+      sub_category: a.sub_category || "",
+      serial_number: a.serial_number || "",
+      manufacturer: a.manufacturer || "",
+      model: a.model || "",
+      purchase_date: a.purchase_date || "",
+      purchase_cost: a.purchase_cost?.toString() || "",
+      current_value: a.current_value?.toString() || "",
+      depreciation_method: a.depreciation_method || "straight_line",
+      depreciation_rate: a.depreciation_rate?.toString() || "",
+      salvage_value: a.salvage_value?.toString() || "",
+      useful_life_years: a.useful_life_years?.toString() || "",
+      lifecycle_stage: a.lifecycle_stage || "acquired",
+      condition: a.condition || "new",
+      location: a.location || "",
+      warranty_expiry: a.warranty_expiry || "",
+      notes: a.notes || "",
+      vehicle_id: a.vehicle_id || "",
+    });
+    setShowAdd(true);
+  };
+
+  const saveMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await (supabase as any).from("fleet_assets").insert({
-        organization_id: organizationId,
+      const payload = {
         asset_code: form.asset_code,
         name: form.name,
         category: form.category,
@@ -127,14 +156,34 @@ export default function AssetRegistryTab() {
         warranty_expiry: form.warranty_expiry || null,
         notes: form.notes || null,
         vehicle_id: form.vehicle_id || null,
-      });
+      };
+      if (editingId) {
+        const { error } = await (supabase as any).from("fleet_assets").update(payload).eq("id", editingId);
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any).from("fleet_assets").insert({ ...payload, organization_id: organizationId });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success(editingId ? "Asset updated" : "Asset registered");
+      queryClient.invalidateQueries({ queryKey: ["fleet-assets"] });
+      setShowAdd(false);
+      setEditingId(null);
+      setForm(emptyForm);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await (supabase as any).from("fleet_assets").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Asset registered");
+      toast.success("Asset deleted");
       queryClient.invalidateQueries({ queryKey: ["fleet-assets"] });
-      setShowAdd(false);
-      setForm({ asset_code: "", name: "", category: "equipment", sub_category: "", serial_number: "", manufacturer: "", model: "", purchase_date: "", purchase_cost: "", current_value: "", depreciation_method: "straight_line", depreciation_rate: "", salvage_value: "", useful_life_years: "", lifecycle_stage: "acquired", condition: "new", location: "", warranty_expiry: "", notes: "", vehicle_id: "" });
+      setDeleteId(null);
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -158,7 +207,7 @@ export default function AssetRegistryTab() {
         depreciation_rate: v.depreciation_rate || null,
         useful_life_years: 10,
         lifecycle_stage: v.status === "active" ? "in_service" : v.status === "maintenance" ? "maintenance" : "idle",
-        condition: v.status === "active" ? "good" : v.status === "maintenance" ? "fair" : "fair",
+        condition: v.status === "active" ? "good" : "fair",
         location: v.depot?.name || null,
         vehicle_id: v.id,
       }));
@@ -204,14 +253,8 @@ export default function AssetRegistryTab() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const toggleVehicle = (id: string) => {
-    setSelectedVehicles(prev => prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]);
-  };
-
-  const toggleDevice = (id: string) => {
-    setSelectedDevices(prev => prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]);
-  };
-
+  const toggleVehicle = (id: string) => setSelectedVehicles(prev => prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]);
+  const toggleDevice = (id: string) => setSelectedDevices(prev => prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]);
   const toggleAll = () => {
     if (importType === "devices") {
       setSelectedDevices(prev => prev.length === unlinkedDevices.length ? [] : unlinkedDevices.map((d: any) => d.id));
@@ -233,7 +276,6 @@ export default function AssetRegistryTab() {
 
   return (
     <div className="space-y-4 mt-4">
-      {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         <Card className="p-3"><p className="text-xs text-muted-foreground">Total Assets</p><p className="text-xl font-bold">{assets.length}</p></Card>
         <Card className="p-3"><p className="text-xs text-muted-foreground">Vehicle Assets</p><p className="text-xl font-bold text-primary">{vehicleAssets}</p></Card>
@@ -243,7 +285,6 @@ export default function AssetRegistryTab() {
         <Card className="p-3"><p className="text-xs text-muted-foreground">Retired/Disposed</p><p className="text-xl font-bold text-destructive">{(byStage.retired || 0) + (byStage.disposed || 0)}</p></Card>
       </div>
 
-      {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -269,7 +310,7 @@ export default function AssetRegistryTab() {
         <Button variant="outline" onClick={() => { setImportType("devices"); setShowImport(true); }} className="gap-1.5 h-9">
           <Radio className="w-4 h-4" />Import Devices ({unlinkedDevices.length})
         </Button>
-        <Button onClick={() => setShowAdd(true)} className="gap-1.5 h-9"><Plus className="w-4 h-4" />Add Asset</Button>
+        <Button onClick={() => { setEditingId(null); setForm(emptyForm); setShowAdd(true); }} className="gap-1.5 h-9"><Plus className="w-4 h-4" />Add Asset</Button>
       </div>
 
       {/* Mobile Card View */}
@@ -286,15 +327,20 @@ export default function AssetRegistryTab() {
                   <p className="font-medium text-sm">{a.name}</p>
                   <p className="text-xs font-mono text-muted-foreground">{a.asset_code}</p>
                 </div>
-                <Badge variant="outline" className={cn("capitalize text-xs", stageBadge(a.lifecycle_stage))}>{a.lifecycle_stage?.replace("_", " ")}</Badge>
+                <div className="flex items-center gap-1">
+                  <Badge variant="outline" className={cn("capitalize text-xs", stageBadge(a.lifecycle_stage))}>{a.lifecycle_stage?.replace("_", " ")}</Badge>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => openEdit(a)}><Pencil className="h-3.5 w-3.5 mr-2" />Edit</DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(a.id)}><Trash2 className="h-3.5 w-3.5 mr-2" />Delete</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="outline" className="capitalize text-xs">{a.category}</Badge>
-                {a.vehicles && (
-                  <Badge variant="secondary" className="text-xs gap-1">
-                    <Truck className="w-3 h-3" />{a.vehicles.plate_number}
-                  </Badge>
-                )}
+                {a.vehicles && <Badge variant="secondary" className="text-xs gap-1"><Truck className="w-3 h-3" />{a.vehicles.plate_number}</Badge>}
                 <span className="capitalize text-xs text-muted-foreground">{a.condition}</span>
               </div>
               <div className="grid grid-cols-2 gap-1 text-xs">
@@ -324,15 +370,16 @@ export default function AssetRegistryTab() {
                 <TableHead className="whitespace-nowrap">Current Value</TableHead>
                 <TableHead className="whitespace-nowrap">Warranty</TableHead>
                 <TableHead className="whitespace-nowrap">Location</TableHead>
+                <TableHead className="w-10"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>{Array.from({ length: 10 }).map((_, j) => <TableCell key={j}><Skeleton className="h-4 w-20" /></TableCell>)}</TableRow>
+                  <TableRow key={i}>{Array.from({ length: 11 }).map((_, j) => <TableCell key={j}><Skeleton className="h-4 w-20" /></TableCell>)}</TableRow>
                 ))
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">No assets found</TableCell></TableRow>
+                <TableRow><TableCell colSpan={11} className="text-center py-8 text-muted-foreground">No assets found</TableCell></TableRow>
               ) : (
                 filtered.map((a: any) => (
                   <TableRow key={a.id}>
@@ -341,12 +388,8 @@ export default function AssetRegistryTab() {
                     <TableCell><Badge variant="outline" className="capitalize text-xs">{a.category}</Badge></TableCell>
                     <TableCell>
                       {a.vehicles ? (
-                        <Badge variant="secondary" className="text-xs gap-1">
-                          <Truck className="w-3 h-3" />{a.vehicles.plate_number}
-                        </Badge>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
+                        <Badge variant="secondary" className="text-xs gap-1"><Truck className="w-3 h-3" />{a.vehicles.plate_number}</Badge>
+                      ) : <span className="text-xs text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell><Badge variant="outline" className={cn("capitalize text-xs", stageBadge(a.lifecycle_stage))}>{a.lifecycle_stage?.replace("_", " ")}</Badge></TableCell>
                     <TableCell className="capitalize text-sm whitespace-nowrap">{a.condition}</TableCell>
@@ -354,6 +397,15 @@ export default function AssetRegistryTab() {
                     <TableCell className="whitespace-nowrap">{a.current_value ? `${a.current_value.toLocaleString()} ETB` : "—"}</TableCell>
                     <TableCell><LicenseExpiryBadge expiryDate={a.warranty_expiry} /></TableCell>
                     <TableCell className="text-sm whitespace-nowrap">{a.location || "—"}</TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEdit(a)}><Pencil className="h-3.5 w-3.5 mr-2" />Edit</DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(a.id)}><Trash2 className="h-3.5 w-3.5 mr-2" />Delete</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -361,6 +413,20 @@ export default function AssetRegistryTab() {
           </Table>
         </div>
       </Card>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={o => !o && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Asset</AlertDialogTitle>
+            <AlertDialogDescription>This will permanently remove this asset and all related lifecycle events, inventory entries, and cost records. This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteId && deleteMutation.mutate(deleteId)}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Import Assets Dialog */}
       <Dialog open={showImport} onOpenChange={setShowImport}>
@@ -372,7 +438,7 @@ export default function AssetRegistryTab() {
             </DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Select {importType === "vehicles" ? "vehicles" : "GPS trackers/IoT devices"} to register as fleet assets. Already-linked items are excluded.
+            Select {importType === "vehicles" ? "vehicles" : "GPS trackers/IoT devices"} to register as fleet assets.
           </p>
 
           {importType === "vehicles" ? (
@@ -383,18 +449,8 @@ export default function AssetRegistryTab() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-10">
-                        <Checkbox
-                          checked={selectedVehicles.length === unlinkededVehicles.length && unlinkededVehicles.length > 0}
-                          onCheckedChange={toggleAll}
-                        />
-                      </TableHead>
-                      <TableHead>Plate</TableHead>
-                      <TableHead>Make / Model</TableHead>
-                      <TableHead>Year</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Acq. Cost</TableHead>
-                      <TableHead>Depot</TableHead>
+                      <TableHead className="w-10"><Checkbox checked={selectedVehicles.length === unlinkededVehicles.length && unlinkededVehicles.length > 0} onCheckedChange={toggleAll} /></TableHead>
+                      <TableHead>Plate</TableHead><TableHead>Make / Model</TableHead><TableHead>Year</TableHead><TableHead>Status</TableHead><TableHead>Acq. Cost</TableHead><TableHead>Depot</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -404,12 +460,7 @@ export default function AssetRegistryTab() {
                         <TableCell className="font-medium">{v.plate_number}</TableCell>
                         <TableCell>{v.make} {v.model}</TableCell>
                         <TableCell>{v.year}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={cn("capitalize text-xs",
-                            v.status === "active" ? "bg-success/10 text-success" :
-                            v.status === "maintenance" ? "bg-warning/10 text-warning" : "bg-muted text-muted-foreground"
-                          )}>{v.status}</Badge>
-                        </TableCell>
+                        <TableCell><Badge variant="outline" className={cn("capitalize text-xs", v.status === "active" ? "bg-success/10 text-success" : v.status === "maintenance" ? "bg-warning/10 text-warning" : "bg-muted text-muted-foreground")}>{v.status}</Badge></TableCell>
                         <TableCell>{v.acquisition_cost ? `${v.acquisition_cost.toLocaleString()} ETB` : "—"}</TableCell>
                         <TableCell className="text-sm">{v.depot?.name || "—"}</TableCell>
                       </TableRow>
@@ -426,17 +477,8 @@ export default function AssetRegistryTab() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-10">
-                        <Checkbox
-                          checked={selectedDevices.length === unlinkedDevices.length && unlinkedDevices.length > 0}
-                          onCheckedChange={toggleAll}
-                        />
-                      </TableHead>
-                      <TableHead>IMEI</TableHead>
-                      <TableHead>Model</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Vehicle</TableHead>
-                      <TableHead>Installed</TableHead>
+                      <TableHead className="w-10"><Checkbox checked={selectedDevices.length === unlinkedDevices.length && unlinkedDevices.length > 0} onCheckedChange={toggleAll} /></TableHead>
+                      <TableHead>IMEI</TableHead><TableHead>Model</TableHead><TableHead>Status</TableHead><TableHead>Vehicle</TableHead><TableHead>Installed</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -445,11 +487,7 @@ export default function AssetRegistryTab() {
                         <TableCell><Checkbox checked={selectedDevices.includes(d.id)} onCheckedChange={() => toggleDevice(d.id)} /></TableCell>
                         <TableCell className="font-mono text-xs">{d.imei}</TableCell>
                         <TableCell>{d.tracker_model}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={cn("capitalize text-xs",
-                            d.status === "active" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
-                          )}>{d.status}</Badge>
-                        </TableCell>
+                        <TableCell><Badge variant="outline" className={cn("capitalize text-xs", d.status === "active" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground")}>{d.status}</Badge></TableCell>
                         <TableCell className="text-sm">{d.vehicles?.plate_number || "—"}</TableCell>
                         <TableCell className="text-sm">{d.install_date || "—"}</TableCell>
                       </TableRow>
@@ -463,32 +501,22 @@ export default function AssetRegistryTab() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowImport(false)}>Cancel</Button>
             {importType === "vehicles" ? (
-              <Button
-                onClick={() => importMutation.mutate()}
-                disabled={selectedVehicles.length === 0 || importMutation.isPending}
-                className="gap-1.5"
-              >
-                <Download className="w-4 h-4" />
-                {importMutation.isPending ? "Importing..." : `Import ${selectedVehicles.length} Vehicle${selectedVehicles.length !== 1 ? "s" : ""}`}
+              <Button onClick={() => importMutation.mutate()} disabled={selectedVehicles.length === 0 || importMutation.isPending} className="gap-1.5">
+                <Download className="w-4 h-4" />{importMutation.isPending ? "Importing..." : `Import ${selectedVehicles.length} Vehicle${selectedVehicles.length !== 1 ? "s" : ""}`}
               </Button>
             ) : (
-              <Button
-                onClick={() => importDevicesMutation.mutate()}
-                disabled={selectedDevices.length === 0 || importDevicesMutation.isPending}
-                className="gap-1.5"
-              >
-                <Download className="w-4 h-4" />
-                {importDevicesMutation.isPending ? "Importing..." : `Import ${selectedDevices.length} Device${selectedDevices.length !== 1 ? "s" : ""}`}
+              <Button onClick={() => importDevicesMutation.mutate()} disabled={selectedDevices.length === 0 || importDevicesMutation.isPending} className="gap-1.5">
+                <Download className="w-4 h-4" />{importDevicesMutation.isPending ? "Importing..." : `Import ${selectedDevices.length} Device${selectedDevices.length !== 1 ? "s" : ""}`}
               </Button>
             )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Add Asset Dialog */}
-      <Dialog open={showAdd} onOpenChange={setShowAdd}>
+      {/* Add/Edit Asset Dialog */}
+      <Dialog open={showAdd} onOpenChange={o => { if (!o) { setShowAdd(false); setEditingId(null); setForm(emptyForm); } }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Register New Asset</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingId ? "Edit Asset" : "Register New Asset"}</DialogTitle></DialogHeader>
           <div className="grid grid-cols-2 gap-4">
             <div><Label>Asset Code *</Label><Input value={form.asset_code} onChange={e => setForm(p => ({ ...p, asset_code: e.target.value }))} placeholder="AST-001" /></div>
             <div><Label>Name *</Label><Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Hydraulic Jack" /></div>
@@ -503,7 +531,7 @@ export default function AssetRegistryTab() {
                 <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>
-                  {unlinkededVehicles.map(v => (
+                  {vehicles.map(v => (
                     <SelectItem key={v.id} value={v.id}>{v.plate_number} - {v.make} {v.model}</SelectItem>
                   ))}
                 </SelectContent>
@@ -545,9 +573,9 @@ export default function AssetRegistryTab() {
             <div className="col-span-2"><Label>Notes</Label><Input value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} /></div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
-            <Button onClick={() => addMutation.mutate()} disabled={!form.asset_code || !form.name || addMutation.isPending}>
-              {addMutation.isPending ? "Registering..." : "Register Asset"}
+            <Button variant="outline" onClick={() => { setShowAdd(false); setEditingId(null); setForm(emptyForm); }}>Cancel</Button>
+            <Button onClick={() => saveMutation.mutate()} disabled={!form.asset_code || !form.name || saveMutation.isPending}>
+              {saveMutation.isPending ? "Saving..." : editingId ? "Update Asset" : "Register Asset"}
             </Button>
           </DialogFooter>
         </DialogContent>
