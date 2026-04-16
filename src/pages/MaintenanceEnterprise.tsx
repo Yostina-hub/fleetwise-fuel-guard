@@ -3,7 +3,8 @@ import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Wrench, Loader2, Ticket, FileSignature, DollarSign, 
-  Users, ShoppingCart, ClipboardList, Building2
+  Users, ShoppingCart, ClipboardList, Building2, FileText,
+  MessageSquare, CreditCard, ClipboardCheck
 } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
 import MaintenanceTicketsTab from "@/components/maintenance-enterprise/MaintenanceTicketsTab";
@@ -13,10 +14,14 @@ import SupplierProfilesTab from "@/components/maintenance-enterprise/SupplierPro
 import PurchaseOrdersTab from "@/components/maintenance-enterprise/PurchaseOrdersTab";
 import SupplierBidsTab from "@/components/maintenance-enterprise/SupplierBidsTab";
 import WorkOrderPortalTab from "@/components/maintenance-enterprise/WorkOrderPortalTab";
+import MaintenanceRequestsTab from "@/components/maintenance-enterprise/MaintenanceRequestsTab";
+import SupplierCommunicationTab from "@/components/maintenance-enterprise/SupplierCommunicationTab";
+import SupplierPaymentsTab from "@/components/maintenance-enterprise/SupplierPaymentsTab";
+import PostMaintenanceTab from "@/components/maintenance-enterprise/PostMaintenanceTab";
 
 const MaintenanceEnterprise = () => {
   const { organizationId, loading: orgLoading } = useOrganization();
-  const [activeTab, setActiveTab] = useState("tickets");
+  const [activeTab, setActiveTab] = useState("requests");
   const tabsRef = useRef<HTMLDivElement>(null);
 
   if (orgLoading) {
@@ -35,7 +40,6 @@ const MaintenanceEnterprise = () => {
   return (
     <Layout>
       <div className="p-4 md:p-8 space-y-6 animate-fade-in">
-        {/* Header */}
         <div className="flex items-center gap-4 slide-in-right">
           <div className="p-4 rounded-2xl glass-strong glow">
             <Building2 className="w-8 h-8 text-primary float-animation" />
@@ -45,15 +49,17 @@ const MaintenanceEnterprise = () => {
               Enterprise Maintenance Suite
             </h1>
             <p className="text-muted-foreground mt-1 text-lg">
-              Tickets • Contracts • Costs • Suppliers • Procurement • Portal
+              Requests • Tickets • Work Orders • Suppliers • Payments • Inspections
             </p>
           </div>
         </div>
 
-        {/* Tabbed Content */}
         <div ref={tabsRef}>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full max-w-5xl grid-cols-7">
+            <TabsList className="flex flex-wrap gap-1 h-auto p-1">
+              <TabsTrigger value="requests" className="gap-1.5 text-xs md:text-sm">
+                <FileText className="w-4 h-4" /> Requests
+              </TabsTrigger>
               <TabsTrigger value="tickets" className="gap-1.5 text-xs md:text-sm">
                 <Ticket className="w-4 h-4" /> Tickets
               </TabsTrigger>
@@ -75,8 +81,20 @@ const MaintenanceEnterprise = () => {
               <TabsTrigger value="portal" className="gap-1.5 text-xs md:text-sm">
                 <Wrench className="w-4 h-4" /> Portal
               </TabsTrigger>
+              <TabsTrigger value="communication" className="gap-1.5 text-xs md:text-sm">
+                <MessageSquare className="w-4 h-4" /> Messages
+              </TabsTrigger>
+              <TabsTrigger value="payments" className="gap-1.5 text-xs md:text-sm">
+                <CreditCard className="w-4 h-4" /> Payments
+              </TabsTrigger>
+              <TabsTrigger value="post-inspection" className="gap-1.5 text-xs md:text-sm">
+                <ClipboardCheck className="w-4 h-4" /> Inspection
+              </TabsTrigger>
             </TabsList>
 
+            <TabsContent value="requests">
+              <MaintenanceRequestsTab />
+            </TabsContent>
             <TabsContent value="tickets">
               <MaintenanceTicketsTab />
             </TabsContent>
@@ -97,6 +115,15 @@ const MaintenanceEnterprise = () => {
             </TabsContent>
             <TabsContent value="portal">
               <WorkOrderPortalTab />
+            </TabsContent>
+            <TabsContent value="communication">
+              <SupplierCommunicationTab />
+            </TabsContent>
+            <TabsContent value="payments">
+              <SupplierPaymentsTab />
+            </TabsContent>
+            <TabsContent value="post-inspection">
+              <PostMaintenanceTab />
             </TabsContent>
           </Tabs>
         </div>
