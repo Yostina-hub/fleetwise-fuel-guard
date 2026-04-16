@@ -72,7 +72,7 @@ export default function AssignDriverDialog({ open, onOpenChange, vehicle }: Assi
           : "Driver assigned to vehicle successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["vehicles"] });
-      queryClient.invalidateQueries({ queryKey: ["trips"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicle-profile"] });
       onOpenChange(false);
     },
     onError: (error: any) => {
