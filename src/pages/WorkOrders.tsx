@@ -2,9 +2,12 @@ import { useState } from "react";
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { ClipboardList, Package, ShieldCheck, Users } from "lucide-react";
+import { ClipboardList, Package, ShieldCheck, Users, Zap, Fuel } from "lucide-react";
 import WorkOrdersTab from "@/components/workorders/WorkOrdersTab";
 import InventoryTab from "@/components/workorders/InventoryTab";
+import { EVWorkOrdersTab } from "@/components/ev/EVWorkOrdersTab";
+import { FuelWorkOrdersTab } from "@/components/fuel/FuelWorkOrdersTab";
+import { FuelWorkOrderDialog } from "@/components/fuel/FuelWorkOrderDialog";
 import WorkOrdersQuickStats from "@/components/workorders/WorkOrdersQuickStats";
 import WorkOrdersQuickActions from "@/components/workorders/WorkOrdersQuickActions";
 import WorkOrdersInsightsCard from "@/components/workorders/WorkOrdersInsightsCard";
@@ -18,6 +21,7 @@ import { useTranslation } from "react-i18next";
 const WorkOrders = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("orders");
+  const [fuelWoDialog, setFuelWoDialog] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
 
   const stats = {
     openOrders: 12,
@@ -86,10 +90,18 @@ const WorkOrders = () => {
 
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4 glass p-1 h-12">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 glass p-1 h-auto sm:h-12 gap-1">
             <TabsTrigger value="orders" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg">
               <ClipboardList className="h-5 w-5" aria-hidden="true" />
-              <span className="font-semibold hidden sm:inline">Work Orders</span>
+              <span className="font-semibold hidden sm:inline">Maintenance</span>
+            </TabsTrigger>
+            <TabsTrigger value="fuel" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg">
+              <Fuel className="h-5 w-5" aria-hidden="true" />
+              <span className="font-semibold hidden sm:inline">Fuel</span>
+            </TabsTrigger>
+            <TabsTrigger value="ev" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg">
+              <Zap className="h-5 w-5" aria-hidden="true" />
+              <span className="font-semibold hidden sm:inline">EV</span>
             </TabsTrigger>
             <TabsTrigger value="inventory" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg">
               <Package className="h-5 w-5" aria-hidden="true" />
@@ -108,6 +120,21 @@ const WorkOrders = () => {
           <TabsContent value="orders" className="animate-bounce-in">
             <Card className="p-3 md:p-6 glass-strong border-2 hover:border-primary/50 transition-all duration-300 card-premium overflow-hidden">
               <WorkOrdersTab />
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="fuel" className="animate-bounce-in">
+            <Card className="p-3 md:p-6 glass-strong border-2 hover:border-primary/50 transition-all duration-300 card-premium overflow-hidden">
+              <FuelWorkOrdersTab
+                onCreate={() => setFuelWoDialog({ open: true, id: null })}
+                onEdit={(id) => setFuelWoDialog({ open: true, id })}
+              />
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="ev" className="animate-bounce-in">
+            <Card className="p-3 md:p-6 glass-strong border-2 hover:border-primary/50 transition-all duration-300 card-premium overflow-hidden">
+              <EVWorkOrdersTab />
             </Card>
           </TabsContent>
 
