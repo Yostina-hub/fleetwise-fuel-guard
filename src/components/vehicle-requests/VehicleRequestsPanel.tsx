@@ -158,10 +158,10 @@ export const VehicleRequestsPanel = () => {
         <CardContent className="p-0">
           {isLoading ? (
             <div className="p-6 text-center text-muted-foreground text-sm">Loading...</div>
-          ) : requests.length === 0 ? (
+          ) : filteredRequests.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <ClipboardList className="w-10 h-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">No vehicle requests yet</p>
+              <p className="text-sm">{search || statusFilter !== "all" ? "No matching requests" : "No vehicle requests yet"}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
