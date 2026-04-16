@@ -10,18 +10,21 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, ArrowRight, History } from "lucide-react";
+import { Plus, ArrowRight, History, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
 const EVENT_TYPES = ["acquired", "deployed", "transferred", "maintenance", "repaired", "inspected", "idle", "retired", "disposed", "revalued"];
+const STAGES = ["acquired", "deployed", "in_service", "maintenance", "idle", "retired", "disposed"];
 
 export default function AssetLifecycleTab() {
   const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
   const [selectedAsset, setSelectedAsset] = useState<string>("all");
   const [showAdd, setShowAdd] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState({ asset_id: "", event_type: "deployed", from_stage: "", to_stage: "", performed_by: "", cost: "", notes: "" });
 
   const { data: assets = [] } = useQuery({
@@ -60,7 +63,6 @@ export default function AssetLifecycleTab() {
         notes: form.notes || null,
       });
       if (error) throw error;
-      // Update asset stage if to_stage provided
       if (form.to_stage) {
         await (supabase as any).from("fleet_assets").update({ lifecycle_stage: form.to_stage }).eq("id", form.asset_id);
       }
@@ -70,6 +72,19 @@ export default function AssetLifecycleTab() {
       queryClient.invalidateQueries({ queryKey: ["asset-lifecycle"] });
       queryClient.invalidateQueries({ queryKey: ["fleet-assets"] });
       setShowAdd(false);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await (supabase as any).from("asset_lifecycle_events").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Event deleted");
+      queryClient.invalidateQueries({ queryKey: ["asset-lifecycle"] });
+      setDeleteId(null);
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -102,7 +117,7 @@ export default function AssetLifecycleTab() {
           events.length === 0 ? <p className="text-center py-8 text-muted-foreground">No lifecycle events recorded</p> : (
             <div className="space-y-3">
               {events.map((e: any) => (
-                <div key={e.id} className="flex items-start gap-3 p-3 rounded-lg border bg-muted/20">
+                <div key={e.id} className="flex items-start gap-3 p-3 rounded-lg border bg-muted/20 group">
                   <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
                     <History className="w-5 h-5 text-muted-foreground" />
                   </div>
@@ -125,12 +140,29 @@ export default function AssetLifecycleTab() {
                       {e.cost > 0 && <span className="font-medium text-foreground">{e.cost.toLocaleString()} ETB</span>}
                     </div>
                   </div>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" onClick={() => setDeleteId(e.id)}>
+                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                  </Button>
                 </div>
               ))}
             </div>
           )}
         </ScrollArea>
       </Card>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={o => !o && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Lifecycle Event</AlertDialogTitle>
+            <AlertDialogDescription>This will permanently remove this lifecycle event record.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteId && deleteMutation.mutate(deleteId)}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
         <DialogContent>
@@ -151,7 +183,7 @@ export default function AssetLifecycleTab() {
             <div><Label>To Stage</Label>
               <Select value={form.to_stage} onValueChange={v => setForm(p => ({ ...p, to_stage: v }))}>
                 <SelectTrigger><SelectValue placeholder="New stage" /></SelectTrigger>
-                <SelectContent>{["acquired", "deployed", "in_service", "maintenance", "idle", "retired", "disposed"].map(s => <SelectItem key={s} value={s} className="capitalize">{s.replace("_", " ")}</SelectItem>)}</SelectContent>
+                <SelectContent>{STAGES.map(s => <SelectItem key={s} value={s} className="capitalize">{s.replace("_", " ")}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div><Label>Performed By</Label><Input value={form.performed_by} onChange={e => setForm(p => ({ ...p, performed_by: e.target.value }))} /></div>
