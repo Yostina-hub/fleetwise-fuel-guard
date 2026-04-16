@@ -14412,6 +14412,91 @@ export type Database = {
           },
         ]
       }
+      predictive_maintenance_scores: {
+        Row: {
+          computed_at: string
+          contributing_factors: Json | null
+          created_at: string
+          dismiss_reason: string | null
+          dismissed_at: string | null
+          dismissed_by: string | null
+          health_score: number
+          id: string
+          organization_id: string
+          predicted_failure_component: string | null
+          predicted_failure_window_days: number | null
+          recommended_action: string | null
+          recommended_priority: string | null
+          risk_level: string
+          status: string
+          updated_at: string
+          vehicle_id: string
+          work_order_id: string | null
+        }
+        Insert: {
+          computed_at?: string
+          contributing_factors?: Json | null
+          created_at?: string
+          dismiss_reason?: string | null
+          dismissed_at?: string | null
+          dismissed_by?: string | null
+          health_score?: number
+          id?: string
+          organization_id: string
+          predicted_failure_component?: string | null
+          predicted_failure_window_days?: number | null
+          recommended_action?: string | null
+          recommended_priority?: string | null
+          risk_level?: string
+          status?: string
+          updated_at?: string
+          vehicle_id: string
+          work_order_id?: string | null
+        }
+        Update: {
+          computed_at?: string
+          contributing_factors?: Json | null
+          created_at?: string
+          dismiss_reason?: string | null
+          dismissed_at?: string | null
+          dismissed_by?: string | null
+          health_score?: number
+          id?: string
+          organization_id?: string
+          predicted_failure_component?: string | null
+          predicted_failure_window_days?: number | null
+          recommended_action?: string | null
+          recommended_priority?: string | null
+          risk_level?: string
+          status?: string
+          updated_at?: string
+          vehicle_id?: string
+          work_order_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "predictive_maintenance_scores_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "predictive_maintenance_scores_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "predictive_maintenance_scores_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       processing_activities: {
         Row: {
           activity_name: string
@@ -22699,6 +22784,14 @@ export type Database = {
         Returns: string
       }
       clear_failed_login: { Args: { p_email: string }; Returns: undefined }
+      compute_predictive_scores: {
+        Args: { p_org_id: string }
+        Returns: {
+          critical: number
+          high: number
+          processed: number
+        }[]
+      }
       create_telemetry_partition: {
         Args: { p_date: string }
         Returns: undefined
