@@ -197,8 +197,8 @@ const Auth = () => {
 
       // Re-authenticate
       const { error: reAuthError } = await supabase.auth.signInWithPassword({
-        email: emailEl.value,
-        password: pwdEl.value,
+        email: pending2FACredentials.email,
+        password: pending2FACredentials.password,
       });
 
       if (reAuthError) {
