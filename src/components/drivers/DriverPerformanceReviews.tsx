@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { ClipboardCheck, Star, TrendingUp, Calendar } from "lucide-react";
 import { format } from "date-fns";
+import { CreatePerformanceReviewDialog } from "./CreatePerformanceReviewDialog";
 
 interface Review {
   id: string;
@@ -35,21 +36,20 @@ export const DriverPerformanceReviews = ({ driverId, driverName }: DriverPerform
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchReviews = useCallback(async () => {
     if (!organizationId || !driverId) return;
-    const fetch = async () => {
-      setLoading(true);
-      const { data } = await supabase
-        .from("driver_performance_reviews")
-        .select("*")
-        .eq("organization_id", organizationId)
-        .eq("driver_id", driverId)
-        .order("review_period_end", { ascending: false });
-      setReviews((data as Review[]) || []);
-      setLoading(false);
-    };
-    fetch();
+    setLoading(true);
+    const { data } = await supabase
+      .from("driver_performance_reviews")
+      .select("*")
+      .eq("organization_id", organizationId)
+      .eq("driver_id", driverId)
+      .order("review_period_end", { ascending: false });
+    setReviews((data as Review[]) || []);
+    setLoading(false);
   }, [driverId, organizationId]);
+
+  useEffect(() => { fetchReviews(); }, [fetchReviews]);
 
   const statusBadge = (status: string) => {
     const map: Record<string, string> = {
@@ -80,6 +80,10 @@ export const DriverPerformanceReviews = ({ driverId, driverName }: DriverPerform
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div />
+        <CreatePerformanceReviewDialog driverId={driverId} driverName={driverName} onCreated={fetchReviews} />
+      </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <Card><CardContent className="p-3 text-center">
           <Star className="w-5 h-5 mx-auto mb-1 text-amber-400" />
