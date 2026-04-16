@@ -28,6 +28,8 @@ interface VehicleListItemProps {
     plate: string;
     make?: string;
     model?: string;
+    vehicleType?: string;
+    fuelType?: string;
     status: string;
     speed: number;
     lat?: number;

@@ -240,6 +240,7 @@ const Vehicles = () => {
         model: v.model || "",
         year: v.year,
         vehicleType: v.vehicle_type || "Vehicle",
+        fuelType: v.fuel_type || "",
         branch: v.depot?.name || "Head Office",
         driverName,
         status,
