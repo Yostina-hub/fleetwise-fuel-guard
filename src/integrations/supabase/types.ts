@@ -11024,6 +11024,261 @@ export type Database = {
           },
         ]
       }
+      internal_accident_claims: {
+        Row: {
+          accident_date: string
+          accident_location: string | null
+          approved_cost: number | null
+          claim_number: string
+          closed_at: string | null
+          consolidated_at: string | null
+          consolidation_notes: string | null
+          contract_id: string | null
+          coverage_notes: string | null
+          covered_by_insurance: boolean | null
+          created_at: string
+          created_by: string | null
+          damage_description: string | null
+          damaged_parts: string[] | null
+          description: string | null
+          discipline_action_at: string | null
+          discipline_action_reference: string | null
+          document_analyzed_at: string | null
+          document_analyzed_by: string | null
+          driver_id: string | null
+          estimated_cost: number | null
+          existing_contract_check_at: string | null
+          existing_contract_found: boolean | null
+          follow_up_notes: string | null
+          id: string
+          is_complete: boolean | null
+          maintenance_completed_at: string | null
+          maintenance_started_at: string | null
+          negligence_check_at: string | null
+          negligence_found: boolean | null
+          negligence_notes: string | null
+          organization_id: string
+          photos: string[] | null
+          po_approved_at: string | null
+          po_number: string | null
+          po_url: string | null
+          procurement_request_number: string | null
+          procurement_requested_at: string | null
+          report_document_url: string | null
+          scd_confirmation_at: string | null
+          scd_confirmation_url: string | null
+          scm_short_list: Json | null
+          selected_supplier: string | null
+          selected_supplier_contact: string | null
+          status: string
+          supervisor_name: string | null
+          supplier_notified_at: string | null
+          third_party_claim_id: string | null
+          updated_at: string
+          vehicle_id: string
+          workflow_stage: string
+        }
+        Insert: {
+          accident_date: string
+          accident_location?: string | null
+          approved_cost?: number | null
+          claim_number: string
+          closed_at?: string | null
+          consolidated_at?: string | null
+          consolidation_notes?: string | null
+          contract_id?: string | null
+          coverage_notes?: string | null
+          covered_by_insurance?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          damage_description?: string | null
+          damaged_parts?: string[] | null
+          description?: string | null
+          discipline_action_at?: string | null
+          discipline_action_reference?: string | null
+          document_analyzed_at?: string | null
+          document_analyzed_by?: string | null
+          driver_id?: string | null
+          estimated_cost?: number | null
+          existing_contract_check_at?: string | null
+          existing_contract_found?: boolean | null
+          follow_up_notes?: string | null
+          id?: string
+          is_complete?: boolean | null
+          maintenance_completed_at?: string | null
+          maintenance_started_at?: string | null
+          negligence_check_at?: string | null
+          negligence_found?: boolean | null
+          negligence_notes?: string | null
+          organization_id: string
+          photos?: string[] | null
+          po_approved_at?: string | null
+          po_number?: string | null
+          po_url?: string | null
+          procurement_request_number?: string | null
+          procurement_requested_at?: string | null
+          report_document_url?: string | null
+          scd_confirmation_at?: string | null
+          scd_confirmation_url?: string | null
+          scm_short_list?: Json | null
+          selected_supplier?: string | null
+          selected_supplier_contact?: string | null
+          status?: string
+          supervisor_name?: string | null
+          supplier_notified_at?: string | null
+          third_party_claim_id?: string | null
+          updated_at?: string
+          vehicle_id: string
+          workflow_stage?: string
+        }
+        Update: {
+          accident_date?: string
+          accident_location?: string | null
+          approved_cost?: number | null
+          claim_number?: string
+          closed_at?: string | null
+          consolidated_at?: string | null
+          consolidation_notes?: string | null
+          contract_id?: string | null
+          coverage_notes?: string | null
+          covered_by_insurance?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          damage_description?: string | null
+          damaged_parts?: string[] | null
+          description?: string | null
+          discipline_action_at?: string | null
+          discipline_action_reference?: string | null
+          document_analyzed_at?: string | null
+          document_analyzed_by?: string | null
+          driver_id?: string | null
+          estimated_cost?: number | null
+          existing_contract_check_at?: string | null
+          existing_contract_found?: boolean | null
+          follow_up_notes?: string | null
+          id?: string
+          is_complete?: boolean | null
+          maintenance_completed_at?: string | null
+          maintenance_started_at?: string | null
+          negligence_check_at?: string | null
+          negligence_found?: boolean | null
+          negligence_notes?: string | null
+          organization_id?: string
+          photos?: string[] | null
+          po_approved_at?: string | null
+          po_number?: string | null
+          po_url?: string | null
+          procurement_request_number?: string | null
+          procurement_requested_at?: string | null
+          report_document_url?: string | null
+          scd_confirmation_at?: string | null
+          scd_confirmation_url?: string | null
+          scm_short_list?: Json | null
+          selected_supplier?: string | null
+          selected_supplier_contact?: string | null
+          status?: string
+          supervisor_name?: string | null
+          supplier_notified_at?: string | null
+          third_party_claim_id?: string | null
+          updated_at?: string
+          vehicle_id?: string
+          workflow_stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_accident_claims_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_accident_claims_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_accident_claims_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_accident_claims_third_party_claim_id_fkey"
+            columns: ["third_party_claim_id"]
+            isOneToOne: false
+            referencedRelation: "accident_claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_accident_claims_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internal_claim_transitions: {
+        Row: {
+          claim_id: string
+          created_at: string
+          decision: string | null
+          from_stage: string | null
+          id: string
+          metadata: Json | null
+          notes: string | null
+          organization_id: string
+          performed_by: string | null
+          performed_by_name: string | null
+          to_stage: string
+        }
+        Insert: {
+          claim_id: string
+          created_at?: string
+          decision?: string | null
+          from_stage?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          organization_id: string
+          performed_by?: string | null
+          performed_by_name?: string | null
+          to_stage: string
+        }
+        Update: {
+          claim_id?: string
+          created_at?: string
+          decision?: string | null
+          from_stage?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          organization_id?: string
+          performed_by?: string | null
+          performed_by_name?: string | null
+          to_stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_claim_transitions_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "internal_accident_claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_claim_transitions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_items: {
         Row: {
           average_monthly_usage: number | null
