@@ -33,7 +33,7 @@ import { useTranslation } from 'react-i18next';
 const TripManagement = () => {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { requests, loading, submitRequest } = useTripRequests();
+  const { requests, loading, submitRequest, cancelRequest } = useTripRequests();
   const { pendingApprovals, approveRequest, rejectRequest } = useApprovals();
   const { isSuperAdmin, hasRole } = usePermissions();
   const canApprove = isSuperAdmin || hasRole("operations_manager") || hasRole("fleet_owner");
