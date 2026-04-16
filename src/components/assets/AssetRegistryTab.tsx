@@ -54,7 +54,9 @@ export default function AssetRegistryTab() {
   const [filterStage, setFilterStage] = useState("all");
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [importType, setImportType] = useState<"vehicles" | "devices">("vehicles");
   const [selectedVehicles, setSelectedVehicles] = useState<string[]>([]);
+  const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
   const [form, setForm] = useState({
     asset_code: "", name: "", category: "equipment", sub_category: "",
     serial_number: "", manufacturer: "", model: "", purchase_date: "",
@@ -65,6 +67,19 @@ export default function AssetRegistryTab() {
   });
 
   const { vehicles } = useVehicles();
+
+  const { data: devices = [] } = useQuery({
+    queryKey: ["devices-for-assets", organizationId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("devices")
+        .select("*, vehicles:vehicle_id(plate_number)")
+        .eq("organization_id", organizationId!);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId,
+  });
 
   const { data: assets = [], isLoading } = useQuery({
     queryKey: ["fleet-assets", organizationId],
