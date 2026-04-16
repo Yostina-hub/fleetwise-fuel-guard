@@ -417,6 +417,7 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
         onImport={handleImport}
         onDuplicate={handleDuplicate}
         onOpenTemplates={() => setShowTemplates(true)}
+        onOpenAI={() => setShowAICommandBar(true)}
         isSaving={isSaving}
         isSimulating={showSimulator}
         canUndo={historyIndex > 0}
@@ -469,6 +470,7 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
                 if (d?.category === "conditions") return "#f59e0b";
                 if (d?.category === "fleet") return "#3b82f6";
                 if (d?.category === "notifications") return "#8b5cf6";
+                if (d?.category === "ai_intelligence") return "#a855f7";
                 if (d?.category === "data") return "#06b6d4";
                 if (d?.category === "timing") return "#64748b";
                 return "#6366f1";
@@ -514,6 +516,15 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
           />
         )}
       </AnimatePresence>
+
+      {/* AI Command Bar */}
+      <WorkflowAICommandBar
+        open={showAICommandBar}
+        onClose={() => setShowAICommandBar(false)}
+        nodes={nodes}
+        edges={edges}
+        onApplyResult={handleAIResult}
+      />
     </div>
   );
 }
