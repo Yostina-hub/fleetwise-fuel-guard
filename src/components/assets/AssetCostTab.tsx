@@ -58,6 +58,29 @@ export default function AssetCostTab() {
     enabled: !!organizationId,
   });
 
+  // Auto-aggregate fuel costs from fuel_transactions for linked assets
+  const { data: fuelCostAgg = { total: 0, count: 0 } } = useQuery({
+    queryKey: ["asset-fuel-cost-agg", organizationId],
+    queryFn: async () => {
+      // Get vehicle IDs linked to fleet_assets
+      const { data: linkedAssets } = await (supabase as any)
+        .from("fleet_assets")
+        .select("vehicle_id")
+        .eq("organization_id", organizationId!)
+        .not("vehicle_id", "is", null);
+      const vids = (linkedAssets || []).map((a: any) => a.vehicle_id).filter(Boolean);
+      if (!vids.length) return { total: 0, count: 0 };
+      const { data: txns } = await supabase
+        .from("fuel_transactions")
+        .select("fuel_cost")
+        .eq("organization_id", organizationId!)
+        .in("vehicle_id", vids);
+      const total = (txns || []).reduce((s, t: any) => s + (t.fuel_cost || 0), 0);
+      return { total, count: txns?.length || 0 };
+    },
+    enabled: !!organizationId,
+  });
+
   const addMutation = useMutation({
     mutationFn: async () => {
       const { error } = await (supabase as any).from("asset_cost_records").insert({
