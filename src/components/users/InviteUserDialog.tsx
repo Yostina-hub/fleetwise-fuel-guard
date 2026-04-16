@@ -56,8 +56,9 @@ const InviteUserDialog = ({ open, onOpenChange, onUserCreated, organizationId: p
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const normalizedEmail = email.trim().toLowerCase();
     
-    if (!email || !password || !selectedRole) {
+    if (!normalizedEmail || !password || !selectedRole) {
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields",
@@ -96,7 +97,7 @@ const InviteUserDialog = ({ open, onOpenChange, onUserCreated, organizationId: p
       // Call edge function to create user (doesn't affect current session)
       const { data, error } = await supabase.functions.invoke("create-user", {
         body: {
-          email,
+          email: normalizedEmail,
           password,
           fullName,
           role: selectedRole,
@@ -119,7 +120,7 @@ const InviteUserDialog = ({ open, onOpenChange, onUserCreated, organizationId: p
       } else {
         toast({
           title: "Success",
-          description: `User ${email} has been created successfully`,
+          description: `User ${normalizedEmail} has been created successfully`,
         });
       }
 
