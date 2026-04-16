@@ -56,7 +56,7 @@ const Organizations = lazyWithRetry(() => import("./pages/Organizations"), "Orga
 const EVManagement = lazyWithRetry(() => import("./pages/EVManagement"), "EVManagement");
 const VehicleRequests = lazyWithRetry(() => import("./pages/VehicleRequests"), "VehicleRequests");
 const TireManagement = lazyWithRetry(() => import("./pages/TireManagement"), "TireManagement");
-const ColdChain = lazyWithRetry(() => import("./pages/ColdChain"), "ColdChain");
+
 const RentalVehicles = lazyWithRetry(() => import("./pages/RentalVehicles"), "RentalVehicles");
 const RoutePlanning = lazyWithRetry(() => import("./pages/RoutePlanning"), "RoutePlanning");
 const DashCam = lazyWithRetry(() => import("./pages/DashCam"), "DashCam");
@@ -169,7 +169,7 @@ const App = () => {
                         <Route path="/ev-management" element={<ProtectedRoute><EVManagement /></ProtectedRoute>} />
                         <Route path="/vehicle-requests" element={<ProtectedRoute><VehicleRequests /></ProtectedRoute>} />
                         <Route path="/tire-management" element={<ProtectedRoute><TireManagement /></ProtectedRoute>} />
-                        <Route path="/cold-chain" element={<ProtectedRoute><ColdChain /></ProtectedRoute>} />
+                        <Route path="/cold-chain" element={<ProtectedRoute><IoTSensorManagement /></ProtectedRoute>} />
                         <Route path="/rental-vehicles" element={<ProtectedRoute><RentalVehicles /></ProtectedRoute>} />
                         <Route path="/route-planning" element={<ProtectedRoute><RoutePlanning /></ProtectedRoute>} />
                         <Route path="/dash-cam" element={<ProtectedRoute><DashCam /></ProtectedRoute>} />

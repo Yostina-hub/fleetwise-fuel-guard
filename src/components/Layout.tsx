@@ -172,7 +172,7 @@ const getNavItems = (t: (key: string) => string) => [
     { label: t("nav.dashCamEvents"), path: "/dash-cam" },
     { label: t("nav.adasDmsReports"), path: "/adas-reports" },
   ]},
-  { icon: Thermometer, label: t("nav.coldChain"), path: "/cold-chain" },
+  { icon: Thermometer, label: t("nav.coldChain"), path: "/iot-sensors" },
 
   // ── Maintenance ──
   { 
