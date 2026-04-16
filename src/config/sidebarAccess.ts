@@ -87,6 +87,8 @@ export const PATH_ROLE_ACCESS: Record<string, string[]> = {
   // ── Maintenance ──
   "/maintenance":            [...MAINT_ROLES],
   "/work-orders":            [...MAINT_ROLES],
+  "/maintenance-enterprise": [...MAINT_ROLES],
+  "/driver-maintenance-request": [...MAINT_ROLES, "driver"],
   "/predictive-maintenance": [...MAINT_ROLES],
   "/tire-management":        [...MAINT_ROLES],
   "/parts-inventory":        [...MAINT_ROLES],
