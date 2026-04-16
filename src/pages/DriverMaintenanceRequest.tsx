@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import MaintenanceWorkflowProgress from "@/components/maintenance-enterprise/MaintenanceWorkflowProgress";
 import MaintenanceWorkflowTimeline from "@/components/maintenance-enterprise/MaintenanceWorkflowTimeline";
 import DriverWorkflowActions from "@/components/maintenance-enterprise/DriverWorkflowActions";
+import DuePreventiveSchedules from "@/components/maintenance-enterprise/DuePreventiveSchedules";
 
 const statusColors: Record<string, string> = {
   submitted: "bg-blue-500/20 text-blue-400",
@@ -208,6 +209,14 @@ const DriverMaintenanceRequest = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Preventive maintenance — schedules currently due for this driver's vehicle */}
+        {driverInfo?.vehicle && (
+          <DuePreventiveSchedules
+            vehicleId={driverInfo.vehicle.id}
+            driverId={driverInfo.driver?.id}
+          />
+        )}
 
         {/* How it works */}
         <Card className="glass-strong">

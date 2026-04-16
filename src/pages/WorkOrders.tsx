@@ -11,6 +11,7 @@ import WorkOrdersInsightsCard from "@/components/workorders/WorkOrdersInsightsCa
 import WorkOrdersTrendChart from "@/components/workorders/WorkOrdersTrendChart";
 import ApprovalLevelsConfig from "@/components/workorders/ApprovalLevelsConfig";
 import DelegationRulesConfig from "@/components/workorders/DelegationRulesConfig";
+import DuePreventiveSchedules from "@/components/maintenance-enterprise/DuePreventiveSchedules";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
@@ -79,6 +80,10 @@ const WorkOrders = () => {
           <WorkOrdersInsightsCard {...insights} />
           <WorkOrdersTrendChart />
         </div>
+
+        {/* Preventive Maintenance — fleet ops view with auto-scan */}
+        <DuePreventiveSchedules showAutoScan />
+
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="grid w-full grid-cols-4 glass p-1 h-12">
