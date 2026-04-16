@@ -199,11 +199,16 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
       return data;
     },
     onSuccess: () => {
-      toast.success("Vehicle request submitted successfully");
+      toast.success(
+        isSuperAdmin && onBehalfOf
+          ? `Vehicle request submitted on behalf of ${onBehalfOf.name}`
+          : "Vehicle request submitted successfully"
+      );
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
       onOpenChange(false);
       setForm(initialForm);
+      setOnBehalfOf(null);
     },
     onError: (err: any) => toast.error(err.message),
   });
