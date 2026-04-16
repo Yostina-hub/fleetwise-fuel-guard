@@ -294,6 +294,10 @@ const FuelMonitoring = () => {
                   <MapPin className="w-4 h-4" aria-hidden="true" />
                   Stations
                 </TabsTrigger>
+                <TabsTrigger value="reports" className="gap-2">
+                  <BarChart3 className="w-4 h-4" aria-hidden="true" />
+                  <span className="hidden sm:inline">Full</span> Reports
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="events">
@@ -310,6 +314,9 @@ const FuelMonitoring = () => {
               </TabsContent>
               <TabsContent value="stations">
                 <ApprovedFuelStationsTab />
+              </TabsContent>
+              <TabsContent value="reports">
+                <FuelComprehensiveReportsTab />
               </TabsContent>
             </Tabs>
           </div>
