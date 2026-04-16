@@ -21195,6 +21195,7 @@ export type Database = {
           reset_at: string
         }[]
       }
+      cleanup_maintenance_workflow_e2e_test: { Args: never; Returns: string }
       cleanup_old_telemetry: {
         Args: { p_retain_months?: number }
         Returns: string
@@ -21333,6 +21334,15 @@ export type Database = {
       route_vehicle_request_approval: {
         Args: { p_request_id: string }
         Returns: string
+      }
+      run_maintenance_workflow_e2e_test: {
+        Args: never
+        Returns: {
+          detail: string
+          flow: string
+          status: string
+          step: string
+        }[]
       }
       scd_create_po: {
         Args: {
