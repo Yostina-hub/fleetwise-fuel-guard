@@ -91,6 +91,7 @@ export interface ThirdPartyClaim {
   photos: string[] | null;
   notes: string | null;
   filed_at: string | null;
+  settled_at: string | null;
   created_at: string;
 }
 
