@@ -164,7 +164,7 @@ const FuelRequests = () => {
       const reqNum = `FR-${Date.now().toString(36).toUpperCase()}`;
       const { data: user } = await supabase.auth.getUser();
 
-      const { error } = await supabase.from("fuel_requests").insert({
+      const { data: inserted, error } = await supabase.from("fuel_requests").insert({
         organization_id: organizationId,
         vehicle_id: form.vehicle_id,
         driver_id: form.driver_id || null,
@@ -177,8 +177,13 @@ const FuelRequests = () => {
         current_odometer: form.current_odometer ? parseFloat(form.current_odometer) : null,
         notes: form.notes || null,
         status: "pending",
-      });
+      }).select("id").single();
       if (error) throw error;
+
+      // Route to approval workflow
+      if (inserted?.id) {
+        await supabase.rpc("route_fuel_request_approval", { p_fuel_request_id: inserted.id });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fuel-requests"] });
