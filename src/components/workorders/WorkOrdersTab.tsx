@@ -559,7 +559,7 @@ const WorkOrdersTab = () => {
           />
         </div>
         <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value); setCurrentPage(1); }}>
-          <SelectTrigger className="w-[180px]" aria-label="Filter by status">
+          <SelectTrigger className="w-full sm:w-[150px]" aria-label="Filter by status">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -572,7 +572,7 @@ const WorkOrdersTab = () => {
           </SelectContent>
         </Select>
         <Select value={priorityFilter} onValueChange={(value) => { setPriorityFilter(value); setCurrentPage(1); }}>
-          <SelectTrigger className="w-[180px]" aria-label="Filter by priority">
+          <SelectTrigger className="w-full sm:w-[150px]" aria-label="Filter by priority">
             <SelectValue placeholder="Priority" />
           </SelectTrigger>
           <SelectContent>
@@ -584,6 +584,8 @@ const WorkOrdersTab = () => {
           </SelectContent>
         </Select>
       </div>
+
+      <div className="overflow-x-auto -mx-2 px-2">
 
       <Table>
         <TableHeader>
