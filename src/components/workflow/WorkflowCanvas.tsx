@@ -26,6 +26,7 @@ import { WorkflowPalette } from "./WorkflowPalette";
 import { WorkflowToolbar } from "./WorkflowToolbar";
 import { WorkflowNodeConfig } from "./WorkflowNodeConfig";
 import { WorkflowSimulator } from "./WorkflowSimulator";
+import { WorkflowAICommandBar, type AIWorkflowResult } from "./WorkflowAICommandBar";
 import { WorkflowTemplateGallery } from "./WorkflowTemplateGallery";
 import TriggerNode from "./nodes/TriggerNode";
 import ConditionNode from "./nodes/ConditionNode";
@@ -65,6 +66,7 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
   const [workflowId, setWorkflowId] = useState<string | null>(editWorkflowId || null);
   const [showSimulator, setShowSimulator] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showAICommandBar, setShowAICommandBar] = useState(false);
 
   // Load existing workflow when editing — scoped to organization
   const loadedRef = useRef<string | null>(null);
@@ -356,6 +358,45 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
     },
     [setNodes]
   );
+
+  // AI command bar result handler
+  const handleAIResult = useCallback((result: AIWorkflowResult) => {
+    pushHistory();
+    if (result.action === "delete") {
+      if (result.nodesToDelete) {
+        setNodes((nds) => nds.filter((n) => !result.nodesToDelete!.includes(n.id)));
+        setEdges((eds) => eds.filter((e) =>
+          !result.nodesToDelete!.includes(e.source) && !result.nodesToDelete!.includes(e.target)
+        ));
+      }
+      if (result.edgesToDelete) {
+        setEdges((eds) => eds.filter((e) => !result.edgesToDelete!.includes(e.id)));
+      }
+    } else if (result.action === "modify") {
+      if (result.nodes) setNodes(result.nodes as any);
+      if (result.edges) setEdges(result.edges as any);
+    } else if (result.action === "add_nodes") {
+      if (result.nodes) setNodes((nds) => [...nds, ...(result.nodes as any)]);
+      if (result.edges) setEdges((eds) => [...eds, ...(result.edges as any)]);
+    } else {
+      // generate, auto_maintenance, smart_decision
+      if (result.nodes) setNodes(result.nodes as any);
+      if (result.edges) setEdges(result.edges as any);
+    }
+    setTimeout(() => fitView({ padding: 0.2 }), 200);
+  }, [pushHistory, setNodes, setEdges, fitView]);
+
+  // Cmd+K keyboard shortcut
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setShowAICommandBar(true);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   return (
     <div className="flex flex-col h-full">
