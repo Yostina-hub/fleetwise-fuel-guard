@@ -7734,6 +7734,72 @@ export type Database = {
           },
         ]
       }
+      fuel_clarification_requests: {
+        Row: {
+          created_at: string
+          fuel_request_id: string
+          id: string
+          justification: string | null
+          justified_at: string | null
+          justified_by: string | null
+          organization_id: string
+          question: string
+          requested_by: string | null
+          resolution: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          fuel_request_id: string
+          id?: string
+          justification?: string | null
+          justified_at?: string | null
+          justified_by?: string | null
+          organization_id: string
+          question: string
+          requested_by?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          fuel_request_id?: string
+          id?: string
+          justification?: string | null
+          justified_at?: string | null
+          justified_by?: string | null
+          organization_id?: string
+          question?: string
+          requested_by?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_clarification_requests_fuel_request_id_fkey"
+            columns: ["fuel_request_id"]
+            isOneToOne: false
+            referencedRelation: "fuel_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_clarification_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fuel_consumption_alerts: {
         Row: {
           acknowledged_at: string | null
@@ -8591,6 +8657,9 @@ export type Database = {
           asset_criticality: string | null
           auto_trigger_efficiency: number | null
           auto_triggered_at: string | null
+          clarification_status: string | null
+          clearance_approved_at: string | null
+          clearance_approved_by: string | null
           clearance_status: string
           context_value: string | null
           cost_center: string | null
@@ -8648,6 +8717,9 @@ export type Database = {
           asset_criticality?: string | null
           auto_trigger_efficiency?: number | null
           auto_triggered_at?: string | null
+          clarification_status?: string | null
+          clearance_approved_at?: string | null
+          clearance_approved_by?: string | null
           clearance_status?: string
           context_value?: string | null
           cost_center?: string | null
@@ -8705,6 +8777,9 @@ export type Database = {
           asset_criticality?: string | null
           auto_trigger_efficiency?: number | null
           auto_triggered_at?: string | null
+          clarification_status?: string | null
+          clearance_approved_at?: string | null
+          clearance_approved_by?: string | null
           clearance_status?: string
           context_value?: string | null
           cost_center?: string | null
@@ -8793,6 +8868,79 @@ export type Database = {
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fuel_telebirr_transactions: {
+        Row: {
+          amount: number | null
+          created_at: string
+          driver_phone: string | null
+          error_message: string | null
+          external_ref: string | null
+          fuel_request_id: string | null
+          fuel_work_order_id: string | null
+          id: string
+          organization_id: string
+          provider: string
+          request_payload: Json | null
+          response_payload: Json | null
+          status: string
+          txn_type: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          driver_phone?: string | null
+          error_message?: string | null
+          external_ref?: string | null
+          fuel_request_id?: string | null
+          fuel_work_order_id?: string | null
+          id?: string
+          organization_id: string
+          provider?: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          status?: string
+          txn_type: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          driver_phone?: string | null
+          error_message?: string | null
+          external_ref?: string | null
+          fuel_request_id?: string | null
+          fuel_work_order_id?: string | null
+          id?: string
+          organization_id?: string
+          provider?: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          status?: string
+          txn_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_telebirr_transactions_fuel_request_id_fkey"
+            columns: ["fuel_request_id"]
+            isOneToOne: false
+            referencedRelation: "fuel_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_telebirr_transactions_fuel_work_order_id_fkey"
+            columns: ["fuel_work_order_id"]
+            isOneToOne: false
+            referencedRelation: "fuel_work_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_telebirr_transactions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -8999,6 +9147,8 @@ export type Database = {
       }
       fuel_work_orders: {
         Row: {
+          amount_remaining: number | null
+          amount_used: number | null
           approved_at: string | null
           approved_by: string | null
           assigned_to: string | null
@@ -9014,12 +9164,24 @@ export type Database = {
           id: string
           notes: string | null
           organization_id: string
+          pin_confirmation_ref: string | null
+          pin_confirmed_at: string | null
+          pullback_amount: number | null
+          pullback_completed_at: string | null
+          pullback_initiated_at: string | null
+          pullback_ref: string | null
+          sms_receipt_sent_at: string | null
+          sms_receipt_text: string | null
           station_id: string | null
           status: string
+          telebirr_provider: string | null
+          telebirr_request_id: string | null
           updated_at: string
           work_order_number: string
         }
         Insert: {
+          amount_remaining?: number | null
+          amount_used?: number | null
           approved_at?: string | null
           approved_by?: string | null
           assigned_to?: string | null
@@ -9035,12 +9197,24 @@ export type Database = {
           id?: string
           notes?: string | null
           organization_id: string
+          pin_confirmation_ref?: string | null
+          pin_confirmed_at?: string | null
+          pullback_amount?: number | null
+          pullback_completed_at?: string | null
+          pullback_initiated_at?: string | null
+          pullback_ref?: string | null
+          sms_receipt_sent_at?: string | null
+          sms_receipt_text?: string | null
           station_id?: string | null
           status?: string
+          telebirr_provider?: string | null
+          telebirr_request_id?: string | null
           updated_at?: string
           work_order_number: string
         }
         Update: {
+          amount_remaining?: number | null
+          amount_used?: number | null
           approved_at?: string | null
           approved_by?: string | null
           assigned_to?: string | null
@@ -9056,8 +9230,18 @@ export type Database = {
           id?: string
           notes?: string | null
           organization_id?: string
+          pin_confirmation_ref?: string | null
+          pin_confirmed_at?: string | null
+          pullback_amount?: number | null
+          pullback_completed_at?: string | null
+          pullback_initiated_at?: string | null
+          pullback_ref?: string | null
+          sms_receipt_sent_at?: string | null
+          sms_receipt_text?: string | null
           station_id?: string | null
           status?: string
+          telebirr_provider?: string | null
+          telebirr_request_id?: string | null
           updated_at?: string
           work_order_number?: string
         }
