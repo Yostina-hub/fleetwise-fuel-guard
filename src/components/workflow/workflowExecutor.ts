@@ -462,7 +462,7 @@ async function aiSmartDecision(config: Record<string, any> | undefined, orgId: s
 }
 
 async function aiPredictMaintenance(orgId: string): Promise<ExecutionResult> {
-  const { data: vehicles } = await supabase.from("vehicles").select("id, plate_number, mileage, last_service_date").eq("organization_id", orgId).order("mileage", { ascending: false }).limit(5);
+  const { data: vehicles } = await (supabase.from("vehicles").select("id, plate_number, mileage, last_service_date").eq("organization_id", orgId).order("created_at", { ascending: false }).limit(5) as any);
   if (!vehicles?.length) return { success: true, operation: "SELECT", table: "vehicles", message: "No vehicles for maintenance prediction", data: { predictions: 0 } };
 
   const predictions = vehicles.map((v) => {
@@ -500,7 +500,7 @@ async function aiAnomalyDetect(orgId: string): Promise<ExecutionResult> {
 }
 
 async function aiRouteOptimize(orgId: string): Promise<ExecutionResult> {
-  const { data: trips } = await supabase.from("trips").select("id, vehicle_id, distance_km, actual_distance_km, status").eq("organization_id", orgId).eq("status", "completed").order("created_at", { ascending: false }).limit(10);
+  const { data: trips } = await (supabase.from("trips").select("id, vehicle_id, distance_km, actual_distance_km, status").eq("organization_id", orgId).eq("status", "completed").order("created_at", { ascending: false }).limit(10) as any);
   if (!trips?.length) return { success: true, operation: "SELECT", table: "trips", message: "No completed trips for route optimization", data: { trips: 0 } };
 
   const withDeviation = trips.filter((t) => t.distance_km && t.actual_distance_km && Math.abs(t.actual_distance_km - t.distance_km) > t.distance_km * 0.15);
@@ -534,7 +534,7 @@ async function aiFuelForecast(orgId: string): Promise<ExecutionResult> {
 }
 
 async function aiDriverScoring(orgId: string): Promise<ExecutionResult> {
-  const { data: scores } = await supabase.from("driver_behavior_scores").select("driver_id, overall_score, harsh_braking_count, harsh_acceleration_count, speeding_count, period_start").eq("organization_id", orgId).order("period_start", { ascending: false }).limit(10);
+  const { data: scores } = await (supabase.from("driver_behavior_scores").select("driver_id, overall_score, harsh_braking_count, harsh_acceleration_count, speeding_count, period_start").eq("organization_id", orgId).order("period_start", { ascending: false }).limit(10) as any);
   if (!scores?.length) return { success: true, operation: "SELECT", table: "driver_behavior_scores", message: "No driver scores available", data: { drivers: 0 } };
 
   const avgScore = scores.reduce((s, d) => s + (d.overall_score ?? 0), 0) / scores.length;
