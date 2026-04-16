@@ -418,19 +418,26 @@ const DashboardCustomizationTab = ({ getVal, saveSetting }: DashboardCustomizati
                         <GripVertical className="h-3.5 w-3.5 text-muted-foreground cursor-grab" />
                       </div>
 
-                      {/* Size indicator */}
-                      <div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); cycleWidgetSize(widget.id); }}
-                              className="h-5 w-5 rounded bg-muted flex items-center justify-center hover:bg-primary/20 transition-colors"
-                            >
-                              <MoveHorizontal className="h-3 w-3 text-muted-foreground" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent>Cycle size: {SIZE_LABELS[widget.size]}</TooltipContent>
-                        </Tooltip>
+                      {/* Size selector */}
+                      <div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5 bg-background/90 backdrop-blur-sm rounded border border-border/50 p-0.5">
+                        {(["small", "medium", "large"] as const).map(s => (
+                          <Tooltip key={s}>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setWidgetSize(widget.id, s); }}
+                                className={cn(
+                                  "h-5 w-5 rounded flex items-center justify-center transition-colors text-[9px] font-bold",
+                                  widget.size === s
+                                    ? "bg-primary text-primary-foreground"
+                                    : "hover:bg-muted text-muted-foreground"
+                                )}
+                              >
+                                {s === "small" ? "S" : s === "medium" ? "M" : "L"}
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-xs">{SIZE_LABELS[s]}</TooltipContent>
+                          </Tooltip>
+                        ))}
                       </div>
 
                       {/* Widget content preview */}
