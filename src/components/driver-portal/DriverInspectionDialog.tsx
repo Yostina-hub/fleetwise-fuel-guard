@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import PhotoUploader from "./PhotoUploader";
 
 interface Props {
   open: boolean;
@@ -41,6 +42,7 @@ const DriverInspectionDialog = ({ open, onOpenChange, driverId, vehicleId, vehic
   const [checks, setChecks] = useState<Record<string, boolean>>(
     Object.fromEntries(CHECKLIST_ITEMS.map(i => [i.key, true]))
   );
+  const [photos, setPhotos] = useState<string[]>([]);
 
   const failedItems = CHECKLIST_ITEMS.filter(i => !checks[i.key]);
   const safe = failedItems.length === 0 && !defects.trim();
@@ -75,6 +77,7 @@ const DriverInspectionDialog = ({ open, onOpenChange, driverId, vehicleId, vehic
         checklist_data: checklist,
         defects_found: defectItems.length ? { items: defectItems } : null,
         mechanic_notes: notes || null,
+        photo_urls: photos,
       });
       if (error) throw error;
 
@@ -83,6 +86,7 @@ const DriverInspectionDialog = ({ open, onOpenChange, driverId, vehicleId, vehic
       onOpenChange(false);
       setOdometer(""); setDefects(""); setNotes(""); setCondition("good");
       setChecks(Object.fromEntries(CHECKLIST_ITEMS.map(i => [i.key, true])));
+      setPhotos([]);
     } catch (e: any) {
       toast.error(e.message || "Failed to submit inspection");
     } finally {
@@ -137,6 +141,17 @@ const DriverInspectionDialog = ({ open, onOpenChange, driverId, vehicleId, vehic
               <Label>Notes</Label>
               <Textarea value={notes} rows={2} onChange={e => setNotes(e.target.value)}
                 placeholder="Optional notes" />
+            </div>
+
+            <div>
+              <Label>Photos (optional)</Label>
+              <PhotoUploader
+                pathPrefix={`inspections/${vehicleId}`}
+                value={photos}
+                onChange={setPhotos}
+                max={5}
+                label="Attach inspection photos"
+              />
             </div>
 
             <div className={`p-3 rounded-lg flex items-center gap-2 text-sm ${

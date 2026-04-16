@@ -8,6 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertTriangle, Loader2, Car } from "lucide-react";
 import { useMaintenanceRequests } from "@/hooks/useMaintenanceRequests";
 import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import PhotoUploader from "./PhotoUploader";
 
 interface Props {
   open: boolean;
@@ -28,24 +31,37 @@ const DriverMaintenanceDialog = ({ open, onOpenChange, driverId, vehicleId, vehi
     description: "",
     notes: "",
   });
+  const [photos, setPhotos] = useState<string[]>([]);
 
   const handleSubmit = async () => {
     if (!vehicleId || !driverId) return;
     if (!form.description.trim()) return;
-    await createRequest.mutateAsync({
-      vehicle_id: vehicleId,
-      driver_id: driverId,
-      request_type: form.request_type,
-      trigger_source: "manual",
-      priority: form.priority,
-      km_reading: form.km_reading ? Number(form.km_reading) : undefined,
-      description: form.description,
-      notes: form.notes || undefined,
-    });
-    queryClient.invalidateQueries({ queryKey: ["driver-portal-submissions"] });
-    queryClient.invalidateQueries({ queryKey: ["driver-portal-requests"] });
-    onOpenChange(false);
-    setForm({ request_type: "corrective", priority: "medium", km_reading: "", description: "", notes: "" });
+    try {
+      const created: any = await createRequest.mutateAsync({
+        vehicle_id: vehicleId,
+        driver_id: driverId,
+        request_type: form.request_type,
+        trigger_source: "manual",
+        priority: form.priority,
+        km_reading: form.km_reading ? Number(form.km_reading) : undefined,
+        description: form.description,
+        notes: form.notes || undefined,
+      });
+      // Patch with photos if attached (column added via migration)
+      if (photos.length > 0 && created?.id) {
+        await (supabase as any)
+          .from("maintenance_requests")
+          .update({ photo_urls: photos })
+          .eq("id", created.id);
+      }
+      queryClient.invalidateQueries({ queryKey: ["driver-portal-submissions"] });
+      queryClient.invalidateQueries({ queryKey: ["driver-portal-requests"] });
+      onOpenChange(false);
+      setForm({ request_type: "corrective", priority: "medium", km_reading: "", description: "", notes: "" });
+      setPhotos([]);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to submit request");
+    }
   };
 
   return (
@@ -106,6 +122,17 @@ const DriverMaintenanceDialog = ({ open, onOpenChange, driverId, vehicleId, vehi
               <Textarea value={form.notes} rows={2}
                 onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                 placeholder="e.g. noise from the engine, warning light on dashboard..." />
+            </div>
+
+            <div>
+              <Label>Photos of the issue (optional)</Label>
+              <PhotoUploader
+                pathPrefix={`maintenance/${vehicleId}`}
+                value={photos}
+                onChange={setPhotos}
+                max={5}
+                label="Take / attach photos"
+              />
             </div>
 
             <DialogFooter>
