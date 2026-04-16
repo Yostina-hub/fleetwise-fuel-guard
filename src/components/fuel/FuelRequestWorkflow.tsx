@@ -31,6 +31,8 @@ import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { TelebirrEmoneyPanel } from "./TelebirrEmoneyPanel";
 import { FuelClarificationPanel } from "./FuelClarificationPanel";
+import { PendingApprovalsPanel } from "./PendingApprovalsPanel";
+import { FuelWorkOrderDialog } from "./FuelWorkOrderDialog";
 
 const ITEMS_PER_PAGE = 15;
 const APPROVER_ROLES = ["fleet_manager", "operations_manager", "org_admin", "super_admin", "fleet_owner"];
@@ -776,10 +778,16 @@ export const FuelRequestWorkflow = () => {
               <Settings className="w-4 h-4" />Auto Trigger
             </Button>
           )}
+          <Button variant="outline" className="gap-2" onClick={() => setShowWoDialog({ id: null, frId: null })}>
+            <FileText className="w-4 h-4" />New Work Order
+          </Button>
           <Button variant="outline" className="gap-2" onClick={exportCSV}><Download className="w-4 h-4" />Export</Button>
           <Button className="gap-2" onClick={() => setShowCreate(true)}><Plus className="h-4 w-4" /> New Request</Button>
         </div>
       </div>
+
+      {/* Delegation-aware pending approvals panel */}
+      <PendingApprovalsPanel />
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
