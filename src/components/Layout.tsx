@@ -68,6 +68,7 @@ import { NotificationCenter } from "@/components/scheduling/NotificationCenter";
 import { HeaderAlertBell } from "@/components/alerts/HeaderAlertBell";
 import { cn } from "@/lib/utils";
 import { isPathAccessible } from "@/config/sidebarAccess";
+import { getRoleSpecificNav } from "@/config/roleNavTemplates";
 import ethioTelecomLogo from "@/assets/ethio-telecom-logo.png";
 import {
   Tooltip,
