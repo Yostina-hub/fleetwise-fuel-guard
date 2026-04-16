@@ -9672,52 +9672,142 @@ export type Database = {
       }
       generators: {
         Row: {
+          address: string | null
+          area: string | null
+          asset_category: string | null
+          asset_group: string | null
+          asset_number: string | null
+          asset_serial_number: string | null
+          asset_status: string
+          asset_type: string
+          checked_out: boolean
+          commission_date: string | null
           created_at: string
+          criticality: string
           current_fuel_level_percent: number | null
+          custom_attributes: Json | null
           fuel_type: string
+          hazard_class: string | null
           id: string
+          inspection_frequency_days: number | null
+          is_gis_asset: boolean
+          is_maintainable: boolean
           last_refuel_date: string | null
+          latitude: number | null
           location: string | null
+          lockout_tagout_required: boolean
+          longitude: number | null
+          manufacture_date: string | null
+          manufacturer: string | null
           model: string | null
           name: string
           notes: string | null
+          operation_log_enabled: boolean
           organization_id: string
+          owning_department: string | null
+          parent_asset_id: string | null
+          ppe_required: string[] | null
+          purchase_cost: number | null
+          safety_notes: string | null
           serial_number: string | null
           status: string
+          supplier: string | null
           tank_capacity_liters: number | null
           updated_at: string
+          warranty_expiration: string | null
+          wip_accounting_class: string | null
         }
         Insert: {
+          address?: string | null
+          area?: string | null
+          asset_category?: string | null
+          asset_group?: string | null
+          asset_number?: string | null
+          asset_serial_number?: string | null
+          asset_status?: string
+          asset_type?: string
+          checked_out?: boolean
+          commission_date?: string | null
           created_at?: string
+          criticality?: string
           current_fuel_level_percent?: number | null
+          custom_attributes?: Json | null
           fuel_type?: string
+          hazard_class?: string | null
           id?: string
+          inspection_frequency_days?: number | null
+          is_gis_asset?: boolean
+          is_maintainable?: boolean
           last_refuel_date?: string | null
+          latitude?: number | null
           location?: string | null
+          lockout_tagout_required?: boolean
+          longitude?: number | null
+          manufacture_date?: string | null
+          manufacturer?: string | null
           model?: string | null
           name: string
           notes?: string | null
+          operation_log_enabled?: boolean
           organization_id: string
+          owning_department?: string | null
+          parent_asset_id?: string | null
+          ppe_required?: string[] | null
+          purchase_cost?: number | null
+          safety_notes?: string | null
           serial_number?: string | null
           status?: string
+          supplier?: string | null
           tank_capacity_liters?: number | null
           updated_at?: string
+          warranty_expiration?: string | null
+          wip_accounting_class?: string | null
         }
         Update: {
+          address?: string | null
+          area?: string | null
+          asset_category?: string | null
+          asset_group?: string | null
+          asset_number?: string | null
+          asset_serial_number?: string | null
+          asset_status?: string
+          asset_type?: string
+          checked_out?: boolean
+          commission_date?: string | null
           created_at?: string
+          criticality?: string
           current_fuel_level_percent?: number | null
+          custom_attributes?: Json | null
           fuel_type?: string
+          hazard_class?: string | null
           id?: string
+          inspection_frequency_days?: number | null
+          is_gis_asset?: boolean
+          is_maintainable?: boolean
           last_refuel_date?: string | null
+          latitude?: number | null
           location?: string | null
+          lockout_tagout_required?: boolean
+          longitude?: number | null
+          manufacture_date?: string | null
+          manufacturer?: string | null
           model?: string | null
           name?: string
           notes?: string | null
+          operation_log_enabled?: boolean
           organization_id?: string
+          owning_department?: string | null
+          parent_asset_id?: string | null
+          ppe_required?: string[] | null
+          purchase_cost?: number | null
+          safety_notes?: string | null
           serial_number?: string | null
           status?: string
+          supplier?: string | null
           tank_capacity_liters?: number | null
           updated_at?: string
+          warranty_expiration?: string | null
+          wip_accounting_class?: string | null
         }
         Relationships: [
           {
@@ -9725,6 +9815,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generators_parent_asset_id_fkey"
+            columns: ["parent_asset_id"]
+            isOneToOne: false
+            referencedRelation: "generators"
             referencedColumns: ["id"]
           },
         ]
