@@ -7763,6 +7763,7 @@ export type Database = {
       }
       fuel_clarification_requests: {
         Row: {
+          auto_created: boolean
           created_at: string
           fuel_request_id: string
           id: string
@@ -7779,6 +7780,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          auto_created?: boolean
           created_at?: string
           fuel_request_id: string
           id?: string
@@ -7795,6 +7797,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          auto_created?: boolean
           created_at?: string
           fuel_request_id?: string
           id?: string
@@ -22326,6 +22329,15 @@ export type Database = {
         Returns: string
       }
       run_drivers_page_e2e_test: {
+        Args: never
+        Returns: {
+          t_detail: string
+          t_flow: string
+          t_status: string
+          t_step: string
+        }[]
+      }
+      run_fuel_e2e_steps_6_12: {
         Args: never
         Returns: {
           t_detail: string
