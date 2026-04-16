@@ -142,12 +142,17 @@ const CreateWorkRequestDialog = ({ open, onOpenChange, onSuccess }: CreateWorkRe
     queryFn: async () => {
       const { data, error } = await supabase
         .from("drivers")
-        .select("id, full_name, phone_number, employment_type")
+        .select("id, first_name, last_name, phone, employment_type")
         .eq("organization_id", organizationId!)
         .eq("status", "active")
-        .order("full_name");
+        .order("first_name");
       if (error) throw error;
-      return data;
+      return (data || []).map(d => ({
+        id: d.id,
+        full_name: `${d.first_name || ''} ${d.last_name || ''}`.trim(),
+        phone_number: d.phone || '',
+        employment_type: d.employment_type || '',
+      }));
     },
     enabled: !!organizationId && open,
   });
