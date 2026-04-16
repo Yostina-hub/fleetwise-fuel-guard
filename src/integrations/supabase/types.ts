@@ -8708,9 +8708,14 @@ export type Database = {
           requested_by: string
           requested_for: string | null
           requestor_department: string | null
+          route: string | null
+          running_hours: number | null
+          security_name: string | null
           station_id: string | null
           status: string
           task_number: string | null
+          technician_employee_id: string | null
+          technician_name: string | null
           trigger_source: string
           updated_at: string
           vehicle_driver_name: string | null
@@ -8779,9 +8784,14 @@ export type Database = {
           requested_by: string
           requested_for?: string | null
           requestor_department?: string | null
+          route?: string | null
+          running_hours?: number | null
+          security_name?: string | null
           station_id?: string | null
           status?: string
           task_number?: string | null
+          technician_employee_id?: string | null
+          technician_name?: string | null
           trigger_source?: string
           updated_at?: string
           vehicle_driver_name?: string | null
@@ -8850,9 +8860,14 @@ export type Database = {
           requested_by?: string
           requested_for?: string | null
           requestor_department?: string | null
+          route?: string | null
+          running_hours?: number | null
+          security_name?: string | null
           station_id?: string | null
           status?: string
           task_number?: string | null
+          technician_employee_id?: string | null
+          technician_name?: string | null
           trigger_source?: string
           updated_at?: string
           vehicle_driver_name?: string | null
