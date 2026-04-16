@@ -36,7 +36,7 @@ const tabs = [
 const DriverHR = () => {
   const { t } = useTranslation();
   const { drivers } = useDrivers();
-  const [activeTab, setActiveTab] = useState("contracts");
+  const [activeTab, setActiveTab] = useState("overview");
   const [selectedDriverId, setSelectedDriverId] = useState("");
   const [driverSearch, setDriverSearch] = useState("");
 
@@ -70,6 +70,7 @@ const DriverHR = () => {
     }
 
     const map: Record<string, JSX.Element> = {
+      overview: <HRFinanceDashboard />,
       contracts: <DriverContractManagement driverId={selectedDriverId} driverName={driverName} />,
       costs: <DriverCostAllocation driverId={selectedDriverId} driverName={driverName} />,
       vehicles: <DriverVehicleHistory driverId={selectedDriverId} driverName={driverName} />,
