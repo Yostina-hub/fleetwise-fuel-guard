@@ -22,6 +22,7 @@ import PostMaintenanceTab from "@/components/maintenance-enterprise/PostMaintena
 import FleetOpsReviewTab from "@/components/maintenance-enterprise/FleetOpsReviewTab";
 import MaintenanceSectionTab from "@/components/maintenance-enterprise/MaintenanceSectionTab";
 import SCDSourcingTab from "@/components/maintenance-enterprise/SCDSourcingTab";
+import SupplierWorkflowTasksTab from "@/components/maintenance-enterprise/SupplierWorkflowTasksTab";
 
 const MaintenanceEnterprise = () => {
   const { organizationId, loading: orgLoading } = useOrganization();
@@ -112,6 +113,9 @@ const MaintenanceEnterprise = () => {
               <TabsTrigger value="scd-sourcing" className="gap-1.5 text-xs md:text-sm">
                 <PackageSearch className="w-4 h-4" /> SCD Sourcing
               </TabsTrigger>
+              <TabsTrigger value="supplier-tasks" className="gap-1.5 text-xs md:text-sm">
+                <Wrench className="w-4 h-4" /> Supplier Tasks
+              </TabsTrigger>
               <TabsTrigger value="tickets" className="gap-1.5 text-xs md:text-sm">
                 <Ticket className="w-4 h-4" /> Tickets
               </TabsTrigger>
@@ -155,6 +159,9 @@ const MaintenanceEnterprise = () => {
             </TabsContent>
             <TabsContent value="scd-sourcing">
               <SCDSourcingTab />
+            </TabsContent>
+            <TabsContent value="supplier-tasks">
+              <SupplierWorkflowTasksTab />
             </TabsContent>
             <TabsContent value="tickets">
               <MaintenanceTicketsTab />
