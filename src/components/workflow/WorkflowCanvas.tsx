@@ -61,6 +61,7 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
   const [selectedNode, setSelectedNode] = useState<WorkflowNode | null>(null);
   const [workflowName, setWorkflowName] = useState("Untitled Workflow");
   const [workflowStatus, setWorkflowStatus] = useState("draft");
+  const [cronExpression, setCronExpression] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [workflowId, setWorkflowId] = useState<string | null>(editWorkflowId || null);
