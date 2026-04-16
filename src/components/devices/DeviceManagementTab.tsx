@@ -94,6 +94,7 @@ export const DeviceManagementTab = () => {
   const [tokenDeviceId, setTokenDeviceId] = useState<string | null>(null);
   const [generatingToken, setGeneratingToken] = useState(false);
   const [sendingLocationCommand, setSendingLocationCommand] = useState<string | null>(null);
+  const [detailDevice, setDetailDevice] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     vehicle_id: "",
