@@ -416,9 +416,12 @@ Type options: risk_prediction, coaching_tip, performance_trend, fuel_optimizatio
         {/* Recent Rewards */}
         <Card className="glass">
           <CardHeader>
-            <div className="flex items-center gap-2">
-              <Gift className="w-5 h-5 text-primary" />
-              <CardTitle>Rewards & Recognition</CardTitle>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Gift className="w-5 h-5 text-primary" />
+                <CardTitle>Rewards & Recognition</CardTitle>
+              </div>
+              <IssueRewardDialog driverId={driverId} onSubmit={async (reward) => { await issueReward.mutateAsync(reward); }} />
             </div>
           </CardHeader>
           <CardContent>
