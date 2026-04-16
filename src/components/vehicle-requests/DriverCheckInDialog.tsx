@@ -10,6 +10,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { getAppUrl } from "@/services/vehicleRequestSmsService";
 
 interface Props {
   request: any;
@@ -67,9 +68,47 @@ export const DriverCheckInDialog = ({ request, open, onClose }: Props) => {
         .update(updates)
         .eq("id", request.id);
       if (error) throw error;
+
+      // Reset vehicle status to available
+      if (request.assigned_vehicle_id) {
+        await (supabase as any)
+          .from("vehicles")
+          .update({ status: "available", updated_at: new Date().toISOString() })
+          .eq("id", request.assigned_vehicle_id);
+      }
+
+      // Reset driver status to active
+      if (request.assigned_driver_id) {
+        await (supabase as any)
+          .from("drivers")
+          .update({ status: "active", updated_at: new Date().toISOString() })
+          .eq("id", request.assigned_driver_id);
+      }
+
+      // Send completion SMS to requester with feedback link
+      try {
+        const { data: reqProfile } = await supabase
+          .from("profiles")
+          .select("phone")
+          .eq("id", request.requester_id)
+          .single();
+        if (reqProfile?.phone) {
+          const msg = [
+            `FleetTrack: Trip Completed`,
+            `Request: ${request.request_number}`,
+            `Your trip has been completed.`,
+            `Please rate your experience: ${getAppUrl()}/vehicle-requests`,
+          ].join("\n");
+          await supabase.functions.invoke("send-sms", {
+            body: { to: reqProfile.phone, message: msg, type: "trip_completed" },
+          });
+        }
+      } catch (e) {
+        console.error("Completion SMS error:", e);
+      }
     },
     onSuccess: () => {
-      toast.success("Driver checked out — request completed");
+      toast.success("Driver checked out — request completed, vehicle now idle");
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
       onClose();
