@@ -1,13 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
-import { Car, ArrowRight, Clock, CalendarDays } from "lucide-react";
+import { Car, ArrowRight, Clock, CalendarDays, Search, Users } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
+import { type Employee, EMPLOYEE_TYPE_LABELS, EMPLOYEE_TYPE_COLORS } from "@/hooks/useEmployees";
 
 interface VehicleAssignment {
   id: string;
+  driver_id: string;
   vehicle_id: string;
   assigned_at: string;
   unassigned_at: string | null;
@@ -18,30 +21,39 @@ interface VehicleAssignment {
 interface DriverVehicleHistoryProps {
   driverId: string;
   driverName: string;
+  employees?: Employee[];
 }
 
-export const DriverVehicleHistory = ({ driverId, driverName }: DriverVehicleHistoryProps) => {
+export const DriverVehicleHistory = ({ driverId, driverName, employees = [] }: DriverVehicleHistoryProps) => {
   const { organizationId } = useOrganization();
   const [assignments, setAssignments] = useState<VehicleAssignment[]>([]);
   const [vehicles, setVehicles] = useState<Record<string, { plate_number: string; make: string; model: string }>>({});
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  const isAllMode = !driverId;
 
   useEffect(() => {
-    if (!organizationId || !driverId) return;
+    if (!organizationId) return;
     const fetch = async () => {
       setLoading(true);
-      const { data } = await supabase
+      let query = supabase
         .from("driver_vehicle_assignments")
         .select("*")
-        .eq("driver_id", driverId)
         .eq("organization_id", organizationId)
         .order("assigned_at", { ascending: false });
 
+      if (driverId) {
+        query = query.eq("driver_id", driverId);
+      } else {
+        query = query.limit(200);
+      }
+
+      const { data } = await query;
       const items = (data as VehicleAssignment[]) || [];
       setAssignments(items);
 
-      // Fetch vehicle details
-      const vehicleIds = [...new Set(items.map((a: any) => a.vehicle_id))] as string[];
+      const vehicleIds = [...new Set(items.map((a) => a.vehicle_id))] as string[];
       if (vehicleIds.length > 0) {
         const { data: vData } = await supabase
           .from("vehicles")
@@ -56,12 +68,38 @@ export const DriverVehicleHistory = ({ driverId, driverName }: DriverVehicleHist
     fetch();
   }, [driverId, organizationId]);
 
-  const currentAssignment = assignments.find(a => a.is_current);
+  const getEmpName = (dId: string) => {
+    if (!isAllMode) return driverName;
+    const emp = employees.find(e => e.driver_id === dId);
+    return emp ? `${emp.first_name} ${emp.last_name}` : "Unknown";
+  };
+
+  const filtered = useMemo(() => {
+    if (!search) return assignments;
+    const q = search.toLowerCase();
+    return assignments.filter(a => {
+      const name = getEmpName(a.driver_id).toLowerCase();
+      const v = vehicles[a.vehicle_id];
+      const plate = v?.plate_number?.toLowerCase() || "";
+      return name.includes(q) || plate.includes(q);
+    });
+  }, [assignments, search, vehicles, employees]);
+
+  const currentAssignment = !isAllMode ? assignments.find(a => a.is_current) : null;
+  const currentAssignments = isAllMode ? assignments.filter(a => a.is_current) : [];
 
   return (
     <div className="space-y-4">
-      {/* Current Assignment */}
-      {currentAssignment && vehicles[currentAssignment.vehicle_id] && (
+      {/* Search */}
+      {isAllMode && (
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+          <Input placeholder="Search by driver or plate..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8 h-9 text-sm" />
+        </div>
+      )}
+
+      {/* Current Assignment (single employee) */}
+      {!isAllMode && currentAssignment && vehicles[currentAssignment.vehicle_id] && (
         <Card className="border-primary/30">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
@@ -90,6 +128,40 @@ export const DriverVehicleHistory = ({ driverId, driverName }: DriverVehicleHist
         </Card>
       )}
 
+      {/* Current assignments summary (all mode) */}
+      {isAllMode && currentAssignments.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Car className="w-4 h-4 text-primary" />
+              Current Assignments
+              <Badge variant="outline" className="text-[10px] ml-auto">{currentAssignments.length} active</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {currentAssignments.filter(a => {
+                if (!search) return true;
+                const q = search.toLowerCase();
+                return getEmpName(a.driver_id).toLowerCase().includes(q) || (vehicles[a.vehicle_id]?.plate_number || "").toLowerCase().includes(q);
+              }).map(a => {
+                const v = vehicles[a.vehicle_id];
+                return (
+                  <div key={a.id} className="flex items-center gap-2 p-2 rounded-lg border text-xs">
+                    <Car className="w-4 h-4 text-primary shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold truncate">{getEmpName(a.driver_id)}</p>
+                      <p className="text-muted-foreground">{v ? `${v.plate_number} — ${v.make} ${v.model}` : "Unknown"}</p>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">{differenceInDays(new Date(), new Date(a.assigned_at))}d</span>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Assignment History */}
       <Card>
         <CardHeader className="pb-3">
@@ -97,12 +169,14 @@ export const DriverVehicleHistory = ({ driverId, driverName }: DriverVehicleHist
             <CalendarDays className="w-4 h-4 text-primary" />
             Assignment History
           </CardTitle>
-          <CardDescription>{assignments.length} total assignments</CardDescription>
+          <CardDescription>{filtered.length} total assignments</CardDescription>
         </CardHeader>
         <CardContent>
-          {assignments.length > 0 ? (
+          {loading ? (
+            <p className="text-center text-muted-foreground py-8">Loading...</p>
+          ) : filtered.length > 0 ? (
             <div className="space-y-2">
-              {assignments.map(a => {
+              {filtered.map(a => {
                 const v = vehicles[a.vehicle_id];
                 const duration = a.unassigned_at
                   ? differenceInDays(new Date(a.unassigned_at), new Date(a.assigned_at))
@@ -111,6 +185,7 @@ export const DriverVehicleHistory = ({ driverId, driverName }: DriverVehicleHist
                   <div key={a.id} className={`flex items-center gap-3 p-3 rounded-lg border ${a.is_current ? "bg-primary/5 border-primary/20" : "hover:bg-accent/50"} transition-colors`}>
                     <Car className="w-4 h-4 text-muted-foreground shrink-0" />
                     <div className="flex-1 min-w-0">
+                      {isAllMode && <p className="text-xs font-semibold mb-0.5">{getEmpName(a.driver_id)}</p>}
                       <p className="text-sm font-medium">{v ? `${v.plate_number} — ${v.make} ${v.model}` : "Unknown Vehicle"}</p>
                       <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
                         <span>{format(new Date(a.assigned_at), "MMM d, yyyy")}</span>

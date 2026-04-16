@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,12 +10,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { DollarSign, Calculator, Settings, FileText, CheckCircle2, Clock, Plus, TrendingUp } from "lucide-react";
+import { DollarSign, Calculator, Settings, Search, Users, Wallet } from "lucide-react";
+import { type Employee, EMPLOYEE_TYPE_LABELS, EMPLOYEE_TYPE_COLORS } from "@/hooks/useEmployees";
 
 interface DriverPayrollManagementProps {
   driverId: string;
   driverName: string;
   employeeId?: string;
+  employees?: Employee[];
 }
 
 interface PayrollConfig {
@@ -32,6 +34,8 @@ interface PayrollConfig {
 
 interface PayrollRecord {
   id: string;
+  driver_id: string;
+  employee_id: string | null;
   pay_period_start: string;
   pay_period_end: string;
   base_salary: number;
@@ -51,7 +55,7 @@ interface PayrollRecord {
   notes: string | null;
 }
 
-export const DriverPayrollManagement = ({ driverId, driverName }: DriverPayrollManagementProps) => {
+export const DriverPayrollManagement = ({ driverId, driverName, employeeId, employees = [] }: DriverPayrollManagementProps) => {
   const { organizationId } = useOrganization();
   const { toast } = useToast();
   const [config, setConfig] = useState<PayrollConfig | null>(null);
@@ -59,6 +63,10 @@ export const DriverPayrollManagement = ({ driverId, driverName }: DriverPayrollM
   const [loading, setLoading] = useState(true);
   const [showConfigDialog, setShowConfigDialog] = useState(false);
   const [showPayrollDialog, setShowPayrollDialog] = useState(false);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const isAllMode = !employeeId && !driverId;
 
   const [configForm, setConfigForm] = useState({
     base_monthly_salary: "0", per_trip_rate: "0", per_km_rate: "0",
@@ -73,16 +81,25 @@ export const DriverPayrollManagement = ({ driverId, driverName }: DriverPayrollM
   });
 
   useEffect(() => {
-    if (!organizationId || !driverId) return;
+    if (!organizationId) return;
     const fetch = async () => {
       setLoading(true);
-      const [cfgRes, payRes] = await Promise.all([
-        supabase.from("driver_payroll_config").select("*").eq("organization_id", organizationId)
-          .eq("driver_id", driverId).eq("is_active", true).order("effective_from", { ascending: false }).limit(1),
-        supabase.from("driver_payroll").select("*").eq("organization_id", organizationId)
-          .eq("driver_id", driverId).order("pay_period_start", { ascending: false }).limit(12),
+      let payQuery = supabase.from("driver_payroll").select("*").eq("organization_id", organizationId)
+        .order("pay_period_start", { ascending: false }).limit(isAllMode ? 200 : 12);
+
+      if (driverId) {
+        payQuery = payQuery.eq("driver_id", driverId);
+      }
+
+      const results = await Promise.all([
+        driverId
+          ? supabase.from("driver_payroll_config").select("*").eq("organization_id", organizationId)
+              .eq("driver_id", driverId).eq("is_active", true).order("effective_from", { ascending: false }).limit(1)
+          : Promise.resolve({ data: [] }),
+        payQuery,
       ]);
-      const cfg = (cfgRes.data as PayrollConfig[])?.[0] || null;
+
+      const cfg = (results[0].data as PayrollConfig[])?.[0] || null;
       setConfig(cfg);
       if (cfg) {
         setConfigForm({
@@ -94,16 +111,43 @@ export const DriverPayrollManagement = ({ driverId, driverName }: DriverPayrollM
           night_shift_multiplier: String(cfg.night_shift_multiplier),
         });
       }
-      setPayrolls((payRes.data as PayrollRecord[]) || []);
+      setPayrolls((results[1].data as PayrollRecord[]) || []);
       setLoading(false);
     };
     fetch();
-  }, [driverId, organizationId]);
+  }, [driverId, employeeId, organizationId]);
 
   const fmt = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(n);
 
+  const getEmpName = (p: PayrollRecord) => {
+    if (!isAllMode) return driverName;
+    const emp = employees.find(e => e.id === p.employee_id || e.driver_id === p.driver_id);
+    return emp ? `${emp.first_name} ${emp.last_name}` : "Unknown";
+  };
+
+  const getEmpType = (p: PayrollRecord) => {
+    const emp = employees.find(e => e.id === p.employee_id || e.driver_id === p.driver_id);
+    return emp?.employee_type || "other";
+  };
+
+  const filteredPayrolls = useMemo(() => {
+    let result = payrolls;
+    if (statusFilter !== "all") result = result.filter(p => p.status === statusFilter);
+    if (search) {
+      const q = search.toLowerCase();
+      result = result.filter(p => getEmpName(p).toLowerCase().includes(q));
+    }
+    return result;
+  }, [payrolls, statusFilter, search, employees]);
+
+  // Aggregate stats
+  const totalGross = payrolls.reduce((s, p) => s + (p.gross_pay || 0), 0);
+  const totalNet = payrolls.reduce((s, p) => s + (p.net_pay || 0), 0);
+  const paidCount = payrolls.filter(p => p.status === "paid").length;
+  const pendingCount = payrolls.filter(p => p.status === "calculated" || p.status === "approved").length;
+
   const handleSaveConfig = async () => {
-    if (!organizationId) return;
+    if (!organizationId || !driverId) return;
     if (config) {
       await supabase.from("driver_payroll_config").update({ is_active: false }).eq("id", config.id);
     }
@@ -122,7 +166,7 @@ export const DriverPayrollManagement = ({ driverId, driverName }: DriverPayrollM
   };
 
   const handleCreatePayroll = async () => {
-    if (!organizationId || !payrollForm.period_start || !payrollForm.period_end) return;
+    if (!organizationId || !payrollForm.period_start || !payrollForm.period_end || !driverId) return;
     const baseSalary = config?.base_monthly_salary || 0;
     const tripBonus = parseFloat(payrollForm.trip_bonus) || 0;
     const kmBonus = parseFloat(payrollForm.km_bonus) || 0;
@@ -144,17 +188,9 @@ export const DriverPayrollManagement = ({ driverId, driverName }: DriverPayrollM
       pay_period_start: payrollForm.period_start,
       pay_period_end: payrollForm.period_end,
       base_salary: baseSalary,
-      trip_bonus: tripBonus,
-      km_bonus: kmBonus,
-      overtime_pay: overtimePay,
-      other_earnings: otherEarnings,
-      deductions: deductions,
-      total_deductions: totalDeductions,
-      gross_pay: grossPay,
-      net_pay: netPay,
-      payment_method: payrollForm.payment_method,
-      notes: payrollForm.notes || null,
-      status: "calculated",
+      trip_bonus: tripBonus, km_bonus: kmBonus, overtime_pay: overtimePay, other_earnings: otherEarnings,
+      deductions, total_deductions: totalDeductions, gross_pay: grossPay, net_pay: netPay,
+      payment_method: payrollForm.payment_method, notes: payrollForm.notes || null, status: "calculated",
     });
     if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
     else { toast({ title: "Payroll created" }); setShowPayrollDialog(false); }
@@ -180,126 +216,177 @@ export const DriverPayrollManagement = ({ driverId, driverName }: DriverPayrollM
 
   return (
     <div className="space-y-4">
-      {/* Pay Config Summary */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold flex items-center gap-2"><Settings className="w-4 h-4 text-primary" /> Pay Configuration</h3>
-        <Dialog open={showConfigDialog} onOpenChange={setShowConfigDialog}>
-          <DialogTrigger asChild>
-            <Button size="sm" variant="outline"><Settings className="w-3.5 h-3.5 mr-1" /> Configure</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Pay Rates — {driverName}</DialogTitle></DialogHeader>
-            <div className="space-y-3">
-              {[
-                { key: "base_monthly_salary", label: "Base Monthly Salary (ETB)" },
-                { key: "per_trip_rate", label: "Per Trip Rate (ETB)" },
-                { key: "per_km_rate", label: "Per KM Rate (ETB)" },
-                { key: "overtime_hourly_rate", label: "Overtime Hourly Rate (ETB)" },
-                { key: "weekend_multiplier", label: "Weekend Multiplier" },
-                { key: "night_shift_multiplier", label: "Night Shift Multiplier" },
-              ].map(({ key, label }) => (
-                <div key={key}>
-                  <label className="text-xs text-muted-foreground">{label}</label>
-                  <Input type="number" step="0.01" value={(configForm as any)[key]}
-                    onChange={e => setConfigForm(f => ({ ...f, [key]: e.target.value }))} />
-                </div>
-              ))}
-              <Button className="w-full" onClick={handleSaveConfig}>Save Configuration</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+      {/* Summary */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Card><CardContent className="p-3 text-center">
+          <DollarSign className="w-5 h-5 mx-auto mb-1 text-primary" />
+          <p className="text-lg font-bold">{fmt(totalGross)}</p>
+          <p className="text-[10px] text-muted-foreground">Total Gross</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-3 text-center">
+          <Wallet className="w-5 h-5 mx-auto mb-1 text-emerald-400" />
+          <p className="text-lg font-bold">{fmt(totalNet)}</p>
+          <p className="text-[10px] text-muted-foreground">Total Net</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-3 text-center">
+          <p className="text-2xl font-bold text-emerald-400">{paidCount}</p>
+          <p className="text-[10px] text-muted-foreground">Paid</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-3 text-center">
+          <p className="text-2xl font-bold text-amber-400">{pendingCount}</p>
+          <p className="text-[10px] text-muted-foreground">Pending</p>
+        </CardContent></Card>
       </div>
 
-      {config ? (
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-          {[
-            { label: "Base Salary", value: fmt(config.base_monthly_salary) },
-            { label: "Per Trip", value: fmt(config.per_trip_rate) },
-            { label: "Per KM", value: fmt(config.per_km_rate) },
-            { label: "OT Rate", value: fmt(config.overtime_hourly_rate) },
-            { label: "Weekend ×", value: `${config.weekend_multiplier}×` },
-            { label: "Night ×", value: `${config.night_shift_multiplier}×` },
-          ].map((s, i) => (
-            <Card key={i}><CardContent className="p-2.5 text-center">
-              <p className="text-sm font-bold">{s.value}</p>
-              <p className="text-[9px] text-muted-foreground">{s.label}</p>
+      {/* Config (single employee only) */}
+      {!isAllMode && (
+        <>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold flex items-center gap-2"><Settings className="w-4 h-4 text-primary" /> Pay Configuration</h3>
+            <Dialog open={showConfigDialog} onOpenChange={setShowConfigDialog}>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline"><Settings className="w-3.5 h-3.5 mr-1" /> Configure</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Pay Rates — {driverName}</DialogTitle></DialogHeader>
+                <div className="space-y-3">
+                  {[
+                    { key: "base_monthly_salary", label: "Base Monthly Salary (ETB)" },
+                    { key: "per_trip_rate", label: "Per Trip Rate (ETB)" },
+                    { key: "per_km_rate", label: "Per KM Rate (ETB)" },
+                    { key: "overtime_hourly_rate", label: "Overtime Hourly Rate (ETB)" },
+                    { key: "weekend_multiplier", label: "Weekend Multiplier" },
+                    { key: "night_shift_multiplier", label: "Night Shift Multiplier" },
+                  ].map(({ key, label }) => (
+                    <div key={key}>
+                      <label className="text-xs text-muted-foreground">{label}</label>
+                      <Input type="number" step="0.01" value={(configForm as any)[key]}
+                        onChange={e => setConfigForm(f => ({ ...f, [key]: e.target.value }))} />
+                    </div>
+                  ))}
+                  <Button className="w-full" onClick={handleSaveConfig}>Save Configuration</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {config ? (
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+              {[
+                { label: "Base Salary", value: fmt(config.base_monthly_salary) },
+                { label: "Per Trip", value: fmt(config.per_trip_rate) },
+                { label: "Per KM", value: fmt(config.per_km_rate) },
+                { label: "OT Rate", value: fmt(config.overtime_hourly_rate) },
+                { label: "Weekend ×", value: `${config.weekend_multiplier}×` },
+                { label: "Night ×", value: `${config.night_shift_multiplier}×` },
+              ].map((s, i) => (
+                <Card key={i}><CardContent className="p-2.5 text-center">
+                  <p className="text-sm font-bold">{s.value}</p>
+                  <p className="text-[9px] text-muted-foreground">{s.label}</p>
+                </CardContent></Card>
+              ))}
+            </div>
+          ) : (
+            <Card><CardContent className="py-4 text-center text-xs text-muted-foreground">
+              No pay configuration set. Click Configure to set up rates.
             </CardContent></Card>
-          ))}
-        </div>
-      ) : (
-        <Card><CardContent className="py-4 text-center text-xs text-muted-foreground">
-          No pay configuration set. Click Configure to set up rates.
-        </CardContent></Card>
+          )}
+        </>
       )}
 
       {/* Payroll Records */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold flex items-center gap-2"><DollarSign className="w-4 h-4 text-emerald-400" /> Payroll History</h3>
-        <Dialog open={showPayrollDialog} onOpenChange={setShowPayrollDialog}>
-          <DialogTrigger asChild>
-            <Button size="sm"><Calculator className="w-3.5 h-3.5 mr-1" /> Create Payroll</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>Create Payroll — {driverName}</DialogTitle></DialogHeader>
-            <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-              <div className="grid grid-cols-2 gap-2">
-                <div><label className="text-xs text-muted-foreground">Period Start</label>
-                  <Input type="date" value={payrollForm.period_start} onChange={e => setPayrollForm(f => ({ ...f, period_start: e.target.value }))} /></div>
-                <div><label className="text-xs text-muted-foreground">Period End</label>
-                  <Input type="date" value={payrollForm.period_end} onChange={e => setPayrollForm(f => ({ ...f, period_end: e.target.value }))} /></div>
-              </div>
-              <p className="text-xs text-muted-foreground">Base salary auto-applied: {config ? fmt(config.base_monthly_salary) : "Not configured"}</p>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { key: "trip_bonus", label: "Trip Bonus" },
-                  { key: "km_bonus", label: "KM Bonus" },
-                  { key: "overtime_pay", label: "Overtime Pay" },
-                  { key: "other_earnings", label: "Other Earnings" },
-                ].map(({ key, label }) => (
-                  <div key={key}>
-                    <label className="text-xs text-muted-foreground">{label}</label>
-                    <Input type="number" step="0.01" value={(payrollForm as any)[key]}
-                      onChange={e => setPayrollForm(f => ({ ...f, [key]: e.target.value }))} />
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs font-medium text-muted-foreground mt-2">Deductions</p>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { key: "deduction_tax", label: "Tax" },
-                  { key: "deduction_penalty", label: "Penalty" },
-                  { key: "deduction_advance", label: "Advance" },
-                  { key: "deduction_other", label: "Other" },
-                ].map(({ key, label }) => (
-                  <div key={key}>
-                    <label className="text-xs text-muted-foreground">{label}</label>
-                    <Input type="number" step="0.01" value={(payrollForm as any)[key]}
-                      onChange={e => setPayrollForm(f => ({ ...f, [key]: e.target.value }))} />
-                  </div>
-                ))}
-              </div>
-              <Select value={payrollForm.payment_method} onValueChange={v => setPayrollForm(f => ({ ...f, payment_method: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {["bank_transfer", "cash", "mobile_money", "check"].map(m => <SelectItem key={m} value={m} className="capitalize">{m.replace(/_/g, " ")}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <Textarea placeholder="Notes..." value={payrollForm.notes} onChange={e => setPayrollForm(f => ({ ...f, notes: e.target.value }))} />
-              <Button className="w-full" onClick={handleCreatePayroll}>Calculate & Save</Button>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h3 className="text-sm font-semibold flex items-center gap-2"><DollarSign className="w-4 h-4 text-emerald-400" /> Payroll Records</h3>
+        <div className="flex gap-2 items-center">
+          {isAllMode && (
+            <div className="relative">
+              <Search className="absolute left-2 top-2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} className="h-8 pl-7 text-xs w-40" />
             </div>
-          </DialogContent>
-        </Dialog>
+          )}
+          <div className="flex gap-1">
+            {["all", "calculated", "approved", "paid"].map(s => (
+              <button key={s} onClick={() => setStatusFilter(s)} className={`px-2 py-1 rounded text-[10px] font-medium capitalize ${statusFilter === s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{s}</button>
+            ))}
+          </div>
+          {!isAllMode && (
+            <Dialog open={showPayrollDialog} onOpenChange={setShowPayrollDialog}>
+              <DialogTrigger asChild>
+                <Button size="sm"><Calculator className="w-3.5 h-3.5 mr-1" /> Create Payroll</Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg">
+                <DialogHeader><DialogTitle>Create Payroll — {driverName}</DialogTitle></DialogHeader>
+                <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div><label className="text-xs text-muted-foreground">Period Start</label>
+                      <Input type="date" value={payrollForm.period_start} onChange={e => setPayrollForm(f => ({ ...f, period_start: e.target.value }))} /></div>
+                    <div><label className="text-xs text-muted-foreground">Period End</label>
+                      <Input type="date" value={payrollForm.period_end} onChange={e => setPayrollForm(f => ({ ...f, period_end: e.target.value }))} /></div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Base salary auto-applied: {config ? fmt(config.base_monthly_salary) : "Not configured"}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { key: "trip_bonus", label: "Trip Bonus" },
+                      { key: "km_bonus", label: "KM Bonus" },
+                      { key: "overtime_pay", label: "Overtime Pay" },
+                      { key: "other_earnings", label: "Other Earnings" },
+                    ].map(({ key, label }) => (
+                      <div key={key}>
+                        <label className="text-xs text-muted-foreground">{label}</label>
+                        <Input type="number" step="0.01" value={(payrollForm as any)[key]}
+                          onChange={e => setPayrollForm(f => ({ ...f, [key]: e.target.value }))} />
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs font-medium text-muted-foreground mt-2">Deductions</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { key: "deduction_tax", label: "Tax" },
+                      { key: "deduction_penalty", label: "Penalty" },
+                      { key: "deduction_advance", label: "Advance" },
+                      { key: "deduction_other", label: "Other" },
+                    ].map(({ key, label }) => (
+                      <div key={key}>
+                        <label className="text-xs text-muted-foreground">{label}</label>
+                        <Input type="number" step="0.01" value={(payrollForm as any)[key]}
+                          onChange={e => setPayrollForm(f => ({ ...f, [key]: e.target.value }))} />
+                      </div>
+                    ))}
+                  </div>
+                  <Select value={payrollForm.payment_method} onValueChange={v => setPayrollForm(f => ({ ...f, payment_method: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {["bank_transfer", "cash", "mobile_money", "check"].map(m => <SelectItem key={m} value={m} className="capitalize">{m.replace(/_/g, " ")}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Textarea placeholder="Notes..." value={payrollForm.notes} onChange={e => setPayrollForm(f => ({ ...f, notes: e.target.value }))} />
+                  <Button className="w-full" onClick={handleCreatePayroll}>Calculate & Save</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
       </div>
 
-      {payrolls.length === 0 ? (
-        <Card><CardContent className="py-6 text-center text-xs text-muted-foreground">No payroll records yet</CardContent></Card>
-      ) : payrolls.map(p => (
+      {filteredPayrolls.length === 0 ? (
+        <Card><CardContent className="py-6 text-center text-xs text-muted-foreground">No payroll records</CardContent></Card>
+      ) : filteredPayrolls.map(p => (
         <Card key={p.id}>
           <CardContent className="p-3">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium">
-                {format(new Date(p.pay_period_start), "MMM d")} — {format(new Date(p.pay_period_end), "MMM d, yyyy")}
-              </span>
+              <div className="flex items-center gap-2">
+                {isAllMode && (
+                  <>
+                    <span className="text-xs font-semibold">{getEmpName(p)}</span>
+                    <Badge variant="outline" className={`text-[8px] px-1 py-0 ${EMPLOYEE_TYPE_COLORS[getEmpType(p)]}`}>
+                      {EMPLOYEE_TYPE_LABELS[getEmpType(p)]}
+                    </Badge>
+                  </>
+                )}
+                <span className="text-xs text-muted-foreground">
+                  {format(new Date(p.pay_period_start), "MMM d")} — {format(new Date(p.pay_period_end), "MMM d, yyyy")}
+                </span>
+              </div>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className={`text-[10px] capitalize ${statusColor(p.status)}`}>{p.status}</Badge>
                 {p.status === "calculated" && (
