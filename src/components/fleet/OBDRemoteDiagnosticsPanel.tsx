@@ -89,7 +89,7 @@ const OBDRemoteDiagnosticsPanel = () => {
         <Select value={selectedVehicle} onValueChange={setSelectedVehicle}>
           <SelectTrigger className="w-[250px]"><SelectValue placeholder="All vehicles" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Vehicles</SelectItem>
+            <SelectItem value="all">All Vehicles</SelectItem>
             {vehicles.map((v: any) => <SelectItem key={v.id} value={v.id}>{v.plate_number} — {v.make} {v.model}</SelectItem>)}
           </SelectContent>
         </Select>
