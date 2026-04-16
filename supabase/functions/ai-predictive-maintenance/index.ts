@@ -156,8 +156,8 @@ Deno.serve(async (req) => {
             .eq("vehicle_id", v.id).order("alert_time", { ascending: false }).limit(20),
           supabase.from("maintenance_schedules").select("service_type, next_due_date")
             .eq("vehicle_id", v.id).limit(20),
-          supabase.from("maintenance_records").select("service_type, completed_date, cost")
-            .eq("vehicle_id", v.id).order("completed_date", { ascending: false }).limit(10),
+          supabase.from("maintenance_tickets").select("title, category, closed_at")
+            .eq("vehicle_id", v.id).order("closed_at", { ascending: false, nullsFirst: false }).limit(10),
         ]);
 
         const pred = await analyzeVehicle(v, alerts ?? [], schedules ?? [], maintenance ?? []);
