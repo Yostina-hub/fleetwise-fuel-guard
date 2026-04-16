@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useDeviceCompatibility } from "@/hooks/useDeviceCompatibility";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -13,6 +14,7 @@ import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import LicenseExpiryBadge from "@/components/fleet/LicenseExpiryBadge";
+import { DeviceProfileCard } from "@/components/fleet/DeviceProfileCard";
 
 interface Props {
   vehicle: any;
@@ -110,6 +112,32 @@ export default function VehicleStatusTab({ vehicle, vehicleId }: Props) {
     },
     enabled: !!vehicleId,
   });
+
+  // Fetch assigned device
+  const { data: assignedDevice } = useQuery({
+    queryKey: ["vehicle-assigned-device", vehicleId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("devices")
+        .select("*")
+        .eq("vehicle_id", vehicleId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!vehicleId,
+  });
+
+  const { profiles: compatibilityProfiles } = useDeviceCompatibility();
+
+  // Match device to compatibility profile
+  const deviceProfile = assignedDevice?.tracker_model
+    ? compatibilityProfiles?.find(
+        (p) =>
+          assignedDevice.tracker_model.toLowerCase().includes(p.model_name.toLowerCase()) ||
+          `${p.vendor} ${p.model_name}`.toLowerCase() === assignedDevice.tracker_model.toLowerCase()
+      )
+    : null;
 
   const isOnline = telemetry?.device_connected && telemetry?.last_communication_at &&
     (new Date().getTime() - new Date(telemetry.last_communication_at).getTime()) < 5 * 60 * 1000;
@@ -337,6 +365,11 @@ export default function VehicleStatusTab({ vehicle, vehicleId }: Props) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Device Compatibility Profile */}
+      {deviceProfile && (
+        <DeviceProfileCard profile={deviceProfile} />
+      )}
 
       {/* Tires */}
       {tires.length > 0 && (
