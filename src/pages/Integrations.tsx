@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
@@ -20,12 +22,40 @@ const Integrations = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("webhooks");
 
-  // Mock stats - in production, these would come from hooks
+  const { data: webhookCount } = useQuery({
+    queryKey: ["webhooks-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase.from("webhook_subscriptions").select("*", { count: "exact", head: true }).eq("is_active", true);
+      if (error) throw error;
+      return count || 0;
+    },
+  });
+
+  const { data: integrationsCount } = useQuery({
+    queryKey: ["integrations-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase.from("integrations").select("*", { count: "exact", head: true });
+      if (error) throw error;
+      return count || 0;
+    },
+  });
+
+  const { data: jobStats } = useQuery({
+    queryKey: ["bulk-jobs-stats"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("bulk_jobs").select("status");
+      if (error) throw error;
+      const completed = data?.filter(j => j.status === "completed").length || 0;
+      const failed = data?.filter(j => j.status === "failed").length || 0;
+      return { completed, failed };
+    },
+  });
+
   const stats = {
-    activeWebhooks: 5,
-    totalIntegrations: 3,
-    bulkJobsCompleted: 127,
-    failedJobs: 2,
+    activeWebhooks: webhookCount ?? 0,
+    totalIntegrations: integrationsCount ?? 0,
+    bulkJobsCompleted: jobStats?.completed ?? 0,
+    failedJobs: jobStats?.failed ?? 0,
   };
 
   const handleAddWebhook = () => {
