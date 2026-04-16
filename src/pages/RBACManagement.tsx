@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -407,8 +407,8 @@ const RBACManagement = () => {
                     <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                   </div>
                 ) : (
-                  <ScrollArea className="w-full">
-                    <div className="min-w-[900px]">
+                  <div className="w-full overflow-x-auto">
+                    <div className="min-w-[1200px]">
                       <Table>
                         <TableHeader>
                           <TableRow className="border-border/50 hover:bg-transparent">
@@ -434,7 +434,7 @@ const RBACManagement = () => {
                         </TableHeader>
                         <TableBody>
                           {resources.map(([resource, perms]) => (
-                            <>
+                            <React.Fragment key={resource}>
                               <TableRow key={`header-${resource}`} className="bg-muted/20 hover:bg-muted/30">
                                 <TableCell
                                   colSpan={ALL_ROLES.length + 1}
@@ -484,12 +484,12 @@ const RBACManagement = () => {
                                   })}
                                 </TableRow>
                               ))}
-                            </>
+                            </React.Fragment>
                           ))}
                         </TableBody>
                       </Table>
                     </div>
-                  </ScrollArea>
+                  </div>
                 )}
               </CardContent>
             </Card>
