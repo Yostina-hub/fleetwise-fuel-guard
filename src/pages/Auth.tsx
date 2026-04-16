@@ -253,6 +253,7 @@ const Auth = () => {
         }
 
         setPending2FA(false);
+        setPending2FACredentials(null);
         toast({
           title: "Welcome back!",
           description: usedBackupCode
