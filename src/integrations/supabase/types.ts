@@ -11202,6 +11202,11 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           assigned_to_role: string | null
+          auto_trigger_actual_value: number | null
+          auto_trigger_reason: string | null
+          auto_trigger_threshold_type: string | null
+          auto_trigger_threshold_value: number | null
+          auto_triggered_at: string | null
           correction_notes: string | null
           created_at: string
           delivery_acceptable: boolean | null
@@ -11274,6 +11279,11 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           assigned_to_role?: string | null
+          auto_trigger_actual_value?: number | null
+          auto_trigger_reason?: string | null
+          auto_trigger_threshold_type?: string | null
+          auto_trigger_threshold_value?: number | null
+          auto_triggered_at?: string | null
           correction_notes?: string | null
           created_at?: string
           delivery_acceptable?: boolean | null
@@ -11346,6 +11356,11 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           assigned_to_role?: string | null
+          auto_trigger_actual_value?: number | null
+          auto_trigger_reason?: string | null
+          auto_trigger_threshold_type?: string | null
+          auto_trigger_threshold_value?: number | null
+          auto_triggered_at?: string | null
           correction_notes?: string | null
           created_at?: string
           delivery_acceptable?: boolean | null
@@ -21265,6 +21280,30 @@ export type Database = {
         Args: { p_cost?: number; p_scope?: string; p_user_id: string }
         Returns: string
       }
+      get_due_preventive_schedules: {
+        Args: {
+          p_lookahead_days?: number
+          p_lookahead_hours?: number
+          p_lookahead_km?: number
+          p_organization_id: string
+          p_vehicle_id?: string
+        }
+        Returns: {
+          current_hours: number
+          current_odometer: number
+          due_reason: string
+          interval_type: string
+          is_overdue: boolean
+          next_due_date: string
+          next_due_hours: number
+          next_due_odometer: number
+          plate_number: string
+          priority: string
+          schedule_id: string
+          service_type: string
+          vehicle_id: string
+        }[]
+      }
       get_user_organization: { Args: { _user_id: string }; Returns: string }
       get_vehicle_fuel_status: {
         Args: { p_vehicle_ids: string[] }
@@ -21434,6 +21473,18 @@ export type Database = {
       supplier_request_variation: {
         Args: { p_request_id: string; p_variation_notes: string }
         Returns: undefined
+      }
+      trigger_preventive_maintenance: {
+        Args: { p_organization_id?: string }
+        Returns: {
+          organization_id: string
+          plate_number: string
+          reason: string
+          request_id: string
+          schedule_id: string
+          status: string
+          vehicle_id: string
+        }[]
       }
       trigger_webhook: {
         Args: { _event_data: Json; _event_type: string }
