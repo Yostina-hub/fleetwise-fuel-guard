@@ -480,7 +480,7 @@ const Layout = ({ children }: LayoutProps) => {
             isMobile && "pb-20"
           )}
         >
-          <div className="min-h-full min-w-full page-enter">
+          <div className="min-h-full min-w-full page-enter [&>*:first-child]:p-4 [&>*:first-child]:md:p-6 [&>*:first-child]:lg:p-8">
             {children}
           </div>
         </div>
