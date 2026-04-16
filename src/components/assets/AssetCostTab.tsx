@@ -102,7 +102,9 @@ export default function AssetCostTab() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const totalCost = costs.reduce((s: number, c: any) => s + (c.amount || 0), 0);
+  const manualFuelCost = costs.filter((c: any) => c.cost_type === "fuel").reduce((s: number, c: any) => s + (c.amount || 0), 0);
+  const totalFuelCost = manualFuelCost + fuelCostAgg.total;
+  const totalCost = costs.reduce((s: number, c: any) => s + (c.amount || 0), 0) + fuelCostAgg.total;
   const preventiveCost = costs.filter((c: any) => c.cost_type === "preventive_maintenance").reduce((s: number, c: any) => s + (c.amount || 0), 0);
   const correctiveCost = costs.filter((c: any) => c.cost_type === "corrective_maintenance").reduce((s: number, c: any) => s + (c.amount || 0), 0);
 
