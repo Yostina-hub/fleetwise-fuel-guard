@@ -210,7 +210,7 @@ export const DriverScoringTab = () => {
                 <div className="space-y-2">
                   <Label htmlFor="driver">Driver</Label>
                   <Select
-                    value={calcForm.driverId}
+                    value={calcForm.driverId || undefined}
                     onValueChange={(value) => setCalcForm({ ...calcForm, driverId: value })}
                   >
                     <SelectTrigger>
@@ -229,7 +229,7 @@ export const DriverScoringTab = () => {
                 <div className="space-y-2">
                   <Label htmlFor="vehicle">Vehicle</Label>
                   <Select
-                    value={calcForm.vehicleId}
+                    value={calcForm.vehicleId || undefined}
                     onValueChange={(value) => setCalcForm({ ...calcForm, vehicleId: value })}
                   >
                     <SelectTrigger>
@@ -525,16 +525,23 @@ export const DriverScoringTab = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {scoreHistory?.map((score) => (
+                  {scoreHistory?.map((score) => {
+                    const historyDriverName = score.driver 
+                      ? `${score.driver.first_name} ${score.driver.last_name}` 
+                      : "Unknown Driver";
+                    const historyInitials = score.driver 
+                      ? `${score.driver.first_name[0]}${score.driver.last_name[0]}` 
+                      : "??";
+                    return (
                     <TableRow key={score.id}>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Avatar className="h-6 w-6">
                             <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                              {getDriverName(score.driver_id).split(" ").map(n => n[0]).join("")}
+                              {historyInitials}
                             </AvatarFallback>
                           </Avatar>
-                          {getDriverName(score.driver_id)}
+                          {historyDriverName}
                         </div>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
@@ -553,7 +560,8 @@ export const DriverScoringTab = () => {
                         {format(new Date(score.created_at), "MMM d, yyyy")}
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                   {(!scoreHistory || scoreHistory.length === 0) && (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
@@ -576,7 +584,7 @@ export const DriverScoringTab = () => {
             <DialogDescription>
               {selectedDriverScore && (
                 <>
-                  {getDriverName(selectedDriverScore.driver_id)} - {getVehiclePlate(selectedDriverScore.vehicle_id)}
+                  {getDriverName(selectedDriverScore)} - {getVehiclePlate(selectedDriverScore)}
                 </>
               )}
             </DialogDescription>

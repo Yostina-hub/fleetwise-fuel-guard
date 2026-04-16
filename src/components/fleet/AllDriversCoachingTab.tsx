@@ -303,7 +303,7 @@ export function AllDriversCoachingTab() {
           <div className="space-y-4 py-4">
             <div>
               <label className="text-sm font-medium mb-2 block">Select Driver</label>
-              <Select value={selectedDriverId} onValueChange={setSelectedDriverId}>
+              <Select value={selectedDriverId || undefined} onValueChange={setSelectedDriverId}>
                 <SelectTrigger>
                   <User className="w-4 h-4 mr-2" />
                   <SelectValue placeholder="Choose a driver..." />
