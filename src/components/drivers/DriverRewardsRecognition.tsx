@@ -63,7 +63,7 @@ export const DriverRewardsRecognition = () => {
 
   const totalValue = rewards.reduce((s, r) => s + (r.value_amount || 0), 0);
   const redeemedCount = rewards.filter(r => r.status === "redeemed").length;
-  const fmt = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+  const fmt = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB", maximumFractionDigits: 0 }).format(n);
 
   return (
     <div className="space-y-4">
