@@ -7763,6 +7763,7 @@ export type Database = {
       }
       fuel_clarification_requests: {
         Row: {
+          auto_created: boolean
           created_at: string
           fuel_request_id: string
           id: string
@@ -7779,6 +7780,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          auto_created?: boolean
           created_at?: string
           fuel_request_id: string
           id?: string
@@ -7795,6 +7797,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          auto_created?: boolean
           created_at?: string
           fuel_request_id?: string
           id?: string
