@@ -129,6 +129,7 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
     onSuccess: () => {
       toast.success("Vehicle request submitted successfully");
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
       onOpenChange(false);
       setForm(initialForm);
     },

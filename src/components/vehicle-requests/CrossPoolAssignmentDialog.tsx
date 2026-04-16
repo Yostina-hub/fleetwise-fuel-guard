@@ -64,6 +64,7 @@ export const CrossPoolAssignmentDialog = ({ request, open, onClose }: Props) => 
     onSuccess: () => {
       toast.success("Cross-pool vehicle assigned successfully");
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
       onClose();
     },
     onError: (err: any) => toast.error(err.message),
