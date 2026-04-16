@@ -1082,6 +1082,56 @@ const TEMPLATES: WorkflowTemplate[] = [
       { id: "fe22", source: "fa5", target: "fa16", type: "smoothstep", animated: true },
     ],
   },
+
+  // ═══════════════════════════════════════════════════════════════
+  // FLEET MAINTENANCE REQUEST & WORK ORDER WORKFLOW
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "tpl_maintenance_request_workflow",
+    name: "Maintenance Request to Work Order",
+    description: "End-to-end maintenance workflow: request submission with KM/hours triggers, multi-level approval routing, auto work order & PO generation, supplier communication, and post-maintenance inspection.",
+    category: "maintenance",
+    icon: "🔧",
+    difficulty: "advanced",
+    estimatedSavings: "~40% faster turnaround",
+    tags: ["maintenance", "work-order", "approval", "purchase-order", "inspection", "supplier"],
+    nodes: [
+      { id: "mt1", type: "trigger", position: { x: 400, y: 50 }, data: { label: "Maintenance Request Submitted", description: "Driver or system submits a maintenance request (preventive, corrective, or breakdown)", icon: "📝", category: "triggers", nodeType: "trigger_event", config: { eventType: "maintenance_request_created" }, status: "idle", isConfigured: true } },
+      { id: "mc1", type: "condition", position: { x: 400, y: 220 }, data: { label: "Request Type?", description: "Check if preventive (scheduled) or corrective/breakdown", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "request.request_type", operator: "equals", rightOperand: "preventive" }, status: "idle", isConfigured: true } },
+      { id: "ma1", type: "action", position: { x: 150, y: 400 }, data: { label: "Validate KM/Hours Threshold", description: "Check vehicle odometer and running hours against schedule", icon: "📊", category: "data", nodeType: "data_lookup", config: { table: "maintenance_schedules", match: "vehicle_id" }, status: "idle", isConfigured: true } },
+      { id: "ma2", type: "action", position: { x: 650, y: 400 }, data: { label: "Log Breakdown Details", description: "Record breakdown location, severity, and driver report", icon: "🗄️", category: "data", nodeType: "data_log_history", config: { table: "maintenance_requests", severity: "high" }, status: "idle", isConfigured: true } },
+      { id: "ma3", type: "action", position: { x: 400, y: 560 }, data: { label: "Route to Fleet Operations", description: "Send approval request to fleet operations manager", icon: "👤", category: "fleet", nodeType: "fleet_assign_driver", config: { action: "route_approval", role: "operations_manager" }, status: "idle", isConfigured: true } },
+      { id: "mc2", type: "condition", position: { x: 400, y: 730 }, data: { label: "Approved?", description: "Fleet operations approves or rejects the request", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "approval.status", operator: "equals", rightOperand: "approved" }, status: "idle", isConfigured: true } },
+      { id: "ma4", type: "action", position: { x: 150, y: 900 }, data: { label: "Auto-Create Work Order", description: "Generate WO with vehicle, priority, and schedule details", icon: "📋", category: "data", nodeType: "data_log_history", config: { table: "work_orders", action: "create" }, status: "idle", isConfigured: true } },
+      { id: "ma5", type: "action", position: { x: 150, y: 1060 }, data: { label: "Auto-Generate Purchase Order", description: "Create zero-birr PO (qty 1) upon WO approval", icon: "🧾", category: "data", nodeType: "data_transform", config: { table: "purchase_orders", auto: true }, status: "idle", isConfigured: true } },
+      { id: "ma6", type: "action", position: { x: 150, y: 1220 }, data: { label: "Notify Supplier", description: "Send WO details to assigned supplier via messaging", icon: "📧", category: "notifications", nodeType: "notify_email", config: { recipients: "supplier", template: "🔧 New Work Order {{wo.number}} for {{vehicle.name}}" }, status: "idle", isConfigured: true } },
+      { id: "ma7", type: "action", position: { x: 150, y: 1380 }, data: { label: "Supplier Submits Invoice", description: "Supplier uploads invoice and cost breakdown", icon: "💰", category: "data", nodeType: "data_log_history", config: { table: "supplier_payment_requests" }, status: "idle", isConfigured: true } },
+      { id: "ma8", type: "action", position: { x: 150, y: 1540 }, data: { label: "Post-Maintenance Inspection", description: "8-point checklist: brakes, lights, fluids, tires, etc.", icon: "✅", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "post_inspection", checklist: 8 }, status: "idle", isConfigured: true } },
+      { id: "mc3", type: "condition", position: { x: 150, y: 1700 }, data: { label: "Inspection Passed?", description: "All checklist items pass and vehicle certified safe", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "inspection.overall_result", operator: "equals", rightOperand: "pass" }, status: "idle", isConfigured: true } },
+      { id: "ma9", type: "action", position: { x: -50, y: 1870 }, data: { label: "Return Vehicle to Service", description: "Update vehicle status to active, log service history", icon: "🚛", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "activate", status: "active" }, status: "idle", isConfigured: true } },
+      { id: "ma10", type: "action", position: { x: 350, y: 1870 }, data: { label: "Re-open Work Order", description: "Inspection failed — send back for rework", icon: "🔄", category: "data", nodeType: "data_log_history", config: { table: "work_orders", action: "reopen" }, status: "idle", isConfigured: true } },
+      { id: "ma11", type: "action", position: { x: 650, y: 900 }, data: { label: "Notify Requestor: Rejected", description: "Send rejection reason to original requestor", icon: "🔔", category: "notifications", nodeType: "notify_push", config: { template: "❌ Maintenance request {{request.number}} rejected: {{rejection.reason}}" }, status: "idle", isConfigured: true } },
+      { id: "ma12", type: "action", position: { x: -50, y: 2030 }, data: { label: "Update Service History", description: "Record completed maintenance in vehicle service log", icon: "📈", category: "data", nodeType: "data_log_history", config: { table: "service_history" }, status: "idle", isConfigured: true } },
+    ],
+    edges: [
+      { id: "me1", source: "mt1", target: "mc1", type: "smoothstep", animated: true },
+      { id: "me2", source: "mc1", target: "ma1", sourceHandle: "true", type: "smoothstep", animated: true, label: "Preventive" },
+      { id: "me3", source: "mc1", target: "ma2", sourceHandle: "false", type: "smoothstep", animated: true, label: "Corrective/Breakdown" },
+      { id: "me4", source: "ma1", target: "ma3", type: "smoothstep", animated: true },
+      { id: "me5", source: "ma2", target: "ma3", type: "smoothstep", animated: true },
+      { id: "me6", source: "ma3", target: "mc2", type: "smoothstep", animated: true },
+      { id: "me7", source: "mc2", target: "ma4", sourceHandle: "true", type: "smoothstep", animated: true, label: "Approved" },
+      { id: "me8", source: "mc2", target: "ma11", sourceHandle: "false", type: "smoothstep", animated: true, label: "Rejected" },
+      { id: "me9", source: "ma4", target: "ma5", type: "smoothstep", animated: true },
+      { id: "me10", source: "ma5", target: "ma6", type: "smoothstep", animated: true },
+      { id: "me11", source: "ma6", target: "ma7", type: "smoothstep", animated: true },
+      { id: "me12", source: "ma7", target: "ma8", type: "smoothstep", animated: true },
+      { id: "me13", source: "ma8", target: "mc3", type: "smoothstep", animated: true },
+      { id: "me14", source: "mc3", target: "ma9", sourceHandle: "true", type: "smoothstep", animated: true, label: "Pass" },
+      { id: "me15", source: "mc3", target: "ma10", sourceHandle: "false", type: "smoothstep", animated: true, label: "Fail" },
+      { id: "me16", source: "ma9", target: "ma12", type: "smoothstep", animated: true },
+    ],
+  },
 ];
 
 export default TEMPLATES;
