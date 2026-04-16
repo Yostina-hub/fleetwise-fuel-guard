@@ -21,15 +21,15 @@ const DashboardWidgetRenderer = ({ section, widgetMap, className }: WidgetRender
 
   const sizeToColSpan = (size: DashboardWidgetConfig["size"]): string => {
     switch (size) {
-      case "large": return "lg:col-span-3";
-      case "medium": return "lg:col-span-2";
+      case "large": return "sm:col-span-2 lg:col-span-3";
+      case "medium": return "sm:col-span-2 lg:col-span-2";
       case "small":
-      default: return "lg:col-span-1";
+      default: return "sm:col-span-1 lg:col-span-1";
     }
   };
 
   return (
-    <div className={cn("grid grid-cols-1 lg:grid-cols-3 gap-6", className)}>
+    <div className={cn("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6", className)}>
       {widgets.map((widget) => {
         const renderer = widgetMap[widget.type];
         if (!renderer) return null;
