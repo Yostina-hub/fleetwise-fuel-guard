@@ -315,7 +315,7 @@ const FuelRequests = () => {
           </TabsList>
           {["all", "pending", "approved", "fulfilled", "rejected"].map(tab => (
             <TabsContent key={tab} value={tab} className="space-y-4">
-              {renderTable(tab === "all" ? filtered : filtered.filter((r: any) => r.status === tab))}
+              <FuelRequestsTable data={tab === "all" ? filtered : filtered.filter((r: any) => r.status === tab)} {...tableProps} />
             </TabsContent>
           ))}
         </Tabs>
