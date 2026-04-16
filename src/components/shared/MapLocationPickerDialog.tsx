@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { useEffect, useRef, useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MapPin, Navigation } from "lucide-react";
+import { MapPin, Navigation, Search, Loader2 } from "lucide-react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { getPreviewSafeMapStyle } from "@/lib/lemat";
@@ -15,6 +15,12 @@ interface MapLocationPickerDialogProps {
   title?: string;
   initialLat?: number;
   initialLng?: number;
+}
+
+interface SearchResult {
+  display_name: string;
+  lat: string;
+  lon: string;
 }
 
 export function MapLocationPickerDialog({
@@ -33,22 +39,62 @@ export function MapLocationPickerDialog({
   const [lng, setLng] = useState(initialLng);
   const [locationName, setLocationName] = useState("");
 
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchTimeout = useRef<ReturnType<typeof setTimeout>>();
+
   useEffect(() => {
     if (!open) return;
     setLat(initialLat);
     setLng(initialLng);
     setLocationName("");
+    setSearchQuery("");
+    setSearchResults([]);
   }, [open, initialLat, initialLng]);
 
+  // Debounced search via Nominatim
+  useEffect(() => {
+    if (!searchQuery.trim() || searchQuery.trim().length < 3) {
+      setSearchResults([]);
+      return;
+    }
+
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+
+    searchTimeout.current = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const q = encodeURIComponent(searchQuery.trim());
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${q}&countrycodes=et&limit=5&addressdetails=0`,
+          { headers: { "Accept-Language": "en" } }
+        );
+        if (res.ok) {
+          const data: SearchResult[] = await res.json();
+          setSearchResults(data);
+        }
+      } catch {
+        // silently fail
+      } finally {
+        setIsSearching(false);
+      }
+    }, 400);
+
+    return () => {
+      if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    };
+  }, [searchQuery]);
+
+  // Map init
   useEffect(() => {
     if (!open) return;
 
-    // Wait for dialog DOM to be fully rendered and container to have dimensions
     const timer = setTimeout(() => {
       const container = mapContainer.current;
       if (!container) return;
 
-      // Force explicit dimensions to ensure MapLibre can render
       container.style.width = "100%";
       container.style.height = "350px";
 
@@ -62,10 +108,7 @@ export function MapLocationPickerDialog({
         attributionControl: false,
       });
 
-      map.on("load", () => {
-        map.resize();
-      });
-
+      map.on("load", () => map.resize());
       map.addControl(new maplibregl.NavigationControl(), "top-right");
 
       const marker = new maplibregl.Marker({ color: "#ef4444", draggable: true })
@@ -79,9 +122,8 @@ export function MapLocationPickerDialog({
       });
 
       map.on("click", (e) => {
-        const { lat: clickLat, lng: clickLng } = e.lngLat;
-        const newLat = parseFloat(clickLat.toFixed(6));
-        const newLng = parseFloat(clickLng.toFixed(6));
+        const newLat = parseFloat(e.lngLat.lat.toFixed(6));
+        const newLng = parseFloat(e.lngLat.lng.toFixed(6));
         setLat(newLat);
         setLng(newLng);
         marker.setLngLat([newLng, newLat]);
@@ -100,12 +142,29 @@ export function MapLocationPickerDialog({
     };
   }, [open, initialLat, initialLng]);
 
-  // Sync marker when lat/lng inputs change manually
+  // Sync marker when lat/lng change
   useEffect(() => {
     if (markerRef.current) {
       markerRef.current.setLngLat([lng, lat]);
     }
   }, [lat, lng]);
+
+  const flyToLocation = (result: SearchResult) => {
+    const newLat = parseFloat(result.lat);
+    const newLng = parseFloat(result.lon);
+    setLat(parseFloat(newLat.toFixed(6)));
+    setLng(parseFloat(newLng.toFixed(6)));
+    setLocationName(result.display_name.split(",")[0]);
+    setSearchQuery(result.display_name.split(",")[0]);
+    setSearchResults([]);
+
+    if (mapRef.current) {
+      mapRef.current.flyTo({ center: [newLng, newLat], zoom: 15, duration: 1200 });
+    }
+    if (markerRef.current) {
+      markerRef.current.setLngLat([newLng, newLat]);
+    }
+  };
 
   const handleConfirm = () => {
     const name = locationName.trim() || `${lat}, ${lng}`;
@@ -121,13 +180,47 @@ export function MapLocationPickerDialog({
             <MapPin className="w-5 h-5 text-destructive" />
             {title}
           </DialogTitle>
+          <DialogDescription>Search for a place, click on the map, or drag the pin.</DialogDescription>
         </DialogHeader>
 
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search location name (e.g. Bole, Meskel Square, Hawassa)"
+            className="pl-9 pr-9 h-9"
+          />
+          {isSearching && (
+            <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground animate-spin" />
+          )}
+
+          {/* Search Results Dropdown */}
+          {searchResults.length > 0 && (
+            <div className="absolute z-50 mt-1 w-full bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
+              {searchResults.map((r, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors flex items-start gap-2"
+                  onClick={() => flyToLocation(r)}
+                >
+                  <MapPin className="w-3.5 h-3.5 mt-0.5 text-destructive shrink-0" />
+                  <span className="line-clamp-2">{r.display_name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Map */}
         <div
           ref={mapContainer}
           className="w-full h-[350px] rounded-lg border border-border overflow-hidden"
         />
 
+        {/* Coordinates & Name */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
             <Label className="text-xs text-muted-foreground">Location Name</Label>
@@ -159,10 +252,6 @@ export function MapLocationPickerDialog({
             />
           </div>
         </div>
-
-        <p className="text-xs text-muted-foreground">
-          Click on the map or drag the pin to select a location. You can also type coordinates manually.
-        </p>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
