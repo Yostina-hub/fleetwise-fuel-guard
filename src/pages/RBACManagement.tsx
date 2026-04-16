@@ -407,8 +407,8 @@ const RBACManagement = () => {
                     <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                   </div>
                 ) : (
-                  <ScrollArea className="w-full">
-                    <div className="min-w-[900px]">
+                  <ScrollArea className="w-full" orientation="horizontal">
+                    <div className="min-w-[1200px]">
                       <Table>
                         <TableHeader>
                           <TableRow className="border-border/50 hover:bg-transparent">
@@ -434,7 +434,7 @@ const RBACManagement = () => {
                         </TableHeader>
                         <TableBody>
                           {resources.map(([resource, perms]) => (
-                            <>
+                            <React.Fragment key={resource}>
                               <TableRow key={`header-${resource}`} className="bg-muted/20 hover:bg-muted/30">
                                 <TableCell
                                   colSpan={ALL_ROLES.length + 1}
