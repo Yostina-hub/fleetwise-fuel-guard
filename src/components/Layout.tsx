@@ -205,6 +205,7 @@ const getNavItems = (t: (key: string) => string) => [
       { label: "Rental Vehicles", path: "/rental-vehicles" },
     ]
   },
+  { icon: FileText, label: "Third-Party Claims", path: "/third-party-claims" },
   { icon: Bell, label: t("nav.alerts"), path: "/alerts" },
   { icon: Bell, label: t("nav.notifications"), path: "/notification-center" },
 
