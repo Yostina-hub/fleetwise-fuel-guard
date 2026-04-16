@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -63,13 +63,14 @@ const Auth = () => {
   const [pending2FAUserId, setPending2FAUserId] = useState<string | null>(null);
   const [verifying2FA, setVerifying2FA] = useState(false);
   const [pending2FACredentials, setPending2FACredentials] = useState<{ email: string; password: string } | null>(null);
+  const checking2FARef = useRef(false);
 
-  // Redirect if already logged in
+  // Redirect if already logged in (but not during 2FA check)
   useEffect(() => {
-    if (user) {
+    if (user && !pending2FA && !checking2FARef.current) {
       navigate("/");
     }
-  }, [user, navigate]);
+  }, [user, navigate, pending2FA]);
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -112,9 +113,12 @@ const Auth = () => {
       // If pre-check fails, proceed with login attempt
     }
 
+    // Set flag to prevent auto-redirect while we check 2FA
+    checking2FARef.current = true;
     const { error } = await signIn(email, password);
 
     if (error) {
+      checking2FARef.current = false;
       // Record failed attempt in progressive delay (client-side exponential backoff)
       progressiveDelay.recordFailedAttempt(email);
       // Record in server-side lockout table
@@ -161,6 +165,7 @@ const Auth = () => {
               title: "2FA Required",
               description: "Enter your authenticator code to continue.",
             });
+            setLoading(false);
             return;
           }
         } catch {
@@ -168,6 +173,7 @@ const Auth = () => {
         }
       }
 
+      checking2FARef.current = false;
       toast({
         title: "Welcome back!",
         description: "You've been signed in successfully.",
