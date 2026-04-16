@@ -1,21 +1,17 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
-  MapPin, Clock, Users, Send, CheckCircle, XCircle, Truck, User, Package,
-  MessageSquare, History, ArrowRight, Shield, Calendar
+  MapPin, Clock, Users, Send, CheckCircle, XCircle, Truck, Package,
+  MessageSquare, History, Shield, Ban
 } from "lucide-react";
 import { format } from "date-fns";
-import { useState } from "react";
 import { ApprovalFlowViewer } from "@/components/scheduling/ApprovalFlowViewer";
 import { VehicleRecommendations } from "@/components/scheduling/VehicleRecommendations";
-import { motion } from "framer-motion";
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
   draft: { bg: "bg-muted", text: "text-muted-foreground", label: "Draft" },
@@ -36,15 +32,17 @@ interface TripDetailPanelProps {
   onApprove?: (approvalId: string, requestId: string, comment?: string) => void;
   onReject?: (approvalId: string, requestId: string, comment: string) => void;
   onAssign?: (trip: any) => void;
+  onCancel?: (id: string) => void;
 }
 
 export const TripDetailPanel = ({
-  trip, open, onOpenChange, onSubmit, onApprove, onReject, onAssign
+  trip, open, onOpenChange, onSubmit, onApprove, onReject, onAssign, onCancel
 }: TripDetailPanelProps) => {
-  const [approvalComment, setApprovalComment] = useState("");
   const status = STATUS_STYLES[trip?.status] || STATUS_STYLES.draft;
 
   if (!trip) return null;
+
+  const canCancel = ["draft", "submitted", "approved"].includes(trip.status);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -54,9 +52,7 @@ export const TripDetailPanel = ({
           <DialogHeader>
             <div className="flex items-center gap-3">
               <span className="font-mono text-lg font-bold text-primary">{trip.request_number}</span>
-              <Badge className={`${status.bg} ${status.text} border-0`}>
-                {status.label}
-              </Badge>
+              <Badge className={`${status.bg} ${status.text} border-0`}>{status.label}</Badge>
             </div>
             <DialogTitle className="text-xl mt-2">{trip.purpose}</DialogTitle>
             <DialogDescription className="sr-only">Trip request details and actions</DialogDescription>
@@ -79,7 +75,7 @@ export const TripDetailPanel = ({
               {trip.drop_geofence?.name || "Not specified"}
             </InfoBlock>
             <InfoBlock icon={<Users className="w-4 h-4 text-secondary" />} label="Passengers">
-              {trip.passengers || 1}
+              {trip.passenger_count || trip.passengers || 1}
             </InfoBlock>
             <InfoBlock icon={<Truck className="w-4 h-4 text-primary" />} label="Vehicle Class">
               {trip.required_class || "Any"}
@@ -137,22 +133,27 @@ export const TripDetailPanel = ({
                 pickupAt={trip.pickup_at}
                 returnAt={trip.return_at}
                 requiredClass={trip.required_class}
-                passengers={trip.passengers}
+                passengers={trip.passenger_count || trip.passengers}
                 pickupGeofenceId={trip.pickup_geofence_id}
               />
             </div>
           )}
 
           {/* Actions */}
-          <div className="flex gap-2 pt-2">
+          <div className="flex gap-2 pt-2 flex-wrap">
             {trip.status === "draft" && onSubmit && (
               <Button onClick={() => { onSubmit(trip.id); onOpenChange(false); }} className="gap-1.5">
                 <Send className="w-4 h-4" /> Submit for Approval
               </Button>
             )}
             {trip.status === "approved" && onAssign && (
-              <Button onClick={() => { onAssign(trip); onOpenChange(false); }} className="gap-1.5">
+              <Button onClick={() => onAssign(trip)} className="gap-1.5">
                 <Truck className="w-4 h-4" /> Assign Vehicle & Driver
+              </Button>
+            )}
+            {canCancel && onCancel && (
+              <Button variant="destructive" onClick={() => onCancel(trip.id)} className="gap-1.5">
+                <Ban className="w-4 h-4" /> Cancel Request
               </Button>
             )}
             <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
