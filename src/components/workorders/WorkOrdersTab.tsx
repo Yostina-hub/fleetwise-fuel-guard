@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import CreateWorkRequestDialog from "./CreateWorkRequestDialog";
 import { useOrganization } from "@/hooks/useOrganization";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
@@ -119,6 +120,22 @@ const WorkOrdersTab = () => {
   });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [reviewComment, setReviewComment] = useState("");
+
+  const handleManualApproval = (decision: 'approved' | 'rejected') => {
+    if (!selectedWorkOrder) return;
+    if (decision === 'rejected' && !reviewComment.trim()) return;
+    
+    updateMutation.mutate({
+      id: selectedWorkOrder.id,
+      updates: {
+        approval_status: decision,
+        status: decision === 'approved' ? 'scheduled' : 'cancelled',
+        notes: decision === 'rejected' ? `Rejected: ${reviewComment}` : (reviewComment || null),
+      } as any,
+    });
+    setReviewComment("");
+  };
 
   // Cost update form
   const [costFormData, setCostFormData] = useState({
@@ -503,150 +520,27 @@ const WorkOrdersTab = () => {
             <Download className="w-4 h-4" aria-hidden="true" />
             Export CSV
           </Button>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button 
-              onClick={resetForm} 
+          <Button 
+              onClick={() => setIsDialogOpen(true)} 
               disabled={!canCreateWorkOrder}
-              aria-label="Create new work order"
+              aria-label="Create new work request"
               title={!canCreateWorkOrder ? "You need super_admin, maintenance_lead, or operations_manager role" : undefined}
             >
               <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
-              Create Work Order
+              Create Work Request
             </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Create Work Order</DialogTitle>
-              <DialogDescription>
-                Schedule a new maintenance work order
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} noValidate>
-              <div className="space-y-4">
-                {formError && (
-                  <Alert variant="destructive">
-                    <AlertTitle>Couldn't create work order</AlertTitle>
-                    <AlertDescription>{formError}</AlertDescription>
-                  </Alert>
-                )}
-
-                <div>
-                  <Label htmlFor="wo-vehicle">Vehicle *</Label>
-                  <Select
-                    value={formData.vehicle_id}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, vehicle_id: value })
-                    }
-                  >
-                    <SelectTrigger id="wo-vehicle" aria-label="Select vehicle">
-                      <SelectValue placeholder="Select a vehicle" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {vehiclesLoading ? (
-                        <SelectItem value="__loading" disabled>
-                          Loading vehicles…
-                        </SelectItem>
-                      ) : vehicles && vehicles.length > 0 ? (
-                        vehicles.map((vehicle) => (
-                          <SelectItem key={vehicle.id} value={vehicle.id}>
-                            {vehicle.plate_number} - {vehicle.make} {vehicle.model}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="__none" disabled>
-                          No vehicles available
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  {fieldErrors.vehicle_id && (
-                    <p className="mt-1 text-sm text-destructive">{fieldErrors.vehicle_id}</p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="wo-work-type">Work Type *</Label>
-                  <Select
-                    value={formData.work_type}
-                    onValueChange={(value: string) =>
-                      setFormData({ ...formData, work_type: value })
-                    }
-                  >
-                    <SelectTrigger id="wo-work-type" aria-label="Select work type">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="oil_change">Oil Change</SelectItem>
-                      <SelectItem value="tire_service">Tire Service</SelectItem>
-                      <SelectItem value="brake_service">Brake Service</SelectItem>
-                      <SelectItem value="inspection">Inspection</SelectItem>
-                      <SelectItem value="engine_repair">Engine Repair</SelectItem>
-                      <SelectItem value="transmission_service">Transmission Service</SelectItem>
-                      <SelectItem value="electrical_repair">Electrical Repair</SelectItem>
-                      <SelectItem value="body_repair">Body Repair</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="wo-priority">Priority *</Label>
-                  <Select
-                    value={formData.priority}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, priority: value as "low" | "medium" | "high" | "urgent" })
-                    }
-                  >
-                    <SelectTrigger id="wo-priority" aria-label="Select priority">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="wo-description">Description *</Label>
-                  <Textarea
-                    id="wo-description"
-                    value={formData.service_description}
-                    onChange={(e) =>
-                      setFormData({ ...formData, service_description: e.target.value })
-                    }
-                    placeholder="Describe the work to be done..."
-                    rows={3}
-                    aria-describedby={fieldErrors.service_description ? "desc-error" : undefined}
-                  />
-                  {fieldErrors.service_description && (
-                    <p id="desc-error" className="mt-1 text-sm text-destructive">{fieldErrors.service_description}</p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="wo-scheduled-date">Scheduled Date</Label>
-                  <Input
-                    id="wo-scheduled-date"
-                    type="date"
-                    value={formData.scheduled_date}
-                    onChange={(e) =>
-                      setFormData({ ...formData, scheduled_date: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-              <DialogFooter className="mt-6">
-                <Button
-                  type="submit"
-                  disabled={createMutation.isPending || vehiclesLoading || !vehicles || vehicles.length === 0}
-                >
-                  {createMutation.isPending ? "Creating..." : "Create Work Order"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
         </div>
       </div>
+
+      <CreateWorkRequestDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["work_orders", organizationId] });
+          toast({ title: "Work request created successfully" });
+          setCurrentPage(1);
+        }}
+      />
 
       {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
@@ -826,6 +720,29 @@ const WorkOrdersTab = () => {
                       : '-'}
                   </p>
                 </div>
+
+                {/* Approval Status */}
+                <div className="col-span-2 flex items-center gap-2 mt-2">
+                  <label className="text-sm text-muted-foreground">Approval:</label>
+                  {(selectedWorkOrder as any).auto_approved ? (
+                    <Badge variant="default" className="bg-emerald-500/20 text-emerald-600 text-xs">
+                      ✓ Auto-Approved
+                    </Badge>
+                  ) : (selectedWorkOrder as any).approval_status === 'approved' ? (
+                    <Badge variant="default" className="bg-emerald-500/20 text-emerald-600 text-xs">
+                      ✓ Approved
+                    </Badge>
+                  ) : (selectedWorkOrder as any).approval_status === 'rejected' ? (
+                    <Badge variant="destructive" className="text-xs">Rejected</Badge>
+                  ) : (
+                    <Badge variant="secondary" className="text-xs">Pending Approval</Badge>
+                  )}
+                  {(selectedWorkOrder as any).auto_approved_reason && (
+                    <span className="text-xs text-muted-foreground italic">
+                      {(selectedWorkOrder as any).auto_approved_reason}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {selectedWorkOrder.service_description && (
@@ -916,6 +833,47 @@ const WorkOrdersTab = () => {
                       <p className="font-medium">{selectedWorkOrder.technician_name}</p>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Fleet Ops Manual Approve/Reject */}
+              {canCreateWorkOrder && (selectedWorkOrder as any).approval_status === 'pending' && !(selectedWorkOrder as any).auto_approved && (
+                <div className="border-t pt-4 space-y-3">
+                  <h4 className="text-sm font-semibold flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-primary" />
+                    Fleet Operations Review
+                  </h4>
+                  <Textarea
+                    placeholder="Review comments / rejection reason (required for rejection)..."
+                    value={reviewComment}
+                    onChange={e => setReviewComment(e.target.value)}
+                    rows={2}
+                    className="text-sm"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className="gap-1"
+                      onClick={() => handleManualApproval('approved')}
+                      disabled={updateMutation.isPending}
+                    >
+                      <CheckCircle className="w-4 h-4" /> Approve
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="gap-1"
+                      onClick={() => handleManualApproval('rejected')}
+                      disabled={updateMutation.isPending || !reviewComment.trim()}
+                    >
+                      <X className="w-4 h-4" /> Reject
+                    </Button>
+                    {!reviewComment.trim() && (
+                      <span className="text-xs text-muted-foreground self-center">
+                        * Rejection reason is mandatory
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
 

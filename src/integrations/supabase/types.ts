@@ -20303,20 +20303,41 @@ export type Database = {
           approval_status: string | null
           approved_at: string | null
           approved_by: string | null
+          asset_criticality: string | null
+          assigned_department: string | null
           attachments: Json | null
+          auto_approved: boolean | null
+          auto_approved_reason: string | null
           completed_date: string | null
+          contact_preference: string | null
           created_at: string
+          created_by_email: string | null
+          created_by_name: string | null
+          created_by_phone: string | null
+          created_by_user_id: string | null
           downtime_hours: number | null
+          driver_name: string | null
+          driver_phone: string | null
+          driver_type: string | null
+          fuel_level: number | null
           id: string
           inspection_id: string | null
+          km_reading: number | null
           labor_cost: number | null
           maintenance_schedule_id: string | null
+          maintenance_type: string | null
           mechanic_id: string | null
           notes: string | null
+          notify_user: boolean | null
           odometer_at_service: number | null
           organization_id: string
           parts_cost: number | null
           priority: string | null
+          remark: string | null
+          request_completion_date: string | null
+          request_start_date: string | null
+          request_type: string | null
+          requested_for: string | null
           scheduled_date: string | null
           service_category: string | null
           service_description: string
@@ -20336,20 +20357,41 @@ export type Database = {
           approval_status?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          asset_criticality?: string | null
+          assigned_department?: string | null
           attachments?: Json | null
+          auto_approved?: boolean | null
+          auto_approved_reason?: string | null
           completed_date?: string | null
+          contact_preference?: string | null
           created_at?: string
+          created_by_email?: string | null
+          created_by_name?: string | null
+          created_by_phone?: string | null
+          created_by_user_id?: string | null
           downtime_hours?: number | null
+          driver_name?: string | null
+          driver_phone?: string | null
+          driver_type?: string | null
+          fuel_level?: number | null
           id?: string
           inspection_id?: string | null
+          km_reading?: number | null
           labor_cost?: number | null
           maintenance_schedule_id?: string | null
+          maintenance_type?: string | null
           mechanic_id?: string | null
           notes?: string | null
+          notify_user?: boolean | null
           odometer_at_service?: number | null
           organization_id: string
           parts_cost?: number | null
           priority?: string | null
+          remark?: string | null
+          request_completion_date?: string | null
+          request_start_date?: string | null
+          request_type?: string | null
+          requested_for?: string | null
           scheduled_date?: string | null
           service_category?: string | null
           service_description: string
@@ -20369,20 +20411,41 @@ export type Database = {
           approval_status?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          asset_criticality?: string | null
+          assigned_department?: string | null
           attachments?: Json | null
+          auto_approved?: boolean | null
+          auto_approved_reason?: string | null
           completed_date?: string | null
+          contact_preference?: string | null
           created_at?: string
+          created_by_email?: string | null
+          created_by_name?: string | null
+          created_by_phone?: string | null
+          created_by_user_id?: string | null
           downtime_hours?: number | null
+          driver_name?: string | null
+          driver_phone?: string | null
+          driver_type?: string | null
+          fuel_level?: number | null
           id?: string
           inspection_id?: string | null
+          km_reading?: number | null
           labor_cost?: number | null
           maintenance_schedule_id?: string | null
+          maintenance_type?: string | null
           mechanic_id?: string | null
           notes?: string | null
+          notify_user?: boolean | null
           odometer_at_service?: number | null
           organization_id?: string
           parts_cost?: number | null
           priority?: string | null
+          remark?: string | null
+          request_completion_date?: string | null
+          request_start_date?: string | null
+          request_type?: string | null
+          requested_for?: string | null
           scheduled_date?: string | null
           service_category?: string | null
           service_description?: string
