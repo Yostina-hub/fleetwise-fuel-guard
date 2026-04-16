@@ -1,6 +1,6 @@
 import { Suspense, useRef, useState, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Environment, ContactShadows, Text, RoundedBox, Center } from "@react-three/drei";
+import { OrbitControls, ContactShadows, Text, RoundedBox, Center } from "@react-three/drei";
 import * as THREE from "three";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -292,10 +292,12 @@ function VehicleScene({ vehicleType, color, status, plate, autoRotate }: {
 
   return (
     <>
-      <ambientLight intensity={0.4} />
-      <directionalLight position={[5, 8, 5]} intensity={1} castShadow />
-      <directionalLight position={[-3, 4, -3]} intensity={0.3} />
+      <ambientLight intensity={0.6} />
+      <directionalLight position={[5, 8, 5]} intensity={1.2} castShadow />
+      <directionalLight position={[-3, 4, -3]} intensity={0.4} />
+      <directionalLight position={[0, 2, -5]} intensity={0.3} />
       <spotLight position={[0, 6, 0]} intensity={0.5} angle={0.4} penumbra={0.5} />
+      <hemisphereLight args={["#b1e1ff", "#b97a20", 0.5]} />
 
       <group ref={groupRef}>
         <Center>
@@ -305,7 +307,6 @@ function VehicleScene({ vehicleType, color, status, plate, autoRotate }: {
       </group>
 
       <ContactShadows position={[0, -0.01, 0]} opacity={0.4} scale={8} blur={2} far={4} />
-      <Environment preset="city" />
       <OrbitControls
         enablePan={false}
         enableZoom={true}
