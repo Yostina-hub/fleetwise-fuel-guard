@@ -355,6 +355,37 @@ const DriverPortal = () => {
                   Open dispatch <ChevronRight className="w-4 h-4 ml-1" aria-hidden="true" />
                 </Button>
               </div>
+              {/* Active vehicle request assignment banner */}
+              {activeRequest && activeRequest.assigned_vehicle && (
+                <div className="mb-4 p-4 rounded-lg border border-success/30 bg-success/5">
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-2">
+                        <Badge className="bg-success/20 text-success border-success/30" variant="outline">
+                          <Car className="w-3 h-3 mr-1" aria-hidden="true" /> Vehicle Assigned
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">{activeRequest.request_number}</Badge>
+                        <Badge variant="outline" className="text-xs capitalize">{activeRequest.status}</Badge>
+                      </div>
+                      <p className="text-sm font-semibold">
+                        {activeRequest.assigned_vehicle.plate_number} · {activeRequest.assigned_vehicle.make} {activeRequest.assigned_vehicle.model}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1 truncate">
+                        {activeRequest.purpose || "—"}
+                        {activeRequest.destination && ` → ${activeRequest.destination}`}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {activeRequest.needed_from && `From ${format(new Date(activeRequest.needed_from), "MMM dd HH:mm")}`}
+                        {activeRequest.needed_until && ` · Until ${format(new Date(activeRequest.needed_until), "MMM dd HH:mm")}`}
+                      </p>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => navigate("/vehicle-requests")} className="shrink-0">
+                      View Request <ChevronRight className="w-4 h-4 ml-1" aria-hidden="true" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-3">
                 {trips?.active?.length === 0 && trips?.upcoming?.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground text-sm">
