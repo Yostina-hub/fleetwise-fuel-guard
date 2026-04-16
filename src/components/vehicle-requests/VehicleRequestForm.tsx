@@ -89,7 +89,7 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
 
       if (form.request_type === "daily_operation") {
         neededFrom = combineDateAndTime(form.date, form.start_time) || new Date().toISOString();
-        neededUntil = combineDateAndTime(form.date, form.end_time) || null;
+        neededUntil = combineDateAndTime(form.end_date || form.date, form.end_time) || null;
       } else {
         neededFrom = combineDateAndTime(form.start_date, form.start_date_time) || new Date().toISOString();
         neededUntil = combineDateAndTime(form.end_date, form.end_date_time) || null;
