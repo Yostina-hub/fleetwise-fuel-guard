@@ -305,93 +305,24 @@ const DriverMaintenanceRequest = () => {
           </CardContent>
         </Card>
 
-        {/* Create Dialog — simplified for drivers */}
+        {/* Create Dialog — Oracle EBS-style Create Work Request form */}
         <Dialog open={showCreate} onOpenChange={setShowCreate}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-warning" /> Report Vehicle Issue
-              </DialogTitle>
-              <DialogDescription>
-                {driverInfo?.vehicle
-                  ? `Reporting for ${driverInfo.vehicle.plate_number} (${driverInfo.vehicle.make} ${driverInfo.vehicle.model})`
-                  : "No vehicle assigned — contact Fleet Operations"}
-              </DialogDescription>
+          <DialogContent className="max-w-6xl max-h-[92vh] overflow-y-auto">
+            <DialogHeader className="sr-only">
+              <DialogTitle>Create Work Request</DialogTitle>
+              <DialogDescription>Submit a new maintenance work request for your assigned vehicle.</DialogDescription>
             </DialogHeader>
-
-            {driverInfo?.vehicle ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Issue Type *</Label>
-                    <Select value={form.request_type} onValueChange={v => setForm(f => ({ ...f, request_type: v }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="corrective">Something is broken</SelectItem>
-                        <SelectItem value="preventive">Scheduled service</SelectItem>
-                        <SelectItem value="breakdown">Vehicle won't start/move</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>How urgent?</Label>
-                    <Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">Can wait</SelectItem>
-                        <SelectItem value="medium">Soon</SelectItem>
-                        <SelectItem value="high">Urgent</SelectItem>
-                        <SelectItem value="critical">Vehicle unsafe</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div>
-                  <Label>Current Odometer (km)</Label>
-                  <Input
-                    type="number"
-                    value={form.km_reading}
-                    onChange={e => setForm(f => ({ ...f, km_reading: e.target.value }))}
-                    placeholder="Enter current km"
-                  />
-                </div>
-
-                <div>
-                  <Label>What's the problem? *</Label>
-                  <Textarea
-                    value={form.description}
-                    onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                    placeholder="Describe what's wrong with the vehicle..."
-                    rows={4}
-                  />
-                </div>
-
-                <div>
-                  <Label>Anything else to mention?</Label>
-                  <Textarea
-                    value={form.notes}
-                    onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                    placeholder="e.g. noise from the engine, warning light on dashboard..."
-                    rows={2}
-                  />
-                </div>
-
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
-                  <Button onClick={handleCreate} disabled={createRequest.isPending || !form.description.trim()}>
-                    {createRequest.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                    Submit Request
-                  </Button>
-                </DialogFooter>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <Car className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>No vehicle is assigned to you.</p>
-                <p className="text-sm">Please contact Fleet Operations to report your issue.</p>
-              </div>
-            )}
+            <CreateWorkRequestForm
+              vehicleId={driverInfo?.vehicle?.id}
+              vehiclePlate={driverInfo?.vehicle?.plate_number}
+              driverId={driverInfo?.driver?.id}
+              driverName={driverInfo?.driver ? `${driverInfo.driver.first_name} ${driverInfo.driver.last_name}` : undefined}
+              onCancel={() => setShowCreate(false)}
+              onSubmitted={() => {
+                setShowCreate(false);
+                queryClient.invalidateQueries({ queryKey: ["maintenance-requests"] });
+              }}
+            />
           </DialogContent>
         </Dialog>
 
