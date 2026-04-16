@@ -1,4 +1,5 @@
 import Layout from "@/components/Layout";
+import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Building2, Users, Tag, CalendarCheck, FileText, AlertTriangle, Truck } from "lucide-react";
@@ -7,7 +8,13 @@ import { PaymentRequestsTab } from "@/components/outsource/PaymentRequestsTab";
 import { CapacityAlertsTab } from "@/components/outsource/CapacityAlertsTab";
 import { AttendanceTab } from "@/components/outsource/AttendanceTab";
 
+const VALID_TABS = ["capacity", "suppliers", "resources", "catalog", "attendance", "payments"] as const;
+
 const OutsourceManagement = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const activeTab = (VALID_TABS as readonly string[]).includes(tabParam || "") ? (tabParam as string) : "capacity";
+
   return (
     <Layout>
       <div className="p-4 md:p-6 space-y-4">
@@ -19,7 +26,7 @@ const OutsourceManagement = () => {
           </div>
         </div>
 
-        <Tabs defaultValue="capacity" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v })} className="space-y-4">
           <TabsList className="grid grid-cols-6 w-full max-w-4xl">
             <TabsTrigger value="capacity"><AlertTriangle className="w-4 h-4 mr-1" /> Capacity</TabsTrigger>
             <TabsTrigger value="suppliers"><Users className="w-4 h-4 mr-1" /> Suppliers</TabsTrigger>
