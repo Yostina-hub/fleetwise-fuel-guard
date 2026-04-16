@@ -40,7 +40,7 @@ const OBD_GAUGES = [
 
 const OBDRemoteDiagnosticsPanel = () => {
   const { organizationId } = useOrganization();
-  const [selectedVehicle, setSelectedVehicle] = useState<string>("");
+  const [selectedVehicle, setSelectedVehicle] = useState<string>("all");
 
   const { data: vehicles = [] } = useQuery({
     queryKey: ["vehicles-obd", organizationId],
@@ -63,7 +63,7 @@ const OBDRemoteDiagnosticsPanel = () => {
         .eq("sensor_type", "obd2")
         .order("recorded_at", { ascending: false })
         .limit(50);
-      if (selectedVehicle) query = query.eq("vehicle_id", selectedVehicle);
+      if (selectedVehicle && selectedVehicle !== "all") query = query.eq("vehicle_id", selectedVehicle);
       const { data, error } = await query;
       if (error) throw error;
       return data || [];
