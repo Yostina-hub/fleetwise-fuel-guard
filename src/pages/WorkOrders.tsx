@@ -53,7 +53,7 @@ const WorkOrders = () => {
 
   return (
     <Layout>
-      <div className="p-4 md:p-8 space-y-6 animate-fade-in">
+      <div className="p-3 md:p-6 space-y-4 animate-fade-in overflow-x-hidden">
         <div className="flex items-center gap-3 slide-in-right">
           <div className="p-4 rounded-2xl glass-strong glow-strong">
             <ClipboardList className="h-8 w-8 text-primary float-animation" aria-hidden="true" />
@@ -75,13 +75,13 @@ const WorkOrders = () => {
           onExportReport={handleExportReport}
         />
 
-        <div className="grid lg:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 gap-4">
           <WorkOrdersInsightsCard {...insights} />
           <WorkOrdersTrendChart />
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4 glass p-1 h-14">
+          <TabsList className="grid w-full grid-cols-4 glass p-1 h-12">
             <TabsTrigger value="orders" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 h-full rounded-lg">
               <ClipboardList className="h-5 w-5" aria-hidden="true" />
               <span className="font-semibold hidden sm:inline">Work Orders</span>
