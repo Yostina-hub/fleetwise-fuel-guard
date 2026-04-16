@@ -392,9 +392,9 @@ const VehicleProfile = () => {
                 <TabsContent value="specifications" className="space-y-4 mt-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Card>
-                      <CardHeader className="pb-2"><CardTitle className="text-sm">Engine & Fuel</CardTitle></CardHeader>
+                      <CardHeader className="pb-2"><CardTitle className="text-sm">Engine & Energy</CardTitle></CardHeader>
                       <CardContent className="grid grid-cols-2 gap-x-4">
-                        <InfoField label="Fuel Type" value={v.fuel_type} icon={Fuel} />
+                        <InfoField label="Energy / Fuel Type" value={v.fuel_type?.replace(/_/g, " ")} icon={Fuel} />
                         <InfoField label="Tank Capacity" value={v.tank_capacity_liters ? `${v.tank_capacity_liters} L` : null} />
                         <InfoField label="Drive Type" value={v.drive_type} icon={Zap} />
                         <InfoField label="Engine Hours" value={v.engine_hours ? `${v.engine_hours} hrs` : null} icon={Clock} />
