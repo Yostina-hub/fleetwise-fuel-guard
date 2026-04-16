@@ -14,6 +14,7 @@ import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import LicenseExpiryBadge from "@/components/fleet/LicenseExpiryBadge";
+import { DeviceProfileCard } from "@/components/fleet/DeviceProfileCard";
 
 interface Props {
   vehicle: any;
