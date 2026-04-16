@@ -5,15 +5,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Clock, MapPin, Users, Car, Route } from "lucide-react";
+import { Clock, Users, Car, Route } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { DateTimePicker, combineDateAndTime } from "@/components/ui/date-time-picker";
-import { format } from "date-fns";
+import { LocationPickerField } from "@/components/shared/LocationPickerField";
+import { VEHICLE_TYPES_OPTIONS } from "@/components/fleet/formConstants";
 
 interface VehicleRequestFormProps {
   open: boolean;
@@ -25,10 +25,6 @@ const POOL_HIERARCHY: Record<string, string[]> = {
   zone: ["SWAAZ", "EAAZ"],
   region: ["NR", "SR"],
 };
-
-const VEHICLE_TYPES = [
-  "Sedan", "SUV", "Pickup", "Van", "Minibus", "Bus", "Truck", "Land Cruiser", "Double Cab",
-];
 
 const initialForm = {
   request_type: "daily_operation",
@@ -137,6 +133,8 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
   });
 
   const isDaily = form.request_type === "daily_operation";
+  const isProject = form.request_type === "project_operation";
+  const isField = form.request_type === "field_operation";
 
   const canSubmit = form.purpose && (isDaily ? form.date : form.start_date);
 
@@ -215,7 +213,7 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
           )}
 
           {/* Project Number - only for project operations */}
-          {form.request_type === "project_operation" && (
+          {isProject && (
             <div>
               <Label className="text-primary font-medium">Project Number</Label>
               <Input
@@ -226,23 +224,22 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
             </div>
           )}
 
+          {/* Departure & Destination from geofences/map */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="text-primary font-medium flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> Departure Place</Label>
-              <Input
-                value={form.departure_place}
-                onChange={e => update("departure_place", e.target.value)}
-                placeholder="Select Departure"
-              />
-            </div>
-            <div>
-              <Label className="text-primary font-medium flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> Destination Place</Label>
-              <Input
-                value={form.destination}
-                onChange={e => update("destination", e.target.value)}
-                placeholder="Search Destination..."
-              />
-            </div>
+            <LocationPickerField
+              label="Departure Place"
+              value={form.departure_place}
+              onChange={v => update("departure_place", v)}
+              placeholder="Select or type departure"
+              iconColor="text-green-500"
+            />
+            <LocationPickerField
+              label="Destination Place"
+              value={form.destination}
+              onChange={v => update("destination", v)}
+              placeholder="Select or type destination"
+              iconColor="text-red-500"
+            />
           </div>
 
           {/* Vehicles & Passengers */}
@@ -262,9 +259,11 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
             <div>
               <Label className="text-primary font-medium">Vehicle Type</Label>
               <Select value={form.vehicle_type} onValueChange={v => update("vehicle_type", v)}>
-                <SelectTrigger><SelectValue placeholder="Select Vehicle" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Select Vehicle Type" /></SelectTrigger>
                 <SelectContent>
-                  {VEHICLE_TYPES.map(vt => <SelectItem key={vt} value={vt}>{vt}</SelectItem>)}
+                  {VEHICLE_TYPES_OPTIONS.map(vt => (
+                    <SelectItem key={vt.value} value={vt.value}>{vt.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -314,6 +313,14 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
               rows={3}
             />
           </div>
+
+          {/* Dynamic info based on type */}
+          {isField && (
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-xs text-muted-foreground">
+              <p className="font-medium text-blue-400">Field Operation Note:</p>
+              <p>Field operations may require special vehicle types and extended durations. Ensure GPS tracking is enabled.</p>
+            </div>
+          )}
 
           {/* Approval Info */}
           <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
