@@ -18,6 +18,7 @@ import { TripStatsBar } from "@/components/trips/TripStatsBar";
 import { TripDetailPanel } from "@/components/trips/TripDetailPanel";
 import { TripCard } from "@/components/trips/TripCard";
 import { ActiveAssignments } from "@/components/scheduling/ActiveAssignments";
+import { CreateAssignmentDialog } from "@/components/scheduling/CreateAssignmentDialog";
 import { ApprovalHistory } from "@/components/scheduling/ApprovalHistory";
 import { CalendarView } from "@/components/scheduling/CalendarView";
 import { TimelineView } from "@/components/scheduling/TimelineView";
@@ -33,7 +34,7 @@ import { useTranslation } from 'react-i18next';
 const TripManagement = () => {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { requests, loading, submitRequest } = useTripRequests();
+  const { requests, loading, submitRequest, cancelRequest } = useTripRequests();
   const { pendingApprovals, approveRequest, rejectRequest } = useApprovals();
   const { isSuperAdmin, hasRole } = usePermissions();
   const canApprove = isSuperAdmin || hasRole("operations_manager") || hasRole("fleet_owner");
@@ -45,6 +46,7 @@ const TripManagement = () => {
   const [detailOpen, setDetailOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "trips");
 
   // Sync tab from URL changes (sidebar deep links)
@@ -382,10 +384,20 @@ const TripManagement = () => {
         open={detailOpen}
         onOpenChange={setDetailOpen}
         onSubmit={(id) => submitRequest.mutate(id)}
+        onAssign={(trip) => {
+          setDetailOpen(false);
+          setSelectedTrip(trip);
+          setAssignOpen(true);
+        }}
+        onCancel={(id) => {
+          cancelRequest.mutate(id);
+          setDetailOpen(false);
+        }}
       />
 
       <ExportScheduleDialog open={exportOpen} onOpenChange={setExportOpen} />
       <CreateTripRequestDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <CreateAssignmentDialog open={assignOpen} onOpenChange={setAssignOpen} />
     </Layout>
   );
 };
