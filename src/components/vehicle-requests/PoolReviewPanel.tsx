@@ -43,6 +43,7 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
     onSuccess: () => {
       toast.success("Pool review updated");
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
     },
     onError: (err: any) => toast.error(err.message),
   });
@@ -74,6 +75,7 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
     onSuccess: () => {
       toast.success("Vehicle assigned from pool");
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
       setExpandedId(null);
       setSelectedVehicle("");
       setSelectedDriver("");

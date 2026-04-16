@@ -33,6 +33,7 @@ export const RequesterFeedbackDialog = ({ request, open, onClose }: Props) => {
     onSuccess: () => {
       toast.success(t('feedback.submitted', 'Feedback submitted!'));
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
       onClose();
     },
     onError: (e: any) => toast.error(e.message),

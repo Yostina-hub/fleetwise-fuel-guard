@@ -39,6 +39,7 @@ export const DriverCheckInDialog = ({ request, open, onClose }: Props) => {
     onSuccess: () => {
       toast.success("Driver checked in successfully");
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
       onClose();
     },
     onError: (err: any) => toast.error(err.message),
@@ -70,6 +71,7 @@ export const DriverCheckInDialog = ({ request, open, onClose }: Props) => {
     onSuccess: () => {
       toast.success("Driver checked out — request completed");
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
       onClose();
     },
     onError: (err: any) => toast.error(err.message),
