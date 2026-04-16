@@ -63,13 +63,14 @@ const Auth = () => {
   const [pending2FAUserId, setPending2FAUserId] = useState<string | null>(null);
   const [verifying2FA, setVerifying2FA] = useState(false);
   const [pending2FACredentials, setPending2FACredentials] = useState<{ email: string; password: string } | null>(null);
+  const checking2FARef = useRef(false);
 
-  // Redirect if already logged in
+  // Redirect if already logged in (but not during 2FA check)
   useEffect(() => {
-    if (user) {
+    if (user && !pending2FA && !checking2FARef.current) {
       navigate("/");
     }
-  }, [user, navigate]);
+  }, [user, navigate, pending2FA]);
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
