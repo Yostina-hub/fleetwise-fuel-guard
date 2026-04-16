@@ -171,14 +171,14 @@ export const DriverDVIRPanel = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Driver *</Label>
-                  <Select value={form.driver_id} onValueChange={v => setForm(p => ({ ...p, driver_id: v }))}>
+                  <Select value={form.driver_id || undefined} onValueChange={v => setForm(p => ({ ...p, driver_id: v }))}>
                     <SelectTrigger><SelectValue placeholder="Select driver" /></SelectTrigger>
                     <SelectContent>{drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.first_name} {d.last_name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div>
                   <Label>Vehicle *</Label>
-                  <Select value={form.vehicle_id} onValueChange={v => setForm(p => ({ ...p, vehicle_id: v }))}>
+                  <Select value={form.vehicle_id || undefined} onValueChange={v => setForm(p => ({ ...p, vehicle_id: v }))}>
                     <SelectTrigger><SelectValue placeholder="Select vehicle" /></SelectTrigger>
                     <SelectContent>{vehicles.map(v => <SelectItem key={v.id} value={v.id}>{v.plate_number} — {v.make} {v.model}</SelectItem>)}</SelectContent>
                   </Select>
