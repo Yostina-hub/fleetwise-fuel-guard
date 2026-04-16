@@ -156,6 +156,12 @@ const WorkOrders = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <FuelWorkOrderDialog
+          open={fuelWoDialog.open}
+          onOpenChange={(o) => setFuelWoDialog((s) => ({ ...s, open: o }))}
+          workOrderId={fuelWoDialog.id}
+        />
       </div>
     </Layout>
   );
