@@ -7004,6 +7004,66 @@ export type Database = {
           },
         ]
       }
+      erp_sync_log: {
+        Row: {
+          attempt_number: number | null
+          created_at: string
+          error_message: string | null
+          id: string
+          organization_id: string
+          request_payload: Json | null
+          response_payload: Json | null
+          response_status_code: number | null
+          status: string
+          sync_type: string
+          triggered_by: string | null
+          work_order_id: string | null
+        }
+        Insert: {
+          attempt_number?: number | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          organization_id: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          response_status_code?: number | null
+          status?: string
+          sync_type?: string
+          triggered_by?: string | null
+          work_order_id?: string | null
+        }
+        Update: {
+          attempt_number?: number | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          organization_id?: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          response_status_code?: number | null
+          status?: string
+          sync_type?: string
+          triggered_by?: string | null
+          work_order_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_sync_log_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_sync_log_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_webhook_bridges: {
         Row: {
           auth_token: string | null
@@ -20548,6 +20608,87 @@ export type Database = {
           },
         ]
       }
+      work_order_operations: {
+        Row: {
+          assigned_hours: number | null
+          assigned_units: number | null
+          created_at: string
+          department: string | null
+          duration_hours: number | null
+          end_time: string | null
+          id: string
+          instances_assigned: number | null
+          notes: string | null
+          operation_description: string
+          organization_id: string
+          person_or_equipment: string | null
+          required_units: number | null
+          resource: string | null
+          resource_sequence: number | null
+          sequence_number: number
+          start_time: string | null
+          updated_at: string
+          work_order_id: string
+        }
+        Insert: {
+          assigned_hours?: number | null
+          assigned_units?: number | null
+          created_at?: string
+          department?: string | null
+          duration_hours?: number | null
+          end_time?: string | null
+          id?: string
+          instances_assigned?: number | null
+          notes?: string | null
+          operation_description: string
+          organization_id: string
+          person_or_equipment?: string | null
+          required_units?: number | null
+          resource?: string | null
+          resource_sequence?: number | null
+          sequence_number?: number
+          start_time?: string | null
+          updated_at?: string
+          work_order_id: string
+        }
+        Update: {
+          assigned_hours?: number | null
+          assigned_units?: number | null
+          created_at?: string
+          department?: string | null
+          duration_hours?: number | null
+          end_time?: string | null
+          id?: string
+          instances_assigned?: number | null
+          notes?: string | null
+          operation_description?: string
+          organization_id?: string
+          person_or_equipment?: string | null
+          required_units?: number | null
+          resource?: string | null
+          resource_sequence?: number | null
+          sequence_number?: number
+          start_time?: string | null
+          updated_at?: string
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_order_operations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_order_operations_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       work_order_parts: {
         Row: {
           created_at: string
@@ -20711,16 +20852,23 @@ export type Database = {
       }
       work_orders: {
         Row: {
+          activity_cause: string | null
+          activity_source: string | null
+          activity_type: string | null
+          additional_description: string | null
+          agreement_number: string | null
           approval_status: string | null
           approved_at: string | null
           approved_by: string | null
           asset_criticality: string | null
+          asset_group: string | null
           assigned_department: string | null
           attachments: Json | null
           auto_approved: boolean | null
           auto_approved_reason: string | null
           completed_date: string | null
           contact_preference: string | null
+          context_value: string | null
           created_at: string
           created_by_email: string | null
           created_by_name: string | null
@@ -20730,6 +20878,12 @@ export type Database = {
           driver_name: string | null
           driver_phone: string | null
           driver_type: string | null
+          erp_sync_attempts: number | null
+          failure_cause: string | null
+          failure_code: string | null
+          failure_resolution: string | null
+          firm_flag: boolean | null
+          firm_status: string | null
           fuel_level: number | null
           id: string
           inspection_id: string | null
@@ -20739,42 +20893,74 @@ export type Database = {
           maintenance_type: string | null
           mechanic_id: string | null
           notes: string | null
+          notification_required: boolean | null
           notify_user: boolean | null
           odometer_at_service: number | null
           organization_id: string
           parts_cost: number | null
+          pending_flag: boolean | null
+          planner: string | null
+          pm_suggested_end_date: string | null
+          pm_suggested_start_date: string | null
+          por_number: string | null
+          por_status: string | null
+          por_synced_at: string | null
           priority: string | null
+          project_code: string | null
           remark: string | null
+          remark_1: string | null
+          remark_2: string | null
+          remark_3: string | null
+          remark_4: string | null
           request_completion_date: string | null
           request_start_date: string | null
           request_type: string | null
           requested_for: string | null
+          schedule_name: string | null
           scheduled_date: string | null
           service_category: string | null
           service_description: string
+          shutdown_type: string | null
           status: string | null
+          supplier_magic_token: string | null
+          supplier_magic_token_expires_at: string | null
+          supplier_name: string | null
+          supplier_user_id: string | null
+          tagout_required: boolean | null
+          task_code: string | null
           technician_name: string | null
           total_cost: number | null
           updated_at: string
           vehicle_id: string
           vendor_id: string | null
           vendor_rating: number | null
+          warranty_active: boolean | null
           warranty_amount: number | null
           warranty_claim: boolean | null
+          warranty_expiration_date: string | null
+          wip_accounting_class: string | null
           work_order_number: string
+          work_order_type: string | null
           work_type: string
         }
         Insert: {
+          activity_cause?: string | null
+          activity_source?: string | null
+          activity_type?: string | null
+          additional_description?: string | null
+          agreement_number?: string | null
           approval_status?: string | null
           approved_at?: string | null
           approved_by?: string | null
           asset_criticality?: string | null
+          asset_group?: string | null
           assigned_department?: string | null
           attachments?: Json | null
           auto_approved?: boolean | null
           auto_approved_reason?: string | null
           completed_date?: string | null
           contact_preference?: string | null
+          context_value?: string | null
           created_at?: string
           created_by_email?: string | null
           created_by_name?: string | null
@@ -20784,6 +20970,12 @@ export type Database = {
           driver_name?: string | null
           driver_phone?: string | null
           driver_type?: string | null
+          erp_sync_attempts?: number | null
+          failure_cause?: string | null
+          failure_code?: string | null
+          failure_resolution?: string | null
+          firm_flag?: boolean | null
+          firm_status?: string | null
           fuel_level?: number | null
           id?: string
           inspection_id?: string | null
@@ -20793,42 +20985,74 @@ export type Database = {
           maintenance_type?: string | null
           mechanic_id?: string | null
           notes?: string | null
+          notification_required?: boolean | null
           notify_user?: boolean | null
           odometer_at_service?: number | null
           organization_id: string
           parts_cost?: number | null
+          pending_flag?: boolean | null
+          planner?: string | null
+          pm_suggested_end_date?: string | null
+          pm_suggested_start_date?: string | null
+          por_number?: string | null
+          por_status?: string | null
+          por_synced_at?: string | null
           priority?: string | null
+          project_code?: string | null
           remark?: string | null
+          remark_1?: string | null
+          remark_2?: string | null
+          remark_3?: string | null
+          remark_4?: string | null
           request_completion_date?: string | null
           request_start_date?: string | null
           request_type?: string | null
           requested_for?: string | null
+          schedule_name?: string | null
           scheduled_date?: string | null
           service_category?: string | null
           service_description: string
+          shutdown_type?: string | null
           status?: string | null
+          supplier_magic_token?: string | null
+          supplier_magic_token_expires_at?: string | null
+          supplier_name?: string | null
+          supplier_user_id?: string | null
+          tagout_required?: boolean | null
+          task_code?: string | null
           technician_name?: string | null
           total_cost?: number | null
           updated_at?: string
           vehicle_id: string
           vendor_id?: string | null
           vendor_rating?: number | null
+          warranty_active?: boolean | null
           warranty_amount?: number | null
           warranty_claim?: boolean | null
+          warranty_expiration_date?: string | null
+          wip_accounting_class?: string | null
           work_order_number: string
+          work_order_type?: string | null
           work_type: string
         }
         Update: {
+          activity_cause?: string | null
+          activity_source?: string | null
+          activity_type?: string | null
+          additional_description?: string | null
+          agreement_number?: string | null
           approval_status?: string | null
           approved_at?: string | null
           approved_by?: string | null
           asset_criticality?: string | null
+          asset_group?: string | null
           assigned_department?: string | null
           attachments?: Json | null
           auto_approved?: boolean | null
           auto_approved_reason?: string | null
           completed_date?: string | null
           contact_preference?: string | null
+          context_value?: string | null
           created_at?: string
           created_by_email?: string | null
           created_by_name?: string | null
@@ -20838,6 +21062,12 @@ export type Database = {
           driver_name?: string | null
           driver_phone?: string | null
           driver_type?: string | null
+          erp_sync_attempts?: number | null
+          failure_cause?: string | null
+          failure_code?: string | null
+          failure_resolution?: string | null
+          firm_flag?: boolean | null
+          firm_status?: string | null
           fuel_level?: number | null
           id?: string
           inspection_id?: string | null
@@ -20847,29 +21077,54 @@ export type Database = {
           maintenance_type?: string | null
           mechanic_id?: string | null
           notes?: string | null
+          notification_required?: boolean | null
           notify_user?: boolean | null
           odometer_at_service?: number | null
           organization_id?: string
           parts_cost?: number | null
+          pending_flag?: boolean | null
+          planner?: string | null
+          pm_suggested_end_date?: string | null
+          pm_suggested_start_date?: string | null
+          por_number?: string | null
+          por_status?: string | null
+          por_synced_at?: string | null
           priority?: string | null
+          project_code?: string | null
           remark?: string | null
+          remark_1?: string | null
+          remark_2?: string | null
+          remark_3?: string | null
+          remark_4?: string | null
           request_completion_date?: string | null
           request_start_date?: string | null
           request_type?: string | null
           requested_for?: string | null
+          schedule_name?: string | null
           scheduled_date?: string | null
           service_category?: string | null
           service_description?: string
+          shutdown_type?: string | null
           status?: string | null
+          supplier_magic_token?: string | null
+          supplier_magic_token_expires_at?: string | null
+          supplier_name?: string | null
+          supplier_user_id?: string | null
+          tagout_required?: boolean | null
+          task_code?: string | null
           technician_name?: string | null
           total_cost?: number | null
           updated_at?: string
           vehicle_id?: string
           vendor_id?: string | null
           vendor_rating?: number | null
+          warranty_active?: boolean | null
           warranty_amount?: number | null
           warranty_claim?: boolean | null
+          warranty_expiration_date?: string | null
+          wip_accounting_class?: string | null
           work_order_number?: string
+          work_order_type?: string | null
           work_type?: string
         }
         Relationships: [
