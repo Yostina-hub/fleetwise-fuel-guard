@@ -33,6 +33,12 @@ const Auth = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [signupPassword, setSignupPassword] = useState("");
   const [activeTab, setActiveTab] = useState("signin");
+  
+  // 2FA state
+  const [pending2FA, setPending2FA] = useState(false);
+  const [totpCode, setTotpCode] = useState("");
+  const [pending2FAUserId, setPending2FAUserId] = useState<string | null>(null);
+  const [verifying2FA, setVerifying2FA] = useState(false);
 
   // Redirect if already logged in
   useEffect(() => {
