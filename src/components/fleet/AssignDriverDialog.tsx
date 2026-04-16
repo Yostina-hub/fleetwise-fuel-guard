@@ -33,6 +33,7 @@ interface AssignDriverDialogProps {
     make: string;
     model: string;
     assignedDriver?: string;
+    driverId?: string | null;
   } | null;
 }
 
@@ -43,6 +44,13 @@ export default function AssignDriverDialog({ open, onOpenChange, vehicle }: Assi
   const queryClient = useQueryClient();
 
   const [selectedDriverId, setSelectedDriverId] = useState<string>("none");
+
+  // Initialize selected driver when dialog opens
+  useEffect(() => {
+    if (open && vehicle) {
+      setSelectedDriverId(vehicle.driverId || "none");
+    }
+  }, [open, vehicle]);
 
   const assignMutation = useMutation({
     mutationFn: async (driverId: string | null) => {
