@@ -362,69 +362,125 @@ export default function AssetRegistryTab() {
         </div>
       </Card>
 
-      {/* Import Vehicles Dialog */}
+      {/* Import Assets Dialog */}
       <Dialog open={showImport} onOpenChange={setShowImport}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Truck className="w-5 h-5" />Import Vehicles as Assets</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              {importType === "vehicles" ? <Truck className="w-5 h-5" /> : <Radio className="w-5 h-5" />}
+              Import {importType === "vehicles" ? "Vehicles" : "Devices"} as Assets
+            </DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Select vehicles to automatically register as fleet assets. Already-linked vehicles are excluded.
+            Select {importType === "vehicles" ? "vehicles" : "GPS trackers/IoT devices"} to register as fleet assets. Already-linked items are excluded.
           </p>
-          {unlinkededVehicles.length === 0 ? (
-            <p className="text-center py-8 text-muted-foreground">All vehicles are already linked as assets.</p>
-          ) : (
-            <ScrollArea className="max-h-[400px]">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-10">
-                      <Checkbox
-                        checked={selectedVehicles.length === unlinkededVehicles.length && unlinkededVehicles.length > 0}
-                        onCheckedChange={toggleAll}
-                      />
-                    </TableHead>
-                    <TableHead>Plate</TableHead>
-                    <TableHead>Make / Model</TableHead>
-                    <TableHead>Year</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Acq. Cost</TableHead>
-                    <TableHead>Depot</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {unlinkededVehicles.map(v => (
-                    <TableRow key={v.id} className="cursor-pointer" onClick={() => toggleVehicle(v.id)}>
-                      <TableCell>
-                        <Checkbox checked={selectedVehicles.includes(v.id)} onCheckedChange={() => toggleVehicle(v.id)} />
-                      </TableCell>
-                      <TableCell className="font-medium">{v.plate_number}</TableCell>
-                      <TableCell>{v.make} {v.model}</TableCell>
-                      <TableCell>{v.year}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={cn("capitalize text-xs",
-                          v.status === "active" ? "bg-success/10 text-success" :
-                          v.status === "maintenance" ? "bg-warning/10 text-warning" : "bg-muted text-muted-foreground"
-                        )}>{v.status}</Badge>
-                      </TableCell>
-                      <TableCell>{v.acquisition_cost ? `${v.acquisition_cost.toLocaleString()} ETB` : "—"}</TableCell>
-                      <TableCell className="text-sm">{v.depot?.name || "—"}</TableCell>
+
+          {importType === "vehicles" ? (
+            unlinkededVehicles.length === 0 ? (
+              <p className="text-center py-8 text-muted-foreground">All vehicles are already linked as assets.</p>
+            ) : (
+              <ScrollArea className="max-h-[400px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10">
+                        <Checkbox
+                          checked={selectedVehicles.length === unlinkededVehicles.length && unlinkededVehicles.length > 0}
+                          onCheckedChange={toggleAll}
+                        />
+                      </TableHead>
+                      <TableHead>Plate</TableHead>
+                      <TableHead>Make / Model</TableHead>
+                      <TableHead>Year</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Acq. Cost</TableHead>
+                      <TableHead>Depot</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </ScrollArea>
+                  </TableHeader>
+                  <TableBody>
+                    {unlinkededVehicles.map(v => (
+                      <TableRow key={v.id} className="cursor-pointer" onClick={() => toggleVehicle(v.id)}>
+                        <TableCell><Checkbox checked={selectedVehicles.includes(v.id)} onCheckedChange={() => toggleVehicle(v.id)} /></TableCell>
+                        <TableCell className="font-medium">{v.plate_number}</TableCell>
+                        <TableCell>{v.make} {v.model}</TableCell>
+                        <TableCell>{v.year}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={cn("capitalize text-xs",
+                            v.status === "active" ? "bg-success/10 text-success" :
+                            v.status === "maintenance" ? "bg-warning/10 text-warning" : "bg-muted text-muted-foreground"
+                          )}>{v.status}</Badge>
+                        </TableCell>
+                        <TableCell>{v.acquisition_cost ? `${v.acquisition_cost.toLocaleString()} ETB` : "—"}</TableCell>
+                        <TableCell className="text-sm">{v.depot?.name || "—"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            )
+          ) : (
+            unlinkedDevices.length === 0 ? (
+              <p className="text-center py-8 text-muted-foreground">All devices are already linked as assets.</p>
+            ) : (
+              <ScrollArea className="max-h-[400px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10">
+                        <Checkbox
+                          checked={selectedDevices.length === unlinkedDevices.length && unlinkedDevices.length > 0}
+                          onCheckedChange={toggleAll}
+                        />
+                      </TableHead>
+                      <TableHead>IMEI</TableHead>
+                      <TableHead>Model</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Vehicle</TableHead>
+                      <TableHead>Installed</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {unlinkedDevices.map((d: any) => (
+                      <TableRow key={d.id} className="cursor-pointer" onClick={() => toggleDevice(d.id)}>
+                        <TableCell><Checkbox checked={selectedDevices.includes(d.id)} onCheckedChange={() => toggleDevice(d.id)} /></TableCell>
+                        <TableCell className="font-mono text-xs">{d.imei}</TableCell>
+                        <TableCell>{d.tracker_model}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={cn("capitalize text-xs",
+                            d.status === "active" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
+                          )}>{d.status}</Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">{d.vehicles?.plate_number || "—"}</TableCell>
+                        <TableCell className="text-sm">{d.install_date || "—"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            )
           )}
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowImport(false)}>Cancel</Button>
-            <Button
-              onClick={() => importMutation.mutate()}
-              disabled={selectedVehicles.length === 0 || importMutation.isPending}
-              className="gap-1.5"
-            >
-              <Download className="w-4 h-4" />
-              {importMutation.isPending ? "Importing..." : `Import ${selectedVehicles.length} Vehicle${selectedVehicles.length !== 1 ? "s" : ""}`}
-            </Button>
+            {importType === "vehicles" ? (
+              <Button
+                onClick={() => importMutation.mutate()}
+                disabled={selectedVehicles.length === 0 || importMutation.isPending}
+                className="gap-1.5"
+              >
+                <Download className="w-4 h-4" />
+                {importMutation.isPending ? "Importing..." : `Import ${selectedVehicles.length} Vehicle${selectedVehicles.length !== 1 ? "s" : ""}`}
+              </Button>
+            ) : (
+              <Button
+                onClick={() => importDevicesMutation.mutate()}
+                disabled={selectedDevices.length === 0 || importDevicesMutation.isPending}
+                className="gap-1.5"
+              >
+                <Download className="w-4 h-4" />
+                {importDevicesMutation.isPending ? "Importing..." : `Import ${selectedDevices.length} Device${selectedDevices.length !== 1 ? "s" : ""}`}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
