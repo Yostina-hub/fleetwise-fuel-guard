@@ -17,7 +17,7 @@ interface UserRole {
   organization_id: string;
 }
 
-const ALLOWED_ADMIN_EMAILS = ["abel.birara@gmail.com", "eshibel@gmail.com", "henyize@gmail.com", "henyize@outlook.com", "amanexo19@gmail.com", "roba@fleet.com"];
+
 
 export function useAuthRaw() {
   const [user, setUser] = useState<User | null>(null);
@@ -143,20 +143,8 @@ export function useAuthRaw() {
       clearRetryTimeouts();
       activeUserIdRef.current = nextUser?.id ?? null;
 
-      if (nextUser && nextSession) {
-      const normalizedEmail = nextUser.email?.trim().toLowerCase();
-        if (!normalizedEmail || !ALLOWED_ADMIN_EMAILS.includes(normalizedEmail)) {
-          await supabase.auth.signOut();
-          sessionTrackedRef.current = null;
-          activeUserIdRef.current = null;
-          setSession(null);
-          setUser(null);
-          setProfile(null);
-          setRoles([]);
-          setLoading(false);
-          return;
-        }
-      }
+      // Access control is enforced by RBAC (user_roles table).
+      // Only users created via the admin create-user function will have roles assigned.
 
       setSession(nextSession);
       setUser(nextUser);
@@ -213,19 +201,6 @@ export function useAuthRaw() {
 
   const signIn = async (email: string, password: string) => {
     const normalizedEmail = email.trim().toLowerCase();
-    if (!ALLOWED_ADMIN_EMAILS.includes(normalizedEmail)) {
-      recordLoginEvent({
-        user_id: "",
-        organization_id: "",
-        status: "blocked",
-        failure_reason: "Email not in admin allowlist",
-      }).catch(() => {});
-      return {
-        error: {
-          message: "Access restricted to authorized administrators only.",
-        } as any,
-      };
-    }
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     
