@@ -68,7 +68,7 @@ async function analyzeVehicle(vehicle: any, alerts: any[], schedules: any[], mai
     model: vehicle.model,
     year: vehicle.year,
     age_years: ageYears,
-    mileage_km: vehicle.current_mileage_km ?? 0,
+    mileage_km: vehicle.odometer_km ?? 0,
     fuel_type: vehicle.fuel_type,
     overdue_schedules: overdueCount,
     high_severity_alerts_30d: alerts.filter(
@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
     // Pick vehicles needing analysis (oldest first, prioritize active)
     const { data: vehicles, error: vErr } = await supabase
       .from("vehicles")
-      .select("id, plate_number, make, model, year, current_mileage_km, fuel_type, status")
+      .select("id, plate_number, make, model, year, odometer_km, fuel_type, status")
       .eq("organization_id", orgId)
       .in("status", ["active", "maintenance"])
       .order("year", { ascending: true, nullsFirst: false })
@@ -170,7 +170,7 @@ Deno.serve(async (req) => {
           predicted_failure_component: pred.predicted_failure_component,
           predicted_failure_window_days: pred.predicted_failure_window_days,
           contributing_factors: {
-            mileage_km: v.current_mileage_km,
+            mileage_km: (v as any).odometer_km,
             vehicle_age_years: v.year ? new Date().getFullYear() - v.year : null,
             overdue_schedules: (schedules ?? []).filter((s: any) => s.next_due_date && new Date(s.next_due_date) < new Date()).length,
             recent_high_alerts_30d: (alerts ?? []).filter((a: any) =>
