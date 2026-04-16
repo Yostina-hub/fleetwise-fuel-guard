@@ -43,10 +43,21 @@ interface RawProfile {
   id: string;
   email: string | null;
   full_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  middle_name: string | null;
   avatar_url: string | null;
   phone: string | null;
   created_at: string;
   organization_id: string | null;
+  employee_code: string | null;
+  department: string | null;
+  job_title: string | null;
+  hire_date: string | null;
+  status: string | null;
+  employee_type: string | null;
+  linked_employee_id: string | null;
+  linked_driver_id: string | null;
 }
 interface RawDriver {
   id: string;
