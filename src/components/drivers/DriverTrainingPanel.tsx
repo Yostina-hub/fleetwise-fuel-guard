@@ -64,6 +64,7 @@ export const DriverTrainingPanel = ({ driverId }: DriverTrainingPanelProps) => {
   const [selectedTab, setSelectedTab] = useState("all");
   const [showAddCourse, setShowAddCourse] = useState(false);
   const [showComplete, setShowComplete] = useState<string | null>(null);
+  const [showMaterials, setShowMaterials] = useState<{ id: string; title: string } | null>(null);
   const [score, setScore] = useState([80]);
   const [saving, setSaving] = useState(false);
   const [courseForm, setCourseForm] = useState({
