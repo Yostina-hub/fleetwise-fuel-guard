@@ -515,6 +515,17 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
             />
           )}
         </AnimatePresence>
+      </div>
+
+      {/* Template Gallery Modal */}
+      <AnimatePresence>
+        {showTemplates && (
+          <WorkflowTemplateGallery
+            onSelectTemplate={handleLoadTemplate}
+            onClose={() => setShowTemplates(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
