@@ -675,39 +675,66 @@ export type Database = {
         Row: {
           brand: string | null
           created_at: string
+          diesel_available: boolean | null
+          diesel_price_per_liter: number | null
+          diesel_stock_liters: number | null
           geofence_id: string | null
+          hours_of_operation: string | null
           id: string
           is_active: boolean | null
+          last_stock_update: string | null
           lat: number
           lng: number
           name: string
           organization_id: string
+          petrol_available: boolean | null
+          petrol_price_per_liter: number | null
+          petrol_stock_liters: number | null
+          phone: string | null
           radius_meters: number | null
           updated_at: string
         }
         Insert: {
           brand?: string | null
           created_at?: string
+          diesel_available?: boolean | null
+          diesel_price_per_liter?: number | null
+          diesel_stock_liters?: number | null
           geofence_id?: string | null
+          hours_of_operation?: string | null
           id?: string
           is_active?: boolean | null
+          last_stock_update?: string | null
           lat: number
           lng: number
           name: string
           organization_id: string
+          petrol_available?: boolean | null
+          petrol_price_per_liter?: number | null
+          petrol_stock_liters?: number | null
+          phone?: string | null
           radius_meters?: number | null
           updated_at?: string
         }
         Update: {
           brand?: string | null
           created_at?: string
+          diesel_available?: boolean | null
+          diesel_price_per_liter?: number | null
+          diesel_stock_liters?: number | null
           geofence_id?: string | null
+          hours_of_operation?: string | null
           id?: string
           is_active?: boolean | null
+          last_stock_update?: string | null
           lat?: number
           lng?: number
           name?: string
           organization_id?: string
+          petrol_available?: boolean | null
+          petrol_price_per_liter?: number | null
+          petrol_stock_liters?: number | null
+          phone?: string | null
           radius_meters?: number | null
           updated_at?: string
         }
@@ -8218,6 +8245,72 @@ export type Database = {
           },
         ]
       }
+      fuel_emoney_approvals: {
+        Row: {
+          acted_at: string | null
+          amount: number
+          approver_id: string
+          approver_role: string
+          comment: string | null
+          created_at: string | null
+          fuel_work_order_id: string
+          id: string
+          initiated_by: string | null
+          is_delegated: boolean | null
+          organization_id: string
+          original_approver_id: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          acted_at?: string | null
+          amount: number
+          approver_id: string
+          approver_role: string
+          comment?: string | null
+          created_at?: string | null
+          fuel_work_order_id: string
+          id?: string
+          initiated_by?: string | null
+          is_delegated?: boolean | null
+          organization_id: string
+          original_approver_id?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          acted_at?: string | null
+          amount?: number
+          approver_id?: string
+          approver_role?: string
+          comment?: string | null
+          created_at?: string | null
+          fuel_work_order_id?: string
+          id?: string
+          initiated_by?: string | null
+          is_delegated?: boolean | null
+          organization_id?: string
+          original_approver_id?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_emoney_approvals_fuel_work_order_id_fkey"
+            columns: ["fuel_work_order_id"]
+            isOneToOne: false
+            referencedRelation: "fuel_work_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_emoney_approvals_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fuel_event_processing_logs: {
         Row: {
           config_snapshot: Json | null
@@ -9193,6 +9286,69 @@ export type Database = {
           },
         ]
       }
+      fuel_wo_approvals: {
+        Row: {
+          acted_at: string | null
+          action: string
+          approver_id: string | null
+          approver_role: string
+          comment: string | null
+          created_at: string | null
+          fuel_work_order_id: string
+          id: string
+          is_delegated: boolean | null
+          organization_id: string
+          original_approver_id: string | null
+          step: number
+          updated_at: string | null
+        }
+        Insert: {
+          acted_at?: string | null
+          action?: string
+          approver_id?: string | null
+          approver_role: string
+          comment?: string | null
+          created_at?: string | null
+          fuel_work_order_id: string
+          id?: string
+          is_delegated?: boolean | null
+          organization_id: string
+          original_approver_id?: string | null
+          step: number
+          updated_at?: string | null
+        }
+        Update: {
+          acted_at?: string | null
+          action?: string
+          approver_id?: string | null
+          approver_role?: string
+          comment?: string | null
+          created_at?: string | null
+          fuel_work_order_id?: string
+          id?: string
+          is_delegated?: boolean | null
+          organization_id?: string
+          original_approver_id?: string | null
+          step?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_wo_approvals_fuel_work_order_id_fkey"
+            columns: ["fuel_work_order_id"]
+            isOneToOne: false
+            referencedRelation: "fuel_work_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_wo_approvals_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fuel_work_orders: {
         Row: {
           activity_cause: string | null
@@ -9202,6 +9358,7 @@ export type Database = {
           agreement_number: string | null
           amount_remaining: number | null
           amount_used: number | null
+          approval_status: string | null
           approved_at: string | null
           approved_by: string | null
           asset_activity: string | null
@@ -9225,6 +9382,8 @@ export type Database = {
           enable_material_issue_request: boolean | null
           failure_cause: string | null
           failure_code: string | null
+          final_approved_at: string | null
+          final_approved_by: string | null
           firm: boolean | null
           fuel_request_id: string
           id: string
@@ -9278,6 +9437,7 @@ export type Database = {
           agreement_number?: string | null
           amount_remaining?: number | null
           amount_used?: number | null
+          approval_status?: string | null
           approved_at?: string | null
           approved_by?: string | null
           asset_activity?: string | null
@@ -9301,6 +9461,8 @@ export type Database = {
           enable_material_issue_request?: boolean | null
           failure_cause?: string | null
           failure_code?: string | null
+          final_approved_at?: string | null
+          final_approved_by?: string | null
           firm?: boolean | null
           fuel_request_id: string
           id?: string
@@ -9354,6 +9516,7 @@ export type Database = {
           agreement_number?: string | null
           amount_remaining?: number | null
           amount_used?: number | null
+          approval_status?: string | null
           approved_at?: string | null
           approved_by?: string | null
           asset_activity?: string | null
@@ -9377,6 +9540,8 @@ export type Database = {
           enable_material_issue_request?: boolean | null
           failure_cause?: string | null
           failure_code?: string | null
+          final_approved_at?: string | null
+          final_approved_by?: string | null
           firm?: boolean | null
           fuel_request_id?: string
           id?: string
@@ -21847,6 +22012,14 @@ export type Database = {
         Args: { p_action: string; p_approval_id: string; p_comment?: string }
         Returns: Json
       }
+      action_fuel_emoney_approval: {
+        Args: { p_action: string; p_approval_id: string; p_comment?: string }
+        Returns: Json
+      }
+      action_fuel_wo_approval: {
+        Args: { p_action: string; p_approval_id: string; p_comment?: string }
+        Returns: Json
+      }
       check_account_lockout: {
         Args: { p_email: string }
         Returns: {
@@ -21960,6 +22133,24 @@ export type Database = {
           vehicle_id: string
         }[]
       }
+      get_my_pending_emoney_approvals: {
+        Args: never
+        Returns: {
+          amount: number
+          approval_id: string
+          approver_role: string
+          created_at: string
+          driver_phone: string
+          fuel_work_order_id: string
+          generator_name: string
+          initiated_by_name: string
+          is_delegated: boolean
+          original_approver_name: string
+          request_number: string
+          vehicle_plate: string
+          work_order_number: string
+        }[]
+      }
       get_my_pending_fuel_approvals: {
         Args: never
         Returns: {
@@ -21977,6 +22168,51 @@ export type Database = {
           requested_by_name: string
           step: number
           vehicle_plate: string
+        }[]
+      }
+      get_my_pending_fuel_wo_approvals: {
+        Args: never
+        Returns: {
+          approval_id: string
+          approver_role: string
+          created_at: string
+          emoney_amount: number
+          fuel_work_order_id: string
+          generator_name: string
+          is_delegated: boolean
+          original_approver_name: string
+          priority: string
+          request_number: string
+          step: number
+          vehicle_plate: string
+          work_order_number: string
+        }[]
+      }
+      get_nearby_fuel_stations: {
+        Args: {
+          p_fuel_type?: string
+          p_lat: number
+          p_lng: number
+          p_max_km?: number
+          p_min_liters?: number
+        }
+        Returns: {
+          brand: string
+          diesel_available: boolean
+          diesel_price_per_liter: number
+          diesel_stock_liters: number
+          distance_km: number
+          has_requested_fuel: boolean
+          hours_of_operation: string
+          id: string
+          last_stock_update: string
+          lat: number
+          lng: number
+          name: string
+          petrol_available: boolean
+          petrol_price_per_liter: number
+          petrol_stock_liters: number
+          phone: string
         }[]
       }
       get_user_organization: { Args: { _user_id: string }; Returns: string }
@@ -21999,6 +22235,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      initiate_fuel_emoney_request: {
+        Args: { p_amount: number; p_wo_id: string }
+        Returns: string
       }
       initiate_work_order_approval: {
         Args: { p_work_order_id: string }
@@ -22080,6 +22320,7 @@ export type Database = {
         Args: { p_fuel_request_id: string }
         Returns: string
       }
+      route_fuel_wo_approval: { Args: { p_wo_id: string }; Returns: string }
       route_vehicle_request_approval: {
         Args: { p_request_id: string }
         Returns: string
