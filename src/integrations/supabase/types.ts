@@ -7705,6 +7705,248 @@ export type Database = {
           },
         ]
       }
+      ev_work_orders: {
+        Row: {
+          activity_cause: string | null
+          activity_source: string | null
+          activity_type: string | null
+          actual_cost: number | null
+          additional_description: string | null
+          agreement_number: string | null
+          approval_status: string | null
+          approved_at: string | null
+          approved_by: string | null
+          asset_activity: string | null
+          asset_group: string | null
+          asset_number: string | null
+          assigned_to: string | null
+          charging_session_id: string | null
+          charging_type: string | null
+          connector_type: string | null
+          context: string | null
+          cost_per_kwh: number | null
+          created_at: string
+          created_by_user_id: string | null
+          current_soc_percent: number | null
+          department: string | null
+          department_description: string | null
+          description: string | null
+          duration: number | null
+          enable_material_issue_request: boolean | null
+          energy_delivered_kwh: number | null
+          energy_required_kwh: number | null
+          estimated_cost: number | null
+          failure_cause: string | null
+          failure_code: string | null
+          final_approved_at: string | null
+          final_approved_by: string | null
+          firm: boolean | null
+          id: string
+          notes: string | null
+          notification_required: boolean | null
+          organization_id: string
+          planned: boolean | null
+          planner_id: string | null
+          planner_name: string | null
+          priority: string | null
+          project: string | null
+          rebuild_parent: string | null
+          remark1: string | null
+          remark2: string | null
+          remark3: string | null
+          remark4: string | null
+          request_number: string | null
+          resolution: string | null
+          scheduled_completion_date: string | null
+          scheduled_start_date: string | null
+          shutdown_type: string | null
+          station_id: string | null
+          status: string
+          supplier_name: string | null
+          tagout_required: boolean | null
+          target_soc_percent: number | null
+          task: string | null
+          updated_at: string
+          vehicle_id: string | null
+          warranty_active: boolean | null
+          warranty_expiration_date: string | null
+          warranty_status: string | null
+          wip_accounting_class: string | null
+          wo_status: string | null
+          work_order_number: string
+          work_order_type: string | null
+        }
+        Insert: {
+          activity_cause?: string | null
+          activity_source?: string | null
+          activity_type?: string | null
+          actual_cost?: number | null
+          additional_description?: string | null
+          agreement_number?: string | null
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          asset_activity?: string | null
+          asset_group?: string | null
+          asset_number?: string | null
+          assigned_to?: string | null
+          charging_session_id?: string | null
+          charging_type?: string | null
+          connector_type?: string | null
+          context?: string | null
+          cost_per_kwh?: number | null
+          created_at?: string
+          created_by_user_id?: string | null
+          current_soc_percent?: number | null
+          department?: string | null
+          department_description?: string | null
+          description?: string | null
+          duration?: number | null
+          enable_material_issue_request?: boolean | null
+          energy_delivered_kwh?: number | null
+          energy_required_kwh?: number | null
+          estimated_cost?: number | null
+          failure_cause?: string | null
+          failure_code?: string | null
+          final_approved_at?: string | null
+          final_approved_by?: string | null
+          firm?: boolean | null
+          id?: string
+          notes?: string | null
+          notification_required?: boolean | null
+          organization_id: string
+          planned?: boolean | null
+          planner_id?: string | null
+          planner_name?: string | null
+          priority?: string | null
+          project?: string | null
+          rebuild_parent?: string | null
+          remark1?: string | null
+          remark2?: string | null
+          remark3?: string | null
+          remark4?: string | null
+          request_number?: string | null
+          resolution?: string | null
+          scheduled_completion_date?: string | null
+          scheduled_start_date?: string | null
+          shutdown_type?: string | null
+          station_id?: string | null
+          status?: string
+          supplier_name?: string | null
+          tagout_required?: boolean | null
+          target_soc_percent?: number | null
+          task?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+          warranty_active?: boolean | null
+          warranty_expiration_date?: string | null
+          warranty_status?: string | null
+          wip_accounting_class?: string | null
+          wo_status?: string | null
+          work_order_number: string
+          work_order_type?: string | null
+        }
+        Update: {
+          activity_cause?: string | null
+          activity_source?: string | null
+          activity_type?: string | null
+          actual_cost?: number | null
+          additional_description?: string | null
+          agreement_number?: string | null
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          asset_activity?: string | null
+          asset_group?: string | null
+          asset_number?: string | null
+          assigned_to?: string | null
+          charging_session_id?: string | null
+          charging_type?: string | null
+          connector_type?: string | null
+          context?: string | null
+          cost_per_kwh?: number | null
+          created_at?: string
+          created_by_user_id?: string | null
+          current_soc_percent?: number | null
+          department?: string | null
+          department_description?: string | null
+          description?: string | null
+          duration?: number | null
+          enable_material_issue_request?: boolean | null
+          energy_delivered_kwh?: number | null
+          energy_required_kwh?: number | null
+          estimated_cost?: number | null
+          failure_cause?: string | null
+          failure_code?: string | null
+          final_approved_at?: string | null
+          final_approved_by?: string | null
+          firm?: boolean | null
+          id?: string
+          notes?: string | null
+          notification_required?: boolean | null
+          organization_id?: string
+          planned?: boolean | null
+          planner_id?: string | null
+          planner_name?: string | null
+          priority?: string | null
+          project?: string | null
+          rebuild_parent?: string | null
+          remark1?: string | null
+          remark2?: string | null
+          remark3?: string | null
+          remark4?: string | null
+          request_number?: string | null
+          resolution?: string | null
+          scheduled_completion_date?: string | null
+          scheduled_start_date?: string | null
+          shutdown_type?: string | null
+          station_id?: string | null
+          status?: string
+          supplier_name?: string | null
+          tagout_required?: boolean | null
+          target_soc_percent?: number | null
+          task?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+          warranty_active?: boolean | null
+          warranty_expiration_date?: string | null
+          warranty_status?: string | null
+          wip_accounting_class?: string | null
+          wo_status?: string | null
+          work_order_number?: string
+          work_order_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ev_work_orders_charging_session_id_fkey"
+            columns: ["charging_session_id"]
+            isOneToOne: false
+            referencedRelation: "ev_charging_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ev_work_orders_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ev_work_orders_station_id_fkey"
+            columns: ["station_id"]
+            isOneToOne: false
+            referencedRelation: "ev_charging_stations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ev_work_orders_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fleet_assets: {
         Row: {
           asset_code: string
