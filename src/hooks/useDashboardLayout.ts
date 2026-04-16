@@ -110,6 +110,19 @@ export function useDashboardLayout() {
     return widget ? widget.visible !== false : true;
   };
 
+  const getWidgetSize = (type: string): "small" | "medium" | "large" => {
+    const widgets = activeLayout?.widgets || DEFAULT_WIDGETS;
+    const widget = widgets.find(w => w.type === type);
+    return widget?.size || "medium";
+  };
+
+  const getWidgetColSpan = (type: string, gridCols: number = 3): number => {
+    const size = getWidgetSize(type);
+    if (size === "large") return gridCols;
+    if (size === "medium") return Math.min(2, gridCols);
+    return 1;
+  };
+
   const saveMutation = useMutation({
     mutationFn: async ({ layoutId, name, widgets }: { layoutId?: string; name: string; widgets: DashboardWidgetConfig[] }) => {
       if (!organizationId || !user) throw new Error("Not authenticated");
