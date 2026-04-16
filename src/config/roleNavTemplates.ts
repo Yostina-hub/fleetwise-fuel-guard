@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import type { NavItem } from "@/components/sidebar/SidebarNav";
 
-type T = (key: string, fallback?: string) => string;
+type T = (key: string, fallback?: any) => string;
 
 /** Driver: focused on their own trips, fuel, vehicle issues, and safety. */
 const driverNav = (t: T): NavItem[] => [
