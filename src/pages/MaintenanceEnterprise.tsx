@@ -7,6 +7,7 @@ import {
   MessageSquare, CreditCard, ClipboardCheck
 } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
+import { usePermissions } from "@/hooks/usePermissions";
 import MaintenanceTicketsTab from "@/components/maintenance-enterprise/MaintenanceTicketsTab";
 import MaintenanceContractsTab from "@/components/maintenance-enterprise/MaintenanceContractsTab";
 import MaintenanceCostTab from "@/components/maintenance-enterprise/MaintenanceCostTab";
