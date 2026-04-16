@@ -100,7 +100,7 @@ export const useUnifiedPeople = () => {
 
       const profilesQ = supabase
         .from("profiles")
-        .select("id, email, full_name, avatar_url, phone, created_at, organization_id");
+        .select("id, email, full_name, first_name, last_name, middle_name, avatar_url, phone, created_at, organization_id, employee_code, department, job_title, hire_date, status, employee_type, linked_employee_id, linked_driver_id");
       const driversQ = supabase
         .from("drivers")
         .select("id, user_id, first_name, last_name, email, phone, avatar_url, status, organization_id, created_at");
