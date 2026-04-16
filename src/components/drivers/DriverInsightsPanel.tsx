@@ -168,8 +168,14 @@ Type options: risk_prediction, coaching_tip, performance_trend, fuel_optimizatio
 
   return (
     <div className="space-y-6">
-      {/* AI Insights Alert */}
-      {unacknowledgedInsights.length > 0 && (
+      {/* Generate AI Insights Button */}
+      <div className="flex items-center justify-between">
+        <div />
+        <Button size="sm" onClick={handleGenerateInsights} disabled={generating} className="gap-1.5">
+          {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+          Generate AI Insights
+        </Button>
+      </div>
         <Card className={cn(
           "glass-strong border-2",
           getSeverityColor(unacknowledgedInsights[0].severity)
@@ -360,9 +366,12 @@ Type options: risk_prediction, coaching_tip, performance_trend, fuel_optimizatio
         {/* Active Goals */}
         <Card className="glass">
           <CardHeader>
-            <div className="flex items-center gap-2">
-              <Target className="w-5 h-5 text-primary" />
-              <CardTitle>Active Goals</CardTitle>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Target className="w-5 h-5 text-primary" />
+                <CardTitle>Active Goals</CardTitle>
+              </div>
+              <CreateGoalDialog driverId={driverId} onSubmit={async (goal) => { await createGoal.mutateAsync(goal); }} />
             </div>
           </CardHeader>
           <CardContent>
