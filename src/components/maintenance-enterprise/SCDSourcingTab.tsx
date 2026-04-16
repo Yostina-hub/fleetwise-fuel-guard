@@ -46,7 +46,7 @@ const SCDSourcingTab = () => {
       if (!organizationId) return [];
       const { data } = await supabase
         .from("supplier_profiles")
-        .select("id, name")
+        .select("id, company_name")
         .eq("organization_id", organizationId)
         .eq("is_active", true);
       return data || [];
@@ -155,11 +155,11 @@ const SCDSourcingTab = () => {
               <Select value={supplierId} onValueChange={(v) => {
                 setSupplierId(v);
                 const s = suppliers.find((x: any) => x.id === v);
-                setSupplierName(s?.name || "");
+                setSupplierName(s?.company_name || "");
               }}>
                 <SelectTrigger><SelectValue placeholder="Select supplier" /></SelectTrigger>
                 <SelectContent>
-                  {suppliers.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                  {suppliers.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.company_name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
