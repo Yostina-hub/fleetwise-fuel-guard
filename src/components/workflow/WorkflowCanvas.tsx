@@ -218,7 +218,8 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
             nodes: serializedNodes,
             edges: serializedEdges,
             status: workflowStatus,
-          })
+            cron_expression: cronExpression || null,
+          } as any)
           .eq("id", workflowId);
         if (error) throw error;
       } else {
@@ -231,8 +232,9 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
             nodes: serializedNodes,
             edges: serializedEdges,
             status: workflowStatus,
+            cron_expression: cronExpression || null,
             created_by: user?.id,
-          })
+          } as any)
           .select("id")
           .single();
         if (error) throw error;
