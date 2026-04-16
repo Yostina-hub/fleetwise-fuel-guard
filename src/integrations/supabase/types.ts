@@ -8424,81 +8424,117 @@ export type Database = {
       fuel_requests: {
         Row: {
           actual_cost: number | null
+          actual_liters: number | null
           approved_at: string | null
           approved_by: string | null
+          clearance_status: string
           cost_center: string | null
           created_at: string
           current_odometer: number | null
+          deviation_justification: string | null
+          deviation_percent: number | null
           driver_id: string | null
+          efficiency_km_per_liter: number | null
+          emoney_amount: number | null
+          emoney_status: string | null
           estimated_cost: number | null
           fuel_type: string | null
+          fuel_work_order_id: string | null
           fulfilled_at: string | null
+          generator_id: string | null
           id: string
           liters_approved: number | null
           liters_requested: number
           notes: string | null
           organization_id: string
+          previous_odometer: number | null
           purpose: string | null
           rejected_reason: string | null
           request_number: string
+          request_type: string
           requested_at: string
           requested_by: string
           station_id: string | null
           status: string
           updated_at: string
           vehicle_id: string
+          wallet_transfer_ref: string | null
         }
         Insert: {
           actual_cost?: number | null
+          actual_liters?: number | null
           approved_at?: string | null
           approved_by?: string | null
+          clearance_status?: string
           cost_center?: string | null
           created_at?: string
           current_odometer?: number | null
+          deviation_justification?: string | null
+          deviation_percent?: number | null
           driver_id?: string | null
+          efficiency_km_per_liter?: number | null
+          emoney_amount?: number | null
+          emoney_status?: string | null
           estimated_cost?: number | null
           fuel_type?: string | null
+          fuel_work_order_id?: string | null
           fulfilled_at?: string | null
+          generator_id?: string | null
           id?: string
           liters_approved?: number | null
           liters_requested: number
           notes?: string | null
           organization_id: string
+          previous_odometer?: number | null
           purpose?: string | null
           rejected_reason?: string | null
           request_number: string
+          request_type?: string
           requested_at?: string
           requested_by: string
           station_id?: string | null
           status?: string
           updated_at?: string
           vehicle_id: string
+          wallet_transfer_ref?: string | null
         }
         Update: {
           actual_cost?: number | null
+          actual_liters?: number | null
           approved_at?: string | null
           approved_by?: string | null
+          clearance_status?: string
           cost_center?: string | null
           created_at?: string
           current_odometer?: number | null
+          deviation_justification?: string | null
+          deviation_percent?: number | null
           driver_id?: string | null
+          efficiency_km_per_liter?: number | null
+          emoney_amount?: number | null
+          emoney_status?: string | null
           estimated_cost?: number | null
           fuel_type?: string | null
+          fuel_work_order_id?: string | null
           fulfilled_at?: string | null
+          generator_id?: string | null
           id?: string
           liters_approved?: number | null
           liters_requested?: number
           notes?: string | null
           organization_id?: string
+          previous_odometer?: number | null
           purpose?: string | null
           rejected_reason?: string | null
           request_number?: string
+          request_type?: string
           requested_at?: string
           requested_by?: string
           station_id?: string | null
           status?: string
           updated_at?: string
           vehicle_id?: string
+          wallet_transfer_ref?: string | null
         }
         Relationships: [
           {
@@ -8506,6 +8542,20 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_requests_fuel_work_order_id_fkey"
+            columns: ["fuel_work_order_id"]
+            isOneToOne: false
+            referencedRelation: "fuel_work_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_requests_generator_id_fkey"
+            columns: ["generator_id"]
+            isOneToOne: false
+            referencedRelation: "generators"
             referencedColumns: ["id"]
           },
           {
@@ -8731,6 +8781,94 @@ export type Database = {
           },
         ]
       }
+      fuel_work_orders: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          assigned_to: string | null
+          created_at: string
+          driver_wallet_id: string | null
+          emoney_amount: number | null
+          emoney_approved_at: string | null
+          emoney_approved_by: string | null
+          emoney_initiated: boolean
+          emoney_transfer_ref: string | null
+          emoney_transfer_status: string | null
+          fuel_request_id: string
+          id: string
+          notes: string | null
+          organization_id: string
+          station_id: string | null
+          status: string
+          updated_at: string
+          work_order_number: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          assigned_to?: string | null
+          created_at?: string
+          driver_wallet_id?: string | null
+          emoney_amount?: number | null
+          emoney_approved_at?: string | null
+          emoney_approved_by?: string | null
+          emoney_initiated?: boolean
+          emoney_transfer_ref?: string | null
+          emoney_transfer_status?: string | null
+          fuel_request_id: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          station_id?: string | null
+          status?: string
+          updated_at?: string
+          work_order_number: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          assigned_to?: string | null
+          created_at?: string
+          driver_wallet_id?: string | null
+          emoney_amount?: number | null
+          emoney_approved_at?: string | null
+          emoney_approved_by?: string | null
+          emoney_initiated?: boolean
+          emoney_transfer_ref?: string | null
+          emoney_transfer_status?: string | null
+          fuel_request_id?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          station_id?: string | null
+          status?: string
+          updated_at?: string
+          work_order_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_work_orders_fuel_request_id_fkey"
+            columns: ["fuel_request_id"]
+            isOneToOne: false
+            referencedRelation: "fuel_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_work_orders_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_work_orders_station_id_fkey"
+            columns: ["station_id"]
+            isOneToOne: false
+            referencedRelation: "approved_fuel_stations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gdpr_requests: {
         Row: {
           expires_at: string | null
@@ -8780,6 +8918,65 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "gdpr_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      generators: {
+        Row: {
+          created_at: string
+          current_fuel_level_percent: number | null
+          fuel_type: string
+          id: string
+          last_refuel_date: string | null
+          location: string | null
+          model: string | null
+          name: string
+          notes: string | null
+          organization_id: string
+          serial_number: string | null
+          status: string
+          tank_capacity_liters: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_fuel_level_percent?: number | null
+          fuel_type?: string
+          id?: string
+          last_refuel_date?: string | null
+          location?: string | null
+          model?: string | null
+          name: string
+          notes?: string | null
+          organization_id: string
+          serial_number?: string | null
+          status?: string
+          tank_capacity_liters?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_fuel_level_percent?: number | null
+          fuel_type?: string
+          id?: string
+          last_refuel_date?: string | null
+          location?: string | null
+          model?: string | null
+          name?: string
+          notes?: string | null
+          organization_id?: string
+          serial_number?: string | null
+          status?: string
+          tank_capacity_liters?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generators_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
