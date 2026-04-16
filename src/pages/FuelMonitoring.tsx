@@ -1,7 +1,7 @@
 import { useMemo, useState, useRef } from "react";
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Fuel, AlertTriangle, Loader2, Warehouse, FileText, Droplet, MapPin } from "lucide-react";
+import { Fuel, AlertTriangle, Loader2, Warehouse, FileText, Droplet, MapPin, BarChart3 } from "lucide-react";
 import { useFuelEvents } from "@/hooks/useFuelEvents";
 import { useFuelTransactions } from "@/hooks/useFuelTransactions";
 import { useVehicles } from "@/hooks/useVehicles";
@@ -26,6 +26,7 @@ import FuelCostBreakdown from "@/components/fuel/FuelCostBreakdown";
 import FuelBudgetTracker from "@/components/fuel/FuelBudgetTracker";
 import { FuelPageContext } from "@/contexts/FuelPageContext";
 import { useTranslation } from "react-i18next";
+import FuelComprehensiveReportsTab from "@/components/fuel/FuelComprehensiveReportsTab";
 
 const FuelMonitoring = () => {
   const { t } = useTranslation();
