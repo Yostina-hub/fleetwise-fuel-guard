@@ -145,8 +145,8 @@ const DriverMaintenanceDialog = ({ open, onOpenChange, driverId, vehicleId, vehi
 
             <DialogFooter>
               <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button onClick={handleSubmit} disabled={createRequest.isPending || !form.description.trim()}>
-                {createRequest.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" aria-hidden="true" />}
+              <Button onClick={handleSubmit} disabled={submitting || !form.description.trim()}>
+                {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" aria-hidden="true" />}
                 Submit Request
               </Button>
             </DialogFooter>
