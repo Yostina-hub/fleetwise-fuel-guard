@@ -92,7 +92,8 @@ export function MapLocationPickerDialog({
         });
 
         if (res.ok) {
-          const data: SearchResult[] = await res.json();
+          const json = await res.json();
+          const data: SearchResult[] = Array.isArray(json) ? json : Array.isArray(json?.results) ? json.results : [];
           setSearchResults(data);
           if (data.length === 0) {
             setSearchError("No matching locations found.");
