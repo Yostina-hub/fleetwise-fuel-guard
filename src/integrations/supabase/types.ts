@@ -14775,20 +14775,81 @@ export type Database = {
           },
         ]
       }
+      predictive_health_snapshots: {
+        Row: {
+          analysis_method: string | null
+          avg_health_score: number
+          created_at: string
+          critical_count: number
+          high_count: number
+          id: string
+          low_count: number
+          medium_count: number
+          organization_id: string
+          snapshot_date: string
+          total_estimated_cost_etb: number | null
+          vehicles_analyzed: number
+        }
+        Insert: {
+          analysis_method?: string | null
+          avg_health_score: number
+          created_at?: string
+          critical_count?: number
+          high_count?: number
+          id?: string
+          low_count?: number
+          medium_count?: number
+          organization_id: string
+          snapshot_date?: string
+          total_estimated_cost_etb?: number | null
+          vehicles_analyzed?: number
+        }
+        Update: {
+          analysis_method?: string | null
+          avg_health_score?: number
+          created_at?: string
+          critical_count?: number
+          high_count?: number
+          id?: string
+          low_count?: number
+          medium_count?: number
+          organization_id?: string
+          snapshot_date?: string
+          total_estimated_cost_etb?: number | null
+          vehicles_analyzed?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "predictive_health_snapshots_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       predictive_maintenance_scores: {
         Row: {
+          ai_confidence: number | null
+          ai_model: string | null
+          ai_reasoning: string | null
+          analysis_method: string | null
+          component_health: Json | null
           computed_at: string
           contributing_factors: Json | null
           created_at: string
           dismiss_reason: string | null
           dismissed_at: string | null
           dismissed_by: string | null
+          estimated_cost_impact_etb: number | null
+          estimated_downtime_days: number | null
           health_score: number
           id: string
           organization_id: string
           predicted_failure_component: string | null
           predicted_failure_window_days: number | null
           recommended_action: string | null
+          recommended_parts: string[] | null
           recommended_priority: string | null
           risk_level: string
           status: string
@@ -14797,18 +14858,26 @@ export type Database = {
           work_order_id: string | null
         }
         Insert: {
+          ai_confidence?: number | null
+          ai_model?: string | null
+          ai_reasoning?: string | null
+          analysis_method?: string | null
+          component_health?: Json | null
           computed_at?: string
           contributing_factors?: Json | null
           created_at?: string
           dismiss_reason?: string | null
           dismissed_at?: string | null
           dismissed_by?: string | null
+          estimated_cost_impact_etb?: number | null
+          estimated_downtime_days?: number | null
           health_score?: number
           id?: string
           organization_id: string
           predicted_failure_component?: string | null
           predicted_failure_window_days?: number | null
           recommended_action?: string | null
+          recommended_parts?: string[] | null
           recommended_priority?: string | null
           risk_level?: string
           status?: string
@@ -14817,18 +14886,26 @@ export type Database = {
           work_order_id?: string | null
         }
         Update: {
+          ai_confidence?: number | null
+          ai_model?: string | null
+          ai_reasoning?: string | null
+          analysis_method?: string | null
+          component_health?: Json | null
           computed_at?: string
           contributing_factors?: Json | null
           created_at?: string
           dismiss_reason?: string | null
           dismissed_at?: string | null
           dismissed_by?: string | null
+          estimated_cost_impact_etb?: number | null
+          estimated_downtime_days?: number | null
           health_score?: number
           id?: string
           organization_id?: string
           predicted_failure_component?: string | null
           predicted_failure_window_days?: number | null
           recommended_action?: string | null
+          recommended_parts?: string[] | null
           recommended_priority?: string | null
           risk_level?: string
           status?: string
