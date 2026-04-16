@@ -76,6 +76,26 @@ export const VehicleRequestsPanel = () => {
     enabled: !!organizationId,
   });
 
+  const filteredRequests = useMemo(() => {
+    let filtered = requests;
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((r: any) => r.status === statusFilter);
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      filtered = filtered.filter((r: any) =>
+        r.request_number?.toLowerCase().includes(q) ||
+        r.requester_name?.toLowerCase().includes(q) ||
+        r.departure_place?.toLowerCase().includes(q) ||
+        r.destination?.toLowerCase().includes(q) ||
+        r.assigned_vehicle?.plate_number?.toLowerCase().includes(q) ||
+        r.pool_name?.toLowerCase().includes(q) ||
+        r.purpose?.toLowerCase().includes(q)
+      );
+    }
+    return filtered;
+  }, [requests, search, statusFilter]);
+
   const pending = requests.filter((r: any) => r.status === "pending").length;
   const assigned = requests.filter((r: any) => r.status === "assigned").length;
   const completed = requests.filter((r: any) => r.status === "completed").length;
