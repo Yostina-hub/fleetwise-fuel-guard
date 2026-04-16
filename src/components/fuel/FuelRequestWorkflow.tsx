@@ -32,6 +32,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { TelebirrEmoneyPanel } from "./TelebirrEmoneyPanel";
 import { FuelClarificationPanel } from "./FuelClarificationPanel";
 import { PendingApprovalsPanel } from "./PendingApprovalsPanel";
+import { PendingFuelWoApprovalsPanel } from "./PendingFuelWoApprovalsPanel";
+import { PendingEmoneyApprovalsPanel } from "./PendingEmoneyApprovalsPanel";
+import { NearbyStationsPanel } from "./NearbyStationsPanel";
 import { FuelWorkOrderDialog } from "./FuelWorkOrderDialog";
 import { FuelWorkOrdersTab } from "./FuelWorkOrdersTab";
 
@@ -788,8 +791,10 @@ export const FuelRequestWorkflow = () => {
         </div>
       </div>
 
-      {/* Delegation-aware pending approvals panel */}
+      {/* Delegation-aware pending approvals panels */}
       <PendingApprovalsPanel />
+      <PendingFuelWoApprovalsPanel />
+      <PendingEmoneyApprovalsPanel />
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
@@ -1549,6 +1554,14 @@ export const FuelRequestWorkflow = () => {
                     driverPhone={showDetail.driver_phone}
                     approvedAmount={Number(showDetail.estimated_cost || 0)}
                     canApprove={canApprove}
+                  />
+                )}
+
+                {/* Step 10: Nearby approved stations with availability */}
+                {showDetail.status === "approved" && (
+                  <NearbyStationsPanel
+                    fuelType={showDetail.fuel_type === "petrol" ? "petrol" : "diesel"}
+                    minLiters={Number(showDetail.liters_approved || showDetail.liters_requested || 0)}
                   />
                 )}
 
