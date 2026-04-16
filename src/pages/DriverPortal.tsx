@@ -1,28 +1,42 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Car, Wrench, Fuel, FileText, Award, Clock, MapPin, Activity,
-  Loader2, ChevronRight, AlertTriangle, CheckCircle2, Calendar, Shield, History
+  Car, FileText, Award, Clock, MapPin, Activity,
+  Loader2, ChevronRight, AlertTriangle, CheckCircle2, Calendar, Shield, History,
+  Inbox, PlayCircle, StopCircle
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format, formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
 import DriverQuickStats from "@/components/driver-portal/DriverQuickStats";
 import DriverQuickActions from "@/components/driver-portal/DriverQuickActions";
+import DriverFuelRequestDialog from "@/components/driver-portal/DriverFuelRequestDialog";
+import DriverVehicleRequestDialog from "@/components/driver-portal/DriverVehicleRequestDialog";
+import DriverInspectionDialog from "@/components/driver-portal/DriverInspectionDialog";
+import DriverMaintenanceDialog from "@/components/driver-portal/DriverMaintenanceDialog";
+import DriverSubmissionsTab from "@/components/driver-portal/DriverSubmissionsTab";
 
 const DriverPortal = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
   const [activeTab, setActiveTab] = useState("assignments");
 
-  // Driver self info + assigned vehicle
+  // Dialog states
+  const [showMaintenance, setShowMaintenance] = useState(false);
+  const [showFuel, setShowFuel] = useState(false);
+  const [showVehicle, setShowVehicle] = useState(false);
+  const [showInspection, setShowInspection] = useState(false);
+
+  // Driver self info + assigned vehicle + auth user id
   const { data: driverData, isLoading: driverLoading } = useQuery({
     queryKey: ["driver-portal-self", organizationId],
     queryFn: async () => {
@@ -32,12 +46,13 @@ const DriverPortal = () => {
 
       const { data: driver } = await supabase
         .from("drivers")
-        .select("id, first_name, last_name, license_number, license_expiry, status, total_trips, total_distance_km, avatar_url")
+        .select("id, first_name, last_name, license_number, license_expiry, status, total_trips, total_distance_km, avatar_url, phone")
         .eq("organization_id", organizationId)
         .eq("user_id", userData.user.id)
         .maybeSingle();
 
-      if (!driver) return { driver: null, vehicle: null };
+      const userId = userData.user.id;
+      if (!driver) return { driver: null, vehicle: null, userId };
 
       const { data: vehicle } = await supabase
         .from("vehicles")
@@ -46,25 +61,29 @@ const DriverPortal = () => {
         .eq("assigned_driver_id", driver.id)
         .maybeSingle();
 
-      return { driver, vehicle };
+      return { driver, vehicle, userId };
     },
     enabled: !!organizationId,
   });
 
   const driverId = driverData?.driver?.id;
+  const userId = driverData?.userId;
+  const vehicle = driverData?.vehicle;
+  const driver = driverData?.driver;
+  const driverName = driver ? `${driver.first_name} ${driver.last_name}` : undefined;
 
-  // Today's & upcoming trips
+  // Today's & upcoming trips + dispatch jobs
   const { data: trips } = useQuery({
     queryKey: ["driver-portal-trips", driverId],
     queryFn: async () => {
       if (!driverId) return { active: [], upcoming: [], recent: [] };
 
       const [{ data: active }, { data: upcoming }, { data: recent }] = await Promise.all([
-        supabase.from("trips").select("id, start_time, end_time, status, distance_km, start_location, end_location")
-          .eq("driver_id", driverId).in("status", ["in_progress", "scheduled"])
-          .order("start_time", { ascending: true }).limit(5),
+        supabase.from("dispatch_jobs").select("id, job_number, status, priority, pickup_location_name, dropoff_location_name, scheduled_pickup_at, actual_pickup_at, actual_dropoff_at")
+          .eq("driver_id", driverId).in("status", ["assigned", "dispatched", "in_progress"])
+          .order("scheduled_pickup_at", { ascending: true }).limit(10),
         supabase.from("dispatch_jobs").select("id, job_number, scheduled_pickup_at, pickup_location_name, dropoff_location_name, status, priority")
-          .eq("driver_id", driverId).in("status", ["assigned", "dispatched", "pending"])
+          .eq("driver_id", driverId).in("status", ["pending"])
           .order("scheduled_pickup_at", { ascending: true }).limit(5),
         supabase.from("trips").select("id, start_time, end_time, distance_km, start_location, end_location")
           .eq("driver_id", driverId).eq("status", "completed")
@@ -92,7 +111,7 @@ const DriverPortal = () => {
     enabled: !!driverId,
   });
 
-  // Open requests (maintenance + fuel)
+  // Open requests counts
   const { data: openRequests } = useQuery({
     queryKey: ["driver-portal-requests", driverId],
     queryFn: async () => {
@@ -100,7 +119,7 @@ const DriverPortal = () => {
       const [m, f] = await Promise.all([
         supabase.from("maintenance_requests").select("id", { count: "exact", head: true })
           .eq("driver_id", driverId).not("status", "in", "(completed,rejected,cancelled)"),
-        supabase.from("fuel_requests").select("id", { count: "exact", head: true })
+        (supabase as any).from("fuel_requests").select("id", { count: "exact", head: true })
           .eq("driver_id", driverId).in("status", ["pending", "approved"]),
       ]);
       return { maintenance: m.count || 0, fuel: f.count || 0 };
@@ -108,12 +127,42 @@ const DriverPortal = () => {
     enabled: !!driverId,
   });
 
-  // Documents/compliance status
-  const licenseExpiry = driverData?.driver?.license_expiry;
+  // License expiry
+  const licenseExpiry = driver?.license_expiry;
   const daysUntilExpiry = useMemo(() => {
     if (!licenseExpiry) return null;
     return Math.ceil((new Date(licenseExpiry).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
   }, [licenseExpiry]);
+
+  // Check-in / Check-out for dispatch job
+  const handleStartJob = async (jobId: string) => {
+    try {
+      const { error } = await supabase.from("dispatch_jobs").update({
+        status: "in_progress",
+        actual_pickup_at: new Date().toISOString(),
+      }).eq("id", jobId);
+      if (error) throw error;
+      toast.success("Trip started — drive safely!");
+      queryClient.invalidateQueries({ queryKey: ["driver-portal-trips"] });
+    } catch (e: any) {
+      toast.error(e.message || "Failed to start trip");
+    }
+  };
+
+  const handleCompleteJob = async (jobId: string) => {
+    try {
+      const { error } = await supabase.from("dispatch_jobs").update({
+        status: "completed",
+        actual_dropoff_at: new Date().toISOString(),
+        completed_at: new Date().toISOString(),
+      }).eq("id", jobId);
+      if (error) throw error;
+      toast.success("Trip completed");
+      queryClient.invalidateQueries({ queryKey: ["driver-portal-trips"] });
+    } catch (e: any) {
+      toast.error(e.message || "Failed to complete trip");
+    }
+  };
 
   if (driverLoading) {
     return (
@@ -125,13 +174,10 @@ const DriverPortal = () => {
     );
   }
 
-  const driver = driverData?.driver;
-  const vehicle = driverData?.vehicle;
-
   return (
     <Layout>
       <div className="p-4 md:p-8 space-y-6 animate-fade-in">
-        {/* Header — matches Admin layout */}
+        {/* Header */}
         <div className="flex items-center gap-3">
           <Shield className="h-8 w-8 text-primary" aria-hidden="true" />
           <div>
@@ -170,12 +216,12 @@ const DriverPortal = () => {
           openFuel={openRequests?.fuel || 0}
         />
 
-        {/* Quick Actions */}
+        {/* Quick Actions — open dialogs (no navigation) */}
         <DriverQuickActions
-          onReportIssue={() => navigate("/driver-maintenance-request")}
-          onRequestFuel={() => navigate("/fuel-management")}
-          onRequestVehicle={() => navigate("/vehicle-requests")}
-          onPreTripInspection={() => navigate("/inspections")}
+          onReportIssue={() => setShowMaintenance(true)}
+          onRequestFuel={() => setShowFuel(true)}
+          onRequestVehicle={() => setShowVehicle(true)}
+          onPreTripInspection={() => setShowInspection(true)}
           onMyDocuments={() => navigate("/document-management")}
         />
 
@@ -186,6 +232,11 @@ const DriverPortal = () => {
               <Calendar className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline">Assignments</span>
               <span className="sm:hidden">Trips</span>
+            </TabsTrigger>
+            <TabsTrigger value="submissions" className="gap-2">
+              <Inbox className="h-4 w-4" aria-hidden="true" />
+              <span className="hidden sm:inline">My Submissions</span>
+              <span className="sm:hidden">Requests</span>
             </TabsTrigger>
             <TabsTrigger value="performance" className="gap-2">
               <Award className="h-4 w-4" aria-hidden="true" />
@@ -206,10 +257,10 @@ const DriverPortal = () => {
             <Card className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-base font-semibold flex items-center gap-2">
-                  <Calendar className="w-4 h-4" aria-hidden="true" /> Today's Assignments
+                  <Calendar className="w-4 h-4" aria-hidden="true" /> My Assignments
                 </h2>
-                <Button size="sm" variant="ghost" onClick={() => navigate("/driver-management")}>
-                  View all <ChevronRight className="w-4 h-4 ml-1" aria-hidden="true" />
+                <Button size="sm" variant="ghost" onClick={() => navigate("/dispatch-management")}>
+                  Open dispatch <ChevronRight className="w-4 h-4 ml-1" aria-hidden="true" />
                 </Button>
               </div>
               <div className="space-y-3">
@@ -220,43 +271,67 @@ const DriverPortal = () => {
                   </div>
                 ) : (
                   <>
-                    {trips?.active?.map((t: any) => (
-                      <div key={t.id} className="p-3 rounded-lg border border-primary/20 bg-primary/5 flex items-center justify-between">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <Badge className="bg-primary/20 text-primary border-primary/30" variant="outline">{t.status}</Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {t.start_time ? format(new Date(t.start_time), "HH:mm") : "—"}
-                            </span>
+                    {trips?.active?.map((j: any) => {
+                      const inProgress = j.status === "in_progress";
+                      return (
+                        <div key={j.id} className="p-3 rounded-lg border border-primary/20 bg-primary/5">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Badge className="bg-primary/20 text-primary border-primary/30" variant="outline">{j.status}</Badge>
+                                <Badge variant="outline" className="text-xs">{j.job_number}</Badge>
+                                {j.priority && (
+                                  <Badge variant={j.priority === "high" ? "destructive" : "outline"} className="text-xs capitalize">
+                                    {j.priority}
+                                  </Badge>
+                                )}
+                                <span className="text-xs text-muted-foreground">
+                                  {j.scheduled_pickup_at ? format(new Date(j.scheduled_pickup_at), "MMM dd HH:mm") : "—"}
+                                </span>
+                              </div>
+                              <p className="text-sm mt-2 truncate flex items-center gap-1">
+                                <MapPin className="w-3 h-3" aria-hidden="true" /> {j.pickup_location_name || "—"} → {j.dropoff_location_name || "—"}
+                              </p>
+                            </div>
+                            <div className="flex flex-col gap-2 shrink-0">
+                              {!inProgress ? (
+                                <Button size="sm" onClick={() => handleStartJob(j.id)} className="gap-1">
+                                  <PlayCircle className="w-4 h-4" aria-hidden="true" /> Check In
+                                </Button>
+                              ) : (
+                                <Button size="sm" variant="outline" onClick={() => handleCompleteJob(j.id)} className="gap-1">
+                                  <StopCircle className="w-4 h-4" aria-hidden="true" /> Check Out
+                                </Button>
+                              )}
+                            </div>
                           </div>
-                          <p className="text-sm mt-1 truncate flex items-center gap-1">
-                            <MapPin className="w-3 h-3" aria-hidden="true" /> {t.start_location || "—"} → {t.end_location || "—"}
-                          </p>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     {trips?.upcoming?.map((j: any) => (
-                      <div key={j.id} className="p-3 rounded-lg border border-border bg-muted/20 flex items-center justify-between">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-xs">{j.job_number}</Badge>
-                            <Badge variant={j.priority === "high" ? "destructive" : "outline"} className="text-xs capitalize">
-                              {j.priority}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {j.scheduled_pickup_at ? format(new Date(j.scheduled_pickup_at), "MMM dd HH:mm") : "—"}
-                            </span>
-                          </div>
-                          <p className="text-sm mt-1 truncate flex items-center gap-1">
-                            <MapPin className="w-3 h-3" aria-hidden="true" /> {j.pickup_location_name || "—"} → {j.dropoff_location_name || "—"}
-                          </p>
+                      <div key={j.id} className="p-3 rounded-lg border border-border bg-muted/20">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="outline" className="text-xs">{j.job_number}</Badge>
+                          <Badge variant={j.priority === "high" ? "destructive" : "outline"} className="text-xs capitalize">
+                            {j.priority}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {j.scheduled_pickup_at ? format(new Date(j.scheduled_pickup_at), "MMM dd HH:mm") : "—"}
+                          </span>
                         </div>
+                        <p className="text-sm mt-1 truncate flex items-center gap-1">
+                          <MapPin className="w-3 h-3" aria-hidden="true" /> {j.pickup_location_name || "—"} → {j.dropoff_location_name || "—"}
+                        </p>
                       </div>
                     ))}
                   </>
                 )}
               </div>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="submissions">
+            <DriverSubmissionsTab driverId={driverId} organizationId={organizationId} userId={userId} />
           </TabsContent>
 
           <TabsContent value="performance">
@@ -376,6 +451,37 @@ const DriverPortal = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Dialogs */}
+        <DriverMaintenanceDialog
+          open={showMaintenance}
+          onOpenChange={setShowMaintenance}
+          driverId={driverId}
+          vehicleId={vehicle?.id}
+          vehiclePlate={vehicle?.plate_number}
+          vehicleMakeModel={vehicle ? `${vehicle.make} ${vehicle.model}` : undefined}
+        />
+        <DriverFuelRequestDialog
+          open={showFuel}
+          onOpenChange={setShowFuel}
+          driverId={driverId}
+          driverName={driverName}
+          vehicleId={vehicle?.id}
+          vehiclePlate={vehicle?.plate_number}
+          vehicleFuelType={vehicle?.fuel_type}
+        />
+        <DriverVehicleRequestDialog
+          open={showVehicle}
+          onOpenChange={setShowVehicle}
+          driverName={driverName}
+        />
+        <DriverInspectionDialog
+          open={showInspection}
+          onOpenChange={setShowInspection}
+          driverId={driverId}
+          vehicleId={vehicle?.id}
+          vehiclePlate={vehicle?.plate_number}
+        />
       </div>
     </Layout>
   );
