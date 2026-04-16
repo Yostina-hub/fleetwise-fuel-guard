@@ -148,6 +148,54 @@ export function useTPLInvoices() {
   return { invoices: query.data || [], isLoading: query.isLoading, createInvoice, updateInvoice, deleteInvoice };
 }
 
+export function useTPLRateCards() {
+  const { organizationId } = useOrganization();
+  const queryClient = useQueryClient();
+
+  const query = useQuery({
+    queryKey: ["tpl-rate-cards", organizationId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tpl_rate_cards")
+        .select("*, tpl_partners(name)")
+        .eq("organization_id", organizationId!)
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!organizationId,
+  });
+
+  const createRateCard = useMutation({
+    mutationFn: async (card: any) => {
+      const { error } = await supabase.from("tpl_rate_cards").insert({ ...card, organization_id: organizationId });
+      if (error) throw error;
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["tpl-rate-cards"] }); toast.success("Rate card created"); },
+    onError: (e: any) => toast.error("Failed to create rate card", { description: e.message }),
+  });
+
+  const updateRateCard = useMutation({
+    mutationFn: async ({ id, ...data }: any) => {
+      const { error } = await supabase.from("tpl_rate_cards").update(data).eq("id", id).eq("organization_id", organizationId!);
+      if (error) throw error;
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["tpl-rate-cards"] }); toast.success("Rate card updated"); },
+    onError: (e: any) => toast.error("Failed to update rate card", { description: e.message }),
+  });
+
+  const deleteRateCard = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("tpl_rate_cards").delete().eq("id", id).eq("organization_id", organizationId!);
+      if (error) throw error;
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["tpl-rate-cards"] }); toast.success("Rate card deleted"); },
+    onError: (e: any) => toast.error("Failed to delete rate card", { description: e.message }),
+  });
+
+  return { rateCards: query.data || [], isLoading: query.isLoading, createRateCard, updateRateCard, deleteRateCard };
+}
+
 export function useTPLPerformance() {
   const { organizationId } = useOrganization();
   const queryClient = useQueryClient();

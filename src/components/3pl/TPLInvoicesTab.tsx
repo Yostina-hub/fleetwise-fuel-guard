@@ -147,8 +147,16 @@ export function TPLInvoicesTab() {
               <div><Label>Due Date</Label><Input type="date" value={form.due_date} onChange={e => setForm({...form, due_date: e.target.value})} /></div>
             </div>
             <div className="grid grid-cols-3 gap-4">
-              <div><Label>Subtotal</Label><Input type="number" value={form.subtotal} onChange={e => setForm({...form, subtotal: e.target.value})} /></div>
-              <div><Label>Tax</Label><Input type="number" value={form.tax_amount} onChange={e => setForm({...form, tax_amount: e.target.value})} /></div>
+              <div><Label>Subtotal</Label><Input type="number" value={form.subtotal} onChange={e => {
+                const sub = e.target.value;
+                const tax = form.tax_amount || "0";
+                setForm({...form, subtotal: sub, total_amount: (parseFloat(sub || "0") + parseFloat(tax)).toString()});
+              }} /></div>
+              <div><Label>Tax</Label><Input type="number" value={form.tax_amount} onChange={e => {
+                const tax = e.target.value;
+                const sub = form.subtotal || "0";
+                setForm({...form, tax_amount: tax, total_amount: (parseFloat(sub) + parseFloat(tax || "0")).toString()});
+              }} /></div>
               <div><Label>Total</Label><Input type="number" value={form.total_amount} onChange={e => setForm({...form, total_amount: e.target.value})} /></div>
             </div>
             <div className="grid grid-cols-2 gap-4">
