@@ -125,8 +125,47 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
       const { data, error } = await (supabase as any).from("vehicle_requests").insert(payload).select("id").single();
       if (error) throw error;
 
-      const { error: routeErr } = await supabase.rpc("route_vehicle_request_approval", { p_request_id: data.id });
+      const { data: routeResult, error: routeErr } = await supabase.rpc("route_vehicle_request_approval", { p_request_id: data.id });
       if (routeErr) console.error("Approval routing error:", routeErr);
+
+      // Send SMS to routed approver(s)
+      if (routeResult && routeResult !== "auto_approved") {
+        try {
+          const { notifyApproverSms, getAppUrl } = await import("@/services/vehicleRequestSmsService");
+          const targetRole = routeResult as string; // e.g. "operations_manager" or "org_admin"
+          const { data: approvers } = await supabase
+            .from("user_roles")
+            .select("user_id")
+            .eq("organization_id", organizationId!)
+            .eq("role", targetRole)
+            .limit(5);
+          if (approvers?.length) {
+            const durationDays = neededUntil
+              ? Math.max(1, Math.ceil((new Date(neededUntil).getTime() - new Date(neededFrom).getTime()) / 86400000))
+              : 1;
+            for (const a of approvers) {
+              const { data: approverProfile } = await supabase
+                .from("profiles")
+                .select("full_name, phone")
+                .eq("id", a.user_id)
+                .single();
+              if (approverProfile?.phone) {
+                await notifyApproverSms({
+                  approverPhone: approverProfile.phone,
+                  approverName: approverProfile.full_name || "Approver",
+                  requestNumber: payload.request_number,
+                  requesterName: payload.requester_name,
+                  purpose: payload.purpose,
+                  durationDays,
+                  appUrl: getAppUrl(),
+                });
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Approver SMS error:", e);
+        }
+      }
 
       return data;
     },
