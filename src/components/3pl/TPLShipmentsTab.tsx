@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTPLShipments, useTPLPartners, useTPLRateCards } from "@/hooks/use3PL";
+import { LocationPickerField } from "@/components/shared/LocationPickerField";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -181,8 +182,8 @@ export function TPLShipmentsTab() {
                 </div>
               )}
             </div>
-            <div><Label>Origin Address</Label><Input value={form.origin_address} onChange={e => setForm({...form, origin_address: e.target.value})} /></div>
-            <div><Label>Destination Address</Label><Input value={form.destination_address} onChange={e => setForm({...form, destination_address: e.target.value})} /></div>
+            <LocationPickerField label="Origin Address" value={form.origin_address} onChange={v => setForm({...form, origin_address: v})} placeholder="Enter origin address" iconColor="text-emerald-500" />
+            <LocationPickerField label="Destination Address" value={form.destination_address} onChange={v => setForm({...form, destination_address: v})} placeholder="Enter destination address" iconColor="text-destructive" />
             <div className="grid grid-cols-2 gap-4">
               <div><Label>Customer Name</Label><Input value={form.customer_name} onChange={e => setForm({...form, customer_name: e.target.value})} /></div>
               <div><Label>Customer Phone</Label><Input value={form.customer_phone} onChange={e => setForm({...form, customer_phone: e.target.value})} /></div>
