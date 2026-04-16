@@ -107,7 +107,7 @@ export function FuelClarificationPanel({ fuelRequestId, organizationId, canReque
                 {/* Resolve (Fleet ops final approval) */}
                 {c.status === "answered" && canResolve && (
                   <div className="flex gap-2 border-t pt-2">
-                    <Button size="sm" className="bg-green-600 hover:bg-green-700"
+                    <Button size="sm" className="bg-success text-success-foreground hover:bg-success/90"
                       onClick={() => resolveClarification.mutate({ id: c.id, resolution: "approved" })}>
                       <CheckCircle2 className="w-4 h-4 mr-1" /> Approve clearance
                     </Button>
