@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,18 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CreditCard, Link, CheckCircle2, AlertTriangle, RefreshCw, FileText, DollarSign, Receipt } from "lucide-react";
-import { toast } from "sonner";
-
-interface BillingConfig {
-  provider: string;
-  apiEndpoint: string;
-  apiKey: string;
-  authType: string;
-  isActive: boolean;
-  syncInterval: string;
-  lastSync: string | null;
-}
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { CreditCard, Link, RefreshCw, DollarSign, Receipt, Loader2, Trash2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useOrganization } from "@/hooks/useOrganization";
+import { format } from "date-fns";
 
 const billingProviders = [
   { value: "custom_erp", label: "Custom ERP Billing" },
@@ -28,46 +23,139 @@ const billingProviders = [
   { value: "custom_api", label: "Custom REST API" },
 ];
 
-const syncableEntities = [
-  { entity: "Vehicle Usage (km)", enabled: true, lastSynced: "2 min ago", records: 312 },
-  { entity: "Fuel Consumption (liters)", enabled: true, lastSynced: "2 min ago", records: 189 },
-  { entity: "Trip Charges", enabled: true, lastSynced: "5 min ago", records: 45 },
-  { entity: "Maintenance Costs", enabled: false, lastSynced: null, records: 0 },
-  { entity: "Driver Overtime Hours", enabled: false, lastSynced: null, records: 0 },
-  { entity: "Asset Depreciation", enabled: false, lastSynced: null, records: 0 },
+const BILLABLE_ENTITY_DEFAULTS = [
+  "Vehicle Usage (km)",
+  "Fuel Consumption (liters)",
+  "Trip Charges",
+  "Maintenance Costs",
+  "Driver Overtime Hours",
+  "Asset Depreciation",
 ];
 
 const BillingIntegrationTab = () => {
-  const [config, setConfig] = useState<BillingConfig>({
-    provider: "custom_erp",
-    apiEndpoint: "",
-    apiKey: "",
-    authType: "bearer",
-    isActive: false,
-    syncInterval: "15",
-    lastSync: null,
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { organizationId } = useOrganization();
+
+  const [provider, setProvider] = useState("custom_erp");
+  const [apiEndpoint, setApiEndpoint] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [authType, setAuthType] = useState("bearer");
+  const [syncInterval, setSyncInterval] = useState("15");
+  const [isActive, setIsActive] = useState(false);
+  const [enabledEntities, setEnabledEntities] = useState<string[]>([]);
+
+  // Fetch existing config
+  const { data: config, isLoading: configLoading } = useQuery({
+    queryKey: ["billing-config", organizationId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("billing_integration_configs")
+        .select("*")
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!organizationId,
   });
 
-  const [entities, setEntities] = useState(syncableEntities);
+  // Fetch billing events
+  const { data: events } = useQuery({
+    queryKey: ["billing-events", organizationId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("billing_sync_events")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!organizationId,
+  });
 
-  const handleSave = () => {
-    toast.success("Billing integration configuration saved");
-  };
-
-  const handleTestConnection = () => {
-    if (!config.apiEndpoint) {
-      toast.error("Please enter an API endpoint");
-      return;
+  // Load config into form
+  useEffect(() => {
+    if (config) {
+      setProvider(config.provider);
+      setApiEndpoint(config.api_endpoint);
+      setAuthType(config.auth_type);
+      setSyncInterval(String(config.sync_interval_minutes));
+      setIsActive(config.is_active);
+      const entities = (config.billable_entities as string[]) || [];
+      setEnabledEntities(entities);
     }
-    toast.success("Connection test successful — billing API reachable");
-  };
+  }, [config]);
 
-  const handleSync = () => {
-    toast.success("Billing sync triggered — processing usage records...");
-  };
+  // Save / update config
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!organizationId) throw new Error("Missing organization");
+      const payload = {
+        organization_id: organizationId,
+        provider,
+        api_endpoint: apiEndpoint,
+        auth_type: authType,
+        sync_interval_minutes: parseInt(syncInterval) || 15,
+        is_active: isActive,
+        billable_entities: enabledEntities,
+      };
+      if (config) {
+        const { error } = await supabase
+          .from("billing_integration_configs")
+          .update(payload)
+          .eq("id", config.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("billing_integration_configs")
+          .insert([payload]);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["billing-config"] });
+      toast({ title: "Saved", description: "Billing integration configuration saved" });
+    },
+    onError: (e: any) => {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    },
+  });
 
-  const toggleEntity = (index: number) => {
-    setEntities(prev => prev.map((e, i) => i === index ? { ...e, enabled: !e.enabled } : e));
+  // Sync now — creates a pending billing sync event
+  const syncMutation = useMutation({
+    mutationFn: async () => {
+      if (!organizationId) throw new Error("Missing organization");
+      const { error } = await supabase.from("billing_sync_events").insert([{
+        organization_id: organizationId,
+        config_id: config?.id || null,
+        event_description: "Manual billing sync triggered",
+        amount: 0,
+        status: "pending",
+      }]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["billing-events"] });
+      toast({ title: "Sync Triggered", description: "Billing sync has been queued" });
+    },
+  });
+
+  // Delete an event
+  const deleteEventMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("billing_sync_events").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["billing-events"] });
+    },
+  });
+
+  const toggleEntity = (entity: string) => {
+    setEnabledEntities(prev =>
+      prev.includes(entity) ? prev.filter(e => e !== entity) : [...prev, entity]
+    );
   };
 
   return (
@@ -86,7 +174,7 @@ const BillingIntegrationTab = () => {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label>Billing Provider</Label>
-              <Select value={config.provider} onValueChange={v => setConfig(p => ({ ...p, provider: v }))}>
+              <Select value={provider} onValueChange={setProvider}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {billingProviders.map(p => (
@@ -97,7 +185,7 @@ const BillingIntegrationTab = () => {
             </div>
             <div className="space-y-2">
               <Label>Authentication Type</Label>
-              <Select value={config.authType} onValueChange={v => setConfig(p => ({ ...p, authType: v }))}>
+              <Select value={authType} onValueChange={setAuthType}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="bearer">Bearer Token</SelectItem>
@@ -109,15 +197,15 @@ const BillingIntegrationTab = () => {
             </div>
             <div className="space-y-2">
               <Label>API Endpoint</Label>
-              <Input placeholder="https://billing.example.com/api/v1" value={config.apiEndpoint} onChange={e => setConfig(p => ({ ...p, apiEndpoint: e.target.value }))} />
+              <Input placeholder="https://billing.example.com/api/v1" value={apiEndpoint} onChange={e => setApiEndpoint(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label>API Key / Token</Label>
-              <Input type="password" placeholder="••••••••••••" value={config.apiKey} onChange={e => setConfig(p => ({ ...p, apiKey: e.target.value }))} />
+              <Input type="password" placeholder="••••••••••••" value={apiKey} onChange={e => setApiKey(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label>Sync Interval (minutes)</Label>
-              <Select value={config.syncInterval} onValueChange={v => setConfig(p => ({ ...p, syncInterval: v }))}>
+              <Select value={syncInterval} onValueChange={setSyncInterval}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="5">Every 5 minutes</SelectItem>
@@ -129,47 +217,41 @@ const BillingIntegrationTab = () => {
               </Select>
             </div>
             <div className="flex items-center gap-3 pt-6">
-              <Switch checked={config.isActive} onCheckedChange={v => setConfig(p => ({ ...p, isActive: v }))} />
+              <Switch checked={isActive} onCheckedChange={setIsActive} />
               <Label>Enable Billing Sync</Label>
             </div>
           </div>
 
           <div className="flex gap-2">
-            <Button onClick={handleSave}>Save Configuration</Button>
-            <Button variant="outline" onClick={handleTestConnection}>
-              <Link className="h-4 w-4 mr-2" /> Test Connection
+            <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+              {saveMutation.isPending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</> : config ? "Update Configuration" : "Save Configuration"}
             </Button>
-            <Button variant="outline" onClick={handleSync}>
+            <Button variant="outline" onClick={() => syncMutation.mutate()} disabled={!config || syncMutation.isPending}>
               <RefreshCw className="h-4 w-4 mr-2" /> Sync Now
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Syncable Entities */}
+      {/* Billable Entities */}
       <Card className="glass-strong">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Receipt className="h-5 w-5" />
             Billable Data Entities
           </CardTitle>
-          <CardDescription>Select which fleet data to sync to your billing system for customer invoicing</CardDescription>
+          <CardDescription>Select which fleet data to sync to your billing system</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {entities.map((entity, idx) => (
-              <div key={entity.entity} className="flex items-center justify-between p-3 rounded-lg glass hover:bg-muted/30">
+            {BILLABLE_ENTITY_DEFAULTS.map(entity => (
+              <div key={entity} className="flex items-center justify-between p-3 rounded-lg glass hover:bg-muted/30">
                 <div className="flex items-center gap-3">
-                  <Switch checked={entity.enabled} onCheckedChange={() => toggleEntity(idx)} />
-                  <div>
-                    <p className="font-medium text-sm">{entity.entity}</p>
-                    {entity.lastSynced && (
-                      <p className="text-xs text-muted-foreground">Last synced: {entity.lastSynced} • {entity.records} records</p>
-                    )}
-                  </div>
+                  <Switch checked={enabledEntities.includes(entity)} onCheckedChange={() => toggleEntity(entity)} />
+                  <p className="font-medium text-sm">{entity}</p>
                 </div>
-                <Badge variant={entity.enabled ? "default" : "outline"}>
-                  {entity.enabled ? "Active" : "Disabled"}
+                <Badge variant={enabledEntities.includes(entity) ? "default" : "outline"}>
+                  {enabledEntities.includes(entity) ? "Active" : "Disabled"}
                 </Badge>
               </div>
             ))}
@@ -177,34 +259,49 @@ const BillingIntegrationTab = () => {
         </CardContent>
       </Card>
 
-      {/* Billing Events Preview */}
+      {/* Billing Events History */}
       <Card className="glass-strong">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5" />
-            Recent Billing Events
+            Billing Sync History
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2 text-sm">
-            {[
-              { time: "14:30", event: "Vehicle ETH-1234 usage invoice: 127 km, 18.5L fuel", amount: "ETB 2,450", status: "synced" },
-              { time: "14:15", event: "Trip TRP-0089 charge: Addis → Hawassa delivery", amount: "ETB 8,200", status: "synced" },
-              { time: "14:00", event: "Monthly fleet rental: 5 vehicles × 30 days", amount: "ETB 125,000", status: "pending" },
-              { time: "13:45", event: "Fuel reimbursement: Driver D-012, receipt #4521", amount: "ETB 1,800", status: "synced" },
-            ].map((evt, i) => (
-              <div key={i} className="flex items-center justify-between p-2 rounded hover:bg-muted/30">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-muted-foreground">{evt.time}</span>
-                  <span>{evt.event}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold">{evt.amount}</span>
-                  <Badge variant={evt.status === "synced" ? "default" : "outline"} className="text-xs">{evt.status}</Badge>
-                </div>
-              </div>
-            ))}
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Event</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {!events?.length ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground">No billing events yet</TableCell>
+                </TableRow>
+              ) : events.map(evt => (
+                <TableRow key={evt.id}>
+                  <TableCell className="text-sm">{format(new Date(evt.created_at), "PPpp")}</TableCell>
+                  <TableCell>{evt.event_description}</TableCell>
+                  <TableCell className="font-semibold">{evt.currency} {Number(evt.amount).toLocaleString()}</TableCell>
+                  <TableCell>
+                    <Badge variant={evt.status === "synced" ? "default" : evt.status === "failed" ? "destructive" : "secondary"}>
+                      {evt.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Button size="sm" variant="ghost" onClick={() => deleteEventMutation.mutate(evt.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>
