@@ -664,6 +664,7 @@ const WorkOrdersTab = () => {
           )}
         </TableBody>
       </Table>
+      </div>
 
       <TablePagination
         currentPage={currentPage}
