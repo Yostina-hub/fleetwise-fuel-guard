@@ -197,7 +197,7 @@ export const DriverCommunicationHub = () => {
               {form.message_type === "direct" && (
                 <div>
                   <Label>Recipient</Label>
-                  <Select value={form.recipient_driver_id} onValueChange={v => setForm(p => ({ ...p, recipient_driver_id: v }))}>
+                  <Select value={form.recipient_driver_id || undefined} onValueChange={v => setForm(p => ({ ...p, recipient_driver_id: v }))}>
                     <SelectTrigger><SelectValue placeholder="Select driver..." /></SelectTrigger>
                     <SelectContent>{drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.first_name} {d.last_name}</SelectItem>)}</SelectContent>
                   </Select>
