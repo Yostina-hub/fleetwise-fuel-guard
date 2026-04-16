@@ -343,7 +343,47 @@ const Vehicle3DViewer = ({
 }: Vehicle3DViewerProps) => {
   const [autoRotate, setAutoRotate] = useState(true);
   const [expanded, setExpanded] = useState(false);
-  const [viewAngle, setViewAngle] = useState<string>("perspective");
+  const [webglSupported, setWebglSupported] = useState<boolean | null>(null);
+  const [canvasReady, setCanvasReady] = useState(false);
+
+  useEffect(() => {
+    try {
+      const canvas = document.createElement("canvas");
+      const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
+      setWebglSupported(!!gl);
+    } catch {
+      setWebglSupported(false);
+    }
+  }, []);
+
+  // Timeout fallback: if canvas doesn't signal ready in 8s, show fallback
+  useEffect(() => {
+    if (webglSupported === false) return;
+    const timer = setTimeout(() => {
+      if (!canvasReady) setWebglSupported(false);
+    }, 8000);
+    return () => clearTimeout(timer);
+  }, [webglSupported, canvasReady]);
+
+  const FallbackView = () => (
+    <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-muted/30 to-muted/10">
+      <div className="text-center space-y-3 p-6">
+        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto">
+          <Eye className="w-10 h-10 text-primary" />
+        </div>
+        <div>
+          <p className="text-sm font-medium">{plate}</p>
+          <p className="text-xs text-muted-foreground">{make} {model}</p>
+        </div>
+        <Badge variant="outline" className="capitalize">
+          {vehicleType?.replace(/_/g, " ") || "sedan"}
+        </Badge>
+        <p className="text-[10px] text-muted-foreground max-w-[200px] mx-auto">
+          3D viewer requires WebGL. Open in a desktop browser for the full experience.
+        </p>
+      </div>
+    </div>
+  );
 
   return (
     <Card className={cn("overflow-hidden", className)}>
@@ -357,59 +397,67 @@ const Vehicle3DViewer = ({
             <Badge variant="outline" className="text-[10px] capitalize">
               {vehicleType?.replace(/_/g, " ") || "sedan"}
             </Badge>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => setAutoRotate(!autoRotate)}
-              title={autoRotate ? "Stop rotation" : "Auto rotate"}
-            >
-              <RotateCcw className={cn("w-3.5 h-3.5", autoRotate && "animate-spin")} style={{ animationDuration: "3s" }} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => setExpanded(!expanded)}
-            >
-              {expanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-            </Button>
+            {webglSupported !== false && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => setAutoRotate(!autoRotate)}
+                  title={autoRotate ? "Stop rotation" : "Auto rotate"}
+                >
+                  <RotateCcw className={cn("w-3.5 h-3.5", autoRotate && "animate-spin")} style={{ animationDuration: "3s" }} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => setExpanded(!expanded)}
+                >
+                  {expanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </CardHeader>
       <CardContent className="p-0">
         <div className={cn(
-          "w-full transition-all duration-300 bg-gradient-to-b from-muted/30 to-muted/10",
+          "w-full transition-all duration-300",
           expanded ? "h-[400px]" : "h-[250px]"
         )}>
-          <Suspense fallback={
-            <div className="w-full h-full flex items-center justify-center">
-              <div className="text-center space-y-2">
-                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-                <p className="text-xs text-muted-foreground">Loading 3D model...</p>
+          {webglSupported === false ? (
+            <FallbackView />
+          ) : (
+            <Suspense fallback={
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-muted/30 to-muted/10">
+                <div className="text-center space-y-2">
+                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+                  <p className="text-xs text-muted-foreground">Loading 3D model...</p>
+                </div>
               </div>
-            </div>
-          }>
-            <Canvas
-              camera={{ position: [3, 2, 3], fov: 45 }}
-              dpr={[1, 2]}
-              gl={{ antialias: true, alpha: true }}
-              style={{ background: "transparent" }}
-            >
-              <VehicleScene
-                vehicleType={vehicleType}
-                color={color}
-                status={status}
-                plate={plate}
-                autoRotate={autoRotate}
-              />
-            </Canvas>
-          </Suspense>
+            }>
+              <Canvas
+                camera={{ position: [3, 2, 3], fov: 45 }}
+                dpr={[1, 2]}
+                gl={{ antialias: true, alpha: true, failIfMajorPerformanceCaveat: false }}
+                style={{ width: "100%", height: "100%", background: "transparent" }}
+                onCreated={() => setCanvasReady(true)}
+              >
+                <VehicleScene
+                  vehicleType={vehicleType}
+                  color={color}
+                  status={status}
+                  plate={plate}
+                  autoRotate={autoRotate}
+                />
+              </Canvas>
+            </Suspense>
+          )}
         </div>
-        {/* Controls bar */}
         <div className="flex items-center justify-center gap-2 p-2 border-t border-border/50">
           <p className="text-[10px] text-muted-foreground">
-            Drag to rotate • Scroll to zoom • {make} {model}
+            {webglSupported === false ? `${make} ${model}` : `Drag to rotate • Scroll to zoom • ${make} ${model}`}
           </p>
         </div>
       </CardContent>
