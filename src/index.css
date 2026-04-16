@@ -1002,11 +1002,26 @@ All colors MUST be HSL.
 }
 
 
+/* Ensure all pages have consistent padding */
+.page-padding > *:first-child {
+  padding: 1rem;
+}
+@media (min-width: 768px) {
+  .page-padding > *:first-child {
+    padding: 1.5rem;
+  }
+}
+@media (min-width: 1024px) {
+  .page-padding > *:first-child {
+    padding: 2rem;
+  }
+}
+
 /* Hide all default scrollbars globally */
 * {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 *::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  display: none;
 }
