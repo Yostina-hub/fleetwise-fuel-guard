@@ -489,7 +489,7 @@ const RBACManagement = () => {
                         </TableBody>
                       </Table>
                     </div>
-                  </ScrollArea>
+                  </div>
                 )}
               </CardContent>
             </Card>
