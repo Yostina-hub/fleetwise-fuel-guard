@@ -55,6 +55,7 @@ const stageLabels: Record<string, string> = {
 const DriverMaintenanceRequest = () => {
   const { organizationId } = useOrganization();
   const { requests, isLoading, createRequest } = useMaintenanceRequests();
+  const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [showDetail, setShowDetail] = useState<MaintenanceRequest | null>(null);
 
