@@ -32,7 +32,7 @@ export interface PredictiveScore {
   component_health: Record<string, number> | null;
   recommended_parts: string[] | null;
   analysis_method: string | null;
-  vehicles?: { plate_number: string; make: string | null; model: string | null; year: number | null; current_mileage_km: number | null };
+  vehicles?: { plate_number: string; make: string | null; model: string | null; year: number | null; odometer_km: number | null };
 }
 
 export interface HealthSnapshot {
@@ -57,7 +57,7 @@ export const usePredictiveMaintenance = () => {
       if (!organizationId) return [];
       const { data, error } = await supabase
         .from("predictive_maintenance_scores")
-        .select("*, vehicles(plate_number, make, model, year, current_mileage_km)")
+        .select("*, vehicles(plate_number, make, model, year, odometer_km)")
         .eq("organization_id", organizationId)
         .order("health_score", { ascending: true });
       if (error) throw error;
