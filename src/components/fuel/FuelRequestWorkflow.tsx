@@ -1565,6 +1565,16 @@ export const FuelRequestWorkflow = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Fuel Work Order create/edit dialog (Oracle-style) */}
+      {showWoDialog && (
+        <FuelWorkOrderDialog
+          open={!!showWoDialog}
+          onOpenChange={(v) => !v && setShowWoDialog(null)}
+          workOrderId={showWoDialog.id}
+          fuelRequestId={showWoDialog.frId}
+        />
+      )}
     </div>
   );
 };
