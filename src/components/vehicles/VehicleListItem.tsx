@@ -135,6 +135,18 @@ export const VehicleListItem = ({
           <p className="text-xs text-muted-foreground truncate">
             {vehicle.make} {vehicle.model}
           </p>
+          <div className="flex flex-wrap gap-1 mt-0.5">
+            {vehicle.vehicleType && vehicle.vehicleType !== "Vehicle" && (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 capitalize">
+                {vehicle.vehicleType.replace('_', ' ')}
+              </Badge>
+            )}
+            {vehicle.fuelType && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 capitalize">
+                {vehicle.fuelType.replace('_', ' ')}
+              </Badge>
+            )}
+          </div>
         </div>
 
         {/* Status Icons */}
