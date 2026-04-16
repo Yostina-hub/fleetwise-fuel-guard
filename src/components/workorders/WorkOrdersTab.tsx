@@ -704,6 +704,29 @@ const WorkOrdersTab = () => {
                       : '-'}
                   </p>
                 </div>
+
+                {/* Approval Status */}
+                <div className="col-span-2 flex items-center gap-2 mt-2">
+                  <label className="text-sm text-muted-foreground">Approval:</label>
+                  {(selectedWorkOrder as any).auto_approved ? (
+                    <Badge variant="default" className="bg-emerald-500/20 text-emerald-600 text-xs">
+                      ✓ Auto-Approved
+                    </Badge>
+                  ) : (selectedWorkOrder as any).approval_status === 'approved' ? (
+                    <Badge variant="default" className="bg-emerald-500/20 text-emerald-600 text-xs">
+                      ✓ Approved
+                    </Badge>
+                  ) : (selectedWorkOrder as any).approval_status === 'rejected' ? (
+                    <Badge variant="destructive" className="text-xs">Rejected</Badge>
+                  ) : (
+                    <Badge variant="secondary" className="text-xs">Pending Approval</Badge>
+                  )}
+                  {(selectedWorkOrder as any).auto_approved_reason && (
+                    <span className="text-xs text-muted-foreground italic">
+                      {(selectedWorkOrder as any).auto_approved_reason}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {selectedWorkOrder.service_description && (
