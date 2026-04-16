@@ -1,0 +1,1 @@
+UPDATE account_lockouts SET failed_attempts = 0, lockout_until = NULL, lockout_reason = NULL, updated_at = now() WHERE email = 'roba@fleet.com';
