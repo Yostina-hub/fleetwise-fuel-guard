@@ -1,19 +1,20 @@
 import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
-import { useDrivers } from "@/hooks/useDrivers";
+import { useEmployees, EMPLOYEE_TYPE_LABELS, EMPLOYEE_TYPE_COLORS, type EmployeeType } from "@/hooks/useEmployees";
 import { format, differenceInDays, startOfMonth, endOfMonth } from "date-fns";
 import {
   Users, Briefcase, DollarSign, CalendarDays, Clock, TrendingUp,
   AlertTriangle, Plane, CheckCircle2, Wallet, Handshake, Award,
+  Wrench, Radio, Building2,
 } from "lucide-react";
 
 interface ContractSummary {
   id: string;
   driver_id: string;
+  employee_id: string | null;
   status: string;
   employment_type: string;
   end_date: string | null;
@@ -24,6 +25,7 @@ interface ContractSummary {
 interface PayrollSummary {
   id: string;
   driver_id: string;
+  employee_id: string | null;
   gross_pay: number;
   net_pay: number;
   total_deductions: number;
@@ -34,6 +36,7 @@ interface PayrollSummary {
 
 interface AttendanceSummary {
   driver_id: string;
+  employee_id: string | null;
   status: string;
   total_hours: number;
   overtime_hours: number;
@@ -42,6 +45,7 @@ interface AttendanceSummary {
 interface LeaveSummary {
   id: string;
   driver_id: string;
+  employee_id: string | null;
   leave_type: string;
   total_days: number;
   status: string;
@@ -55,9 +59,17 @@ interface OutsourceContractSummary {
   end_date: string | null;
 }
 
+const TYPE_ICONS: Partial<Record<EmployeeType, typeof Users>> = {
+  driver: Users,
+  mechanic: Wrench,
+  dispatcher: Radio,
+  office_staff: Building2,
+  manager: Briefcase,
+};
+
 export const HRFinanceDashboard = () => {
   const { organizationId } = useOrganization();
-  const { drivers } = useDrivers();
+  const { employees } = useEmployees();
   const [contracts, setContracts] = useState<ContractSummary[]>([]);
   const [payrolls, setPayrolls] = useState<PayrollSummary[]>([]);
   const [attendance, setAttendance] = useState<AttendanceSummary[]>([]);
@@ -74,13 +86,13 @@ export const HRFinanceDashboard = () => {
       const monthEnd = format(endOfMonth(now), "yyyy-MM-dd");
 
       const [cRes, pRes, aRes, lRes, oRes] = await Promise.all([
-        supabase.from("driver_contracts").select("id, driver_id, status, employment_type, end_date, pay_rate, pay_currency")
+        supabase.from("driver_contracts").select("id, driver_id, employee_id, status, employment_type, end_date, pay_rate, pay_currency")
           .eq("organization_id", organizationId),
-        supabase.from("driver_payroll").select("id, driver_id, gross_pay, net_pay, total_deductions, status, pay_period_start, pay_period_end")
+        supabase.from("driver_payroll").select("id, driver_id, employee_id, gross_pay, net_pay, total_deductions, status, pay_period_start, pay_period_end")
           .eq("organization_id", organizationId).order("pay_period_start", { ascending: false }).limit(200),
-        supabase.from("driver_attendance").select("driver_id, status, total_hours, overtime_hours")
+        supabase.from("driver_attendance").select("driver_id, employee_id, status, total_hours, overtime_hours")
           .eq("organization_id", organizationId).gte("date", monthStart).lte("date", monthEnd),
-        supabase.from("driver_leave_requests").select("id, driver_id, leave_type, total_days, status")
+        supabase.from("driver_leave_requests").select("id, driver_id, employee_id, leave_type, total_days, status")
           .eq("organization_id", organizationId),
         supabase.from("outsource_contracts").select("id, status, monthly_cost, contractor_name, end_date")
           .eq("organization_id", organizationId),
@@ -97,6 +109,17 @@ export const HRFinanceDashboard = () => {
   }, [organizationId]);
 
   const fmt = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB", maximumFractionDigits: 0 }).format(n);
+
+  // Employee type breakdown
+  const employeeTypeCounts = useMemo(() => {
+    const map: Record<string, number> = {};
+    employees.forEach(e => {
+      map[e.employee_type] = (map[e.employee_type] || 0) + 1;
+    });
+    return Object.entries(map).sort((a, b) => b[1] - a[1]);
+  }, [employees]);
+
+  const activeEmployees = employees.filter(e => e.status === "active");
 
   // Contract stats
   const activeContracts = contracts.filter(c => c.status === "active");
@@ -123,7 +146,10 @@ export const HRFinanceDashboard = () => {
   const totalAbsent = attendance.filter(a => a.status === "absent").length;
   const totalHours = attendance.reduce((s, a) => s + (a.total_hours || 0), 0);
   const totalOvertime = attendance.reduce((s, a) => s + (a.overtime_hours || 0), 0);
-  const uniqueDriversAttended = new Set(attendance.filter(a => a.status === "present" || a.status === "late").map(a => a.driver_id)).size;
+  const uniqueAttended = new Set(
+    attendance.filter(a => a.status === "present" || a.status === "late")
+      .map(a => a.employee_id || a.driver_id)
+  ).size;
 
   // Leave stats
   const pendingLeaves = leaves.filter(l => l.status === "pending");
@@ -139,19 +165,27 @@ export const HRFinanceDashboard = () => {
   const activeOutsource = outsource.filter(o => o.status === "active");
   const outsourceMonthly = activeOutsource.reduce((s, o) => s + (o.monthly_cost || 0), 0);
 
-  // Top cost drivers by payroll
-  const driverPayrollMap = useMemo(() => {
+  // Top employees by payroll
+  const employeePayrollMap = useMemo(() => {
     const map: Record<string, number> = {};
-    payrolls.forEach(p => { map[p.driver_id] = (map[p.driver_id] || 0) + p.net_pay; });
+    payrolls.forEach(p => {
+      const key = p.employee_id || p.driver_id;
+      map[key] = (map[key] || 0) + p.net_pay;
+    });
     return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 8);
   }, [payrolls]);
 
-  const getDriverName = (driverId: string) => {
-    const d = drivers.find(d => d.id === driverId);
-    return d ? `${d.first_name} ${d.last_name}` : "Unknown";
+  const getEmployeeName = (id: string) => {
+    const emp = employees.find(e => e.id === id || e.driver_id === id);
+    return emp ? `${emp.first_name} ${emp.last_name}` : "Unknown";
   };
 
-  const maxPayroll = driverPayrollMap[0]?.[1] || 1;
+  const getEmployeeType = (id: string): EmployeeType => {
+    const emp = employees.find(e => e.id === id || e.driver_id === id);
+    return emp?.employee_type || "other";
+  };
+
+  const maxPayroll = employeePayrollMap[0]?.[1] || 1;
 
   if (loading) {
     return (
@@ -169,15 +203,40 @@ export const HRFinanceDashboard = () => {
     <div className="space-y-5">
       <div>
         <h3 className="text-lg font-semibold">HR & Finance Overview</h3>
-        <p className="text-sm text-muted-foreground">Fleet-wide workforce, payroll, and contract analytics</p>
+        <p className="text-sm text-muted-foreground">Organization-wide workforce, payroll, and contract analytics</p>
       </div>
+
+      {/* Workforce Composition */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Users className="w-4 h-4 text-primary" />
+            Workforce Composition
+            <Badge variant="outline" className="text-[10px] ml-auto">{employees.length} total / {activeEmployees.length} active</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+            {employeeTypeCounts.map(([type, count]) => {
+              const Icon = TYPE_ICONS[type as EmployeeType] || Users;
+              return (
+                <div key={type} className={`rounded-lg border p-2.5 text-center ${EMPLOYEE_TYPE_COLORS[type as EmployeeType]}`}>
+                  <Icon className="w-4 h-4 mx-auto mb-1" />
+                  <p className="text-lg font-bold">{count}</p>
+                  <p className="text-[9px]">{EMPLOYEE_TYPE_LABELS[type as EmployeeType]}</p>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Top-Level KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
         {[
           { label: "Active Contracts", value: activeContracts.length, icon: Briefcase, color: "text-primary" },
           { label: "Expiring Soon", value: expiringContracts.length, icon: AlertTriangle, color: "text-warning" },
-          { label: "Drivers Attended", value: uniqueDriversAttended, icon: Users, color: "text-emerald-400" },
+          { label: "Attended (Month)", value: uniqueAttended, icon: Users, color: "text-emerald-400" },
           { label: "Pending Leaves", value: pendingLeaves.length, icon: Plane, color: "text-amber-400" },
           { label: "Gross Payroll", value: fmt(totalGrossPay), icon: DollarSign, color: "text-primary", small: true },
           { label: "Net Payroll", value: fmt(totalNetPay), icon: Wallet, color: "text-emerald-400", small: true },
@@ -340,22 +399,25 @@ export const HRFinanceDashboard = () => {
         </Card>
       </div>
 
-      {/* Top Payroll by Driver + Expiring Contracts */}
+      {/* Top Employees by Payroll + Expiring Contracts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-primary" />
-              Top Drivers — Total Net Pay
+              Top Employees — Total Net Pay
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {driverPayrollMap.length === 0 ? (
+            {employeePayrollMap.length === 0 ? (
               <p className="text-center text-muted-foreground text-sm py-4">No payroll data</p>
-            ) : driverPayrollMap.map(([driverId, total], i) => (
-              <div key={driverId} className="flex items-center gap-2">
+            ) : employeePayrollMap.map(([empId, total], i) => (
+              <div key={empId} className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground w-5">{i + 1}.</span>
-                <span className="text-xs font-medium w-32 truncate">{getDriverName(driverId)}</span>
+                <span className="text-xs font-medium w-28 truncate">{getEmployeeName(empId)}</span>
+                <Badge variant="outline" className={`text-[8px] px-1 py-0 ${EMPLOYEE_TYPE_COLORS[getEmployeeType(empId)]}`}>
+                  {EMPLOYEE_TYPE_LABELS[getEmployeeType(empId)]}
+                </Badge>
                 <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                   <div className="h-full bg-primary rounded-full" style={{ width: `${(total / maxPayroll) * 100}%` }} />
                 </div>
@@ -380,11 +442,15 @@ export const HRFinanceDashboard = () => {
               </div>
             ) : expiringContracts.map(c => {
               const daysLeft = c.end_date ? differenceInDays(new Date(c.end_date), new Date()) : 0;
+              const empId = c.employee_id || c.driver_id;
               return (
                 <div key={c.id} className="flex items-center justify-between p-2 rounded-lg border text-xs">
                   <div className="flex items-center gap-2">
                     <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span className="font-medium">{getDriverName(c.driver_id)}</span>
+                    <span className="font-medium">{getEmployeeName(empId)}</span>
+                    <Badge variant="outline" className={`text-[8px] px-1 py-0 ${EMPLOYEE_TYPE_COLORS[getEmployeeType(empId)]}`}>
+                      {EMPLOYEE_TYPE_LABELS[getEmployeeType(empId)]}
+                    </Badge>
                     <Badge variant="outline" className="text-[10px] capitalize">{c.employment_type.replace(/_/g, " ")}</Badge>
                   </div>
                   <Badge variant="outline" className={`text-[10px] ${daysLeft <= 30 ? "text-red-400 border-red-500/30" : "text-amber-400 border-amber-500/30"}`}>
