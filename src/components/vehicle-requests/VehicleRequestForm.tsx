@@ -280,8 +280,10 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
             {onBehalfOf ? (
               <>
                 <Badge variant="secondary" className="gap-1">
+                  {onBehalfOf.type === "driver" && <Car className="w-3 h-3" />}
                   {onBehalfOf.name}
                 </Badge>
+                <Badge variant="outline" className="text-xs capitalize">{onBehalfOf.type}</Badge>
                 <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => setOnBehalfOf(null)}>
                   <X className="w-3.5 h-3.5" /> Clear
                 </Button>
@@ -289,40 +291,71 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
             ) : (
               <Popover open={userPickerOpen} onOpenChange={setUserPickerOpen}>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-7">Select user…</Button>
+                  <Button variant="outline" size="sm" className="h-7">Select person…</Button>
                 </PopoverTrigger>
-                <PopoverContent className="p-0 w-80" align="start">
+                <PopoverContent className="p-0 w-96" align="start">
                   <Command>
-                    <CommandInput placeholder="Search users by name or email…" />
-                    <CommandList>
-                      <CommandEmpty>No users found.</CommandEmpty>
-                      <CommandGroup>
-                        {orgUsers.map((u: any) => (
+                    <CommandInput placeholder="Search by name, email, or license…" />
+                    <CommandList className="max-h-72">
+                      <CommandEmpty>No users or drivers found.</CommandEmpty>
+                      {/* System Users */}
+                      <CommandGroup heading="System Users">
+                        {orgPeople.filter((p: any) => p.type === "user").map((u: any) => (
                           <CommandItem
-                            key={u.id}
-                            value={`${u.full_name || ""} ${u.email || ""}`}
+                            key={`user-${u.id}`}
+                            value={u.searchStr}
                             onSelect={() => {
-                              setOnBehalfOf({ id: u.id, name: u.full_name || u.email, email: u.email });
+                              setOnBehalfOf({ id: u.id, name: u.name, email: u.email, type: "user", driverId: u.driverId });
                               setUserPickerOpen(false);
                             }}
-                            className="cursor-pointer"
+                            className="cursor-pointer gap-2"
                           >
-                            <div className="flex flex-col">
-                              <span className="text-sm">{u.full_name || u.email}</span>
-                              {u.full_name && (
-                                <span className="text-xs text-muted-foreground">{u.email}</span>
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-sm truncate">{u.name}</span>
+                                <span className="text-xs text-muted-foreground truncate">{u.email}</span>
+                              </div>
+                              {u.isAlsoDriver && (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">Driver</Badge>
                               )}
                             </div>
                           </CommandItem>
                         ))}
                       </CommandGroup>
+                      {/* Unlinked Drivers */}
+                      {orgPeople.some((p: any) => p.type === "driver") && (
+                        <CommandGroup heading="Drivers (no user account)">
+                          {orgPeople.filter((p: any) => p.type === "driver").map((d: any) => (
+                            <CommandItem
+                              key={`driver-${d.id}`}
+                              value={d.searchStr}
+                              onSelect={() => {
+                                setOnBehalfOf({ id: d.id, name: d.name, email: d.email, type: "driver", driverId: d.id });
+                                setUserPickerOpen(false);
+                              }}
+                              className="cursor-pointer gap-2"
+                            >
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <Car className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                <div className="flex flex-col min-w-0">
+                                  <span className="text-sm truncate">{d.name}</span>
+                                  <span className="text-xs text-muted-foreground truncate">{d.email}</span>
+                                </div>
+                                <Badge variant={d.status === "active" ? "default" : "secondary"} className="text-[10px] px-1.5 py-0 shrink-0 capitalize">
+                                  {d.status || "active"}
+                                </Badge>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      )}
                     </CommandList>
                   </Command>
                 </PopoverContent>
               </Popover>
             )}
             <span className="text-xs text-muted-foreground ml-auto">
-              {onBehalfOf ? "Approval routing will use this user's role." : "Leave empty to file as yourself."}
+              {onBehalfOf ? "Approval routing will use this person's role." : "Leave empty to file as yourself."}
             </span>
           </div>
         )}
