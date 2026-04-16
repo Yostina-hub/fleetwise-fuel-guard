@@ -15,12 +15,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Plus, Search, Package, Truck, Wrench, CircleDot, Battery, Box, Download } from "lucide-react";
+import { Plus, Search, Package, Truck, Wrench, CircleDot, Battery, Box, Download, Radio, Cpu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import LicenseExpiryBadge from "@/components/fleet/LicenseExpiryBadge";
 
 const CATEGORIES = [
   { value: "vehicle", label: "Vehicle", icon: Truck },
+  { value: "gps_tracker", label: "GPS Tracker", icon: Radio },
+  { value: "iot_sensor", label: "IoT Sensor", icon: Cpu },
   { value: "equipment", label: "Equipment", icon: Wrench },
   { value: "tool", label: "Tool", icon: Package },
   { value: "tire", label: "Tire", icon: CircleDot },
