@@ -1,22 +1,26 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Car, Wrench, Fuel, FileText, Award, Clock, MapPin, Activity,
-  Loader2, ChevronRight, AlertTriangle, CheckCircle2, Calendar, Gauge, Shield
+  Loader2, ChevronRight, AlertTriangle, CheckCircle2, Calendar, Shield, History
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format, formatDistanceToNow } from "date-fns";
+import DriverQuickStats from "@/components/driver-portal/DriverQuickStats";
+import DriverQuickActions from "@/components/driver-portal/DriverQuickActions";
 
 const DriverPortal = () => {
   const navigate = useNavigate();
   const { organizationId } = useOrganization();
+  const [activeTab, setActiveTab] = useState("assignments");
 
   // Driver self info + assigned vehicle
   const { data: driverData, isLoading: driverLoading } = useQuery({
@@ -48,14 +52,12 @@ const DriverPortal = () => {
   });
 
   const driverId = driverData?.driver?.id;
-  const vehicleId = driverData?.vehicle?.id;
 
   // Today's & upcoming trips
   const { data: trips } = useQuery({
     queryKey: ["driver-portal-trips", driverId],
     queryFn: async () => {
       if (!driverId) return { active: [], upcoming: [], recent: [] };
-      const today = new Date(); today.setHours(0, 0, 0, 0);
 
       const [{ data: active }, { data: upcoming }, { data: recent }] = await Promise.all([
         supabase.from("trips").select("id, start_time, end_time, status, distance_km, start_location, end_location")
@@ -66,7 +68,7 @@ const DriverPortal = () => {
           .order("scheduled_pickup_at", { ascending: true }).limit(5),
         supabase.from("trips").select("id, start_time, end_time, distance_km, start_location, end_location")
           .eq("driver_id", driverId).eq("status", "completed")
-          .order("end_time", { ascending: false }).limit(5),
+          .order("end_time", { ascending: false }).limit(10),
       ]);
       return { active: active || [], upcoming: upcoming || [], recent: recent || [] };
     },
@@ -117,7 +119,7 @@ const DriverPortal = () => {
     return (
       <Layout>
         <div className="p-8 flex items-center justify-center min-h-[400px]">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <Loader2 className="w-8 h-8 animate-spin text-primary" aria-label="Loading driver portal" />
         </div>
       </Layout>
     );
@@ -125,28 +127,21 @@ const DriverPortal = () => {
 
   const driver = driverData?.driver;
   const vehicle = driverData?.vehicle;
-  const driverName = driver ? `${driver.first_name} ${driver.last_name}` : "Driver";
 
   return (
     <Layout>
       <div className="p-4 md:p-8 space-y-6 animate-fade-in">
-        {/* Hero / Welcome */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 slide-in-right">
-          <div className="flex items-center gap-4">
-            <div className="p-4 rounded-2xl glass-strong glow">
-              <Shield className="w-8 h-8 text-primary float-animation" />
-            </div>
-            <div>
-              <h1 className="text-2xl md:text-4xl font-bold gradient-text">
-                Welcome, {driver?.first_name || "Driver"}
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                Your driver portal — assignments, requests, performance & documents
-              </p>
-            </div>
+        {/* Header — matches Admin layout */}
+        <div className="flex items-center gap-3">
+          <Shield className="h-8 w-8 text-primary" aria-hidden="true" />
+          <div>
+            <h1 className="text-3xl font-bold">Driver Portal</h1>
+            <p className="text-muted-foreground">
+              {driver ? `Welcome, ${driver.first_name} ${driver.last_name}` : "Your assignments, requests & compliance hub"}
+            </p>
           </div>
           {driver?.status && (
-            <Badge variant="outline" className="capitalize self-start md:self-auto">
+            <Badge variant="outline" className="capitalize ml-auto">
               {driver.status}
             </Badge>
           )}
@@ -155,7 +150,7 @@ const DriverPortal = () => {
         {!driver && (
           <Card className="glass-strong border-warning/30">
             <CardContent className="p-6 flex items-center gap-3">
-              <AlertTriangle className="w-6 h-6 text-warning" />
+              <AlertTriangle className="w-6 h-6 text-warning" aria-hidden="true" />
               <div>
                 <p className="font-medium">No driver profile linked to your account</p>
                 <p className="text-sm text-muted-foreground">Contact Fleet Operations to link your driver record.</p>
@@ -165,208 +160,150 @@ const DriverPortal = () => {
         )}
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="glass-strong">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <Car className="w-6 h-6 text-primary" />
-                <Badge variant="outline" className="text-xs">Assigned</Badge>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">My Vehicle</p>
-              <p className="font-bold text-lg truncate">
-                {vehicle ? vehicle.plate_number : "—"}
-              </p>
-              {vehicle && (
-                <p className="text-xs text-muted-foreground truncate">{vehicle.make} {vehicle.model}</p>
-              )}
-            </CardContent>
-          </Card>
+        <DriverQuickStats
+          vehiclePlate={vehicle?.plate_number}
+          vehicleMakeModel={vehicle ? `${vehicle.make || ""} ${vehicle.model || ""}`.trim() : null}
+          totalTrips={driver?.total_trips || 0}
+          totalDistanceKm={Number(driver?.total_distance_km || 0)}
+          safetyScore={score?.overall_score}
+          openMaintenance={openRequests?.maintenance || 0}
+          openFuel={openRequests?.fuel || 0}
+        />
 
-          <Card className="glass-strong">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <Activity className="w-6 h-6 text-success" />
-                <Badge variant="outline" className="text-xs">Lifetime</Badge>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">Total Trips</p>
-              <p className="font-bold text-2xl">{driver?.total_trips || 0}</p>
-              <p className="text-xs text-muted-foreground">
-                {Number(driver?.total_distance_km || 0).toLocaleString()} km
-              </p>
-            </CardContent>
-          </Card>
+        {/* Quick Actions */}
+        <DriverQuickActions
+          onReportIssue={() => navigate("/driver-maintenance-request")}
+          onRequestFuel={() => navigate("/fuel-management")}
+          onRequestVehicle={() => navigate("/vehicle-requests")}
+          onPreTripInspection={() => navigate("/inspections")}
+          onMyDocuments={() => navigate("/document-management")}
+        />
 
-          <Card className="glass-strong">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <Award className="w-6 h-6 text-warning" />
-                <Badge variant="outline" className="text-xs">Score</Badge>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">Safety Rating</p>
-              <p className="font-bold text-2xl">
-                {score?.overall_score ? Math.round(score.overall_score) : "—"}
-                {score?.overall_score && <span className="text-sm text-muted-foreground">/100</span>}
-              </p>
-              {score?.overall_score && (
-                <Progress value={score.overall_score} className="h-1 mt-2" />
-              )}
-            </CardContent>
-          </Card>
+        {/* Tabbed sections */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList className="flex flex-wrap h-auto w-full gap-1">
+            <TabsTrigger value="assignments" className="gap-2">
+              <Calendar className="h-4 w-4" aria-hidden="true" />
+              <span className="hidden sm:inline">Assignments</span>
+              <span className="sm:hidden">Trips</span>
+            </TabsTrigger>
+            <TabsTrigger value="performance" className="gap-2">
+              <Award className="h-4 w-4" aria-hidden="true" />
+              Performance
+            </TabsTrigger>
+            <TabsTrigger value="compliance" className="gap-2">
+              <FileText className="h-4 w-4" aria-hidden="true" />
+              <span className="hidden sm:inline">Compliance</span>
+              <span className="sm:hidden">Docs</span>
+            </TabsTrigger>
+            <TabsTrigger value="history" className="gap-2">
+              <History className="h-4 w-4" aria-hidden="true" />
+              History
+            </TabsTrigger>
+          </TabsList>
 
-          <Card className="glass-strong">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <Clock className="w-6 h-6 text-accent" />
-                <Badge variant="outline" className="text-xs">Open</Badge>
+          <TabsContent value="assignments">
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base font-semibold flex items-center gap-2">
+                  <Calendar className="w-4 h-4" aria-hidden="true" /> Today's Assignments
+                </h2>
+                <Button size="sm" variant="ghost" onClick={() => navigate("/driver-management")}>
+                  View all <ChevronRight className="w-4 h-4 ml-1" aria-hidden="true" />
+                </Button>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">My Requests</p>
-              <p className="font-bold text-2xl">
-                {(openRequests?.maintenance || 0) + (openRequests?.fuel || 0)}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {openRequests?.maintenance || 0} maint · {openRequests?.fuel || 0} fuel
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main grid: Assignments + Quick Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Today's Assignments */}
-          <Card className="glass-strong lg:col-span-2">
-            <CardHeader className="pb-3 flex flex-row items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Calendar className="w-4 h-4" /> Today's Assignments
-              </CardTitle>
-              <Button size="sm" variant="ghost" onClick={() => navigate("/driver-management")}>
-                View all <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {trips?.active?.length === 0 && trips?.upcoming?.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground text-sm">
-                  <CheckCircle2 className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                  No active or scheduled assignments
-                </div>
-              ) : (
-                <>
-                  {trips?.active?.map((t: any) => (
-                    <div key={t.id} className="p-3 rounded-lg border border-primary/20 bg-primary/5 flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <Badge className="bg-primary/20 text-primary border-primary/30" variant="outline">{t.status}</Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {t.start_time ? format(new Date(t.start_time), "HH:mm") : "—"}
-                          </span>
+              <div className="space-y-3">
+                {trips?.active?.length === 0 && trips?.upcoming?.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground text-sm">
+                    <CheckCircle2 className="w-10 h-10 mx-auto mb-2 opacity-50" aria-hidden="true" />
+                    No active or scheduled assignments
+                  </div>
+                ) : (
+                  <>
+                    {trips?.active?.map((t: any) => (
+                      <div key={t.id} className="p-3 rounded-lg border border-primary/20 bg-primary/5 flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-primary/20 text-primary border-primary/30" variant="outline">{t.status}</Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {t.start_time ? format(new Date(t.start_time), "HH:mm") : "—"}
+                            </span>
+                          </div>
+                          <p className="text-sm mt-1 truncate flex items-center gap-1">
+                            <MapPin className="w-3 h-3" aria-hidden="true" /> {t.start_location || "—"} → {t.end_location || "—"}
+                          </p>
                         </div>
-                        <p className="text-sm mt-1 truncate flex items-center gap-1">
-                          <MapPin className="w-3 h-3" /> {t.start_location || "—"} → {t.end_location || "—"}
-                        </p>
                       </div>
-                    </div>
-                  ))}
-                  {trips?.upcoming?.map((j: any) => (
-                    <div key={j.id} className="p-3 rounded-lg border border-border bg-muted/20 flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-xs">{j.job_number}</Badge>
-                          <Badge variant={j.priority === "high" ? "destructive" : "outline"} className="text-xs capitalize">
-                            {j.priority}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {j.scheduled_pickup_at ? format(new Date(j.scheduled_pickup_at), "MMM dd HH:mm") : "—"}
-                          </span>
+                    ))}
+                    {trips?.upcoming?.map((j: any) => (
+                      <div key={j.id} className="p-3 rounded-lg border border-border bg-muted/20 flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">{j.job_number}</Badge>
+                            <Badge variant={j.priority === "high" ? "destructive" : "outline"} className="text-xs capitalize">
+                              {j.priority}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {j.scheduled_pickup_at ? format(new Date(j.scheduled_pickup_at), "MMM dd HH:mm") : "—"}
+                            </span>
+                          </div>
+                          <p className="text-sm mt-1 truncate flex items-center gap-1">
+                            <MapPin className="w-3 h-3" aria-hidden="true" /> {j.pickup_location_name || "—"} → {j.dropoff_location_name || "—"}
+                          </p>
                         </div>
-                        <p className="text-sm mt-1 truncate flex items-center gap-1">
-                          <MapPin className="w-3 h-3" /> {j.pickup_location_name || "—"} → {j.dropoff_location_name || "—"}
-                        </p>
                       </div>
-                    </div>
-                  ))}
-                </>
-              )}
-            </CardContent>
-          </Card>
+                    ))}
+                  </>
+                )}
+              </div>
+            </Card>
+          </TabsContent>
 
-          {/* Quick Actions */}
-          <Card className="glass-strong">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start" onClick={() => navigate("/driver-maintenance-request")}>
-                <Wrench className="w-4 h-4 mr-2 text-warning" /> Report Vehicle Issue
-              </Button>
-              <Button variant="outline" className="w-full justify-start" onClick={() => navigate("/fuel-management")}>
-                <Fuel className="w-4 h-4 mr-2 text-primary" /> Request Fuel
-              </Button>
-              <Button variant="outline" className="w-full justify-start" onClick={() => navigate("/vehicle-requests")}>
-                <Car className="w-4 h-4 mr-2 text-accent" /> Request Vehicle
-              </Button>
-              <Button variant="outline" className="w-full justify-start" onClick={() => navigate("/inspections")}>
-                <Gauge className="w-4 h-4 mr-2 text-success" /> Pre-Trip Inspection
-              </Button>
-              <Button variant="outline" className="w-full justify-start" onClick={() => navigate("/document-management")}>
-                <FileText className="w-4 h-4 mr-2 text-muted-foreground" /> My Documents
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Performance + Documents */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Performance breakdown */}
-          <Card className="glass-strong">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Award className="w-4 h-4" /> My Performance
+          <TabsContent value="performance">
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base font-semibold flex items-center gap-2">
+                  <Award className="w-4 h-4" aria-hidden="true" /> My Performance
+                </h2>
                 {score?.score_period_end && (
-                  <span className="text-xs text-muted-foreground font-normal ml-auto">
-                    as of {format(new Date(score.score_period_end), "MMM dd")}
+                  <span className="text-xs text-muted-foreground">
+                    as of {format(new Date(score.score_period_end), "MMM dd, yyyy")}
                   </span>
                 )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {score ? (
-                <>
-                  {[
-                    { label: "Speeding", value: score.speeding_score, color: "bg-success" },
-                    { label: "Braking", value: score.braking_score, color: "bg-primary" },
-                    { label: "Acceleration", value: score.acceleration_score, color: "bg-accent" },
-                    { label: "Idle", value: score.idle_score, color: "bg-warning" },
-                  ].map(item => (
-                    <div key={item.label}>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="text-muted-foreground">{item.label}</span>
-                        <span className="font-medium">{item.value ? Math.round(item.value) : "—"}/100</span>
+              </div>
+              <div className="space-y-4">
+                {score ? (
+                  <>
+                    {[
+                      { label: "Speeding", value: score.speeding_score },
+                      { label: "Braking", value: score.braking_score },
+                      { label: "Acceleration", value: score.acceleration_score },
+                      { label: "Idle Time", value: score.idle_score },
+                    ].map(item => (
+                      <div key={item.label}>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-muted-foreground">{item.label}</span>
+                          <span className="font-medium">{item.value ? Math.round(item.value) : "—"}/100</span>
+                        </div>
+                        <Progress value={item.value || 0} className="h-2" />
                       </div>
-                      <Progress value={item.value || 0} className="h-2" />
-                    </div>
-                  ))}
-                  <div className="pt-2 border-t border-border/50">
-                    <p className="text-xs text-muted-foreground">
-                      Recent Trips: <span className="font-medium text-foreground">{trips?.recent?.length || 0}</span> in last batch
-                    </p>
+                    ))}
+                  </>
+                ) : (
+                  <div className="text-center py-6 text-muted-foreground text-sm">
+                    <Activity className="w-10 h-10 mx-auto mb-2 opacity-50" aria-hidden="true" />
+                    No performance data yet
                   </div>
-                </>
-              ) : (
-                <div className="text-center py-6 text-muted-foreground text-sm">
-                  <Activity className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                  No performance data yet
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                )}
+              </div>
+            </Card>
+          </TabsContent>
 
-          {/* Documents & Compliance */}
-          <Card className="glass-strong">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <FileText className="w-4 h-4" /> Documents & Compliance
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
+          <TabsContent value="compliance">
+            <Card className="p-6 space-y-3">
+              <h2 className="text-base font-semibold flex items-center gap-2 mb-2">
+                <FileText className="w-4 h-4" aria-hidden="true" /> Documents & Compliance
+              </h2>
               <div className="p-3 rounded-lg bg-muted/30">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-sm font-medium">Driving License</span>
@@ -389,57 +326,56 @@ const DriverPortal = () => {
               </div>
 
               <Button variant="outline" className="w-full justify-between" onClick={() => navigate("/licensing-compliance")}>
-                <span className="flex items-center gap-2"><Shield className="w-4 h-4" /> View Compliance Status</span>
-                <ChevronRight className="w-4 h-4" />
+                <span className="flex items-center gap-2"><Shield className="w-4 h-4" aria-hidden="true" /> View Compliance Status</span>
+                <ChevronRight className="w-4 h-4" aria-hidden="true" />
               </Button>
               <Button variant="outline" className="w-full justify-between" onClick={() => navigate("/document-management")}>
-                <span className="flex items-center gap-2"><FileText className="w-4 h-4" /> Upload / View Documents</span>
-                <ChevronRight className="w-4 h-4" />
+                <span className="flex items-center gap-2"><FileText className="w-4 h-4" aria-hidden="true" /> Upload / View Documents</span>
+                <ChevronRight className="w-4 h-4" aria-hidden="true" />
               </Button>
               <Button variant="outline" className="w-full justify-between" onClick={() => navigate("/driver-training")}>
-                <span className="flex items-center gap-2"><Award className="w-4 h-4" /> Training Certificates</span>
-                <ChevronRight className="w-4 h-4" />
+                <span className="flex items-center gap-2"><Award className="w-4 h-4" aria-hidden="true" /> Training Certificates</span>
+                <ChevronRight className="w-4 h-4" aria-hidden="true" />
               </Button>
-            </CardContent>
-          </Card>
-        </div>
+            </Card>
+          </TabsContent>
 
-        {/* Recent Trip History */}
-        <Card className="glass-strong">
-          <CardHeader className="pb-3 flex flex-row items-center justify-between">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Clock className="w-4 h-4" /> Recent Trip History
-            </CardTitle>
-            <Button size="sm" variant="ghost" onClick={() => navigate("/route-history")}>
-              View all <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {trips?.recent?.length === 0 ? (
-              <div className="text-center py-6 text-muted-foreground text-sm">No completed trips yet</div>
-            ) : (
-              <div className="space-y-2">
-                {trips?.recent?.map((t: any) => (
-                  <div key={t.id} className="flex items-center justify-between p-2 rounded hover:bg-muted/30 cursor-pointer text-sm" onClick={() => navigate(`/route-history?tripId=${t.id}`)}>
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="p-2 rounded bg-primary/10">
-                        <MapPin className="w-4 h-4 text-primary" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate">{t.start_location || "—"} → {t.end_location || "—"}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {t.end_time ? formatDistanceToNow(new Date(t.end_time), { addSuffix: true }) : "—"}
-                          {t.distance_km && ` · ${Number(t.distance_km).toFixed(1)} km`}
-                        </p>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                ))}
+          <TabsContent value="history">
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base font-semibold flex items-center gap-2">
+                  <Clock className="w-4 h-4" aria-hidden="true" /> Recent Trip History
+                </h2>
+                <Button size="sm" variant="ghost" onClick={() => navigate("/route-history")}>
+                  View all <ChevronRight className="w-4 h-4 ml-1" aria-hidden="true" />
+                </Button>
               </div>
-            )}
-          </CardContent>
-        </Card>
+              {trips?.recent?.length === 0 ? (
+                <div className="text-center py-6 text-muted-foreground text-sm">No completed trips yet</div>
+              ) : (
+                <div className="space-y-2">
+                  {trips?.recent?.map((t: any) => (
+                    <div key={t.id} className="flex items-center justify-between p-2 rounded hover:bg-muted/30 cursor-pointer text-sm" onClick={() => navigate(`/route-history?tripId=${t.id}`)}>
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="p-2 rounded bg-primary/10">
+                          <MapPin className="w-4 h-4 text-primary" aria-hidden="true" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate">{t.start_location || "—"} → {t.end_location || "—"}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {t.end_time ? formatDistanceToNow(new Date(t.end_time), { addSuffix: true }) : "—"}
+                            {t.distance_km && ` · ${Number(t.distance_km).toFixed(1)} km`}
+                          </p>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );
