@@ -29,6 +29,8 @@ import { toast } from "sonner";
 import { TablePagination, usePagination } from "@/components/reports/TablePagination";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
+import { TelebirrEmoneyPanel } from "./TelebirrEmoneyPanel";
+import { FuelClarificationPanel } from "./FuelClarificationPanel";
 
 const ITEMS_PER_PAGE = 15;
 const APPROVER_ROLES = ["fleet_manager", "operations_manager", "org_admin", "super_admin", "fleet_owner"];
@@ -1274,24 +1276,26 @@ export const FuelRequestWorkflow = () => {
                   onSubmitJustification={(id: string, j: string) => justificationMutation.mutate({ id, justification: j })}
                 />
 
-                {/* E-Money Actions */}
-                {showDetail.fuel_work_order_id && showDetail.status === "approved" && canApprove && (
-                  <Card>
-                    <CardHeader className="py-3 px-4">
-                      <CardTitle className="text-sm flex items-center gap-2"><Wallet className="h-4 w-4" /> E-Money Transfer Actions</CardTitle>
-                    </CardHeader>
-                    <CardContent className="px-4 pb-3 flex gap-2 flex-wrap">
-                      <Button size="sm" variant="outline" onClick={() => emoneyMutation.mutate({ workOrderId: showDetail.fuel_work_order_id, action: "initiate", amount: showDetail.estimated_cost || 0 })}>
-                        <Wallet className="h-3 w-3 mr-1" /> Initiate Transfer
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => emoneyMutation.mutate({ workOrderId: showDetail.fuel_work_order_id, action: "approve" })}>
-                        <Check className="h-3 w-3 mr-1" /> Approve Transfer
-                      </Button>
-                      <Button size="sm" onClick={() => emoneyMutation.mutate({ workOrderId: showDetail.fuel_work_order_id, action: "complete" })}>
-                        <Send className="h-3 w-3 mr-1" /> Complete Transfer
-                      </Button>
-                    </CardContent>
-                  </Card>
+                {/* Telebirr E-Money Pipeline (replaces placeholder buttons) */}
+                {showDetail.fuel_work_order_id && showDetail.status === "approved" && (
+                  <TelebirrEmoneyPanel
+                    workOrderId={showDetail.fuel_work_order_id}
+                    fuelRequestId={showDetail.id}
+                    driverPhone={showDetail.driver_phone}
+                    approvedAmount={Number(showDetail.estimated_cost || 0)}
+                    canApprove={canApprove}
+                  />
+                )}
+
+                {/* Clarification & clearance loop (steps 14-17) */}
+                {showDetail.status === "fulfilled" && organizationId && (
+                  <FuelClarificationPanel
+                    fuelRequestId={showDetail.id}
+                    organizationId={organizationId}
+                    canRequest={canApprove}
+                    canJustify={canApprove}
+                    canResolve={canApprove}
+                  />
                 )}
               </div>
             </ScrollArea>
