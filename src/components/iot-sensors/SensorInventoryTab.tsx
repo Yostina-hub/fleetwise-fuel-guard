@@ -274,9 +274,9 @@ const SensorInventoryTab = ({ organizationId }: SensorInventoryTabProps) => {
             </div>
             <div>
               <Label>Vehicle</Label>
-              <Select value={form.vehicle_id} onValueChange={v => setForm(p => ({ ...p, vehicle_id: v }))}>
+              <Select value={form.vehicle_id || undefined} onValueChange={v => setForm(p => ({ ...p, vehicle_id: v }))}>
                 <SelectTrigger><SelectValue placeholder="Assign to vehicle" /></SelectTrigger>
-                <SelectContent>{vehicles.map((v: any) => <SelectItem key={v.id} value={v.id}>{v.plate_number}</SelectItem>)}</SelectContent>
+                <SelectContent>{vehicles.filter((v: any) => v.id).map((v: any) => <SelectItem key={v.id} value={v.id}>{v.plate_number}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>
