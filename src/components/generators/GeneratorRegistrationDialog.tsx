@@ -171,7 +171,7 @@ export const GeneratorRegistrationDialog = ({
                 disabled={!!editGenerator}
               />
               {errors.asset_number && (
-                <p className="text-xs text-destructive">{errors.asset_number.message}</p>
+                <p className="text-xs text-destructive">{errMsg(errors.asset_number)}</p>
               )}
             </div>
             <div className="space-y-1">
@@ -180,7 +180,7 @@ export const GeneratorRegistrationDialog = ({
               </Label>
               <Input placeholder="e.g. Main Office Backup Generator" {...form.register("name")} />
               {errors.name && (
-                <p className="text-xs text-destructive">{errors.name.message}</p>
+                <p className="text-xs text-destructive">{errMsg(errors.name)}</p>
               )}
             </div>
             <div className="space-y-1">
@@ -195,7 +195,7 @@ export const GeneratorRegistrationDialog = ({
               </Label>
               <Input placeholder="Manufacturer S/N" {...form.register("asset_serial_number")} />
               {errors.asset_serial_number && (
-                <p className="text-xs text-destructive">{errors.asset_serial_number.message}</p>
+                <p className="text-xs text-destructive">{errMsg(errors.asset_serial_number)}</p>
               )}
             </div>
             <div className="space-y-1">
@@ -434,7 +434,7 @@ export const GeneratorRegistrationDialog = ({
                     })}
                   />
                   {errors.tank_capacity_liters && (
-                    <p className="text-xs text-destructive">{errors.tank_capacity_liters.message}</p>
+                    <p className="text-xs text-destructive">{errMsg(errors.tank_capacity_liters)}</p>
                   )}
                 </div>
               </div>
@@ -466,7 +466,7 @@ export const GeneratorRegistrationDialog = ({
                     })}
                   />
                   {errors.latitude && (
-                    <p className="text-xs text-destructive">{errors.latitude.message}</p>
+                    <p className="text-xs text-destructive">{errMsg(errors.latitude)}</p>
                   )}
                 </div>
                 <div className="space-y-1">
@@ -481,7 +481,7 @@ export const GeneratorRegistrationDialog = ({
                     })}
                   />
                   {errors.longitude && (
-                    <p className="text-xs text-destructive">{errors.longitude.message}</p>
+                    <p className="text-xs text-destructive">{errMsg(errors.longitude)}</p>
                   )}
                 </div>
               </div>
