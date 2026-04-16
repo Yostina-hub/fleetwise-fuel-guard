@@ -40,7 +40,7 @@ const OBD_GAUGES = [
 
 const OBDRemoteDiagnosticsPanel = () => {
   const { organizationId } = useOrganization();
-  const [selectedVehicle, setSelectedVehicle] = useState<string>("");
+  const [selectedVehicle, setSelectedVehicle] = useState<string>("all");
 
   const { data: vehicles = [] } = useQuery({
     queryKey: ["vehicles-obd", organizationId],
@@ -63,7 +63,7 @@ const OBDRemoteDiagnosticsPanel = () => {
         .eq("sensor_type", "obd2")
         .order("recorded_at", { ascending: false })
         .limit(50);
-      if (selectedVehicle) query = query.eq("vehicle_id", selectedVehicle);
+      if (selectedVehicle && selectedVehicle !== "all") query = query.eq("vehicle_id", selectedVehicle);
       const { data, error } = await query;
       if (error) throw error;
       return data || [];
@@ -89,7 +89,7 @@ const OBDRemoteDiagnosticsPanel = () => {
         <Select value={selectedVehicle} onValueChange={setSelectedVehicle}>
           <SelectTrigger className="w-[250px]"><SelectValue placeholder="All vehicles" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Vehicles</SelectItem>
+            <SelectItem value="all">All Vehicles</SelectItem>
             {vehicles.map((v: any) => <SelectItem key={v.id} value={v.id}>{v.plate_number} — {v.make} {v.model}</SelectItem>)}
           </SelectContent>
         </Select>
