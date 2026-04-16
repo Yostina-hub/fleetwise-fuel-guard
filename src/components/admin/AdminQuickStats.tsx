@@ -1,38 +1,101 @@
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useOrganization } from "@/hooks/useOrganization";
 import { Card, CardContent } from "@/components/ui/card";
-import { Settings, Users, Lock, AlertTriangle, CheckCircle, Shield } from "lucide-react";
+import { Users, Lock, AlertTriangle, CheckCircle, Shield, Activity } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-interface AdminQuickStatsProps {
-  totalUsers: number;
-  activeSSO: boolean;
-  passwordPolicyEnabled: boolean;
-  pendingPenalties: number;
-  loginAttemptsToday?: number;
-}
+const AdminQuickStats = () => {
+  const { organizationId } = useOrganization();
 
-const AdminQuickStats = ({
-  totalUsers,
-  activeSSO,
-  passwordPolicyEnabled,
-  pendingPenalties,
-  loginAttemptsToday = 0,
-}: AdminQuickStatsProps) => {
+  const { data: userCount = 0 } = useQuery({
+    queryKey: ["admin_stats_users", organizationId],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", organizationId!);
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!organizationId,
+  });
+
+  const { data: ssoActive = false } = useQuery({
+    queryKey: ["admin_stats_sso", organizationId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("sso_configurations")
+        .select("id")
+        .eq("organization_id", organizationId!)
+        .eq("is_active", true)
+        .limit(1);
+      if (error) throw error;
+      return (data?.length || 0) > 0;
+    },
+    enabled: !!organizationId,
+  });
+
+  const { data: passwordPolicyEnabled = false } = useQuery({
+    queryKey: ["admin_stats_password", organizationId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("password_policies")
+        .select("id")
+        .eq("organization_id", organizationId!)
+        .limit(1);
+      if (error) throw error;
+      return (data?.length || 0) > 0;
+    },
+    enabled: !!organizationId,
+  });
+
+  const { data: pendingPenalties = 0 } = useQuery({
+    queryKey: ["admin_stats_penalties", organizationId],
+    queryFn: async () => {
+      const { count, error } = await (supabase as any)
+        .from("driver_penalties")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", organizationId!)
+        .eq("status", "pending");
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!organizationId,
+  });
+
+  const { data: loginsToday = 0 } = useQuery({
+    queryKey: ["admin_stats_logins", organizationId],
+    queryFn: async () => {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const { count, error } = await (supabase as any)
+        .from("login_history")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", organizationId!)
+        .gte("login_time", todayStart.toISOString());
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!organizationId,
+  });
+
   const stats = [
     {
       label: "Organization Users",
       tooltip: "Total number of users in your organization",
-      value: totalUsers.toString(),
+      value: userCount.toString(),
       icon: Users,
       color: "text-primary",
       bgColor: "bg-primary/10",
     },
     {
       label: "SSO Status",
-      tooltip: activeSSO ? "Single Sign-On is configured and active" : "Single Sign-On is not configured",
-      value: activeSSO ? "Active" : "Disabled",
+      tooltip: ssoActive ? "Single Sign-On is configured and active" : "Single Sign-On is not configured",
+      value: ssoActive ? "Active" : "Disabled",
       icon: Shield,
-      color: activeSSO ? "text-success" : "text-muted-foreground",
-      bgColor: activeSSO ? "bg-success/10" : "bg-muted/50",
+      color: ssoActive ? "text-success" : "text-muted-foreground",
+      bgColor: ssoActive ? "bg-success/10" : "bg-muted/50",
     },
     {
       label: "Password Policy",
@@ -53,8 +116,8 @@ const AdminQuickStats = ({
     {
       label: "Logins Today",
       tooltip: "Number of successful logins today",
-      value: loginAttemptsToday.toString(),
-      icon: Settings,
+      value: loginsToday.toString(),
+      icon: Activity,
       color: "text-blue-600",
       bgColor: "bg-blue-500/10",
     },
