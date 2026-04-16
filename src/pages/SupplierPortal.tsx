@@ -4,9 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Loader2, Wrench } from "lucide-react";
 import { format } from "date-fns";
+import { WorkOrderMessageThread } from "@/components/maintenance-enterprise/WorkOrderMessageThread";
+import { SupplierPaymentRequestForm } from "@/components/maintenance-enterprise/SupplierPaymentRequestForm";
 
 export default function SupplierPortal() {
   const { user } = useAuthContext();
@@ -66,6 +68,30 @@ export default function SupplierPortal() {
           ))}
         </div>
       )}
+
+      <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          {selected && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{selected.work_order_number} — {selected.vehicles?.plate_number}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">{selected.service_description}</p>
+                <WorkOrderMessageThread
+                  workOrderId={selected.id}
+                  organizationId={selected.organization_id}
+                  senderType="supplier"
+                />
+                <SupplierPaymentRequestForm
+                  workOrderId={selected.id}
+                  organizationId={selected.organization_id}
+                />
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -15608,6 +15608,7 @@ export type Database = {
           status: string | null
           supplier_id: string | null
           supplier_name: string | null
+          supporting_documents: Json
           updated_at: string
           work_order_id: string
         }
@@ -15627,6 +15628,7 @@ export type Database = {
           status?: string | null
           supplier_id?: string | null
           supplier_name?: string | null
+          supporting_documents?: Json
           updated_at?: string
           work_order_id: string
         }
@@ -15646,6 +15648,7 @@ export type Database = {
           status?: string | null
           supplier_id?: string | null
           supplier_name?: string | null
+          supporting_documents?: Json
           updated_at?: string
           work_order_id?: string
         }
