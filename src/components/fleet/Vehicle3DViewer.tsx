@@ -1,6 +1,6 @@
 import { Suspense, useRef, useState, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Environment, ContactShadows, Text, RoundedBox, Center } from "@react-three/drei";
+import { OrbitControls, ContactShadows, Text, RoundedBox, Center } from "@react-three/drei";
 import * as THREE from "three";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
