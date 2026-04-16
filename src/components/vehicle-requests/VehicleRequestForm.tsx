@@ -133,7 +133,7 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
         try {
           const { notifyApproverSms, getAppUrl } = await import("@/services/vehicleRequestSmsService");
           const targetRole = routeResult as string; // e.g. "operations_manager" or "org_admin"
-          const { data: approvers } = await supabase
+          const { data: approvers } = await (supabase as any)
             .from("user_roles")
             .select("user_id")
             .eq("organization_id", organizationId!)
