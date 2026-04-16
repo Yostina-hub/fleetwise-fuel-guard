@@ -305,11 +305,16 @@ export const VehicleVirtualGrid = ({
                     <CardHeader className="relative pt-12">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <CardTitle className="text-xl flex items-center gap-2">
+                          <CardTitle className="text-xl flex items-center gap-2 flex-wrap">
                             {vehicle.plate}
                             {vehicle.vehicleType && (
                               <Badge variant="outline" className="text-xs font-normal capitalize">
                                 {vehicle.vehicleType.replace('_', ' ')}
+                              </Badge>
+                            )}
+                            {vehicle.fuelType && (
+                              <Badge variant="secondary" className="text-xs font-normal capitalize">
+                                {vehicle.fuelType.replace('_', ' ')}
                               </Badge>
                             )}
                           </CardTitle>
