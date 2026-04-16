@@ -504,150 +504,27 @@ const WorkOrdersTab = () => {
             <Download className="w-4 h-4" aria-hidden="true" />
             Export CSV
           </Button>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button 
-              onClick={resetForm} 
+          <Button 
+              onClick={() => setIsDialogOpen(true)} 
               disabled={!canCreateWorkOrder}
-              aria-label="Create new work order"
+              aria-label="Create new work request"
               title={!canCreateWorkOrder ? "You need super_admin, maintenance_lead, or operations_manager role" : undefined}
             >
               <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
-              Create Work Order
+              Create Work Request
             </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Create Work Order</DialogTitle>
-              <DialogDescription>
-                Schedule a new maintenance work order
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} noValidate>
-              <div className="space-y-4">
-                {formError && (
-                  <Alert variant="destructive">
-                    <AlertTitle>Couldn't create work order</AlertTitle>
-                    <AlertDescription>{formError}</AlertDescription>
-                  </Alert>
-                )}
-
-                <div>
-                  <Label htmlFor="wo-vehicle">Vehicle *</Label>
-                  <Select
-                    value={formData.vehicle_id}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, vehicle_id: value })
-                    }
-                  >
-                    <SelectTrigger id="wo-vehicle" aria-label="Select vehicle">
-                      <SelectValue placeholder="Select a vehicle" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {vehiclesLoading ? (
-                        <SelectItem value="__loading" disabled>
-                          Loading vehicles…
-                        </SelectItem>
-                      ) : vehicles && vehicles.length > 0 ? (
-                        vehicles.map((vehicle) => (
-                          <SelectItem key={vehicle.id} value={vehicle.id}>
-                            {vehicle.plate_number} - {vehicle.make} {vehicle.model}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="__none" disabled>
-                          No vehicles available
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  {fieldErrors.vehicle_id && (
-                    <p className="mt-1 text-sm text-destructive">{fieldErrors.vehicle_id}</p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="wo-work-type">Work Type *</Label>
-                  <Select
-                    value={formData.work_type}
-                    onValueChange={(value: string) =>
-                      setFormData({ ...formData, work_type: value })
-                    }
-                  >
-                    <SelectTrigger id="wo-work-type" aria-label="Select work type">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="oil_change">Oil Change</SelectItem>
-                      <SelectItem value="tire_service">Tire Service</SelectItem>
-                      <SelectItem value="brake_service">Brake Service</SelectItem>
-                      <SelectItem value="inspection">Inspection</SelectItem>
-                      <SelectItem value="engine_repair">Engine Repair</SelectItem>
-                      <SelectItem value="transmission_service">Transmission Service</SelectItem>
-                      <SelectItem value="electrical_repair">Electrical Repair</SelectItem>
-                      <SelectItem value="body_repair">Body Repair</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="wo-priority">Priority *</Label>
-                  <Select
-                    value={formData.priority}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, priority: value as "low" | "medium" | "high" | "urgent" })
-                    }
-                  >
-                    <SelectTrigger id="wo-priority" aria-label="Select priority">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="wo-description">Description *</Label>
-                  <Textarea
-                    id="wo-description"
-                    value={formData.service_description}
-                    onChange={(e) =>
-                      setFormData({ ...formData, service_description: e.target.value })
-                    }
-                    placeholder="Describe the work to be done..."
-                    rows={3}
-                    aria-describedby={fieldErrors.service_description ? "desc-error" : undefined}
-                  />
-                  {fieldErrors.service_description && (
-                    <p id="desc-error" className="mt-1 text-sm text-destructive">{fieldErrors.service_description}</p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="wo-scheduled-date">Scheduled Date</Label>
-                  <Input
-                    id="wo-scheduled-date"
-                    type="date"
-                    value={formData.scheduled_date}
-                    onChange={(e) =>
-                      setFormData({ ...formData, scheduled_date: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-              <DialogFooter className="mt-6">
-                <Button
-                  type="submit"
-                  disabled={createMutation.isPending || vehiclesLoading || !vehicles || vehicles.length === 0}
-                >
-                  {createMutation.isPending ? "Creating..." : "Create Work Order"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
         </div>
       </div>
+
+      <CreateWorkRequestDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["work_orders", organizationId] });
+          toast({ title: "Work request created successfully" });
+          setCurrentPage(1);
+        }}
+      />
 
       {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
