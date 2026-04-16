@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -17,11 +18,17 @@ import {
   Sparkles,
   Trophy,
   Loader2,
-  ChevronRight
+  ChevronRight,
+  Wand2
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { CreateGoalDialog } from "./CreateGoalDialog";
+import { IssueRewardDialog } from "./IssueRewardDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useOrganization } from "@/hooks/useOrganization";
+import { useToast } from "@/hooks/use-toast";
 
 interface DriverInsightsPanelProps {
   driverId: string;
@@ -59,6 +66,9 @@ const getRewardTypeIcon = (type: string) => {
 };
 
 export const DriverInsightsPanel = ({ driverId }: DriverInsightsPanelProps) => {
+  const { organizationId } = useOrganization();
+  const { toast } = useToast();
+  const [generating, setGenerating] = useState(false);
   const { 
     insights,
     unacknowledgedInsights,
@@ -67,8 +77,76 @@ export const DriverInsightsPanel = ({ driverId }: DriverInsightsPanelProps) => {
     rewards,
     trends,
     isLoading,
-    acknowledgeInsight
+    acknowledgeInsight,
+    createGoal,
+    issueReward,
   } = useDriverInsights(driverId);
+
+  const handleGenerateInsights = async () => {
+    if (!organizationId || !driverId) return;
+    setGenerating(true);
+    try {
+      // Fetch driver data for AI analysis
+      const [{ data: driver }, { data: recentTrips }, { data: scores }] = await Promise.all([
+        supabase.from("drivers").select("first_name, last_name, safety_score, total_trips, total_distance_km").eq("id", driverId).single(),
+        supabase.from("trips").select("distance_km, fuel_consumed, start_time, end_time, status").eq("driver_id", driverId).order("start_time", { ascending: false }).limit(20),
+        (supabase as any).from("driver_behavior_scores").select("overall_score, speeding_score, braking_score, acceleration_score, cornering_score, calculated_at").eq("driver_id", driverId).order("calculated_at", { ascending: false }).limit(5),
+      ]);
+
+      const prompt = `Analyze this fleet driver's performance data and generate 2-3 actionable insights.
+
+Driver: ${driver?.first_name} ${driver?.last_name}
+Safety Score: ${driver?.safety_score || 'N/A'}
+Total Trips: ${driver?.total_trips || 0}
+Total Distance: ${driver?.total_distance_km || 0} km
+
+Recent Trips (last 20): ${JSON.stringify(recentTrips?.slice(0, 5) || [])}
+Behavior Scores: ${JSON.stringify(scores || [])}
+
+Return ONLY a valid JSON array of insight objects with this structure:
+[{"insight_type":"performance_trend","severity":"info","title":"...","description":"...","action_items":["action1","action2"],"confidence_score":85}]
+
+Severity options: positive, info, warning, critical
+Type options: risk_prediction, coaching_tip, performance_trend, fuel_optimization, route_suggestion`;
+
+      const response = await supabase.functions.invoke("ai-gateway", {
+        body: { prompt, model: "google/gemini-2.5-flash" },
+      });
+
+      if (response.error) throw response.error;
+
+      let insightsData: any[];
+      try {
+        const text = response.data?.content || response.data?.text || response.data;
+        const jsonStr = typeof text === "string" ? text.replace(/```json\n?|\n?```/g, "").trim() : JSON.stringify(text);
+        insightsData = JSON.parse(jsonStr);
+      } catch {
+        throw new Error("Failed to parse AI response");
+      }
+
+      for (const insight of insightsData) {
+        await (supabase as any).from("driver_ai_insights").insert({
+          organization_id: organizationId,
+          driver_id: driverId,
+          insight_type: insight.insight_type || "performance_trend",
+          severity: insight.severity || "info",
+          title: insight.title,
+          description: insight.description,
+          action_items: insight.action_items || [],
+          confidence_score: insight.confidence_score || null,
+          is_acknowledged: false,
+        });
+      }
+
+      toast({ title: `${insightsData.length} AI insights generated!` });
+      // Refetch via query invalidation handled by hook
+      window.location.reload();
+    } catch (err: any) {
+      toast({ title: "Failed to generate insights", description: err.message, variant: "destructive" });
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   if (isLoading) {
     return (
