@@ -71,13 +71,30 @@ const DriverMaintenanceRequest = () => {
 
       if (!driver) return null;
 
-      // Find assigned vehicle
-      const { data: vehicle } = await supabase
+      // 1) Permanent assignment via vehicles.assigned_driver_id (driver may have multiple — pick most recent)
+      const { data: permVehicles } = await supabase
         .from("vehicles")
-        .select("id, plate_number, make, model")
+        .select("id, plate_number, make, model, updated_at")
         .eq("organization_id", organizationId)
         .eq("assigned_driver_id", driver.id)
-        .maybeSingle();
+        .order("updated_at", { ascending: false })
+        .limit(1);
+
+      let vehicle = permVehicles?.[0] || null;
+
+      // 2) Fallback: active vehicle request assignment
+      if (!vehicle) {
+        const { data: req } = await (supabase as any)
+          .from("vehicle_requests")
+          .select(`assigned_vehicle:assigned_vehicle_id(id, plate_number, make, model)`)
+          .eq("organization_id", organizationId)
+          .eq("assigned_driver_id", driver.id)
+          .in("status", ["assigned", "approved", "in_progress"])
+          .order("assigned_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (req?.assigned_vehicle) vehicle = req.assigned_vehicle;
+      }
 
       return { driver, vehicle };
     },
