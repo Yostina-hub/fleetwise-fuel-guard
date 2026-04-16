@@ -339,7 +339,7 @@ const Auth = () => {
   ];
 
   return (
-    <div className="min-h-screen relative overflow-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+    <div className="h-screen relative overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
       {/* Theme-based backgrounds */}
       {theme === 'cyber' ? (
         <>
@@ -372,7 +372,7 @@ const Auth = () => {
         </>
       )}
 
-      <div className="relative z-10 min-h-screen grid lg:grid-cols-2">
+      <div className="relative z-10 min-h-full grid lg:grid-cols-2">
         {/* Left Side - Branding & Features */}
         <div className="hidden lg:flex flex-col justify-between p-12 pt-16 pl-24">
           <div className="mt-20">
