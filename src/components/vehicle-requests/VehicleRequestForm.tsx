@@ -104,6 +104,15 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
       const user = (await supabase.auth.getUser()).data.user;
       const profile = (await supabase.from("profiles").select("full_name").eq("id", user!.id).single()).data;
 
+      // Super admin may file on behalf of another user; otherwise use self.
+      const requesterId = isSuperAdmin && onBehalfOf ? onBehalfOf.id : user!.id;
+      const requesterName = isSuperAdmin && onBehalfOf
+        ? onBehalfOf.name
+        : (profile?.full_name || user!.email || "Unknown");
+      const filedOnBehalfNote = isSuperAdmin && onBehalfOf
+        ? ` (filed by ${profile?.full_name || user!.email} on behalf of ${onBehalfOf.name})`
+        : "";
+
       let neededFrom: string;
       let neededUntil: string | null = null;
 
