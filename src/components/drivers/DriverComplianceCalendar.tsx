@@ -1,10 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
-import { Calendar, AlertTriangle, CheckCircle2, Clock, Bell } from "lucide-react";
+import { useDrivers } from "@/hooks/useDrivers";
+import { Calendar, AlertTriangle, CheckCircle2, Clock, Bell, Plus } from "lucide-react";
 import { format, differenceInDays, isPast } from "date-fns";
+import { toast } from "sonner";
 
 interface ComplianceEvent {
   id: string;
@@ -18,27 +26,43 @@ interface ComplianceEvent {
   priority: string;
 }
 
+const EVENT_TYPES = [
+  { value: "license_renewal", label: "License Renewal" },
+  { value: "medical_certificate", label: "Medical Certificate" },
+  { value: "background_check", label: "Background Check" },
+  { value: "drug_test", label: "Drug Test" },
+  { value: "safety_training", label: "Safety Training" },
+  { value: "vehicle_inspection", label: "Vehicle Inspection" },
+  { value: "insurance_renewal", label: "Insurance Renewal" },
+  { value: "other", label: "Other" },
+];
+
 export const DriverComplianceCalendar = () => {
   const { organizationId } = useOrganization();
+  const { drivers } = useDrivers();
   const [events, setEvents] = useState<ComplianceEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
+  const [showAdd, setShowAdd] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    driver_id: "", event_type: "license_renewal", title: "", description: "", due_date: "", priority: "medium",
+  });
 
-  useEffect(() => {
+  const fetchEvents = useCallback(async () => {
     if (!organizationId) return;
-    const fetchEvents = async () => {
-      setLoading(true);
-      const { data } = await supabase
-        .from("driver_compliance_events")
-        .select("*")
-        .eq("organization_id", organizationId)
-        .order("due_date", { ascending: true })
-        .limit(200);
-      setEvents((data as ComplianceEvent[]) || []);
-      setLoading(false);
-    };
-    fetchEvents();
+    setLoading(true);
+    const { data } = await supabase
+      .from("driver_compliance_events")
+      .select("*")
+      .eq("organization_id", organizationId)
+      .order("due_date", { ascending: true })
+      .limit(200);
+    setEvents((data as ComplianceEvent[]) || []);
+    setLoading(false);
   }, [organizationId]);
+
+  useEffect(() => { fetchEvents(); }, [fetchEvents]);
 
   const now = new Date();
   const overdueCount = events.filter(e => e.status !== "completed" && isPast(new Date(e.due_date))).length;
@@ -66,12 +90,48 @@ export const DriverComplianceCalendar = () => {
   };
 
   const eventTypeLabel = (t: string) => t.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  const getDriverName = (id: string) => {
+    const d = drivers.find(dr => dr.id === id);
+    return d ? `${d.first_name} ${d.last_name}` : "";
+  };
+
+  const handleCreate = async () => {
+    if (!organizationId || !form.driver_id || !form.title || !form.due_date) return;
+    setSaving(true);
+    const { error } = await supabase.from("driver_compliance_events").insert({
+      organization_id: organizationId,
+      driver_id: form.driver_id,
+      event_type: form.event_type,
+      title: form.title,
+      description: form.description || null,
+      due_date: form.due_date,
+      priority: form.priority,
+    });
+    setSaving(false);
+    if (error) { toast.error("Failed to create event"); return; }
+    toast.success("Compliance event created");
+    setShowAdd(false);
+    setForm({ driver_id: "", event_type: "license_renewal", title: "", description: "", due_date: "", priority: "medium" });
+    fetchEvents();
+  };
+
+  const markComplete = async (id: string) => {
+    await supabase.from("driver_compliance_events").update({
+      status: "completed",
+      completed_date: new Date().toISOString().split("T")[0],
+    }).eq("id", id);
+    toast.success("Marked as completed");
+    fetchEvents();
+  };
 
   return (
     <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold">Compliance Calendar</h3>
-        <p className="text-sm text-muted-foreground">Unified view of all compliance deadlines across drivers</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">Compliance Calendar</h3>
+          <p className="text-sm text-muted-foreground">Unified view of all compliance deadlines across drivers</p>
+        </div>
+        <Button className="gap-2" onClick={() => setShowAdd(true)}><Plus className="w-4 h-4" />Add Event</Button>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -139,6 +199,7 @@ export const DriverComplianceCalendar = () => {
                     <p className="text-sm font-medium truncate">{evt.title}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <Badge variant="outline" className="text-[10px]">{eventTypeLabel(evt.event_type)}</Badge>
+                      <span className="text-[10px] text-muted-foreground">{getDriverName(evt.driver_id)}</span>
                       <span className="text-[10px] text-muted-foreground">Due: {format(new Date(evt.due_date), "MMM dd, yyyy")}</span>
                     </div>
                   </div>
@@ -148,6 +209,11 @@ export const DriverComplianceCalendar = () => {
                     {!isOverdue && evt.status !== "completed" && daysLeft <= 30 && (
                       <Badge variant="secondary" className="text-[10px]">{daysLeft}d left</Badge>
                     )}
+                    {evt.status !== "completed" && (
+                      <Button variant="ghost" size="sm" className="h-7 text-xs text-emerald-500" onClick={() => markComplete(evt.id)}>
+                        <CheckCircle2 className="w-3.5 h-3.5 mr-1" />Done
+                      </Button>
+                    )}
                   </div>
                 </div>
               );
@@ -155,6 +221,64 @@ export const DriverComplianceCalendar = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Create Event Dialog */}
+      <Dialog open={showAdd} onOpenChange={setShowAdd}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New Compliance Event</DialogTitle>
+            <DialogDescription>Schedule a compliance deadline for a driver.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Driver *</Label>
+              <Select value={form.driver_id || undefined} onValueChange={v => setForm(f => ({ ...f, driver_id: v }))}>
+                <SelectTrigger><SelectValue placeholder="Select driver" /></SelectTrigger>
+                <SelectContent>{drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.first_name} {d.last_name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Event Type</Label>
+                <Select value={form.event_type} onValueChange={v => setForm(f => ({ ...f, event_type: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{EVENT_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Priority</Label>
+                <Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="critical">Critical</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label>Title *</Label>
+              <Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g., License Renewal for John" />
+            </div>
+            <div>
+              <Label>Due Date *</Label>
+              <Input type="date" value={form.due_date} onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Description</Label>
+              <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Optional details..." />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
+            <Button onClick={handleCreate} disabled={saving || !form.driver_id || !form.title || !form.due_date}>
+              {saving ? "Saving..." : "Create Event"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
