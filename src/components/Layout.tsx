@@ -148,6 +148,7 @@ const getNavItems = (t: (key: string) => string) => [
   { icon: Fuel, label: t("nav.fuelMonitoring"), subItems: [
     { label: t("nav.consumption"), path: "/fuel" },
     { label: t("nav.fuelRequests"), path: "/fuel-requests" },
+    { label: "Generators", path: "/generators" },
     { label: t("nav.fuelCardProviders"), path: "/fuel-card-providers" },
   ]},
   { icon: Battery, label: t("nav.evManagement"), path: "/ev-management" },

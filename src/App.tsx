@@ -98,6 +98,7 @@ const AssetManagement = lazyWithRetry(() => import("./pages/AssetManagement"), "
 const InstallApp = lazyWithRetry(() => import("./pages/InstallApp"), "InstallApp");
 const FuelEventsMap = lazyWithRetry(() => import("./pages/FuelEventsMap"), "FuelEventsMap");
 const InfrastructureMonitoring = lazyWithRetry(() => import("./pages/InfrastructureMonitoring"), "InfrastructureMonitoring");
+const Generators = lazyWithRetry(() => import("./pages/Generators"), "Generators");
 const OperationsConsole = lazyWithRetry(() => import("./pages/OperationsConsole"), "OperationsConsole");
 const SystemArchitecture = lazyWithRetry(() => import("./pages/SystemArchitecture"), "SystemArchitecture");
 const LicensingCompliance = lazyWithRetry(() => import("./pages/LicensingCompliance"), "LicensingCompliance");
@@ -183,6 +184,7 @@ const App = () => {
                         <Route path="/performance-simulation" element={<ProtectedRoute><PerformanceSimulation /></ProtectedRoute>} />
                         <Route path="/predictive-maintenance" element={<ProtectedRoute><PredictiveMaintenance /></ProtectedRoute>} />
                         <Route path="/fuel-requests" element={<ProtectedRoute><FuelRequests /></ProtectedRoute>} />
+                        <Route path="/generators" element={<ProtectedRoute><Generators /></ProtectedRoute>} />
                         <Route path="/driver-logbook" element={<ProtectedRoute><DriverLogbook /></ProtectedRoute>} />
                         <Route path="/roadside-assistance" element={<ProtectedRoute><RoadsideAssistance /></ProtectedRoute>} />
                         <Route path="/carbon-emissions" element={<ProtectedRoute><CarbonEmissions /></ProtectedRoute>} />
