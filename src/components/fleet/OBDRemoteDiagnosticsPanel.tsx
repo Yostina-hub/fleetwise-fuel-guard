@@ -1,13 +1,18 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
-import { CircuitBoard, Thermometer, Gauge, Fuel, Activity, Zap, Clock } from "lucide-react";
+import { toast } from "sonner";
+import { CircuitBoard, Thermometer, Gauge, Fuel, Activity, Zap, Clock, Plus, Trash2, Loader2 } from "lucide-react";
 
 interface OBDReading {
   rpm?: number;
@@ -21,10 +26,6 @@ interface OBDReading {
   speed_kmh?: number;
   dtc_codes?: string[];
   battery_voltage?: number;
-  fuel_system_status?: string;
-  fuel_trim_short?: number;
-  fuel_trim_long?: number;
-  o2_voltage?: number;
 }
 
 const OBD_GAUGES = [
@@ -38,9 +39,25 @@ const OBD_GAUGES = [
   { key: "fuel_pressure", label: "Fuel Pressure", unit: "kPa", icon: Fuel, min: 0, max: 500, warn: 400, color: "text-primary" },
 ];
 
+const emptyForm = {
+  vehicle_id: "",
+  rpm: "",
+  coolant_temp: "",
+  engine_load: "",
+  speed_kmh: "",
+  throttle_position: "",
+  battery_voltage: "",
+  intake_temp: "",
+  fuel_pressure: "",
+  dtc_codes: "",
+};
+
 const OBDRemoteDiagnosticsPanel = () => {
   const { organizationId } = useOrganization();
+  const queryClient = useQueryClient();
   const [selectedVehicle, setSelectedVehicle] = useState<string>("all");
+  const [showDialog, setShowDialog] = useState(false);
+  const [form, setForm] = useState(emptyForm);
 
   const { data: vehicles = [] } = useQuery({
     queryKey: ["vehicles-obd", organizationId],
@@ -69,12 +86,59 @@ const OBDRemoteDiagnosticsPanel = () => {
       return data || [];
     },
     enabled: !!organizationId,
-    refetchInterval: 15000, // Poll every 15s for live data
+    refetchInterval: 15000,
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!organizationId) throw new Error("No organization");
+      const readings: any = {};
+      if (form.rpm) readings.rpm = parseFloat(form.rpm);
+      if (form.coolant_temp) readings.coolant_temp = parseFloat(form.coolant_temp);
+      if (form.engine_load) readings.engine_load = parseFloat(form.engine_load);
+      if (form.speed_kmh) readings.speed_kmh = parseFloat(form.speed_kmh);
+      if (form.throttle_position) readings.throttle_position = parseFloat(form.throttle_position);
+      if (form.battery_voltage) readings.battery_voltage = parseFloat(form.battery_voltage);
+      if (form.intake_temp) readings.intake_temp = parseFloat(form.intake_temp);
+      if (form.fuel_pressure) readings.fuel_pressure = parseFloat(form.fuel_pressure);
+      if (form.dtc_codes.trim()) readings.dtc_codes = form.dtc_codes.split(",").map(c => c.trim()).filter(Boolean);
+      
+      const isAlert = (readings.coolant_temp && readings.coolant_temp > 105) || (readings.dtc_codes && readings.dtc_codes.length > 0);
+      
+      const { error } = await supabase.from("hardware_sensor_data").insert([{
+        organization_id: organizationId,
+        vehicle_id: form.vehicle_id,
+        sensor_type: "obd2",
+        readings,
+        is_alert: isAlert,
+        alert_type: isAlert ? (readings.dtc_codes?.length > 0 ? "dtc_fault" : "high_temp") : null,
+      }]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["obd-data"] });
+      setShowDialog(false);
+      setForm(emptyForm);
+      toast.success("OBD-II reading logged");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("hardware_sensor_data").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["obd-data"] });
+      toast.success("Reading deleted");
+    },
+    onError: (e: any) => toast.error(e.message),
   });
 
   const latestReadingsRaw = obdData[0]?.readings;
-  const latestReading: OBDReading = (latestReadingsRaw && typeof latestReadingsRaw === "object" && !Array.isArray(latestReadingsRaw)) ? latestReadingsRaw as unknown as OBDReading : {};
-  const dtcCodes = latestReading.dtc_codes || [];
+  const latestReading: OBDReading = typeof latestReadingsRaw === "object" && latestReadingsRaw !== null ? latestReadingsRaw : {};
+  const dtcCodes: string[] = Array.isArray(latestReading.dtc_codes) ? latestReading.dtc_codes : [];
 
   return (
     <div className="space-y-6">
@@ -86,13 +150,16 @@ const OBDRemoteDiagnosticsPanel = () => {
           </h2>
           <p className="text-sm text-muted-foreground">Live engine data from on-board diagnostics</p>
         </div>
-        <Select value={selectedVehicle} onValueChange={setSelectedVehicle}>
-          <SelectTrigger className="w-[250px]"><SelectValue placeholder="All vehicles" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Vehicles</SelectItem>
-            {vehicles.map((v: any) => <SelectItem key={v.id} value={v.id}>{v.plate_number} — {v.make} {v.model}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2">
+          <Select value={selectedVehicle} onValueChange={setSelectedVehicle}>
+            <SelectTrigger className="w-[250px]"><SelectValue placeholder="All vehicles" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Vehicles</SelectItem>
+              {vehicles.map((v: any) => <SelectItem key={v.id} value={v.id}>{v.plate_number} — {v.make} {v.model}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button onClick={() => { setForm(emptyForm); setShowDialog(true); }}><Plus className="h-4 w-4 mr-2" /> Log Reading</Button>
+        </div>
       </div>
 
       {/* Live Gauges */}
@@ -156,30 +223,29 @@ const OBDRemoteDiagnosticsPanel = () => {
               <TableHead>Speed</TableHead>
               <TableHead>Battery</TableHead>
               <TableHead>DTCs</TableHead>
+              <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {obdData.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                {isLoading ? "Loading..." : "No OBD-II data. Connect an OBD-II sensor to begin."}
-              </TableCell></TableRow>
-            ) : obdData.map((r: any) => {
-              const rd: OBDReading = r.readings || {};
+            {isLoading ? (
+              <TableRow><TableCell colSpan={9} className="text-center py-8"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></TableCell></TableRow>
+            ) : obdData.length === 0 ? (
+              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No OBD-II data. Connect OBD-II scanners or log manually.</TableCell></TableRow>
+            ) : obdData.map((row: any) => {
+              const r: OBDReading = typeof row.readings === "object" && row.readings !== null ? row.readings : {};
+              const codes = Array.isArray(r.dtc_codes) ? r.dtc_codes : [];
               return (
-                <TableRow key={r.id}>
-                  <TableCell className="text-sm">{format(new Date(r.recorded_at), "MMM dd, HH:mm:ss")}</TableCell>
-                  <TableCell className="font-medium">{r.vehicles?.plate_number || "—"}</TableCell>
-                  <TableCell className="font-mono">{rd.rpm ?? "—"}</TableCell>
-                  <TableCell className={`font-mono ${(rd.coolant_temp ?? 0) > 105 ? "text-destructive font-bold" : ""}`}>{rd.coolant_temp ?? "—"}°C</TableCell>
-                  <TableCell className="font-mono">{rd.engine_load ?? "—"}%</TableCell>
-                  <TableCell className="font-mono">{rd.speed_kmh ?? "—"}</TableCell>
-                  <TableCell className="font-mono">{rd.battery_voltage ?? "—"}V</TableCell>
+                <TableRow key={row.id} className={row.is_alert ? "bg-destructive/5" : ""}>
+                  <TableCell className="text-sm">{format(new Date(row.recorded_at), "MMM dd, HH:mm")}</TableCell>
+                  <TableCell className="font-medium">{row.vehicles?.plate_number || "—"}</TableCell>
+                  <TableCell>{r.rpm ?? "—"}</TableCell>
+                  <TableCell className={r.coolant_temp && r.coolant_temp > 105 ? "text-destructive font-bold" : ""}>{r.coolant_temp ? `${r.coolant_temp}°C` : "—"}</TableCell>
+                  <TableCell>{r.engine_load ? `${r.engine_load}%` : "—"}</TableCell>
+                  <TableCell>{r.speed_kmh ?? "—"}</TableCell>
+                  <TableCell>{r.battery_voltage ? `${r.battery_voltage}V` : "—"}</TableCell>
+                  <TableCell>{codes.length > 0 ? <Badge variant="destructive">{codes.length} DTCs</Badge> : "—"}</TableCell>
                   <TableCell>
-                    {rd.dtc_codes?.length ? (
-                      <Badge variant="destructive" className="text-xs">{rd.dtc_codes.length} codes</Badge>
-                    ) : (
-                      <Badge variant="secondary" className="text-xs">Clear</Badge>
-                    )}
+                    <Button size="sm" variant="ghost" onClick={() => { if (confirm("Delete this reading?")) deleteMutation.mutate(row.id); }}><Trash2 className="h-4 w-4" /></Button>
                   </TableCell>
                 </TableRow>
               );
@@ -187,6 +253,42 @@ const OBDRemoteDiagnosticsPanel = () => {
           </TableBody>
         </Table>
       </Card>
+
+      {/* Log OBD-II Reading Dialog */}
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><CircuitBoard className="h-5 w-5" /> Log OBD-II Reading</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Vehicle *</Label>
+              <Select value={form.vehicle_id || undefined} onValueChange={v => setForm(p => ({ ...p, vehicle_id: v }))}>
+                <SelectTrigger><SelectValue placeholder="Select vehicle" /></SelectTrigger>
+                <SelectContent>{vehicles.filter((v: any) => v.id).map((v: any) => <SelectItem key={v.id} value={v.id}>{v.plate_number} — {v.make} {v.model}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>RPM</Label><Input value={form.rpm} onChange={e => setForm(p => ({ ...p, rpm: e.target.value }))} placeholder="2400" /></div>
+              <div><Label>Coolant Temp (°C)</Label><Input value={form.coolant_temp} onChange={e => setForm(p => ({ ...p, coolant_temp: e.target.value }))} placeholder="92" /></div>
+              <div><Label>Engine Load (%)</Label><Input value={form.engine_load} onChange={e => setForm(p => ({ ...p, engine_load: e.target.value }))} placeholder="45" /></div>
+              <div><Label>Speed (km/h)</Label><Input value={form.speed_kmh} onChange={e => setForm(p => ({ ...p, speed_kmh: e.target.value }))} placeholder="60" /></div>
+              <div><Label>Throttle (%)</Label><Input value={form.throttle_position} onChange={e => setForm(p => ({ ...p, throttle_position: e.target.value }))} placeholder="30" /></div>
+              <div><Label>Battery (V)</Label><Input value={form.battery_voltage} onChange={e => setForm(p => ({ ...p, battery_voltage: e.target.value }))} placeholder="12.6" /></div>
+              <div><Label>Intake Temp (°C)</Label><Input value={form.intake_temp} onChange={e => setForm(p => ({ ...p, intake_temp: e.target.value }))} placeholder="35" /></div>
+              <div><Label>Fuel Pressure (kPa)</Label><Input value={form.fuel_pressure} onChange={e => setForm(p => ({ ...p, fuel_pressure: e.target.value }))} placeholder="250" /></div>
+            </div>
+            <div>
+              <Label>DTC Codes (comma-separated)</Label>
+              <Input value={form.dtc_codes} onChange={e => setForm(p => ({ ...p, dtc_codes: e.target.value }))} placeholder="P0301, P0420, P0171" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
+            <Button onClick={() => saveMutation.mutate()} disabled={!form.vehicle_id || saveMutation.isPending}>
+              {saveMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Log Reading
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
