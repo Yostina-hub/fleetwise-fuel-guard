@@ -214,22 +214,58 @@ export default function AssetRegistryTab() {
         <Button onClick={() => setShowAdd(true)} className="gap-1.5 h-9"><Plus className="w-4 h-4" />Add Asset</Button>
       </div>
 
-      {/* Table */}
-      <Card>
-        <ScrollArea className="max-h-[500px]">
+      {/* Mobile Card View */}
+      <div className="block md:hidden space-y-3">
+        {isLoading ? (
+          Array.from({ length: 3 }).map((_, i) => <Card key={i} className="p-4"><Skeleton className="h-20 w-full" /></Card>)
+        ) : filtered.length === 0 ? (
+          <Card className="p-8 text-center text-muted-foreground">No assets found</Card>
+        ) : (
+          filtered.map((a: any) => (
+            <Card key={a.id} className="p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-sm">{a.name}</p>
+                  <p className="text-xs font-mono text-muted-foreground">{a.asset_code}</p>
+                </div>
+                <Badge variant="outline" className={cn("capitalize text-xs", stageBadge(a.lifecycle_stage))}>{a.lifecycle_stage?.replace("_", " ")}</Badge>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="outline" className="capitalize text-xs">{a.category}</Badge>
+                {a.vehicles && (
+                  <Badge variant="secondary" className="text-xs gap-1">
+                    <Truck className="w-3 h-3" />{a.vehicles.plate_number}
+                  </Badge>
+                )}
+                <span className="capitalize text-xs text-muted-foreground">{a.condition}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-1 text-xs">
+                <div><span className="text-muted-foreground">Cost:</span> {a.purchase_cost ? `${a.purchase_cost.toLocaleString()} ETB` : "—"}</div>
+                <div><span className="text-muted-foreground">Value:</span> {a.current_value ? `${a.current_value.toLocaleString()} ETB` : "—"}</div>
+                <div><span className="text-muted-foreground">Location:</span> {a.location || "—"}</div>
+                <div><span className="text-muted-foreground">Warranty:</span> <LicenseExpiryBadge expiryDate={a.warranty_expiry} /></div>
+              </div>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {/* Desktop Table */}
+      <Card className="hidden md:block">
+        <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Linked Vehicle</TableHead>
-                <TableHead>Stage</TableHead>
-                <TableHead>Condition</TableHead>
-                <TableHead>Purchase Cost</TableHead>
-                <TableHead>Current Value</TableHead>
-                <TableHead>Warranty</TableHead>
-                <TableHead>Location</TableHead>
+                <TableHead className="whitespace-nowrap">Code</TableHead>
+                <TableHead className="whitespace-nowrap">Name</TableHead>
+                <TableHead className="whitespace-nowrap">Category</TableHead>
+                <TableHead className="whitespace-nowrap">Linked Vehicle</TableHead>
+                <TableHead className="whitespace-nowrap">Stage</TableHead>
+                <TableHead className="whitespace-nowrap">Condition</TableHead>
+                <TableHead className="whitespace-nowrap">Purchase Cost</TableHead>
+                <TableHead className="whitespace-nowrap">Current Value</TableHead>
+                <TableHead className="whitespace-nowrap">Warranty</TableHead>
+                <TableHead className="whitespace-nowrap">Location</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -242,8 +278,8 @@ export default function AssetRegistryTab() {
               ) : (
                 filtered.map((a: any) => (
                   <TableRow key={a.id}>
-                    <TableCell className="font-mono text-xs">{a.asset_code}</TableCell>
-                    <TableCell className="font-medium">{a.name}</TableCell>
+                    <TableCell className="font-mono text-xs whitespace-nowrap">{a.asset_code}</TableCell>
+                    <TableCell className="font-medium whitespace-nowrap">{a.name}</TableCell>
                     <TableCell><Badge variant="outline" className="capitalize text-xs">{a.category}</Badge></TableCell>
                     <TableCell>
                       {a.vehicles ? (
@@ -255,17 +291,17 @@ export default function AssetRegistryTab() {
                       )}
                     </TableCell>
                     <TableCell><Badge variant="outline" className={cn("capitalize text-xs", stageBadge(a.lifecycle_stage))}>{a.lifecycle_stage?.replace("_", " ")}</Badge></TableCell>
-                    <TableCell className="capitalize text-sm">{a.condition}</TableCell>
-                    <TableCell>{a.purchase_cost ? `${a.purchase_cost.toLocaleString()} ETB` : "—"}</TableCell>
-                    <TableCell>{a.current_value ? `${a.current_value.toLocaleString()} ETB` : "—"}</TableCell>
+                    <TableCell className="capitalize text-sm whitespace-nowrap">{a.condition}</TableCell>
+                    <TableCell className="whitespace-nowrap">{a.purchase_cost ? `${a.purchase_cost.toLocaleString()} ETB` : "—"}</TableCell>
+                    <TableCell className="whitespace-nowrap">{a.current_value ? `${a.current_value.toLocaleString()} ETB` : "—"}</TableCell>
                     <TableCell><LicenseExpiryBadge expiryDate={a.warranty_expiry} /></TableCell>
-                    <TableCell className="text-sm">{a.location || "—"}</TableCell>
+                    <TableCell className="text-sm whitespace-nowrap">{a.location || "—"}</TableCell>
                   </TableRow>
                 ))
               )}
             </TableBody>
           </Table>
-        </ScrollArea>
+        </div>
       </Card>
 
       {/* Import Vehicles Dialog */}
