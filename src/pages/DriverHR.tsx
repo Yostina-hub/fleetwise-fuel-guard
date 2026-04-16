@@ -6,10 +6,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Briefcase, DollarSign, Car, Gift, UserCircle, Search,
-  CalendarDays, BarChart3, Wallet, Handshake, LayoutDashboard, Users,
+  Briefcase, DollarSign, Car, Gift, Search,
+  CalendarDays, BarChart3, Wallet, Handshake, LayoutDashboard, Users, X,
 } from "lucide-react";
 
 import { HRFinanceDashboard } from "@/components/drivers/HRFinanceDashboard";
@@ -25,12 +26,12 @@ import { useTranslation } from 'react-i18next';
 
 const tabs = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
-  { key: "contracts", label: "Contracts", icon: Briefcase, needsEmployee: true },
-  { key: "costs", label: "Cost Allocation", icon: DollarSign, needsEmployee: true },
-  { key: "vehicles", label: "Vehicle History", icon: Car, needsEmployee: true, driversOnly: true },
-  { key: "attendance", label: "Attendance", icon: CalendarDays, needsEmployee: true },
-  { key: "performance", label: "Performance", icon: BarChart3, needsEmployee: true },
-  { key: "payroll", label: "Payroll", icon: Wallet, needsEmployee: true },
+  { key: "contracts", label: "Contracts", icon: Briefcase },
+  { key: "costs", label: "Cost Allocation", icon: DollarSign },
+  { key: "vehicles", label: "Vehicle History", icon: Car, driversOnly: true },
+  { key: "attendance", label: "Attendance", icon: CalendarDays },
+  { key: "performance", label: "Performance", icon: BarChart3 },
+  { key: "payroll", label: "Payroll", icon: Wallet },
   { key: "outsource", label: "Outsource", icon: Handshake },
   { key: "rewards", label: "Rewards", icon: Gift },
 ];
@@ -44,10 +45,6 @@ const DriverHR = () => {
 
   const selectedEmployee = employees.find(e => e.id === selectedEmployeeId);
   const employeeName = selectedEmployee ? `${selectedEmployee.first_name} ${selectedEmployee.last_name}` : "";
-  const currentTab = tabs.find(t => t.key === activeTab);
-  const needsEmployee = currentTab?.needsEmployee || false;
-
-  // For driver-specific tabs, resolve driver_id from employee
   const driverId = selectedEmployee?.driver_id || "";
 
   const filteredEmployees = useMemo(() => {
@@ -60,23 +57,12 @@ const DriverHR = () => {
     );
   }, [employees, employeeSearch]);
 
-  const renderContent = () => {
-    if (needsEmployee && !selectedEmployeeId) {
-      return (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-            <Users className="w-8 h-8 text-primary/40" />
-          </div>
-          <h3 className="text-lg font-semibold mb-1">Select an Employee</h3>
-          <p className="text-sm text-muted-foreground max-w-sm">
-            Choose an employee to view their {currentTab?.label.toLowerCase()} data.
-          </p>
-        </motion.div>
-      );
-    }
+  const clearSelection = () => {
+    setSelectedEmployeeId("");
+  };
 
-    // Vehicle history only for driver-type employees
+  const renderContent = () => {
+    // Vehicle history only for driver-type employees and requires selection
     if (activeTab === "vehicles" && selectedEmployee && !selectedEmployee.driver_id) {
       return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
@@ -92,12 +78,12 @@ const DriverHR = () => {
 
     const map: Record<string, JSX.Element> = {
       overview: <HRFinanceDashboard />,
-      contracts: <DriverContractManagement driverId={driverId} driverName={employeeName} employeeId={selectedEmployeeId} />,
-      costs: <DriverCostAllocation driverId={driverId} driverName={employeeName} employeeId={selectedEmployeeId} />,
-      vehicles: <DriverVehicleHistory driverId={driverId} driverName={employeeName} />,
-      attendance: <DriverAttendanceManagement driverId={driverId} driverName={employeeName} employeeId={selectedEmployeeId} />,
-      performance: <DriverPerformanceKPIs driverId={driverId} driverName={employeeName} employeeId={selectedEmployeeId} />,
-      payroll: <DriverPayrollManagement driverId={driverId} driverName={employeeName} employeeId={selectedEmployeeId} />,
+      contracts: <DriverContractManagement driverId={driverId} driverName={employeeName} employeeId={selectedEmployeeId} employees={employees} />,
+      costs: <DriverCostAllocation driverId={driverId} driverName={employeeName} employeeId={selectedEmployeeId} employees={employees} />,
+      vehicles: <DriverVehicleHistory driverId={driverId} driverName={employeeName} employees={employees} />,
+      attendance: <DriverAttendanceManagement driverId={driverId} driverName={employeeName} employeeId={selectedEmployeeId} employees={employees} />,
+      performance: <DriverPerformanceKPIs driverId={driverId} driverName={employeeName} employeeId={selectedEmployeeId} employees={employees} />,
+      payroll: <DriverPayrollManagement driverId={driverId} driverName={employeeName} employeeId={selectedEmployeeId} employees={employees} />,
       outsource: <OutsourceContractManagement />,
       rewards: <DriverRewardsRecognition />,
     };
@@ -122,7 +108,7 @@ const DriverHR = () => {
             <Users className="w-4 h-4 text-muted-foreground shrink-0" />
             <Select value={selectedEmployeeId || undefined} onValueChange={setSelectedEmployeeId}>
               <SelectTrigger className="w-[260px] border-0 bg-transparent h-8 text-sm focus:ring-0">
-                <SelectValue placeholder="Select employee..." />
+                <SelectValue placeholder="All employees" />
               </SelectTrigger>
               <SelectContent>
                 <div className="px-2 pb-2">
@@ -150,6 +136,11 @@ const DriverHR = () => {
                 )}
               </SelectContent>
             </Select>
+            {selectedEmployeeId && (
+              <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={clearSelection}>
+                <X className="w-3.5 h-3.5" />
+              </Button>
+            )}
           </div>
         </div>
 
@@ -162,13 +153,12 @@ const DriverHR = () => {
               )}>
               <tab.icon className="w-3.5 h-3.5" />
               {tab.label}
-              {tab.needsEmployee && <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />}
             </button>
           ))}
         </div>
 
         <AnimatePresence mode="wait">
-          <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="min-h-[400px]">
+          <motion.div key={activeTab + selectedEmployeeId} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="min-h-[400px]">
             {renderContent()}
           </motion.div>
         </AnimatePresence>
