@@ -47,6 +47,7 @@ import {
   Terminal,
   Layers,
   Scale,
+  AlertTriangle,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
