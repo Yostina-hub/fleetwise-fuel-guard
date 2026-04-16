@@ -74,15 +74,15 @@ const DriverPortal = () => {
   });
 
   // Latest driver score
-  const { data: score } = useQuery({
+  const { data: score } = useQuery<any>({
     queryKey: ["driver-portal-score", driverId],
     queryFn: async () => {
       if (!driverId) return null;
       const { data } = await supabase
         .from("driver_behavior_scores")
-        .select("overall_score, safety_score, efficiency_score, eco_score, period_end")
+        .select("overall_score, speeding_score, braking_score, acceleration_score, idle_score, score_period_end")
         .eq("driver_id", driverId)
-        .order("period_end", { ascending: false })
+        .order("score_period_end", { ascending: false })
         .limit(1)
         .maybeSingle();
       return data;
@@ -99,7 +99,7 @@ const DriverPortal = () => {
         supabase.from("maintenance_requests").select("id", { count: "exact", head: true })
           .eq("driver_id", driverId).not("status", "in", "(completed,rejected,cancelled)"),
         supabase.from("fuel_requests").select("id", { count: "exact", head: true })
-          .eq("requested_by_driver_id", driverId).in("status", ["pending", "approved"]),
+          .eq("driver_id", driverId).in("status", ["pending", "approved"]),
       ]);
       return { maintenance: m.count || 0, fuel: f.count || 0 };
     },
@@ -320,9 +320,9 @@ const DriverPortal = () => {
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <Award className="w-4 h-4" /> My Performance
-                {score?.period_end && (
+                {score?.score_period_end && (
                   <span className="text-xs text-muted-foreground font-normal ml-auto">
-                    as of {format(new Date(score.period_end), "MMM dd")}
+                    as of {format(new Date(score.score_period_end), "MMM dd")}
                   </span>
                 )}
               </CardTitle>
@@ -331,9 +331,10 @@ const DriverPortal = () => {
               {score ? (
                 <>
                   {[
-                    { label: "Safety", value: score.safety_score, color: "bg-success" },
-                    { label: "Efficiency", value: score.efficiency_score, color: "bg-primary" },
-                    { label: "Eco-Driving", value: score.eco_score, color: "bg-accent" },
+                    { label: "Speeding", value: score.speeding_score, color: "bg-success" },
+                    { label: "Braking", value: score.braking_score, color: "bg-primary" },
+                    { label: "Acceleration", value: score.acceleration_score, color: "bg-accent" },
+                    { label: "Idle", value: score.idle_score, color: "bg-warning" },
                   ].map(item => (
                     <div key={item.label}>
                       <div className="flex justify-between text-sm mb-1">
