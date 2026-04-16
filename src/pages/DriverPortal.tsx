@@ -67,16 +67,36 @@ const DriverPortal = () => {
         driver = data;
       }
 
-      if (!driver) return { driver: null, vehicle: null, userId };
+      if (!driver) return { driver: null, vehicle: null, activeRequest: null, userId };
 
-      const { data: vehicle } = await supabase
+      // 1) Permanent vehicle assignment (vehicles.assigned_driver_id)
+      const { data: permanentVehicle } = await supabase
         .from("vehicles")
         .select("id, plate_number, make, model, year, fuel_type, status")
         .eq("organization_id", organizationId)
         .eq("assigned_driver_id", driver.id)
         .maybeSingle();
 
-      return { driver, vehicle, userId };
+      // 2) Active vehicle request assignment (trip-based) — takes precedence if present
+      const { data: activeRequest } = await (supabase as any)
+        .from("vehicle_requests")
+        .select(`
+          id, request_number, status, approval_status, purpose, destination,
+          needed_from, needed_until, assigned_at, driver_checked_in_at, driver_checked_out_at,
+          assigned_vehicle_id,
+          assigned_vehicle:assigned_vehicle_id(id, plate_number, make, model, year, fuel_type, status)
+        `)
+        .eq("organization_id", organizationId)
+        .eq("assigned_driver_id", driver.id)
+        .in("status", ["assigned", "approved", "in_progress"])
+        .order("assigned_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const requestVehicle = activeRequest?.assigned_vehicle || null;
+      const vehicle = requestVehicle || permanentVehicle || null;
+
+      return { driver, vehicle, activeRequest, userId };
     },
     enabled: !!organizationId,
   });
@@ -85,6 +105,7 @@ const DriverPortal = () => {
   const userId = driverData?.userId;
   const vehicle = driverData?.vehicle;
   const driver = driverData?.driver;
+  const activeRequest = driverData?.activeRequest;
   const driverName = driver ? `${driver.first_name} ${driver.last_name}` : undefined;
 
   // Today's & upcoming trips + dispatch jobs
@@ -211,6 +232,11 @@ const DriverPortal = () => {
           queryClient.invalidateQueries({ queryKey: ["driver-portal-submissions"] });
           queryClient.invalidateQueries({ queryKey: ["driver-portal-requests"] });
         })
+      .on("postgres_changes", { event: "*", schema: "public", table: "vehicle_requests", filter: `assigned_driver_id=eq.${driverId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["driver-portal-self"] });
+          queryClient.invalidateQueries({ queryKey: ["driver-portal-submissions"] });
+        })
       .on("postgres_changes", { event: "*", schema: "public", table: "vehicle_requests", filter: `organization_id=eq.${organizationId}` },
         () => queryClient.invalidateQueries({ queryKey: ["driver-portal-submissions"] }))
       .subscribe();
@@ -329,6 +355,37 @@ const DriverPortal = () => {
                   Open dispatch <ChevronRight className="w-4 h-4 ml-1" aria-hidden="true" />
                 </Button>
               </div>
+              {/* Active vehicle request assignment banner */}
+              {activeRequest && activeRequest.assigned_vehicle && (
+                <div className="mb-4 p-4 rounded-lg border border-success/30 bg-success/5">
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-2">
+                        <Badge className="bg-success/20 text-success border-success/30" variant="outline">
+                          <Car className="w-3 h-3 mr-1" aria-hidden="true" /> Vehicle Assigned
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">{activeRequest.request_number}</Badge>
+                        <Badge variant="outline" className="text-xs capitalize">{activeRequest.status}</Badge>
+                      </div>
+                      <p className="text-sm font-semibold">
+                        {activeRequest.assigned_vehicle.plate_number} · {activeRequest.assigned_vehicle.make} {activeRequest.assigned_vehicle.model}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1 truncate">
+                        {activeRequest.purpose || "—"}
+                        {activeRequest.destination && ` → ${activeRequest.destination}`}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {activeRequest.needed_from && `From ${format(new Date(activeRequest.needed_from), "MMM dd HH:mm")}`}
+                        {activeRequest.needed_until && ` · Until ${format(new Date(activeRequest.needed_until), "MMM dd HH:mm")}`}
+                      </p>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => navigate("/vehicle-requests")} className="shrink-0">
+                      View Request <ChevronRight className="w-4 h-4 ml-1" aria-hidden="true" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-3">
                 {trips?.active?.length === 0 && trips?.upcoming?.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground text-sm">
