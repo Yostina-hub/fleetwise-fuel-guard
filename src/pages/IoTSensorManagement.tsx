@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Cpu, Thermometer, DoorOpen, Siren, Gauge, KeyRound, CircuitBoard, Weight, Fuel, Wrench, Activity } from "lucide-react";
+import { Cpu, Thermometer, DoorOpen, Siren, Gauge, KeyRound, CircuitBoard, Fuel, Wrench, Activity } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useTranslation } from "react-i18next";
 import SensorInventoryTab from "@/components/iot-sensors/SensorInventoryTab";
@@ -11,6 +11,7 @@ import TPMSTab from "@/components/iot-sensors/TPMSTab";
 import DriverIdTab from "@/components/iot-sensors/DriverIdTab";
 import HardwareSensorDataTab from "@/components/iot-sensors/HardwareSensorDataTab";
 import SensorCalibrationTab from "@/components/iot-sensors/SensorCalibrationTab";
+import ColdChainTab from "@/components/iot-sensors/ColdChainTab";
 import FuelProbeCalibrationPanel from "@/components/fleet/FuelProbeCalibrationPanel";
 import OBDRemoteDiagnosticsPanel from "@/components/fleet/OBDRemoteDiagnosticsPanel";
 
@@ -71,10 +72,7 @@ const IoTSensorManagement = () => {
           </TabsContent>
 
           <TabsContent value="temperature">
-            <div className="p-4 rounded-lg border bg-card">
-              <p className="text-sm text-muted-foreground mb-2">Cold Chain temperature monitoring is available on the dedicated page for advanced analytics, compliance tracking, and threshold configuration.</p>
-              <a href="/cold-chain" className="text-primary hover:underline text-sm font-medium">Go to Cold Chain Dashboard →</a>
-            </div>
+            <ColdChainTab organizationId={organizationId} />
           </TabsContent>
 
           <TabsContent value="door">
