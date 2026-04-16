@@ -34,13 +34,7 @@ const Administration = () => {
         </div>
 
         {/* Quick Stats */}
-        <AdminQuickStats
-          totalUsers={12}
-          activeSSO={false}
-          passwordPolicyEnabled={true}
-          pendingPenalties={3}
-          loginAttemptsToday={28}
-        />
+        <AdminQuickStats />
 
         {/* Quick Actions */}
         <AdminQuickActions
