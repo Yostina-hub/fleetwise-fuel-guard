@@ -112,12 +112,38 @@ const Auth = () => {
       // Clear all lockout state on success
       progressiveDelay.resetAttempts(email);
       void (async () => { try { await supabase.rpc("clear_failed_login", { p_email: email }); } catch {} })();
-      // Record successful login in security modules
+      
+      // Check if user has 2FA enabled
       const userId = (await supabase.auth.getUser()).data.user?.id;
       if (userId) {
         loginAlerts.recordLogin(userId, true);
         sessionManager.registerSession(userId);
+        
+        try {
+          const { data: twoFactor } = await supabase
+            .from("two_factor_settings")
+            .select("is_enabled, secret_encrypted")
+            .eq("user_id", userId)
+            .maybeSingle();
+          
+          if (twoFactor?.is_enabled && twoFactor?.secret_encrypted) {
+            // Sign out temporarily - user must complete 2FA first
+            await supabase.auth.signOut();
+            setPending2FA(true);
+            setPending2FAUserId(userId);
+            setTotpCode("");
+            setLoading(false);
+            toast({
+              title: "2FA Required",
+              description: "Enter your authenticator code to continue.",
+            });
+            return;
+          }
+        } catch {
+          // If 2FA check fails, allow login
+        }
       }
+
       toast({
         title: "Welcome back!",
         description: "You've been signed in successfully.",
@@ -126,6 +152,109 @@ const Auth = () => {
     }
 
     setLoading(false);
+  };
+
+  const handle2FAVerify = async () => {
+    if (totpCode.length !== 6) {
+      toast({ title: "Invalid Code", description: "Enter a 6-digit code.", variant: "destructive" });
+      return;
+    }
+    setVerifying2FA(true);
+
+    try {
+      // Get the stored secret for this user
+      // We need to sign back in first to access the data
+      const emailEl = document.getElementById('signin-email') as HTMLInputElement;
+      const pwdEl = document.getElementById('signin-password') as HTMLInputElement;
+      
+      if (!emailEl?.value || !pwdEl?.value) {
+        toast({ title: "Session expired", description: "Please sign in again.", variant: "destructive" });
+        setPending2FA(false);
+        setVerifying2FA(false);
+        return;
+      }
+
+      // Re-authenticate
+      const { error: reAuthError } = await supabase.auth.signInWithPassword({
+        email: emailEl.value,
+        password: pwdEl.value,
+      });
+
+      if (reAuthError) {
+        toast({ title: "Authentication failed", description: "Please try again.", variant: "destructive" });
+        setPending2FA(false);
+        setVerifying2FA(false);
+        return;
+      }
+
+      // Fetch the 2FA secret
+      const { data: twoFactor } = await supabase
+        .from("two_factor_settings")
+        .select("secret_encrypted, backup_codes")
+        .eq("user_id", pending2FAUserId!)
+        .maybeSingle();
+
+      if (!twoFactor?.secret_encrypted) {
+        // 2FA was disabled in the meantime, allow through
+        toast({ title: "Welcome back!", description: "Signed in successfully." });
+        navigate("/");
+        setVerifying2FA(false);
+        return;
+      }
+
+      // Verify TOTP code using time-based algorithm
+      const isValidTotp = verifyTOTP(twoFactor.secret_encrypted, totpCode);
+      
+      // Also check backup codes
+      let usedBackupCode = false;
+      if (!isValidTotp && twoFactor.backup_codes) {
+        const codes = twoFactor.backup_codes as string[];
+        const codeIndex = codes.indexOf(totpCode);
+        if (codeIndex >= 0) {
+          usedBackupCode = true;
+          // Remove used backup code
+          const updatedCodes = [...codes];
+          updatedCodes.splice(codeIndex, 1);
+          await supabase
+            .from("two_factor_settings")
+            .update({ backup_codes: updatedCodes, last_used_at: new Date().toISOString() })
+            .eq("user_id", pending2FAUserId!);
+        }
+      }
+
+      if (isValidTotp || usedBackupCode) {
+        // Update last_used_at
+        if (isValidTotp) {
+          await supabase
+            .from("two_factor_settings")
+            .update({ last_used_at: new Date().toISOString() })
+            .eq("user_id", pending2FAUserId!);
+        }
+
+        setPending2FA(false);
+        toast({
+          title: "Welcome back!",
+          description: usedBackupCode
+            ? "Signed in with backup code. Consider regenerating codes."
+            : "Two-factor verification successful.",
+        });
+        navigate("/");
+      } else {
+        // Wrong code - sign out again
+        await supabase.auth.signOut();
+        toast({
+          title: "Invalid Code",
+          description: "The verification code is incorrect. Please try again.",
+          variant: "destructive",
+        });
+        setTotpCode("");
+      }
+    } catch (err) {
+      console.error("2FA verification error:", err);
+      toast({ title: "Error", description: "Verification failed. Please try again.", variant: "destructive" });
+    }
+    
+    setVerifying2FA(false);
   };
 
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
