@@ -58,6 +58,29 @@ export default function AssetCostTab() {
     enabled: !!organizationId,
   });
 
+  // Auto-aggregate fuel costs from fuel_transactions for linked assets
+  const { data: fuelCostAgg = { total: 0, count: 0 } } = useQuery({
+    queryKey: ["asset-fuel-cost-agg", organizationId],
+    queryFn: async () => {
+      // Get vehicle IDs linked to fleet_assets
+      const { data: linkedAssets } = await (supabase as any)
+        .from("fleet_assets")
+        .select("vehicle_id")
+        .eq("organization_id", organizationId!)
+        .not("vehicle_id", "is", null);
+      const vids = (linkedAssets || []).map((a: any) => a.vehicle_id).filter(Boolean);
+      if (!vids.length) return { total: 0, count: 0 };
+      const { data: txns } = await supabase
+        .from("fuel_transactions")
+        .select("fuel_cost")
+        .eq("organization_id", organizationId!)
+        .in("vehicle_id", vids);
+      const total = (txns || []).reduce((s, t: any) => s + (t.fuel_cost || 0), 0);
+      return { total, count: txns?.length || 0 };
+    },
+    enabled: !!organizationId,
+  });
+
   const addMutation = useMutation({
     mutationFn: async () => {
       const { error } = await (supabase as any).from("asset_cost_records").insert({
@@ -79,7 +102,9 @@ export default function AssetCostTab() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const totalCost = costs.reduce((s: number, c: any) => s + (c.amount || 0), 0);
+  const manualFuelCost = costs.filter((c: any) => c.cost_type === "fuel").reduce((s: number, c: any) => s + (c.amount || 0), 0);
+  const totalFuelCost = manualFuelCost + fuelCostAgg.total;
+  const totalCost = costs.reduce((s: number, c: any) => s + (c.amount || 0), 0) + fuelCostAgg.total;
   const preventiveCost = costs.filter((c: any) => c.cost_type === "preventive_maintenance").reduce((s: number, c: any) => s + (c.amount || 0), 0);
   const correctiveCost = costs.filter((c: any) => c.cost_type === "corrective_maintenance").reduce((s: number, c: any) => s + (c.amount || 0), 0);
 
@@ -97,8 +122,9 @@ export default function AssetCostTab() {
 
   return (
     <div className="space-y-4 mt-4">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="p-3"><p className="text-xs text-muted-foreground">Total Cost</p><p className="text-xl font-bold">{totalCost.toLocaleString()} ETB</p></Card>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <Card className="p-3"><p className="text-xs text-muted-foreground">Total Cost (incl. Fuel)</p><p className="text-xl font-bold">{totalCost.toLocaleString()} ETB</p></Card>
+        <Card className="p-3"><p className="text-xs text-muted-foreground">Fuel Cost (Auto)</p><p className="text-xl font-bold text-amber-400">{totalFuelCost.toLocaleString()} ETB</p><p className="text-[10px] text-muted-foreground">{fuelCostAgg.count} transactions</p></Card>
         <Card className="p-3"><p className="text-xs text-muted-foreground">Preventive Maintenance</p><p className="text-xl font-bold text-success">{preventiveCost.toLocaleString()} ETB</p></Card>
         <Card className="p-3"><p className="text-xs text-muted-foreground">Corrective Maintenance</p><p className="text-xl font-bold text-warning">{correctiveCost.toLocaleString()} ETB</p></Card>
         <Card className="p-3"><p className="text-xs text-muted-foreground">Records</p><p className="text-xl font-bold">{costs.length}</p></Card>
