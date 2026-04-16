@@ -61,6 +61,7 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
   const [selectedNode, setSelectedNode] = useState<WorkflowNode | null>(null);
   const [workflowName, setWorkflowName] = useState("Untitled Workflow");
   const [workflowStatus, setWorkflowStatus] = useState("draft");
+  const [cronExpression, setCronExpression] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [workflowId, setWorkflowId] = useState<string | null>(editWorkflowId || null);
@@ -89,6 +90,7 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
         setWorkflowName(data.name);
         setWorkflowStatus(data.status);
         setWorkflowId(data.id);
+        setCronExpression((data as any).cron_expression || "");
         if (Array.isArray(data.nodes)) setNodes(data.nodes as any);
         if (Array.isArray(data.edges)) setEdges(data.edges as any);
         setTimeout(() => fitView({ padding: 0.2 }), 200);
@@ -216,7 +218,8 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
             nodes: serializedNodes,
             edges: serializedEdges,
             status: workflowStatus,
-          })
+            cron_expression: cronExpression || null,
+          } as any)
           .eq("id", workflowId);
         if (error) throw error;
       } else {
@@ -229,8 +232,9 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
             nodes: serializedNodes,
             edges: serializedEdges,
             status: workflowStatus,
+            cron_expression: cronExpression || null,
             created_by: user?.id,
-          })
+          } as any)
           .select("id")
           .single();
         if (error) throw error;
@@ -498,6 +502,7 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
               nodes={nodes}
               edges={edges}
               organizationId={organizationId}
+              workflowId={workflowId}
               onNodeStatusChange={handleSimNodeStatus}
               onClose={() => {
                 setShowSimulator(false);

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,13 +19,26 @@ import {
   Zap,
   GitBranch,
   MoreVertical,
+  Copy,
+  History,
+  CheckCircle2,
+  XCircle,
+  Activity,
 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 
 interface WorkflowListProps {
@@ -41,9 +55,11 @@ const statusColors: Record<string, string> = {
 
 export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
   const { organizationId } = useOrganization();
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [historyWorkflowId, setHistoryWorkflowId] = useState<string | null>(null);
 
   const { data: workflows, isLoading } = useQuery({
     queryKey: ["workflows", organizationId],
@@ -60,6 +76,23 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
     enabled: !!organizationId,
   });
 
+  // Execution history for a specific workflow
+  const { data: executionHistory } = useQuery({
+    queryKey: ["workflow-executions", historyWorkflowId],
+    queryFn: async () => {
+      if (!historyWorkflowId) return [];
+      const { data, error } = await (supabase as any)
+        .from("workflow_executions")
+        .select("*")
+        .eq("workflow_id", historyWorkflowId)
+        .order("started_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!historyWorkflowId,
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("workflows").delete().eq("id", id);
@@ -68,6 +101,39 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["workflows", organizationId] });
       toast({ title: "Deleted", description: "Workflow removed" });
+    },
+  });
+
+  const duplicateMutation = useMutation({
+    mutationFn: async (workflow: any) => {
+      const { error } = await supabase.from("workflows").insert({
+        organization_id: organizationId,
+        name: `${workflow.name} (Copy)`,
+        description: workflow.description,
+        category: workflow.category,
+        nodes: workflow.nodes,
+        edges: workflow.edges,
+        status: "draft",
+        created_by: user?.id,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workflows", organizationId] });
+      toast({ title: "Duplicated", description: "Workflow copied as draft" });
+    },
+  });
+
+  const toggleStatusMutation = useMutation({
+    mutationFn: async ({ id, currentStatus }: { id: string; currentStatus: string }) => {
+      const newStatus = currentStatus === "active" ? "paused" : "active";
+      const { error } = await supabase.from("workflows").update({ status: newStatus }).eq("id", id);
+      if (error) throw error;
+      return newStatus;
+    },
+    onSuccess: (newStatus) => {
+      queryClient.invalidateQueries({ queryKey: ["workflows", organizationId] });
+      toast({ title: "Status Updated", description: `Workflow is now ${newStatus}` });
     },
   });
 
@@ -157,6 +223,23 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(workflow.id); }}>
                         <Edit className="h-3.5 w-3.5 mr-2" /> Edit
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); duplicateMutation.mutate(workflow); }}>
+                        <Copy className="h-3.5 w-3.5 mr-2" /> Duplicate
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation();
+                        toggleStatusMutation.mutate({ id: workflow.id, currentStatus: workflow.status });
+                      }}>
+                        {workflow.status === "active" ? (
+                          <><Pause className="h-3.5 w-3.5 mr-2" /> Pause</>
+                        ) : (
+                          <><Play className="h-3.5 w-3.5 mr-2" /> Activate</>
+                        )}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setHistoryWorkflowId(workflow.id); }}>
+                        <History className="h-3.5 w-3.5 mr-2" /> Execution History
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem
                         className="text-destructive"
                         onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(workflow.id); }}
@@ -178,6 +261,12 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
                   <Badge variant="outline" className="text-[10px]">
                     v{workflow.version}
                   </Badge>
+                  {(workflow as any).execution_count > 0 && (
+                    <Badge variant="outline" className="text-[10px] gap-0.5">
+                      <Activity className="h-2.5 w-2.5" />
+                      {(workflow as any).execution_count} runs
+                    </Badge>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between text-[10px] text-muted-foreground">
@@ -189,6 +278,13 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
                     {(workflow.nodes as any[])?.length || 0} nodes · {(workflow.edges as any[])?.length || 0} connections
                   </div>
                 </div>
+
+                {(workflow as any).last_executed_at && (
+                  <div className="mt-2 pt-2 border-t border-border text-[10px] text-muted-foreground flex items-center gap-1">
+                    <Zap className="h-2.5 w-2.5" />
+                    Last run: {format(new Date((workflow as any).last_executed_at), "MMM d, HH:mm")}
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -206,6 +302,83 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
           </Button>
         </Card>
       )}
+
+      {/* Execution History Dialog */}
+      <Dialog open={!!historyWorkflowId} onOpenChange={(open) => !open && setHistoryWorkflowId(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Execution History
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="h-[60vh]">
+            <div className="space-y-2 pr-4">
+              {executionHistory && executionHistory.length > 0 ? (
+                executionHistory.map((exec: any) => (
+                  <div
+                    key={exec.id}
+                    className="p-3 rounded-lg border border-border bg-muted/30 space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {exec.status === "completed" && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+                        {exec.status === "completed_with_errors" && <XCircle className="h-4 w-4 text-amber-500" />}
+                        {exec.status === "failed" && <XCircle className="h-4 w-4 text-destructive" />}
+                        {exec.status === "aborted" && <Pause className="h-4 w-4 text-muted-foreground" />}
+                        <span className="text-sm font-medium capitalize">{exec.status.replace(/_/g, " ")}</span>
+                        <Badge variant="outline" className="text-[10px]">{exec.trigger_type}</Badge>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(exec.started_at), "MMM d, HH:mm:ss")}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-5 gap-2 text-center">
+                      <div>
+                        <div className="text-sm font-bold text-foreground">{exec.total_nodes}</div>
+                        <div className="text-[9px] text-muted-foreground">Total</div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold text-emerald-500">{exec.nodes_executed}</div>
+                        <div className="text-[9px] text-muted-foreground">Passed</div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold text-destructive">{exec.nodes_failed}</div>
+                        <div className="text-[9px] text-muted-foreground">Failed</div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold text-cyan-500">{exec.db_reads}</div>
+                        <div className="text-[9px] text-muted-foreground">Reads</div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold text-amber-500">{exec.db_writes}</div>
+                        <div className="text-[9px] text-muted-foreground">Writes</div>
+                      </div>
+                    </div>
+                    {exec.duration_ms && (
+                      <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                        <Clock className="h-2.5 w-2.5" />
+                        Duration: {(exec.duration_ms / 1000).toFixed(1)}s
+                      </div>
+                    )}
+                    {exec.error_summary && (
+                      <div className="text-[10px] text-destructive bg-destructive/10 p-1.5 rounded">
+                        {exec.error_summary}
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Activity className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">No executions yet</p>
+                  <p className="text-xs">Run a simulation to see execution history</p>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

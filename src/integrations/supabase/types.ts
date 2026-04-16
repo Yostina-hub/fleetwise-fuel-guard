@@ -20045,6 +20045,84 @@ export type Database = {
           },
         ]
       }
+      workflow_executions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          db_reads: number
+          db_writes: number
+          duration_ms: number | null
+          error_summary: string | null
+          execution_logs: Json | null
+          id: string
+          nodes_executed: number
+          nodes_failed: number
+          organization_id: string
+          started_at: string
+          status: string
+          total_nodes: number
+          trigger_type: string
+          triggered_by: string | null
+          updated_at: string
+          workflow_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          db_reads?: number
+          db_writes?: number
+          duration_ms?: number | null
+          error_summary?: string | null
+          execution_logs?: Json | null
+          id?: string
+          nodes_executed?: number
+          nodes_failed?: number
+          organization_id: string
+          started_at?: string
+          status?: string
+          total_nodes?: number
+          trigger_type?: string
+          triggered_by?: string | null
+          updated_at?: string
+          workflow_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          db_reads?: number
+          db_writes?: number
+          duration_ms?: number | null
+          error_summary?: string | null
+          execution_logs?: Json | null
+          id?: string
+          nodes_executed?: number
+          nodes_failed?: number
+          organization_id?: string
+          started_at?: string
+          status?: string
+          total_nodes?: number
+          trigger_type?: string
+          triggered_by?: string | null
+          updated_at?: string
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_executions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_executions_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workflow_runs: {
         Row: {
           completed_at: string | null
@@ -20100,12 +20178,16 @@ export type Database = {
           category: string
           created_at: string
           created_by: string | null
+          cron_expression: string | null
           description: string | null
           edges: Json
+          execution_count: number
           id: string
           is_template: boolean | null
+          last_executed_at: string | null
           last_run_at: string | null
           name: string
+          next_execution_at: string | null
           nodes: Json
           organization_id: string
           run_count: number | null
@@ -20120,12 +20202,16 @@ export type Database = {
           category?: string
           created_at?: string
           created_by?: string | null
+          cron_expression?: string | null
           description?: string | null
           edges?: Json
+          execution_count?: number
           id?: string
           is_template?: boolean | null
+          last_executed_at?: string | null
           last_run_at?: string | null
           name: string
+          next_execution_at?: string | null
           nodes?: Json
           organization_id: string
           run_count?: number | null
@@ -20140,12 +20226,16 @@ export type Database = {
           category?: string
           created_at?: string
           created_by?: string | null
+          cron_expression?: string | null
           description?: string | null
           edges?: Json
+          execution_count?: number
           id?: string
           is_template?: boolean | null
+          last_executed_at?: string | null
           last_run_at?: string | null
           name?: string
+          next_execution_at?: string | null
           nodes?: Json
           organization_id?: string
           run_count?: number | null
