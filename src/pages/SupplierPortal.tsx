@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Loader2, Wrench } from "lucide-react";
 import { format } from "date-fns";
 
 export default function SupplierPortal() {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const [selected, setSelected] = useState<any>(null);
 
   const { data: workOrders = [], isLoading } = useQuery({

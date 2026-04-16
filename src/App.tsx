@@ -79,6 +79,8 @@ const MaintenanceEnterprise = lazyWithRetry(() => import("./pages/MaintenanceEnt
 const DriverMaintenanceRequest = lazyWithRetry(() => import("./pages/DriverMaintenanceRequest"), "DriverMaintenanceRequest");
 const DriverPortal = lazyWithRetry(() => import("./pages/DriverPortal"), "DriverPortal");
 const ThirdPartyLogistics = lazyWithRetry(() => import("./pages/ThirdPartyLogistics"), "ThirdPartyLogistics");
+const SupplierPortal = lazyWithRetry(() => import("./pages/SupplierPortal"), "SupplierPortal");
+const SupplierWorkOrderView = lazyWithRetry(() => import("./pages/SupplierWorkOrderView"), "SupplierWorkOrderView");
 
 const PartsInventory = lazyWithRetry(() => import("./pages/PartsInventory"), "PartsInventory");
 const VendorManagement = lazyWithRetry(() => import("./pages/VendorManagement"), "VendorManagement");
@@ -215,6 +217,8 @@ const App = () => {
                         <Route path="/asset-management" element={<ProtectedRoute><AssetManagement /></ProtectedRoute>} />
                         <Route path="/privacy" element={<PrivacyPolicy />} />
                         <Route path="/3pl" element={<ProtectedRoute><ThirdPartyLogistics /></ProtectedRoute>} />
+                        <Route path="/supplier-portal" element={<ProtectedRoute><SupplierPortal /></ProtectedRoute>} />
+                        <Route path="/supplier-wo/:token" element={<SupplierWorkOrderView />} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />
                       </Routes>
