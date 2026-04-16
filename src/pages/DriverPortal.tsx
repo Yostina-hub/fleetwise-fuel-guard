@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -79,7 +79,7 @@ const DriverPortal = () => {
       if (!driverId) return { active: [], upcoming: [], recent: [] };
 
       const [{ data: active }, { data: upcoming }, { data: recent }] = await Promise.all([
-        supabase.from("dispatch_jobs").select("id, job_number, status, priority, pickup_location_name, dropoff_location_name, scheduled_pickup_at, actual_pickup_at, actual_dropoff_at")
+        (supabase as any).from("dispatch_jobs").select("id, job_number, status, priority, pickup_location_name, dropoff_location_name, scheduled_pickup_at, actual_pickup_at, actual_dropoff_at, odometer_start, odometer_end, distance_traveled_km")
           .eq("driver_id", driverId).in("status", ["assigned", "dispatched", "in_progress"])
           .order("scheduled_pickup_at", { ascending: true }).limit(10),
         supabase.from("dispatch_jobs").select("id, job_number, scheduled_pickup_at, pickup_location_name, dropoff_location_name, status, priority")
@@ -134,13 +134,16 @@ const DriverPortal = () => {
     return Math.ceil((new Date(licenseExpiry).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
   }, [licenseExpiry]);
 
-  // Check-in / Check-out for dispatch job
+  // Check-in / Check-out for dispatch job (with mileage)
   const handleStartJob = async (jobId: string) => {
+    const odoStr = window.prompt("Enter starting odometer (km) — leave blank to skip:");
+    const odoStart = odoStr && !isNaN(Number(odoStr)) ? Number(odoStr) : null;
     try {
       const { error } = await supabase.from("dispatch_jobs").update({
         status: "in_progress",
         actual_pickup_at: new Date().toISOString(),
-      }).eq("id", jobId);
+        ...(odoStart !== null ? { odometer_start: odoStart } : {}),
+      } as any).eq("id", jobId);
       if (error) throw error;
       toast.success("Trip started — drive safely!");
       queryClient.invalidateQueries({ queryKey: ["driver-portal-trips"] });
@@ -149,20 +152,55 @@ const DriverPortal = () => {
     }
   };
 
-  const handleCompleteJob = async (jobId: string) => {
+  const handleCompleteJob = async (jobId: string, odoStartKnown?: number | null) => {
+    const odoStr = window.prompt(
+      odoStartKnown != null
+        ? `Enter ending odometer (km) — start was ${odoStartKnown}:`
+        : "Enter ending odometer (km) — leave blank to skip:"
+    );
+    const odoEnd = odoStr && !isNaN(Number(odoStr)) ? Number(odoStr) : null;
+    let distance: number | null = null;
+    if (odoEnd !== null && odoStartKnown != null && odoEnd >= odoStartKnown) {
+      distance = odoEnd - odoStartKnown;
+    }
     try {
       const { error } = await supabase.from("dispatch_jobs").update({
         status: "completed",
         actual_dropoff_at: new Date().toISOString(),
         completed_at: new Date().toISOString(),
-      }).eq("id", jobId);
+        ...(odoEnd !== null ? { odometer_end: odoEnd } : {}),
+        ...(distance !== null ? { distance_traveled_km: distance } : {}),
+      } as any).eq("id", jobId);
       if (error) throw error;
-      toast.success("Trip completed");
+      toast.success(distance !== null ? `Trip completed · ${distance} km logged` : "Trip completed");
       queryClient.invalidateQueries({ queryKey: ["driver-portal-trips"] });
     } catch (e: any) {
       toast.error(e.message || "Failed to complete trip");
     }
   };
+
+  // Realtime subscriptions — auto-refresh on backend changes
+  useEffect(() => {
+    if (!driverId || !organizationId) return;
+    const channel = supabase
+      .channel(`driver-portal-${driverId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "dispatch_jobs", filter: `driver_id=eq.${driverId}` },
+        () => queryClient.invalidateQueries({ queryKey: ["driver-portal-trips"] }))
+      .on("postgres_changes", { event: "*", schema: "public", table: "maintenance_requests", filter: `driver_id=eq.${driverId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["driver-portal-submissions"] });
+          queryClient.invalidateQueries({ queryKey: ["driver-portal-requests"] });
+        })
+      .on("postgres_changes", { event: "*", schema: "public", table: "fuel_requests", filter: `driver_id=eq.${driverId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["driver-portal-submissions"] });
+          queryClient.invalidateQueries({ queryKey: ["driver-portal-requests"] });
+        })
+      .on("postgres_changes", { event: "*", schema: "public", table: "vehicle_requests", filter: `organization_id=eq.${organizationId}` },
+        () => queryClient.invalidateQueries({ queryKey: ["driver-portal-submissions"] }))
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [driverId, organizationId, queryClient]);
 
   if (driverLoading) {
     return (
@@ -299,7 +337,7 @@ const DriverPortal = () => {
                                   <PlayCircle className="w-4 h-4" aria-hidden="true" /> Check In
                                 </Button>
                               ) : (
-                                <Button size="sm" variant="outline" onClick={() => handleCompleteJob(j.id)} className="gap-1">
+                                <Button size="sm" variant="outline" onClick={() => handleCompleteJob(j.id, j.odometer_start)} className="gap-1">
                                   <StopCircle className="w-4 h-4" aria-hidden="true" /> Check Out
                                 </Button>
                               )}

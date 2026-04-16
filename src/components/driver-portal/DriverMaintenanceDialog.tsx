@@ -6,8 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, Loader2, Car } from "lucide-react";
-import { useMaintenanceRequests } from "@/hooks/useMaintenanceRequests";
 import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useOrganization } from "@/hooks/useOrganization";
+import { toast } from "sonner";
+import PhotoUploader from "./PhotoUploader";
 
 interface Props {
   open: boolean;
@@ -20,7 +23,8 @@ interface Props {
 
 const DriverMaintenanceDialog = ({ open, onOpenChange, driverId, vehicleId, vehiclePlate, vehicleMakeModel }: Props) => {
   const queryClient = useQueryClient();
-  const { createRequest } = useMaintenanceRequests();
+  const { organizationId } = useOrganization();
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     request_type: "corrective",
     priority: "medium",
@@ -28,24 +32,44 @@ const DriverMaintenanceDialog = ({ open, onOpenChange, driverId, vehicleId, vehi
     description: "",
     notes: "",
   });
+  const [photos, setPhotos] = useState<string[]>([]);
 
   const handleSubmit = async () => {
-    if (!vehicleId || !driverId) return;
+    if (!vehicleId || !driverId || !organizationId) return;
     if (!form.description.trim()) return;
-    await createRequest.mutateAsync({
-      vehicle_id: vehicleId,
-      driver_id: driverId,
-      request_type: form.request_type,
-      trigger_source: "manual",
-      priority: form.priority,
-      km_reading: form.km_reading ? Number(form.km_reading) : undefined,
-      description: form.description,
-      notes: form.notes || undefined,
-    });
-    queryClient.invalidateQueries({ queryKey: ["driver-portal-submissions"] });
-    queryClient.invalidateQueries({ queryKey: ["driver-portal-requests"] });
-    onOpenChange(false);
-    setForm({ request_type: "corrective", priority: "medium", km_reading: "", description: "", notes: "" });
+    setSubmitting(true);
+    try {
+      const reqNumber = "MR-" + Date.now().toString().slice(-8);
+      const { data: userData } = await supabase.auth.getUser();
+      const { error } = await supabase.from("maintenance_requests").insert({
+        organization_id: organizationId,
+        request_number: reqNumber,
+        requested_by: userData.user?.id,
+        vehicle_id: vehicleId,
+        driver_id: driverId,
+        request_type: form.request_type,
+        trigger_source: "manual",
+        priority: form.priority,
+        km_reading: form.km_reading ? Number(form.km_reading) : null,
+        description: form.description,
+        notes: form.notes || null,
+        status: "submitted",
+        workflow_stage: "submitted",
+        photo_urls: photos,
+      } as any);
+      if (error) throw error;
+      toast.success("Maintenance request submitted");
+      queryClient.invalidateQueries({ queryKey: ["driver-portal-submissions"] });
+      queryClient.invalidateQueries({ queryKey: ["driver-portal-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["maintenance-requests"] });
+      onOpenChange(false);
+      setForm({ request_type: "corrective", priority: "medium", km_reading: "", description: "", notes: "" });
+      setPhotos([]);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to submit request");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -108,10 +132,21 @@ const DriverMaintenanceDialog = ({ open, onOpenChange, driverId, vehicleId, vehi
                 placeholder="e.g. noise from the engine, warning light on dashboard..." />
             </div>
 
+            <div>
+              <Label>Photos of the issue (optional)</Label>
+              <PhotoUploader
+                pathPrefix={`maintenance/${vehicleId}`}
+                value={photos}
+                onChange={setPhotos}
+                max={5}
+                label="Take / attach photos"
+              />
+            </div>
+
             <DialogFooter>
               <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button onClick={handleSubmit} disabled={createRequest.isPending || !form.description.trim()}>
-                {createRequest.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" aria-hidden="true" />}
+              <Button onClick={handleSubmit} disabled={submitting || !form.description.trim()}>
+                {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" aria-hidden="true" />}
                 Submit Request
               </Button>
             </DialogFooter>

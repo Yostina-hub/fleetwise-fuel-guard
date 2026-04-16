@@ -2662,6 +2662,7 @@ export type Database = {
           customer_name: string | null
           customer_phone: string | null
           dispatched_at: string | null
+          distance_traveled_km: number | null
           driver_id: string | null
           dropoff_geofence_id: string | null
           dropoff_lat: number | null
@@ -2670,6 +2671,8 @@ export type Database = {
           id: string
           job_number: string
           job_type: string
+          odometer_end: number | null
+          odometer_start: number | null
           organization_id: string
           pickup_geofence_id: string | null
           pickup_lat: number | null
@@ -2696,6 +2699,7 @@ export type Database = {
           customer_name?: string | null
           customer_phone?: string | null
           dispatched_at?: string | null
+          distance_traveled_km?: number | null
           driver_id?: string | null
           dropoff_geofence_id?: string | null
           dropoff_lat?: number | null
@@ -2704,6 +2708,8 @@ export type Database = {
           id?: string
           job_number: string
           job_type?: string
+          odometer_end?: number | null
+          odometer_start?: number | null
           organization_id: string
           pickup_geofence_id?: string | null
           pickup_lat?: number | null
@@ -2730,6 +2736,7 @@ export type Database = {
           customer_name?: string | null
           customer_phone?: string | null
           dispatched_at?: string | null
+          distance_traveled_km?: number | null
           driver_id?: string | null
           dropoff_geofence_id?: string | null
           dropoff_lat?: number | null
@@ -2738,6 +2745,8 @@ export type Database = {
           id?: string
           job_number?: string
           job_type?: string
+          odometer_end?: number | null
+          odometer_start?: number | null
           organization_id?: string
           pickup_geofence_id?: string | null
           pickup_lat?: number | null
@@ -11184,6 +11193,7 @@ export type Database = {
           needs_maintenance: boolean | null
           notes: string | null
           organization_id: string
+          photo_urls: string[] | null
           post_inspection_at: string | null
           post_inspection_notes: string | null
           post_inspection_result: string | null
@@ -11243,6 +11253,7 @@ export type Database = {
           needs_maintenance?: boolean | null
           notes?: string | null
           organization_id: string
+          photo_urls?: string[] | null
           post_inspection_at?: string | null
           post_inspection_notes?: string | null
           post_inspection_result?: string | null
@@ -11302,6 +11313,7 @@ export type Database = {
           needs_maintenance?: boolean | null
           notes?: string | null
           organization_id?: string
+          photo_urls?: string[] | null
           post_inspection_at?: string | null
           post_inspection_notes?: string | null
           post_inspection_result?: string | null
