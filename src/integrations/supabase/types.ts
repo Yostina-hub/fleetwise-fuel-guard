@@ -728,6 +728,209 @@ export type Database = {
           },
         ]
       }
+      asset_cost_records: {
+        Row: {
+          amount: number
+          asset_id: string
+          cost_type: string
+          created_at: string
+          description: string | null
+          id: string
+          maintenance_schedule_id: string | null
+          organization_id: string
+          receipt_url: string | null
+          recorded_by: string | null
+          recorded_date: string
+          updated_at: string
+          work_order_id: string | null
+        }
+        Insert: {
+          amount?: number
+          asset_id: string
+          cost_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          maintenance_schedule_id?: string | null
+          organization_id: string
+          receipt_url?: string | null
+          recorded_by?: string | null
+          recorded_date?: string
+          updated_at?: string
+          work_order_id?: string | null
+        }
+        Update: {
+          amount?: number
+          asset_id?: string
+          cost_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          maintenance_schedule_id?: string | null
+          organization_id?: string
+          receipt_url?: string | null
+          recorded_by?: string | null
+          recorded_date?: string
+          updated_at?: string
+          work_order_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_cost_records_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_cost_records_maintenance_schedule_id_fkey"
+            columns: ["maintenance_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_cost_records_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_cost_records_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_inventory: {
+        Row: {
+          asset_id: string
+          created_at: string
+          current_quantity: number
+          id: string
+          last_counted_at: string | null
+          last_restocked_at: string | null
+          minimum_quantity: number | null
+          organization_id: string
+          reorder_point: number | null
+          stock_location: string | null
+          supplier: string | null
+          unit: string | null
+          unit_cost: number | null
+          updated_at: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          current_quantity?: number
+          id?: string
+          last_counted_at?: string | null
+          last_restocked_at?: string | null
+          minimum_quantity?: number | null
+          organization_id: string
+          reorder_point?: number | null
+          stock_location?: string | null
+          supplier?: string | null
+          unit?: string | null
+          unit_cost?: number | null
+          updated_at?: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          current_quantity?: number
+          id?: string
+          last_counted_at?: string | null
+          last_restocked_at?: string | null
+          minimum_quantity?: number | null
+          organization_id?: string
+          reorder_point?: number | null
+          stock_location?: string | null
+          supplier?: string | null
+          unit?: string | null
+          unit_cost?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_inventory_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_inventory_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_lifecycle_events: {
+        Row: {
+          asset_id: string
+          cost: number | null
+          created_at: string
+          documents: string[] | null
+          event_date: string
+          event_type: string
+          from_stage: string | null
+          id: string
+          notes: string | null
+          organization_id: string
+          performed_by: string | null
+          to_stage: string | null
+        }
+        Insert: {
+          asset_id: string
+          cost?: number | null
+          created_at?: string
+          documents?: string[] | null
+          event_date?: string
+          event_type?: string
+          from_stage?: string | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          performed_by?: string | null
+          to_stage?: string | null
+        }
+        Update: {
+          asset_id?: string
+          cost?: number | null
+          created_at?: string
+          documents?: string[] | null
+          event_date?: string
+          event_type?: string
+          from_stage?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          performed_by?: string | null
+          to_stage?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_lifecycle_events_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_lifecycle_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -6768,6 +6971,121 @@ export type Database = {
             foreignKeyName: "ev_vehicle_data_vehicle_id_fkey"
             columns: ["vehicle_id"]
             isOneToOne: true
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fleet_assets: {
+        Row: {
+          asset_code: string
+          assigned_to_depot: string | null
+          assigned_to_user: string | null
+          category: string
+          condition: string | null
+          created_at: string
+          current_value: number | null
+          depreciation_method: string | null
+          depreciation_rate: number | null
+          id: string
+          is_active: boolean | null
+          lifecycle_stage: string
+          location: string | null
+          manufacturer: string | null
+          model: string | null
+          name: string
+          notes: string | null
+          organization_id: string
+          photo_url: string | null
+          purchase_cost: number | null
+          purchase_date: string | null
+          salvage_value: number | null
+          serial_number: string | null
+          sub_category: string | null
+          updated_at: string
+          useful_life_years: number | null
+          vehicle_id: string | null
+          warranty_expiry: string | null
+        }
+        Insert: {
+          asset_code: string
+          assigned_to_depot?: string | null
+          assigned_to_user?: string | null
+          category?: string
+          condition?: string | null
+          created_at?: string
+          current_value?: number | null
+          depreciation_method?: string | null
+          depreciation_rate?: number | null
+          id?: string
+          is_active?: boolean | null
+          lifecycle_stage?: string
+          location?: string | null
+          manufacturer?: string | null
+          model?: string | null
+          name: string
+          notes?: string | null
+          organization_id: string
+          photo_url?: string | null
+          purchase_cost?: number | null
+          purchase_date?: string | null
+          salvage_value?: number | null
+          serial_number?: string | null
+          sub_category?: string | null
+          updated_at?: string
+          useful_life_years?: number | null
+          vehicle_id?: string | null
+          warranty_expiry?: string | null
+        }
+        Update: {
+          asset_code?: string
+          assigned_to_depot?: string | null
+          assigned_to_user?: string | null
+          category?: string
+          condition?: string | null
+          created_at?: string
+          current_value?: number | null
+          depreciation_method?: string | null
+          depreciation_rate?: number | null
+          id?: string
+          is_active?: boolean | null
+          lifecycle_stage?: string
+          location?: string | null
+          manufacturer?: string | null
+          model?: string | null
+          name?: string
+          notes?: string | null
+          organization_id?: string
+          photo_url?: string | null
+          purchase_cost?: number | null
+          purchase_date?: string | null
+          salvage_value?: number | null
+          serial_number?: string | null
+          sub_category?: string | null
+          updated_at?: string
+          useful_life_years?: number | null
+          vehicle_id?: string | null
+          warranty_expiry?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_assets_assigned_to_depot_fkey"
+            columns: ["assigned_to_depot"]
+            isOneToOne: false
+            referencedRelation: "depots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_assets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_assets_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
             referencedRelation: "vehicles"
             referencedColumns: ["id"]
           },
