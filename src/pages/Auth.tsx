@@ -208,8 +208,8 @@ const Auth = () => {
         return;
       }
 
-      // Verify TOTP code using time-based algorithm
-      const isValidTotp = verifyTOTP(twoFactor.secret_encrypted, totpCode);
+      // Verify TOTP code using RFC-compatible algorithm
+      const isValidTotp = await verifyTotpCode(twoFactor.secret_encrypted, totpCode);
       
       // Also check backup codes
       let usedBackupCode = false;

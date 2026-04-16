@@ -84,9 +84,13 @@ const TwoFactorTab = () => {
     mutationFn: async () => {
       if (!user?.id || !organizationId) throw new Error("Not authenticated");
       
-      // Simple verification: just check the code is 6 digits
       if (verificationCode.length !== 6 || !/^\d+$/.test(verificationCode)) {
         throw new Error("Please enter a valid 6-digit verification code");
+      }
+
+      const isValidTotp = await verifyTotpCode(setupSecret, verificationCode);
+      if (!isValidTotp) {
+        throw new Error("The verification code from your authenticator app is incorrect");
       }
 
       const { error } = await supabase
