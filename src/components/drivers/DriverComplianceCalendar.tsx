@@ -26,7 +26,7 @@ export const DriverComplianceCalendar = () => {
 
   useEffect(() => {
     if (!organizationId) return;
-    const fetch = async () => {
+    const fetchEvents = async () => {
       setLoading(true);
       const { data } = await supabase
         .from("driver_compliance_events")
@@ -34,10 +34,10 @@ export const DriverComplianceCalendar = () => {
         .eq("organization_id", organizationId)
         .order("due_date", { ascending: true })
         .limit(200);
-      setEvents((data as any) || []);
+      setEvents((data as ComplianceEvent[]) || []);
       setLoading(false);
     };
-    fetch();
+    fetchEvents();
   }, [organizationId]);
 
   const now = new Date();

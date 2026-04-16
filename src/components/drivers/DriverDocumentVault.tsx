@@ -47,7 +47,7 @@ export const DriverDocumentVault = ({ driverId, driverName }: DriverDocumentVaul
         .eq("entity_type", "driver")
         .eq("entity_id", driverId)
         .order("created_at", { ascending: false });
-      setDocuments((data as any) || []);
+      setDocuments((data as Document[]) || []);
       setLoading(false);
     };
     fetch();

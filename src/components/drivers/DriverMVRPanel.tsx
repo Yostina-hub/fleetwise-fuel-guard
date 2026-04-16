@@ -44,7 +44,7 @@ export const DriverMVRPanel = () => {
       .eq("organization_id", organizationId)
       .order("pull_date", { ascending: false })
       .limit(100);
-    setRecords((data as any) || []);
+    setRecords((data as MVRRecord[]) || []);
     setLoading(false);
   };
 
@@ -167,7 +167,7 @@ const NewMVRDialog = ({ organizationId, onSuccess, open, onOpenChange }: { organ
       points_total: parseInt(pointsTotal) || 0,
       report_source: source || null,
       notes: notes || null,
-    } as any);
+    });
     setSaving(false);
     if (error) { toast.error("Failed to save"); return; }
     toast.success("MVR record added");
@@ -185,7 +185,7 @@ const NewMVRDialog = ({ organizationId, onSuccess, open, onOpenChange }: { organ
         <div className="space-y-3">
           <div>
             <Label>Driver</Label>
-            <Select value={driverId} onValueChange={setDriverId}>
+            <Select value={driverId || undefined} onValueChange={setDriverId}>
               <SelectTrigger><SelectValue placeholder="Select driver..." /></SelectTrigger>
               <SelectContent>{drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.first_name} {d.last_name}</SelectItem>)}</SelectContent>
             </Select>
