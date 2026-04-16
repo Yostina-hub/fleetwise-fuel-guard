@@ -252,11 +252,10 @@ function AutoRotate({ enabled }: { enabled: boolean }) {
 
 // ---------- Scene ----------
 
-function VehicleScene({ vehicleType, color, status, plate, autoRotate }: {
+function VehicleScene({ vehicleType, color, status, autoRotate }: {
   vehicleType: string;
   color: string;
   status: string;
-  plate: string;
   autoRotate: boolean;
 }) {
   const bodyColor = useMemo(() => getVehicleColor(color), [color]);
@@ -442,7 +441,6 @@ const Vehicle3DViewer = ({
                   vehicleType={vehicleType}
                   color={color}
                   status={status}
-                  plate={plate}
                   autoRotate={autoRotate}
                 />
               </Canvas>
