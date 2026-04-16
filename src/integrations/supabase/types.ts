@@ -3075,6 +3075,7 @@ export type Database = {
           created_at: string
           date: string
           driver_id: string
+          employee_id: string | null
           id: string
           notes: string | null
           organization_id: string
@@ -3093,6 +3094,7 @@ export type Database = {
           created_at?: string
           date: string
           driver_id: string
+          employee_id?: string | null
           id?: string
           notes?: string | null
           organization_id: string
@@ -3111,6 +3113,7 @@ export type Database = {
           created_at?: string
           date?: string
           driver_id?: string
+          employee_id?: string | null
           id?: string
           notes?: string | null
           organization_id?: string
@@ -3128,6 +3131,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_attendance_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
           {
@@ -3640,6 +3650,7 @@ export type Database = {
           department: string | null
           document_url: string | null
           driver_id: string
+          employee_id: string | null
           employment_type: string | null
           end_date: string | null
           id: string
@@ -3666,6 +3677,7 @@ export type Database = {
           department?: string | null
           document_url?: string | null
           driver_id: string
+          employee_id?: string | null
           employment_type?: string | null
           end_date?: string | null
           id?: string
@@ -3692,6 +3704,7 @@ export type Database = {
           department?: string | null
           document_url?: string | null
           driver_id?: string
+          employee_id?: string | null
           employment_type?: string | null
           end_date?: string | null
           id?: string
@@ -3720,6 +3733,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "driver_contracts_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "driver_contracts_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -3733,6 +3753,7 @@ export type Database = {
           cost_per_km: number | null
           created_at: string
           driver_id: string
+          employee_id: string | null
           fine_cost: number | null
           fuel_cost: number | null
           id: string
@@ -3751,6 +3772,7 @@ export type Database = {
           cost_per_km?: number | null
           created_at?: string
           driver_id: string
+          employee_id?: string | null
           fine_cost?: number | null
           fuel_cost?: number | null
           id?: string
@@ -3769,6 +3791,7 @@ export type Database = {
           cost_per_km?: number | null
           created_at?: string
           driver_id?: string
+          employee_id?: string | null
           fine_cost?: number | null
           fuel_cost?: number | null
           id?: string
@@ -3789,6 +3812,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_cost_allocations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
           {
@@ -4722,6 +4752,7 @@ export type Database = {
           approved_by: string | null
           created_at: string
           driver_id: string
+          employee_id: string | null
           end_date: string
           id: string
           leave_type: string
@@ -4738,6 +4769,7 @@ export type Database = {
           approved_by?: string | null
           created_at?: string
           driver_id: string
+          employee_id?: string | null
           end_date: string
           id?: string
           leave_type?: string
@@ -4754,6 +4786,7 @@ export type Database = {
           approved_by?: string | null
           created_at?: string
           driver_id?: string
+          employee_id?: string | null
           end_date?: string
           id?: string
           leave_type?: string
@@ -4771,6 +4804,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_leave_requests_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
           {
@@ -5168,6 +5208,7 @@ export type Database = {
           currency: string | null
           deductions: Json | null
           driver_id: string
+          employee_id: string | null
           gross_pay: number | null
           id: string
           km_bonus: number | null
@@ -5194,6 +5235,7 @@ export type Database = {
           currency?: string | null
           deductions?: Json | null
           driver_id: string
+          employee_id?: string | null
           gross_pay?: number | null
           id?: string
           km_bonus?: number | null
@@ -5220,6 +5262,7 @@ export type Database = {
           currency?: string | null
           deductions?: Json | null
           driver_id?: string
+          employee_id?: string | null
           gross_pay?: number | null
           id?: string
           km_bonus?: number | null
@@ -5244,6 +5287,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_payroll_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
           {
@@ -5526,6 +5576,7 @@ export type Database = {
           composite_score: number | null
           created_at: string
           driver_id: string
+          employee_id: string | null
           fuel_efficiency_score: number | null
           id: string
           incident_count: number | null
@@ -5542,6 +5593,7 @@ export type Database = {
           composite_score?: number | null
           created_at?: string
           driver_id: string
+          employee_id?: string | null
           fuel_efficiency_score?: number | null
           id?: string
           incident_count?: number | null
@@ -5558,6 +5610,7 @@ export type Database = {
           composite_score?: number | null
           created_at?: string
           driver_id?: string
+          employee_id?: string | null
           fuel_efficiency_score?: number | null
           id?: string
           incident_count?: number | null
@@ -5574,6 +5627,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_performance_kpis_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
           {
@@ -5595,6 +5655,7 @@ export type Database = {
           driver_comments: string | null
           driver_id: string
           efficiency_score: number | null
+          employee_id: string | null
           goals: Json | null
           id: string
           improvement_areas: string[] | null
@@ -5622,6 +5683,7 @@ export type Database = {
           driver_comments?: string | null
           driver_id: string
           efficiency_score?: number | null
+          employee_id?: string | null
           goals?: Json | null
           id?: string
           improvement_areas?: string[] | null
@@ -5649,6 +5711,7 @@ export type Database = {
           driver_comments?: string | null
           driver_id?: string
           efficiency_score?: number | null
+          employee_id?: string | null
           goals?: Json | null
           id?: string
           improvement_areas?: string[] | null
@@ -5673,6 +5736,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_performance_reviews_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
           {
@@ -6608,6 +6678,93 @@ export type Database = {
           vehicle_ids?: string[]
         }
         Relationships: []
+      }
+      employees: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          department: string | null
+          driver_id: string | null
+          email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          emergency_contact_relationship: string | null
+          employee_id: string | null
+          employee_type: Database["public"]["Enums"]["employee_type"]
+          first_name: string
+          hire_date: string | null
+          id: string
+          job_title: string | null
+          last_name: string
+          notes: string | null
+          organization_id: string
+          phone: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          department?: string | null
+          driver_id?: string | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
+          employee_id?: string | null
+          employee_type?: Database["public"]["Enums"]["employee_type"]
+          first_name: string
+          hire_date?: string | null
+          id?: string
+          job_title?: string | null
+          last_name: string
+          notes?: string | null
+          organization_id: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          department?: string | null
+          driver_id?: string | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
+          employee_id?: string | null
+          employee_type?: Database["public"]["Enums"]["employee_type"]
+          first_name?: string
+          hire_date?: string | null
+          id?: string
+          job_title?: string | null
+          last_name?: string
+          notes?: string | null
+          organization_id?: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employees_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employees_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       energy_cost_rates: {
         Row: {
@@ -20087,6 +20244,15 @@ export type Database = {
         | "technician"
         | "mechanic"
         | "viewer"
+      employee_type:
+        | "driver"
+        | "mechanic"
+        | "dispatcher"
+        | "office_staff"
+        | "manager"
+        | "technician"
+        | "coordinator"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -20229,6 +20395,16 @@ export const Constants = {
         "technician",
         "mechanic",
         "viewer",
+      ],
+      employee_type: [
+        "driver",
+        "mechanic",
+        "dispatcher",
+        "office_staff",
+        "manager",
+        "technician",
+        "coordinator",
+        "other",
       ],
     },
   },
