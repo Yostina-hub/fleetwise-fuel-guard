@@ -67,9 +67,25 @@ export const DriverCheckInDialog = ({ request, open, onClose }: Props) => {
         .update(updates)
         .eq("id", request.id);
       if (error) throw error;
+
+      // Reset vehicle status to available
+      if (request.assigned_vehicle_id) {
+        await (supabase as any)
+          .from("vehicles")
+          .update({ status: "available", updated_at: new Date().toISOString() })
+          .eq("id", request.assigned_vehicle_id);
+      }
+
+      // Reset driver status to active
+      if (request.assigned_driver_id) {
+        await (supabase as any)
+          .from("drivers")
+          .update({ status: "active", updated_at: new Date().toISOString() })
+          .eq("id", request.assigned_driver_id);
+      }
     },
     onSuccess: () => {
-      toast.success("Driver checked out — request completed");
+      toast.success("Driver checked out — request completed, vehicle now idle");
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
       onClose();
