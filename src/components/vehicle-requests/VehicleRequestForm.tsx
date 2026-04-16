@@ -5,7 +5,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Clock, Users, Car, Route } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Clock, Users, Car, Route, UserCog, X } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -53,9 +56,26 @@ const initialForm = {
 
 export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormProps) => {
   const { t } = useTranslation();
-  const { organizationId } = useOrganization();
+  const { organizationId, isSuperAdmin } = useOrganization();
   const queryClient = useQueryClient();
   const [form, setForm] = useState(initialForm);
+  // Super-admin only: file the request on behalf of another user
+  const [onBehalfOf, setOnBehalfOf] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [userPickerOpen, setUserPickerOpen] = useState(false);
+
+  const { data: orgUsers = [] } = useQuery({
+    queryKey: ["vr-org-users", organizationId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .eq("organization_id", organizationId!)
+        .order("full_name");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId && open && isSuperAdmin,
+  });
 
   const { data: pools = [] } = useQuery({
     queryKey: ["fleet-pools", organizationId],
@@ -84,6 +104,15 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
       const user = (await supabase.auth.getUser()).data.user;
       const profile = (await supabase.from("profiles").select("full_name").eq("id", user!.id).single()).data;
 
+      // Super admin may file on behalf of another user; otherwise use self.
+      const requesterId = isSuperAdmin && onBehalfOf ? onBehalfOf.id : user!.id;
+      const requesterName = isSuperAdmin && onBehalfOf
+        ? onBehalfOf.name
+        : (profile?.full_name || user!.email || "Unknown");
+      const filedOnBehalfNote = isSuperAdmin && onBehalfOf
+        ? ` (filed by ${profile?.full_name || user!.email} on behalf of ${onBehalfOf.name})`
+        : "";
+
       let neededFrom: string;
       let neededUntil: string | null = null;
 
@@ -98,10 +127,10 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
       const payload = {
         organization_id: organizationId!,
         request_number: `VR-${Date.now().toString(36).toUpperCase()}`,
-        requester_id: user!.id,
-        requester_name: profile?.full_name || user!.email || "Unknown",
+        requester_id: requesterId,
+        requester_name: requesterName,
         request_type: form.request_type,
-        purpose: form.purpose,
+        purpose: form.purpose + filedOnBehalfNote,
         needed_from: neededFrom,
         needed_until: neededUntil,
         departure_place: form.departure_place || null,
@@ -170,11 +199,16 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
       return data;
     },
     onSuccess: () => {
-      toast.success("Vehicle request submitted successfully");
+      toast.success(
+        isSuperAdmin && onBehalfOf
+          ? `Vehicle request submitted on behalf of ${onBehalfOf.name}`
+          : "Vehicle request submitted successfully"
+      );
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
       onOpenChange(false);
       setForm(initialForm);
+      setOnBehalfOf(null);
     },
     onError: (err: any) => toast.error(err.message),
   });
@@ -198,6 +232,61 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
           </DialogTitle>
           <DialogDescription>Submit a vehicle request. Fields adapt based on operation type.</DialogDescription>
         </DialogHeader>
+
+        {/* Super-admin: file on behalf of any user */}
+        {isSuperAdmin && (
+          <div className="rounded-md border border-dashed border-primary/30 bg-primary/5 p-3 flex items-center gap-2 flex-wrap">
+            <UserCog className="w-4 h-4 text-primary shrink-0" />
+            <span className="text-sm font-medium">Request on behalf of:</span>
+            {onBehalfOf ? (
+              <>
+                <Badge variant="secondary" className="gap-1">
+                  {onBehalfOf.name}
+                </Badge>
+                <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => setOnBehalfOf(null)}>
+                  <X className="w-3.5 h-3.5" /> Clear
+                </Button>
+              </>
+            ) : (
+              <Popover open={userPickerOpen} onOpenChange={setUserPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7">Select user…</Button>
+                </PopoverTrigger>
+                <PopoverContent className="p-0 w-80" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search users by name or email…" />
+                    <CommandList>
+                      <CommandEmpty>No users found.</CommandEmpty>
+                      <CommandGroup>
+                        {orgUsers.map((u: any) => (
+                          <CommandItem
+                            key={u.id}
+                            value={`${u.full_name || ""} ${u.email || ""}`}
+                            onSelect={() => {
+                              setOnBehalfOf({ id: u.id, name: u.full_name || u.email, email: u.email });
+                              setUserPickerOpen(false);
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <div className="flex flex-col">
+                              <span className="text-sm">{u.full_name || u.email}</span>
+                              {u.full_name && (
+                                <span className="text-xs text-muted-foreground">{u.email}</span>
+                              )}
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            )}
+            <span className="text-xs text-muted-foreground ml-auto">
+              {onBehalfOf ? "Approval routing will use this user's role." : "Leave empty to file as yourself."}
+            </span>
+          </div>
+        )}
 
         <div className="space-y-5">
           {/* Vehicle Request Type */}
