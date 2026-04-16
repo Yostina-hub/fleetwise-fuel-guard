@@ -84,7 +84,7 @@ const DriverPerformance = () => {
 
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border">
             <UserCircle className="w-4 h-4 text-muted-foreground shrink-0" />
-            <Select value={selectedDriverId} onValueChange={setSelectedDriverId}>
+            <Select value={selectedDriverId || undefined} onValueChange={setSelectedDriverId}>
               <SelectTrigger className="w-[220px] border-0 bg-transparent h-8 text-sm focus:ring-0">
                 <SelectValue placeholder="Select driver..." />
               </SelectTrigger>

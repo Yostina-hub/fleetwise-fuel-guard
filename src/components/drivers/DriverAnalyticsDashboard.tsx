@@ -28,7 +28,7 @@ export const DriverAnalyticsDashboard = () => {
         .select("id, first_name, last_name, total_trips, total_distance_km, safety_score, status")
         .eq("organization_id", organizationId)
         .order("total_distance_km", { ascending: false });
-      setDrivers((data as any) || []);
+      setDrivers((data as DriverStats[]) || []);
       setLoading(false);
     };
     fetch();
