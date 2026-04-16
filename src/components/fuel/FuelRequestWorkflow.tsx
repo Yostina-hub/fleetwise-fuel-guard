@@ -206,8 +206,8 @@ const PreviousClearanceReport = ({ vehicleId, generatorId, organizationId, forma
   );
 };
 
-// Nearby Stations Panel
-const NearbyStationsPanel = ({ organizationId, onSelectStation }: any) => {
+// Approved Stations Panel (simple list, used at request creation)
+const ApprovedStationsPanel = ({ organizationId, onSelectStation }: any) => {
   const { data: stations = [] } = useQuery({
     queryKey: ["approved-fuel-stations", organizationId],
     queryFn: async () => {
@@ -1330,8 +1330,8 @@ export const FuelRequestWorkflow = () => {
                 </div>
               </div>
 
-              {/* Nearby stations */}
-              <NearbyStationsPanel organizationId={organizationId} onSelectStation={setSelectedStation} />
+              {/* Approved stations (creation-time picker) */}
+              <ApprovedStationsPanel organizationId={organizationId} onSelectStation={setSelectedStation} />
               {selectedStation && (
                 <p className="text-xs text-success flex items-center gap-1"><MapPin className="h-3 w-3" /> Station selected</p>
               )}
