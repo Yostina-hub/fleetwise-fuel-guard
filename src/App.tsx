@@ -100,6 +100,7 @@ const FuelEventsMap = lazyWithRetry(() => import("./pages/FuelEventsMap"), "Fuel
 const InfrastructureMonitoring = lazyWithRetry(() => import("./pages/InfrastructureMonitoring"), "InfrastructureMonitoring");
 const Generators = lazyWithRetry(() => import("./pages/Generators"), "Generators");
 const OutsourceManagement = lazyWithRetry(() => import("./pages/OutsourceManagement"), "OutsourceManagement");
+const ThirdPartyClaims = lazyWithRetry(() => import("./pages/ThirdPartyClaims"), "ThirdPartyClaims");
 const OperationsConsole = lazyWithRetry(() => import("./pages/OperationsConsole"), "OperationsConsole");
 const SystemArchitecture = lazyWithRetry(() => import("./pages/SystemArchitecture"), "SystemArchitecture");
 const LicensingCompliance = lazyWithRetry(() => import("./pages/LicensingCompliance"), "LicensingCompliance");
