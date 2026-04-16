@@ -173,6 +173,7 @@ const Auth = () => {
         }
       }
 
+      checking2FARef.current = false;
       toast({
         title: "Welcome back!",
         description: "You've been signed in successfully.",
