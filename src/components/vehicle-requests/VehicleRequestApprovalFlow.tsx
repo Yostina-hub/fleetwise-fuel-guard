@@ -72,7 +72,9 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
     onSuccess: () => {
       toast.success("Request approved");
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
       queryClient.invalidateQueries({ queryKey: ["vehicle-request-approvals"] });
+      queryClient.invalidateQueries({ queryKey: ["vr-approvals-panel"] });
       onClose();
     },
     onError: (err: any) => toast.error(err.message),
@@ -104,7 +106,9 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
     onSuccess: () => {
       toast.success("Request rejected");
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
       queryClient.invalidateQueries({ queryKey: ["vehicle-request-approvals"] });
+      queryClient.invalidateQueries({ queryKey: ["vr-approvals-panel"] });
       onClose();
     },
     onError: (err: any) => toast.error(err.message),
@@ -152,6 +156,7 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
     onSuccess: () => {
       toast.success("Vehicle & driver assigned");
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
       onClose();
     },
     onError: (err: any) => toast.error(err.message),
@@ -167,6 +172,7 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
     onSuccess: () => {
       toast.success("Request completed");
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
       onClose();
     },
     onError: (err: any) => toast.error(err.message),
@@ -183,6 +189,7 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
     onSuccess: () => {
       toast.success("SMS notification sent");
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
     },
     onError: (err: any) => toast.error(err.message),
   });
