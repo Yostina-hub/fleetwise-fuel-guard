@@ -440,16 +440,7 @@ const Dashboard = () => {
                 )}
                 {wv("distance_by_group") && (
                   <DistanceByGroupChart 
-                    data={useMemo(() => {
-                      const hours = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'];
-                      const activeCount = dbVehicles.filter(v => v.status === 'active').length;
-                      const idleCount = dbVehicles.filter(v => v.status === 'maintenance').length;
-                      return hours.map((time, i) => ({
-                        time,
-                        'Active Fleet': Math.max(0, (tripMetrics.totalDistanceKm / 9) * (1 + Math.sin(i * 0.5)) * (activeCount / Math.max(dbVehicles.length, 1))),
-                        'Idle Fleet': Math.max(0, (tripMetrics.totalDistanceKm / 18) * Math.cos(i * 0.3) * (idleCount / Math.max(dbVehicles.length, 1))),
-                      }));
-                    }, [tripMetrics, dbVehicles])}
+                    data={distanceByGroupData}
                     groups={[
                       { name: 'Active Fleet', color: 'hsl(var(--success))' },
                       { name: 'Idle Fleet', color: 'hsl(var(--warning))' },
