@@ -130,6 +130,11 @@ const initialForm: FuelRequestFormData = {
   email: "",
   notify_user: false,
   contact_preference: "",
+  technician_name: "",
+  technician_employee_id: "",
+  security_name: "",
+  route: "",
+  running_hours: "",
 };
 
 // Previous Clearance Report (supports both vehicles and generators)
