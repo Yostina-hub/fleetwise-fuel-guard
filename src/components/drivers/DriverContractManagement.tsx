@@ -28,6 +28,7 @@ interface Contract {
 interface DriverContractManagementProps {
   driverId: string;
   driverName: string;
+  employeeId?: string;
 }
 
 export const DriverContractManagement = ({ driverId, driverName }: DriverContractManagementProps) => {

@@ -15,6 +15,7 @@ import { DollarSign, Calculator, Settings, FileText, CheckCircle2, Clock, Plus, 
 interface DriverPayrollManagementProps {
   driverId: string;
   driverName: string;
+  employeeId?: string;
 }
 
 interface PayrollConfig {
