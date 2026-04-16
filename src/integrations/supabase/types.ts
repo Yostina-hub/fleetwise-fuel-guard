@@ -21370,6 +21370,15 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: string
       }
+      run_drivers_page_e2e_test: {
+        Args: never
+        Returns: {
+          t_detail: string
+          t_flow: string
+          t_status: string
+          t_step: string
+        }[]
+      }
       run_maintenance_workflow_e2e_test: {
         Args: never
         Returns: {
