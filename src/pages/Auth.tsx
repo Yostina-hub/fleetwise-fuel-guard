@@ -118,6 +118,7 @@ const Auth = () => {
     const { error } = await signIn(email, password);
 
     if (error) {
+      checking2FARef.current = false;
       // Record failed attempt in progressive delay (client-side exponential backoff)
       progressiveDelay.recordFailedAttempt(email);
       // Record in server-side lockout table
