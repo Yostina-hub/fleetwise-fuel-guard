@@ -963,6 +963,10 @@ export const FuelRequestWorkflow = () => {
                   {generators.length === 0 && (
                     <p className="text-xs text-muted-foreground mt-1">No generators registered. Register generators first.</p>
                   )}
+                  {/* Previous clearance report for generator */}
+                  <div className="mt-4">
+                    <PreviousClearanceReport generatorId={form.generator_id} organizationId={organizationId} formatFuel={formatFuel} formatCurrency={formatCurrency} />
+                  </div>
                 </div>
               )}
 
@@ -1122,9 +1126,15 @@ export const FuelRequestWorkflow = () => {
                 </div>
               )}
             </div>
-            {/* Previous clearance report in approval */}
-            {showApprove?.vehicle_id && (
-              <PreviousClearanceReport vehicleId={showApprove.vehicle_id} organizationId={organizationId} formatFuel={formatFuel} formatCurrency={formatCurrency} />
+            {/* Previous clearance report in approval (vehicle or generator) */}
+            {(showApprove?.vehicle_id || showApprove?.generator_id) && (
+              <PreviousClearanceReport
+                vehicleId={showApprove?.vehicle_id}
+                generatorId={showApprove?.generator_id}
+                organizationId={organizationId}
+                formatFuel={formatFuel}
+                formatCurrency={formatCurrency}
+              />
             )}
             <div>
               <Label>Liters to Approve</Label>
