@@ -1019,7 +1019,12 @@ export const DeviceManagementTab = () => {
                     )}
                   </TableCell>
                   <TableCell className="font-mono text-sm">
-                    {device.imei}
+                    <button
+                      className="hover:text-primary hover:underline cursor-pointer transition-colors text-left"
+                      onClick={() => setDetailDevice(device)}
+                    >
+                      {device.imei}
+                    </button>
                   </TableCell>
                   <TableCell>{device.tracker_model}</TableCell>
                   <TableCell>
