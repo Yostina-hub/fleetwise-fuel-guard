@@ -1028,13 +1028,13 @@ const TEMPLATES: WorkflowTemplate[] = [
       { id: "fa7", type: "action", position: { x: 200, y: 1100 }, data: { label: "WO Delegation Approval", description: "Work order approved as per delegation matrix", icon: "✅", category: "fleet", nodeType: "fleet_assign_driver", config: { delegation_scope: "fuel_work_orders" }, status: "idle", isConfigured: true } },
 
       // Initiate e-money
-      { id: "fa8", type: "action", position: { x: 200, y: 1250 }, data: { label: "Initiate E-Money Transfer", description: "Initiate electronic money transfer to driver or on-site fuel admin", icon: "💳", category: "integrations", nodeType: "integration_webhook", config: { action: "emoney_initiate", amount_source: "estimated_cost" }, status: "idle", isConfigured: true } },
+      { id: "fa8", type: "action", position: { x: 200, y: 1250 }, data: { label: "Initiate E-Money Transfer", description: "Initiate electronic money transfer to driver or on-site fuel admin", icon: "💳", category: "actions", nodeType: "integration_webhook", config: { action: "emoney_initiate", amount_source: "estimated_cost" }, status: "idle", isConfigured: true } },
 
       // Approve e-money
       { id: "fa9", type: "action", position: { x: 200, y: 1400 }, data: { label: "E-Money Approval (Delegation)", description: "E-money transfer approved by authorized delegate", icon: "🔐", category: "fleet", nodeType: "fleet_assign_driver", config: { delegation_scope: "emoney_transfer" }, status: "idle", isConfigured: true } },
 
       // Transfer to wallet
-      { id: "fa10", type: "action", position: { x: 200, y: 1550 }, data: { label: "Transfer to Driver Wallet", description: "E-money transferred to driver's wallet account for fuel purchase", icon: "👛", category: "integrations", nodeType: "integration_webhook", config: { action: "wallet_transfer", target: "driver_wallet" }, status: "idle", isConfigured: true } },
+      { id: "fa10", type: "action", position: { x: 200, y: 1550 }, data: { label: "Transfer to Driver Wallet", description: "E-money transferred to driver's wallet account for fuel purchase", icon: "👛", category: "actions", nodeType: "integration_webhook", config: { action: "wallet_transfer", target: "driver_wallet" }, status: "idle", isConfigured: true } },
 
       // Show nearby stations
       { id: "fa11", type: "action", position: { x: 200, y: 1700 }, data: { label: "Show Nearby Stations", description: "Display approved fuel stations with availability on driver's app", icon: "🗺️", category: "notifications", nodeType: "notify_push", config: { recipients: "driver", template: "Your fuel request is ready. View nearby stations.", include_map: true }, status: "idle", isConfigured: true } },
