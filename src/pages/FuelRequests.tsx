@@ -26,7 +26,7 @@ import { useTranslation } from "react-i18next";
 
 const ITEMS_PER_PAGE = 15;
 
-const FuelRequestsTable = ({ data, isLoading, getPlate, getDriverName, formatFuel, formatCurrency, statusBadge, setShowDetail, setShowApprove, setShowReject, setApprovedLiters, fulfillMutation }: any) => {
+const FuelRequestsTable = ({ data, isLoading, getPlate, getDriverName, formatFuel, formatCurrency, statusBadge, setShowDetail, setShowApprove, setShowReject, setApprovedLiters, fulfillMutation, canApprove }: any) => {
   const { currentPage, setCurrentPage, startIndex, endIndex } = usePagination(data.length, ITEMS_PER_PAGE);
   const paged = data.slice(startIndex, endIndex);
 
@@ -73,7 +73,7 @@ const FuelRequestsTable = ({ data, isLoading, getPlate, getDriverName, formatFue
                             <Button variant="ghost" size="sm" onClick={() => setShowDetail(r)}><Eye className="w-4 h-4" /></Button>
                           </TooltipTrigger><TooltipContent>View details</TooltipContent></Tooltip>
                         </TooltipProvider>
-                        {r.status === "pending" && (
+                        {r.status === "pending" && canApprove && (
                           <>
                             <Button variant="ghost" size="sm" className="text-success" onClick={() => { setShowApprove(r); setApprovedLiters(String(r.liters_requested)); }}>
                               <Check className="w-4 h-4" />
@@ -83,7 +83,7 @@ const FuelRequestsTable = ({ data, isLoading, getPlate, getDriverName, formatFue
                             </Button>
                           </>
                         )}
-                        {r.status === "approved" && (
+                        {r.status === "approved" && canApprove && (
                           <Button variant="ghost" size="sm" className="text-primary" onClick={() => fulfillMutation.mutate(r.id)}>
                             <CheckCircle className="w-4 h-4" />
                           </Button>
@@ -287,7 +287,7 @@ const FuelRequests = () => {
     toast.success("Exported");
   };
 
-  const tableProps = { isLoading, getPlate, getDriverName, formatFuel, formatCurrency, statusBadge, setShowDetail, setShowApprove, setShowReject, setApprovedLiters, fulfillMutation };
+  const tableProps = { isLoading, getPlate, getDriverName, formatFuel, formatCurrency, statusBadge, setShowDetail, setShowApprove, setShowReject, setApprovedLiters, fulfillMutation, canApprove };
 
   return (
     <Layout>
