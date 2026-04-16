@@ -12945,6 +12945,74 @@ export type Database = {
         }
         Relationships: []
       }
+      outsource_capacity_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_type: string
+          created_at: string
+          id: string
+          message: string
+          metadata: Json | null
+          organization_id: string
+          recommendation: string | null
+          resolved_at: string | null
+          resource_count_current: number | null
+          resource_count_optimal: number | null
+          severity: string
+          status: string
+          updated_at: string
+          utilization_pct: number | null
+          zone_region: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type: string
+          created_at?: string
+          id?: string
+          message: string
+          metadata?: Json | null
+          organization_id: string
+          recommendation?: string | null
+          resolved_at?: string | null
+          resource_count_current?: number | null
+          resource_count_optimal?: number | null
+          severity?: string
+          status?: string
+          updated_at?: string
+          utilization_pct?: number | null
+          zone_region?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type?: string
+          created_at?: string
+          id?: string
+          message?: string
+          metadata?: Json | null
+          organization_id?: string
+          recommendation?: string | null
+          resolved_at?: string | null
+          resource_count_current?: number | null
+          resource_count_optimal?: number | null
+          severity?: string
+          status?: string
+          updated_at?: string
+          utilization_pct?: number | null
+          zone_region?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outsource_capacity_alerts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       outsource_contracts: {
         Row: {
           auto_renew: boolean | null
@@ -13088,6 +13156,213 @@ export type Database = {
           },
         ]
       }
+      outsource_payment_request_items: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          item_type: string
+          organization_id: string
+          payment_request_id: string
+          quantity: number
+          reference_id: string | null
+          reference_table: string | null
+          total: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          item_type: string
+          organization_id: string
+          payment_request_id: string
+          quantity?: number
+          reference_id?: string | null
+          reference_table?: string | null
+          total?: number
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          item_type?: string
+          organization_id?: string
+          payment_request_id?: string
+          quantity?: number
+          reference_id?: string | null
+          reference_table?: string | null
+          total?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outsource_payment_request_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outsource_payment_request_items_payment_request_id_fkey"
+            columns: ["payment_request_id"]
+            isOneToOne: false
+            referencedRelation: "outsource_payment_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outsource_payment_requests: {
+        Row: {
+          amount_approved: number | null
+          amount_requested: number
+          approval_chain: Json | null
+          approved_at: string | null
+          approver_id: string | null
+          attachments: string[] | null
+          consolidated_at: string | null
+          consolidated_by: string | null
+          contract_check_at: string | null
+          contract_check_by: string | null
+          contract_check_result: string | null
+          contract_id: string | null
+          created_at: string
+          currency: string
+          deductions: number | null
+          driver_id: string | null
+          fuel_cost: number | null
+          fuel_info_provided_at: string | null
+          fuel_info_provided_by: string | null
+          id: string
+          lubricant_cost: number | null
+          notes: string | null
+          organization_id: string
+          paid_at: string | null
+          payment_reference: string | null
+          period_end: string
+          period_start: string
+          rejection_reason: string | null
+          rental_vehicle_id: string | null
+          request_number: string
+          status: string
+          submitted_at: string | null
+          submitted_by: string | null
+          supplier_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_approved?: number | null
+          amount_requested?: number
+          approval_chain?: Json | null
+          approved_at?: string | null
+          approver_id?: string | null
+          attachments?: string[] | null
+          consolidated_at?: string | null
+          consolidated_by?: string | null
+          contract_check_at?: string | null
+          contract_check_by?: string | null
+          contract_check_result?: string | null
+          contract_id?: string | null
+          created_at?: string
+          currency?: string
+          deductions?: number | null
+          driver_id?: string | null
+          fuel_cost?: number | null
+          fuel_info_provided_at?: string | null
+          fuel_info_provided_by?: string | null
+          id?: string
+          lubricant_cost?: number | null
+          notes?: string | null
+          organization_id: string
+          paid_at?: string | null
+          payment_reference?: string | null
+          period_end: string
+          period_start: string
+          rejection_reason?: string | null
+          rental_vehicle_id?: string | null
+          request_number: string
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_approved?: number | null
+          amount_requested?: number
+          approval_chain?: Json | null
+          approved_at?: string | null
+          approver_id?: string | null
+          attachments?: string[] | null
+          consolidated_at?: string | null
+          consolidated_by?: string | null
+          contract_check_at?: string | null
+          contract_check_by?: string | null
+          contract_check_result?: string | null
+          contract_id?: string | null
+          created_at?: string
+          currency?: string
+          deductions?: number | null
+          driver_id?: string | null
+          fuel_cost?: number | null
+          fuel_info_provided_at?: string | null
+          fuel_info_provided_by?: string | null
+          id?: string
+          lubricant_cost?: number | null
+          notes?: string | null
+          organization_id?: string
+          paid_at?: string | null
+          payment_reference?: string | null
+          period_end?: string
+          period_start?: string
+          rejection_reason?: string | null
+          rental_vehicle_id?: string | null
+          request_number?: string
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outsource_payment_requests_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "outsource_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outsource_payment_requests_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outsource_payment_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outsource_payment_requests_rental_vehicle_id_fkey"
+            columns: ["rental_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "rental_vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outsource_payment_requests_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       outsource_payments: {
         Row: {
           amount: number
@@ -13153,6 +13428,153 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outsource_price_catalogs: {
+        Row: {
+          base_rate: number
+          catalog_name: string
+          created_at: string
+          currency: string
+          driver_grade: string | null
+          driver_included: boolean
+          effective_from: string
+          effective_to: string | null
+          fuel_included: boolean
+          id: string
+          is_active: boolean
+          notes: string | null
+          organization_id: string
+          overtime_rate: number | null
+          resource_type: string
+          unit: string
+          updated_at: string
+          vehicle_class: string | null
+          zone_region: string | null
+        }
+        Insert: {
+          base_rate?: number
+          catalog_name: string
+          created_at?: string
+          currency?: string
+          driver_grade?: string | null
+          driver_included?: boolean
+          effective_from?: string
+          effective_to?: string | null
+          fuel_included?: boolean
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          organization_id: string
+          overtime_rate?: number | null
+          resource_type: string
+          unit?: string
+          updated_at?: string
+          vehicle_class?: string | null
+          zone_region?: string | null
+        }
+        Update: {
+          base_rate?: number
+          catalog_name?: string
+          created_at?: string
+          currency?: string
+          driver_grade?: string | null
+          driver_included?: boolean
+          effective_from?: string
+          effective_to?: string | null
+          fuel_included?: boolean
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          organization_id?: string
+          overtime_rate?: number | null
+          resource_type?: string
+          unit?: string
+          updated_at?: string
+          vehicle_class?: string | null
+          zone_region?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outsource_price_catalogs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outsource_vehicle_attendance: {
+        Row: {
+          attendance_date: string
+          created_at: string
+          fuel_consumed_liters: number | null
+          hours_active: number | null
+          id: string
+          km_driven: number | null
+          notes: string | null
+          organization_id: string
+          rental_vehicle_id: string | null
+          source: string
+          status: string
+          updated_at: string
+          vehicle_id: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          attendance_date: string
+          created_at?: string
+          fuel_consumed_liters?: number | null
+          hours_active?: number | null
+          id?: string
+          km_driven?: number | null
+          notes?: string | null
+          organization_id: string
+          rental_vehicle_id?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          vehicle_id?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          attendance_date?: string
+          created_at?: string
+          fuel_consumed_liters?: number | null
+          hours_active?: number | null
+          id?: string
+          km_driven?: number | null
+          notes?: string | null
+          organization_id?: string
+          rental_vehicle_id?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          vehicle_id?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outsource_vehicle_attendance_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outsource_vehicle_attendance_rental_vehicle_id_fkey"
+            columns: ["rental_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "rental_vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outsource_vehicle_attendance_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
             referencedColumns: ["id"]
           },
         ]
