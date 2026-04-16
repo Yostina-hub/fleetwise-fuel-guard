@@ -5,12 +5,25 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Thermometer, AlertTriangle, BarChart3, DoorOpen, Settings, Save } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Thermometer, AlertTriangle, BarChart3, DoorOpen, Settings, Save, Plus, Trash2, Loader2 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, subDays } from "date-fns";
 import { toast } from "sonner";
+
+const emptyReadingForm = {
+  vehicle_id: "",
+  temperature_celsius: "",
+  humidity_percent: "",
+  door_status: "closed",
+  compressor_status: "running",
+  sensor_id: "",
+  min_threshold: "-25",
+  max_threshold: "8",
+};
 
 interface ColdChainTabProps {
   organizationId: string;
@@ -20,6 +33,8 @@ const ColdChainTab = ({ organizationId }: ColdChainTabProps) => {
   const [activeTab, setActiveTab] = useState("live");
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const [showLogDialog, setShowLogDialog] = useState(false);
+  const [readingForm, setReadingForm] = useState(emptyReadingForm);
 
   const [complianceRange, setComplianceRange] = useState({
     start: format(subDays(new Date(), 7), "yyyy-MM-dd"),
@@ -27,6 +42,60 @@ const ColdChainTab = ({ organizationId }: ColdChainTabProps) => {
   });
 
   const [thresholds, setThresholds] = useState<Record<string, { min: string; max: string }>>({});
+
+  const { data: vehicles = [] } = useQuery({
+    queryKey: ["vehicles-cold-chain", organizationId],
+    queryFn: async () => {
+      const { data } = await supabase.from("vehicles").select("id, plate_number").eq("organization_id", organizationId).order("plate_number");
+      return data || [];
+    },
+    enabled: !!organizationId,
+  });
+
+  const logReadingMutation = useMutation({
+    mutationFn: async () => {
+      const temp = parseFloat(readingForm.temperature_celsius);
+      if (isNaN(temp)) throw new Error("Temperature is required");
+      const minT = parseFloat(readingForm.min_threshold);
+      const maxT = parseFloat(readingForm.max_threshold);
+      const isAlarm = temp < minT || temp > maxT;
+      const { error } = await (supabase as any).from("cold_chain_readings").insert([{
+        organization_id: organizationId,
+        vehicle_id: readingForm.vehicle_id,
+        temperature_celsius: temp,
+        humidity_percent: readingForm.humidity_percent ? parseFloat(readingForm.humidity_percent) : null,
+        door_status: readingForm.door_status,
+        compressor_status: readingForm.compressor_status,
+        sensor_id: readingForm.sensor_id || null,
+        min_threshold: minT,
+        max_threshold: maxT,
+        is_alarm: isAlarm,
+        alarm_type: isAlarm ? (temp < minT ? "low_temp" : "high_temp") : null,
+      }]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cold-chain-latest"] });
+      queryClient.invalidateQueries({ queryKey: ["cold-chain-alarms"] });
+      setShowLogDialog(false);
+      setReadingForm(emptyReadingForm);
+      toast.success("Cold chain reading logged");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const deleteReadingMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await (supabase as any).from("cold_chain_readings").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cold-chain-latest"] });
+      queryClient.invalidateQueries({ queryKey: ["cold-chain-alarms"] });
+      toast.success("Reading deleted");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   const { data: latestReadings = [], isLoading } = useQuery({
     queryKey: ["cold-chain-latest", organizationId],
@@ -158,6 +227,10 @@ const ColdChainTab = ({ organizationId }: ColdChainTabProps) => {
           <p className="text-xs text-muted-foreground">Doors Open</p>
           <p className="text-2xl font-bold text-amber-600">{doorsOpen}</p>
         </CardContent></Card>
+      </div>
+
+      <div className="flex justify-end">
+        <Button onClick={() => { setReadingForm(emptyReadingForm); setShowLogDialog(true); }}><Plus className="h-4 w-4 mr-2" /> Log Reading</Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -383,6 +456,58 @@ const ColdChainTab = ({ organizationId }: ColdChainTabProps) => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Log Reading Dialog */}
+      <Dialog open={showLogDialog} onOpenChange={setShowLogDialog}>
+        <DialogContent>
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Thermometer className="h-5 w-5" /> Log Cold Chain Reading</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Vehicle *</Label>
+              <Select value={readingForm.vehicle_id || undefined} onValueChange={v => setReadingForm(p => ({ ...p, vehicle_id: v }))}>
+                <SelectTrigger><SelectValue placeholder="Select vehicle" /></SelectTrigger>
+                <SelectContent>{vehicles.filter((v: any) => v.id).map((v: any) => <SelectItem key={v.id} value={v.id}>{v.plate_number}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Temperature (°C) *</Label><Input value={readingForm.temperature_celsius} onChange={e => setReadingForm(p => ({ ...p, temperature_celsius: e.target.value }))} placeholder="-18.5" /></div>
+              <div><Label>Humidity (%)</Label><Input value={readingForm.humidity_percent} onChange={e => setReadingForm(p => ({ ...p, humidity_percent: e.target.value }))} placeholder="45" /></div>
+              <div><Label>Min Threshold (°C)</Label><Input value={readingForm.min_threshold} onChange={e => setReadingForm(p => ({ ...p, min_threshold: e.target.value }))} /></div>
+              <div><Label>Max Threshold (°C)</Label><Input value={readingForm.max_threshold} onChange={e => setReadingForm(p => ({ ...p, max_threshold: e.target.value }))} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Door Status</Label>
+                <Select value={readingForm.door_status} onValueChange={v => setReadingForm(p => ({ ...p, door_status: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="closed">Closed</SelectItem>
+                    <SelectItem value="open">Open</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Compressor</Label>
+                <Select value={readingForm.compressor_status} onValueChange={v => setReadingForm(p => ({ ...p, compressor_status: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="running">Running</SelectItem>
+                    <SelectItem value="off">Off</SelectItem>
+                    <SelectItem value="standby">Standby</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div><Label>Sensor ID</Label><Input value={readingForm.sensor_id} onChange={e => setReadingForm(p => ({ ...p, sensor_id: e.target.value }))} placeholder="TEMP-001" /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowLogDialog(false)}>Cancel</Button>
+            <Button onClick={() => logReadingMutation.mutate()} disabled={!readingForm.vehicle_id || !readingForm.temperature_celsius || logReadingMutation.isPending}>
+              {logReadingMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Log Reading
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
