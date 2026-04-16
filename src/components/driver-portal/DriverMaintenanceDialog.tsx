@@ -6,9 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, Loader2, Car } from "lucide-react";
-import { useMaintenanceRequests } from "@/hooks/useMaintenanceRequests";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useOrganization } from "@/hooks/useOrganization";
 import { toast } from "sonner";
 import PhotoUploader from "./PhotoUploader";
 
@@ -23,7 +23,8 @@ interface Props {
 
 const DriverMaintenanceDialog = ({ open, onOpenChange, driverId, vehicleId, vehiclePlate, vehicleMakeModel }: Props) => {
   const queryClient = useQueryClient();
-  const { createRequest } = useMaintenanceRequests();
+  const { organizationId } = useOrganization();
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     request_type: "corrective",
     priority: "medium",
@@ -34,33 +35,40 @@ const DriverMaintenanceDialog = ({ open, onOpenChange, driverId, vehicleId, vehi
   const [photos, setPhotos] = useState<string[]>([]);
 
   const handleSubmit = async () => {
-    if (!vehicleId || !driverId) return;
+    if (!vehicleId || !driverId || !organizationId) return;
     if (!form.description.trim()) return;
+    setSubmitting(true);
     try {
-      const created: any = await createRequest.mutateAsync({
+      const reqNumber = "MR-" + Date.now().toString().slice(-8);
+      const { data: userData } = await supabase.auth.getUser();
+      const { error } = await supabase.from("maintenance_requests").insert({
+        organization_id: organizationId,
+        request_number: reqNumber,
+        requested_by: userData.user?.id,
         vehicle_id: vehicleId,
         driver_id: driverId,
         request_type: form.request_type,
         trigger_source: "manual",
         priority: form.priority,
-        km_reading: form.km_reading ? Number(form.km_reading) : undefined,
+        km_reading: form.km_reading ? Number(form.km_reading) : null,
         description: form.description,
-        notes: form.notes || undefined,
-      });
-      // Patch with photos if attached (column added via migration)
-      if (photos.length > 0 && created?.id) {
-        await (supabase as any)
-          .from("maintenance_requests")
-          .update({ photo_urls: photos })
-          .eq("id", created.id);
-      }
+        notes: form.notes || null,
+        status: "submitted",
+        workflow_stage: "submitted",
+        photo_urls: photos,
+      } as any);
+      if (error) throw error;
+      toast.success("Maintenance request submitted");
       queryClient.invalidateQueries({ queryKey: ["driver-portal-submissions"] });
       queryClient.invalidateQueries({ queryKey: ["driver-portal-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["maintenance-requests"] });
       onOpenChange(false);
       setForm({ request_type: "corrective", priority: "medium", km_reading: "", description: "", notes: "" });
       setPhotos([]);
     } catch (e: any) {
       toast.error(e.message || "Failed to submit request");
+    } finally {
+      setSubmitting(false);
     }
   };
 
