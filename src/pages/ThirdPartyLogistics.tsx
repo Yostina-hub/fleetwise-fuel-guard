@@ -1,14 +1,16 @@
 import { useState } from "react";
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, Truck, FileText, BarChart3 } from "lucide-react";
+import { Building2, Truck, FileText, BarChart3, CreditCard, LayoutDashboard } from "lucide-react";
 import { TPLPartnersTab } from "@/components/3pl/TPLPartnersTab";
 import { TPLShipmentsTab } from "@/components/3pl/TPLShipmentsTab";
 import { TPLInvoicesTab } from "@/components/3pl/TPLInvoicesTab";
 import { TPLPerformanceTab } from "@/components/3pl/TPLPerformanceTab";
+import { TPLRateCardsTab } from "@/components/3pl/TPLRateCardsTab";
+import { TPLDashboardTab } from "@/components/3pl/TPLDashboardTab";
 
 const ThirdPartyLogistics = () => {
-  const [activeTab, setActiveTab] = useState("partners");
+  const [activeTab, setActiveTab] = useState("dashboard");
 
   return (
     <Layout>
@@ -19,9 +21,15 @@ const ThirdPartyLogistics = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 max-w-lg">
+          <TabsList className="grid w-full grid-cols-6 max-w-2xl">
+            <TabsTrigger value="dashboard" className="gap-1.5">
+              <LayoutDashboard className="h-4 w-4" /> Overview
+            </TabsTrigger>
             <TabsTrigger value="partners" className="gap-1.5">
               <Building2 className="h-4 w-4" /> Partners
+            </TabsTrigger>
+            <TabsTrigger value="rate-cards" className="gap-1.5">
+              <CreditCard className="h-4 w-4" /> Rates
             </TabsTrigger>
             <TabsTrigger value="shipments" className="gap-1.5">
               <Truck className="h-4 w-4" /> Shipments
@@ -34,7 +42,9 @@ const ThirdPartyLogistics = () => {
             </TabsTrigger>
           </TabsList>
 
+          <TabsContent value="dashboard"><TPLDashboardTab /></TabsContent>
           <TabsContent value="partners"><TPLPartnersTab /></TabsContent>
+          <TabsContent value="rate-cards"><TPLRateCardsTab /></TabsContent>
           <TabsContent value="shipments"><TPLShipmentsTab /></TabsContent>
           <TabsContent value="invoices"><TPLInvoicesTab /></TabsContent>
           <TabsContent value="performance"><TPLPerformanceTab /></TabsContent>
