@@ -21222,6 +21222,14 @@ export type Database = {
         Args: { p_notes?: string; p_request_id: string }
         Returns: Json
       }
+      e2e_check_stage: {
+        Args: { p_expected: string; p_req: string }
+        Returns: {
+          detail: string
+          status: string
+        }[]
+      }
+      e2e_set_user: { Args: { p_user_id: string }; Returns: undefined }
       fleet_ops_review_request: {
         Args: { p_decision: string; p_notes?: string; p_request_id: string }
         Returns: undefined
