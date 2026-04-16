@@ -640,7 +640,7 @@ const Dashboard = () => {
                   </Card>
                 ),
                 quick_actions: () => (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
                     <QuickActionsCard />
                     <TripsOverviewCard />
                     <DriversOverviewCard />
@@ -661,7 +661,7 @@ const Dashboard = () => {
             <MileageDurationCharts />
 
             {/* Key Metrics Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <MetricCard
                 title="Cost per Kilometer"
                 value={`${formatCurrency(analytics.tco.costPerKm)}/${settings.distance_unit}`}
@@ -702,7 +702,7 @@ const Dashboard = () => {
             </div>
 
             {/* Detailed Analytics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               <UtilizationGauge
                 utilizationRate={analytics.utilization.utilizationRate}
                 activeVehicles={analytics.utilization.activeVehicles}
