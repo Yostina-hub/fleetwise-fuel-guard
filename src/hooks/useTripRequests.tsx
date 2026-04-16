@@ -146,5 +146,39 @@ export const useTripRequests = () => {
     },
   });
 
-  return { requests, loading, createRequest, submitRequest };
+  const cancelRequest = useMutation({
+    mutationFn: async (requestId: string) => {
+      const { error } = await supabase
+        .from("trip_requests")
+        .update({ status: "rejected", rejection_reason: "Cancelled by requester", rejected_at: new Date().toISOString() })
+        .eq("id", requestId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["trip-requests"] });
+      toast({ title: "Cancelled", description: "Trip request has been cancelled" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const updateRequest = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Record<string, any> }) => {
+      const { error } = await supabase
+        .from("trip_requests")
+        .update(updates)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["trip-requests"] });
+      toast({ title: "Updated", description: "Trip request updated" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  return { requests, loading, createRequest, submitRequest, cancelRequest, updateRequest };
 };
