@@ -120,6 +120,22 @@ const WorkOrdersTab = () => {
   });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [reviewComment, setReviewComment] = useState("");
+
+  const handleManualApproval = (decision: 'approved' | 'rejected') => {
+    if (!selectedWorkOrder) return;
+    if (decision === 'rejected' && !reviewComment.trim()) return;
+    
+    updateMutation.mutate({
+      id: selectedWorkOrder.id,
+      updates: {
+        approval_status: decision,
+        status: decision === 'approved' ? 'scheduled' : 'cancelled',
+        notes: decision === 'rejected' ? `Rejected: ${reviewComment}` : (reviewComment || null),
+      } as any,
+    });
+    setReviewComment("");
+  };
 
   // Cost update form
   const [costFormData, setCostFormData] = useState({
