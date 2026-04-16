@@ -89,6 +89,7 @@ const PassengerTracking = lazyWithRetry(() => import("./pages/PassengerTracking"
 const RFIDPairing = lazyWithRetry(() => import("./pages/RFIDPairing"), "RFIDPairing");
 const FuelCardProviders = lazyWithRetry(() => import("./pages/FuelCardProviders"), "FuelCardProviders");
 const VehicleProfile = lazyWithRetry(() => import("./pages/VehicleProfile"), "VehicleProfile");
+const AssetManagement = lazyWithRetry(() => import("./pages/AssetManagement"), "AssetManagement");
 const InstallApp = lazyWithRetry(() => import("./pages/InstallApp"), "InstallApp");
 const FuelEventsMap = lazyWithRetry(() => import("./pages/FuelEventsMap"), "FuelEventsMap");
 const InfrastructureMonitoring = lazyWithRetry(() => import("./pages/InfrastructureMonitoring"), "InfrastructureMonitoring");
@@ -207,6 +208,7 @@ const App = () => {
                         <Route path="/system-architecture" element={<ProtectedRoute requiredRole="super_admin"><SystemArchitecture /></ProtectedRoute>} />
                         <Route path="/licensing-compliance" element={<ProtectedRoute><LicensingCompliance /></ProtectedRoute>} />
                         <Route path="/vehicle-profile" element={<ProtectedRoute><VehicleProfile /></ProtectedRoute>} />
+                        <Route path="/asset-management" element={<ProtectedRoute><AssetManagement /></ProtectedRoute>} />
                         <Route path="/privacy" element={<PrivacyPolicy />} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />

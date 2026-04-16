@@ -93,6 +93,7 @@ const getNavItems = (t: (key: string) => string) => [
     subItems: [
       { label: t("nav.vehicleList"), path: "/fleet" },
       { label: "Vehicle Profile", path: "/vehicle-profile" },
+      { label: "Asset Management", path: "/asset-management" },
       { label: t("nav.devices"), path: "/devices" },
       { label: t("nav.hardwareSensorsShort"), path: "/hardware-sensors" },
       { label: t("nav.iotSensors"), path: "/iot-sensors" },
