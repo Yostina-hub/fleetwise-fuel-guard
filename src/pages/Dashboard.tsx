@@ -344,7 +344,7 @@ const Dashboard = () => {
           </div>
         )}
         
-        <div className={`relative z-10 p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 animate-fade-in`}>
+        <div className={`relative z-10 p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 animate-fade-in max-w-[1600px] mx-auto w-full`}>
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
