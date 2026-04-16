@@ -337,7 +337,7 @@ const DriverPortal = () => {
                                   <PlayCircle className="w-4 h-4" aria-hidden="true" /> Check In
                                 </Button>
                               ) : (
-                                <Button size="sm" variant="outline" onClick={() => handleCompleteJob(j.id)} className="gap-1">
+                                <Button size="sm" variant="outline" onClick={() => handleCompleteJob(j.id, j.odometer_start)} className="gap-1">
                                   <StopCircle className="w-4 h-4" aria-hidden="true" /> Check Out
                                 </Button>
                               )}
