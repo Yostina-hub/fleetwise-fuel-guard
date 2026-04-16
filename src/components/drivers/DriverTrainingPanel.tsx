@@ -17,11 +17,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import {
   BookOpen, Play, CheckCircle, Clock, Award, AlertCircle, Video, FileText,
-  HelpCircle, Gamepad2, Loader2, RefreshCw, Plus, GraduationCap,
+  HelpCircle, Gamepad2, Loader2, RefreshCw, Plus, GraduationCap, Paperclip,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { CourseMaterialsPanel } from "./CourseMaterialsPanel";
 
 interface DriverTrainingPanelProps {
   driverId: string;
