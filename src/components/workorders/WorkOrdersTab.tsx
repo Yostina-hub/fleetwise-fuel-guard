@@ -587,7 +587,7 @@ const WorkOrdersTab = () => {
 
       <div className="overflow-x-auto -mx-2 px-2">
 
-      <Table>
+      <Table className="min-w-[700px]">
         <TableHeader>
           <TableRow>
             <TableHead>WO Number</TableHead>
