@@ -366,6 +366,11 @@ export default function VehicleStatusTab({ vehicle, vehicleId }: Props) {
         </Card>
       </div>
 
+      {/* Device Compatibility Profile */}
+      {deviceProfile && (
+        <DeviceProfileCard profile={deviceProfile} />
+      )}
+
       {/* Tires */}
       {tires.length > 0 && (
         <Card>
