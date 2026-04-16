@@ -5,12 +5,25 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Thermometer, AlertTriangle, BarChart3, DoorOpen, Settings, Save } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Thermometer, AlertTriangle, BarChart3, DoorOpen, Settings, Save, Plus, Trash2, Loader2 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, subDays } from "date-fns";
 import { toast } from "sonner";
+
+const emptyReadingForm = {
+  vehicle_id: "",
+  temperature_celsius: "",
+  humidity_percent: "",
+  door_status: "closed",
+  compressor_status: "running",
+  sensor_id: "",
+  min_threshold: "-25",
+  max_threshold: "8",
+};
 
 interface ColdChainTabProps {
   organizationId: string;
