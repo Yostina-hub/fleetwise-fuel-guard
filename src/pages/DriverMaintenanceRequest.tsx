@@ -323,7 +323,7 @@ const DriverMaintenanceRequest = () => {
                     type="number"
                     value={form.km_reading}
                     onChange={e => setForm(f => ({ ...f, km_reading: e.target.value }))}
-                    placeholder={driverInfo.vehicle.current_mileage ? `Last known: ${Number(driverInfo.vehicle.current_mileage).toLocaleString()} km` : "Enter current km"}
+                    placeholder="Enter current km"
                   />
                 </div>
 
