@@ -344,7 +344,7 @@ const Dashboard = () => {
           </div>
         )}
         
-        <div className={`relative z-10 p-8 space-y-6 animate-fade-in`}>
+        <div className={`relative z-10 p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 animate-fade-in`}>
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
@@ -371,7 +371,7 @@ const Dashboard = () => {
 
         {/* Tabs for different views */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className={`grid w-full max-w-lg grid-cols-3 ${activeTab === 'executive' ? 'bg-white/10 border border-cyan-500/20' : ''}`}>
+          <TabsList className={`grid w-full max-w-xs sm:max-w-lg grid-cols-3 ${activeTab === 'executive' ? 'bg-white/10 border border-cyan-500/20' : ''}`}>
             <TabsTrigger value="executive" className={`gap-2 ${activeTab === 'executive' ? 'data-[state=active]:bg-[#8DC63F] data-[state=active]:text-white' : ''}`}>
               <Crown className="w-4 h-4" />
               Executive
@@ -395,7 +395,7 @@ const Dashboard = () => {
                 vehicle_misuse: () => <VehicleMisuseDonut />,
                 total_trips: () => <TotalTripsCard />,
                 quick_metrics: () => (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     <QuickMetricCard title="Total Distance" value={`${tripMetrics.totalDistanceKm.toFixed(1)} km`} badge="Live" badgeVariant="secondary" icon={<Car className="w-5 h-5" />} />
                     <QuickMetricCard title="Avg Distance/Vehicle" value={`${dbVehicles.length > 0 ? (tripMetrics.totalDistanceKm / dbVehicles.length).toFixed(1) : 0} km`} badge="Live" badgeVariant="secondary" icon={<Gauge className="w-5 h-5" />} />
                     <QuickMetricCard title="Active Trips" value={tripMetrics.inProgressTrips} badge="Live" badgeVariant="secondary" icon={<Route className="w-5 h-5" />} />
@@ -460,7 +460,7 @@ const Dashboard = () => {
               section="overview"
               widgetMap={{
                 kpi_cards: () => (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     {isLoading && dbVehicles.length === 0 ? (
                       <>{[1, 2, 3, 4].map((i) => <StatCardSkeleton key={i} />)}</>
                     ) : (
