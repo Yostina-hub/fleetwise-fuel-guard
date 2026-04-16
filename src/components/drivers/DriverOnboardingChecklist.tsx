@@ -71,7 +71,7 @@ export const DriverOnboardingChecklist = ({ driverId, driverName }: DriverOnboar
       .eq("driver_id", driverId)
       .eq("organization_id", organizationId)
       .order("step_order", { ascending: true });
-    setItems((data as any) || []);
+    setItems((data as ChecklistItem[]) || []);
     setLoading(false);
   };
 
