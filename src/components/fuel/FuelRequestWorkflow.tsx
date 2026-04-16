@@ -567,6 +567,17 @@ export const FuelRequestWorkflow = () => {
         asset_criticality: form.asset_criticality || null,
         additional_description: form.additional_description || null,
         context_value: form.context_value || "Fuel request for vehicle",
+        // Enterprise header fields
+        assigned_department: form.assigned_department || null,
+        request_by_start_date: form.request_by_start_date ? new Date(form.request_by_start_date).toISOString() : null,
+        request_by_completion_date: form.request_by_completion_date ? new Date(form.request_by_completion_date).toISOString() : null,
+        requested_for: form.requested_for || null,
+        work_request_type: form.work_request_type || null,
+        priority: form.priority || "medium",
+        phone_number: form.phone_number || null,
+        email: form.email || null,
+        notify_user: form.notify_user,
+        contact_preference: form.contact_preference || null,
       };
 
       const { data: inserted, error } = await supabase.from("fuel_requests").insert(insertData).select("id").single();
