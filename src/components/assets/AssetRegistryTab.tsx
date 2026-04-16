@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useVehicles } from "@/hooks/useVehicles";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -12,10 +13,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Plus, Search, Package, Truck, Wrench, CircleDot, Battery, Box } from "lucide-react";
+import { Plus, Search, Package, Truck, Wrench, CircleDot, Battery, Box, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
 import LicenseExpiryBadge from "@/components/fleet/LicenseExpiryBadge";
 
 const CATEGORIES = [
@@ -50,21 +51,25 @@ export default function AssetRegistryTab() {
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStage, setFilterStage] = useState("all");
   const [showAdd, setShowAdd] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [selectedVehicles, setSelectedVehicles] = useState<string[]>([]);
   const [form, setForm] = useState({
     asset_code: "", name: "", category: "equipment", sub_category: "",
     serial_number: "", manufacturer: "", model: "", purchase_date: "",
     purchase_cost: "", current_value: "", depreciation_method: "straight_line",
     depreciation_rate: "", salvage_value: "", useful_life_years: "",
     lifecycle_stage: "acquired", condition: "new", location: "",
-    warranty_expiry: "", notes: "",
+    warranty_expiry: "", notes: "", vehicle_id: "",
   });
+
+  const { vehicles } = useVehicles();
 
   const { data: assets = [], isLoading } = useQuery({
     queryKey: ["fleet-assets", organizationId],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("fleet_assets")
-        .select("*")
+        .select("*, vehicles:vehicle_id(id, plate_number, make, model)")
         .eq("organization_id", organizationId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -72,6 +77,10 @@ export default function AssetRegistryTab() {
     },
     enabled: !!organizationId,
   });
+
+  // Vehicles not yet linked as assets
+  const linkedVehicleIds = new Set(assets.filter((a: any) => a.vehicle_id).map((a: any) => a.vehicle_id));
+  const unlinkededVehicles = vehicles.filter(v => !linkedVehicleIds.has(v.id));
 
   const addMutation = useMutation({
     mutationFn: async () => {
@@ -96,6 +105,7 @@ export default function AssetRegistryTab() {
         location: form.location || null,
         warranty_expiry: form.warranty_expiry || null,
         notes: form.notes || null,
+        vehicle_id: form.vehicle_id || null,
       });
       if (error) throw error;
     },
@@ -103,10 +113,57 @@ export default function AssetRegistryTab() {
       toast.success("Asset registered");
       queryClient.invalidateQueries({ queryKey: ["fleet-assets"] });
       setShowAdd(false);
-      setForm({ asset_code: "", name: "", category: "equipment", sub_category: "", serial_number: "", manufacturer: "", model: "", purchase_date: "", purchase_cost: "", current_value: "", depreciation_method: "straight_line", depreciation_rate: "", salvage_value: "", useful_life_years: "", lifecycle_stage: "acquired", condition: "new", location: "", warranty_expiry: "", notes: "" });
+      setForm({ asset_code: "", name: "", category: "equipment", sub_category: "", serial_number: "", manufacturer: "", model: "", purchase_date: "", purchase_cost: "", current_value: "", depreciation_method: "straight_line", depreciation_rate: "", salvage_value: "", useful_life_years: "", lifecycle_stage: "acquired", condition: "new", location: "", warranty_expiry: "", notes: "", vehicle_id: "" });
     },
     onError: (e: any) => toast.error(e.message),
   });
+
+  const importMutation = useMutation({
+    mutationFn: async () => {
+      const toImport = vehicles.filter(v => selectedVehicles.includes(v.id));
+      const rows = toImport.map((v, idx) => ({
+        organization_id: organizationId,
+        asset_code: `VH-${v.plate_number?.replace(/\s/g, "") || idx}`,
+        name: `${v.make} ${v.model} (${v.plate_number})`,
+        category: "vehicle",
+        sub_category: v.vehicle_type || null,
+        serial_number: v.vin || null,
+        manufacturer: v.make,
+        model: v.model,
+        purchase_date: v.acquisition_date || null,
+        purchase_cost: v.acquisition_cost || null,
+        current_value: v.acquisition_cost || null,
+        depreciation_method: "straight_line",
+        depreciation_rate: v.depreciation_rate || null,
+        useful_life_years: 10,
+        lifecycle_stage: v.status === "active" ? "in_service" : v.status === "maintenance" ? "maintenance" : "idle",
+        condition: v.status === "active" ? "good" : v.status === "maintenance" ? "fair" : "fair",
+        location: v.depot?.name || null,
+        vehicle_id: v.id,
+      }));
+      const { error } = await (supabase as any).from("fleet_assets").insert(rows);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(`${selectedVehicles.length} vehicles imported as assets`);
+      queryClient.invalidateQueries({ queryKey: ["fleet-assets"] });
+      setShowImport(false);
+      setSelectedVehicles([]);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const toggleVehicle = (id: string) => {
+    setSelectedVehicles(prev => prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]);
+  };
+
+  const toggleAll = () => {
+    if (selectedVehicles.length === unlinkededVehicles.length) {
+      setSelectedVehicles([]);
+    } else {
+      setSelectedVehicles(unlinkededVehicles.map(v => v.id));
+    }
+  };
 
   const filtered = assets.filter((a: any) => {
     const matchSearch = !search || a.name?.toLowerCase().includes(search.toLowerCase()) || a.asset_code?.toLowerCase().includes(search.toLowerCase()) || a.serial_number?.toLowerCase().includes(search.toLowerCase());
@@ -115,15 +172,16 @@ export default function AssetRegistryTab() {
     return matchSearch && matchCat && matchStage;
   });
 
-  // Summary counts
   const totalValue = assets.reduce((s: number, a: any) => s + (a.current_value || 0), 0);
   const byStage = STAGES.reduce((acc: any, st) => { acc[st] = assets.filter((a: any) => a.lifecycle_stage === st).length; return acc; }, {} as Record<string, number>);
+  const vehicleAssets = assets.filter((a: any) => a.category === "vehicle").length;
 
   return (
     <div className="space-y-4 mt-4">
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         <Card className="p-3"><p className="text-xs text-muted-foreground">Total Assets</p><p className="text-xl font-bold">{assets.length}</p></Card>
+        <Card className="p-3"><p className="text-xs text-muted-foreground">Vehicle Assets</p><p className="text-xl font-bold text-primary">{vehicleAssets}</p></Card>
         <Card className="p-3"><p className="text-xs text-muted-foreground">Total Value</p><p className="text-xl font-bold">{totalValue.toLocaleString()} ETB</p></Card>
         <Card className="p-3"><p className="text-xs text-muted-foreground">In Service</p><p className="text-xl font-bold text-success">{(byStage.deployed || 0) + (byStage.in_service || 0)}</p></Card>
         <Card className="p-3"><p className="text-xs text-muted-foreground">Maintenance</p><p className="text-xl font-bold text-warning">{byStage.maintenance || 0}</p></Card>
@@ -150,6 +208,9 @@ export default function AssetRegistryTab() {
             {STAGES.map(s => <SelectItem key={s} value={s} className="capitalize">{s.replace("_", " ")}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Button variant="outline" onClick={() => setShowImport(true)} className="gap-1.5 h-9">
+          <Download className="w-4 h-4" />Import Vehicles ({unlinkededVehicles.length})
+        </Button>
         <Button onClick={() => setShowAdd(true)} className="gap-1.5 h-9"><Plus className="w-4 h-4" />Add Asset</Button>
       </div>
 
@@ -162,6 +223,7 @@ export default function AssetRegistryTab() {
                 <TableHead>Code</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Category</TableHead>
+                <TableHead>Linked Vehicle</TableHead>
                 <TableHead>Stage</TableHead>
                 <TableHead>Condition</TableHead>
                 <TableHead>Purchase Cost</TableHead>
@@ -173,16 +235,25 @@ export default function AssetRegistryTab() {
             <TableBody>
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>{Array.from({ length: 9 }).map((_, j) => <TableCell key={j}><Skeleton className="h-4 w-20" /></TableCell>)}</TableRow>
+                  <TableRow key={i}>{Array.from({ length: 10 }).map((_, j) => <TableCell key={j}><Skeleton className="h-4 w-20" /></TableCell>)}</TableRow>
                 ))
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No assets found</TableCell></TableRow>
+                <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">No assets found</TableCell></TableRow>
               ) : (
                 filtered.map((a: any) => (
                   <TableRow key={a.id}>
                     <TableCell className="font-mono text-xs">{a.asset_code}</TableCell>
                     <TableCell className="font-medium">{a.name}</TableCell>
                     <TableCell><Badge variant="outline" className="capitalize text-xs">{a.category}</Badge></TableCell>
+                    <TableCell>
+                      {a.vehicles ? (
+                        <Badge variant="secondary" className="text-xs gap-1">
+                          <Truck className="w-3 h-3" />{a.vehicles.plate_number}
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
                     <TableCell><Badge variant="outline" className={cn("capitalize text-xs", stageBadge(a.lifecycle_stage))}>{a.lifecycle_stage?.replace("_", " ")}</Badge></TableCell>
                     <TableCell className="capitalize text-sm">{a.condition}</TableCell>
                     <TableCell>{a.purchase_cost ? `${a.purchase_cost.toLocaleString()} ETB` : "—"}</TableCell>
@@ -197,6 +268,73 @@ export default function AssetRegistryTab() {
         </ScrollArea>
       </Card>
 
+      {/* Import Vehicles Dialog */}
+      <Dialog open={showImport} onOpenChange={setShowImport}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Truck className="w-5 h-5" />Import Vehicles as Assets</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Select vehicles to automatically register as fleet assets. Already-linked vehicles are excluded.
+          </p>
+          {unlinkededVehicles.length === 0 ? (
+            <p className="text-center py-8 text-muted-foreground">All vehicles are already linked as assets.</p>
+          ) : (
+            <ScrollArea className="max-h-[400px]">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={selectedVehicles.length === unlinkededVehicles.length && unlinkededVehicles.length > 0}
+                        onCheckedChange={toggleAll}
+                      />
+                    </TableHead>
+                    <TableHead>Plate</TableHead>
+                    <TableHead>Make / Model</TableHead>
+                    <TableHead>Year</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Acq. Cost</TableHead>
+                    <TableHead>Depot</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {unlinkededVehicles.map(v => (
+                    <TableRow key={v.id} className="cursor-pointer" onClick={() => toggleVehicle(v.id)}>
+                      <TableCell>
+                        <Checkbox checked={selectedVehicles.includes(v.id)} onCheckedChange={() => toggleVehicle(v.id)} />
+                      </TableCell>
+                      <TableCell className="font-medium">{v.plate_number}</TableCell>
+                      <TableCell>{v.make} {v.model}</TableCell>
+                      <TableCell>{v.year}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={cn("capitalize text-xs",
+                          v.status === "active" ? "bg-success/10 text-success" :
+                          v.status === "maintenance" ? "bg-warning/10 text-warning" : "bg-muted text-muted-foreground"
+                        )}>{v.status}</Badge>
+                      </TableCell>
+                      <TableCell>{v.acquisition_cost ? `${v.acquisition_cost.toLocaleString()} ETB` : "—"}</TableCell>
+                      <TableCell className="text-sm">{v.depot?.name || "—"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowImport(false)}>Cancel</Button>
+            <Button
+              onClick={() => importMutation.mutate()}
+              disabled={selectedVehicles.length === 0 || importMutation.isPending}
+              className="gap-1.5"
+            >
+              <Download className="w-4 h-4" />
+              {importMutation.isPending ? "Importing..." : `Import ${selectedVehicles.length} Vehicle${selectedVehicles.length !== 1 ? "s" : ""}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Add Asset Dialog */}
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
@@ -208,6 +346,17 @@ export default function AssetRegistryTab() {
               <Select value={form.category} onValueChange={v => setForm(p => ({ ...p, category: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div><Label>Link Vehicle (optional)</Label>
+              <Select value={form.vehicle_id} onValueChange={v => setForm(p => ({ ...p, vehicle_id: v }))}>
+                <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">None</SelectItem>
+                  {unlinkededVehicles.map(v => (
+                    <SelectItem key={v.id} value={v.id}>{v.plate_number} - {v.make} {v.model}</SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </div>
             <div><Label>Sub-Category</Label><Input value={form.sub_category} onChange={e => setForm(p => ({ ...p, sub_category: e.target.value }))} /></div>
