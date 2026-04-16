@@ -27,9 +27,13 @@ function base32ToBytes(secret: string): Uint8Array {
 }
 
 async function importTotpKey(secret: string): Promise<CryptoKey> {
+  const rawBytes = base32ToBytes(secret);
+  const keyBytes = new Uint8Array(rawBytes.length);
+  keyBytes.set(rawBytes);
+
   return crypto.subtle.importKey(
     "raw",
-    base32ToBytes(secret),
+    keyBytes,
     { name: "HMAC", hash: "SHA-1" },
     false,
     ["sign"],
