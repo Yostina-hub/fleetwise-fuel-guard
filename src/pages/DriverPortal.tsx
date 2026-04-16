@@ -105,6 +105,7 @@ const DriverPortal = () => {
   const userId = driverData?.userId;
   const vehicle = driverData?.vehicle;
   const driver = driverData?.driver;
+  const activeRequest = driverData?.activeRequest;
   const driverName = driver ? `${driver.first_name} ${driver.last_name}` : undefined;
 
   // Today's & upcoming trips + dispatch jobs
