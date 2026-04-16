@@ -157,6 +157,7 @@ export default function VehicleStatusTab({ vehicle, vehicleId }: Props) {
   const assetCategoryIcon = (cat: string) => {
     const m: Record<string, any> = {
       tire: CircleDot, battery: Zap, tool: Wrench, equipment: Package,
+      gps_tracker: Radio, iot_sensor: Radio,
     };
     return m[cat] || Package;
   };
