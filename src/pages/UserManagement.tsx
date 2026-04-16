@@ -2,17 +2,10 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Users } from "lucide-react";
+import { Shield, Users, ChevronLeft, ChevronRight } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import UsersQuickStats from "@/components/users/UsersQuickStats";
 import UsersQuickActions from "@/components/users/UsersQuickActions";
@@ -61,7 +54,6 @@ const UserManagement = () => {
           .map((ur) => ({ role: ur.role })),
       }));
 
-      // Fetch ban status for all users in parallel
       const statusPromises = usersWithRoles.map(async (user) => {
         try {
           const { data } = await supabase.functions.invoke("manage-user", {
@@ -76,7 +68,6 @@ const UserManagement = () => {
       const usersWithStatus = await Promise.all(statusPromises);
       setUsers(usersWithStatus);
 
-      // Keep open dialogs in sync
       setDetailUser(prev => prev ? usersWithStatus.find(u => u.id === prev.id) || null : null);
       setResetPwdUser(prev => prev ? usersWithStatus.find(u => u.id === prev.id) || null : null);
       setStatusActionUser(prev => prev ? usersWithStatus.find(u => u.id === prev.id) || null : null);
@@ -188,15 +179,15 @@ const UserManagement = () => {
 
   return (
     <Layout>
-      <div className="p-4 md:p-8 space-y-6 animate-fade-in">
+      <div className="p-3 sm:p-4 md:p-8 space-y-4 sm:space-y-6 animate-fade-in">
         {/* Header */}
         <div className="flex items-center gap-3 slide-in-left">
-          <div className="p-4 rounded-2xl glass-strong glow">
-            <Users className="h-8 w-8 text-primary animate-float" />
+          <div className="p-3 sm:p-4 rounded-2xl glass-strong glow">
+            <Users className="h-6 w-6 sm:h-8 sm:w-8 text-primary animate-float" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-4xl font-bold gradient-text">{t("users.title")}</h1>
-            <p className="text-muted-foreground mt-1 text-lg">{t("users.permissions")}</p>
+            <h1 className="text-xl sm:text-2xl md:text-4xl font-bold gradient-text">{t("users.title")}</h1>
+            <p className="text-muted-foreground mt-0.5 sm:mt-1 text-sm sm:text-lg">{t("users.permissions")}</p>
           </div>
         </div>
 
@@ -209,7 +200,6 @@ const UserManagement = () => {
           onBulkAssignRoles={() => setBulkAssignOpen(true)}
         />
 
-        {/* Filters */}
         <UserFilters
           users={users}
           onFilteredUsersChange={handleFilteredUsersChange}
@@ -218,10 +208,10 @@ const UserManagement = () => {
 
         {/* Users Table */}
         <Card className="glass-strong">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center justify-between">
+          <CardHeader className="pb-3 px-3 sm:px-6">
+            <CardTitle className="text-base sm:text-lg flex items-center justify-between">
               <span>All Users</span>
-              <span className="text-sm font-normal text-muted-foreground">
+              <span className="text-xs sm:text-sm font-normal text-muted-foreground">
                 {filteredUsers.length} user{filteredUsers.length !== 1 ? "s" : ""}
               </span>
             </CardTitle>
@@ -241,45 +231,56 @@ const UserManagement = () => {
 
         {/* Pagination */}
         {!loading && totalPages > 1 && (
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                />
-              </PaginationItem>
-              {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                let page: number;
-                if (totalPages <= 7) {
-                  page = i + 1;
-                } else if (currentPage <= 4) {
-                  page = i + 1;
-                } else if (currentPage >= totalPages - 3) {
-                  page = totalPages - 6 + i;
+          <div className="flex items-center justify-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="h-9 px-3 gap-1"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">Prev</span>
+            </Button>
+
+            <div className="flex items-center gap-1">
+              {(() => {
+                const pages: number[] = [];
+                const maxVisible = 5;
+                if (totalPages <= maxVisible) {
+                  for (let i = 1; i <= totalPages; i++) pages.push(i);
+                } else if (currentPage <= 3) {
+                  for (let i = 1; i <= Math.min(maxVisible, totalPages); i++) pages.push(i);
+                } else if (currentPage >= totalPages - 2) {
+                  for (let i = totalPages - maxVisible + 1; i <= totalPages; i++) pages.push(i);
                 } else {
-                  page = currentPage - 3 + i;
+                  for (let i = currentPage - 2; i <= currentPage + 2; i++) pages.push(i);
                 }
-                return (
-                  <PaginationItem key={page}>
-                    <PaginationLink
-                      onClick={() => setCurrentPage(page)}
-                      isActive={currentPage === page}
-                      className="cursor-pointer"
-                    >
-                      {page}
-                    </PaginationLink>
-                  </PaginationItem>
-                );
-              })}
-              <PaginationItem>
-                <PaginationNext
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
+                return pages.map(page => (
+                  <Button
+                    key={page}
+                    variant={currentPage === page ? "default" : "outline"}
+                    size="sm"
+                    className="h-9 w-9 p-0"
+                    onClick={() => setCurrentPage(page)}
+                  >
+                    {page}
+                  </Button>
+                ));
+              })()}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+              className="h-9 px-3 gap-1"
+            >
+              <span className="hidden sm:inline">Next</span>
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
         )}
 
         {/* Dialogs */}
@@ -288,7 +289,6 @@ const UserManagement = () => {
         <UserDetailDialog open={!!detailUser} onOpenChange={(o) => !o && setDetailUser(null)} user={detailUser} onUserUpdated={fetchUsers} initialTab={detailTab} />
         <ResetPasswordDialog open={!!resetPwdUser} onOpenChange={(o) => !o && setResetPwdUser(null)} user={resetPwdUser} />
         
-        {/* Deactivate / Activate Dialog */}
         <ConfirmActionDialog
           open={!!statusActionUser}
           onOpenChange={(o) => !o && setStatusActionUser(null)}
@@ -304,7 +304,6 @@ const UserManagement = () => {
           variant={statusActionUser?.is_banned ? "default" : "destructive"}
         />
 
-        {/* Delete User Dialog */}
         <ConfirmActionDialog
           open={!!deleteUser}
           onOpenChange={(o) => !o && setDeleteUser(null)}

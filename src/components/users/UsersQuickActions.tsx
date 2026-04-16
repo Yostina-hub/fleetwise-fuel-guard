@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { UserPlus, RefreshCw, Download, Shield } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface UsersQuickActionsProps {
   onInviteUser: () => void;
@@ -15,51 +16,32 @@ const UsersQuickActions = ({
   onExportUsers,
   onBulkAssignRoles,
 }: UsersQuickActionsProps) => {
+  const isMobile = useIsMobile();
+
   const actions = [
-    {
-      label: "Invite User",
-      icon: UserPlus,
-      onClick: onInviteUser,
-      variant: "default" as const,
-      className: "bg-primary hover:bg-primary/90",
-    },
-    {
-      label: "Refresh",
-      icon: RefreshCw,
-      onClick: onRefreshUsers,
-      variant: "outline" as const,
-      className: "border-primary/50 hover:bg-primary/10",
-    },
-    {
-      label: "Export",
-      icon: Download,
-      onClick: onExportUsers,
-      variant: "outline" as const,
-      className: "border-success/50 hover:bg-success/10",
-    },
-    {
-      label: "Bulk Assign",
-      icon: Shield,
-      onClick: onBulkAssignRoles,
-      variant: "outline" as const,
-      className: "border-warning/50 hover:bg-warning/10",
-    },
+    { label: "Invite User", icon: UserPlus, onClick: onInviteUser, variant: "default" as const, className: "bg-primary hover:bg-primary/90" },
+    { label: "Refresh", icon: RefreshCw, onClick: onRefreshUsers, variant: "outline" as const, className: "border-primary/50 hover:bg-primary/10" },
+    { label: "Export", icon: Download, onClick: onExportUsers, variant: "outline" as const, className: "border-success/50 hover:bg-success/10" },
+    { label: "Bulk Assign", icon: Shield, onClick: onBulkAssignRoles, variant: "outline" as const, className: "border-warning/50 hover:bg-warning/10" },
   ];
 
   return (
     <Card className="glass-strong">
-      <CardContent className="p-4">
-        <div className="flex flex-wrap gap-3">
+      <CardContent className="p-3 sm:p-4">
+        <div className="flex flex-wrap gap-2 sm:gap-3">
           {actions.map((action) => (
             <Button
               key={action.label}
               variant={action.variant}
+              size={isMobile ? "sm" : "default"}
               className={`gap-2 ${action.className}`}
               onClick={action.onClick}
               aria-label={action.label}
             >
               <action.icon className="w-4 h-4" aria-hidden="true" />
-              {action.label}
+              <span className={action.label === "Invite User" ? "" : "hidden sm:inline"}>
+                {action.label}
+              </span>
             </Button>
           ))}
         </div>
