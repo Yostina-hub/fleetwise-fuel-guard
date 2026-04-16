@@ -478,7 +478,7 @@ const Dashboard = () => {
                 geofence_categories: () => <GeofenceCategoriesCard />,
                 vehicle_utilization: () => <VehicleUtilizationCard vehicles={dbVehicles} telemetryMap={telemetryMap} />,
                 metric_cards: () => (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     <MetricCard title="Utilization" value={`${analytics.utilization.utilizationRate.toFixed(0)}%`} subtitle={`${analytics.utilization.activeVehicles} of ${dbVehicles.length} vehicles`} icon={<Activity className="w-5 h-5" />} trend={analytics.utilization.trend} trendValue={`${analytics.utilization.trendPercentage.toFixed(1)}%`} variant="primary" />
                     <MetricCard title="Monthly TCO" value={formatCurrency(analytics.tco.totalCost)} subtitle={`${formatCurrency(analytics.tco.costPerKm)}/${settings.distance_unit}`} icon={<DollarSign className="w-5 h-5" />} trend={analytics.tco.trend} trendValue={`${analytics.tco.trendPercentage.toFixed(1)}%`} trendPositive={analytics.tco.trend === 'down'} variant="default" />
                     <MetricCard title="Carbon Emissions" value={`${(analytics.carbon.totalCO2Kg / 1000).toFixed(1)}t`} subtitle={`${analytics.carbon.averagePerVehicle.toFixed(0)} kg/vehicle`} icon={<TrendingUp className="w-5 h-5" />} trend={analytics.carbon.trend} trendValue={`${analytics.carbon.trendPercentage.toFixed(1)}%`} trendPositive={analytics.carbon.trend === 'down'} variant="success" />
