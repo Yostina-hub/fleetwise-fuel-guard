@@ -140,6 +140,11 @@ export const GeneratorRegistrationDialog = ({
   };
 
   const errors = form.formState.errors;
+  const errMsg = (e: unknown): string | null => {
+    if (!e || typeof e !== "object") return null;
+    const m = (e as { message?: unknown }).message;
+    return typeof m === "string" ? m : null;
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
