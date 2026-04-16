@@ -77,6 +77,7 @@ const AccidentInsurance = lazyWithRetry(() => import("./pages/AccidentInsurance"
 const DocumentManagement = lazyWithRetry(() => import("./pages/DocumentManagement"), "DocumentManagement");
 const ComplianceCalendar = lazyWithRetry(() => import("./pages/ComplianceCalendar"), "ComplianceCalendar");
 const MaintenanceEnterprise = lazyWithRetry(() => import("./pages/MaintenanceEnterprise"), "MaintenanceEnterprise");
+const ThirdPartyLogistics = lazyWithRetry(() => import("./pages/ThirdPartyLogistics"), "ThirdPartyLogistics");
 
 const PartsInventory = lazyWithRetry(() => import("./pages/PartsInventory"), "PartsInventory");
 const VendorManagement = lazyWithRetry(() => import("./pages/VendorManagement"), "VendorManagement");
@@ -210,6 +211,7 @@ const App = () => {
                         <Route path="/vehicle-profile" element={<ProtectedRoute><VehicleProfile /></ProtectedRoute>} />
                         <Route path="/asset-management" element={<ProtectedRoute><AssetManagement /></ProtectedRoute>} />
                         <Route path="/privacy" element={<PrivacyPolicy />} />
+                        <Route path="/3pl" element={<ProtectedRoute><ThirdPartyLogistics /></ProtectedRoute>} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />
                       </Routes>
