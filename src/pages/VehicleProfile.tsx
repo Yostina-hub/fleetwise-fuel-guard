@@ -1,6 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, Suspense } from "react";
 import Layout from "@/components/Layout";
 import VehicleStatusTab from "@/components/fleet/VehicleStatusTab";
+import { lazy } from "react";
+const Vehicle3DViewer = lazy(() => import("@/components/fleet/Vehicle3DViewer"));
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -281,8 +283,9 @@ const VehicleProfile = () => {
               </div>
 
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid grid-cols-7 w-full">
+                <TabsList className="grid grid-cols-8 w-full">
                   <TabsTrigger value="status" className="gap-1 text-xs"><Zap className="w-3 h-3" />Status</TabsTrigger>
+                  <TabsTrigger value="3d" className="gap-1 text-xs"><Box className="w-3 h-3" />3D View</TabsTrigger>
                   <TabsTrigger value="overview" className="gap-1 text-xs"><Info className="w-3 h-3" />Overview</TabsTrigger>
                   <TabsTrigger value="specifications" className="gap-1 text-xs"><Gauge className="w-3 h-3" />Specs</TabsTrigger>
                   <TabsTrigger value="ownership" className="gap-1 text-xs"><Key className="w-3 h-3" />Ownership</TabsTrigger>
@@ -294,6 +297,20 @@ const VehicleProfile = () => {
                 {/* STATUS TAB */}
                 <TabsContent value="status">
                   <VehicleStatusTab vehicle={v} vehicleId={selectedId!} />
+                </TabsContent>
+
+                {/* 3D VIEW TAB */}
+                <TabsContent value="3d">
+                  <Suspense fallback={<div className="h-[300px] flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+                    <Vehicle3DViewer
+                      vehicleType={v.vehicle_type}
+                      color={v.color}
+                      status={v.status}
+                      plate={v.plate_number}
+                      make={v.make}
+                      model={v.model}
+                    />
+                  </Suspense>
                 </TabsContent>
 
                 {/* OVERVIEW TAB */}
