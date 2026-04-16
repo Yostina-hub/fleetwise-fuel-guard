@@ -19,13 +19,20 @@ export type Database = {
           accident_date: string
           accident_location: string | null
           actual_repair_cost: number | null
+          agreed_amount: number | null
           approved_amount: number | null
           approved_at: string | null
+          archived: boolean | null
+          archived_at: string | null
           claim_amount: number | null
           claim_number: string
+          collected_at: string | null
+          collected_from_third_party: number | null
+          compensation_requested_at: string | null
           completeness_check: string | null
           completeness_checked_at: string | null
           completeness_checked_by: string | null
+          covered_by_policy: boolean | null
           created_at: string
           damage_description: string | null
           description: string | null
@@ -43,42 +50,78 @@ export type Database = {
           incident_id: string | null
           incident_type: string
           insurance_id: string | null
+          legal_case_number: string | null
+          legal_filed_at: string | null
+          legal_outcome: string | null
+          legal_outcome_at: string | null
+          legal_status: string | null
+          maintenance_per_wo_ok: boolean | null
           notes: string | null
           notification_letter_sent_at: string | null
           notification_letter_sent_by: string | null
           notification_letter_url: string | null
           organization_id: string
+          payment_receipt_url: string | null
+          payment_requested_by_garage_at: string | null
           photos: string[] | null
           police_report_number: string | null
+          policy_analysis_notes: string | null
+          pro_forma_invoice_url: string | null
+          quotation_amount: number | null
+          quotation_count: number | null
+          quotation_selected_at: string | null
+          quotations_requested_at: string | null
+          receipt_signed_at: string | null
+          repair_completion_reported_at: string | null
           repair_end_date: string | null
           repair_start_date: string | null
+          repair_status: string | null
           repair_vendor: string | null
+          salvage_collected: boolean | null
+          salvage_collected_at: string | null
+          salvage_notes: string | null
+          salvage_value: number | null
+          selected_supplier_contact: string | null
+          selected_supplier_garage: string | null
           settled_at: string | null
           settlement_amount: number | null
           settlement_reference: string | null
           status: string | null
+          third_party_agreed: boolean | null
           third_party_contact: string | null
           third_party_dealt_at: string | null
           third_party_insurance: string | null
           third_party_name: string | null
           third_party_vehicle: string | null
           updated_at: string
+          vehicle_handover_at: string | null
           vehicle_id: string
+          vehicle_returned_at: string | null
           within_insurance_coverage: boolean | null
           within_limit: boolean | null
+          work_order_approved_at: string | null
+          work_order_number: string | null
+          work_order_url: string | null
           workflow_stage: string
         }
         Insert: {
           accident_date: string
           accident_location?: string | null
           actual_repair_cost?: number | null
+          agreed_amount?: number | null
           approved_amount?: number | null
           approved_at?: string | null
+          archived?: boolean | null
+          archived_at?: string | null
           claim_amount?: number | null
           claim_number: string
+          collected_at?: string | null
+          collected_from_third_party?: number | null
+          compensation_requested_at?: string | null
           completeness_check?: string | null
           completeness_checked_at?: string | null
           completeness_checked_by?: string | null
+          covered_by_policy?: boolean | null
           created_at?: string
           damage_description?: string | null
           description?: string | null
@@ -96,42 +139,78 @@ export type Database = {
           incident_id?: string | null
           incident_type?: string
           insurance_id?: string | null
+          legal_case_number?: string | null
+          legal_filed_at?: string | null
+          legal_outcome?: string | null
+          legal_outcome_at?: string | null
+          legal_status?: string | null
+          maintenance_per_wo_ok?: boolean | null
           notes?: string | null
           notification_letter_sent_at?: string | null
           notification_letter_sent_by?: string | null
           notification_letter_url?: string | null
           organization_id: string
+          payment_receipt_url?: string | null
+          payment_requested_by_garage_at?: string | null
           photos?: string[] | null
           police_report_number?: string | null
+          policy_analysis_notes?: string | null
+          pro_forma_invoice_url?: string | null
+          quotation_amount?: number | null
+          quotation_count?: number | null
+          quotation_selected_at?: string | null
+          quotations_requested_at?: string | null
+          receipt_signed_at?: string | null
+          repair_completion_reported_at?: string | null
           repair_end_date?: string | null
           repair_start_date?: string | null
+          repair_status?: string | null
           repair_vendor?: string | null
+          salvage_collected?: boolean | null
+          salvage_collected_at?: string | null
+          salvage_notes?: string | null
+          salvage_value?: number | null
+          selected_supplier_contact?: string | null
+          selected_supplier_garage?: string | null
           settled_at?: string | null
           settlement_amount?: number | null
           settlement_reference?: string | null
           status?: string | null
+          third_party_agreed?: boolean | null
           third_party_contact?: string | null
           third_party_dealt_at?: string | null
           third_party_insurance?: string | null
           third_party_name?: string | null
           third_party_vehicle?: string | null
           updated_at?: string
+          vehicle_handover_at?: string | null
           vehicle_id: string
+          vehicle_returned_at?: string | null
           within_insurance_coverage?: boolean | null
           within_limit?: boolean | null
+          work_order_approved_at?: string | null
+          work_order_number?: string | null
+          work_order_url?: string | null
           workflow_stage?: string
         }
         Update: {
           accident_date?: string
           accident_location?: string | null
           actual_repair_cost?: number | null
+          agreed_amount?: number | null
           approved_amount?: number | null
           approved_at?: string | null
+          archived?: boolean | null
+          archived_at?: string | null
           claim_amount?: number | null
           claim_number?: string
+          collected_at?: string | null
+          collected_from_third_party?: number | null
+          compensation_requested_at?: string | null
           completeness_check?: string | null
           completeness_checked_at?: string | null
           completeness_checked_by?: string | null
+          covered_by_policy?: boolean | null
           created_at?: string
           damage_description?: string | null
           description?: string | null
@@ -149,29 +228,58 @@ export type Database = {
           incident_id?: string | null
           incident_type?: string
           insurance_id?: string | null
+          legal_case_number?: string | null
+          legal_filed_at?: string | null
+          legal_outcome?: string | null
+          legal_outcome_at?: string | null
+          legal_status?: string | null
+          maintenance_per_wo_ok?: boolean | null
           notes?: string | null
           notification_letter_sent_at?: string | null
           notification_letter_sent_by?: string | null
           notification_letter_url?: string | null
           organization_id?: string
+          payment_receipt_url?: string | null
+          payment_requested_by_garage_at?: string | null
           photos?: string[] | null
           police_report_number?: string | null
+          policy_analysis_notes?: string | null
+          pro_forma_invoice_url?: string | null
+          quotation_amount?: number | null
+          quotation_count?: number | null
+          quotation_selected_at?: string | null
+          quotations_requested_at?: string | null
+          receipt_signed_at?: string | null
+          repair_completion_reported_at?: string | null
           repair_end_date?: string | null
           repair_start_date?: string | null
+          repair_status?: string | null
           repair_vendor?: string | null
+          salvage_collected?: boolean | null
+          salvage_collected_at?: string | null
+          salvage_notes?: string | null
+          salvage_value?: number | null
+          selected_supplier_contact?: string | null
+          selected_supplier_garage?: string | null
           settled_at?: string | null
           settlement_amount?: number | null
           settlement_reference?: string | null
           status?: string | null
+          third_party_agreed?: boolean | null
           third_party_contact?: string | null
           third_party_dealt_at?: string | null
           third_party_insurance?: string | null
           third_party_name?: string | null
           third_party_vehicle?: string | null
           updated_at?: string
+          vehicle_handover_at?: string | null
           vehicle_id?: string
+          vehicle_returned_at?: string | null
           within_insurance_coverage?: boolean | null
           within_limit?: boolean | null
+          work_order_approved_at?: string | null
+          work_order_number?: string | null
+          work_order_url?: string | null
           workflow_stage?: string
         }
         Relationships: [
