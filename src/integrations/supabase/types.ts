@@ -8488,19 +8488,32 @@ export type Database = {
         Row: {
           actual_cost: number | null
           actual_liters: number | null
+          additional_description: string | null
+          adjustment_wo_number: string | null
           approved_at: string | null
           approved_by: string | null
+          asset_criticality: string | null
+          auto_trigger_efficiency: number | null
+          auto_triggered_at: string | null
           clearance_status: string
+          context_value: string | null
           cost_center: string | null
           created_at: string
           current_odometer: number | null
           deviation_justification: string | null
           deviation_percent: number | null
           driver_id: string | null
+          driver_name: string | null
+          driver_phone: string | null
+          driver_type: string | null
           efficiency_km_per_liter: number | null
           emoney_amount: number | null
           emoney_status: string | null
+          employee_id_no: string | null
           estimated_cost: number | null
+          fuel_by_cash_coupon: number | null
+          fuel_in_telebirr: number | null
+          fuel_request_type: string | null
           fuel_type: string | null
           fuel_work_order_id: string | null
           fulfilled_at: string | null
@@ -8511,34 +8524,53 @@ export type Database = {
           notes: string | null
           organization_id: string
           previous_odometer: number | null
+          project_number: string | null
           purpose: string | null
           rejected_reason: string | null
+          remark: string | null
           request_number: string
           request_type: string
           requested_at: string
           requested_by: string
+          requestor_department: string | null
           station_id: string | null
           status: string
+          task_number: string | null
+          trigger_source: string
           updated_at: string
+          vehicle_driver_name: string | null
           vehicle_id: string
           wallet_transfer_ref: string | null
         }
         Insert: {
           actual_cost?: number | null
           actual_liters?: number | null
+          additional_description?: string | null
+          adjustment_wo_number?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          asset_criticality?: string | null
+          auto_trigger_efficiency?: number | null
+          auto_triggered_at?: string | null
           clearance_status?: string
+          context_value?: string | null
           cost_center?: string | null
           created_at?: string
           current_odometer?: number | null
           deviation_justification?: string | null
           deviation_percent?: number | null
           driver_id?: string | null
+          driver_name?: string | null
+          driver_phone?: string | null
+          driver_type?: string | null
           efficiency_km_per_liter?: number | null
           emoney_amount?: number | null
           emoney_status?: string | null
+          employee_id_no?: string | null
           estimated_cost?: number | null
+          fuel_by_cash_coupon?: number | null
+          fuel_in_telebirr?: number | null
+          fuel_request_type?: string | null
           fuel_type?: string | null
           fuel_work_order_id?: string | null
           fulfilled_at?: string | null
@@ -8549,34 +8581,53 @@ export type Database = {
           notes?: string | null
           organization_id: string
           previous_odometer?: number | null
+          project_number?: string | null
           purpose?: string | null
           rejected_reason?: string | null
+          remark?: string | null
           request_number: string
           request_type?: string
           requested_at?: string
           requested_by: string
+          requestor_department?: string | null
           station_id?: string | null
           status?: string
+          task_number?: string | null
+          trigger_source?: string
           updated_at?: string
+          vehicle_driver_name?: string | null
           vehicle_id: string
           wallet_transfer_ref?: string | null
         }
         Update: {
           actual_cost?: number | null
           actual_liters?: number | null
+          additional_description?: string | null
+          adjustment_wo_number?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          asset_criticality?: string | null
+          auto_trigger_efficiency?: number | null
+          auto_triggered_at?: string | null
           clearance_status?: string
+          context_value?: string | null
           cost_center?: string | null
           created_at?: string
           current_odometer?: number | null
           deviation_justification?: string | null
           deviation_percent?: number | null
           driver_id?: string | null
+          driver_name?: string | null
+          driver_phone?: string | null
+          driver_type?: string | null
           efficiency_km_per_liter?: number | null
           emoney_amount?: number | null
           emoney_status?: string | null
+          employee_id_no?: string | null
           estimated_cost?: number | null
+          fuel_by_cash_coupon?: number | null
+          fuel_in_telebirr?: number | null
+          fuel_request_type?: string | null
           fuel_type?: string | null
           fuel_work_order_id?: string | null
           fulfilled_at?: string | null
@@ -8587,15 +8638,21 @@ export type Database = {
           notes?: string | null
           organization_id?: string
           previous_odometer?: number | null
+          project_number?: string | null
           purpose?: string | null
           rejected_reason?: string | null
+          remark?: string | null
           request_number?: string
           request_type?: string
           requested_at?: string
           requested_by?: string
+          requestor_department?: string | null
           station_id?: string | null
           status?: string
+          task_number?: string | null
+          trigger_source?: string
           updated_at?: string
+          vehicle_driver_name?: string | null
           vehicle_id?: string
           wallet_transfer_ref?: string | null
         }
@@ -11740,6 +11797,8 @@ export type Database = {
           favicon_url: string | null
           from_email: string | null
           from_name: string | null
+          fuel_auto_request_enabled: boolean | null
+          fuel_efficiency_threshold: number | null
           fuel_price_per_liter: number
           fuel_unit: string
           id: string
@@ -11782,6 +11841,8 @@ export type Database = {
           favicon_url?: string | null
           from_email?: string | null
           from_name?: string | null
+          fuel_auto_request_enabled?: boolean | null
+          fuel_efficiency_threshold?: number | null
           fuel_price_per_liter?: number
           fuel_unit?: string
           id?: string
@@ -11824,6 +11885,8 @@ export type Database = {
           favicon_url?: string | null
           from_email?: string | null
           from_name?: string | null
+          fuel_auto_request_enabled?: boolean | null
+          fuel_efficiency_threshold?: number | null
           fuel_price_per_liter?: number
           fuel_unit?: string
           id?: string
