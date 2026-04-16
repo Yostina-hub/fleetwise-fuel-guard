@@ -290,6 +290,23 @@ export const GPSDeviceDialog = ({
               </Select>
             )}
           </div>
+
+          {/* Device Compatibility Profile */}
+          {selectedDeviceId && (() => {
+            const selectedDevice = devices.find(d => d.id === selectedDeviceId);
+            if (!selectedDevice) return null;
+            const profile = compatibilityProfiles?.find(
+              (p) => selectedDevice.tracker_model.toLowerCase().includes(p.model_name.toLowerCase()) ||
+                     (p.vendor.toLowerCase() + " " + p.model_name.toLowerCase()) === selectedDevice.tracker_model.toLowerCase()
+            );
+            if (!profile) return null;
+            return (
+              <div className="space-y-2">
+                <Label>Device Compatibility Profile</Label>
+                <DeviceProfileCard profile={profile} compact />
+              </div>
+            );
+          })()}
         </div>
 
         <DialogFooter>
