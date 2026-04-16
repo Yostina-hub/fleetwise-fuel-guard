@@ -106,6 +106,7 @@ const getNavItems = (t: (key: string) => string) => [
     icon: Users, 
     label: t("nav.driverManagement"), 
     subItems: [
+      { label: "Driver Portal", path: "/driver-portal" },
       { label: t("nav.driverHub"), path: "/driver-management" },
       { label: t("nav.driversDirectory"), path: "/drivers" },
       { label: t("nav.scoringBehavior"), path: "/driver-scoring" },
