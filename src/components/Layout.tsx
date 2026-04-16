@@ -193,7 +193,18 @@ const getNavItems = (t: (key: string) => string) => [
     ]
   },
 
-  // ── Alerts & Notifications ──
+  // ── Outsource Management ──
+  { 
+    icon: Building2, 
+    label: "Outsource Management", 
+    subItems: [
+      { label: "Capacity Alerts", path: "/outsource-management?tab=capacity" },
+      { label: "Price Catalog", path: "/outsource-management?tab=catalog" },
+      { label: "Vehicle Attendance", path: "/outsource-management?tab=attendance" },
+      { label: "Payment Requests", path: "/outsource-management?tab=payments" },
+      { label: "Rental Vehicles", path: "/rental-vehicles" },
+    ]
+  },
   { icon: Bell, label: t("nav.alerts"), path: "/alerts" },
   { icon: Bell, label: t("nav.notifications"), path: "/notification-center" },
 
