@@ -25,11 +25,14 @@ const reasonLabel: Record<NonNullable<DueSchedule["due_reason"]>, { label: strin
 };
 
 const DuePreventiveSchedules = ({ vehicleId, driverId, showAutoScan = false }: Props) => {
-  // When no vehicleId is provided (e.g. driver has no vehicle assigned), skip the query and show guidance.
+  // All hooks must be called unconditionally on every render.
   const { data: dueSchedules = [], isLoading, refetch } = useDuePreventiveSchedules({
     vehicleId,
     enabled: !!vehicleId || showAutoScan,
   });
+  const { createRequest } = useMaintenanceRequests();
+  const triggerScan = useTriggerPreventiveScan();
+  const [submittingId, setSubmittingId] = useState<string | null>(null);
 
   // Driver has no vehicle assigned — show clear empty state instead of hiding the panel.
   if (!vehicleId && !showAutoScan) {
@@ -49,9 +52,6 @@ const DuePreventiveSchedules = ({ vehicleId, driverId, showAutoScan = false }: P
       </Card>
     );
   }
-  const { createRequest } = useMaintenanceRequests();
-  const triggerScan = useTriggerPreventiveScan();
-  const [submittingId, setSubmittingId] = useState<string | null>(null);
 
   const handleRequest = async (s: DueSchedule) => {
     setSubmittingId(s.schedule_id);
