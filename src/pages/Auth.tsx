@@ -155,8 +155,8 @@ const Auth = () => {
             await supabase.auth.signOut();
             setPending2FA(true);
             setPending2FAUserId(userId);
+            setPending2FACredentials({ email, password });
             setTotpCode("");
-            setLoading(false);
             toast({
               title: "2FA Required",
               description: "Enter your authenticator code to continue.",
