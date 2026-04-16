@@ -128,7 +128,7 @@ export function TPLPartnersTab() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
+                      <Star className="h-3.5 w-3.5 text-warning fill-warning" />
                       {p.rating || "N/A"}
                     </div>
                   </TableCell>
