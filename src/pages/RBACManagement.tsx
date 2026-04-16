@@ -396,99 +396,99 @@ const RBACManagement = () => {
 
           {/* Permission Matrix Tab */}
           <TabsContent value="matrix" className="mt-4">
-            <Card className="glass-strong">
+            <Card className="glass-strong overflow-hidden">
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg">Permission Matrix</CardTitle>
                 <CardDescription>Toggle permissions for each role. Super Admin always has full access.</CardDescription>
               </CardHeader>
-              <CardContent className="p-0">
+              <CardContent className="p-0 overflow-hidden">
                 {loading ? (
                   <div className="flex items-center justify-center py-16">
                     <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                   </div>
                 ) : (
-                  <div className="w-full overflow-x-auto">
-                    <div className="min-w-[1200px]">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="border-border/50 hover:bg-transparent">
-                            <TableHead className="sticky left-0 z-10 bg-background w-[200px] min-w-[200px]">Permission</TableHead>
-                            {ALL_ROLES.map((role) => (
-                              <TableHead key={role.value} className="text-center px-1 min-w-[80px]">
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <span className={`text-[10px] font-semibold cursor-help ${role.color}`}>
-                                        {role.label}
-                                      </span>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top" className="max-w-xs">
-                                      <p className="font-medium">{role.label}</p>
-                                      <p className="text-xs text-muted-foreground">{role.description}</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              </TableHead>
-                            ))}
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {resources.map(([resource, perms]) => (
-                            <React.Fragment key={resource}>
-                              <TableRow key={`header-${resource}`} className="bg-muted/20 hover:bg-muted/30">
-                                <TableCell
-                                  colSpan={ALL_ROLES.length + 1}
-                                  className="sticky left-0 z-10 bg-muted/20 py-1.5"
-                                >
-                                  <div className="flex items-center gap-2">
-                                    {RESOURCE_ICONS[resource] || <Shield className="w-3.5 h-3.5" />}
-                                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                      {resource}
+                  <div className="overflow-x-auto max-w-full -mx-0">
+                    <table className="w-full min-w-[1200px] border-collapse">
+                      <thead>
+                        <tr className="border-b border-border/50">
+                          <th className="sticky left-0 z-20 bg-background text-left px-4 py-2 w-[180px] min-w-[180px] text-xs font-medium text-muted-foreground">
+                            Permission
+                          </th>
+                          {ALL_ROLES.map((role) => (
+                            <th key={role.value} className="text-center px-1 py-2 min-w-[70px]">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className={`text-[10px] font-semibold cursor-help ${role.color}`}>
+                                      {role.label}
                                     </span>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                              {perms.map((perm) => (
-                                <TableRow key={perm.id} className="border-border/20 hover:bg-muted/10">
-                                  <TableCell className="sticky left-0 z-10 bg-background">
-                                    <TooltipProvider>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <div className="flex items-center gap-2 cursor-help">
-                                            {ACTION_ICONS[perm.action] || <Info className="w-3 h-3" />}
-                                            <span className="text-xs font-medium">{perm.name.replace(/_/g, " ")}</span>
-                                          </div>
-                                        </TooltipTrigger>
-                                        <TooltipContent side="right">
-                                          <p className="text-xs">{perm.description}</p>
-                                        </TooltipContent>
-                                      </Tooltip>
-                                    </TooltipProvider>
-                                  </TableCell>
-                                  {ALL_ROLES.map((role) => {
-                                    const enabled = isPermEnabled(role.value, perm.id);
-                                    const isSA = role.value === "super_admin";
-                                    return (
-                                      <TableCell key={role.value} className="text-center px-1">
-                                        {isSA ? (
-                                          <CheckCircle2 className="w-4 h-4 text-emerald-400 mx-auto" />
-                                        ) : (
-                                          <Switch
-                                            checked={enabled}
-                                            onCheckedChange={() => togglePermission(role.value, perm.id)}
-                                            className="mx-auto scale-75"
-                                          />
-                                        )}
-                                      </TableCell>
-                                    );
-                                  })}
-                                </TableRow>
-                              ))}
-                            </React.Fragment>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="max-w-xs">
+                                    <p className="font-medium">{role.label}</p>
+                                    <p className="text-xs text-muted-foreground">{role.description}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </th>
                           ))}
-                        </TableBody>
-                      </Table>
-                    </div>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {resources.map(([resource, perms]) => (
+                          <React.Fragment key={resource}>
+                            <tr className="bg-muted/20">
+                              <td
+                                colSpan={ALL_ROLES.length + 1}
+                                className="sticky left-0 z-10 bg-muted/20 px-4 py-1.5"
+                              >
+                                <div className="flex items-center gap-2">
+                                  {RESOURCE_ICONS[resource] || <Shield className="w-3.5 h-3.5" />}
+                                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                    {resource}
+                                  </span>
+                                </div>
+                              </td>
+                            </tr>
+                            {perms.map((perm) => (
+                              <tr key={perm.id} className="border-b border-border/10 hover:bg-muted/10 transition-colors">
+                                <td className="sticky left-0 z-10 bg-background px-4 py-1.5">
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <div className="flex items-center gap-2 cursor-help">
+                                          {ACTION_ICONS[perm.action] || <Info className="w-3 h-3" />}
+                                          <span className="text-xs font-medium whitespace-nowrap">{perm.name.replace(/_/g, " ")}</span>
+                                        </div>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="right">
+                                        <p className="text-xs">{perm.description}</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </td>
+                                {ALL_ROLES.map((role) => {
+                                  const enabled = isPermEnabled(role.value, perm.id);
+                                  const isSA = role.value === "super_admin";
+                                  return (
+                                    <td key={role.value} className="text-center px-1 py-1">
+                                      {isSA ? (
+                                        <CheckCircle2 className="w-4 h-4 text-emerald-400 mx-auto" />
+                                      ) : (
+                                        <Switch
+                                          checked={enabled}
+                                          onCheckedChange={() => togglePermission(role.value, perm.id)}
+                                          className="mx-auto scale-75"
+                                        />
+                                      )}
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            ))}
+                          </React.Fragment>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </CardContent>
