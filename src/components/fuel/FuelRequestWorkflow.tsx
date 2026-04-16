@@ -589,6 +589,12 @@ export const FuelRequestWorkflow = () => {
         email: form.email || null,
         notify_user: form.notify_user,
         contact_preference: form.contact_preference || null,
+        // Generator-specific fields
+        technician_name: form.technician_name || null,
+        technician_employee_id: form.technician_employee_id || null,
+        security_name: form.security_name || null,
+        route: form.route || null,
+        running_hours: form.running_hours ? parseFloat(form.running_hours) : null,
       };
 
       const { data: inserted, error } = await supabase.from("fuel_requests").insert(insertData).select("id").single();
