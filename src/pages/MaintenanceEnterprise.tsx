@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Wrench, Loader2, Ticket, FileSignature, DollarSign, 
   Users, ShoppingCart, ClipboardList, Building2, FileText,
-  MessageSquare, CreditCard, ClipboardCheck
+  MessageSquare, CreditCard, ClipboardCheck, ShieldCheck, PackageSearch
 } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -19,6 +19,9 @@ import MaintenanceRequestsTab from "@/components/maintenance-enterprise/Maintena
 import SupplierCommunicationTab from "@/components/maintenance-enterprise/SupplierCommunicationTab";
 import SupplierPaymentsTab from "@/components/maintenance-enterprise/SupplierPaymentsTab";
 import PostMaintenanceTab from "@/components/maintenance-enterprise/PostMaintenanceTab";
+import FleetOpsReviewTab from "@/components/maintenance-enterprise/FleetOpsReviewTab";
+import MaintenanceSectionTab from "@/components/maintenance-enterprise/MaintenanceSectionTab";
+import SCDSourcingTab from "@/components/maintenance-enterprise/SCDSourcingTab";
 
 const MaintenanceEnterprise = () => {
   const { organizationId, loading: orgLoading } = useOrganization();
@@ -100,6 +103,15 @@ const MaintenanceEnterprise = () => {
               <TabsTrigger value="requests" className="gap-1.5 text-xs md:text-sm">
                 <FileText className="w-4 h-4" /> Requests
               </TabsTrigger>
+              <TabsTrigger value="fleet-ops" className="gap-1.5 text-xs md:text-sm">
+                <ShieldCheck className="w-4 h-4" /> Fleet Ops Review
+              </TabsTrigger>
+              <TabsTrigger value="maint-section" className="gap-1.5 text-xs md:text-sm">
+                <Wrench className="w-4 h-4" /> Maint. Section
+              </TabsTrigger>
+              <TabsTrigger value="scd-sourcing" className="gap-1.5 text-xs md:text-sm">
+                <PackageSearch className="w-4 h-4" /> SCD Sourcing
+              </TabsTrigger>
               <TabsTrigger value="tickets" className="gap-1.5 text-xs md:text-sm">
                 <Ticket className="w-4 h-4" /> Tickets
               </TabsTrigger>
@@ -134,6 +146,15 @@ const MaintenanceEnterprise = () => {
 
             <TabsContent value="requests">
               <MaintenanceRequestsTab />
+            </TabsContent>
+            <TabsContent value="fleet-ops">
+              <FleetOpsReviewTab />
+            </TabsContent>
+            <TabsContent value="maint-section">
+              <MaintenanceSectionTab />
+            </TabsContent>
+            <TabsContent value="scd-sourcing">
+              <SCDSourcingTab />
             </TabsContent>
             <TabsContent value="tickets">
               <MaintenanceTicketsTab />
