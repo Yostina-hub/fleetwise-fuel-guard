@@ -6703,6 +6703,33 @@ export type Database = {
           },
         ]
       }
+      e2e_test_runs: {
+        Row: {
+          detail: string | null
+          flow: string | null
+          id: string
+          run_at: string
+          status: string | null
+          step: string | null
+        }
+        Insert: {
+          detail?: string | null
+          flow?: string | null
+          id?: string
+          run_at?: string
+          status?: string | null
+          step?: string | null
+        }
+        Update: {
+          detail?: string | null
+          flow?: string | null
+          id?: string
+          run_at?: string
+          status?: string | null
+          step?: string | null
+        }
+        Relationships: []
+      }
       email_report_configs: {
         Row: {
           created_at: string
