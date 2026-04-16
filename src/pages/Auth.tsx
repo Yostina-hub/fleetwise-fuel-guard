@@ -58,9 +58,10 @@ const Auth = () => {
     const formData = new FormData(e.currentTarget);
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
+    const normalizedEmail = email.trim().toLowerCase();
 
     // Progressive delay: exponential backoff for failed attempts (server-side lockout + client defense-in-depth)
-    const delayCheck = progressiveDelay.shouldDelay(email);
+    const delayCheck = progressiveDelay.shouldDelay(normalizedEmail);
     if (delayCheck.delay) {
       toast({
         title: "Too Many Attempts",
@@ -74,12 +75,12 @@ const Auth = () => {
     // Pre-check server-side lockout BEFORE attempting sign-in
     try {
       const { data: lockStatus } = await supabase.rpc("check_account_lockout", {
-        p_email: email,
+        p_email: normalizedEmail,
       });
       const lockRow = lockStatus?.[0];
       if (lockRow?.is_locked) {
         const until = new Date(lockRow.lockout_until).toLocaleTimeString();
-        progressiveDelay.recordFailedAttempt(email);
+        progressiveDelay.recordFailedAttempt(normalizedEmail);
         toast({
           title: "Account Locked",
           description: `Too many failed attempts. Try again after ${until}.`,
@@ -94,15 +95,15 @@ const Auth = () => {
 
     // Set flag to prevent auto-redirect while we check 2FA
     checking2FARef.current = true;
-    const { error } = await signIn(email, password);
+    const { error } = await signIn(normalizedEmail, password);
 
     if (error) {
       checking2FARef.current = false;
       // Record failed attempt in progressive delay (client-side exponential backoff)
-      progressiveDelay.recordFailedAttempt(email);
+      progressiveDelay.recordFailedAttempt(normalizedEmail);
       // Record in server-side lockout table
       void (async () => { try { await supabase.rpc("record_failed_login", {
-        p_email: email,
+        p_email: normalizedEmail,
         p_ip_address: "0.0.0.0",
         p_max_attempts: 5,
         p_lockout_minutes: 15,
@@ -117,8 +118,8 @@ const Auth = () => {
       });
     } else {
       // Clear all lockout state on success
-      progressiveDelay.resetAttempts(email);
-      void (async () => { try { await supabase.rpc("clear_failed_login", { p_email: email }); } catch {} })();
+      progressiveDelay.resetAttempts(normalizedEmail);
+      void (async () => { try { await supabase.rpc("clear_failed_login", { p_email: normalizedEmail }); } catch {} })();
       
       // Check if user has 2FA enabled
       const userId = (await supabase.auth.getUser()).data.user?.id;
@@ -138,7 +139,7 @@ const Auth = () => {
             await supabase.auth.signOut();
             setPending2FA(true);
             setPending2FAUserId(userId);
-            setPending2FACredentials({ email, password });
+            setPending2FACredentials({ email: normalizedEmail, password });
             setTotpCode("");
             toast({
               title: "2FA Required",

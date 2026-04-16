@@ -43,10 +43,11 @@ Deno.serve(async (req) => {
       return secureJsonResponse({ success: false, error: 'Invalid or missing request body' }, req, 400);
     }
     const { email, password, fullName, role, organizationId } = body;
+    const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : email;
 
     // Input validation
     const validationError = validateAll(
-      () => validateEmail(email),
+      () => validateEmail(normalizedEmail),
       () => validateString(password, "password", { minLength: 8, maxLength: 128 }),
       () => validateString(fullName, "fullName", { required: false, maxLength: 200 }),
       () => validateEnum(role, "role", ["super_admin", "org_admin", "fleet_manager", "operator", "driver", "viewer", "mechanic", "technician"]),
@@ -85,7 +86,7 @@ Deno.serve(async (req) => {
 
     // Create user
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email,
+      email: normalizedEmail,
       password,
       email_confirm: true,
       user_metadata: { full_name: fullName },
@@ -130,8 +131,8 @@ Deno.serve(async (req) => {
       userId: requestingUser.id,
       organizationId: targetOrgId,
       severity: "info",
-      description: `User ${email} created with role ${role} in org ${targetOrgId}`,
-      metadata: { newUserId: newUser.user.id, role, email },
+      description: `User ${normalizedEmail} created with role ${role} in org ${targetOrgId}`,
+      metadata: { newUserId: newUser.user.id, role, email: normalizedEmail },
       ipAddress,
       userAgent,
     });
