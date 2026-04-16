@@ -1671,6 +1671,69 @@ export type Database = {
           },
         ]
       }
+      course_materials: {
+        Row: {
+          course_id: string
+          created_at: string
+          description: string | null
+          file_name: string
+          file_size_bytes: number | null
+          file_type: string
+          file_url: string
+          id: string
+          mime_type: string | null
+          organization_id: string
+          sort_order: number | null
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          description?: string | null
+          file_name: string
+          file_size_bytes?: number | null
+          file_type?: string
+          file_url: string
+          id?: string
+          mime_type?: string | null
+          organization_id: string
+          sort_order?: number | null
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          description?: string | null
+          file_name?: string
+          file_size_bytes?: number | null
+          file_type?: string
+          file_url?: string
+          id?: string
+          mime_type?: string | null
+          organization_id?: string
+          sort_order?: number | null
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_materials_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_training_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_materials_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cron_job_history: {
         Row: {
           details: string | null

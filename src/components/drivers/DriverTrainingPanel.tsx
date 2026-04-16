@@ -17,11 +17,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import {
   BookOpen, Play, CheckCircle, Clock, Award, AlertCircle, Video, FileText,
-  HelpCircle, Gamepad2, Loader2, RefreshCw, Plus, GraduationCap,
+  HelpCircle, Gamepad2, Loader2, RefreshCw, Plus, GraduationCap, Paperclip,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { CourseMaterialsPanel } from "./CourseMaterialsPanel";
 
 interface DriverTrainingPanelProps {
   driverId: string;
@@ -63,6 +64,7 @@ export const DriverTrainingPanel = ({ driverId }: DriverTrainingPanelProps) => {
   const [selectedTab, setSelectedTab] = useState("all");
   const [showAddCourse, setShowAddCourse] = useState(false);
   const [showComplete, setShowComplete] = useState<string | null>(null);
+  const [showMaterials, setShowMaterials] = useState<{ id: string; title: string } | null>(null);
   const [score, setScore] = useState([80]);
   const [saving, setSaving] = useState(false);
   const [courseForm, setCourseForm] = useState({
@@ -236,6 +238,9 @@ export const DriverTrainingPanel = ({ driverId }: DriverTrainingPanelProps) => {
 
                               <div className="flex flex-col items-end gap-2">
                                 {getStatusBadge(progress?.status || 'not_started')}
+                                <Button size="sm" variant="outline" className="gap-1" onClick={() => setShowMaterials({ id: course.id, title: course.title })}>
+                                  <Paperclip className="w-3 h-3" />Materials
+                                </Button>
                                 {isInProgress && (
                                   <Button size="sm" onClick={() => { setScore([80]); setShowComplete(course.id); }}>
                                     <GraduationCap className="w-3 h-3 mr-1" />Complete
@@ -378,6 +383,14 @@ export const DriverTrainingPanel = ({ driverId }: DriverTrainingPanelProps) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {showMaterials && (
+        <CourseMaterialsPanel
+          courseId={showMaterials.id}
+          courseTitle={showMaterials.title}
+          open={!!showMaterials}
+          onOpenChange={(open) => !open && setShowMaterials(null)}
+        />
+      )}
     </div>
   );
 };
