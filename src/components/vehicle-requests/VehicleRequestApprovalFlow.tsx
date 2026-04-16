@@ -69,6 +69,25 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
         status: "approved",
         approval_status: "approved",
       }).eq("id", request.id);
+
+      // SMS to requester
+      try {
+        const { data: reqProfile } = await supabase
+          .from("profiles")
+          .select("phone")
+          .eq("id", request.requester_id)
+          .single();
+        if (reqProfile?.phone) {
+          await notifyRequesterDecisionSms({
+            requesterPhone: reqProfile.phone,
+            requestNumber: request.request_number,
+            decision: "approved",
+            appUrl: getAppUrl(),
+          });
+        }
+      } catch (e) {
+        console.error("Approval SMS error:", e);
+      }
     },
     onSuccess: () => {
       toast.success("Request approved");
@@ -103,6 +122,26 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
         approval_status: "rejected",
         rejection_reason: rejectionReason,
       }).eq("id", request.id);
+
+      // SMS to requester on rejection
+      try {
+        const { data: reqProfile } = await supabase
+          .from("profiles")
+          .select("phone")
+          .eq("id", request.requester_id)
+          .single();
+        if (reqProfile?.phone) {
+          await notifyRequesterDecisionSms({
+            requesterPhone: reqProfile.phone,
+            requestNumber: request.request_number,
+            decision: "rejected",
+            rejectionReason,
+            appUrl: getAppUrl(),
+          });
+        }
+      } catch (e) {
+        console.error("Rejection SMS error:", e);
+      }
     },
     onSuccess: () => {
       toast.success("Request rejected");
