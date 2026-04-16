@@ -72,8 +72,8 @@ export const DriverPerformanceKPIs = ({ driverId, driverName }: DriverPerformanc
         supabase.from("driver_performance_reviews").select("*").eq("organization_id", organizationId)
           .eq("driver_id", driverId).order("created_at", { ascending: false }).limit(10),
       ]);
-      setKpis((kpiRes.data as any) || []);
-      setReviews((revRes.data as any) || []);
+      setKpis((kpiRes.data as KPI[]) || []);
+      setReviews((revRes.data as Review[]) || []);
       setLoading(false);
     };
     fetch();

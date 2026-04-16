@@ -75,8 +75,8 @@ export const OutsourceContractManagement = ({}: OutsourceContractManagementProps
       supabase.from("outsource_contracts").select("*").eq("organization_id", organizationId).order("created_at", { ascending: false }),
       supabase.from("outsource_payments").select("*").eq("organization_id", organizationId).order("payment_date", { ascending: false }).limit(50),
     ]);
-    setContracts((cRes.data as any) || []);
-    setPayments((pRes.data as any) || []);
+    setContracts((cRes.data as Contract[]) || []);
+    setPayments((pRes.data as Payment[]) || []);
     setLoading(false);
   };
 
@@ -185,7 +185,7 @@ export const OutsourceContractManagement = ({}: OutsourceContractManagementProps
             <DialogContent>
               <DialogHeader><DialogTitle>Record Payment</DialogTitle></DialogHeader>
               <div className="space-y-3">
-                <Select value={paymentForm.contract_id} onValueChange={v => setPaymentForm(f => ({ ...f, contract_id: v }))}>
+                <Select value={paymentForm.contract_id || undefined} onValueChange={v => setPaymentForm(f => ({ ...f, contract_id: v }))}>
                   <SelectTrigger><SelectValue placeholder="Select contract..." /></SelectTrigger>
                   <SelectContent>
                     {contracts.filter(c => c.status === "active").map(c => (

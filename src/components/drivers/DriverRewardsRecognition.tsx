@@ -35,7 +35,7 @@ export const DriverRewardsRecognition = () => {
         .eq("organization_id", organizationId)
         .order("issued_at", { ascending: false })
         .limit(100);
-      setRewards((data as any) || []);
+      setRewards((data as Reward[]) || []);
       setLoading(false);
     };
     fetch();

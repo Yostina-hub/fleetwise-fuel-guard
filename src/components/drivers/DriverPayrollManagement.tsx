@@ -81,7 +81,7 @@ export const DriverPayrollManagement = ({ driverId, driverName }: DriverPayrollM
         supabase.from("driver_payroll").select("*").eq("organization_id", organizationId)
           .eq("driver_id", driverId).order("pay_period_start", { ascending: false }).limit(12),
       ]);
-      const cfg = (cfgRes.data as any)?.[0] || null;
+      const cfg = (cfgRes.data as PayrollConfig[])?.[0] || null;
       setConfig(cfg);
       if (cfg) {
         setConfigForm({
@@ -93,7 +93,7 @@ export const DriverPayrollManagement = ({ driverId, driverName }: DriverPayrollM
           night_shift_multiplier: String(cfg.night_shift_multiplier),
         });
       }
-      setPayrolls((payRes.data as any) || []);
+      setPayrolls((payRes.data as PayrollRecord[]) || []);
       setLoading(false);
     };
     fetch();

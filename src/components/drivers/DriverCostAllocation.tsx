@@ -42,7 +42,7 @@ export const DriverCostAllocation = ({ driverId, driverName }: DriverCostAllocat
         .eq("driver_id", driverId)
         .order("period_start", { ascending: false })
         .limit(12);
-      setCosts((data as any) || []);
+      setCosts((data as CostAllocation[]) || []);
       setLoading(false);
     };
     fetch();
