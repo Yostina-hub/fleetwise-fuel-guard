@@ -249,6 +249,24 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
             />
           </div>
 
+          {/* Coordinates display */}
+          {(form.departure_lat != null || form.destination_lat != null) && (
+            <div className="grid grid-cols-2 gap-4">
+              {form.departure_lat != null && form.departure_lng != null ? (
+                <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground space-y-0.5">
+                  <div className="font-medium text-foreground text-sm">{form.departure_place || "Departure"}</div>
+                  <div>Lat: {form.departure_lat.toFixed(6)} &nbsp;|&nbsp; Lng: {form.departure_lng.toFixed(6)}</div>
+                </div>
+              ) : <div />}
+              {form.destination_lat != null && form.destination_lng != null ? (
+                <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground space-y-0.5">
+                  <div className="font-medium text-foreground text-sm">{form.destination || "Destination"}</div>
+                  <div>Lat: {form.destination_lat.toFixed(6)} &nbsp;|&nbsp; Lng: {form.destination_lng.toFixed(6)}</div>
+                </div>
+              ) : <div />}
+            </div>
+          )}
+
           {/* Vehicles & Passengers */}
           <div className="grid grid-cols-2 gap-4">
             <div>
