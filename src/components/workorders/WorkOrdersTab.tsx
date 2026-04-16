@@ -820,6 +820,47 @@ const WorkOrdersTab = () => {
                 </div>
               )}
 
+              {/* Fleet Ops Manual Approve/Reject */}
+              {canCreateWorkOrder && (selectedWorkOrder as any).approval_status === 'pending' && !(selectedWorkOrder as any).auto_approved && (
+                <div className="border-t pt-4 space-y-3">
+                  <h4 className="text-sm font-semibold flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-primary" />
+                    Fleet Operations Review
+                  </h4>
+                  <Textarea
+                    placeholder="Review comments / rejection reason (required for rejection)..."
+                    value={reviewComment}
+                    onChange={e => setReviewComment(e.target.value)}
+                    rows={2}
+                    className="text-sm"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className="gap-1"
+                      onClick={() => handleManualApproval('approved')}
+                      disabled={updateMutation.isPending}
+                    >
+                      <CheckCircle className="w-4 h-4" /> Approve
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="gap-1"
+                      onClick={() => handleManualApproval('rejected')}
+                      disabled={updateMutation.isPending || !reviewComment.trim()}
+                    >
+                      <X className="w-4 h-4" /> Reject
+                    </Button>
+                    {!reviewComment.trim() && (
+                      <span className="text-xs text-muted-foreground self-center">
+                        * Rejection reason is mandatory
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Approval Chain */}
               <div className="border-t pt-4">
                 <WorkOrderApprovalFlow
