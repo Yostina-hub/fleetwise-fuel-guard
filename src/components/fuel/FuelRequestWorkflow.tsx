@@ -33,6 +33,7 @@ import { TelebirrEmoneyPanel } from "./TelebirrEmoneyPanel";
 import { FuelClarificationPanel } from "./FuelClarificationPanel";
 import { PendingApprovalsPanel } from "./PendingApprovalsPanel";
 import { FuelWorkOrderDialog } from "./FuelWorkOrderDialog";
+import { FuelWorkOrdersTab } from "./FuelWorkOrdersTab";
 
 const ITEMS_PER_PAGE = 15;
 const APPROVER_ROLES = ["fleet_manager", "operations_manager", "org_admin", "super_admin", "fleet_owner"];
@@ -817,7 +818,16 @@ export const FuelRequestWorkflow = () => {
           <TabsTrigger value="auto">Auto-Triggered</TabsTrigger>
           <TabsTrigger value="deviation_detected">Deviations</TabsTrigger>
           <TabsTrigger value="rejected">Rejected</TabsTrigger>
+          <TabsTrigger value="work_orders" className="gap-1"><FileText className="h-3 w-3" />Work Orders</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="work_orders" className="space-y-4">
+          <FuelWorkOrdersTab
+            onEdit={(woId) => setShowWoDialog({ id: woId, frId: null })}
+            onCreate={() => setShowWoDialog({ id: null, frId: null })}
+          />
+        </TabsContent>
+
         {["all", "pending", "approved", "fulfilled", "auto", "deviation_detected", "rejected"].map(tab => {
           const tabData = tab === "all" ? filtered
             : tab === "auto" ? filtered.filter((r: any) => r.trigger_source === "auto")
@@ -904,6 +914,15 @@ export const FuelRequestWorkflow = () => {
                                   <Button variant="ghost" size="sm" className="text-primary" onClick={() => { setShowFulfill(r); setActualLiters(String(r.liters_approved || r.liters_requested)); }}>
                                     <Fuel className="w-4 h-4" />
                                   </Button>
+                                )}
+                                {r.fuel_work_order_id && (
+                                  <TooltipProvider>
+                                    <Tooltip><TooltipTrigger asChild>
+                                      <Button variant="ghost" size="sm" className="text-primary" onClick={() => setShowWoDialog({ id: r.fuel_work_order_id, frId: r.id })}>
+                                        <FileText className="w-4 h-4" />
+                                      </Button>
+                                    </TooltipTrigger><TooltipContent>Edit Work Order</TooltipContent></Tooltip>
+                                  </TooltipProvider>
                                 )}
                               </div>
                             </TableCell>

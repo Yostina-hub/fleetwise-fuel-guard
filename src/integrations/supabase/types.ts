@@ -22093,6 +22093,15 @@ export type Database = {
           t_step: string
         }[]
       }
+      run_fuel_workflow_e2e_test: {
+        Args: never
+        Returns: {
+          t_detail: string
+          t_flow: string
+          t_status: string
+          t_step: string
+        }[]
+      }
       run_maintenance_workflow_e2e_test: {
         Args: never
         Returns: {
