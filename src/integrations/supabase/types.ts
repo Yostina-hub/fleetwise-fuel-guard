@@ -12897,6 +12897,50 @@ export type Database = {
           },
         ]
       }
+      role_location_access: {
+        Row: {
+          access_level: string
+          created_at: string
+          created_by: string | null
+          id: string
+          location_id: string
+          location_type: string
+          organization_id: string
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          access_level?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          location_id: string
+          location_type?: string
+          organization_id: string
+          role: string
+          updated_at?: string
+        }
+        Update: {
+          access_level?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          location_id?: string
+          location_type?: string
+          organization_id?: string
+          role?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_location_access_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_permissions: {
         Row: {
           created_at: string
