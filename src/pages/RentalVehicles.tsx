@@ -35,7 +35,7 @@ const RentalVehicles = () => {
   const { data: rentalVehicles = [], isLoading } = useQuery({
     queryKey: ["rental-vehicles", organizationId],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("rental_vehicles")
         .select("*")
         .eq("organization_id", organizationId!)
@@ -50,28 +50,32 @@ const RentalVehicles = () => {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      const plate = form.plate_number.trim();
+      const provider = form.provider_name.trim();
+      if (!plate || !provider) throw new Error("Plate number and provider are required");
+      if (form.contract_start >= form.contract_end) throw new Error("Contract end must be after start date");
       const payload = {
         organization_id: organizationId!,
-        plate_number: form.plate_number,
-        make: form.make || null,
-        model: form.model || null,
-        provider_name: form.provider_name,
-        contract_number: form.contract_number || null,
+        plate_number: plate,
+        make: form.make.trim() || null,
+        model: form.model.trim() || null,
+        provider_name: provider,
+        contract_number: form.contract_number.trim() || null,
         contract_start: form.contract_start,
         contract_end: form.contract_end,
         monthly_cost: form.monthly_cost ? parseFloat(form.monthly_cost) : 0,
         daily_rate: form.daily_rate ? parseFloat(form.daily_rate) : null,
-        driver_name: form.driver_name || null,
-        driver_phone: form.driver_phone || null,
+        driver_name: form.driver_name.trim() || null,
+        driver_phone: form.driver_phone.trim() || null,
         driver_type: form.driver_type,
-        notes: form.notes || null,
+        notes: form.notes.trim() || null,
       };
       if (editingVehicle) {
         const { organization_id: _, ...updatePayload } = payload;
-        const { error } = await (supabase as any).from("rental_vehicles").update(updatePayload).eq("id", editingVehicle.id);
+        const { error } = await supabase.from("rental_vehicles").update(updatePayload).eq("id", editingVehicle.id);
         if (error) throw error;
       } else {
-        const { error } = await (supabase as any).from("rental_vehicles").insert({ ...payload, status: "active" });
+        const { error } = await supabase.from("rental_vehicles").insert({ ...payload, status: "active" });
         if (error) throw error;
       }
     },
@@ -85,7 +89,7 @@ const RentalVehicles = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await (supabase as any).from("rental_vehicles").delete().eq("id", id);
+      const { error } = await supabase.from("rental_vehicles").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => { invalidate(); setShowDeleteConfirm(null); toast.success("Vehicle deleted"); },
@@ -94,7 +98,7 @@ const RentalVehicles = () => {
 
   const statusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await (supabase as any).from("rental_vehicles").update({ status }).eq("id", id);
+      const { error } = await supabase.from("rental_vehicles").update({ status }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => { invalidate(); toast.success("Status updated"); },
