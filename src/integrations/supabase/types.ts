@@ -11174,6 +11174,7 @@ export type Database = {
         Row: {
           approved_at: string | null
           approved_by: string | null
+          assigned_to_role: string | null
           correction_notes: string | null
           created_at: string
           delivery_acceptable: boolean | null
@@ -11183,6 +11184,8 @@ export type Database = {
           driver_id: string | null
           files_updated: boolean | null
           fuel_level: number | null
+          geofence_verified_delivery: boolean | null
+          geofence_verified_receipt: boolean | null
           id: string
           inspector_assigned_at: string | null
           inspector_id: string | null
@@ -11193,7 +11196,9 @@ export type Database = {
           needs_maintenance: boolean | null
           notes: string | null
           organization_id: string
+          pdr_number: string | null
           photo_urls: string[] | null
+          po_id: string | null
           post_inspection_at: string | null
           post_inspection_notes: string | null
           post_inspection_result: string | null
@@ -11211,8 +11216,10 @@ export type Database = {
           running_hours: number | null
           schedule_id: string | null
           scrap_return_form_url: string | null
+          sourcing_status: string | null
           spare_parts_collected: boolean | null
           status: string | null
+          supplier_geofence_id: string | null
           supplier_id: string | null
           supplier_invoice_url: string | null
           supplier_name: string | null
@@ -11226,14 +11233,20 @@ export type Database = {
           variation_requested: boolean | null
           vehicle_delivered_at: string | null
           vehicle_delivered_by: string | null
+          vehicle_delivered_lat: number | null
+          vehicle_delivered_lng: number | null
           vehicle_id: string
           vehicle_received_at: string | null
+          vehicle_received_by: string | null
+          vehicle_received_lat: number | null
+          vehicle_received_lng: number | null
           work_order_id: string | null
           workflow_stage: string | null
         }
         Insert: {
           approved_at?: string | null
           approved_by?: string | null
+          assigned_to_role?: string | null
           correction_notes?: string | null
           created_at?: string
           delivery_acceptable?: boolean | null
@@ -11243,6 +11256,8 @@ export type Database = {
           driver_id?: string | null
           files_updated?: boolean | null
           fuel_level?: number | null
+          geofence_verified_delivery?: boolean | null
+          geofence_verified_receipt?: boolean | null
           id?: string
           inspector_assigned_at?: string | null
           inspector_id?: string | null
@@ -11253,7 +11268,9 @@ export type Database = {
           needs_maintenance?: boolean | null
           notes?: string | null
           organization_id: string
+          pdr_number?: string | null
           photo_urls?: string[] | null
+          po_id?: string | null
           post_inspection_at?: string | null
           post_inspection_notes?: string | null
           post_inspection_result?: string | null
@@ -11271,8 +11288,10 @@ export type Database = {
           running_hours?: number | null
           schedule_id?: string | null
           scrap_return_form_url?: string | null
+          sourcing_status?: string | null
           spare_parts_collected?: boolean | null
           status?: string | null
+          supplier_geofence_id?: string | null
           supplier_id?: string | null
           supplier_invoice_url?: string | null
           supplier_name?: string | null
@@ -11286,14 +11305,20 @@ export type Database = {
           variation_requested?: boolean | null
           vehicle_delivered_at?: string | null
           vehicle_delivered_by?: string | null
+          vehicle_delivered_lat?: number | null
+          vehicle_delivered_lng?: number | null
           vehicle_id: string
           vehicle_received_at?: string | null
+          vehicle_received_by?: string | null
+          vehicle_received_lat?: number | null
+          vehicle_received_lng?: number | null
           work_order_id?: string | null
           workflow_stage?: string | null
         }
         Update: {
           approved_at?: string | null
           approved_by?: string | null
+          assigned_to_role?: string | null
           correction_notes?: string | null
           created_at?: string
           delivery_acceptable?: boolean | null
@@ -11303,6 +11328,8 @@ export type Database = {
           driver_id?: string | null
           files_updated?: boolean | null
           fuel_level?: number | null
+          geofence_verified_delivery?: boolean | null
+          geofence_verified_receipt?: boolean | null
           id?: string
           inspector_assigned_at?: string | null
           inspector_id?: string | null
@@ -11313,7 +11340,9 @@ export type Database = {
           needs_maintenance?: boolean | null
           notes?: string | null
           organization_id?: string
+          pdr_number?: string | null
           photo_urls?: string[] | null
+          po_id?: string | null
           post_inspection_at?: string | null
           post_inspection_notes?: string | null
           post_inspection_result?: string | null
@@ -11331,8 +11360,10 @@ export type Database = {
           running_hours?: number | null
           schedule_id?: string | null
           scrap_return_form_url?: string | null
+          sourcing_status?: string | null
           spare_parts_collected?: boolean | null
           status?: string | null
+          supplier_geofence_id?: string | null
           supplier_id?: string | null
           supplier_invoice_url?: string | null
           supplier_name?: string | null
@@ -11346,8 +11377,13 @@ export type Database = {
           variation_requested?: boolean | null
           vehicle_delivered_at?: string | null
           vehicle_delivered_by?: string | null
+          vehicle_delivered_lat?: number | null
+          vehicle_delivered_lng?: number | null
           vehicle_id?: string
           vehicle_received_at?: string | null
+          vehicle_received_by?: string | null
+          vehicle_received_lat?: number | null
+          vehicle_received_lng?: number | null
           work_order_id?: string | null
           workflow_stage?: string | null
         }
@@ -11371,6 +11407,13 @@ export type Database = {
             columns: ["schedule_id"]
             isOneToOne: false
             referencedRelation: "maintenance_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_requests_supplier_geofence_id_fkey"
+            columns: ["supplier_geofence_id"]
+            isOneToOne: false
+            referencedRelation: "geofences"
             referencedColumns: ["id"]
           },
           {
@@ -11684,6 +11727,69 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maintenance_workflow_events: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_name: string | null
+          actor_role: string | null
+          created_at: string
+          from_stage: string | null
+          id: string
+          metadata: Json | null
+          notes: string | null
+          organization_id: string
+          request_id: string
+          step_number: string | null
+          to_stage: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_name?: string | null
+          actor_role?: string | null
+          created_at?: string
+          from_stage?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          organization_id: string
+          request_id: string
+          step_number?: string | null
+          to_stage: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_name?: string | null
+          actor_role?: string | null
+          created_at?: string
+          from_stage?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          organization_id?: string
+          request_id?: string
+          step_number?: string | null
+          to_stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_workflow_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_workflow_events_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_requests"
             referencedColumns: ["id"]
           },
         ]
@@ -21098,6 +21204,27 @@ export type Database = {
         Args: { p_date: string }
         Returns: undefined
       }
+      delivery_check_decision: {
+        Args: {
+          p_acceptable: boolean
+          p_document_url?: string
+          p_notes?: string
+          p_request_id: string
+        }
+        Returns: undefined
+      }
+      driver_confirm_vehicle_delivered: {
+        Args: { p_notes?: string; p_request_id: string }
+        Returns: Json
+      }
+      driver_confirm_vehicle_received: {
+        Args: { p_notes?: string; p_request_id: string }
+        Returns: Json
+      }
+      fleet_ops_review_request: {
+        Args: { p_decision: string; p_notes?: string; p_request_id: string }
+        Returns: undefined
+      }
       get_active_delegate: {
         Args: { p_cost?: number; p_scope?: string; p_user_id: string }
         Returns: string
@@ -21127,6 +21254,10 @@ export type Database = {
         Args: { p_work_order_id: string }
         Returns: undefined
       }
+      inspector_post_inspection: {
+        Args: { p_notes?: string; p_request_id: string; p_result: string }
+        Returns: undefined
+      }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       is_vehicle_online: { Args: { vehicle_uuid: string }; Returns: boolean }
       log_audit_event: {
@@ -21140,6 +21271,30 @@ export type Database = {
           _status?: string
         }
         Returns: string
+      }
+      log_maintenance_workflow_event: {
+        Args: {
+          p_action: string
+          p_from: string
+          p_metadata?: Json
+          p_notes?: string
+          p_request_id: string
+          p_step: string
+          p_to: string
+        }
+        Returns: string
+      }
+      maintenance_create_pdr: {
+        Args: { p_notes?: string; p_pdr_number: string; p_request_id: string }
+        Returns: undefined
+      }
+      maintenance_pre_inspection: {
+        Args: {
+          p_needs_maintenance: boolean
+          p_notes?: string
+          p_request_id: string
+        }
+        Returns: undefined
       }
       recalculate_driver_stats: {
         Args: { p_organization_id?: string }
@@ -21179,6 +21334,17 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: string
       }
+      scd_create_po: {
+        Args: {
+          p_notes?: string
+          p_po_id: string
+          p_request_id: string
+          p_supplier_geofence_id?: string
+          p_supplier_id: string
+          p_supplier_name: string
+        }
+        Returns: undefined
+      }
       send_notification: {
         Args: {
           _link?: string
@@ -21197,6 +21363,16 @@ export type Database = {
       user_in_organization: {
         Args: { _organization_id: string; _user_id: string }
         Returns: boolean
+      }
+      verify_vehicle_at_supplier: {
+        Args: { p_default_radius_m?: number; p_request_id: string }
+        Returns: {
+          distance_m: number
+          geofence_name: string
+          vehicle_lat: number
+          vehicle_lng: number
+          verified: boolean
+        }[]
       }
     }
     Enums: {
