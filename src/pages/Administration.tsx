@@ -46,10 +46,11 @@ const Administration = () => {
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="flex flex-wrap w-full gap-1">
+        <TabsList className="flex flex-wrap h-auto w-full gap-1">
           <TabsTrigger value="org-settings" className="gap-2">
             <Globe className="h-4 w-4" aria-hidden="true" />
-            Organization
+            <span className="hidden sm:inline">Organization</span>
+            <span className="sm:hidden">Org</span>
           </TabsTrigger>
           <TabsTrigger value="sso" className="gap-2">
             <Shield className="h-4 w-4" aria-hidden="true" />
@@ -57,7 +58,8 @@ const Administration = () => {
           </TabsTrigger>
           <TabsTrigger value="password" className="gap-2">
             <Lock className="h-4 w-4" aria-hidden="true" />
-            Password
+            <span className="hidden sm:inline">Password</span>
+            <span className="sm:hidden">Pass</span>
           </TabsTrigger>
           <TabsTrigger value="2fa" className="gap-2">
             <KeyRound className="h-4 w-4" aria-hidden="true" />
@@ -65,27 +67,33 @@ const Administration = () => {
           </TabsTrigger>
           <TabsTrigger value="ip-allowlist" className="gap-2">
             <Shield className="h-4 w-4" aria-hidden="true" />
-            IP Allowlist
+            <span className="hidden sm:inline">IP Allowlist</span>
+            <span className="sm:hidden">IP</span>
           </TabsTrigger>
           <TabsTrigger value="legal" className="gap-2">
             <Scale className="h-4 w-4" aria-hidden="true" />
-            Legal Holds
+            <span className="hidden sm:inline">Legal Holds</span>
+            <span className="sm:hidden">Legal</span>
           </TabsTrigger>
           <TabsTrigger value="history" className="gap-2">
             <History className="h-4 w-4" aria-hidden="true" />
-            Login History
+            <span className="hidden sm:inline">Login History</span>
+            <span className="sm:hidden">History</span>
           </TabsTrigger>
           <TabsTrigger value="email-reports" className="gap-2">
             <Mail className="h-4 w-4" aria-hidden="true" />
-            Email Reports
+            <span className="hidden sm:inline">Email Reports</span>
+            <span className="sm:hidden">Email</span>
           </TabsTrigger>
           <TabsTrigger value="penalty-config" className="gap-2">
             <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-            Penalty Rules
+            <span className="hidden sm:inline">Penalty Rules</span>
+            <span className="sm:hidden">Rules</span>
           </TabsTrigger>
           <TabsTrigger value="penalties" className="gap-2">
             <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-            Driver Penalties
+            <span className="hidden sm:inline">Driver Penalties</span>
+            <span className="sm:hidden">Penalties</span>
           </TabsTrigger>
         </TabsList>
 
