@@ -25,7 +25,30 @@ const reasonLabel: Record<NonNullable<DueSchedule["due_reason"]>, { label: strin
 };
 
 const DuePreventiveSchedules = ({ vehicleId, driverId, showAutoScan = false }: Props) => {
-  const { data: dueSchedules = [], isLoading, refetch } = useDuePreventiveSchedules({ vehicleId });
+  // When no vehicleId is provided (e.g. driver has no vehicle assigned), skip the query and show guidance.
+  const { data: dueSchedules = [], isLoading, refetch } = useDuePreventiveSchedules({
+    vehicleId,
+    enabled: !!vehicleId || showAutoScan,
+  });
+
+  // Driver has no vehicle assigned — show clear empty state instead of hiding the panel.
+  if (!vehicleId && !showAutoScan) {
+    return (
+      <Card className="glass-strong border-dashed">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary" />
+            Preventive Maintenance
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground">
+          No vehicle assigned to you yet. Once Fleet Operations assigns a vehicle, scheduled services
+          (oil changes, brake checks, etc.) due by kilometer, engine hours or date will appear here
+          with a one-click <span className="font-semibold text-foreground">"Request Now"</span> button.
+        </CardContent>
+      </Card>
+    );
+  }
   const { createRequest } = useMaintenanceRequests();
   const triggerScan = useTriggerPreventiveScan();
   const [submittingId, setSubmittingId] = useState<string | null>(null);
