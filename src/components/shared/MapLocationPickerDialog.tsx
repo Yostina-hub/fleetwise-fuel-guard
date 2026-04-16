@@ -7,6 +7,7 @@ import { MapPin, Navigation, Search, Loader2 } from "lucide-react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { getPreviewSafeMapStyle } from "@/lib/lemat";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MapLocationPickerDialogProps {
   open: boolean;
@@ -43,6 +44,7 @@ export function MapLocationPickerDialog({
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const searchTimeout = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
@@ -52,12 +54,14 @@ export function MapLocationPickerDialog({
     setLocationName("");
     setSearchQuery("");
     setSearchResults([]);
+    setSearchError(null);
   }, [open, initialLat, initialLng]);
 
   // Debounced search via Nominatim
   useEffect(() => {
     if (!searchQuery.trim() || searchQuery.trim().length < 3) {
       setSearchResults([]);
+      setSearchError(null);
       return;
     }
 
@@ -65,18 +69,42 @@ export function MapLocationPickerDialog({
 
     searchTimeout.current = setTimeout(async () => {
       setIsSearching(true);
+      setSearchError(null);
       try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session) {
+          setSearchResults([]);
+          setSearchError("Please sign in again to search locations.");
+          return;
+        }
+
         const q = encodeURIComponent(searchQuery.trim());
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${q}&countrycodes=et&limit=5&addressdetails=0`,
-          { headers: { "Accept-Language": "en" } }
-        );
+        const proxyUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/lemat-search-geocode?q=${q}&countrycodes=et&limit=5`;
+        const res = await fetch(proxyUrl, {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            "Accept-Language": "en",
+          },
+        });
+
         if (res.ok) {
-          const data: SearchResult[] = await res.json();
+          const json = await res.json();
+          const data: SearchResult[] = Array.isArray(json) ? json : Array.isArray(json?.results) ? json.results : [];
           setSearchResults(data);
+          if (data.length === 0) {
+            setSearchError("No matching locations found.");
+          }
+        } else {
+          setSearchResults([]);
+          setSearchError("Search is temporarily unavailable.");
         }
       } catch {
-        // silently fail
+        setSearchResults([]);
+        setSearchError("Search is temporarily unavailable.");
       } finally {
         setIsSearching(false);
       }
@@ -210,6 +238,12 @@ export function MapLocationPickerDialog({
                   <span className="line-clamp-2">{r.display_name}</span>
                 </button>
               ))}
+            </div>
+          )}
+
+          {!isSearching && searchError && searchResults.length === 0 && (
+            <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover px-3 py-2 text-sm text-muted-foreground shadow-lg">
+              {searchError}
             </div>
           )}
         </div>
