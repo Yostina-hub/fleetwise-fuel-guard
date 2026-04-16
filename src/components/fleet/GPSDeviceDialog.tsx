@@ -22,6 +22,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { Radio, Wifi, WifiOff, Search } from "lucide-react";
+import { useDeviceCompatibility } from "@/hooks/useDeviceCompatibility";
+import { DeviceProfileCard } from "@/components/fleet/DeviceProfileCard";
 
 interface GPSDeviceDialogProps {
   open: boolean;
