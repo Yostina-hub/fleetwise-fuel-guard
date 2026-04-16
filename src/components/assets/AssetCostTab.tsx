@@ -122,8 +122,9 @@ export default function AssetCostTab() {
 
   return (
     <div className="space-y-4 mt-4">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="p-3"><p className="text-xs text-muted-foreground">Total Cost</p><p className="text-xl font-bold">{totalCost.toLocaleString()} ETB</p></Card>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <Card className="p-3"><p className="text-xs text-muted-foreground">Total Cost (incl. Fuel)</p><p className="text-xl font-bold">{totalCost.toLocaleString()} ETB</p></Card>
+        <Card className="p-3"><p className="text-xs text-muted-foreground">Fuel Cost (Auto)</p><p className="text-xl font-bold text-amber-400">{totalFuelCost.toLocaleString()} ETB</p><p className="text-[10px] text-muted-foreground">{fuelCostAgg.count} transactions</p></Card>
         <Card className="p-3"><p className="text-xs text-muted-foreground">Preventive Maintenance</p><p className="text-xl font-bold text-success">{preventiveCost.toLocaleString()} ETB</p></Card>
         <Card className="p-3"><p className="text-xs text-muted-foreground">Corrective Maintenance</p><p className="text-xl font-bold text-warning">{correctiveCost.toLocaleString()} ETB</p></Card>
         <Card className="p-3"><p className="text-xs text-muted-foreground">Records</p><p className="text-xl font-bold">{costs.length}</p></Card>
