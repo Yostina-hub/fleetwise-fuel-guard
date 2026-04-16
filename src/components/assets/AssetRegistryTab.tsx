@@ -387,10 +387,10 @@ export default function AssetRegistryTab() {
               </Select>
             </div>
             <div><Label>Link Vehicle (optional)</Label>
-              <Select value={form.vehicle_id} onValueChange={v => setForm(p => ({ ...p, vehicle_id: v }))}>
+              <Select value={form.vehicle_id || "none"} onValueChange={v => setForm(p => ({ ...p, vehicle_id: v === "none" ? "" : v }))}>
                 <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {unlinkededVehicles.map(v => (
                     <SelectItem key={v.id} value={v.id}>{v.plate_number} - {v.make} {v.model}</SelectItem>
                   ))}
