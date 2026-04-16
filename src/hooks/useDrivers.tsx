@@ -46,31 +46,36 @@ export const useDrivers = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const fetchDrivers = useCallback(async () => {
+    if (!organizationId) {
+      setDrivers([]);
+      setLoading(false);
+      return;
+    }
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("drivers")
+        .select("*")
+        .eq("organization_id", organizationId)
+        .order("last_name", { ascending: true });
+
+      if (error) throw error;
+      setDrivers((data as any) || []);
+    } catch (err: any) {
+      console.error("Error fetching drivers:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [organizationId]);
+
   useEffect(() => {
     if (!organizationId) {
       setDrivers([]);
       setLoading(false);
       return;
     }
-
-    const fetchDrivers = async () => {
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from("drivers")
-          .select("*")
-          .eq("organization_id", organizationId)
-          .order("last_name", { ascending: true });
-
-        if (error) throw error;
-        setDrivers((data as any) || []);
-      } catch (err: any) {
-        console.error("Error fetching drivers:", err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
 
     fetchDrivers();
 
@@ -98,11 +103,12 @@ export const useDrivers = () => {
       clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
-  }, [organizationId]);
+  }, [organizationId, fetchDrivers]);
 
   return {
     drivers,
     loading,
-    error
+    error,
+    refetch: fetchDrivers,
   };
 };
