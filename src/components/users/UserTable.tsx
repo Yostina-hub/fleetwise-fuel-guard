@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Shield, UserCog, KeyRound, UserX, UserCheck, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export interface UserProfile {
   id: string;
@@ -75,11 +76,56 @@ interface UserTableProps {
   onDeleteUser: (user: UserProfile) => void;
 }
 
+const getInitials = (name: string | null, email: string) => {
+  if (name) return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+  return email[0].toUpperCase();
+};
+
+const UserActionsMenu = ({ user, isBanned, onViewUser, onAssignRole, onResetPassword, onToggleStatus, onDeleteUser }: {
+  user: UserProfile;
+  isBanned: boolean;
+  onViewUser: (user: UserProfile) => void;
+  onAssignRole: (user: UserProfile) => void;
+  onResetPassword: (user: UserProfile) => void;
+  onToggleStatus: (user: UserProfile) => void;
+  onDeleteUser: (user: UserProfile) => void;
+}) => (
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+      <Button variant="ghost" size="icon" className="h-8 w-8">
+        <MoreHorizontal className="h-4 w-4" />
+      </Button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="end" className="w-48">
+      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onViewUser(user); }}>
+        <UserCog className="w-4 h-4 mr-2" /> View Details
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAssignRole(user); }}>
+        <Shield className="w-4 h-4 mr-2" /> Manage Roles
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onResetPassword(user); }}>
+        <KeyRound className="w-4 h-4 mr-2" /> Reset Password
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem
+        onClick={(e) => { e.stopPropagation(); onToggleStatus(user); }}
+        className={isBanned ? "text-emerald-400 focus:text-emerald-400" : "text-amber-400 focus:text-amber-400"}
+      >
+        {isBanned ? <><UserCheck className="w-4 h-4 mr-2" /> Activate</> : <><UserX className="w-4 h-4 mr-2" /> Deactivate</>}
+      </DropdownMenuItem>
+      <DropdownMenuItem
+        onClick={(e) => { e.stopPropagation(); onDeleteUser(user); }}
+        className="text-destructive focus:text-destructive"
+      >
+        <Trash2 className="w-4 h-4 mr-2" /> Delete User
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  </DropdownMenu>
+);
+
 const UserTable = ({ users, loading, onViewUser, onAssignRole, onResetPassword, onToggleStatus, onDeleteUser }: UserTableProps) => {
-  const getInitials = (name: string | null, email: string) => {
-    if (name) return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
-    return email[0].toUpperCase();
-  };
+  const isMobile = useIsMobile();
 
   if (loading) {
     return (
@@ -99,6 +145,76 @@ const UserTable = ({ users, loading, onViewUser, onAssignRole, onResetPassword, 
     );
   }
 
+  // Mobile card layout
+  if (isMobile) {
+    return (
+      <div className="px-3 pb-2 space-y-2">
+        {users.map((user) => {
+          const isBanned = user.is_banned === true;
+          return (
+            <div
+              key={user.id}
+              className="rounded-xl border border-border/30 bg-muted/10 p-3 active:bg-muted/30 transition-colors touch-manipulation"
+              onClick={() => onViewUser(user)}
+            >
+              <div className="flex items-start gap-3">
+                <Avatar className={`h-10 w-10 border shrink-0 ${isBanned ? 'border-destructive/50 opacity-60' : 'border-border/50'}`}>
+                  <AvatarImage src={user.avatar_url || undefined} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                    {getInitials(user.full_name, user.email)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className={`font-medium text-sm truncate ${isBanned ? 'text-muted-foreground line-through' : ''}`}>
+                      {user.full_name || "Unnamed User"}
+                    </p>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {isBanned ? (
+                        <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30 text-[10px] px-1.5 py-0">
+                          Inactive
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px] px-1.5 py-0">
+                          Active
+                        </Badge>
+                      )}
+                      <UserActionsMenu
+                        user={user} isBanned={isBanned}
+                        onViewUser={onViewUser} onAssignRole={onAssignRole}
+                        onResetPassword={onResetPassword} onToggleStatus={onToggleStatus}
+                        onDeleteUser={onDeleteUser}
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                  {user.phone && <p className="text-xs text-muted-foreground mt-0.5">{user.phone}</p>}
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {user.user_roles.length > 0 ? user.user_roles.map((ur) => (
+                      <Badge
+                        key={ur.role}
+                        variant="outline"
+                        className={`text-[10px] px-1.5 py-0 font-medium ${ROLE_COLORS[ur.role] || ""}`}
+                      >
+                        {ROLE_LABELS[ur.role] || ur.role}
+                      </Badge>
+                    )) : (
+                      <span className="text-[11px] text-muted-foreground italic">Unassigned</span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground/60 mt-1.5">
+                    Joined {formatDistanceToNow(new Date(user.created_at), { addSuffix: true })}
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Desktop table layout
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -172,42 +288,12 @@ const UserTable = ({ users, loading, onViewUser, onAssignRole, onResetPassword, 
                   )}
                 </TableCell>
                 <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onViewUser(user); }}>
-                        <UserCog className="w-4 h-4 mr-2" /> View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAssignRole(user); }}>
-                        <Shield className="w-4 h-4 mr-2" /> Manage Roles
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onResetPassword(user); }}>
-                        <KeyRound className="w-4 h-4 mr-2" /> Reset Password
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={(e) => { e.stopPropagation(); onToggleStatus(user); }}
-                        className={isBanned ? "text-emerald-400 focus:text-emerald-400" : "text-amber-400 focus:text-amber-400"}
-                      >
-                        {isBanned ? (
-                          <><UserCheck className="w-4 h-4 mr-2" /> Activate</>
-                        ) : (
-                          <><UserX className="w-4 h-4 mr-2" /> Deactivate</>
-                        )}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={(e) => { e.stopPropagation(); onDeleteUser(user); }}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" /> Delete User
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <UserActionsMenu
+                    user={user} isBanned={isBanned}
+                    onViewUser={onViewUser} onAssignRole={onAssignRole}
+                    onResetPassword={onResetPassword} onToggleStatus={onToggleStatus}
+                    onDeleteUser={onDeleteUser}
+                  />
                 </TableCell>
               </TableRow>
             );

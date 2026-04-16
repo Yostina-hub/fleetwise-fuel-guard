@@ -105,11 +105,9 @@ const UserFilters = ({ users, onFilteredUsersChange, onPageReset }: UserFiltersP
     onPageReset();
   };
 
-  // Compute filtered + sorted users
   const filteredUsers = useMemo(() => {
     let result = [...users];
 
-    // Search
     if (filters.search) {
       const q = filters.search.toLowerCase();
       result = result.filter(u =>
@@ -119,19 +117,16 @@ const UserFilters = ({ users, onFilteredUsersChange, onPageReset }: UserFiltersP
       );
     }
 
-    // Role filter
     if (filters.role !== "all") {
       result = result.filter(u => u.user_roles.some(r => r.role === filters.role));
     }
 
-    // Status filter
     if (filters.status === "assigned") {
       result = result.filter(u => u.user_roles.length > 0);
     } else if (filters.status === "unassigned") {
       result = result.filter(u => u.user_roles.length === 0);
     }
 
-    // Date filter
     const getDateRange = (): { from?: Date; to?: Date } => {
       switch (filters.datePreset) {
         case "today": return { from: startOfDay(new Date()), to: endOfDay(new Date()) };
@@ -150,23 +145,14 @@ const UserFilters = ({ users, onFilteredUsersChange, onPageReset }: UserFiltersP
       result = result.filter(u => isBefore(new Date(u.created_at), endOfDay(range.to!)));
     }
 
-    // Sort
     result.sort((a, b) => {
       let cmp = 0;
       switch (filters.sortBy) {
-        case "name":
-          cmp = (a.full_name || "").localeCompare(b.full_name || "");
-          break;
-        case "email":
-          cmp = a.email.localeCompare(b.email);
-          break;
-        case "roles":
-          cmp = a.user_roles.length - b.user_roles.length;
-          break;
+        case "name": cmp = (a.full_name || "").localeCompare(b.full_name || ""); break;
+        case "email": cmp = a.email.localeCompare(b.email); break;
+        case "roles": cmp = a.user_roles.length - b.user_roles.length; break;
         case "created_at":
-        default:
-          cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-          break;
+        default: cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime(); break;
       }
       return filters.sortDir === "desc" ? -cmp : cmp;
     });
@@ -174,7 +160,6 @@ const UserFilters = ({ users, onFilteredUsersChange, onPageReset }: UserFiltersP
     return result;
   }, [users, filters]);
 
-  // Push filtered results up
   useMemo(() => {
     onFilteredUsersChange(filteredUsers);
   }, [filteredUsers, onFilteredUsersChange]);
@@ -198,15 +183,14 @@ const UserFilters = ({ users, onFilteredUsersChange, onPageReset }: UserFiltersP
 
   return (
     <div className="space-y-3">
-      {/* Primary row */}
       <Card className="glass-strong">
-        <CardContent className="p-4">
-          <div className="flex gap-3 items-center">
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:items-center">
             {/* Search */}
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Search by name, email, or phone..."
+                placeholder="Search name, email, phone..."
                 className="pl-10 h-10"
                 value={filters.search}
                 onChange={e => updateFilter("search", e.target.value)}
@@ -221,34 +205,36 @@ const UserFilters = ({ users, onFilteredUsersChange, onPageReset }: UserFiltersP
               )}
             </div>
 
-            {/* Role select */}
-            <Select value={filters.role} onValueChange={v => updateFilter("role", v)}>
-              <SelectTrigger className="w-[180px] h-10">
-                <SelectValue placeholder="All Roles" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Roles</SelectItem>
-                {ROLE_OPTIONS.map(r => (
-                  <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              {/* Role select */}
+              <Select value={filters.role} onValueChange={v => updateFilter("role", v)}>
+                <SelectTrigger className="w-full sm:w-[180px] h-10">
+                  <SelectValue placeholder="All Roles" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Roles</SelectItem>
+                  {ROLE_OPTIONS.map(r => (
+                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            {/* Advanced toggle */}
-            <Button
-              variant={showAdvanced ? "default" : "outline"}
-              size="sm"
-              className="gap-2 h-10 px-4 shrink-0"
-              onClick={() => setShowAdvanced(!showAdvanced)}
-            >
-              <SlidersHorizontal className="w-4 h-4" />
-              Filters
-              {activeFilterCount > 0 && (
-                <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-[10px] rounded-full">
-                  {activeFilterCount}
-                </Badge>
-              )}
-            </Button>
+              {/* Advanced toggle */}
+              <Button
+                variant={showAdvanced ? "default" : "outline"}
+                size="sm"
+                className="gap-2 h-10 px-3 sm:px-4 shrink-0"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                <span className="hidden sm:inline">Filters</span>
+                {activeFilterCount > 0 && (
+                  <Badge variant="secondary" className="ml-0.5 h-5 w-5 p-0 flex items-center justify-center text-[10px] rounded-full">
+                    {activeFilterCount}
+                  </Badge>
+                )}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -256,15 +242,12 @@ const UserFilters = ({ users, onFilteredUsersChange, onPageReset }: UserFiltersP
       {/* Advanced filters panel */}
       {showAdvanced && (
         <Card className="glass-strong border-primary/20 animate-fade-in">
-          <CardContent className="p-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Status */}
+          <CardContent className="p-3 sm:p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</label>
                 <Select value={filters.status} onValueChange={v => updateFilter("status", v)}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {STATUS_OPTIONS.map(s => (
                       <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
@@ -273,13 +256,10 @@ const UserFilters = ({ users, onFilteredUsersChange, onPageReset }: UserFiltersP
                 </Select>
               </div>
 
-              {/* Date joined */}
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Date Joined</label>
                 <Select value={filters.datePreset} onValueChange={v => updateFilter("datePreset", v)}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {DATE_PRESETS.map(d => (
                       <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
@@ -288,7 +268,6 @@ const UserFilters = ({ users, onFilteredUsersChange, onPageReset }: UserFiltersP
                 </Select>
               </div>
 
-              {/* Custom date range pickers */}
               {filters.datePreset === "custom" && (
                 <>
                   <div className="space-y-1.5">
@@ -322,15 +301,12 @@ const UserFilters = ({ users, onFilteredUsersChange, onPageReset }: UserFiltersP
                 </>
               )}
 
-              {/* Sort */}
               {filters.datePreset !== "custom" && (
                 <>
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Sort By</label>
                     <Select value={filters.sortBy} onValueChange={v => updateFilter("sortBy", v)}>
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="created_at">Date Joined</SelectItem>
                         <SelectItem value="name">Name</SelectItem>
@@ -342,9 +318,7 @@ const UserFilters = ({ users, onFilteredUsersChange, onPageReset }: UserFiltersP
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Order</label>
                     <Select value={filters.sortDir} onValueChange={v => updateFilter("sortDir", v as "asc" | "desc")}>
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="desc">Newest First</SelectItem>
                         <SelectItem value="asc">Oldest First</SelectItem>
@@ -355,7 +329,6 @@ const UserFilters = ({ users, onFilteredUsersChange, onPageReset }: UserFiltersP
               )}
             </div>
 
-            {/* Reset */}
             {activeFilterCount > 0 && (
               <div className="flex justify-end mt-3">
                 <Button variant="ghost" size="sm" onClick={resetFilters} className="gap-1.5 text-muted-foreground hover:text-foreground">
@@ -367,7 +340,6 @@ const UserFilters = ({ users, onFilteredUsersChange, onPageReset }: UserFiltersP
         </Card>
       )}
 
-      {/* Active filter chips */}
       {activeChips.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {activeChips.map(chip => (
