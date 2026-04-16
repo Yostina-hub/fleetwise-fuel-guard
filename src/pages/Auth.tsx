@@ -165,6 +165,7 @@ const Auth = () => {
               title: "2FA Required",
               description: "Enter your authenticator code to continue.",
             });
+            setLoading(false);
             return;
           }
         } catch {
