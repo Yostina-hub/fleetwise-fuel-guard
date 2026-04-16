@@ -518,7 +518,7 @@ const Auth = () => {
 
                     <button
                       type="button"
-                      onClick={() => { setPending2FA(false); setTotpCode(""); }}
+                      onClick={() => { setPending2FA(false); setTotpCode(""); setPending2FACredentials(null); }}
                       className="w-full text-center text-sm text-white/50 hover:text-white/80 transition-colors flex items-center justify-center gap-2"
                     >
                       <ArrowLeft className="w-4 h-4" />
