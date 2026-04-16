@@ -2,13 +2,14 @@ import { useState } from "react";
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { Settings, Shield, Lock, Globe, Scale, History, Mail, AlertTriangle } from "lucide-react";
+import { Settings, Shield, Lock, Globe, Scale, History, Mail, AlertTriangle, KeyRound } from "lucide-react";
 import OrganizationSettingsTab from "@/components/admin/OrganizationSettingsTab";
 import SSOConfigTab from "@/components/admin/SSOConfigTab";
 import PasswordPoliciesTab from "@/components/admin/PasswordPoliciesTab";
 import IPAllowlistTab from "@/components/admin/IPAllowlistTab";
 import LegalHoldsTab from "@/components/admin/LegalHoldsTab";
 import LoginHistoryTab from "@/components/admin/LoginHistoryTab";
+import TwoFactorTab from "@/components/admin/TwoFactorTab";
 import { EmailReportsTab } from "@/components/admin/EmailReportsTab";
 import { PenaltyConfigTab } from "@/components/admin/PenaltyConfigTab";
 import { DriverPenaltiesTab } from "@/components/admin/DriverPenaltiesTab";
@@ -58,6 +59,10 @@ const Administration = () => {
             <Lock className="h-4 w-4" aria-hidden="true" />
             Password
           </TabsTrigger>
+          <TabsTrigger value="2fa" className="gap-2">
+            <KeyRound className="h-4 w-4" aria-hidden="true" />
+            2FA
+          </TabsTrigger>
           <TabsTrigger value="ip-allowlist" className="gap-2">
             <Shield className="h-4 w-4" aria-hidden="true" />
             IP Allowlist
@@ -99,6 +104,12 @@ const Administration = () => {
         <TabsContent value="password">
           <Card className="p-6">
             <PasswordPoliciesTab />
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="2fa">
+          <Card className="p-6">
+            <TwoFactorTab />
           </Card>
         </TabsContent>
 
