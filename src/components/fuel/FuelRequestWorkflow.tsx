@@ -1119,24 +1119,79 @@ export const FuelRequestWorkflow = () => {
                   <PreviousClearanceReport vehicleId={form.vehicle_id} organizationId={organizationId} formatFuel={formatFuel} formatCurrency={formatCurrency} />
                 </>
               ) : (
-                <div>
-                  <Label>Generator *</Label>
-                  <Select value={form.generator_id} onValueChange={v => setForm(f => ({ ...f, generator_id: v }))}>
-                    <SelectTrigger><SelectValue placeholder="Select generator" /></SelectTrigger>
-                    <SelectContent>
-                      {generators.map((g: any) => (
-                        <SelectItem key={g.id} value={g.id}>{g.name} — {g.location || g.model || ""}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {generators.length === 0 && (
-                    <p className="text-xs text-muted-foreground mt-1">No generators registered. Register generators first.</p>
-                  )}
-                  {/* Previous clearance report for generator */}
-                  <div className="mt-4">
-                    <PreviousClearanceReport generatorId={form.generator_id} organizationId={organizationId} formatFuel={formatFuel} formatCurrency={formatCurrency} />
+                <>
+                  <div>
+                    <Label>Generator (Asset) *</Label>
+                    <Select value={form.generator_id} onValueChange={v => setForm(f => ({ ...f, generator_id: v }))}>
+                      <SelectTrigger><SelectValue placeholder="Select generator" /></SelectTrigger>
+                      <SelectContent>
+                        {generators.map((g: any) => (
+                          <SelectItem key={g.id} value={g.id}>{g.name} — {g.location || g.model || ""}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {generators.length === 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">No generators registered. Register generators first.</p>
+                    )}
                   </div>
-                </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Driver Type</Label>
+                      <Select value={form.driver_type} onValueChange={v => setForm(f => ({ ...f, driver_type: v }))}>
+                        <SelectTrigger><SelectValue placeholder="Select driver type" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="internal">Internal</SelectItem>
+                          <SelectItem value="outsourced">Outsourced</SelectItem>
+                          <SelectItem value="temporary">Temporary</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Driver Name</Label>
+                      <Select value={form.driver_id} onValueChange={handleDriverSelect}>
+                        <SelectTrigger><SelectValue placeholder="Select driver (optional)" /></SelectTrigger>
+                        <SelectContent>{drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.first_name} {d.last_name}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Employee ID No.</Label>
+                      <Input value={form.employee_id_no} onChange={e => setForm(f => ({ ...f, employee_id_no: e.target.value }))} placeholder="Driver employee ID" />
+                    </div>
+                    <div>
+                      <Label>Technician Name *</Label>
+                      <Input value={form.technician_name} onChange={e => setForm(f => ({ ...f, technician_name: e.target.value }))} placeholder="Generator technician" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Technician Employee ID</Label>
+                      <Input value={form.technician_employee_id} onChange={e => setForm(f => ({ ...f, technician_employee_id: e.target.value }))} placeholder="Employee ID" />
+                    </div>
+                    <div>
+                      <Label>Security Name</Label>
+                      <Input value={form.security_name} onChange={e => setForm(f => ({ ...f, security_name: e.target.value }))} placeholder="Security personnel on duty" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Route</Label>
+                      <Input value={form.route} onChange={e => setForm(f => ({ ...f, route: e.target.value }))} placeholder="Site / route identifier" />
+                    </div>
+                    <div>
+                      <Label>Running Hours</Label>
+                      <Input type="number" step="0.1" value={form.running_hours} onChange={e => setForm(f => ({ ...f, running_hours: e.target.value }))} placeholder="Generator hours" />
+                    </div>
+                  </div>
+
+                  {/* Previous clearance report for generator */}
+                  <PreviousClearanceReport generatorId={form.generator_id} organizationId={organizationId} formatFuel={formatFuel} formatCurrency={formatCurrency} />
+                </>
               )}
 
               <Separator />
