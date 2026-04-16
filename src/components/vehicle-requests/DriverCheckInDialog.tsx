@@ -10,6 +10,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { getAppUrl } from "@/services/vehicleRequestSmsService";
 
 interface Props {
   request: any;
