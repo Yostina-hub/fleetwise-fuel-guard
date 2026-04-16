@@ -76,7 +76,7 @@ async function analyzeVehicle(vehicle: any, alerts: any[], schedules: any[], mai
         new Date(a.alert_time) > new Date(Date.now() - 30 * 86400 * 1000)
     ).length,
     recent_alerts_sample: alerts.slice(0, 8).map((a) => ({ type: a.alert_type, severity: a.severity, message: a.message })),
-    recent_maintenance: maintenance.slice(0, 6).map((m) => ({ type: m.service_type, date: m.completed_date, cost: m.cost })),
+    recent_maintenance: maintenance.slice(0, 6).map((m) => ({ title: m.title, category: m.category, closed_at: m.closed_at })),
     overdue_items: schedules.filter((s) => s.next_due_date && new Date(s.next_due_date) < new Date()).slice(0, 5).map((s) => s.service_type),
   };
 
