@@ -8655,12 +8655,15 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           asset_criticality: string | null
+          assigned_department: string | null
+          attachments: string[] | null
           auto_trigger_efficiency: number | null
           auto_triggered_at: string | null
           clarification_status: string | null
           clearance_approved_at: string | null
           clearance_approved_by: string | null
           clearance_status: string
+          contact_preference: string | null
           context_value: string | null
           cost_center: string | null
           created_at: string
@@ -8672,6 +8675,7 @@ export type Database = {
           driver_phone: string | null
           driver_type: string | null
           efficiency_km_per_liter: number | null
+          email: string | null
           emoney_amount: number | null
           emoney_status: string | null
           employee_id_no: string | null
@@ -8687,16 +8691,22 @@ export type Database = {
           liters_approved: number | null
           liters_requested: number
           notes: string | null
+          notify_user: boolean | null
           organization_id: string
+          phone_number: string | null
           previous_odometer: number | null
+          priority: string | null
           project_number: string | null
           purpose: string | null
           rejected_reason: string | null
           remark: string | null
+          request_by_completion_date: string | null
+          request_by_start_date: string | null
           request_number: string
           request_type: string
           requested_at: string
           requested_by: string
+          requested_for: string | null
           requestor_department: string | null
           station_id: string | null
           status: string
@@ -8706,6 +8716,7 @@ export type Database = {
           vehicle_driver_name: string | null
           vehicle_id: string
           wallet_transfer_ref: string | null
+          work_request_type: string | null
         }
         Insert: {
           actual_cost?: number | null
@@ -8715,12 +8726,15 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           asset_criticality?: string | null
+          assigned_department?: string | null
+          attachments?: string[] | null
           auto_trigger_efficiency?: number | null
           auto_triggered_at?: string | null
           clarification_status?: string | null
           clearance_approved_at?: string | null
           clearance_approved_by?: string | null
           clearance_status?: string
+          contact_preference?: string | null
           context_value?: string | null
           cost_center?: string | null
           created_at?: string
@@ -8732,6 +8746,7 @@ export type Database = {
           driver_phone?: string | null
           driver_type?: string | null
           efficiency_km_per_liter?: number | null
+          email?: string | null
           emoney_amount?: number | null
           emoney_status?: string | null
           employee_id_no?: string | null
@@ -8747,16 +8762,22 @@ export type Database = {
           liters_approved?: number | null
           liters_requested: number
           notes?: string | null
+          notify_user?: boolean | null
           organization_id: string
+          phone_number?: string | null
           previous_odometer?: number | null
+          priority?: string | null
           project_number?: string | null
           purpose?: string | null
           rejected_reason?: string | null
           remark?: string | null
+          request_by_completion_date?: string | null
+          request_by_start_date?: string | null
           request_number: string
           request_type?: string
           requested_at?: string
           requested_by: string
+          requested_for?: string | null
           requestor_department?: string | null
           station_id?: string | null
           status?: string
@@ -8766,6 +8787,7 @@ export type Database = {
           vehicle_driver_name?: string | null
           vehicle_id: string
           wallet_transfer_ref?: string | null
+          work_request_type?: string | null
         }
         Update: {
           actual_cost?: number | null
@@ -8775,12 +8797,15 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           asset_criticality?: string | null
+          assigned_department?: string | null
+          attachments?: string[] | null
           auto_trigger_efficiency?: number | null
           auto_triggered_at?: string | null
           clarification_status?: string | null
           clearance_approved_at?: string | null
           clearance_approved_by?: string | null
           clearance_status?: string
+          contact_preference?: string | null
           context_value?: string | null
           cost_center?: string | null
           created_at?: string
@@ -8792,6 +8817,7 @@ export type Database = {
           driver_phone?: string | null
           driver_type?: string | null
           efficiency_km_per_liter?: number | null
+          email?: string | null
           emoney_amount?: number | null
           emoney_status?: string | null
           employee_id_no?: string | null
@@ -8807,16 +8833,22 @@ export type Database = {
           liters_approved?: number | null
           liters_requested?: number
           notes?: string | null
+          notify_user?: boolean | null
           organization_id?: string
+          phone_number?: string | null
           previous_odometer?: number | null
+          priority?: string | null
           project_number?: string | null
           purpose?: string | null
           rejected_reason?: string | null
           remark?: string | null
+          request_by_completion_date?: string | null
+          request_by_start_date?: string | null
           request_number?: string
           request_type?: string
           requested_at?: string
           requested_by?: string
+          requested_for?: string | null
           requestor_department?: string | null
           station_id?: string | null
           status?: string
@@ -8826,6 +8858,7 @@ export type Database = {
           vehicle_driver_name?: string | null
           vehicle_id?: string
           wallet_transfer_ref?: string | null
+          work_request_type?: string | null
         }
         Relationships: [
           {
