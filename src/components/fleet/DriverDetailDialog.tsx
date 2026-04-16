@@ -37,6 +37,7 @@ import { format, formatDistanceToNow } from "date-fns";
 import type { Driver } from "@/hooks/useDrivers";
 import LicenseExpiryBadge from "./LicenseExpiryBadge";
 import { DriverVerificationPanel } from "@/components/drivers/DriverVerificationPanel";
+import ProvisionDriverAccountButton from "@/components/fleet/ProvisionDriverAccountButton";
 
 interface DriverDetailDialogProps {
   open: boolean;
@@ -262,6 +263,21 @@ export default function DriverDetailDialog({ open, onOpenChange, driver }: Drive
                     </div>
                     <p className="text-sm text-muted-foreground">Safety Score</p>
                   </div>
+                </div>
+
+                {/* Portal access provisioning (RBAC: assigns 'driver' role) */}
+                <div className="mt-4 pt-4 border-t flex items-center justify-between flex-wrap gap-2">
+                  <div className="text-sm text-muted-foreground">
+                    Driver Portal access lets this driver sign in to view assignments,
+                    submit fuel/maintenance requests, and run inspections.
+                  </div>
+                  <ProvisionDriverAccountButton
+                    driverId={driver.id}
+                    organizationId={(driver as any).organization_id}
+                    email={driver.email}
+                    fullName={`${driver.first_name} ${driver.last_name}`.trim()}
+                    hasAccount={Boolean((driver as any).user_id)}
+                  />
                 </div>
               </CardContent>
             </Card>

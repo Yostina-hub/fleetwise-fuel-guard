@@ -115,9 +115,45 @@ export default function CreateDriverDialog({ open, onOpenChange }: CreateDriverD
         const { error: updateErr } = await supabase.from("drivers").update(updates).eq("id", driverId);
         if (updateErr) console.error("Failed to update attachment URLs:", updateErr);
       }
+
+      // Provision Driver Portal account when email + password supplied
+      // (assigns the `driver` role so the sidebar entry becomes visible via RBAC)
+      let portalProvisioned = false;
+      if (data.email && formData.password) {
+        try {
+          const { data: cu, error: cuErr } = await supabase.functions.invoke("create-user", {
+            body: {
+              email: data.email,
+              password: formData.password,
+              fullName: `${data.first_name} ${data.last_name}`.trim(),
+              role: "driver",
+              organizationId,
+            },
+          });
+          if (cuErr) throw new Error(cuErr.message || "create-user failed");
+          const userId = (cu as any)?.user?.id;
+          if (userId) {
+            await supabase.from("drivers").update({ user_id: userId }).eq("id", driverId);
+            portalProvisioned = true;
+          }
+        } catch (provErr: any) {
+          console.error("Driver portal provisioning failed:", provErr);
+          toast({
+            title: "Driver saved, portal account failed",
+            description: provErr?.message || "You can retry from the driver detail dialog.",
+            variant: "destructive",
+          });
+        }
+      }
+      return { portalProvisioned };
     },
-    onSuccess: () => {
-      toast({ title: "Success", description: "Driver registered successfully" });
+    onSuccess: (result) => {
+      toast({
+        title: "Success",
+        description: result?.portalProvisioned
+          ? "Driver registered and portal access provisioned"
+          : "Driver registered successfully",
+      });
       queryClient.invalidateQueries({ queryKey: ["drivers"] });
       setFormData({ ...initialForm });
       setLicenseFrontFile(null); setLicenseBackFile(null);
