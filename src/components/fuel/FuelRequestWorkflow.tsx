@@ -73,6 +73,18 @@ interface FuelRequestFormData {
   asset_criticality: string;
   additional_description: string;
   context_value: string;
+  // Enterprise work-request header fields
+  assigned_department: string;
+  request_by_start_date: string;
+  request_by_completion_date: string;
+  requested_for: string;
+  work_request_type: string;
+  priority: string;
+  // Creation information
+  phone_number: string;
+  email: string;
+  notify_user: boolean;
+  contact_preference: string;
 }
 
 const initialForm: FuelRequestFormData = {
@@ -102,6 +114,16 @@ const initialForm: FuelRequestFormData = {
   asset_criticality: "",
   additional_description: "",
   context_value: "Fuel request for vehicle",
+  assigned_department: "",
+  request_by_start_date: new Date().toISOString().slice(0, 16),
+  request_by_completion_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
+  requested_for: "",
+  work_request_type: "",
+  priority: "medium",
+  phone_number: "",
+  email: "",
+  notify_user: false,
+  contact_preference: "",
 };
 
 // Previous Clearance Report (supports both vehicles and generators)
