@@ -5,7 +5,6 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { toast } from "sonner";
 import { compatibilityProfileSeeds, CompatibilityProfileSeed } from "@/data/deviceCompatibilityProfiles";
 import type { Json } from "@/integrations/supabase/types";
-import type { Json } from "@/integrations/supabase/types";
 
 export interface DeviceCompatibilityProfile {
   id: string;
