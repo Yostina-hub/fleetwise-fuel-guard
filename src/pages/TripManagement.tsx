@@ -45,6 +45,7 @@ const TripManagement = () => {
   const [detailOpen, setDetailOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "trips");
 
   // Sync tab from URL changes (sidebar deep links)
