@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ClipboardList, Plus, Clock, CheckCircle, Truck, Eye, LogIn, Shuffle } from "lucide-react";
+import { ClipboardList, Plus, Clock, CheckCircle, Truck, Eye, LogIn, Shuffle, Search } from "lucide-react";
 import { VehicleRequestForm } from "@/components/vehicle-requests/VehicleRequestForm";
 import { VehicleRequestApprovalFlow } from "@/components/vehicle-requests/VehicleRequestApprovalFlow";
 import { DriverCheckInDialog } from "@/components/vehicle-requests/DriverCheckInDialog";
