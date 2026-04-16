@@ -997,6 +997,110 @@ export type Database = {
           },
         ]
       }
+      billing_integration_configs: {
+        Row: {
+          api_endpoint: string
+          auth_type: string
+          billable_entities: Json
+          created_at: string
+          id: string
+          is_active: boolean
+          last_sync_at: string | null
+          organization_id: string
+          provider: string
+          sync_interval_minutes: number
+          updated_at: string
+        }
+        Insert: {
+          api_endpoint?: string
+          auth_type?: string
+          billable_entities?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          organization_id: string
+          provider?: string
+          sync_interval_minutes?: number
+          updated_at?: string
+        }
+        Update: {
+          api_endpoint?: string
+          auth_type?: string
+          billable_entities?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          organization_id?: string
+          provider?: string
+          sync_interval_minutes?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_integration_configs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_sync_events: {
+        Row: {
+          amount: number | null
+          config_id: string | null
+          created_at: string
+          currency: string
+          error_message: string | null
+          event_description: string
+          id: string
+          organization_id: string
+          response_code: number | null
+          status: string
+        }
+        Insert: {
+          amount?: number | null
+          config_id?: string | null
+          created_at?: string
+          currency?: string
+          error_message?: string | null
+          event_description: string
+          id?: string
+          organization_id: string
+          response_code?: number | null
+          status?: string
+        }
+        Update: {
+          amount?: number | null
+          config_id?: string | null
+          created_at?: string
+          currency?: string
+          error_message?: string | null
+          event_description?: string
+          id?: string
+          organization_id?: string
+          response_code?: number | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_sync_events_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "billing_integration_configs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_sync_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       breach_incidents: {
         Row: {
           affected_data_types: string[] | null
