@@ -5,13 +5,13 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { verifyTotpCode } from "@/lib/security/totp";
 import { Shield, ShieldCheck, ShieldOff, Copy, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 
@@ -84,9 +84,13 @@ const TwoFactorTab = () => {
     mutationFn: async () => {
       if (!user?.id || !organizationId) throw new Error("Not authenticated");
       
-      // Simple verification: just check the code is 6 digits
       if (verificationCode.length !== 6 || !/^\d+$/.test(verificationCode)) {
         throw new Error("Please enter a valid 6-digit verification code");
+      }
+
+      const isValidTotp = await verifyTotpCode(setupSecret, verificationCode);
+      if (!isValidTotp) {
+        throw new Error("The verification code from your authenticator app is incorrect");
       }
 
       const { error } = await supabase
