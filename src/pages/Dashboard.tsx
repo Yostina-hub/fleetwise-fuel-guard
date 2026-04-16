@@ -129,7 +129,7 @@ const Dashboard = () => {
   const { formatCurrency, formatDistance, settings } = useOrganizationSettings();
   const { metrics: tripMetrics, refetch: refetchTrips } = useTripMetrics(dateRange);
   const { kpis, driverRankings, complianceItems, financialMetrics, recentActivities, geofenceActivities, loading: execLoading, refetch: refetchExec } = useExecutiveMetrics();
-  const { isWidgetVisible: wv } = useDashboardLayout();
+  const { isWidgetVisible: wv, getVisibleWidgets } = useDashboardLayout();
   // Real-time subscriptions for live dashboard updates
   useEffect(() => {
     if (!organizationId) return;
