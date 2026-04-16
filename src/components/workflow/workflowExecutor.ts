@@ -125,6 +125,30 @@ export async function executeNode(
       case "hw_ev_charger":
         return { success: true, operation: "SELECT", message: "EV charger status read", data: { charging: true, soc_percent: Math.floor(Math.random() * 60 + 30) } };
 
+      // ── AI Intelligence (Read + Analyze) ────────
+      case "ai_decision":
+        return await aiSmartDecision(config, organizationId);
+      case "ai_predict_maintenance":
+        return await aiPredictMaintenance(organizationId);
+      case "ai_anomaly_detect":
+        return await aiAnomalyDetect(organizationId);
+      case "ai_route_optimize":
+        return await aiRouteOptimize(organizationId);
+      case "ai_fuel_forecast":
+        return await aiFuelForecast(organizationId);
+      case "ai_driver_scoring":
+        return await aiDriverScoring(organizationId);
+
+      // ── Fuel Request Workflow ───────────────────
+      case "fuel_request_submit":
+        return await fuelRequestSubmit(config, organizationId);
+      case "fuel_request_approve":
+        return await fuelRequestApprove(config, organizationId);
+      case "fuel_deviation_check":
+        return await fuelDeviationCheck(organizationId);
+      case "fuel_emoney_transfer":
+        return await fuelEmoneyTransfer(config, organizationId);
+
       default:
         return { success: true, operation: "SELECT", message: `Node '${nodeType}' executed (no specific handler)`, data: {} };
     }
@@ -418,6 +442,163 @@ async function logToAudit(config: Record<string, any> | undefined, orgId: string
 
   if (error) return { success: false, operation: "INSERT", table: "audit_logs", message: `Audit log failed: ${error.message}`, error: error.message };
   return { success: true, operation: "INSERT", table: "audit_logs", message: "Event logged to audit history", data: { audit_id: data.id }, rowCount: 1 };
+}
+
+// ── AI Intelligence Handlers ──────────────────────
+
+async function aiSmartDecision(config: Record<string, any> | undefined, orgId: string): Promise<ExecutionResult> {
+  const { data: telemetry } = await (supabase.from("vehicle_telemetry").select("vehicle_id, speed_kmh, fuel_level_percent, ignition_status").eq("organization_id", orgId).order("last_communication_at", { ascending: false }).limit(10) as any);
+  const vehicles = telemetry?.length ?? 0;
+  const avgSpeed = vehicles > 0 ? telemetry.reduce((s: number, t: any) => s + (t.speed_kmh ?? 0), 0) / vehicles : 0;
+  const lowFuel = telemetry?.filter((t: any) => (t.fuel_level_percent ?? 100) < 25).length ?? 0;
+  const idling = telemetry?.filter((t: any) => t.ignition_status === "on" && (t.speed_kmh ?? 0) < 3).length ?? 0;
+
+  return {
+    success: true, operation: "SELECT", table: "vehicle_telemetry",
+    message: `AI Decision: ${vehicles} vehicles analyzed — ${lowFuel} low fuel, ${idling} idling, avg speed ${avgSpeed.toFixed(0)} km/h`,
+    data: { vehicles_analyzed: vehicles, avg_speed_kmh: Number(avgSpeed.toFixed(1)), low_fuel_count: lowFuel, idling_count: idling, recommendation: lowFuel > 2 ? "dispatch_fuel" : idling > 3 ? "reduce_idling" : "all_clear" },
+    rowCount: vehicles,
+  };
+}
+
+async function aiPredictMaintenance(orgId: string): Promise<ExecutionResult> {
+  const { data: vehicles } = await (supabase.from("vehicles").select("id, plate_number, mileage, last_service_date").eq("organization_id", orgId).order("created_at", { ascending: false }).limit(5) as any);
+  if (!vehicles?.length) return { success: true, operation: "SELECT", table: "vehicles", message: "No vehicles for maintenance prediction", data: { predictions: 0 } };
+
+  const predictions = vehicles.map((v) => {
+    const mileage = v.mileage ?? 0;
+    const daysSinceService = v.last_service_date ? Math.floor((Date.now() - new Date(v.last_service_date).getTime()) / 86400000) : 999;
+    const urgency = mileage > 50000 || daysSinceService > 90 ? "high" : mileage > 30000 || daysSinceService > 60 ? "medium" : "low";
+    return { plate: v.plate_number, mileage, days_since_service: daysSinceService, urgency };
+  });
+
+  const highUrgency = predictions.filter((p) => p.urgency === "high").length;
+  return {
+    success: true, operation: "SELECT", table: "vehicles",
+    message: `AI Maintenance: ${predictions.length} vehicles scanned, ${highUrgency} need urgent service`,
+    data: { total_scanned: predictions.length, high_urgency: highUrgency, top_priority: predictions[0] },
+    rowCount: predictions.length,
+  };
+}
+
+async function aiAnomalyDetect(orgId: string): Promise<ExecutionResult> {
+  const { data: fuelTx } = await (supabase.from("fuel_transactions").select("vehicle_id, liters, cost, created_at").eq("organization_id", orgId).order("created_at", { ascending: false }).limit(20) as any);
+  if (!fuelTx?.length) return { success: true, operation: "SELECT", table: "fuel_transactions", message: "No fuel data for anomaly detection", data: { anomalies: 0 } };
+
+  const avgCostPerLiter = fuelTx.reduce((s: number, t: any) => s + ((t.cost ?? 0) / Math.max(t.liters ?? 1, 1)), 0) / fuelTx.length;
+  const anomalies = fuelTx.filter((t: any) => {
+    const cpl = (t.cost ?? 0) / Math.max(t.liters ?? 1, 1);
+    return Math.abs(cpl - avgCostPerLiter) > avgCostPerLiter * 0.3;
+  });
+
+  return {
+    success: true, operation: "SELECT", table: "fuel_transactions",
+    message: `AI Anomaly: ${fuelTx.length} transactions analyzed, ${anomalies.length} anomalies detected (>30% cost deviation)`,
+    data: { transactions_analyzed: fuelTx.length, anomalies_found: anomalies.length, avg_cost_per_liter: Number(avgCostPerLiter.toFixed(2)) },
+    rowCount: fuelTx.length,
+  };
+}
+
+async function aiRouteOptimize(orgId: string): Promise<ExecutionResult> {
+  const { data: trips } = await (supabase.from("trips").select("id, vehicle_id, distance_km, actual_distance_km, status").eq("organization_id", orgId).eq("status", "completed").order("created_at", { ascending: false }).limit(10) as any);
+  if (!trips?.length) return { success: true, operation: "SELECT", table: "trips", message: "No completed trips for route optimization", data: { trips: 0 } };
+
+  const withDeviation = trips.filter((t) => t.distance_km && t.actual_distance_km && Math.abs(t.actual_distance_km - t.distance_km) > t.distance_km * 0.15);
+  const totalPlanned = trips.reduce((s, t) => s + (t.distance_km ?? 0), 0);
+  const totalActual = trips.reduce((s, t) => s + (t.actual_distance_km ?? t.distance_km ?? 0), 0);
+  const savingsPct = totalPlanned > 0 ? ((totalActual - totalPlanned) / totalPlanned * 100).toFixed(1) : "0";
+
+  return {
+    success: true, operation: "SELECT", table: "trips",
+    message: `AI Route: ${trips.length} trips analyzed, ${withDeviation.length} with >15% deviation, potential ${savingsPct}% optimization`,
+    data: { trips_analyzed: trips.length, route_deviations: withDeviation.length, total_planned_km: totalPlanned, total_actual_km: totalActual },
+    rowCount: trips.length,
+  };
+}
+
+async function aiFuelForecast(orgId: string): Promise<ExecutionResult> {
+  const { data: fuelTx } = await (supabase.from("fuel_transactions").select("liters, cost, created_at").eq("organization_id", orgId).order("created_at", { ascending: false }).limit(30) as any);
+  if (!fuelTx?.length) return { success: true, operation: "SELECT", table: "fuel_transactions", message: "No fuel data for forecasting", data: { forecast: "insufficient_data" } };
+
+  const totalLiters = fuelTx.reduce((s: number, t: any) => s + (t.liters ?? 0), 0);
+  const totalCost = fuelTx.reduce((s: number, t: any) => s + (t.cost ?? 0), 0);
+  const avgDailyLiters = totalLiters / Math.max(fuelTx.length, 1);
+  const avgCostPerLiter = totalCost / Math.max(totalLiters, 1);
+
+  return {
+    success: true, operation: "SELECT", table: "fuel_transactions",
+    message: `AI Fuel Forecast: avg ${avgDailyLiters.toFixed(0)}L/fill, ${avgCostPerLiter.toFixed(2)} ETB/L — projected monthly: ${(avgDailyLiters * 30 * avgCostPerLiter).toFixed(0)} ETB`,
+    data: { avg_liters_per_fill: Number(avgDailyLiters.toFixed(1)), avg_cost_per_liter: Number(avgCostPerLiter.toFixed(2)), projected_monthly_liters: Number((avgDailyLiters * 30).toFixed(0)), projected_monthly_cost: Number((avgDailyLiters * 30 * avgCostPerLiter).toFixed(0)) },
+    rowCount: fuelTx.length,
+  };
+}
+
+async function aiDriverScoring(orgId: string): Promise<ExecutionResult> {
+  const { data: scores } = await (supabase.from("driver_behavior_scores").select("driver_id, overall_score, harsh_braking_count, harsh_acceleration_count, speeding_count, period_start").eq("organization_id", orgId).order("period_start", { ascending: false }).limit(10) as any);
+  if (!scores?.length) return { success: true, operation: "SELECT", table: "driver_behavior_scores", message: "No driver scores available", data: { drivers: 0 } };
+
+  const avgScore = scores.reduce((s, d) => s + (d.overall_score ?? 0), 0) / scores.length;
+  const highRisk = scores.filter((d) => (d.overall_score ?? 100) < 60).length;
+  const totalEvents = scores.reduce((s, d) => s + (d.harsh_braking_count ?? 0) + (d.harsh_acceleration_count ?? 0) + (d.speeding_count ?? 0), 0);
+
+  return {
+    success: true, operation: "SELECT", table: "driver_behavior_scores",
+    message: `AI Scoring: ${scores.length} drivers, avg score ${avgScore.toFixed(0)}, ${highRisk} high-risk, ${totalEvents} total events`,
+    data: { drivers_scored: scores.length, avg_score: Number(avgScore.toFixed(1)), high_risk_count: highRisk, total_safety_events: totalEvents },
+    rowCount: scores.length,
+  };
+}
+
+// ── Fuel Request Workflow Handlers ────────────────
+
+async function fuelRequestSubmit(config: Record<string, any> | undefined, orgId: string): Promise<ExecutionResult> {
+  const { data: vehicle } = await supabase.from("vehicles").select("id, plate_number").eq("organization_id", orgId).limit(1).maybeSingle();
+  if (!vehicle) return { success: false, operation: "INSERT", table: "fuel_requests", message: "No vehicles found", error: "No vehicles" };
+
+  const { data, error } = await (supabase as any).from("fuel_requests").insert({
+    organization_id: orgId,
+    vehicle_id: vehicle.id,
+    requested_liters: config?.liters ?? 50,
+    purpose: config?.purpose || "Operational refuel",
+    status: "pending",
+    request_type: config?.request_type || "vehicle",
+  }).select("id, status, requested_liters").single();
+
+  if (error) return { success: false, operation: "INSERT", table: "fuel_requests", message: `Fuel request failed: ${error.message}`, error: error.message };
+  return { success: true, operation: "INSERT", table: "fuel_requests", message: `Fuel request submitted: ${data.requested_liters}L for ${vehicle.plate_number}`, data: { request_id: data.id, liters: data.requested_liters, vehicle: vehicle.plate_number }, rowCount: 1 };
+}
+
+async function fuelRequestApprove(config: Record<string, any> | undefined, orgId: string): Promise<ExecutionResult> {
+  const { data: request } = await (supabase as any).from("fuel_requests").select("id, requested_liters, status, vehicle_id").eq("organization_id", orgId).eq("status", "pending").order("created_at", { ascending: false }).limit(1).maybeSingle();
+  if (!request) return { success: true, operation: "SELECT", table: "fuel_requests", message: "No pending fuel requests to approve", data: { pending: 0 } };
+
+  const { error } = await (supabase as any).from("fuel_requests").update({ status: "approved", approved_liters: request.requested_liters }).eq("id", request.id);
+  if (error) return { success: false, operation: "UPDATE", table: "fuel_requests", message: `Approval failed: ${error.message}`, error: error.message };
+
+  return { success: true, operation: "UPDATE", table: "fuel_requests", message: `Fuel request approved: ${request.requested_liters}L`, data: { request_id: request.id, approved_liters: request.requested_liters }, rowCount: 1 };
+}
+
+async function fuelDeviationCheck(orgId: string): Promise<ExecutionResult> {
+  const { data: requests } = await (supabase as any).from("fuel_requests").select("id, requested_liters, actual_liters, deviation_percent, clearance_status").eq("organization_id", orgId).not("actual_liters", "is", null).order("created_at", { ascending: false }).limit(10);
+  if (!requests?.length) return { success: true, operation: "SELECT", table: "fuel_requests", message: "No dispensed fuel requests for deviation check", data: { checked: 0 } };
+
+  const deviations = requests.filter((r: any) => Math.abs(r.deviation_percent ?? 0) > 5);
+  return {
+    success: true, operation: "SELECT", table: "fuel_requests",
+    message: `Deviation check: ${requests.length} requests scanned, ${deviations.length} exceed 5% threshold`,
+    data: { total_checked: requests.length, deviations_found: deviations.length, max_deviation: Math.max(...requests.map((r: any) => Math.abs(r.deviation_percent ?? 0))).toFixed(1) + "%" },
+    rowCount: requests.length,
+  };
+}
+
+async function fuelEmoneyTransfer(config: Record<string, any> | undefined, orgId: string): Promise<ExecutionResult> {
+  const { data: request } = await (supabase as any).from("fuel_requests").select("id, approved_liters, emoney_status").eq("organization_id", orgId).eq("status", "approved").is("emoney_status", null).order("created_at", { ascending: false }).limit(1).maybeSingle();
+  if (!request) return { success: true, operation: "SELECT", table: "fuel_requests", message: "No approved requests pending e-money transfer", data: { pending: 0 } };
+
+  const { error } = await (supabase as any).from("fuel_requests").update({ emoney_status: "initiated", emoney_amount: (request.approved_liters ?? 0) * (config?.price_per_liter ?? 65) }).eq("id", request.id);
+  if (error) return { success: false, operation: "UPDATE", table: "fuel_requests", message: `E-money transfer failed: ${error.message}`, error: error.message };
+
+  return { success: true, operation: "UPDATE", table: "fuel_requests", message: `E-money transfer initiated: ${((request.approved_liters ?? 0) * (config?.price_per_liter ?? 65)).toFixed(0)} ETB`, data: { request_id: request.id, amount_etb: (request.approved_liters ?? 0) * (config?.price_per_liter ?? 65) }, rowCount: 1 };
 }
 
 // ── Utilities ─────────────────────────────────────
