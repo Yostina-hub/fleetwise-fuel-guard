@@ -229,6 +229,10 @@ const ColdChainTab = ({ organizationId }: ColdChainTabProps) => {
         </CardContent></Card>
       </div>
 
+      <div className="flex justify-end">
+        <Button onClick={() => { setReadingForm(emptyReadingForm); setShowLogDialog(true); }}><Plus className="h-4 w-4 mr-2" /> Log Reading</Button>
+      </div>
+
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="live" className="gap-1.5"><Thermometer className="w-3.5 h-3.5" /> Live Status</TabsTrigger>
