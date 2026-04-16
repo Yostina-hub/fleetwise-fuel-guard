@@ -33,8 +33,6 @@ export const VehicleRequestsPanel = () => {
   const [showCrossPool, setShowCrossPool] = useState<any>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [showCrossPool, setShowCrossPool] = useState<any>(null);
-
   useEffect(() => {
     if (!organizationId) return;
     const channel = supabase
