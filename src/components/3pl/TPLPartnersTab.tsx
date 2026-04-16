@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTPLPartners } from "@/hooks/use3PL";
+import { LocationPickerField } from "@/components/shared/LocationPickerField";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -163,7 +164,7 @@ export function TPLPartnersTab() {
               <div><Label>Contact Phone</Label><Input value={form.contact_phone} onChange={e => setForm({...form, contact_phone: e.target.value})} /></div>
             </div>
             <div><Label>Contact Email</Label><Input value={form.contact_email} onChange={e => setForm({...form, contact_email: e.target.value})} type="email" /></div>
-            <div><Label>Address</Label><Input value={form.address} onChange={e => setForm({...form, address: e.target.value})} /></div>
+            <LocationPickerField label="Address" value={form.address} onChange={v => setForm({...form, address: v})} placeholder="Partner address" iconColor="text-primary" />
             <div>
               <Label>Service Types</Label>
               <div className="flex flex-wrap gap-2 mt-1">
