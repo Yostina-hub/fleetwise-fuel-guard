@@ -37,6 +37,10 @@ const initialForm = {
   end_date_time: "18:00",
   departure_place: "",
   destination: "",
+  departure_lat: null as number | null,
+  departure_lng: null as number | null,
+  destination_lat: null as number | null,
+  destination_lng: null as number | null,
   num_vehicles: "1",
   passengers: "1",
   vehicle_type: "",
@@ -102,6 +106,10 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
         needed_until: neededUntil,
         departure_place: form.departure_place || null,
         destination: form.destination || null,
+        departure_lat: form.departure_lat,
+        departure_lng: form.departure_lng,
+        destination_lat: form.destination_lat,
+        destination_lng: form.destination_lng,
         num_vehicles: parseInt(form.num_vehicles) || 1,
         passengers: parseInt(form.passengers) || 1,
         vehicle_type: form.vehicle_type || null,
@@ -230,6 +238,7 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
               label="Departure Place"
               value={form.departure_place}
               onChange={v => update("departure_place", v)}
+              onCoordsChange={(lat, lng) => { update("departure_lat", lat); update("departure_lng", lng); }}
               placeholder="Select or type departure"
               iconColor="text-green-500"
             />
@@ -237,6 +246,7 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
               label="Destination Place"
               value={form.destination}
               onChange={v => update("destination", v)}
+              onCoordsChange={(lat, lng) => { update("destination_lat", lat); update("destination_lng", lng); }}
               placeholder="Select or type destination"
               iconColor="text-red-500"
             />
