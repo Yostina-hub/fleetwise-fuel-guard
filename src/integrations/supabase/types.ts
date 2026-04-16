@@ -11165,14 +11165,32 @@ export type Database = {
         Row: {
           approved_at: string | null
           approved_by: string | null
+          correction_notes: string | null
           created_at: string
+          delivery_acceptable: boolean | null
+          delivery_checked_at: string | null
+          delivery_document_url: string | null
           description: string | null
           driver_id: string | null
+          files_updated: boolean | null
           fuel_level: number | null
           id: string
+          inspector_assigned_at: string | null
+          inspector_id: string | null
           km_reading: number | null
+          maintenance_accepted: boolean | null
+          maintenance_accepted_at: string | null
+          maintenance_accepted_by: string | null
+          needs_maintenance: boolean | null
           notes: string | null
           organization_id: string
+          post_inspection_at: string | null
+          post_inspection_notes: string | null
+          post_inspection_result: string | null
+          pre_inspection_at: string | null
+          pre_inspection_by: string | null
+          pre_inspection_done: boolean | null
+          pre_inspection_notes: string | null
           priority: string | null
           rejection_reason: string | null
           request_number: string
@@ -11182,23 +11200,56 @@ export type Database = {
           requestor_department: string | null
           running_hours: number | null
           schedule_id: string | null
+          scrap_return_form_url: string | null
+          spare_parts_collected: boolean | null
           status: string | null
+          supplier_id: string | null
+          supplier_invoice_url: string | null
+          supplier_name: string | null
+          supplier_report_url: string | null
           trigger_source: string
           updated_at: string
+          variation_accepted: boolean | null
+          variation_accepted_at: string | null
+          variation_accepted_by: string | null
+          variation_notes: string | null
+          variation_requested: boolean | null
+          vehicle_delivered_at: string | null
+          vehicle_delivered_by: string | null
           vehicle_id: string
+          vehicle_received_at: string | null
           work_order_id: string | null
+          workflow_stage: string | null
         }
         Insert: {
           approved_at?: string | null
           approved_by?: string | null
+          correction_notes?: string | null
           created_at?: string
+          delivery_acceptable?: boolean | null
+          delivery_checked_at?: string | null
+          delivery_document_url?: string | null
           description?: string | null
           driver_id?: string | null
+          files_updated?: boolean | null
           fuel_level?: number | null
           id?: string
+          inspector_assigned_at?: string | null
+          inspector_id?: string | null
           km_reading?: number | null
+          maintenance_accepted?: boolean | null
+          maintenance_accepted_at?: string | null
+          maintenance_accepted_by?: string | null
+          needs_maintenance?: boolean | null
           notes?: string | null
           organization_id: string
+          post_inspection_at?: string | null
+          post_inspection_notes?: string | null
+          post_inspection_result?: string | null
+          pre_inspection_at?: string | null
+          pre_inspection_by?: string | null
+          pre_inspection_done?: boolean | null
+          pre_inspection_notes?: string | null
           priority?: string | null
           rejection_reason?: string | null
           request_number: string
@@ -11208,23 +11259,56 @@ export type Database = {
           requestor_department?: string | null
           running_hours?: number | null
           schedule_id?: string | null
+          scrap_return_form_url?: string | null
+          spare_parts_collected?: boolean | null
           status?: string | null
+          supplier_id?: string | null
+          supplier_invoice_url?: string | null
+          supplier_name?: string | null
+          supplier_report_url?: string | null
           trigger_source?: string
           updated_at?: string
+          variation_accepted?: boolean | null
+          variation_accepted_at?: string | null
+          variation_accepted_by?: string | null
+          variation_notes?: string | null
+          variation_requested?: boolean | null
+          vehicle_delivered_at?: string | null
+          vehicle_delivered_by?: string | null
           vehicle_id: string
+          vehicle_received_at?: string | null
           work_order_id?: string | null
+          workflow_stage?: string | null
         }
         Update: {
           approved_at?: string | null
           approved_by?: string | null
+          correction_notes?: string | null
           created_at?: string
+          delivery_acceptable?: boolean | null
+          delivery_checked_at?: string | null
+          delivery_document_url?: string | null
           description?: string | null
           driver_id?: string | null
+          files_updated?: boolean | null
           fuel_level?: number | null
           id?: string
+          inspector_assigned_at?: string | null
+          inspector_id?: string | null
           km_reading?: number | null
+          maintenance_accepted?: boolean | null
+          maintenance_accepted_at?: string | null
+          maintenance_accepted_by?: string | null
+          needs_maintenance?: boolean | null
           notes?: string | null
           organization_id?: string
+          post_inspection_at?: string | null
+          post_inspection_notes?: string | null
+          post_inspection_result?: string | null
+          pre_inspection_at?: string | null
+          pre_inspection_by?: string | null
+          pre_inspection_done?: boolean | null
+          pre_inspection_notes?: string | null
           priority?: string | null
           rejection_reason?: string | null
           request_number?: string
@@ -11234,11 +11318,26 @@ export type Database = {
           requestor_department?: string | null
           running_hours?: number | null
           schedule_id?: string | null
+          scrap_return_form_url?: string | null
+          spare_parts_collected?: boolean | null
           status?: string | null
+          supplier_id?: string | null
+          supplier_invoice_url?: string | null
+          supplier_name?: string | null
+          supplier_report_url?: string | null
           trigger_source?: string
           updated_at?: string
+          variation_accepted?: boolean | null
+          variation_accepted_at?: string | null
+          variation_accepted_by?: string | null
+          variation_notes?: string | null
+          variation_requested?: boolean | null
+          vehicle_delivered_at?: string | null
+          vehicle_delivered_by?: string | null
           vehicle_id?: string
+          vehicle_received_at?: string | null
           work_order_id?: string | null
+          workflow_stage?: string | null
         }
         Relationships: [
           {
