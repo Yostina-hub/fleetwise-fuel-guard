@@ -2,12 +2,13 @@ import { useState } from "react";
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion } from "framer-motion";
-import { Battery, Zap, MapPin, BarChart3, Settings } from "lucide-react";
+import { Battery, Zap, MapPin, BarChart3, Settings, ClipboardList } from "lucide-react";
 import { EVBatteryDashboard } from "@/components/ev/EVBatteryDashboard";
 import { EVChargingHistory } from "@/components/ev/EVChargingHistory";
 import { EVChargingStations } from "@/components/ev/EVChargingStations";
 import { EVCostAnalysis } from "@/components/ev/EVCostAnalysis";
 import { EVFleetOverview } from "@/components/ev/EVFleetOverview";
+import { EVWorkOrdersTab } from "@/components/ev/EVWorkOrdersTab";
 import { useTranslation } from "react-i18next";
 
 const EVManagement = () => {
@@ -19,6 +20,7 @@ const EVManagement = () => {
     { key: "battery", label: "Battery Health", icon: Zap },
     { key: "charging", label: "Charging Sessions", icon: BarChart3 },
     { key: "stations", label: "Charging Stations", icon: MapPin },
+    { key: "work-orders", label: "Work Orders", icon: ClipboardList },
     { key: "costs", label: "Cost Analysis", icon: Settings },
   ];
 
@@ -65,6 +67,9 @@ const EVManagement = () => {
             </TabsContent>
             <TabsContent value="stations" className="mt-0">
               <EVChargingStations />
+            </TabsContent>
+            <TabsContent value="work-orders" className="mt-0">
+              <EVWorkOrdersTab />
             </TabsContent>
             <TabsContent value="costs" className="mt-0">
               <EVCostAnalysis />
