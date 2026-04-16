@@ -115,12 +115,32 @@ export const DRIVE_TYPES = [
   { value: "6X4", label: "6X4" },
 ];
 
-export const ENERGY_TYPES = [
-  { value: "petrol", label: "Petrol" },
-  { value: "diesel", label: "Diesel" },
-  { value: "electric", label: "Electric" },
+export const ENERGY_SOURCES = [
+  { value: "fuel", label: "Fuel (ICE)" },
+  { value: "electric", label: "Electric (EV)" },
   { value: "hybrid", label: "Hybrid" },
-  { value: "cng", label: "Compressed Natural Gas" },
+  { value: "alternative", label: "Alternative" },
+];
+
+export const ENERGY_TYPES = [
+  // Fuel (ICE)
+  { value: "diesel", label: "Diesel", source: "fuel" },
+  { value: "petrol", label: "Petrol / Gasoline", source: "fuel" },
+  { value: "premium_petrol", label: "Premium Petrol", source: "fuel" },
+  // Electric
+  { value: "electric", label: "Battery Electric (BEV)", source: "electric" },
+  // Hybrid
+  { value: "hybrid_diesel", label: "Hybrid Diesel (HEV)", source: "hybrid" },
+  { value: "hybrid_petrol", label: "Hybrid Petrol (HEV)", source: "hybrid" },
+  { value: "phev_diesel", label: "Plug-in Hybrid Diesel (PHEV)", source: "hybrid" },
+  { value: "phev_petrol", label: "Plug-in Hybrid Petrol (PHEV)", source: "hybrid" },
+  // Alternative
+  { value: "cng", label: "Compressed Natural Gas (CNG)", source: "alternative" },
+  { value: "lng", label: "Liquefied Natural Gas (LNG)", source: "alternative" },
+  { value: "lpg", label: "Liquefied Petroleum Gas (LPG)", source: "alternative" },
+  { value: "hydrogen", label: "Hydrogen Fuel Cell", source: "alternative" },
+  { value: "biodiesel", label: "Biodiesel", source: "alternative" },
+  { value: "ethanol", label: "Ethanol (E85)", source: "alternative" },
 ];
 
 export const VEHICLE_CATEGORIES = [

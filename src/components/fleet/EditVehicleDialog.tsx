@@ -21,7 +21,7 @@ import { Loader2, Truck, User, FileText, Shield, Settings, MapPin, Paperclip } f
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   PLATE_CODES, PLATE_REGIONS, VEHICLE_TYPES_OPTIONS, VEHICLE_GROUPS, DRIVE_TYPES,
-  ROUTE_TYPES, ENERGY_TYPES, VEHICLE_CATEGORIES, TEMPERATURE_CONTROLS,
+  ROUTE_TYPES, ENERGY_TYPES, ENERGY_SOURCES, VEHICLE_CATEGORIES, TEMPERATURE_CONTROLS,
   VEHICLE_STATUSES, OWNER_TYPES, OWNER_STATUSES, ASSIGNED_LOCATIONS,
   ADMIN_REGIONS,
 } from "./formConstants";
@@ -355,7 +355,14 @@ export default function EditVehicleDialog({ open, onOpenChange, vehicle }: EditV
                     <Select value={formData.fuel_type} onValueChange={v => set("fuel_type", v)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {ENERGY_TYPES.map(e => <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>)}
+                        {ENERGY_SOURCES.map(src => (
+                          <SelectGroup key={src.value}>
+                            <SelectLabel className="text-xs font-semibold text-muted-foreground">{src.label}</SelectLabel>
+                            {ENERGY_TYPES.filter(e => e.source === src.value).map(e => (
+                              <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>
+                            ))}
+                          </SelectGroup>
+                        ))}
                       </SelectContent>
                     </Select>
                   </Field>
