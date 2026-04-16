@@ -101,25 +101,25 @@ const WorkOrders = () => {
           </TabsList>
 
           <TabsContent value="orders" className="animate-bounce-in">
-            <Card className="p-6 glass-strong border-2 hover:border-primary/50 transition-all duration-300 card-premium">
+            <Card className="p-3 md:p-6 glass-strong border-2 hover:border-primary/50 transition-all duration-300 card-premium overflow-hidden">
               <WorkOrdersTab />
             </Card>
           </TabsContent>
 
           <TabsContent value="inventory" className="animate-bounce-in">
-            <Card className="p-6 glass-strong border-2 hover:border-primary/50 transition-all duration-300 card-premium">
+            <Card className="p-3 md:p-6 glass-strong border-2 hover:border-primary/50 transition-all duration-300 card-premium overflow-hidden">
               <InventoryTab />
             </Card>
           </TabsContent>
 
           <TabsContent value="approvals" className="animate-bounce-in">
-            <Card className="p-6 glass-strong border-2 hover:border-primary/50 transition-all duration-300 card-premium">
+            <Card className="p-3 md:p-6 glass-strong border-2 hover:border-primary/50 transition-all duration-300 card-premium overflow-hidden">
               <ApprovalLevelsConfig />
             </Card>
           </TabsContent>
 
           <TabsContent value="delegation" className="animate-bounce-in">
-            <Card className="p-6 glass-strong border-2 hover:border-primary/50 transition-all duration-300 card-premium">
+            <Card className="p-3 md:p-6 glass-strong border-2 hover:border-primary/50 transition-all duration-300 card-premium overflow-hidden">
               <DelegationRulesConfig />
             </Card>
           </TabsContent>
