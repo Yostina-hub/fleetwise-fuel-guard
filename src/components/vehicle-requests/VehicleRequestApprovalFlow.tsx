@@ -170,25 +170,44 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
       }
       await (supabase as any).from("vehicle_requests").update(updates).eq("id", request.id);
 
-      // Send SMS to assigned driver
+      // Get assigned vehicle plate
+      const { data: vehicle } = await (supabase as any)
+        .from("vehicles")
+        .select("plate_number")
+        .eq("id", vehicleId)
+        .single();
+
+      // Send SMS to driver AND requester
       if (selectedDriver) {
         const driver = drivers.find((d: any) => d.id === selectedDriver);
         if (driver?.phone) {
           try {
-            await sendDispatchSms({
+            // Get requester phone for dual notification
+            const { data: reqProfile } = await supabase
+              .from("profiles")
+              .select("phone")
+              .eq("id", request.requester_id)
+              .single();
+
+            await notifyAssignmentSms({
               driverPhone: driver.phone,
               driverName: `${driver.first_name} ${driver.last_name}`,
-              jobNumber: request.request_number,
-              pickupLocation: request.departure_place || "TBD",
-              dropoffLocation: request.destination || "TBD",
+              requesterPhone: reqProfile?.phone || undefined,
+              requesterName: request.requester_name,
+              requestNumber: request.request_number,
+              vehiclePlate: vehicle?.plate_number || "N/A",
+              departure: request.departure_place || "TBD",
+              destination: request.destination || "TBD",
               scheduledTime: format(new Date(request.needed_from), "MMM dd, HH:mm"),
+              appUrl: getAppUrl(),
             });
+
             await (supabase as any).from("vehicle_requests").update({
               sms_notification_sent: true,
               sms_sent_at: new Date().toISOString(),
             }).eq("id", request.id);
           } catch (e) {
-            console.error("SMS failed:", e);
+            console.error("Assignment SMS failed:", e);
           }
         }
       }
