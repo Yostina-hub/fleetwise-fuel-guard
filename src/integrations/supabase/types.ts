@@ -11104,6 +11104,123 @@ export type Database = {
           },
         ]
       }
+      maintenance_requests: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          description: string | null
+          driver_id: string | null
+          fuel_level: number | null
+          id: string
+          km_reading: number | null
+          notes: string | null
+          organization_id: string
+          priority: string | null
+          rejection_reason: string | null
+          request_number: string
+          request_type: string
+          requested_by: string | null
+          requested_completion_date: string | null
+          requestor_department: string | null
+          running_hours: number | null
+          schedule_id: string | null
+          status: string | null
+          trigger_source: string
+          updated_at: string
+          vehicle_id: string
+          work_order_id: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          description?: string | null
+          driver_id?: string | null
+          fuel_level?: number | null
+          id?: string
+          km_reading?: number | null
+          notes?: string | null
+          organization_id: string
+          priority?: string | null
+          rejection_reason?: string | null
+          request_number: string
+          request_type?: string
+          requested_by?: string | null
+          requested_completion_date?: string | null
+          requestor_department?: string | null
+          running_hours?: number | null
+          schedule_id?: string | null
+          status?: string | null
+          trigger_source?: string
+          updated_at?: string
+          vehicle_id: string
+          work_order_id?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          description?: string | null
+          driver_id?: string | null
+          fuel_level?: number | null
+          id?: string
+          km_reading?: number | null
+          notes?: string | null
+          organization_id?: string
+          priority?: string | null
+          rejection_reason?: string | null
+          request_number?: string
+          request_type?: string
+          requested_by?: string | null
+          requested_completion_date?: string | null
+          requestor_department?: string | null
+          running_hours?: number | null
+          schedule_id?: string | null
+          status?: string | null
+          trigger_source?: string
+          updated_at?: string
+          vehicle_id?: string
+          work_order_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_requests_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_requests_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_requests_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_requests_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maintenance_schedules: {
         Row: {
           checklist_template_id: string | null
@@ -12654,6 +12771,78 @@ export type Database = {
           resource?: string
         }
         Relationships: []
+      }
+      post_maintenance_inspections: {
+        Row: {
+          checklist: Json | null
+          corrective_actions: string | null
+          created_at: string
+          findings: string | null
+          id: string
+          inspection_date: string
+          inspector_id: string | null
+          inspector_name: string | null
+          notes: string | null
+          organization_id: string
+          overall_result: string | null
+          parts_replaced: Json | null
+          scrap_form_url: string | null
+          scrap_returned: boolean | null
+          updated_at: string
+          work_order_id: string
+        }
+        Insert: {
+          checklist?: Json | null
+          corrective_actions?: string | null
+          created_at?: string
+          findings?: string | null
+          id?: string
+          inspection_date?: string
+          inspector_id?: string | null
+          inspector_name?: string | null
+          notes?: string | null
+          organization_id: string
+          overall_result?: string | null
+          parts_replaced?: Json | null
+          scrap_form_url?: string | null
+          scrap_returned?: boolean | null
+          updated_at?: string
+          work_order_id: string
+        }
+        Update: {
+          checklist?: Json | null
+          corrective_actions?: string | null
+          created_at?: string
+          findings?: string | null
+          id?: string
+          inspection_date?: string
+          inspector_id?: string | null
+          inspector_name?: string | null
+          notes?: string | null
+          organization_id?: string
+          overall_result?: string | null
+          parts_replaced?: Json | null
+          scrap_form_url?: string | null
+          scrap_returned?: boolean | null
+          updated_at?: string
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_maintenance_inspections_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_maintenance_inspections_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       processing_activities: {
         Row: {
@@ -14927,6 +15116,88 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "supplier_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_payment_requests: {
+        Row: {
+          amount: number | null
+          created_at: string
+          currency: string | null
+          id: string
+          invoice_number: string | null
+          invoice_url: string | null
+          notes: string | null
+          organization_id: string
+          payment_reference: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+          supplier_id: string | null
+          supplier_name: string | null
+          updated_at: string
+          work_order_id: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          invoice_number?: string | null
+          invoice_url?: string | null
+          notes?: string | null
+          organization_id: string
+          payment_reference?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          supplier_id?: string | null
+          supplier_name?: string | null
+          updated_at?: string
+          work_order_id: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          invoice_number?: string | null
+          invoice_url?: string | null
+          notes?: string | null
+          organization_id?: string
+          payment_reference?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          supplier_id?: string | null
+          supplier_name?: string | null
+          updated_at?: string
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_payment_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_payment_requests_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_payment_requests_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
             referencedColumns: ["id"]
           },
         ]
@@ -19718,6 +19989,63 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wo_supplier_messages: {
+        Row: {
+          attachment_name: string | null
+          attachment_url: string | null
+          created_at: string
+          id: string
+          message: string
+          organization_id: string
+          read_at: string | null
+          sender_id: string | null
+          sender_name: string
+          sender_type: string
+          work_order_id: string
+        }
+        Insert: {
+          attachment_name?: string | null
+          attachment_url?: string | null
+          created_at?: string
+          id?: string
+          message: string
+          organization_id: string
+          read_at?: string | null
+          sender_id?: string | null
+          sender_name: string
+          sender_type?: string
+          work_order_id: string
+        }
+        Update: {
+          attachment_name?: string | null
+          attachment_url?: string | null
+          created_at?: string
+          id?: string
+          message?: string
+          organization_id?: string
+          read_at?: string | null
+          sender_id?: string | null
+          sender_name?: string
+          sender_type?: string
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wo_supplier_messages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wo_supplier_messages_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
             referencedColumns: ["id"]
           },
         ]
