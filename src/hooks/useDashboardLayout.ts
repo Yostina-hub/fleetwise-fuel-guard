@@ -183,6 +183,8 @@ export function useDashboardLayout() {
     isLoading,
     getVisibleWidgets,
     isWidgetVisible,
+    getWidgetSize,
+    getWidgetColSpan,
     defaultWidgets: DEFAULT_WIDGETS,
     save: saveMutation.mutate,
     saving: saveMutation.isPending,
