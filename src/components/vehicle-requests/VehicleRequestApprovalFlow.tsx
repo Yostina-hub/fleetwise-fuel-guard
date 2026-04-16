@@ -60,8 +60,8 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
         approver_id: user!.id,
         approver_name: profile?.full_name || user!.email,
         approval_level: 1,
-        decision: "approved",
-        decided_at: new Date().toISOString(),
+        status: "approved",
+        decision_at: new Date().toISOString(),
       });
 
       await (supabase as any).from("vehicle_requests").update({
@@ -90,8 +90,8 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
         approver_id: user!.id,
         approver_name: profile?.full_name || user!.email,
         approval_level: 1,
-        decision: "rejected",
-        decided_at: new Date().toISOString(),
+        status: "rejected",
+        decision_at: new Date().toISOString(),
         comments: rejectionReason,
       });
 
@@ -301,11 +301,11 @@ export const VehicleRequestApprovalFlow = ({ request, approvals, onClose, onChec
           {requestApprovals.map((a: any) => (
             <div key={a.id} className="flex items-center justify-between text-xs py-1.5 border-b border-border/50">
               <div className="flex items-center gap-2">
-                {a.decision === "approved" ? <CheckCircle className="w-3.5 h-3.5 text-green-500" /> : <XCircle className="w-3.5 h-3.5 text-destructive" />}
+              {a.status === "approved" ? <CheckCircle className="w-3.5 h-3.5 text-green-500" /> : <XCircle className="w-3.5 h-3.5 text-destructive" />}
                 <span>{a.approver_name}</span>
-                <Badge variant={a.decision === "approved" ? "default" : "destructive"} className="text-[10px]">{a.decision}</Badge>
+                <Badge variant={a.status === "approved" ? "default" : "destructive"} className="text-[10px]">{a.status}</Badge>
               </div>
-              <span className="text-muted-foreground">{a.decided_at ? format(new Date(a.decided_at), "MMM dd, HH:mm") : "Pending"}</span>
+              <span className="text-muted-foreground">{a.decision_at ? format(new Date(a.decision_at), "MMM dd, HH:mm") : "Pending"}</span>
             </div>
           ))}
           {requestApprovals.some((a: any) => a.comments) && (
