@@ -407,7 +407,7 @@ const RBACManagement = () => {
                     <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                   </div>
                 ) : (
-                  <ScrollArea className="w-full" orientation="horizontal">
+                  <div className="w-full overflow-x-auto">
                     <div className="min-w-[1200px]">
                       <Table>
                         <TableHeader>
