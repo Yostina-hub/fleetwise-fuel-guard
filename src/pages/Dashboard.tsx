@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -62,6 +62,7 @@ import DateRangeFilter from "@/components/dashboard/DateRangeFilter";
 import { useVehicleTelemetry } from "@/hooks/useVehicleTelemetry";
 import { startOfMonth } from "date-fns";
 import { useTranslation } from "react-i18next";
+import { useDashboardLayout } from "@/hooks/useDashboardLayout";
 
 // Executive Dashboard Components
 import ExecutiveKPIGrid from "@/components/dashboard/executive/ExecutiveKPIGrid";
