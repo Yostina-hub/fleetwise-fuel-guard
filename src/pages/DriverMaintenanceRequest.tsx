@@ -17,6 +17,8 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import MaintenanceWorkflowProgress from "@/components/maintenance-enterprise/MaintenanceWorkflowProgress";
+import MaintenanceWorkflowTimeline from "@/components/maintenance-enterprise/MaintenanceWorkflowTimeline";
+import DriverWorkflowActions from "@/components/maintenance-enterprise/DriverWorkflowActions";
 
 const statusColors: Record<string, string> = {
   submitted: "bg-blue-500/20 text-blue-400",
@@ -429,19 +431,16 @@ const DriverMaintenanceRequest = () => {
                   </div>
                 )}
 
-                {/* Driver action: Deliver vehicle (Step 6b) */}
-                {showDetail.workflow_stage === "approved" && (
-                  <div className="p-3 rounded border border-warning/20 bg-warning/5 text-sm">
-                    <strong>Action Required:</strong> Please deliver your vehicle to the assigned outsourcing garage.
-                  </div>
-                )}
+                {/* Driver geofence-verified actions */}
+                <DriverWorkflowActions request={showDetail} />
 
-                {/* Driver action: Receive vehicle (Step 23/27) */}
-                {showDetail.workflow_stage === "vehicle_received" && (
-                  <div className="p-3 rounded border border-success/20 bg-success/5 text-sm">
-                    <strong>Action Required:</strong> Your vehicle is ready for pickup. Please receive and confirm.
-                  </div>
-                )}
+                {/* Vertical workflow timeline (29-step audit trail) */}
+                <div className="pt-2 border-t border-border">
+                  <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <Clock className="w-4 h-4" /> Workflow Timeline
+                  </h4>
+                  <MaintenanceWorkflowTimeline requestId={showDetail.id} />
+                </div>
               </div>
             )}
           </DialogContent>
