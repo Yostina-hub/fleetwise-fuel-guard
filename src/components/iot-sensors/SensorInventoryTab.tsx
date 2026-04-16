@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Cpu, Edit2, Loader2, Search } from "lucide-react";
+import { Plus, Cpu, Loader2, Search, Edit2, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -54,6 +54,7 @@ const emptyForm = {
   position_label: "",
   vehicle_id: "",
   notes: "",
+  status: "active",
 };
 
 interface SensorInventoryTabProps {
@@ -63,6 +64,7 @@ interface SensorInventoryTabProps {
 const SensorInventoryTab = ({ organizationId }: SensorInventoryTabProps) => {
   const queryClient = useQueryClient();
   const [showDialog, setShowDialog] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [form, setForm] = useState(emptyForm);
@@ -92,9 +94,9 @@ const SensorInventoryTab = ({ organizationId }: SensorInventoryTabProps) => {
     enabled: !!organizationId,
   });
 
-  const addMutation = useMutation({
+  const saveMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await (supabase as any).from("iot_sensors").insert({
+      const payload = {
         organization_id: organizationId,
         sensor_type: form.sensor_type,
         sensor_model: form.sensor_model,
@@ -106,18 +108,59 @@ const SensorInventoryTab = ({ organizationId }: SensorInventoryTabProps) => {
         position_label: form.position_label || null,
         vehicle_id: form.vehicle_id || null,
         notes: form.notes || null,
-        status: "active",
-      });
+        status: form.status,
+      };
+      if (editingId) {
+        const { error } = await (supabase as any).from("iot_sensors").update(payload).eq("id", editingId);
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any).from("iot_sensors").insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["iot-sensors"] });
+      closeDialog();
+      toast.success(editingId ? "Sensor updated" : "Sensor registered successfully");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await (supabase as any).from("iot_sensors").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["iot-sensors"] });
-      setShowDialog(false);
-      setForm(emptyForm);
-      toast.success("Sensor registered successfully");
+      toast.success("Sensor deleted");
     },
     onError: (e: any) => toast.error(e.message),
   });
+
+  const closeDialog = () => {
+    setShowDialog(false);
+    setEditingId(null);
+    setForm(emptyForm);
+  };
+
+  const openEdit = (s: any) => {
+    setEditingId(s.id);
+    setForm({
+      sensor_type: s.sensor_type,
+      sensor_model: s.sensor_model || "",
+      sensor_serial: s.sensor_serial || "",
+      manufacturer: s.manufacturer || "",
+      protocol: s.protocol || "ble",
+      firmware_version: s.firmware_version || "",
+      installation_date: s.installation_date ? s.installation_date.split("T")[0] : "",
+      position_label: s.position_label || "",
+      vehicle_id: s.vehicle_id || "",
+      notes: s.notes || "",
+      status: s.status || "active",
+    });
+    setShowDialog(true);
+  };
 
   const filtered = sensors.filter((s: any) =>
     !search || s.sensor_model?.toLowerCase().includes(search.toLowerCase()) ||
@@ -154,7 +197,7 @@ const SensorInventoryTab = ({ organizationId }: SensorInventoryTabProps) => {
             {SENSOR_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Button onClick={() => setShowDialog(true)}><Plus className="h-4 w-4 mr-2" /> Register Sensor</Button>
+        <Button onClick={() => { setEditingId(null); setForm(emptyForm); setShowDialog(true); }}><Plus className="h-4 w-4 mr-2" /> Register Sensor</Button>
       </div>
 
       <Card>
@@ -169,13 +212,14 @@ const SensorInventoryTab = ({ organizationId }: SensorInventoryTabProps) => {
               <TableHead>Position</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Installed</TableHead>
+              <TableHead className="w-[80px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-8"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center py-8"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></TableCell></TableRow>
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No sensors registered. Click "Register Sensor" to add one.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No sensors registered. Click "Register Sensor" to add one.</TableCell></TableRow>
             ) : filtered.map((s: any) => (
               <TableRow key={s.id}>
                 <TableCell><Badge variant="outline" className="uppercase text-xs">{s.sensor_type}</Badge></TableCell>
@@ -186,15 +230,21 @@ const SensorInventoryTab = ({ organizationId }: SensorInventoryTabProps) => {
                 <TableCell className="text-sm">{s.position_label || "—"}</TableCell>
                 <TableCell><Badge className={STATUS_COLORS[s.status] || ""}>{s.status}</Badge></TableCell>
                 <TableCell className="text-sm">{s.installation_date ? format(new Date(s.installation_date), "MMM dd, yyyy") : "—"}</TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(s)}><Edit2 className="h-3.5 w-3.5" /></Button>
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => { if (confirm("Delete this sensor?")) deleteMutation.mutate(s.id); }}><Trash2 className="h-3.5 w-3.5" /></Button>
+                  </div>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </Card>
 
-      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+      <Dialog open={showDialog} onOpenChange={v => { if (!v) closeDialog(); }}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle className="flex items-center gap-2"><Cpu className="h-5 w-5" /> Register IoT Sensor</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Cpu className="h-5 w-5" /> {editingId ? "Edit Sensor" : "Register IoT Sensor"}</DialogTitle></DialogHeader>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Sensor Type</Label>
@@ -241,15 +291,30 @@ const SensorInventoryTab = ({ organizationId }: SensorInventoryTabProps) => {
               <Label>Installation Date</Label>
               <Input type="date" value={form.installation_date} onChange={e => setForm(p => ({ ...p, installation_date: e.target.value }))} />
             </div>
-            <div className="col-span-2">
+            {editingId && (
+              <div>
+                <Label>Status</Label>
+                <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="faulty">Faulty</SelectItem>
+                    <SelectItem value="maintenance">Maintenance</SelectItem>
+                    <SelectItem value="decommissioned">Decommissioned</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className={editingId ? "" : "col-span-2"}>
               <Label>Notes</Label>
               <Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} placeholder="Installation notes..." rows={2} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-            <Button onClick={() => addMutation.mutate()} disabled={!form.sensor_model || addMutation.isPending}>
-              {addMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Register
+            <Button variant="outline" onClick={closeDialog}>Cancel</Button>
+            <Button onClick={() => saveMutation.mutate()} disabled={!form.sensor_model || saveMutation.isPending}>
+              {saveMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} {editingId ? "Update" : "Register"}
             </Button>
           </DialogFooter>
         </DialogContent>
