@@ -21356,6 +21356,31 @@ export type Database = {
         }
         Returns: string
       }
+      supplier_acknowledge_request: {
+        Args: { p_notes?: string; p_request_id: string }
+        Returns: undefined
+      }
+      supplier_complete_work: {
+        Args: {
+          p_invoice_url?: string
+          p_notes?: string
+          p_report_url?: string
+          p_request_id: string
+        }
+        Returns: undefined
+      }
+      supplier_mark_delivered_back: {
+        Args: {
+          p_document_url?: string
+          p_notes?: string
+          p_request_id: string
+        }
+        Returns: undefined
+      }
+      supplier_request_variation: {
+        Args: { p_request_id: string; p_variation_notes: string }
+        Returns: undefined
+      }
       trigger_webhook: {
         Args: { _event_data: Json; _event_type: string }
         Returns: undefined

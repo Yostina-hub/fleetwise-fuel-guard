@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { MaintenanceRequest, WorkflowStage } from "@/hooks/useMaintenanceRequests";
 import MaintenanceWorkflowProgress from "./MaintenanceWorkflowProgress";
+import MaintenanceWorkflowTimeline from "./MaintenanceWorkflowTimeline";
 import { format } from "date-fns";
 
 interface Props {
@@ -339,6 +340,16 @@ const MaintenanceRequestDetail = ({ request: req, onAction, isPending, drivers =
           <Loader2 className="w-4 h-4 animate-spin" /> Processing...
         </div>
       )}
+
+      <Separator />
+
+      {/* Full audit timeline */}
+      <div>
+        <h4 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+          <FileText className="w-4 h-4 text-primary" /> Workflow Audit Trail
+        </h4>
+        <MaintenanceWorkflowTimeline requestId={req.id} />
+      </div>
     </div>
   );
 };
