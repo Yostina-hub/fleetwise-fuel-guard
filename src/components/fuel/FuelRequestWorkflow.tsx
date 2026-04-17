@@ -516,37 +516,44 @@ export const FuelRequestWorkflow = () => {
   };
 
 
-  // Approve
+  const getPendingFuelApproval = (fuelRequestId: string) =>
+    pendingFuelApprovals?.find((approval: any) => approval.fuel_request_id === fuelRequestId);
+
+  // Approve via delegated approval record
   const approveMutation = useMutation({
-    mutationFn: async ({ id, liters }: { id: string; liters: number }) => {
-      const { data: user } = await supabase.auth.getUser();
-      const { error } = await supabase.from("fuel_requests").update({
-        status: "approved",
-        liters_approved: liters,
-        approved_by: user.user?.id,
-        approved_at: new Date().toISOString(),
-      }).eq("id", id);
-      if (error) throw error;
+    mutationFn: async ({ fuelRequestId, liters }: { fuelRequestId: string; liters: number }) => {
+      const approval = getPendingFuelApproval(fuelRequestId);
+      if (!approval) throw new Error("No delegated approval is assigned to you for this request");
+
+      return approveFuelRequest.mutateAsync({
+        approvalId: approval.id,
+        fuelRequestId,
+        litersApproved: liters,
+      });
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["fuel-requests"] });
       setShowApprove(null);
-      toast.success("Request approved — Fuel Work Order created automatically");
+      toast.success(
+        result?.allApproved
+          ? "Request approved — Fuel Work Order created automatically"
+          : "Approval recorded. Waiting for the next delegated approver"
+      );
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  // Reject
+  // Reject via delegated approval record
   const rejectMutation = useMutation({
-    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
-      const { data: user } = await supabase.auth.getUser();
-      const { error } = await supabase.from("fuel_requests").update({
-        status: "rejected",
-        rejected_reason: reason,
-        approved_by: user.user?.id,
-        approved_at: new Date().toISOString(),
-      }).eq("id", id);
-      if (error) throw error;
+    mutationFn: async ({ fuelRequestId, reason }: { fuelRequestId: string; reason: string }) => {
+      const approval = getPendingFuelApproval(fuelRequestId);
+      if (!approval) throw new Error("No delegated approval is assigned to you for this request");
+
+      return rejectFuelRequest.mutateAsync({
+        approvalId: approval.id,
+        fuelRequestId,
+        comment: reason,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fuel-requests"] });
