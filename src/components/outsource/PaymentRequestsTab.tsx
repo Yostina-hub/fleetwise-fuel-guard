@@ -8,9 +8,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, FileText, CheckCircle2, XCircle, Send, Fuel, Layers, ShieldCheck, Banknote } from "lucide-react";
+import { Plus, FileText, CheckCircle2, XCircle, Send, Fuel, Layers, ShieldCheck, Banknote, Calculator } from "lucide-react";
 import { useOutsourcePaymentRequests, type PRStatus } from "@/hooks/useOutsourcePaymentRequests";
+import { useOutsourcePriceCatalogs } from "@/hooks/useOutsourcePriceCatalogs";
+import { supabase } from "@/integrations/supabase/client";
+import { useOrganization } from "@/hooks/useOrganization";
+import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 const STATUS_LABEL: Record<PRStatus, string> = {
   draft: "Draft",
@@ -42,22 +47,115 @@ const STATUS_COLOR: Partial<Record<PRStatus, "default" | "secondary" | "outline"
 };
 
 export function PaymentRequestsTab() {
+  const { organizationId } = useOrganization();
   const { requests, isLoading, create, transition, provideFuelInfo } = useOutsourcePaymentRequests();
+  const { catalogs } = useOutsourcePriceCatalogs();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
+    rental_vehicle_id: "",
+    catalog_id: "",
     period_start: new Date().toISOString().split("T")[0],
     period_end: new Date().toISOString().split("T")[0],
     amount_requested: 0,
     notes: "",
+    attendance_days: 0,
   });
 
   // Fuel info dialog state
   const [fuelDialog, setFuelDialog] = useState<string | null>(null);
   const [fuelForm, setFuelForm] = useState({ fuel_cost: 0, lubricant_cost: 0, notes: "" });
 
+  // Rental vehicles for attendance lookup
+  const { data: rentalVehicles = [] } = useQuery({
+    queryKey: ["rental-vehicles-for-pr", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data, error } = await (supabase as any)
+        .from("rental_vehicles")
+        .select("id, plate_number, supplier_id")
+        .eq("organization_id", organizationId)
+        .limit(200);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId,
+  });
+
+  const generateFromAttendance = async () => {
+    if (!form.rental_vehicle_id || !form.catalog_id || !form.period_start || !form.period_end) {
+      toast.error("Select rental vehicle, catalog, and period first");
+      return;
+    }
+    const catalog = catalogs.find((c) => c.id === form.catalog_id);
+    if (!catalog) return;
+
+    const { data, error } = await (supabase as any)
+      .from("outsource_vehicle_attendance")
+      .select("attendance_date, status, hours_active, km_driven")
+      .eq("rental_vehicle_id", form.rental_vehicle_id)
+      .gte("attendance_date", form.period_start)
+      .lte("attendance_date", form.period_end);
+
+    if (error) {
+      toast.error(`Attendance lookup failed: ${error.message}`);
+      return;
+    }
+    const records = data || [];
+    const presentDays = records.filter((r: any) => r.status === "present" || r.status === "partial").length;
+
+    if (presentDays === 0) {
+      toast.warning("No attendance records in this period — defaulting to 0");
+    }
+
+    let amount = 0;
+    if (catalog.unit === "per_day") amount = presentDays * Number(catalog.base_rate || 0);
+    else if (catalog.unit === "per_hour") {
+      const hours = records.reduce((a: number, r: any) => a + Number(r.hours_active || 0), 0);
+      amount = hours * Number(catalog.base_rate || 0);
+    } else if (catalog.unit === "per_km") {
+      const km = records.reduce((a: number, r: any) => a + Number(r.km_driven || 0), 0);
+      amount = km * Number(catalog.base_rate || 0);
+    } else {
+      amount = presentDays * Number(catalog.base_rate || 0);
+    }
+
+    setForm({
+      ...form,
+      attendance_days: presentDays,
+      amount_requested: Math.round(amount * 100) / 100,
+      notes: `${form.notes ? form.notes + "\n" : ""}Auto-generated: ${presentDays} day(s) × ${catalog.unit} @ ${catalog.currency} ${catalog.base_rate}`,
+    });
+    toast.success(`Computed ${catalog.currency} ${amount.toLocaleString()} from ${presentDays} attendance day(s)`);
+  };
+
   const submit = () => {
-    if (!form.period_start || !form.period_end || !form.amount_requested) return;
-    create.mutate(form as any, { onSuccess: () => { setOpen(false); setForm({ period_start: new Date().toISOString().split("T")[0], period_end: new Date().toISOString().split("T")[0], amount_requested: 0, notes: "" }); } });
+    if (!form.period_start || !form.period_end || !form.amount_requested) {
+      toast.error("Period and amount required");
+      return;
+    }
+    create.mutate(
+      {
+        period_start: form.period_start,
+        period_end: form.period_end,
+        amount_requested: form.amount_requested,
+        notes: form.notes,
+        rental_vehicle_id: form.rental_vehicle_id || null,
+      } as any,
+      {
+        onSuccess: () => {
+          setOpen(false);
+          setForm({
+            rental_vehicle_id: "",
+            catalog_id: "",
+            period_start: new Date().toISOString().split("T")[0],
+            period_end: new Date().toISOString().split("T")[0],
+            amount_requested: 0,
+            notes: "",
+            attendance_days: 0,
+          });
+        },
+      }
+    );
   };
 
   return (
@@ -67,11 +165,41 @@ export function PaymentRequestsTab() {
           <CardTitle className="flex items-center gap-2"><FileText className="w-5 h-5 text-primary" /> Payment Requests</CardTitle>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild><Button size="sm"><Plus className="w-4 h-4 mr-1" /> Step 1 — New request</Button></DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-2xl">
               <DialogHeader><DialogTitle>1a — Send approved required information & report for payment</DialogTitle></DialogHeader>
               <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Rental vehicle</Label>
+                  <Select value={form.rental_vehicle_id} onValueChange={(v) => setForm({ ...form, rental_vehicle_id: v })}>
+                    <SelectTrigger><SelectValue placeholder="Select rental vehicle" /></SelectTrigger>
+                    <SelectContent>
+                      {rentalVehicles.map((v: any) => (
+                        <SelectItem key={v.id} value={v.id}>{v.plate_number}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Price catalog</Label>
+                  <Select value={form.catalog_id} onValueChange={(v) => setForm({ ...form, catalog_id: v })}>
+                    <SelectTrigger><SelectValue placeholder="Select rate" /></SelectTrigger>
+                    <SelectContent>
+                      {catalogs.filter((c) => c.is_active).map((c) => (
+                        <SelectItem key={c.id} value={c.id}>{c.catalog_name} — {c.currency} {c.base_rate}/{c.unit}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div><Label>Period start</Label><Input type="date" value={form.period_start} onChange={(e) => setForm({ ...form, period_start: e.target.value })} /></div>
                 <div><Label>Period end</Label><Input type="date" value={form.period_end} onChange={(e) => setForm({ ...form, period_end: e.target.value })} /></div>
+                <div className="col-span-2">
+                  <Button type="button" variant="outline" size="sm" onClick={generateFromAttendance} className="w-full">
+                    <Calculator className="w-4 h-4 mr-1" /> 1.6 — Generate amount from attendance × catalog
+                  </Button>
+                  {form.attendance_days > 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">Computed from {form.attendance_days} attendance day(s)</p>
+                  )}
+                </div>
                 <div className="col-span-2"><Label>Amount requested (ETB)</Label><Input type="number" value={form.amount_requested} onChange={(e) => setForm({ ...form, amount_requested: Number(e.target.value) })} /></div>
                 <div className="col-span-2"><Label>Notes / approved info reference</Label><Textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
               </div>
