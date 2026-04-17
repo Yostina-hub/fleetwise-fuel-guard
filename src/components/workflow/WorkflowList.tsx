@@ -227,6 +227,20 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
   }, {});
   const availableCategories = Object.keys(categoryCounts).sort();
 
+  // Domain → categories taxonomy (professional 2-tier grouping)
+  const domainCounts: Record<string, number> = {};
+  for (const cat of availableCategories) {
+    const domain = getDomainForCategory(cat);
+    domainCounts[domain] = (domainCounts[domain] || 0) + categoryCounts[cat];
+  }
+  const availableDomains = Object.keys(domainCounts).sort(
+    (a, b) => DOMAIN_ORDER.indexOf(a) - DOMAIN_ORDER.indexOf(b),
+  );
+  const subCategoriesForDomain =
+    domainFilter === "all"
+      ? []
+      : availableCategories.filter((c) => getDomainForCategory(c) === domainFilter);
+
   const filteredWorkflows = (workflows || [])
     .filter((w: any) => {
       const q = search.toLowerCase();
