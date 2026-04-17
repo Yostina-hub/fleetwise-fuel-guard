@@ -1,0 +1,1 @@
+DELETE FROM public.outsource_payment_requests WHERE request_number LIKE 'TEST-T%';
