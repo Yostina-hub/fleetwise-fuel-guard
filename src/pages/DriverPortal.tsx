@@ -24,6 +24,7 @@ import { VehicleInspectionFormDialog } from "@/components/maintenance/VehicleIns
 import { VehicleRequestForm } from "@/components/vehicle-requests/VehicleRequestForm";
 import CreateWorkRequestDialog from "@/components/maintenance/CreateWorkRequestDialog";
 import DriverSubmissionsTab from "@/components/driver-portal/DriverSubmissionsTab";
+import DriverTripHistory from "@/components/driver-portal/DriverTripHistory";
 
 const DriverPortal = () => {
   const navigate = useNavigate();
@@ -539,39 +540,7 @@ const DriverPortal = () => {
           </TabsContent>
 
           <TabsContent value="history">
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-semibold flex items-center gap-2">
-                  <Clock className="w-4 h-4" aria-hidden="true" /> Recent Trip History
-                </h2>
-                <Button size="sm" variant="ghost" onClick={() => navigate("/route-history")}>
-                  View all <ChevronRight className="w-4 h-4 ml-1" aria-hidden="true" />
-                </Button>
-              </div>
-              {trips?.recent?.length === 0 ? (
-                <div className="text-center py-6 text-muted-foreground text-sm">No completed trips yet</div>
-              ) : (
-                <div className="space-y-2">
-                  {trips?.recent?.map((t: any) => (
-                    <div key={t.id} className="flex items-center justify-between p-2 rounded hover:bg-muted/30 cursor-pointer text-sm" onClick={() => navigate(`/route-history?tripId=${t.id}`)}>
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className="p-2 rounded bg-primary/10">
-                          <MapPin className="w-4 h-4 text-primary" aria-hidden="true" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate">{t.start_location || "—"} → {t.end_location || "—"}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {t.end_time ? formatDistanceToNow(new Date(t.end_time), { addSuffix: true }) : "—"}
-                            {t.distance_km && ` · ${Number(t.distance_km).toFixed(1)} km`}
-                          </p>
-                        </div>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
+            <DriverTripHistory driverId={driverId} />
           </TabsContent>
         </Tabs>
 
