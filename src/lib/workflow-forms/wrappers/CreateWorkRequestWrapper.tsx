@@ -25,9 +25,9 @@ export default function CreateWorkRequestWrapper({ prefill, onSubmitted, onCance
           defaultRequestType={prefill?.request_type ?? "corrective"}
           defaultContext={prefill?.context ?? "vehicle_maintenance"}
           defaultInspectionSubType={prefill?.inspection_sub_type ?? ""}
-          onSubmitted={() => {
+          onSubmitted={(result) => {
             setOpen(false);
-            onSubmitted({ form: "create_work_request", at: new Date().toISOString() });
+            onSubmitted({ form: "create_work_request", ...(result ?? {}), at: new Date().toISOString() });
           }}
           onCancel={() => {
             setOpen(false);
