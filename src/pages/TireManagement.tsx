@@ -9,10 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
-import { CircleDot, Plus, BarChart3, History, AlertTriangle, TrendingUp, RotateCcw, ClipboardList } from "lucide-react";
+import { CircleDot, Plus, BarChart3, History, AlertTriangle, TrendingUp, RotateCcw, ClipboardList, GitBranch } from "lucide-react";
 import { TireChangeDialog } from "@/components/tire-management/TireChangeDialog";
 import { TireRequestDialog } from "@/components/tire-management/TireRequestDialog";
 import { TireRequestsTab } from "@/components/tire-management/TireRequestsTab";
+import { TireUtilizationReport } from "@/components/tire-management/TireUtilizationReport";
+import { WorkflowPage } from "@/lib/workflow-engine/WorkflowPage";
+import { tireRequestConfig } from "@/lib/workflow-engine/configs/tireRequestConfig";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
