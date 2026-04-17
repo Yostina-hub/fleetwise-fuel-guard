@@ -88,17 +88,7 @@ export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
   }
 
   // Reusable form chooser path
-  if (open && choices.length > 0) {
-    if (activeChoiceForm) {
-      return (
-        <RenderWorkflowForm
-          formKey={activeChoiceForm.key}
-          prefill={activeChoice?.prefill}
-          onCancel={() => setChosenFormKey(null)}
-          onSubmitted={submitReusableForm}
-        />
-      );
-    }
+  if (open && choices.length > 0 && !chosenFormKey) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-xl">
@@ -134,6 +124,21 @@ export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
       </Dialog>
     );
   }
+
+  // A choice was picked AND there's a registered reusable form for it.
+  if (open && activeChoiceForm) {
+    return (
+      <RenderWorkflowForm
+        formKey={activeChoiceForm.key}
+        prefill={activeChoice?.prefill}
+        onCancel={() => setChosenFormKey(null)}
+        onSubmitted={submitReusableForm}
+      />
+    );
+  }
+
+  // A choice was picked but no registered form exists → fall through to inline
+  // intakeFields form below (values are pre-seeded via useEffect above).
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
