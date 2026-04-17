@@ -2259,6 +2259,62 @@ export type Database = {
           },
         ]
       }
+      delegation_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_name: string | null
+          created_at: string
+          entity_name: string | null
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+          organization_id: string
+          scope: string | null
+          source_id: string | null
+          source_table: string
+          summary: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_name?: string | null
+          created_at?: string
+          entity_name?: string | null
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          organization_id: string
+          scope?: string | null
+          source_id?: string | null
+          source_table: string
+          summary?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_name?: string | null
+          created_at?: string
+          entity_name?: string | null
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          organization_id?: string
+          scope?: string | null
+          source_id?: string | null
+          source_table?: string
+          summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delegation_audit_log_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       delegation_matrix: {
         Row: {
           created_at: string
@@ -23984,6 +24040,7 @@ export type Database = {
         Args: { p_cost?: number; p_scope?: string; p_user_id: string }
         Returns: string
       }
+      get_actor_name: { Args: never; Returns: string }
       get_due_preventive_schedules: {
         Args: {
           p_lookahead_days?: number
