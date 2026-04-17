@@ -285,12 +285,18 @@ async function runWorkflow(
           description: cfg.description ?? null,
           assignee_role: cfg.assignee_role ?? null,
           form_schema: cfg.fields ?? [],
+          form_key: cfg.form_key ?? null,
+          context: {
+            ...(ctx.trigger ?? {}),
+            ...(cfg.prefill ?? {}),
+            ...(cfg.context ?? {}),
+          },
           actions: cfg.actions ?? (out[nodeId] ?? []).map((e) => ({
             id: e.sourceHandle || e.target,
             label: e.sourceHandle || "Continue",
           })),
-          vehicle_id: ctx.trigger?.vehicle_id ?? null,
-          driver_id: ctx.trigger?.driver_id ?? null,
+          vehicle_id: ctx.trigger?.vehicle_id ?? cfg.prefill?.vehicle_id ?? null,
+          driver_id: ctx.trigger?.driver_id ?? cfg.prefill?.driver_id ?? null,
         });
         if (taskErr) throw taskErr;
 

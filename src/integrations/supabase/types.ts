@@ -24156,11 +24156,13 @@ export type Database = {
           assignee_user_id: string | null
           completed_at: string | null
           completed_by: string | null
+          context: Json
           created_at: string
           decision: string | null
           description: string | null
           driver_id: string | null
           due_at: string | null
+          form_key: string | null
           form_schema: Json
           id: string
           node_id: string
@@ -24179,11 +24181,13 @@ export type Database = {
           assignee_user_id?: string | null
           completed_at?: string | null
           completed_by?: string | null
+          context?: Json
           created_at?: string
           decision?: string | null
           description?: string | null
           driver_id?: string | null
           due_at?: string | null
+          form_key?: string | null
           form_schema?: Json
           id?: string
           node_id: string
@@ -24202,11 +24206,13 @@ export type Database = {
           assignee_user_id?: string | null
           completed_at?: string | null
           completed_by?: string | null
+          context?: Json
           created_at?: string
           decision?: string | null
           description?: string | null
           driver_id?: string | null
           due_at?: string | null
+          form_key?: string | null
           form_schema?: Json
           id?: string
           node_id?: string
