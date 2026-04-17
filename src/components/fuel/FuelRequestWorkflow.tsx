@@ -24,6 +24,7 @@ import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
 import { useOrganizationSettings } from "@/hooks/useOrganizationSettings";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useDriverScope } from "@/hooks/useDriverScope";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { TablePagination, usePagination } from "@/components/reports/TablePagination";

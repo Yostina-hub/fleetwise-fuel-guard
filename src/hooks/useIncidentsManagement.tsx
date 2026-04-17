@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
+import { useDriverScope } from "./useDriverScope";
 import { toast } from "@/hooks/use-toast";
 
 export interface Incident {
