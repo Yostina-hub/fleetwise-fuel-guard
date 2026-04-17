@@ -272,12 +272,14 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
 
   const activeFilterCount =
     (statusFilter !== "all" ? 1 : 0) +
+    (domainFilter !== "all" ? 1 : 0) +
     (categoryFilter !== "all" ? 1 : 0) +
     (search ? 1 : 0);
 
   const clearFilters = () => {
     setSearch("");
     setStatusFilter("all");
+    setDomainFilter("all");
     setCategoryFilter("all");
   };
 
