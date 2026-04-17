@@ -166,13 +166,14 @@ export function useWorkflow(config: WorkflowConfig) {
       const newStatus = action.completes || toStage?.terminal ? "completed" : "in_progress";
       const completedAt = newStatus === "completed" ? new Date().toISOString() : null;
 
-      // ── Fleet Inspection: reuse existing open Work Order on the vehicle ─────
-      // When the user picks "Use existing open WO" on the request_maintenance
-      // stage, look up an open WO for the vehicle and stash its id into data.
+      // ── WO reuse interceptor (Fleet Inspection + Safety & Comfort) ─────────
+      // When the user picks "Use existing open WO", look up an open WO for the
+      // vehicle and stash its id into data.
       let interceptedPayload: Record<string, any> = payload || {};
-      if (config.type === "fleet_inspection" && action.id === "use_existing_wo") {
+      const WO_REUSE_TYPES = new Set(["fleet_inspection", "safety_comfort"]);
+      if (WO_REUSE_TYPES.has(config.type) && action.id === "use_existing_wo") {
         const vehId = instance.vehicle_id;
-        if (!vehId) throw new Error("No vehicle linked to this inspection");
+        if (!vehId) throw new Error("No vehicle linked to this request");
         const { data: openWos, error: woErr } = await supabase
           .from("work_orders")
           .select("id, work_order_number, status")
@@ -193,10 +194,16 @@ export function useWorkflow(config: WorkflowConfig) {
         };
       }
 
-      // ── Fleet Inspection: enforce initiator-only WO closure for pre/post ───
+      // ── Initiator-only closure enforcement ────────────────────────────────
+      // Fleet Inspection (pre/post): action `initiator_close_wo`
+      // Safety & Comfort: action `accept` (final acceptance step)
+      const INITIATOR_ONLY: Record<string, string[]> = {
+        fleet_inspection: ["initiator_close_wo"],
+        safety_comfort: ["accept"],
+      };
+      const initiatorActions = INITIATOR_ONLY[config.type] || [];
       if (
-        config.type === "fleet_inspection" &&
-        action.id === "initiator_close_wo" &&
+        initiatorActions.includes(action.id) &&
         instance.created_by &&
         user?.id &&
         instance.created_by !== user.id
@@ -206,7 +213,7 @@ export function useWorkflow(config: WorkflowConfig) {
           userRoles.includes("operations_manager") ||
           userRoles.includes("super_admin");
         if (!isManagerOverride) {
-          throw new Error("Only the request initiator (or a fleet/operations manager) can close this WO");
+          throw new Error("Only the request initiator (or a fleet/operations manager) can perform this action");
         }
       }
 
