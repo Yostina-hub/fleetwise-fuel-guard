@@ -252,6 +252,7 @@ const getNavItems = (t: (key: string) => string) => [
 
   // ── Tools & Automation ──
   { icon: Workflow, label: t("nav.workflowBuilder"), path: "/workflow-builder", highlight: true },
+  { icon: Inbox, label: "Task Inbox", path: "/inbox" },
   { icon: GitBranch, label: t("nav.delegationMatrix"), path: "/delegation-matrix" },
   { icon: Upload, label: t("nav.bulkOperations"), path: "/bulk-operations" },
 
