@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -219,6 +219,7 @@ export function PaymentRequestsTab() {
               <TableBody>
                 {requests.map(r => (
                   <Fragment key={r.id}>
+                    <TableRow>
                     <TableCell className="font-medium">{r.request_number}</TableCell>
                     <TableCell className="text-xs">{r.period_start} → {r.period_end}</TableCell>
                     <TableCell>{r.currency} {r.amount_requested.toLocaleString()}{r.amount_approved ? <span className="text-xs text-success ml-1">(✓ {r.amount_approved.toLocaleString()})</span> : null}</TableCell>
@@ -287,7 +288,7 @@ export function PaymentRequestsTab() {
                       </TableCell>
                     </TableRow>
                   )}
-                  </>
+                  </Fragment>
                 ))}
               </TableBody>
             </Table>
