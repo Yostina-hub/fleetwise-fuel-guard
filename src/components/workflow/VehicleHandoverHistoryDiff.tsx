@@ -157,7 +157,7 @@ export function VehicleHandoverHistoryDiff({ instance }: Props) {
       {diff.conditionChanged && (
         <div className="rounded-md border p-2 space-y-1">
           <p className="text-xs font-semibold flex items-center gap-1">
-            <AlertTriangle className="h-3 w-3 text-amber-500" /> Overall condition changed
+            <AlertTriangle className="h-3 w-3 text-destructive" /> Overall condition changed
           </p>
           <div className="text-[11px] text-muted-foreground">
             <strong>Previous:</strong>
