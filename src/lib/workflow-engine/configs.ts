@@ -17,6 +17,7 @@ import {
 import type { WorkflowConfig } from "./types";
 import { tireRequestConfig } from "./configs/tireRequestConfig";
 import { vehicleHandoverConfig } from "./configs/vehicleHandoverConfig";
+import { fleetTransferConfig } from "./configs/fleetTransferConfig";
 
 // Reusable lane helpers
 import type { Lane } from "./types";
@@ -974,6 +975,7 @@ export const WORKFLOW_CONFIGS: Record<string, WorkflowConfig> = {
   safety_comfort:          safetyComfortConfig,
   tire_request:            tireRequestConfig,
   vehicle_handover:        vehicleHandoverConfig,
+  fleet_transfer:          fleetTransferConfig,
 };
 
-export { tireRequestConfig, vehicleHandoverConfig };
+export { tireRequestConfig, vehicleHandoverConfig, fleetTransferConfig };

@@ -1,6 +1,7 @@
 // Re-exports for workflow configs (modular path).
 export { tireRequestConfig } from "./tireRequestConfig";
 export { vehicleHandoverConfig } from "./vehicleHandoverConfig";
+export { fleetTransferConfig } from "./fleetTransferConfig";
 export {
   fleetInspectionConfig,
   vehicleRegistrationConfig,

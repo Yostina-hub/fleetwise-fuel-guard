@@ -9,6 +9,7 @@ import {
   driverOnboardingConfig, driverTrainingConfig, driverAllowanceConfig,
   vehicleDisposalConfig, roadsideAssistanceConfig, licenseRenewalConfig,
   outsourceRentalConfig, safetyComfortConfig, vehicleHandoverConfig,
+  fleetTransferConfig,
 } from "@/lib/workflow-engine/configs";
 
 const wrap = (config: any, extraAction?: React.ReactNode) => () => (
@@ -37,3 +38,4 @@ export const VehicleHandoverPage          = wrap(
     </Link>
   </Button>,
 );
+export const FleetTransferPage            = wrap(fleetTransferConfig);
