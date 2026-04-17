@@ -84,7 +84,7 @@ export function useSopInboxTasks(
             assignee_role: (stage?.actions?.[0]?.allowedRoles?.[0] as string | undefined) ?? null,
             form_schema: formSchema,
             form_key: null,
-            context: raw.data ?? {},
+            context: (raw.data && typeof raw.data === "object" && !Array.isArray(raw.data) ? raw.data : {}) as Record<string, any>,
             actions,
             status: status === "pending" ? "pending" : "completed",
             vehicle_id: raw.vehicle_id,
