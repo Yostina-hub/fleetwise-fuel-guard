@@ -403,7 +403,7 @@ async function runWorkflow(
     })
     .eq("id", wf.id);
 
-  return { run_id: runId, status: failed ? "failed" : "completed", nodes: log.length, duration_ms: durationMs };
+  return { run_id: runId, status: finalStatus, nodes: log.length, duration_ms: durationMs };
 }
 
 // ─────────────────────────────────────────────────────────────
