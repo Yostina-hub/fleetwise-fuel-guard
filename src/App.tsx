@@ -111,7 +111,7 @@ const PrivacyPolicy = lazyWithRetry(() => import("./pages/PrivacyPolicy"), "Priv
 const NotFound = lazyWithRetry(() => import("./pages/NotFound"), "NotFound");
 
 // ── ET FMG SOP Workflows (config-driven) ──
-const FleetInspectionPage = lazyWithRetry(() => import("./pages/sop-workflows").then(m => ({ default: m.FleetInspectionPage })), "FleetInspectionPage");
+const FleetInspectionPage = lazyWithRetry(() => import("./pages/FleetInspectionWithEbsForm"), "FleetInspectionPage");
 const VehicleRegistrationPage = lazyWithRetry(() => import("./pages/sop-workflows").then(m => ({ default: m.VehicleRegistrationPage })), "VehicleRegistrationPage");
 const VehicleInsuranceRenewalPage = lazyWithRetry(() => import("./pages/sop-workflows").then(m => ({ default: m.VehicleInsuranceRenewalPage })), "VehicleInsuranceRenewalPage");
 const PreventiveMaintenancePage = lazyWithRetry(() => import("./pages/sop-workflows").then(m => ({ default: m.PreventiveMaintenancePage })), "PreventiveMaintenancePage");

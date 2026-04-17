@@ -12888,6 +12888,8 @@ export type Database = {
           delivery_document_url: string | null
           description: string | null
           driver_id: string | null
+          driver_phone: string | null
+          driver_type: string | null
           files_updated: boolean | null
           fuel_level: number | null
           geofence_verified_delivery: boolean | null
@@ -12919,10 +12921,13 @@ export type Database = {
           request_by_completion_date: string | null
           request_number: string
           request_start_date: string | null
+          request_subtype: string | null
           request_type: string
           requested_by: string | null
           requested_completion_date: string | null
           requestor_department: string | null
+          requestor_employee_id: string | null
+          requestor_pool: string | null
           running_hours: number | null
           schedule_id: string | null
           scrap_return_form_url: string | null
@@ -12976,6 +12981,8 @@ export type Database = {
           delivery_document_url?: string | null
           description?: string | null
           driver_id?: string | null
+          driver_phone?: string | null
+          driver_type?: string | null
           files_updated?: boolean | null
           fuel_level?: number | null
           geofence_verified_delivery?: boolean | null
@@ -13007,10 +13014,13 @@ export type Database = {
           request_by_completion_date?: string | null
           request_number: string
           request_start_date?: string | null
+          request_subtype?: string | null
           request_type?: string
           requested_by?: string | null
           requested_completion_date?: string | null
           requestor_department?: string | null
+          requestor_employee_id?: string | null
+          requestor_pool?: string | null
           running_hours?: number | null
           schedule_id?: string | null
           scrap_return_form_url?: string | null
@@ -13064,6 +13074,8 @@ export type Database = {
           delivery_document_url?: string | null
           description?: string | null
           driver_id?: string | null
+          driver_phone?: string | null
+          driver_type?: string | null
           files_updated?: boolean | null
           fuel_level?: number | null
           geofence_verified_delivery?: boolean | null
@@ -13095,10 +13107,13 @@ export type Database = {
           request_by_completion_date?: string | null
           request_number?: string
           request_start_date?: string | null
+          request_subtype?: string | null
           request_type?: string
           requested_by?: string | null
           requested_completion_date?: string | null
           requestor_department?: string | null
+          requestor_employee_id?: string | null
+          requestor_pool?: string | null
           running_hours?: number | null
           schedule_id?: string | null
           scrap_return_form_url?: string | null

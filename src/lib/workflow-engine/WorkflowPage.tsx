@@ -11,9 +11,11 @@ import type { WorkflowConfig, WorkflowInstance } from "./types";
 
 interface Props {
   config: WorkflowConfig;
+  /** Optional extra action button rendered next to "File new" (e.g. EBS Create Work Request CTA). */
+  extraAction?: React.ReactNode;
 }
 
-export function WorkflowPage({ config }: Props) {
+export function WorkflowPage({ config, extraAction }: Props) {
   const { instances, isLoading } = useWorkflow(config);
   const [newOpen, setNewOpen] = useState(false);
   const [selected, setSelected] = useState<WorkflowInstance | null>(null);
@@ -31,9 +33,12 @@ export function WorkflowPage({ config }: Props) {
             </p>
           </div>
         </div>
-        <Button onClick={() => setNewOpen(true)}>
-          <Plus className="w-4 h-4 mr-1" /> File new
-        </Button>
+        <div className="flex items-center gap-2">
+          {extraAction}
+          <Button onClick={() => setNewOpen(true)}>
+            <Plus className="w-4 h-4 mr-1" /> File new
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (

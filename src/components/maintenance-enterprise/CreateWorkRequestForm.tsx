@@ -24,6 +24,9 @@ interface Props {
   driverName?: string;
   scheduleId?: string;
   defaultRequestType?: string;
+  /** When 'trip_inspection' the form renders the Oracle EBS Veh. Trip Inspection layout with Pre/Post-trip subtype. */
+  defaultContext?: "vehicle_maintenance" | "trip_inspection" | "generator_maintenance" | "equipment_maintenance";
+  defaultInspectionSubType?: "pre_trip" | "post_trip" | "annual" | "";
   onSubmitted?: () => void;
   onCancel?: () => void;
 }
@@ -44,6 +47,8 @@ export default function CreateWorkRequestForm({
   driverName,
   scheduleId,
   defaultRequestType = "corrective",
+  defaultContext = "vehicle_maintenance",
+  defaultInspectionSubType = "",
   onSubmitted,
   onCancel,
 }: Props) {
@@ -51,12 +56,16 @@ export default function CreateWorkRequestForm({
   const { createRequest } = useMaintenanceRequests();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const isTripInspection = defaultContext === "trip_inspection";
+
   // Header
   const [assetNumber, setAssetNumber] = useState(vehiclePlate || "");
   const [assignedDept, setAssignedDept] = useState("");
   const [requestStartDate, setRequestStartDate] = useState<Date>(new Date());
   const [requestedFor, setRequestedFor] = useState("");
-  const [workRequestType, setWorkRequestType] = useState(defaultRequestType);
+  const [workRequestType, setWorkRequestType] = useState(
+    isTripInspection ? "inspection" : defaultRequestType
+  );
   const [priority, setPriority] = useState("medium");
   const [completionDate, setCompletionDate] = useState<Date | undefined>(
     new Date(Date.now() + 24 * 60 * 60 * 1000)
@@ -78,15 +87,19 @@ export default function CreateWorkRequestForm({
   const [contactPreference, setContactPreference] = useState("");
 
   // Descriptive Info
-  const [contextValue, setContextValue] = useState("Vehicle Maintenance request");
+  const [contextValue, setContextValue] = useState(
+    isTripInspection ? "Veh. Trip Inspection request" : "Vehicle Maintenance request"
+  );
   const [requestorDepartment, setRequestorDepartment] = useState("");
+  const [requestorPool, setRequestorPool] = useState("");
+  const [requestorEmployeeId, setRequestorEmployeeId] = useState("");
   const [maintenanceTypeReq, setMaintenanceTypeReq] = useState("");
   const [kmReading, setKmReading] = useState("");
   const [driverType, setDriverType] = useState("");
   const [selectedDriverName, setSelectedDriverName] = useState(driverName || "");
   const [driverPhone, setDriverPhone] = useState("");
   const [fuelLevel, setFuelLevel] = useState("");
-  const [inspectionSubType, setInspectionSubType] = useState<string>("");
+  const [inspectionSubType, setInspectionSubType] = useState<string>(defaultInspectionSubType);
   const [remark, setRemark] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
@@ -111,13 +124,31 @@ export default function CreateWorkRequestForm({
           setAssignedDept(profile.department);
           setRequestorDepartment(profile.department);
         }
-        if (code) setRequestedFor(code);
+        if (code) {
+          setRequestedFor(code);
+          setRequestorEmployeeId(code);
+        }
       } else {
         setCreatedBy(userData.user.email || "");
         setEmailAddr(userData.user.email || "");
       }
     })();
   }, []);
+
+  // Fleet pools for Requestor Pool dropdown
+  const { data: pools = [] } = useQuery({
+    queryKey: ["fleet-pools-lookup", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data } = await supabase
+        .from("fleet_pools")
+        .select("id, name")
+        .eq("organization_id", organizationId)
+        .order("name");
+      return data || [];
+    },
+    enabled: !!organizationId,
+  });
 
   // Auto-fill driver phone
   useEffect(() => {
@@ -192,12 +223,14 @@ export default function CreateWorkRequestForm({
     if (!assignedDept.trim()) return "Assigned Department is required";
     if (!requestStartDate) return "Request By Start Date is required";
     if (!additionalDescription.trim()) return "Additional Description is required";
-    if (!requestorDepartment.trim()) return "Requestor Department is required";
-    if (!maintenanceTypeReq.trim()) return "Type of maintenance request is required";
-    if (workRequestType === "inspection" && !inspectionSubType) return "Inspection sub-type is required";
+    if (!isTripInspection && !requestorDepartment.trim()) return "Requestor Department is required";
+    if (isTripInspection && !requestorPool.trim()) return "Requestor Pool is required";
+    if (isTripInspection && !driverType.trim()) return "Driver type is required";
+    if (!isTripInspection && !maintenanceTypeReq.trim()) return "Type of maintenance request is required";
+    if ((workRequestType === "inspection" || isTripInspection) && !inspectionSubType) return "Type of Request is required";
     if (!kmReading.trim()) return "KM reading is required";
     if (!driverPhone.trim()) return "Driver Phone No. is required";
-    if (!fuelLevel.trim()) return "Fuel level in the tank is required";
+    if (!isTripInspection && !fuelLevel.trim()) return "Fuel level in the tank is required";
     return null;
   };
 
@@ -215,7 +248,8 @@ export default function CreateWorkRequestForm({
 
     setSubmitting(true);
     try {
-      const reqNumber = "MR-" + Date.now().toString().slice(-8);
+      const prefix = isTripInspection ? "TI-" : "MR-";
+      const reqNumber = prefix + Date.now().toString().slice(-8);
       const { data: userData } = await supabase.auth.getUser();
       const { error } = await (supabase as any).from("maintenance_requests").insert({
         organization_id: organizationId,
@@ -223,15 +257,20 @@ export default function CreateWorkRequestForm({
         vehicle_id: resolvedVehicleId,
         driver_id: driverId || null,
         requested_by: userData.user?.id,
-        request_type: workRequestType,
+        request_type: isTripInspection ? "inspection" : workRequestType,
+        request_subtype: isTripInspection ? inspectionSubType : (workRequestType === "inspection" ? inspectionSubType : null),
         trigger_source: scheduleId ? "preventive_schedule" : "manual",
         priority,
         status: "submitted",
         workflow_stage: "submitted",
-        requestor_department: requestorDepartment,
+        requestor_department: requestorDepartment || null,
+        requestor_pool: requestorPool || null,
+        requestor_employee_id: requestorEmployeeId || null,
+        driver_type: driverType || null,
+        driver_phone: driverPhone || null,
         km_reading: kmReading ? Number(kmReading) : null,
         fuel_level: fuelLevel ? Number(fuelLevel) : null,
-        description: maintenanceTypeReq,
+        description: maintenanceTypeReq || (isTripInspection ? `Vehicle ${inspectionSubType?.replace("_", "-")} Inspection Request` : null),
         additional_description: additionalDescription,
         notes: remark || null,
         remark: remark || null,
@@ -250,7 +289,7 @@ export default function CreateWorkRequestForm({
       if (error) throw error;
 
       // If this is an inspection request, also seed a vehicle_inspections row.
-      if (workRequestType === "inspection" && resolvedVehicleId) {
+      if ((workRequestType === "inspection" || isTripInspection) && resolvedVehicleId && inspectionSubType) {
         await (supabase as any).from("vehicle_inspections").insert({
           organization_id: organizationId,
           vehicle_id: resolvedVehicleId,
@@ -259,7 +298,7 @@ export default function CreateWorkRequestForm({
           status: "pending",
           odometer_km: kmReading ? Number(kmReading) : null,
           inspection_date: new Date().toISOString(),
-          mechanic_notes: `Linked to maintenance request ${reqNumber}. ${additionalDescription}`,
+          mechanic_notes: `Linked to work request ${reqNumber}. ${additionalDescription}`,
         });
       }
 
@@ -475,36 +514,77 @@ export default function CreateWorkRequestForm({
               <Select value={contextValue} onValueChange={setContextValue}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="Veh. Trip Inspection request">Veh. Trip Inspection request</SelectItem>
                   <SelectItem value="Vehicle Maintenance request">Vehicle Maintenance request</SelectItem>
                   <SelectItem value="Generator Maintenance request">Generator Maintenance request</SelectItem>
                   <SelectItem value="Equipment Maintenance request">Equipment Maintenance request</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground mt-1">{contextValue}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {contextValue === "Veh. Trip Inspection request" ? "Vehicle pre and post trip inspection request" : contextValue}
+              </p>
             </div>
           </FieldRow>
-          <FieldRow label="Requestor Department" required>
-            <Input value={requestorDepartment} onChange={e => setRequestorDepartment(e.target.value)} />
-          </FieldRow>
-          <FieldRow label="Type of maintenance request" required>
-            <Select value={maintenanceTypeReq} onValueChange={setMaintenanceTypeReq}>
-              <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+
+          <FieldRow label="Driver type" required={isTripInspection}>
+            <Select value={driverType} onValueChange={setDriverType}>
+              <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="Oil Change">Oil Change</SelectItem>
-                <SelectItem value="Brake Service">Brake Service</SelectItem>
-                <SelectItem value="Tire Service">Tire Service</SelectItem>
-                <SelectItem value="Engine Repair">Engine Repair</SelectItem>
-                <SelectItem value="Electrical">Electrical</SelectItem>
-                <SelectItem value="Body / Paint">Body / Paint</SelectItem>
-                <SelectItem value="Air Conditioning">Air Conditioning</SelectItem>
-                <SelectItem value="Transmission">Transmission</SelectItem>
-                <SelectItem value="Suspension">Suspension</SelectItem>
-                <SelectItem value="General Inspection">General Inspection</SelectItem>
-                <SelectItem value="Other">Other</SelectItem>
+                <SelectItem value="staff">Staff Driver</SelectItem>
+                <SelectItem value="outsourced">Outsourced Driver</SelectItem>
+                <SelectItem value="contract">Contract Driver</SelectItem>
               </SelectContent>
             </Select>
           </FieldRow>
-          {workRequestType === "inspection" && (
+
+          <FieldRow label="Driver Name">
+            <Input value={selectedDriverName} onChange={e => setSelectedDriverName(e.target.value)} />
+          </FieldRow>
+
+          <FieldRow label="Employee ID">
+            <Input value={requestorEmployeeId} onChange={e => setRequestorEmployeeId(e.target.value)} placeholder="Employee number" />
+          </FieldRow>
+
+          <FieldRow label="Requestor Pool" required={isTripInspection}>
+            <Select value={requestorPool} onValueChange={setRequestorPool}>
+              <SelectTrigger><SelectValue placeholder="Select pool" /></SelectTrigger>
+              <SelectContent>
+                {pools.length === 0 && <SelectItem value="__none__" disabled>No pools configured</SelectItem>}
+                {pools.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </FieldRow>
+
+          <FieldRow label="Type of Request" required={isTripInspection || workRequestType === "inspection"}>
+            {isTripInspection ? (
+              <Select value={inspectionSubType} onValueChange={setInspectionSubType}>
+                <SelectTrigger><SelectValue placeholder="Select request type" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="post_trip">Vehicle Post-Trip Inspection Request</SelectItem>
+                  <SelectItem value="pre_trip">Vehicle Pre-Trip Inspection Request</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <Select value={maintenanceTypeReq} onValueChange={setMaintenanceTypeReq}>
+                <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Oil Change">Oil Change</SelectItem>
+                  <SelectItem value="Brake Service">Brake Service</SelectItem>
+                  <SelectItem value="Tire Service">Tire Service</SelectItem>
+                  <SelectItem value="Engine Repair">Engine Repair</SelectItem>
+                  <SelectItem value="Electrical">Electrical</SelectItem>
+                  <SelectItem value="Body / Paint">Body / Paint</SelectItem>
+                  <SelectItem value="Air Conditioning">Air Conditioning</SelectItem>
+                  <SelectItem value="Transmission">Transmission</SelectItem>
+                  <SelectItem value="Suspension">Suspension</SelectItem>
+                  <SelectItem value="General Inspection">General Inspection</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          </FieldRow>
+
+          {!isTripInspection && workRequestType === "inspection" && (
             <FieldRow label="Inspection sub-type" required>
               <Select value={inspectionSubType} onValueChange={setInspectionSubType}>
                 <SelectTrigger><SelectValue placeholder="Select sub-type" /></SelectTrigger>
@@ -516,31 +596,30 @@ export default function CreateWorkRequestForm({
               </Select>
             </FieldRow>
           )}
+
+          {!isTripInspection && (
+            <FieldRow label="Requestor Department" required>
+              <Input value={requestorDepartment} onChange={e => setRequestorDepartment(e.target.value)} />
+            </FieldRow>
+          )}
+
           <FieldRow label="KM reading" required>
             <Input type="number" value={kmReading} onChange={e => setKmReading(e.target.value)} />
           </FieldRow>
-          <FieldRow label="Driver type">
-            <Select value={driverType} onValueChange={setDriverType}>
-              <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="staff">Staff Driver</SelectItem>
-                <SelectItem value="outsourced">Outsourced Driver</SelectItem>
-                <SelectItem value="contract">Contract Driver</SelectItem>
-              </SelectContent>
-            </Select>
-          </FieldRow>
-          <FieldRow label="Driver Name">
-            <Input value={selectedDriverName} onChange={e => setSelectedDriverName(e.target.value)} />
-          </FieldRow>
+
           <FieldRow label="Driver Phone No." required>
             <Input value={driverPhone} onChange={e => setDriverPhone(e.target.value)} />
           </FieldRow>
-          <FieldRow label="fuel level in the tank" required>
-            <div className="flex items-center gap-2">
-              <Input type="number" min={0} max={100} value={fuelLevel} onChange={e => setFuelLevel(e.target.value)} className="max-w-[160px]" />
-              <span className="text-sm text-muted-foreground">%</span>
-            </div>
-          </FieldRow>
+
+          {!isTripInspection && (
+            <FieldRow label="Fuel level in the tank" required>
+              <div className="flex items-center gap-2">
+                <Input type="number" min={0} max={100} value={fuelLevel} onChange={e => setFuelLevel(e.target.value)} className="max-w-[160px]" />
+                <span className="text-sm text-muted-foreground">%</span>
+              </div>
+            </FieldRow>
+          )}
+
           <FieldRow label="Remark">
             <Textarea value={remark} onChange={e => setRemark(e.target.value)} rows={2} />
           </FieldRow>
