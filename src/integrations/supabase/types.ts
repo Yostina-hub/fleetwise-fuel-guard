@@ -20183,6 +20183,198 @@ export type Database = {
           },
         ]
       }
+      tire_request_items: {
+        Row: {
+          created_at: string
+          id: string
+          iproc_received_by: string | null
+          iproc_return_reference: string | null
+          iproc_return_status: string
+          iproc_returned_at: string | null
+          iproc_warehouse: string | null
+          new_tire_id: string | null
+          notes: string | null
+          organization_id: string
+          position: string
+          preferred_brand: string | null
+          preferred_model: string | null
+          previous_tire_id: string | null
+          request_id: string
+          return_skip_reason: string | null
+          tire_size: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          iproc_received_by?: string | null
+          iproc_return_reference?: string | null
+          iproc_return_status?: string
+          iproc_returned_at?: string | null
+          iproc_warehouse?: string | null
+          new_tire_id?: string | null
+          notes?: string | null
+          organization_id: string
+          position: string
+          preferred_brand?: string | null
+          preferred_model?: string | null
+          previous_tire_id?: string | null
+          request_id: string
+          return_skip_reason?: string | null
+          tire_size?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          iproc_received_by?: string | null
+          iproc_return_reference?: string | null
+          iproc_return_status?: string
+          iproc_returned_at?: string | null
+          iproc_warehouse?: string | null
+          new_tire_id?: string | null
+          notes?: string | null
+          organization_id?: string
+          position?: string
+          preferred_brand?: string | null
+          preferred_model?: string | null
+          previous_tire_id?: string | null
+          request_id?: string
+          return_skip_reason?: string | null
+          tire_size?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tire_request_items_new_tire_id_fkey"
+            columns: ["new_tire_id"]
+            isOneToOne: false
+            referencedRelation: "tire_inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tire_request_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tire_request_items_previous_tire_id_fkey"
+            columns: ["previous_tire_id"]
+            isOneToOne: false
+            referencedRelation: "tire_inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tire_request_items_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "tire_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tire_requests: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          approved_by_name: string | null
+          created_at: string
+          documents: string[] | null
+          driver_id: string | null
+          estimated_cost: number | null
+          fulfilled_at: string | null
+          fulfilled_by: string | null
+          id: string
+          notes: string | null
+          organization_id: string
+          priority: string
+          reason: string | null
+          rejected_reason: string | null
+          request_number: string
+          request_type: string
+          requested_by: string | null
+          requested_by_name: string | null
+          requested_by_role: string | null
+          status: string
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_by_name?: string | null
+          created_at?: string
+          documents?: string[] | null
+          driver_id?: string | null
+          estimated_cost?: number | null
+          fulfilled_at?: string | null
+          fulfilled_by?: string | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          priority?: string
+          reason?: string | null
+          rejected_reason?: string | null
+          request_number: string
+          request_type?: string
+          requested_by?: string | null
+          requested_by_name?: string | null
+          requested_by_role?: string | null
+          status?: string
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_by_name?: string | null
+          created_at?: string
+          documents?: string[] | null
+          driver_id?: string | null
+          estimated_cost?: number | null
+          fulfilled_at?: string | null
+          fulfilled_by?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          priority?: string
+          reason?: string | null
+          rejected_reason?: string | null
+          request_number?: string
+          request_type?: string
+          requested_by?: string | null
+          requested_by_name?: string | null
+          requested_by_role?: string | null
+          status?: string
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tire_requests_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tire_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tire_requests_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tpl_invoices: {
         Row: {
           created_at: string

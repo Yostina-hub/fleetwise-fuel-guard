@@ -9,8 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
-import { CircleDot, Plus, BarChart3, History, AlertTriangle, TrendingUp, RotateCcw } from "lucide-react";
+import { CircleDot, Plus, BarChart3, History, AlertTriangle, TrendingUp, RotateCcw, ClipboardList } from "lucide-react";
 import { TireChangeDialog } from "@/components/tire-management/TireChangeDialog";
+import { TireRequestDialog } from "@/components/tire-management/TireRequestDialog";
+import { TireRequestsTab } from "@/components/tire-management/TireRequestsTab";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -24,6 +26,7 @@ const TireManagement = () => {
   const [activeTab, setActiveTab] = useState("inventory");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showChangeDialog, setShowChangeDialog] = useState(false);
+  const [showRequestDialog, setShowRequestDialog] = useState(false);
   const { organizationId } = useOrganization();
   const { vehicles } = useVehicles();
   const queryClient = useQueryClient();
@@ -133,6 +136,9 @@ const TireManagement = () => {
             </div>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" className="gap-2" onClick={() => setShowRequestDialog(true)}>
+              <ClipboardList className="w-4 h-4" /> New Request
+            </Button>
             <Button variant="outline" className="gap-2" onClick={() => setShowChangeDialog(true)}>
               <RotateCcw className="w-4 h-4" /> Record Change
             </Button>
@@ -165,6 +171,7 @@ const TireManagement = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="inventory" className="gap-1.5"><CircleDot className="w-3.5 h-3.5" /> Inventory</TabsTrigger>
+            <TabsTrigger value="requests" className="gap-1.5"><ClipboardList className="w-3.5 h-3.5" /> Requests</TabsTrigger>
             <TabsTrigger value="positions" className="gap-1.5"><CircleDot className="w-3.5 h-3.5" /> Positions</TabsTrigger>
             <TabsTrigger value="changes" className="gap-1.5"><History className="w-3.5 h-3.5" /> Change History</TabsTrigger>
             <TabsTrigger value="costs" className="gap-1.5"><BarChart3 className="w-3.5 h-3.5" /> Cost Analysis</TabsTrigger>
@@ -218,6 +225,10 @@ const TireManagement = () => {
                   );
                 })
               )}
+            </TabsContent>
+
+            <TabsContent value="requests" className="mt-0">
+              <TireRequestsTab />
             </TabsContent>
 
             <TabsContent value="positions" className="mt-0">
@@ -390,6 +401,7 @@ const TireManagement = () => {
           </DialogContent>
         </Dialog>
         <TireChangeDialog open={showChangeDialog} onOpenChange={setShowChangeDialog} tires={tireInventory} />
+        <TireRequestDialog open={showRequestDialog} onOpenChange={setShowRequestDialog} />
       </div>
     </Layout>
   );
