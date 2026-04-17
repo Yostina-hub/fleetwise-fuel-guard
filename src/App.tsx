@@ -57,6 +57,7 @@ const Organizations = lazyWithRetry(() => import("./pages/Organizations"), "Orga
 const EVManagement = lazyWithRetry(() => import("./pages/EVManagement"), "EVManagement");
 const VehicleRequests = lazyWithRetry(() => import("./pages/VehicleRequests"), "VehicleRequests");
 const TireManagement = lazyWithRetry(() => import("./pages/TireManagement"), "TireManagement");
+const HandoverCatalogAdmin = lazyWithRetry(() => import("./pages/HandoverCatalogAdmin"), "HandoverCatalogAdmin");
 
 const RentalVehicles = lazyWithRetry(() => import("./pages/RentalVehicles"), "RentalVehicles");
 const RoutePlanning = lazyWithRetry(() => import("./pages/RoutePlanning"), "RoutePlanning");
@@ -268,6 +269,7 @@ const App = () => {
                         <Route path="/sop/outsource-rental" element={<ProtectedRoute><OutsourceRentalPage /></ProtectedRoute>} />
                        <Route path="/sop/safety-comfort" element={<ProtectedRoute><SafetyComfortPage /></ProtectedRoute>} />
                        <Route path="/sop/vehicle-handover" element={<ProtectedRoute><VehicleHandoverPage /></ProtectedRoute>} />
+                       <Route path="/sop/vehicle-handover/catalog" element={<ProtectedRoute><HandoverCatalogAdmin /></ProtectedRoute>} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />
                       </Routes>

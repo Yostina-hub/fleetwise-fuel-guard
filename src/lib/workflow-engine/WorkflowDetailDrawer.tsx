@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { Lock, CheckCircle2, History as HistoryIcon, ExternalLink } from "lucide-react";
 import { WorkflowFieldset } from "./WorkflowFieldset";
 import { useWorkflow, useWorkflowTransitions } from "./useWorkflow";
+import { VehicleHandoverHistoryDiff } from "@/components/workflow/VehicleHandoverHistoryDiff";
 import type { WorkflowConfig, WorkflowInstance, StageAction } from "./types";
 
 interface Props {
@@ -182,7 +183,13 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
               )}
             </TabsContent>
 
-            <TabsContent value="data" className="mt-3">
+            <TabsContent value="data" className="mt-3 space-y-3">
+              {config.type === "vehicle_handover" ? (
+                <div>
+                  <p className="text-xs font-semibold mb-2">History comparison</p>
+                  <VehicleHandoverHistoryDiff instance={instance} />
+                </div>
+              ) : null}
               <pre className="text-[11px] bg-muted/50 p-2 rounded overflow-auto max-h-96">
                 {JSON.stringify(instance.data || {}, null, 2)}
               </pre>
