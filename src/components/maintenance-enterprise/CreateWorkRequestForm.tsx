@@ -601,7 +601,7 @@ export default function CreateWorkRequestForm({
             </Select>
           </FieldRow>
 
-          <FieldRow label="Type of Request" required={isTripInspection || workRequestType === "inspection"}>
+          <FieldRow label="Type of Request" required={isTripInspection || isSafetyComfortCtx || workRequestType === "inspection"}>
             {isTripInspection ? (
               <div className="space-y-2 rounded-md border p-3">
                 {[
