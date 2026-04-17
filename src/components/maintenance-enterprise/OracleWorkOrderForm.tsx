@@ -222,9 +222,20 @@ export default function OracleWorkOrderForm({ maintenanceRequestId, workOrderId,
       setPriority(data.priority || "medium");
       if (data.scheduled_date) setScheduledStart(new Date(data.scheduled_date));
 
-      const { data: ops } = await (supabase as any)
-        .from("work_order_operations").select("*").eq("work_order_id", workOrderId).order("sequence_number");
+      const [{ data: ops }, { data: mats }, { data: prms }, { data: qps }, { data: mtrs }, { data: atts }] = await Promise.all([
+        (supabase as any).from("work_order_operations").select("*").eq("work_order_id", workOrderId).order("sequence_number"),
+        (supabase as any).from("work_order_materials").select("*").eq("work_order_id", workOrderId),
+        (supabase as any).from("work_order_permits").select("*").eq("work_order_id", workOrderId),
+        (supabase as any).from("work_order_quality_plans").select("*").eq("work_order_id", workOrderId),
+        (supabase as any).from("work_order_meter_readings").select("*").eq("work_order_id", workOrderId),
+        (supabase as any).from("work_order_attachments").select("*").eq("work_order_id", workOrderId),
+      ]);
       if (ops?.length) setOperations(ops as any);
+      if (mats?.length) setMaterials(mats as any);
+      if (prms?.length) setPermits(prms as any);
+      if (qps?.length) setQualityPlans(qps as any);
+      if (mtrs?.length) setMeterReadings(mtrs as any);
+      if (atts?.length) setAttachments(atts as any);
     })();
   }, [workOrderId]);
 
@@ -234,6 +245,26 @@ export default function OracleWorkOrderForm({ maintenanceRequestId, workOrderId,
   };
   const updateOp = (i: number, patch: Partial<Operation>) => setOperations(prev => prev.map((o, idx) => idx === i ? { ...o, ...patch } : o));
   const removeOp = (i: number) => setOperations(prev => prev.filter((_, idx) => idx !== i));
+
+  const addMaterial = () => setMaterials(prev => [...prev, { item_code: "", item_description: "", required_quantity: 1, issued_quantity: 0, uom: "EA", supply_type: "Push", unit_cost: 0 }]);
+  const updateMat = (i: number, p: Partial<Material>) => setMaterials(prev => prev.map((m, idx) => idx === i ? { ...m, ...p } : m));
+  const removeMat = (i: number) => setMaterials(prev => prev.filter((_, idx) => idx !== i));
+
+  const addPermit = () => setPermits(prev => [...prev, { permit_number: "", permit_type: "general", issued_by: "", status: "pending" }]);
+  const updatePermit = (i: number, p: Partial<Permit>) => setPermits(prev => prev.map((m, idx) => idx === i ? { ...m, ...p } : m));
+  const removePermit = (i: number) => setPermits(prev => prev.filter((_, idx) => idx !== i));
+
+  const addQuality = () => setQualityPlans(prev => [...prev, { plan_name: "", characteristic: "", specification: "", result: "", pass: null }]);
+  const updateQuality = (i: number, p: Partial<QualityPlan>) => setQualityPlans(prev => prev.map((m, idx) => idx === i ? { ...m, ...p } : m));
+  const removeQuality = (i: number) => setQualityPlans(prev => prev.filter((_, idx) => idx !== i));
+
+  const addMeter = () => setMeterReadings(prev => [...prev, { meter_name: "Odometer", reading_value: 0, unit: "KM" }]);
+  const updateMeter = (i: number, p: Partial<MeterReading>) => setMeterReadings(prev => prev.map((m, idx) => idx === i ? { ...m, ...p } : m));
+  const removeMeter = (i: number) => setMeterReadings(prev => prev.filter((_, idx) => idx !== i));
+
+  const addAttachment = () => setAttachments(prev => [...prev, { file_name: "", file_url: "", category: "general" }]);
+  const updateAttachment = (i: number, p: Partial<Attachment>) => setAttachments(prev => prev.map((m, idx) => idx === i ? { ...m, ...p } : m));
+  const removeAttachment = (i: number) => setAttachments(prev => prev.filter((_, idx) => idx !== i));
 
   const handleSave = async () => {
     if (!assetNumber.trim()) { toast.error("Asset Number is required"); return; }
