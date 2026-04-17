@@ -250,6 +250,9 @@ const getNavItems = (t: (key: string) => string) => [
       { label: "Roadside Assistance", path: "/sop/roadside-assistance" },
       { label: "License Renewal", path: "/sop/license-renewal" },
       { label: "Outsource Rental", path: "/sop/outsource-rental" },
+      { label: "Safety & Comfort", path: "/sop/safety-comfort" },
+      { label: "Vehicle Handover", path: "/sop/vehicle-handover" },
+      { label: "Fleet Distribution & Transfer", path: "/sop/fleet-transfer" },
     ],
   },
 
