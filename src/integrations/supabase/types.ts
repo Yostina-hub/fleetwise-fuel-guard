@@ -12867,8 +12867,11 @@ export type Database = {
       maintenance_requests: {
         Row: {
           additional_description: string | null
+          approval_routed_at: string | null
           approved_at: string | null
           approved_by: string | null
+          approver_role: string | null
+          approver_user_id: string | null
           asset_criticality: string | null
           assigned_to_role: string | null
           attachments: Json | null
@@ -12895,6 +12898,7 @@ export type Database = {
           geofence_verified_delivery: boolean | null
           geofence_verified_receipt: boolean | null
           id: string
+          inspection_id: string | null
           inspector_assigned_at: string | null
           inspector_id: string | null
           km_reading: number | null
@@ -12916,6 +12920,8 @@ export type Database = {
           pre_inspection_done: boolean | null
           pre_inspection_notes: string | null
           priority: string | null
+          rejected_at: string | null
+          rejected_by: string | null
           rejection_reason: string | null
           remark: string | null
           request_by_completion_date: string | null
@@ -12960,8 +12966,11 @@ export type Database = {
         }
         Insert: {
           additional_description?: string | null
+          approval_routed_at?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          approver_role?: string | null
+          approver_user_id?: string | null
           asset_criticality?: string | null
           assigned_to_role?: string | null
           attachments?: Json | null
@@ -12988,6 +12997,7 @@ export type Database = {
           geofence_verified_delivery?: boolean | null
           geofence_verified_receipt?: boolean | null
           id?: string
+          inspection_id?: string | null
           inspector_assigned_at?: string | null
           inspector_id?: string | null
           km_reading?: number | null
@@ -13009,6 +13019,8 @@ export type Database = {
           pre_inspection_done?: boolean | null
           pre_inspection_notes?: string | null
           priority?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
           rejection_reason?: string | null
           remark?: string | null
           request_by_completion_date?: string | null
@@ -13053,8 +13065,11 @@ export type Database = {
         }
         Update: {
           additional_description?: string | null
+          approval_routed_at?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          approver_role?: string | null
+          approver_user_id?: string | null
           asset_criticality?: string | null
           assigned_to_role?: string | null
           attachments?: Json | null
@@ -13081,6 +13096,7 @@ export type Database = {
           geofence_verified_delivery?: boolean | null
           geofence_verified_receipt?: boolean | null
           id?: string
+          inspection_id?: string | null
           inspector_assigned_at?: string | null
           inspector_id?: string | null
           km_reading?: number | null
@@ -13102,6 +13118,8 @@ export type Database = {
           pre_inspection_done?: boolean | null
           pre_inspection_notes?: string | null
           priority?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
           rejection_reason?: string | null
           remark?: string | null
           request_by_completion_date?: string | null
@@ -21230,78 +21248,120 @@ export type Database = {
       }
       vehicle_inspections: {
         Row: {
+          bolo_certificate_url: string | null
           certified_safe: boolean | null
           checklist_data: Json | null
+          closed_by_initiator: string | null
+          closed_by_initiator_at: string | null
           created_at: string
           defects_found: Json | null
           driver_id: string | null
           id: string
+          inspection_center: string | null
+          inspection_center_supplier_id: string | null
           inspection_date: string
           inspection_type: string
           inspector_signature_url: string | null
           location_lat: number | null
           location_lng: number | null
+          maintenance_request_id: string | null
           mechanic_notes: string | null
           mechanic_signature_url: string | null
           odometer_km: number | null
+          official_receipt_url: string | null
           organization_id: string
+          outsource_po_id: string | null
+          outsource_stage: string | null
           overall_condition: string | null
           photo_urls: string[] | null
+          plate_sticker_number: string | null
+          registration_cost: number | null
+          registration_date: string | null
+          registration_valid_until: string | null
           repaired_at: string | null
           status: string
           updated_at: string
           vehicle_id: string
           work_order_created: boolean | null
+          work_order_id: string | null
           workflow_instance_id: string | null
         }
         Insert: {
+          bolo_certificate_url?: string | null
           certified_safe?: boolean | null
           checklist_data?: Json | null
+          closed_by_initiator?: string | null
+          closed_by_initiator_at?: string | null
           created_at?: string
           defects_found?: Json | null
           driver_id?: string | null
           id?: string
+          inspection_center?: string | null
+          inspection_center_supplier_id?: string | null
           inspection_date?: string
           inspection_type?: string
           inspector_signature_url?: string | null
           location_lat?: number | null
           location_lng?: number | null
+          maintenance_request_id?: string | null
           mechanic_notes?: string | null
           mechanic_signature_url?: string | null
           odometer_km?: number | null
+          official_receipt_url?: string | null
           organization_id: string
+          outsource_po_id?: string | null
+          outsource_stage?: string | null
           overall_condition?: string | null
           photo_urls?: string[] | null
+          plate_sticker_number?: string | null
+          registration_cost?: number | null
+          registration_date?: string | null
+          registration_valid_until?: string | null
           repaired_at?: string | null
           status?: string
           updated_at?: string
           vehicle_id: string
           work_order_created?: boolean | null
+          work_order_id?: string | null
           workflow_instance_id?: string | null
         }
         Update: {
+          bolo_certificate_url?: string | null
           certified_safe?: boolean | null
           checklist_data?: Json | null
+          closed_by_initiator?: string | null
+          closed_by_initiator_at?: string | null
           created_at?: string
           defects_found?: Json | null
           driver_id?: string | null
           id?: string
+          inspection_center?: string | null
+          inspection_center_supplier_id?: string | null
           inspection_date?: string
           inspection_type?: string
           inspector_signature_url?: string | null
           location_lat?: number | null
           location_lng?: number | null
+          maintenance_request_id?: string | null
           mechanic_notes?: string | null
           mechanic_signature_url?: string | null
           odometer_km?: number | null
+          official_receipt_url?: string | null
           organization_id?: string
+          outsource_po_id?: string | null
+          outsource_stage?: string | null
           overall_condition?: string | null
           photo_urls?: string[] | null
+          plate_sticker_number?: string | null
+          registration_cost?: number | null
+          registration_date?: string | null
+          registration_valid_until?: string | null
           repaired_at?: string | null
           status?: string
           updated_at?: string
           vehicle_id?: string
           work_order_created?: boolean | null
+          work_order_id?: string | null
           workflow_instance_id?: string | null
         }
         Relationships: [

@@ -251,58 +251,78 @@ export default function CreateWorkRequestForm({
       const prefix = isTripInspection ? "TI-" : "MR-";
       const reqNumber = prefix + Date.now().toString().slice(-8);
       const { data: userData } = await supabase.auth.getUser();
-      const { error } = await (supabase as any).from("maintenance_requests").insert({
-        organization_id: organizationId,
-        request_number: reqNumber,
-        vehicle_id: resolvedVehicleId,
-        driver_id: driverId || null,
-        requested_by: userData.user?.id,
-        request_type: isTripInspection ? "inspection" : workRequestType,
-        request_subtype: isTripInspection ? inspectionSubType : (workRequestType === "inspection" ? inspectionSubType : null),
-        trigger_source: scheduleId ? "preventive_schedule" : "manual",
-        priority,
-        status: "submitted",
-        workflow_stage: "submitted",
-        requestor_department: requestorDepartment || null,
-        requestor_pool: requestorPool || null,
-        requestor_employee_id: requestorEmployeeId || null,
-        driver_type: driverType || null,
-        driver_phone: driverPhone || null,
-        km_reading: kmReading ? Number(kmReading) : null,
-        fuel_level: fuelLevel ? Number(fuelLevel) : null,
-        description: maintenanceTypeReq || (isTripInspection ? `Vehicle ${inspectionSubType?.replace("_", "-")} Inspection Request` : null),
-        additional_description: additionalDescription,
-        notes: remark || null,
-        remark: remark || null,
-        request_start_date: requestStartDate.toISOString(),
-        request_by_completion_date: completionDate?.toISOString() || null,
-        requested_completion_date: completionDate ? format(completionDate, "yyyy-MM-dd") : null,
-        notify_user: notifyUser === "Yes",
-        contact_phone: phoneNumber || null,
-        contact_email: emailAddr || null,
-        contact_preference: contactPreference || null,
-        context_value: contextValue,
-        asset_criticality: assetCriticality || null,
-        attachments: attachments as any,
-        schedule_id: scheduleId || null,
-      });
-      if (error) throw error;
-
-      // If this is an inspection request, also seed a vehicle_inspections row.
-      if ((workRequestType === "inspection" || isTripInspection) && resolvedVehicleId && inspectionSubType) {
-        await (supabase as any).from("vehicle_inspections").insert({
+      const { data: insertedReq, error } = await (supabase as any)
+        .from("maintenance_requests")
+        .insert({
           organization_id: organizationId,
+          request_number: reqNumber,
           vehicle_id: resolvedVehicleId,
           driver_id: driverId || null,
-          inspection_type: inspectionSubType, // 'annual' | 'pre_trip' | 'post_trip'
-          status: "pending",
-          odometer_km: kmReading ? Number(kmReading) : null,
-          inspection_date: new Date().toISOString(),
-          mechanic_notes: `Linked to work request ${reqNumber}. ${additionalDescription}`,
-        });
+          requested_by: userData.user?.id,
+          request_type: isTripInspection ? "inspection" : workRequestType,
+          request_subtype: isTripInspection ? inspectionSubType : (workRequestType === "inspection" ? inspectionSubType : null),
+          trigger_source: scheduleId ? "preventive_schedule" : "manual",
+          priority,
+          status: "submitted",
+          workflow_stage: "submitted",
+          requestor_department: requestorDepartment || null,
+          requestor_pool: requestorPool || null,
+          requestor_employee_id: requestorEmployeeId || null,
+          driver_type: driverType || null,
+          driver_phone: driverPhone || null,
+          km_reading: kmReading ? Number(kmReading) : null,
+          fuel_level: fuelLevel ? Number(fuelLevel) : null,
+          description: maintenanceTypeReq || (isTripInspection ? `Vehicle ${inspectionSubType?.replace("_", "-")} Inspection Request` : null),
+          additional_description: additionalDescription,
+          notes: remark || null,
+          remark: remark || null,
+          request_start_date: requestStartDate.toISOString(),
+          request_by_completion_date: completionDate?.toISOString() || null,
+          requested_completion_date: completionDate ? format(completionDate, "yyyy-MM-dd") : null,
+          notify_user: notifyUser === "Yes",
+          contact_phone: phoneNumber || null,
+          contact_email: emailAddr || null,
+          contact_preference: contactPreference || null,
+          context_value: contextValue,
+          asset_criticality: assetCriticality || null,
+          attachments: attachments as any,
+          schedule_id: scheduleId || null,
+        })
+        .select("id, approver_role")
+        .maybeSingle();
+      if (error) throw error;
+
+      // If this is an inspection request, also seed a vehicle_inspections row and bidirectionally link.
+      if ((workRequestType === "inspection" || isTripInspection) && resolvedVehicleId && inspectionSubType) {
+        const { data: insp } = await (supabase as any)
+          .from("vehicle_inspections")
+          .insert({
+            organization_id: organizationId,
+            vehicle_id: resolvedVehicleId,
+            driver_id: driverId || null,
+            inspection_type: inspectionSubType, // 'annual' | 'pre_trip' | 'post_trip'
+            status: "pending",
+            odometer_km: kmReading ? Number(kmReading) : null,
+            inspection_date: new Date().toISOString(),
+            mechanic_notes: `Linked to work request ${reqNumber}. ${additionalDescription}`,
+            outsource_stage: inspectionSubType === "annual" ? "awaiting_approval" : null,
+            maintenance_request_id: insertedReq?.id || null,
+          })
+          .select("id")
+          .maybeSingle();
+
+        if (insp?.id && insertedReq?.id) {
+          await (supabase as any)
+            .from("maintenance_requests")
+            .update({ inspection_id: insp.id })
+            .eq("id", insertedReq.id);
+        }
       }
 
-      toast.success(`Work Request ${reqNumber} created`);
+      const approverInfo = insertedReq?.approver_role
+        ? ` — routed to ${insertedReq.approver_role.replace(/_/g, " ")}`
+        : "";
+      toast.success(`Work Request ${reqNumber} created${approverInfo}`);
       onSubmitted?.();
     } catch (e: any) {
       toast.error(e.message || "Failed to create request");
@@ -557,13 +577,28 @@ export default function CreateWorkRequestForm({
 
           <FieldRow label="Type of Request" required={isTripInspection || workRequestType === "inspection"}>
             {isTripInspection ? (
-              <Select value={inspectionSubType} onValueChange={setInspectionSubType}>
-                <SelectTrigger><SelectValue placeholder="Select request type" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="post_trip">Vehicle Post-Trip Inspection Request</SelectItem>
-                  <SelectItem value="pre_trip">Vehicle Pre-Trip Inspection Request</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="space-y-2 rounded-md border p-3">
+                {[
+                  { value: "post_trip", label: "Vehicle Post-Trip Inspection Request", hint: "Filed after a trip; closed by initiator." },
+                  { value: "pre_trip",  label: "Vehicle Pre-Trip Inspection Request",  hint: "Filed before a trip; closed by initiator." },
+                  { value: "annual",    label: "Vehicle Annual Inspection Request (Bolo)", hint: "Routes to outsourcing pipeline (RFQ → PO → payment)." },
+                ].map(opt => (
+                  <label key={opt.value} className="flex items-start gap-2 cursor-pointer text-sm">
+                    <input
+                      type="radio"
+                      name="trip-inspection-subtype"
+                      value={opt.value}
+                      checked={inspectionSubType === opt.value}
+                      onChange={() => setInspectionSubType(opt.value)}
+                      className="mt-1 accent-primary"
+                    />
+                    <span>
+                      <span className="font-medium">{opt.label}</span>
+                      <span className="block text-xs text-muted-foreground">{opt.hint}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
             ) : (
               <Select value={maintenanceTypeReq} onValueChange={setMaintenanceTypeReq}>
                 <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
@@ -583,6 +618,18 @@ export default function CreateWorkRequestForm({
               </Select>
             )}
           </FieldRow>
+
+          {isTripInspection && inspectionSubType === "annual" && (
+            <div className="rounded-md border-l-4 border-primary bg-primary/5 p-3 mb-3 text-xs">
+              <p className="font-medium text-foreground mb-1">Annual Inspection — Outsourcing pipeline</p>
+              <p className="text-muted-foreground">
+                After approval (delegation matrix), a work order is created and routed to the
+                Outsourcing pipeline: <strong>RFQ → quotes → supplier select → PO → invoice → payment</strong>.
+                Annual registration cost, date and Bolo certificate are captured at the closing step on the
+                inspection record.
+              </p>
+            </div>
+          )}
 
           {!isTripInspection && workRequestType === "inspection" && (
             <FieldRow label="Inspection sub-type" required>
