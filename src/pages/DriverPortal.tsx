@@ -251,6 +251,37 @@ const DriverPortal = () => {
     return () => { supabase.removeChannel(channel); };
   }, [driverId, organizationId, queryClient]);
 
+  /**
+   * Deep-link handler: when arriving via /driver-portal?postTrip=<inspection_id>
+   * (from an alert), look up the pending inspection and open the dialog
+   * pre-filled as a post-trip checklist for the correct vehicle.
+   */
+  const postTripParam = searchParams.get("postTrip");
+  useEffect(() => {
+    if (!postTripParam || !organizationId) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("vehicle_inspections")
+        .select("id, vehicle_id, status")
+        .eq("id", postTripParam)
+        .eq("organization_id", organizationId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (!data) {
+        toast.error("Post-trip inspection not found");
+        return;
+      }
+      if (data.status !== "pending") {
+        toast.info("This post-trip inspection has already been completed");
+        return;
+      }
+      setInspectionPrefillOverride({ vehicle_id: data.vehicle_id, inspection_type: "post_trip" });
+      setShowInspection(true);
+    })();
+    return () => { cancelled = true; };
+  }, [postTripParam, organizationId]);
+
   if (driverLoading) {
     return (
       <Layout>
@@ -316,12 +347,29 @@ const DriverPortal = () => {
           openFuel={openRequests?.fuel || 0}
         />
 
+        {/* Pending post-trip inspection — hybrid enforcement */}
+        <PendingPostTripBanner
+          driverId={driverId}
+          organizationId={organizationId || undefined}
+          onStart={(insp) => {
+            setInspectionPrefillOverride({ vehicle_id: insp.vehicle_id, inspection_type: "post_trip" });
+            setShowInspection(true);
+          }}
+        />
+
         {/* Quick Actions — open dialogs (no navigation) */}
         <DriverQuickActions
           onReportIssue={() => setShowMaintenance(true)}
           onRequestFuel={() => setShowFuel(true)}
           onRequestVehicle={() => setShowVehicle(true)}
-          onPreTripInspection={() => setShowInspection(true)}
+          onPreTripInspection={() => {
+            setInspectionPrefillOverride(null);
+            setShowInspection(true);
+          }}
+          onPostTripInspection={() => {
+            setInspectionPrefillOverride({ vehicle_id: vehicle?.id, inspection_type: "post_trip" });
+            setShowInspection(true);
+          }}
           onMyDocuments={() => navigate("/document-management")}
         />
 
