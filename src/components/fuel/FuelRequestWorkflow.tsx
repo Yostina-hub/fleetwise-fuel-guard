@@ -37,6 +37,7 @@ import { PendingEmoneyApprovalsPanel } from "./PendingEmoneyApprovalsPanel";
 import { NearbyStationsPanel } from "./NearbyStationsPanel";
 import { FuelWorkOrderDialog } from "./FuelWorkOrderDialog";
 import { FuelWorkOrdersTab } from "./FuelWorkOrdersTab";
+import { FuelRequestFormDialog } from "./FuelRequestFormDialog";
 
 const ITEMS_PER_PAGE = 15;
 const APPROVER_ROLES = ["fleet_manager", "operations_manager", "org_admin", "super_admin", "fleet_owner"];
