@@ -22635,6 +22635,183 @@ export type Database = {
           },
         ]
       }
+      work_order_attachments: {
+        Row: {
+          category: string | null
+          file_name: string
+          file_url: string
+          id: string
+          mime_type: string | null
+          notes: string | null
+          organization_id: string
+          uploaded_at: string | null
+          uploaded_by: string | null
+          work_order_id: string
+        }
+        Insert: {
+          category?: string | null
+          file_name: string
+          file_url: string
+          id?: string
+          mime_type?: string | null
+          notes?: string | null
+          organization_id: string
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+          work_order_id: string
+        }
+        Update: {
+          category?: string | null
+          file_name?: string
+          file_url?: string
+          id?: string
+          mime_type?: string | null
+          notes?: string | null
+          organization_id?: string
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_order_attachments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_order_attachments_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_order_materials: {
+        Row: {
+          created_at: string | null
+          id: string
+          issued_quantity: number | null
+          item_code: string | null
+          item_description: string | null
+          notes: string | null
+          operation_sequence: number | null
+          organization_id: string
+          required_date: string | null
+          required_quantity: number | null
+          supply_type: string | null
+          unit_cost: number | null
+          uom: string | null
+          updated_at: string | null
+          work_order_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          issued_quantity?: number | null
+          item_code?: string | null
+          item_description?: string | null
+          notes?: string | null
+          operation_sequence?: number | null
+          organization_id: string
+          required_date?: string | null
+          required_quantity?: number | null
+          supply_type?: string | null
+          unit_cost?: number | null
+          uom?: string | null
+          updated_at?: string | null
+          work_order_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          issued_quantity?: number | null
+          item_code?: string | null
+          item_description?: string | null
+          notes?: string | null
+          operation_sequence?: number | null
+          organization_id?: string
+          required_date?: string | null
+          required_quantity?: number | null
+          supply_type?: string | null
+          unit_cost?: number | null
+          uom?: string | null
+          updated_at?: string | null
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_order_materials_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_order_materials_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_order_meter_readings: {
+        Row: {
+          captured_at: string | null
+          captured_by: string | null
+          created_at: string | null
+          id: string
+          meter_name: string
+          notes: string | null
+          organization_id: string
+          reading_value: number
+          unit: string | null
+          work_order_id: string
+        }
+        Insert: {
+          captured_at?: string | null
+          captured_by?: string | null
+          created_at?: string | null
+          id?: string
+          meter_name: string
+          notes?: string | null
+          organization_id: string
+          reading_value: number
+          unit?: string | null
+          work_order_id: string
+        }
+        Update: {
+          captured_at?: string | null
+          captured_by?: string | null
+          created_at?: string | null
+          id?: string
+          meter_name?: string
+          notes?: string | null
+          organization_id?: string
+          reading_value?: number
+          unit?: string | null
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_order_meter_readings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_order_meter_readings_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       work_order_operations: {
         Row: {
           assigned_hours: number | null
@@ -22783,6 +22960,66 @@ export type Database = {
           },
         ]
       }
+      work_order_permits: {
+        Row: {
+          created_at: string | null
+          id: string
+          issued_by: string | null
+          notes: string | null
+          organization_id: string
+          permit_number: string | null
+          permit_type: string | null
+          status: string | null
+          updated_at: string | null
+          valid_from: string | null
+          valid_until: string | null
+          work_order_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          issued_by?: string | null
+          notes?: string | null
+          organization_id: string
+          permit_number?: string | null
+          permit_type?: string | null
+          status?: string | null
+          updated_at?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+          work_order_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          issued_by?: string | null
+          notes?: string | null
+          organization_id?: string
+          permit_number?: string | null
+          permit_type?: string | null
+          status?: string | null
+          updated_at?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_order_permits_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_order_permits_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       work_order_portal_access: {
         Row: {
           access_email: string | null
@@ -22870,6 +23107,69 @@ export type Database = {
           },
           {
             foreignKeyName: "work_order_portal_access_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_order_quality_plans: {
+        Row: {
+          characteristic: string | null
+          collected_at: string | null
+          collected_by: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          organization_id: string
+          pass: boolean | null
+          plan_name: string | null
+          result: string | null
+          specification: string | null
+          updated_at: string | null
+          work_order_id: string
+        }
+        Insert: {
+          characteristic?: string | null
+          collected_at?: string | null
+          collected_by?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          pass?: boolean | null
+          plan_name?: string | null
+          result?: string | null
+          specification?: string | null
+          updated_at?: string | null
+          work_order_id: string
+        }
+        Update: {
+          characteristic?: string | null
+          collected_at?: string | null
+          collected_by?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          pass?: boolean | null
+          plan_name?: string | null
+          result?: string | null
+          specification?: string | null
+          updated_at?: string | null
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_order_quality_plans_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_order_quality_plans_work_order_id_fkey"
             columns: ["work_order_id"]
             isOneToOne: false
             referencedRelation: "work_orders"
