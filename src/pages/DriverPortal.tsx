@@ -24,6 +24,7 @@ import { VehicleInspectionFormDialog } from "@/components/maintenance/VehicleIns
 import { VehicleRequestForm } from "@/components/vehicle-requests/VehicleRequestForm";
 import CreateWorkRequestDialog from "@/components/maintenance/CreateWorkRequestDialog";
 import DriverSubmissionsTab from "@/components/driver-portal/DriverSubmissionsTab";
+import DriverTripHistory from "@/components/driver-portal/DriverTripHistory";
 
 const DriverPortal = () => {
   const navigate = useNavigate();
