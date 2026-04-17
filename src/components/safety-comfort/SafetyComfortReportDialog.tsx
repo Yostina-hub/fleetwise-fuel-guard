@@ -19,9 +19,11 @@ import { toast } from "sonner";
 import { Shield, AlertTriangle } from "lucide-react";
 import {
   VEHICLE_GROUPS, VEHICLE_GROUPS_MAP, CATEGORY_LABELS,
-  ITEM_STATUS_OPTIONS, groupItemsByCategory,
+  ITEM_STATUS_OPTIONS, groupItemsByCategory, getItemStandard,
   type ChecklistCategory, type ItemStatus,
 } from "@/lib/safety-comfort/standard-lists";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Info } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -79,14 +81,20 @@ export default function SafetyComfortReportDialog({ open, onOpenChange, prefill,
   const flaggedItems = useMemo(() => {
     return group.items
       .filter(i => itemStatuses[i.key] && itemStatuses[i.key] !== "ok")
-      .map(i => ({
-        key: i.key,
-        label: i.label,
-        category: i.category,
-        critical: !!i.critical,
-        status: itemStatuses[i.key],
-        note: itemNotes[i.key] || "",
-      }));
+      .map(i => {
+        const std = getItemStandard(i.key);
+        return {
+          key: i.key,
+          label: i.label,
+          category: i.category,
+          critical: !!i.critical,
+          status: itemStatuses[i.key],
+          note: itemNotes[i.key] || "",
+          required_qty: std.requiredQty,
+          usability_period: std.usabilityPeriod,
+          standard_remark: std.remark,
+        };
+      });
   }, [group, itemStatuses, itemNotes]);
 
   const hasCriticalIssue = flaggedItems.some(i => i.critical);
@@ -267,13 +275,33 @@ export default function SafetyComfortReportDialog({ open, onOpenChange, prefill,
                       {grouped[cat].map(item => {
                         const status = itemStatuses[item.key];
                         const flagged = status && status !== "ok";
+                        const std = getItemStandard(item.key);
                         return (
                           <div key={item.key} className={`p-2.5 grid grid-cols-12 gap-2 items-center ${flagged ? "bg-destructive/5" : ""}`}>
-                            <div className="col-span-5 flex items-center gap-2">
-                              <span className="text-sm">{item.label}</span>
-                              {item.critical && <Badge variant="outline" className="text-[10px] h-4">Critical</Badge>}
+                            <div className="col-span-5 flex items-center gap-1.5 min-w-0">
+                              <span className="text-sm truncate">{item.label}</span>
+                              {item.critical && <Badge variant="outline" className="text-[10px] h-4 shrink-0">Critical</Badge>}
+                              <TooltipProvider delayDuration={150}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button type="button" className="text-muted-foreground hover:text-foreground shrink-0">
+                                      <Info className="h-3.5 w-3.5" />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="right" className="max-w-xs text-xs">
+                                    <div className="space-y-1">
+                                      <div><b>Required Qty:</b> {std.requiredQty}</div>
+                                      <div><b>Usability:</b> {std.usabilityPeriod}</div>
+                                      <div className="text-muted-foreground">{std.remark}</div>
+                                    </div>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             </div>
-                            <div className="col-span-3">
+                            <div className="col-span-3 text-[11px] text-muted-foreground truncate" title={std.usabilityPeriod}>
+                              {std.usabilityPeriod}
+                            </div>
+                            <div className="col-span-2">
                               <Select value={status || ""} onValueChange={(v) => setItemStatuses(s => ({ ...s, [item.key]: v as ItemStatus }))}>
                                 <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="OK" /></SelectTrigger>
                                 <SelectContent>
@@ -281,11 +309,11 @@ export default function SafetyComfortReportDialog({ open, onOpenChange, prefill,
                                 </SelectContent>
                               </Select>
                             </div>
-                            <div className="col-span-4">
+                            <div className="col-span-2">
                               {flagged && (
                                 <Input
                                   className="h-8 text-xs"
-                                  placeholder="Note (optional)"
+                                  placeholder="Note"
                                   value={itemNotes[item.key] || ""}
                                   onChange={e => setItemNotes(n => ({ ...n, [item.key]: e.target.value }))}
                                 />
