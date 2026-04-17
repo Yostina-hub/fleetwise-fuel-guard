@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import type { WorkflowConfig } from "./types";
 import { tireRequestConfig } from "./configs/tireRequestConfig";
+import { vehicleHandoverConfig } from "./configs/vehicleHandoverConfig";
 
 // Reusable lane helpers
 import type { Lane } from "./types";
@@ -972,6 +973,7 @@ export const WORKFLOW_CONFIGS: Record<string, WorkflowConfig> = {
   outsource_rental:        outsourceRentalConfig,
   safety_comfort:          safetyComfortConfig,
   tire_request:            tireRequestConfig,
+  vehicle_handover:        vehicleHandoverConfig,
 };
 
-export { tireRequestConfig };
+export { tireRequestConfig, vehicleHandoverConfig };
