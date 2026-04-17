@@ -38,8 +38,8 @@ const SOP_ROUTES: Record<string, string> = {
 
 // Group SOPs by domain for visual scanning.
 const CATEGORIES: Array<{ key: string; label: string; types: string[] }> = [
-  { key: "fleet", label: "Fleet & Compliance", types: ["fleet_inspection", "vehicle_registration", "vehicle_insurance_renewal", "license_renewal"] },
-  { key: "maintenance", label: "Maintenance", types: ["preventive_maintenance", "breakdown_maintenance", "roadside_assistance", "safety_comfort"] },
+  { key: "fleet", label: "Fleet & Compliance", types: ["fleet_inspection", "vehicle_registration", "vehicle_insurance_renewal", "license_renewal", "safety_comfort"] },
+  { key: "maintenance", label: "Maintenance", types: ["preventive_maintenance", "breakdown_maintenance", "roadside_assistance"] },
   { key: "ops", label: "Operations & Dispatch", types: ["vehicle_dispatch", "outsource_rental", "vehicle_disposal"] },
   { key: "drivers", label: "Drivers & HR", types: ["driver_onboarding", "driver_training", "driver_allowance"] },
 ];
