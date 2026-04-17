@@ -37,7 +37,14 @@ export function TaskContextPanel({ task, organizationId, onClose, onSubmit, subm
   useEffect(() => {
     if (!task) return;
     const init: Record<string, any> = {};
-    (task.form_schema ?? []).forEach((f) => (init[f.key] = ""));
+    const nowIso = new Date().toISOString();
+    (task.form_schema ?? []).forEach((f) => {
+      // Pre-fill datetime/date fields with "now" so they're never silently empty.
+      // Users can still edit before submit.
+      if (f.type === "datetime") init[f.key] = nowIso.slice(0, 16);   // YYYY-MM-DDTHH:mm
+      else if (f.type === "date") init[f.key] = nowIso.slice(0, 10);  // YYYY-MM-DD
+      else init[f.key] = "";
+    });
     setValues(init);
   }, [task?.id]);
 
