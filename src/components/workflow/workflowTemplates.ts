@@ -1266,6 +1266,466 @@ const TEMPLATES: WorkflowTemplate[] = [
       { id: "se44", source: "f6", target: "f7", sourceHandle: "false", type: "smoothstep", animated: true, label: "No" },
     ],
   },
+
+  // ═══════════════════════════════════════════════════════════════
+  // FMG-INS 01 — FLEET INSPECTION (full SOP migration to builder)
+  // 16 stages · 6 lanes · branching internal vs annual paths
+  // Reusable forms: Create Work Request (Oracle EBS) + Vehicle Inspection
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "tpl_fleet_inspection_sop",
+    name: "Fleet Inspection (FMG-INS 01) — Full SOP",
+    description:
+      "Full migration of the Fleet Inspection SOP into the visual builder. 16 role-gated human tasks across Fleet Ops, Maintenance, Inspection Center, Transport Authority, Sourcing and Finance — with branching for Internal vs Annual (Bolo) inspection paths and reusable Work Request / Vehicle Inspection forms.",
+    category: "compliance",
+    icon: "📋",
+    difficulty: "advanced",
+    estimatedSavings: "Standardizes 16-step SOP · full audit trail",
+    tags: ["SOP", "fleet-inspection", "FMG-INS-01", "annual", "bolo", "human-task", "approval", "compliance"],
+    nodes: [
+      // ── Trigger ───────────────────────────────────────────────
+      {
+        id: "trg",
+        type: "trigger",
+        position: { x: 480, y: 20 },
+        data: {
+          label: "File New Inspection",
+          description: "Manual filing or scheduled annual inspection trigger",
+          icon: "⚡",
+          category: "triggers",
+          nodeType: "trigger_event",
+          config: { eventType: "fleet_inspection_filed" },
+          status: "idle",
+          isConfigured: true,
+        },
+      },
+
+      // ── Stage 1: List vehicles to be inspected (Fleet Ops) ─────
+      {
+        id: "s1_list",
+        type: "action",
+        position: { x: 480, y: 160 },
+        data: {
+          label: "1. List Vehicles to Inspect",
+          description: "Fleet Operations selects vehicles due for inspection",
+          icon: "🧑‍💼",
+          category: "actions",
+          nodeType: "human_task",
+          config: {
+            title: "List vehicles to be inspected",
+            description: "Pick the vehicles that should enter the inspection cycle.",
+            assignee_role: "fleet_manager",
+            form_key: "create_work_request",
+            actions: [{ id: "ready", label: "Make vehicles ready" }],
+          },
+          status: "idle",
+          isConfigured: true,
+        },
+      },
+
+      // ── Stage 2: Vehicles ready — branch decision ─────────────
+      {
+        id: "s2_ready",
+        type: "action",
+        position: { x: 480, y: 320 },
+        data: {
+          label: "2. Vehicles Ready — Choose Path",
+          description: "Pick Internal inspection or Annual (Bolo) inspection",
+          icon: "🧑‍💼",
+          category: "actions",
+          nodeType: "human_task",
+          config: {
+            title: "Vehicles ready — choose inspection path",
+            description: "Internal preventive route or Annual TA Bolo route.",
+            assignee_role: "operations_manager",
+            actions: [
+              { id: "internal", label: "Internal inspection", variant: "secondary" },
+              { id: "annual", label: "Annual (Bolo) inspection", variant: "default" },
+            ],
+          },
+          status: "idle",
+          isConfigured: true,
+        },
+      },
+
+      // ═════════ INTERNAL PATH (left column) ═════════
+      // Stage 3: Request preventive maintenance
+      {
+        id: "s3_pm",
+        type: "action",
+        position: { x: 120, y: 500 },
+        data: {
+          label: "3. Request Preventive Maintenance",
+          description: "Maintenance team receives the request",
+          icon: "🧑‍💼",
+          category: "actions",
+          nodeType: "human_task",
+          config: {
+            title: "Request preventive maintenance",
+            description: "Open a maintenance request for the listed vehicles.",
+            assignee_role: "maintenance_manager",
+            form_key: "create_work_request",
+            actions: [{ id: "assign", label: "Assign fleet inspector" }],
+          },
+          status: "idle",
+          isConfigured: true,
+        },
+      },
+      // Stage 4: Assign fleet inspector — pass / fail branch
+      {
+        id: "s4_inspector",
+        type: "action",
+        position: { x: 120, y: 670 },
+        data: {
+          label: "4. Assign Fleet Inspector",
+          description: "Inspector performs the internal inspection",
+          icon: "🛡️",
+          category: "actions",
+          nodeType: "approval",
+          config: {
+            title: "Internal inspection result",
+            description: "Record the inspection outcome.",
+            assignee_role: "maintenance_supervisor",
+            form_key: "vehicle_inspection",
+            actions: [
+              { id: "pass", label: "Pass — release vehicle", variant: "default" },
+              { id: "fail", label: "Fail — manage breakdown", variant: "destructive" },
+            ],
+          },
+          status: "idle",
+          isConfigured: true,
+        },
+      },
+      // Stage 5: Manage breakdown (loops back)
+      {
+        id: "s5_breakdown",
+        type: "action",
+        position: { x: -80, y: 840 },
+        data: {
+          label: "Manage Breakdown Maintenance",
+          description: "Repair issues then re-assign inspector",
+          icon: "🧑‍💼",
+          category: "actions",
+          nodeType: "human_task",
+          config: {
+            title: "Manage breakdown maintenance",
+            description: "Fix the failure and route back to inspector.",
+            assignee_role: "maintenance_manager",
+            form_key: "oracle_work_order",
+            actions: [{ id: "back_to_inspector", label: "Re-assign inspector" }],
+          },
+          status: "idle",
+          isConfigured: true,
+        },
+      },
+      // Stage 5b: Ready for trip (terminal — internal path end)
+      {
+        id: "s5_ready_trip",
+        type: "action",
+        position: { x: 320, y: 840 },
+        data: {
+          label: "5. Ready for Trip ✅ (END)",
+          description: "Vehicle released to operations",
+          icon: "✅",
+          category: "actions",
+          nodeType: "human_task",
+          config: {
+            title: "Confirm vehicle ready for trip",
+            description: "Internal inspection path complete.",
+            assignee_role: "fleet_manager",
+            actions: [{ id: "close", label: "Close inspection" }],
+          },
+          status: "idle",
+          isConfigured: true,
+        },
+      },
+
+      // ═════════ ANNUAL PATH (right column) ═════════
+      // Stage 6: Develop inspection schedule
+      {
+        id: "s6_schedule",
+        type: "action",
+        position: { x: 840, y: 500 },
+        data: {
+          label: "6. Develop Inspection Schedule",
+          description: "Plan inspection center visit",
+          icon: "🧑‍💼",
+          category: "actions",
+          nodeType: "human_task",
+          config: {
+            title: "Develop annual inspection schedule",
+            description: "Set the date and assign the vehicle to a center.",
+            assignee_role: "fleet_manager",
+            fields: [
+              { key: "scheduled_at", label: "Scheduled date", type: "datetime", required: true },
+              { key: "center_name", label: "Inspection center", type: "text", required: true },
+            ],
+            actions: [{ id: "send", label: "Send vehicle to center" }],
+          },
+          status: "idle",
+          isConfigured: true,
+        },
+      },
+      // Stage 7: Send vehicle to inspection center
+      {
+        id: "s7_send",
+        type: "action",
+        position: { x: 840, y: 670 },
+        data: {
+          label: "7. Send Vehicle to Center",
+          description: "Driver delivers the vehicle to the inspection center",
+          icon: "🧑‍💼",
+          category: "actions",
+          nodeType: "human_task",
+          config: {
+            title: "Send vehicle to inspection center",
+            description: "Confirm hand-off at the inspection center.",
+            assignee_role: "operations_manager",
+            actions: [{ id: "perform", label: "Perform inspection" }],
+          },
+          status: "idle",
+          isConfigured: true,
+        },
+      },
+      // Stage 8: Perform inspection — pass / fail
+      {
+        id: "s8_perform",
+        type: "action",
+        position: { x: 840, y: 840 },
+        data: {
+          label: "8. Perform Fleet Inspection",
+          description: "Inspection center performs the official inspection",
+          icon: "🛡️",
+          category: "actions",
+          nodeType: "approval",
+          config: {
+            title: "Annual inspection result",
+            description: "Pass to issue certificate, or Fail to send back for maintenance.",
+            assignee_role: "inspection_center",
+            form_key: "vehicle_inspection",
+            actions: [
+              { id: "pass_annual", label: "Pass — issue certificate", variant: "default" },
+              { id: "fail_annual", label: "Fail — send back", variant: "destructive" },
+            ],
+          },
+          status: "idle",
+          isConfigured: true,
+        },
+      },
+      // Stage 9: Send back for further maintenance (loops to breakdown)
+      {
+        id: "s9_sendback",
+        type: "action",
+        position: { x: 1080, y: 1010 },
+        data: {
+          label: "9. Send Back for Maintenance",
+          description: "Failed annual inspection routed to breakdown maintenance",
+          icon: "🧑‍💼",
+          category: "actions",
+          nodeType: "human_task",
+          config: {
+            title: "Route to breakdown maintenance",
+            description: "Forward the failed inspection to maintenance for repair.",
+            assignee_role: "inspection_center",
+            actions: [{ id: "to_breakdown", label: "Route to breakdown" }],
+          },
+          status: "idle",
+          isConfigured: true,
+        },
+      },
+      // Stage 10: Give inspection certificate
+      {
+        id: "s10_cert",
+        type: "action",
+        position: { x: 600, y: 1010 },
+        data: {
+          label: "10. Issue Inspection Certificate",
+          description: "Inspection center issues the certificate",
+          icon: "🧑‍💼",
+          category: "actions",
+          nodeType: "human_task",
+          config: {
+            title: "Issue inspection certificate",
+            description: "Record certificate number and validity.",
+            assignee_role: "inspection_center",
+            fields: [
+              { key: "certificate_no", label: "Certificate #", type: "text", required: true },
+              { key: "valid_until", label: "Valid until", type: "date", required: true },
+            ],
+            actions: [{ id: "raise_payment", label: "Raise payment request" }],
+          },
+          status: "idle",
+          isConfigured: true,
+        },
+      },
+      // Stage 11: Raise payment request
+      {
+        id: "s11_payreq",
+        type: "action",
+        position: { x: 600, y: 1180 },
+        data: {
+          label: "11. Raise Payment Request",
+          description: "Inspection center raises a payment request",
+          icon: "🧑‍💼",
+          category: "actions",
+          nodeType: "human_task",
+          config: {
+            title: "Raise payment request",
+            description: "Submit the inspection fee for advance approval.",
+            assignee_role: "inspection_center",
+            fields: [
+              { key: "amount_etb", label: "Amount (ETB)", type: "number", required: true },
+            ],
+            actions: [{ id: "request_advance", label: "Request advance" }],
+          },
+          status: "idle",
+          isConfigured: true,
+        },
+      },
+      // Stage 12: Request advance — Fleet Ops / TA for Bolo
+      {
+        id: "s12_advance",
+        type: "action",
+        position: { x: 600, y: 1350 },
+        data: {
+          label: "12. Request Advance (Fleet Ops & TA)",
+          description: "Fleet Ops requests advance to inspection center & TA for Bolo",
+          icon: "🛡️",
+          category: "actions",
+          nodeType: "approval",
+          config: {
+            title: "Approve advance request",
+            description: "Approve to forward to Sourcing for payment order.",
+            assignee_role: "operations_manager",
+            actions: [
+              { id: "confirm", label: "Confirm & order payment", variant: "default" },
+              { id: "reject", label: "Reject request", variant: "destructive" },
+            ],
+          },
+          status: "idle",
+          isConfigured: true,
+        },
+      },
+      // Stage 13: Confirmation & payment order
+      {
+        id: "s13_confirm",
+        type: "action",
+        position: { x: 600, y: 1520 },
+        data: {
+          label: "13. Confirmation & Payment Order",
+          description: "Sourcing executes the payment order",
+          icon: "🧑‍💼",
+          category: "actions",
+          nodeType: "human_task",
+          config: {
+            title: "Sourcing payment order",
+            description: "Pay & collect Bolo from Transport Authority.",
+            assignee_role: "sourcing_manager",
+            actions: [{ id: "pay_collect", label: "Pay & collect Bolo" }],
+          },
+          status: "idle",
+          isConfigured: true,
+        },
+      },
+      // Stage 14: Receive advance, pay, collect Bolo
+      {
+        id: "s14_receive",
+        type: "action",
+        position: { x: 600, y: 1690 },
+        data: {
+          label: "14. Receive Advance, Pay & Collect Bolo",
+          description: "Fleet Ops receives the advance and routes to TA",
+          icon: "🧑‍💼",
+          category: "actions",
+          nodeType: "human_task",
+          config: {
+            title: "Receive advance & route to Transport Authority",
+            description: "Confirm receipt and forward to TA.",
+            assignee_role: "fleet_manager",
+            actions: [{ id: "to_ta", label: "Send to Transport Authority" }],
+          },
+          status: "idle",
+          isConfigured: true,
+        },
+      },
+      // Stage 15: TA receives payment & provides Bolo
+      {
+        id: "s15_ta",
+        type: "action",
+        position: { x: 600, y: 1860 },
+        data: {
+          label: "15. TA Receives Payment & Provides Bolo",
+          description: "Transport Authority receives and issues the receipt",
+          icon: "🧑‍💼",
+          category: "actions",
+          nodeType: "human_task",
+          config: {
+            title: "Transport Authority — issue Bolo & receipt",
+            description: "Record the official receipt for the payment.",
+            assignee_role: "transport_authority",
+            fields: [
+              { key: "receipt_no", label: "Receipt #", type: "text", required: true },
+            ],
+            actions: [{ id: "issue", label: "Issue receipt & finish" }],
+          },
+          status: "idle",
+          isConfigured: true,
+        },
+      },
+      // Stage 16: Finance receives payment & gives final receipt (terminal)
+      {
+        id: "s16_finance",
+        type: "action",
+        position: { x: 600, y: 2030 },
+        data: {
+          label: "16. Finance Receives & Files (END) ✅",
+          description: "Finance archives the receipt and closes the SOP",
+          icon: "✅",
+          category: "actions",
+          nodeType: "human_task",
+          config: {
+            title: "File payment receipt & close SOP",
+            description: "Annual inspection cycle complete.",
+            assignee_role: "finance_manager",
+            actions: [{ id: "complete", label: "Complete workflow" }],
+          },
+          status: "idle",
+          isConfigured: true,
+        },
+      },
+    ],
+    edges: [
+      // Trigger → Stage 1 → Stage 2
+      { id: "fi_e1", source: "trg", target: "s1_list", type: "smoothstep", animated: true },
+      { id: "fi_e2", source: "s1_list", target: "s2_ready", type: "smoothstep", animated: true, label: "ready" },
+
+      // Stage 2 branch: internal vs annual
+      { id: "fi_e3", source: "s2_ready", target: "s3_pm", type: "smoothstep", animated: true, label: "internal" },
+      { id: "fi_e4", source: "s2_ready", target: "s6_schedule", type: "smoothstep", animated: true, label: "annual" },
+
+      // Internal path
+      { id: "fi_e5", source: "s3_pm", target: "s4_inspector", type: "smoothstep", animated: true, label: "assign" },
+      { id: "fi_e6", source: "s4_inspector", target: "s5_ready_trip", type: "smoothstep", animated: true, label: "pass" },
+      { id: "fi_e7", source: "s4_inspector", target: "s5_breakdown", type: "smoothstep", animated: true, label: "fail" },
+      { id: "fi_e8", source: "s5_breakdown", target: "s4_inspector", type: "smoothstep", animated: true, label: "back_to_inspector" },
+
+      // Annual path
+      { id: "fi_e9", source: "s6_schedule", target: "s7_send", type: "smoothstep", animated: true, label: "send" },
+      { id: "fi_e10", source: "s7_send", target: "s8_perform", type: "smoothstep", animated: true, label: "perform" },
+      { id: "fi_e11", source: "s8_perform", target: "s10_cert", type: "smoothstep", animated: true, label: "pass_annual" },
+      { id: "fi_e12", source: "s8_perform", target: "s9_sendback", type: "smoothstep", animated: true, label: "fail_annual" },
+      { id: "fi_e13", source: "s9_sendback", target: "s5_breakdown", type: "smoothstep", animated: true, label: "to_breakdown" },
+
+      // Payment chain
+      { id: "fi_e14", source: "s10_cert", target: "s11_payreq", type: "smoothstep", animated: true, label: "raise_payment" },
+      { id: "fi_e15", source: "s11_payreq", target: "s12_advance", type: "smoothstep", animated: true, label: "request_advance" },
+      { id: "fi_e16", source: "s12_advance", target: "s13_confirm", type: "smoothstep", animated: true, label: "confirm" },
+      { id: "fi_e17", source: "s12_advance", target: "s11_payreq", type: "smoothstep", animated: true, label: "reject" },
+      { id: "fi_e18", source: "s13_confirm", target: "s14_receive", type: "smoothstep", animated: true, label: "pay_collect" },
+      { id: "fi_e19", source: "s14_receive", target: "s15_ta", type: "smoothstep", animated: true, label: "to_ta" },
+      { id: "fi_e20", source: "s15_ta", target: "s16_finance", type: "smoothstep", animated: true, label: "issue" },
+    ],
+  },
 ];
 
 export default TEMPLATES;
