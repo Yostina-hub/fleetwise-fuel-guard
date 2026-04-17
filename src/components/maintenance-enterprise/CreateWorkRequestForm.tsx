@@ -100,6 +100,7 @@ export default function CreateWorkRequestForm({
   const [driverPhone, setDriverPhone] = useState("");
   const [fuelLevel, setFuelLevel] = useState("");
   const [inspectionSubType, setInspectionSubType] = useState<string>(defaultInspectionSubType);
+  const [requestedQuantity, setRequestedQuantity] = useState<string>("");
   const [remark, setRemark] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
@@ -218,19 +219,22 @@ export default function CreateWorkRequestForm({
     setAttachments(prev => prev.filter(a => a.path !== att.path));
   };
 
+  const isSafetyComfortCtx = contextValue === "V Safety & Comfort Request";
+
   const validate = (): string | null => {
     if (!assetNumber.trim()) return "Asset Number is required";
     if (!assignedDept.trim()) return "Assigned Department is required";
     if (!requestStartDate) return "Request By Start Date is required";
     if (!additionalDescription.trim()) return "Additional Description is required";
-    if (!isTripInspection && !requestorDepartment.trim()) return "Requestor Department is required";
-    if (isTripInspection && !requestorPool.trim()) return "Requestor Pool is required";
-    if (isTripInspection && !driverType.trim()) return "Driver type is required";
-    if (!isTripInspection && !maintenanceTypeReq.trim()) return "Type of maintenance request is required";
+    if (!isTripInspection && !isSafetyComfortCtx && !requestorDepartment.trim()) return "Requestor Department is required";
+    if ((isTripInspection || isSafetyComfortCtx) && !requestorPool.trim()) return "Requestor Pool is required";
+    if ((isTripInspection || isSafetyComfortCtx) && !driverType.trim()) return "Driver type is required";
+    if (!isTripInspection && !isSafetyComfortCtx && !maintenanceTypeReq.trim()) return "Type of maintenance request is required";
+    if (isSafetyComfortCtx && !maintenanceTypeReq.trim()) return "Type of Request is required";
     if ((workRequestType === "inspection" || isTripInspection) && !inspectionSubType) return "Type of Request is required";
     if (!kmReading.trim()) return "KM reading is required";
     if (!driverPhone.trim()) return "Driver Phone No. is required";
-    if (!isTripInspection && !fuelLevel.trim()) return "Fuel level in the tank is required";
+    if (!isTripInspection && !isSafetyComfortCtx && !fuelLevel.trim()) return "Fuel level in the tank is required";
     return null;
   };
 
@@ -274,7 +278,10 @@ export default function CreateWorkRequestForm({
           fuel_level: fuelLevel ? Number(fuelLevel) : null,
           description: maintenanceTypeReq || (isTripInspection ? `Vehicle ${inspectionSubType?.replace("_", "-")} Inspection Request` : null),
           additional_description: additionalDescription,
-          notes: remark || null,
+          notes: [
+            requestedQuantity ? `Requested Quantity: ${requestedQuantity}` : null,
+            remark || null,
+          ].filter(Boolean).join("\n") || null,
           remark: remark || null,
           request_start_date: requestStartDate.toISOString(),
           request_by_completion_date: completionDate?.toISOString() || null,
@@ -565,7 +572,7 @@ export default function CreateWorkRequestForm({
             </div>
           </FieldRow>
 
-          <FieldRow label="Driver type" required={isTripInspection}>
+          <FieldRow label="Driver type" required={isTripInspection || isSafetyComfortCtx}>
             <Select value={driverType} onValueChange={setDriverType}>
               <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
               <SelectContent>
@@ -584,7 +591,7 @@ export default function CreateWorkRequestForm({
             <Input value={requestorEmployeeId} onChange={e => setRequestorEmployeeId(e.target.value)} placeholder="Employee number" />
           </FieldRow>
 
-          <FieldRow label="Requestor Pool" required={isTripInspection}>
+          <FieldRow label="Requestor Pool" required={isTripInspection || isSafetyComfortCtx}>
             <Select value={requestorPool} onValueChange={setRequestorPool}>
               <SelectTrigger><SelectValue placeholder="Select pool" /></SelectTrigger>
               <SelectContent>
@@ -594,7 +601,7 @@ export default function CreateWorkRequestForm({
             </Select>
           </FieldRow>
 
-          <FieldRow label="Type of Request" required={isTripInspection || workRequestType === "inspection"}>
+          <FieldRow label="Type of Request" required={isTripInspection || isSafetyComfortCtx || workRequestType === "inspection"}>
             {isTripInspection ? (
               <div className="space-y-2 rounded-md border p-3">
                 {[
@@ -663,7 +670,7 @@ export default function CreateWorkRequestForm({
             </FieldRow>
           )}
 
-          {!isTripInspection && (
+          {!isTripInspection && !isSafetyComfortCtx && (
             <FieldRow label="Requestor Department" required>
               <Input value={requestorDepartment} onChange={e => setRequestorDepartment(e.target.value)} />
             </FieldRow>
@@ -677,7 +684,7 @@ export default function CreateWorkRequestForm({
             <Input value={driverPhone} onChange={e => setDriverPhone(e.target.value)} />
           </FieldRow>
 
-          {!isTripInspection && (
+          {!isTripInspection && !isSafetyComfortCtx && (
             <FieldRow label="Fuel level in the tank" required>
               <div className="flex items-center gap-2">
                 <Input type="number" min={0} max={100} value={fuelLevel} onChange={e => setFuelLevel(e.target.value)} className="max-w-[160px]" />
@@ -685,6 +692,17 @@ export default function CreateWorkRequestForm({
               </div>
             </FieldRow>
           )}
+
+          <FieldRow label="Requested Quantity">
+            <Input
+              type="number"
+              min={0}
+              value={requestedQuantity}
+              onChange={e => setRequestedQuantity(e.target.value)}
+              className="max-w-[200px]"
+              placeholder="e.g. 1"
+            />
+          </FieldRow>
 
           <FieldRow label="Remark">
             <Textarea value={remark} onChange={e => setRemark(e.target.value)} rows={2} />
