@@ -170,6 +170,23 @@ export function useWorkflow(config: WorkflowConfig) {
         documents: documents || [],
       });
       if (trErr) throw trErr;
+
+      // Inspection hook: when Vehicle Dispatch reaches "completed", auto-create post-trip inspection
+      if (config.type === "vehicle_dispatch" && action.toStage === "completed") {
+        try {
+          await supabase.functions.invoke("auto-create-posttrip-inspection", {
+            body: {
+              organization_id: organizationId,
+              vehicle_id: mergedData.__vehicle_id || mergedData.vehicle_id || null,
+              driver_id: mergedData.__driver_id || mergedData.driver_id || null,
+              trip_id: instance.id,
+              odometer_km: Number(mergedData.odometer_end) || null,
+            },
+          });
+        } catch (e) {
+          console.warn("post-trip auto-create failed", e);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
