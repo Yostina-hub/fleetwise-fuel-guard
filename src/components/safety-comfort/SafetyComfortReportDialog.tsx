@@ -81,14 +81,20 @@ export default function SafetyComfortReportDialog({ open, onOpenChange, prefill,
   const flaggedItems = useMemo(() => {
     return group.items
       .filter(i => itemStatuses[i.key] && itemStatuses[i.key] !== "ok")
-      .map(i => ({
-        key: i.key,
-        label: i.label,
-        category: i.category,
-        critical: !!i.critical,
-        status: itemStatuses[i.key],
-        note: itemNotes[i.key] || "",
-      }));
+      .map(i => {
+        const std = getItemStandard(i.key);
+        return {
+          key: i.key,
+          label: i.label,
+          category: i.category,
+          critical: !!i.critical,
+          status: itemStatuses[i.key],
+          note: itemNotes[i.key] || "",
+          required_qty: std.requiredQty,
+          usability_period: std.usabilityPeriod,
+          standard_remark: std.remark,
+        };
+      });
   }, [group, itemStatuses, itemNotes]);
 
   const hasCriticalIssue = flaggedItems.some(i => i.critical);
