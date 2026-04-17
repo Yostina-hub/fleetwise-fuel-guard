@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, FileText, CheckCircle2, XCircle, Send, Fuel, Layers, ShieldCheck, Banknote, Calculator } from "lucide-react";
 import { useOutsourcePaymentRequests, type PRStatus } from "@/hooks/useOutsourcePaymentRequests";
+import { ApprovalChainPanel } from "./ApprovalChainPanel";
 import { useOutsourcePriceCatalogs } from "@/hooks/useOutsourcePriceCatalogs";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
