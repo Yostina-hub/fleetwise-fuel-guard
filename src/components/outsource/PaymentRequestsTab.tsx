@@ -49,7 +49,7 @@ const STATUS_COLOR: Partial<Record<PRStatus, "default" | "secondary" | "outline"
 
 export function PaymentRequestsTab() {
   const { organizationId } = useOrganization();
-  const { requests, isLoading, create, transition, provideFuelInfo } = useOutsourcePaymentRequests();
+  const { requests, isLoading, create, transition, provideFuelInfo, actOnApproval } = useOutsourcePaymentRequests();
   const { catalogs } = useOutsourcePriceCatalogs();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
