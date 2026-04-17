@@ -22359,6 +22359,7 @@ export type Database = {
           acquisition_cost: number | null
           acquisition_date: string | null
           assigned_driver_id: string | null
+          awaiting_post_trip_inspection_id: string | null
           capacity_kg: number | null
           capacity_volume: number | null
           color: string | null
@@ -22422,6 +22423,7 @@ export type Database = {
           acquisition_cost?: number | null
           acquisition_date?: string | null
           assigned_driver_id?: string | null
+          awaiting_post_trip_inspection_id?: string | null
           capacity_kg?: number | null
           capacity_volume?: number | null
           color?: string | null
@@ -22485,6 +22487,7 @@ export type Database = {
           acquisition_cost?: number | null
           acquisition_date?: string | null
           assigned_driver_id?: string | null
+          awaiting_post_trip_inspection_id?: string | null
           capacity_kg?: number | null
           capacity_volume?: number | null
           color?: string | null
@@ -22550,6 +22553,13 @@ export type Database = {
             columns: ["assigned_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicles_awaiting_post_trip_inspection_id_fkey"
+            columns: ["awaiting_post_trip_inspection_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_inspections"
             referencedColumns: ["id"]
           },
           {

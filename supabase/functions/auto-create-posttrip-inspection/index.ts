@@ -92,7 +92,8 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Notify driver
+  // Notify driver — include inspection_id in alert_data so the alert bell
+  // can deep-link to /driver-portal?postTrip=<id>.
   await sb.from("alerts").insert({
     organization_id: body.organization_id,
     vehicle_id: body.vehicle_id,
@@ -104,6 +105,7 @@ Deno.serve(async (req) => {
     message: "Please complete the post-trip inspection for the vehicle you just returned.",
     alert_time: new Date().toISOString(),
     status: "active",
+    alert_data: { inspection_id: insp.id, trip_id: body.trip_id ?? null },
   });
 
   await sb.from("audit_logs").insert({

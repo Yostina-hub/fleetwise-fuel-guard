@@ -33,7 +33,13 @@ export const HeaderAlertBell = () => {
   } = useHeaderAlerts();
 
   const handleAlertClick = (alert: any) => {
-    if (alert.lat && alert.lng) {
+    // Post-trip inspection alerts deep-link straight to the driver portal,
+    // which auto-opens the inspection dialog (hybrid enforcement flow).
+    if (alert.alert_type === "post_trip_inspection_required") {
+      const inspectionId =
+        alert.alert_data?.inspection_id || alert.alert_data?.vehicle_inspection_id;
+      navigate(inspectionId ? `/driver-portal?postTrip=${inspectionId}` : "/driver-portal");
+    } else if (alert.lat && alert.lng) {
       navigate(`/map?lat=${alert.lat}&lng=${alert.lng}&alertId=${alert.id}`);
     } else {
       navigate(`/alerts`);

@@ -25,6 +25,7 @@ import { VehicleRequestForm } from "@/components/vehicle-requests/VehicleRequest
 import CreateWorkRequestDialog from "@/components/maintenance/CreateWorkRequestDialog";
 import DriverSubmissionsTab from "@/components/driver-portal/DriverSubmissionsTab";
 import DriverTripHistory from "@/components/driver-portal/DriverTripHistory";
+import PendingPostTripBanner from "@/components/driver-portal/PendingPostTripBanner";
 
 const DriverPortal = () => {
   const navigate = useNavigate();
@@ -39,6 +40,12 @@ const DriverPortal = () => {
   const [showFuel, setShowFuel] = useState(false);
   const [showVehicle, setShowVehicle] = useState(false);
   const [showInspection, setShowInspection] = useState(false);
+  // Override prefill when launching the inspection dialog as a post-trip flow
+  // (from the pending banner or from an alert deep-link).
+  const [inspectionPrefillOverride, setInspectionPrefillOverride] = useState<{
+    vehicle_id?: string;
+    inspection_type?: string;
+  } | null>(null);
 
   // Driver self info + assigned vehicle + auth user id
   // Super admins can override via ?driverId= to view the portal as that driver.
@@ -244,6 +251,37 @@ const DriverPortal = () => {
     return () => { supabase.removeChannel(channel); };
   }, [driverId, organizationId, queryClient]);
 
+  /**
+   * Deep-link handler: when arriving via /driver-portal?postTrip=<inspection_id>
+   * (from an alert), look up the pending inspection and open the dialog
+   * pre-filled as a post-trip checklist for the correct vehicle.
+   */
+  const postTripParam = searchParams.get("postTrip");
+  useEffect(() => {
+    if (!postTripParam || !organizationId) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("vehicle_inspections")
+        .select("id, vehicle_id, status")
+        .eq("id", postTripParam)
+        .eq("organization_id", organizationId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (!data) {
+        toast.error("Post-trip inspection not found");
+        return;
+      }
+      if (data.status !== "pending") {
+        toast.info("This post-trip inspection has already been completed");
+        return;
+      }
+      setInspectionPrefillOverride({ vehicle_id: data.vehicle_id, inspection_type: "post_trip" });
+      setShowInspection(true);
+    })();
+    return () => { cancelled = true; };
+  }, [postTripParam, organizationId]);
+
   if (driverLoading) {
     return (
       <Layout>
@@ -309,12 +347,29 @@ const DriverPortal = () => {
           openFuel={openRequests?.fuel || 0}
         />
 
+        {/* Pending post-trip inspection — hybrid enforcement */}
+        <PendingPostTripBanner
+          driverId={driverId}
+          organizationId={organizationId || undefined}
+          onStart={(insp) => {
+            setInspectionPrefillOverride({ vehicle_id: insp.vehicle_id, inspection_type: "post_trip" });
+            setShowInspection(true);
+          }}
+        />
+
         {/* Quick Actions — open dialogs (no navigation) */}
         <DriverQuickActions
           onReportIssue={() => setShowMaintenance(true)}
           onRequestFuel={() => setShowFuel(true)}
           onRequestVehicle={() => setShowVehicle(true)}
-          onPreTripInspection={() => setShowInspection(true)}
+          onPreTripInspection={() => {
+            setInspectionPrefillOverride(null);
+            setShowInspection(true);
+          }}
+          onPostTripInspection={() => {
+            setInspectionPrefillOverride({ vehicle_id: vehicle?.id, inspection_type: "post_trip" });
+            setShowInspection(true);
+          }}
           onMyDocuments={() => navigate("/document-management")}
         />
 
@@ -579,18 +634,22 @@ const DriverPortal = () => {
         />
         <VehicleInspectionFormDialog
           open={showInspection}
-          onOpenChange={setShowInspection}
+          onOpenChange={(v) => {
+            setShowInspection(v);
+            if (!v) setInspectionPrefillOverride(null);
+          }}
           prefill={{
-            vehicle_id: vehicle?.id,
+            vehicle_id: inspectionPrefillOverride?.vehicle_id ?? vehicle?.id,
             driver_id: driverId,
-            inspection_type: "pre_trip",
-            lockVehicle: !!vehicle?.id,
+            inspection_type: inspectionPrefillOverride?.inspection_type ?? "pre_trip",
+            lockVehicle: !!(inspectionPrefillOverride?.vehicle_id ?? vehicle?.id),
             lockDriver: !!driverId,
             enablePhotos: true,
           }}
           invalidateKeys={[
             ["vehicle-inspections"],
             ["driver-portal-submissions"],
+            ["driver-pending-post-trip"],
           ]}
         />
       </div>
