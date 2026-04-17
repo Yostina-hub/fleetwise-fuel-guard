@@ -22,7 +22,8 @@ export function ApprovalChainPanel({
   isPending,
 }: Props) {
   const { steps, isLoading } = useOutsourcePaymentApprovals(paymentRequestId);
-  const { roles } = useUserRoles();
+  const { roles } = useAuth();
+  const userRoleNames = roles.map((r: any) => r.role);
 
   if (isLoading) return <p className="text-xs text-muted-foreground">Loading approval chain…</p>;
   if (steps.length === 0) {
