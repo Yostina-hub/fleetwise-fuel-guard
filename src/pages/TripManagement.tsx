@@ -35,6 +35,7 @@ import DispatchJobsTab from "@/components/dispatch/DispatchJobsTab";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import { useTranslation } from 'react-i18next';
+import DriverTripsView from "@/components/trips/DriverTripsView";
 
 const TripManagement = () => {
   const { t } = useTranslation();
