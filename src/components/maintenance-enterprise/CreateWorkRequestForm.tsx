@@ -47,6 +47,8 @@ export default function CreateWorkRequestForm({
   driverName,
   scheduleId,
   defaultRequestType = "corrective",
+  defaultContext = "vehicle_maintenance",
+  defaultInspectionSubType = "",
   onSubmitted,
   onCancel,
 }: Props) {
@@ -54,12 +56,16 @@ export default function CreateWorkRequestForm({
   const { createRequest } = useMaintenanceRequests();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const isTripInspection = defaultContext === "trip_inspection";
+
   // Header
   const [assetNumber, setAssetNumber] = useState(vehiclePlate || "");
   const [assignedDept, setAssignedDept] = useState("");
   const [requestStartDate, setRequestStartDate] = useState<Date>(new Date());
   const [requestedFor, setRequestedFor] = useState("");
-  const [workRequestType, setWorkRequestType] = useState(defaultRequestType);
+  const [workRequestType, setWorkRequestType] = useState(
+    isTripInspection ? "inspection" : defaultRequestType
+  );
   const [priority, setPriority] = useState("medium");
   const [completionDate, setCompletionDate] = useState<Date | undefined>(
     new Date(Date.now() + 24 * 60 * 60 * 1000)
@@ -81,15 +87,19 @@ export default function CreateWorkRequestForm({
   const [contactPreference, setContactPreference] = useState("");
 
   // Descriptive Info
-  const [contextValue, setContextValue] = useState("Vehicle Maintenance request");
+  const [contextValue, setContextValue] = useState(
+    isTripInspection ? "Veh. Trip Inspection request" : "Vehicle Maintenance request"
+  );
   const [requestorDepartment, setRequestorDepartment] = useState("");
+  const [requestorPool, setRequestorPool] = useState("");
+  const [requestorEmployeeId, setRequestorEmployeeId] = useState("");
   const [maintenanceTypeReq, setMaintenanceTypeReq] = useState("");
   const [kmReading, setKmReading] = useState("");
   const [driverType, setDriverType] = useState("");
   const [selectedDriverName, setSelectedDriverName] = useState(driverName || "");
   const [driverPhone, setDriverPhone] = useState("");
   const [fuelLevel, setFuelLevel] = useState("");
-  const [inspectionSubType, setInspectionSubType] = useState<string>("");
+  const [inspectionSubType, setInspectionSubType] = useState<string>(defaultInspectionSubType);
   const [remark, setRemark] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
