@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Inbox as InboxIcon, CheckCircle2, Clock, Loader2 } from "lucide-react";
+import { Inbox as InboxIcon, CheckCircle2, Clock, Loader2, FileText } from "lucide-react";
+import { RenderWorkflowForm, getWorkflowForm } from "@/lib/workflow-forms/registry";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useToast } from "@/hooks/use-toast";
@@ -39,6 +40,10 @@ interface WorkflowTask {
   description: string | null;
   assignee_role: string | null;
   form_schema: FormField[];
+  /** When set, the Inbox renders the registered reusable form instead of ad-hoc fields. */
+  form_key?: string | null;
+  /** Prefilled values from the workflow run context (vehicle_id, driver_id, etc.). */
+  context?: Record<string, any> | null;
   actions: TaskAction[];
   status: string;
   vehicle_id: string | null;
@@ -82,20 +87,22 @@ export default function Inbox() {
     }
   }, [selected]);
 
-  const submit = async (decision: string) => {
+  const submit = async (decision: string, resultPayload?: Record<string, any>) => {
     if (!selected) return;
-    // basic required-field validation
-    for (const f of selected.form_schema ?? []) {
-      if (f.required && !values[f.key]) {
-        toast({ title: `${f.label} is required`, variant: "destructive" });
-        return;
+    // basic required-field validation (only for ad-hoc fields)
+    if (!selected.form_key) {
+      for (const f of selected.form_schema ?? []) {
+        if (f.required && !values[f.key]) {
+          toast({ title: `${f.label} is required`, variant: "destructive" });
+          return;
+        }
       }
     }
     setSubmitting(true);
     const { error } = await supabase.rpc("complete_workflow_task" as any, {
       _task_id: selected.id,
       _decision: decision,
-      _result: values,
+      _result: resultPayload ?? values,
     });
     setSubmitting(false);
     if (error) {
@@ -103,11 +110,13 @@ export default function Inbox() {
       return;
     }
     toast({ title: "Step completed", description: "Workflow will resume shortly." });
+    const wfId = selected.workflow_id;
+    const runId = selected.run_id;
     setSelected(null);
     qc.invalidateQueries({ queryKey: ["workflow-tasks"] });
     // Kick the runner immediately for snappy UX (cron also picks it up within 1 min)
     supabase.functions.invoke("workflow-runner", {
-      body: { workflow_id: selected.workflow_id, run_id: selected.run_id },
+      body: { workflow_id: wfId, run_id: runId },
     }).catch(() => {/* server runner cron will retry */});
   };
 
@@ -200,9 +209,30 @@ export default function Inbox() {
         )}
       </div>
 
-      <Dialog open={!!selected} onOpenChange={(v) => !v && setSelected(null)}>
+      {/* Reusable form path: the registered form brings its own dialog. */}
+      {selected?.form_key ? (
+        <RenderWorkflowForm
+          formKey={selected.form_key}
+          prefill={{
+            ...(selected.context ?? {}),
+            vehicle_id: selected.vehicle_id ?? selected.context?.vehicle_id,
+            driver_id: selected.driver_id ?? selected.context?.driver_id,
+          }}
+          onCancel={() => setSelected(null)}
+          onSubmitted={(result) => {
+            const decision = getWorkflowForm(selected.form_key!)?.default_decision ?? "submitted";
+            submit(decision, { ...(result ?? {}), form_key: selected.form_key });
+          }}
+        />
+      ) : null}
+
+      {/* Ad-hoc fields path: render fields inline in our dialog. */}
+      <Dialog
+        open={!!selected && !selected.form_key}
+        onOpenChange={(v) => !v && setSelected(null)}
+      >
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          {selected ? (
+          {selected && !selected.form_key ? (
             <>
               <DialogHeader>
                 <DialogTitle>{selected.title}</DialogTitle>
@@ -212,6 +242,11 @@ export default function Inbox() {
               </DialogHeader>
 
               <div className="space-y-3 py-2">
+                {(selected.form_schema ?? []).length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">
+                    No input fields. Click an action button below to complete this step.
+                  </p>
+                ) : null}
                 {(selected.form_schema ?? []).map((f) => (
                   <div key={f.key} className="space-y-1.5">
                     <Label>{f.label}{f.required ? " *" : ""}</Label>

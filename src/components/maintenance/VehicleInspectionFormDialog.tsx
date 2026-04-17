@@ -40,6 +40,8 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   prefill?: InspectionPrefill;
   invalidateKeys?: string[][];
+  /** Optional callback fired after a successful inspection submission. */
+  onSubmitted?: (payload: { inspection_id?: string; safe: boolean; status: string }) => void;
 }
 
 const buildState = (prefill?: InspectionPrefill) => ({
@@ -61,6 +63,7 @@ export const VehicleInspectionFormDialog = ({
   onOpenChange,
   prefill,
   invalidateKeys = [["vehicle-inspections"]],
+  onSubmitted,
 }: Props) => {
   const { createInspection } = useMaintenanceSchedules();
   const { vehicles } = useVehicles();
@@ -131,6 +134,7 @@ export const VehicleInspectionFormDialog = ({
 
       invalidateKeys.forEach(key => queryClient.invalidateQueries({ queryKey: key }));
       toast.success(safe ? "Inspection passed" : "Inspection submitted with defects");
+      onSubmitted?.({ inspection_id: (created as any)?.id, safe, status: hasFailures ? 'pending_repair' : 'passed' });
       onOpenChange(false);
     } catch (e: any) {
       toast.error(e.message || "Failed to submit inspection");

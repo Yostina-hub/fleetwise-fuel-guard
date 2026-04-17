@@ -39,6 +39,8 @@ interface Props {
   source?: "manual" | "driver_portal" | "auto";
   /** Invalidate these query keys after successful create */
   invalidateKeys?: string[][];
+  /** Optional callback fired after a successful fuel request submission. */
+  onSubmitted?: (payload: { fuel_request_id?: string }) => void;
 }
 
 interface FormData {
@@ -230,6 +232,7 @@ export const FuelRequestFormDialog = ({
   prefill,
   source = "manual",
   invalidateKeys = [["fuel-requests"]],
+  onSubmitted,
 }: Props) => {
   const { organizationId } = useOrganization();
   const { vehicles } = useVehicles();
@@ -395,9 +398,11 @@ export const FuelRequestFormDialog = ({
       if (inserted?.id) {
         await supabase.rpc("route_fuel_request_approval", { p_fuel_request_id: inserted.id });
       }
+      return inserted?.id as string | undefined;
     },
-    onSuccess: () => {
+    onSuccess: (insertedId) => {
       invalidateKeys.forEach(key => queryClient.invalidateQueries({ queryKey: key }));
+      onSubmitted?.({ fuel_request_id: insertedId });
       onOpenChange(false);
       toast.success("Fuel request submitted & routed for approval");
     },

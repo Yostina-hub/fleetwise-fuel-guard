@@ -10,7 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Trash2, ArrowUp, ArrowDown, FileText } from "lucide-react";
+import { listWorkflowForms } from "@/lib/workflow-forms/registry";
 
 type FieldType = "text" | "textarea" | "number" | "date" | "datetime" | "select";
 
@@ -135,6 +136,41 @@ export const HumanTaskEditor = ({ config, isApproval, onChange }: Props) => {
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      {/* Reusable form picker */}
+      <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/30">
+        <div className="flex items-center gap-2">
+          <FileText className="h-3.5 w-3.5 text-primary" />
+          <div className="text-xs font-semibold text-foreground">Reusable Form</div>
+        </div>
+        <p className="text-[10px] text-muted-foreground">
+          Embed an existing app form (Work Request, Work Order, Inspection, Fuel Request).
+          When set, the Inbox renders the full form instead of the ad-hoc fields below.
+        </p>
+        <Select
+          value={config?.form_key || "__none__"}
+          onValueChange={(v) => setCfg({ form_key: v === "__none__" ? null : v })}
+        >
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue placeholder="None — use ad-hoc fields" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__none__">None — use ad-hoc fields below</SelectItem>
+            {listWorkflowForms().map((f) => (
+              <SelectItem key={f.key} value={f.key}>
+                {f.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {config?.form_key && (
+          <p className="text-[10px] text-muted-foreground italic">
+            On submit, the task is auto-completed with decision{" "}
+            <span className="font-mono">submitted</span>. Connect an outgoing edge labeled{" "}
+            <span className="font-mono">submitted</span> to route the next step.
+          </p>
+        )}
       </div>
 
       {/* Form fields builder */}
