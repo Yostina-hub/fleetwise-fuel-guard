@@ -1,5 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
-import { useSearchParams, Navigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useOrganization } from "@/hooks/useOrganization";
 import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { ShieldAlert, Loader2 } from "lucide-react";
@@ -32,13 +35,33 @@ import DispatchJobsTab from "@/components/dispatch/DispatchJobsTab";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import { useTranslation } from 'react-i18next';
+import DriverTripsView from "@/components/trips/DriverTripsView";
 
 const TripManagement = () => {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { organizationId } = useOrganization();
   const { requests, loading, submitRequest, cancelRequest } = useTripRequests();
   const { pendingApprovals, approveRequest, rejectRequest } = useApprovals();
   const { isSuperAdmin, hasRole, hasPermission, loading: permsLoading } = usePermissions();
+
+  // Resolve driver record for current user (only used when isDriverOnly)
+  const { data: driverSelf, isLoading: driverLoading } = useQuery({
+    queryKey: ["trip-mgmt-driver-self", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return null;
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return null;
+      const { data } = await supabase
+        .from("drivers")
+        .select("id, first_name, last_name")
+        .eq("organization_id", organizationId)
+        .eq("user_id", u.user.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!organizationId,
+  });
 
   // RBAC role groups
   const isDriverOnly = hasRole("driver") && !isSuperAdmin && !hasRole("operations_manager")
@@ -122,16 +145,25 @@ const TripManagement = () => {
   const pendingApprovalCount = pendingApprovals?.length || 0;
 
   // ── RBAC enforcement ────────────────────────────────────────────────
-  // Drivers are redirected to their dedicated portal.
-  if (!permsLoading && isDriverOnly) {
-    return <Navigate to="/driver-portal" replace />;
-  }
   // Show loader while permissions resolve to avoid flash of unauthorized UI.
-  if (permsLoading) {
+  if (permsLoading || (isDriverOnly && driverLoading)) {
     return (
       <Layout>
         <div className="p-8 flex items-center justify-center min-h-[400px]">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" aria-label="Loading permissions" />
+          <Loader2 className="w-8 h-8 animate-spin text-primary" aria-label="Loading" />
+        </div>
+      </Layout>
+    );
+  }
+  // Drivers see a focused, driver-scoped view of their own trips.
+  if (isDriverOnly) {
+    return (
+      <Layout>
+        <div className="p-4 md:p-6">
+          <DriverTripsView
+            driverId={driverSelf?.id}
+            driverName={driverSelf ? `${driverSelf.first_name} ${driverSelf.last_name}` : undefined}
+          />
         </div>
       </Layout>
     );
