@@ -125,12 +125,11 @@ async function scanAndRun(admin: any) {
     }
   }
 
-  // 2) Workflow runs queued by DB triggers (status=running, no execution_log yet)
+  // 2) Workflow runs queued or resumed (status=running, picked up by scanner)
   const { data: queued } = await admin
     .from("workflow_runs")
     .select("id, workflow_id, organization_id, trigger_data, started_at")
     .eq("status", "running")
-    .is("execution_log", null)
     .lt("started_at", new Date(Date.now() - 1000).toISOString())
     .limit(50);
 
@@ -209,10 +208,23 @@ async function runWorkflow(
     runId = created.id;
   }
 
-  const startedAt = Date.now();
-  const log: LogEntry[] = [];
+  // Load existing run state so we can resume from a paused human_task
+  const { data: existingRun } = await admin
+    .from("workflow_runs")
+    .select("execution_log, current_node_id, context, started_at")
+    .eq("id", runId)
+    .single();
+
+  const startedAt = existingRun?.started_at
+    ? new Date(existingRun.started_at).getTime()
+    : Date.now();
+  const log: LogEntry[] = Array.isArray(existingRun?.execution_log)
+    ? existingRun.execution_log
+    : [];
+  const ctx: Record<string, any> = (existingRun?.context as any) ?? {};
   let failed = false;
   let errorMsg: string | null = null;
+  let pausedAt: string | null = null;
 
   try {
     const nodes: WorkflowNode[] = Array.isArray(wf.nodes) ? wf.nodes : [];
@@ -231,12 +243,24 @@ async function runWorkflow(
     for (const n of nodes) inDeg[n.id] = 0;
     for (const e of edges) inDeg[e.target] = (inDeg[e.target] ?? 0) + 1;
 
-    // Start at every node with no incoming edges (triggers / orphans)
-    const queue: string[] = nodes
-      .filter((n) => (inDeg[n.id] ?? 0) === 0)
-      .map((n) => n.id);
-    const visited = new Set<string>();
+    // Resume vs fresh start
+    const visited = new Set<string>(log.map((l) => l.node_id));
     const branchOf: Record<string, "true" | "false" | null> = {};
+    let queue: string[];
+
+    if (existingRun?.current_node_id && ctx.last_task?.node_id === existingRun.current_node_id) {
+      // We just got a task completion: resume from that node's children
+      visited.add(existingRun.current_node_id);
+      const decision = ctx.last_task.decision as string | undefined;
+      queue = (out[existingRun.current_node_id] ?? [])
+        .filter((e) => !decision || !e.sourceHandle || e.sourceHandle === decision)
+        .map((e) => e.target);
+    } else {
+      // Fresh start: every node with no incoming edges
+      queue = nodes
+        .filter((n) => (inDeg[n.id] ?? 0) === 0)
+        .map((n) => n.id);
+    }
 
     while (queue.length) {
       const nodeId = queue.shift()!;
@@ -248,6 +272,41 @@ async function runWorkflow(
 
       const t0 = Date.now();
       let entry: LogEntry;
+
+      // ── HUMAN TASK / APPROVAL: pause the run, create an inbox task ──
+      if (node.data.nodeType === "human_task" || node.data.nodeType === "approval") {
+        const cfg = node.data.config ?? {};
+        const { error: taskErr } = await admin.from("workflow_tasks").insert({
+          organization_id: wf.organization_id,
+          workflow_id: wf.id,
+          run_id: runId,
+          node_id: nodeId,
+          title: cfg.title || node.data.label,
+          description: cfg.description ?? null,
+          assignee_role: cfg.assignee_role ?? null,
+          form_schema: cfg.fields ?? [],
+          actions: cfg.actions ?? (out[nodeId] ?? []).map((e) => ({
+            id: e.sourceHandle || e.target,
+            label: e.sourceHandle || "Continue",
+          })),
+          vehicle_id: ctx.trigger?.vehicle_id ?? null,
+          driver_id: ctx.trigger?.driver_id ?? null,
+        });
+        if (taskErr) throw taskErr;
+
+        log.push({
+          node_id: nodeId,
+          label: node.data.label,
+          node_type: node.data.nodeType,
+          category: node.data.category,
+          status: "success",
+          message: `Awaiting human action${cfg.assignee_role ? ` (${cfg.assignee_role})` : ""}`,
+          duration_ms: Date.now() - t0,
+          ts: new Date().toISOString(),
+        });
+        pausedAt = nodeId;
+        break;
+      }
 
       try {
         const res = await executeNode(admin, node, wf.organization_id);
@@ -313,14 +372,22 @@ async function runWorkflow(
 
   const durationMs = Date.now() - startedAt;
 
+  const finalStatus = pausedAt
+    ? "awaiting_human"
+    : failed
+    ? "failed"
+    : "completed";
+
   await admin
     .from("workflow_runs")
     .update({
-      status: failed ? "failed" : "completed",
-      completed_at: new Date().toISOString(),
+      status: finalStatus,
+      completed_at: pausedAt ? null : new Date().toISOString(),
       duration_ms: durationMs,
       execution_log: log,
       error_message: errorMsg,
+      current_node_id: pausedAt,
+      context: ctx,
     })
     .eq("id", runId);
 

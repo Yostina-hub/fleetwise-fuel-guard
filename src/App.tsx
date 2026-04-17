@@ -51,6 +51,7 @@ const FleetScheduling = lazyWithRetry(() => import("./pages/FleetScheduling"), "
 const Dispatch = lazyWithRetry(() => import("./pages/Dispatch"), "Dispatch");
 const DriverApp = lazyWithRetry(() => import("./pages/DriverApp"), "DriverApp");
 const WorkflowBuilder = lazyWithRetry(() => import("./pages/WorkflowBuilder"), "WorkflowBuilder");
+const Inbox = lazyWithRetry(() => import("./pages/Inbox"), "Inbox");
 const TripManagement = lazyWithRetry(() => import("./pages/TripManagement"), "TripManagement");
 const Organizations = lazyWithRetry(() => import("./pages/Organizations"), "Organizations");
 const EVManagement = lazyWithRetry(() => import("./pages/EVManagement"), "EVManagement");
@@ -190,6 +191,7 @@ const App = () => {
                         <Route path="/config" element={<ProtectedRoute requiredRole="super_admin"><SystemConfig /></ProtectedRoute>} />
                         <Route path="/devices" element={<ProtectedRoute><DeviceIntegration /></ProtectedRoute>} />
                         <Route path="/workflow-builder" element={<ProtectedRoute><WorkflowBuilder /></ProtectedRoute>} />
+                        <Route path="/inbox" element={<ProtectedRoute><Inbox /></ProtectedRoute>} />
                         <Route path="/trip-management" element={<ProtectedRoute><TripManagement /></ProtectedRoute>} />
                         <Route path="/ev-management" element={<ProtectedRoute><EVManagement /></ProtectedRoute>} />
                         <Route path="/vehicle-requests" element={<ProtectedRoute><VehicleRequests /></ProtectedRoute>} />
