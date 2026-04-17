@@ -421,9 +421,11 @@ const TripManagement = () => {
             <TimelineView />
           </TabsContent>
 
-          <TabsContent value="analytics" className="mt-4">
-            <UtilizationAnalytics />
-          </TabsContent>
+          {canViewAnalytics && (
+            <TabsContent value="analytics" className="mt-4">
+              <UtilizationAnalytics />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 
