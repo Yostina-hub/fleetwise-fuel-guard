@@ -27,13 +27,16 @@ interface Props {
 const MaintenanceWorkflowProgress = ({ currentStage }: Props) => {
   const currentIdx = STAGE_SEQUENCE.findIndex(s => s.key === currentStage);
   const isTerminal = TERMINAL_STAGES.includes(currentStage as WorkflowStage);
+  const isFullyComplete = currentStage === "completed";
 
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-1 pb-1">
         {STAGE_SEQUENCE.map((stage, idx) => {
-          const isDone = currentIdx > idx;
-          const isCurrent = currentIdx === idx;
+          // When fully completed, every stage (including the final "Completed" pill) is done.
+          // Otherwise, stages strictly before the current one are done.
+          const isDone = isFullyComplete || currentIdx > idx;
+          const isCurrent = !isFullyComplete && currentIdx === idx;
           return (
             <div key={stage.key} className="flex items-center shrink-0">
               <div
