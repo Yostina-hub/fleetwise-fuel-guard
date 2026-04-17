@@ -1,69 +1,51 @@
 import { useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Inbox as InboxIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Inbox as InboxIcon, CheckCircle2, Clock, Loader2, FileText } from "lucide-react";
-import { RenderWorkflowForm, getWorkflowForm } from "@/lib/workflow-forms/registry";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { formatDistanceToNow } from "date-fns";
+import { differenceInMinutes } from "date-fns";
+import { TaskFilters, type StatusFilter, type Scope } from "@/components/inbox/TaskFilters";
+import { TaskList } from "@/components/inbox/TaskList";
+import { TaskContextPanel } from "@/components/inbox/TaskContextPanel";
+import { BulkActionBar } from "@/components/inbox/BulkActionBar";
+import { EmptyState } from "@/components/inbox/EmptyState";
+import { RenderWorkflowForm, getWorkflowForm } from "@/lib/workflow-forms/registry";
+import type { WorkflowTask } from "@/components/inbox/types";
 
-interface FormField {
-  key: string;
-  label: string;
-  type?: "text" | "textarea" | "number" | "date" | "datetime" | "select";
-  required?: boolean;
-  options?: { value: string; label: string }[];
-  placeholder?: string;
-}
-
-interface TaskAction {
-  id: string;
-  label: string;
-  variant?: "default" | "destructive" | "outline" | "secondary";
-}
-
-interface WorkflowTask {
-  id: string;
-  workflow_id: string;
-  run_id: string;
-  node_id: string;
-  title: string;
-  description: string | null;
-  assignee_role: string | null;
-  form_schema: FormField[];
-  /** When set, the Inbox renders the registered reusable form instead of ad-hoc fields. */
-  form_key?: string | null;
-  /** Prefilled values from the workflow run context (vehicle_id, driver_id, etc.). */
-  context?: Record<string, any> | null;
-  actions: TaskAction[];
-  status: string;
-  vehicle_id: string | null;
-  driver_id: string | null;
-  due_at: string | null;
-  created_at: string;
-  workflows?: { name: string; nodes?: any[] } | null;
-}
+const DEFAULT_SLA_MINUTES = 60 * 24; // 1 day
 
 export default function Inbox() {
   const { organizationId } = useOrganization();
   const { toast } = useToast();
   const qc = useQueryClient();
-  const [selected, setSelected] = useState<WorkflowTask | null>(null);
-  const [values, setValues] = useState<Record<string, any>>({});
-  const [submitting, setSubmitting] = useState(false);
-  const [filter, setFilter] = useState<"pending" | "completed">("pending");
 
-  const { data: tasks = [], isLoading } = useQuery({
-    queryKey: ["workflow-tasks", organizationId, filter],
+  // Filters
+  const [status, setStatus] = useState<StatusFilter>("pending");
+  const [scope, setScope] = useState<Scope>("all");
+  const [search, setSearch] = useState("");
+  const [workflowFilter, setWorkflowFilter] = useState<string | null>(null);
+  const [roleFilter, setRoleFilter] = useState<string | null>(null);
+  const [slaFilter, setSlaFilter] = useState<"all" | "breach" | "warn">("all");
+
+  // Selection
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selection, setSelection] = useState<Set<string>>(new Set());
+  const [submitting, setSubmitting] = useState(false);
+
+  // Current user (for "Me" scope)
+  const { data: currentUserId } = useQuery({
+    queryKey: ["current-user-id"],
+    queryFn: async () => (await supabase.auth.getUser()).data.user?.id ?? null,
+    staleTime: 5 * 60_000,
+  });
+
+  // Tasks fetch
+  const { data: rawTasks = [], isLoading } = useQuery<WorkflowTask[]>({
+    queryKey: ["workflow-tasks", organizationId, status],
     enabled: !!organizationId,
     refetchInterval: 8000,
     queryFn: async () => {
@@ -71,9 +53,9 @@ export default function Inbox() {
         .from("workflow_tasks" as any)
         .select("*, workflows(name, nodes)")
         .eq("organization_id", organizationId!)
-        .eq("status", filter)
+        .eq("status", status)
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(200);
       if (error) throw error;
 
       return ((data ?? []) as any[]).map((task) => {
@@ -83,14 +65,9 @@ export default function Inbox() {
         const cfg = matchedNode?.data?.config ?? {};
         const cfgFields = Array.isArray(cfg.fields) ? cfg.fields : [];
         const cfgActions = Array.isArray(cfg.actions) ? cfg.actions : [];
-
-        // When the workflow node config exists, it is the source of truth.
-        // Stale task.form_key values from older runs must not override a node
-        // that intentionally has no form_key (otherwise the wrong form opens).
         const formKey = matchedNode
           ? (cfg.form_key ?? null)
           : (cfg.form_key ?? task.form_key ?? null);
-
         return {
           ...task,
           form_schema: cfgFields.length ? cfgFields : (task.form_schema ?? []),
@@ -106,20 +83,79 @@ export default function Inbox() {
     },
   });
 
-  useEffect(() => {
-    if (selected) {
-      const init: Record<string, any> = {};
-      (selected.form_schema ?? []).forEach((f) => (init[f.key] = ""));
-      setValues(init);
+  // Apply filters in-memory
+  const filteredTasks = useMemo(() => {
+    let list = rawTasks;
+    if (scope === "me" && currentUserId) {
+      list = list.filter(t => (t as any).assignee_user_id === currentUserId);
     }
-  }, [selected]);
+    if (workflowFilter) list = list.filter(t => t.workflows?.name === workflowFilter);
+    if (roleFilter) list = list.filter(t => t.assignee_role === roleFilter);
+    if (slaFilter !== "all") {
+      list = list.filter(t => {
+        const created = new Date(t.created_at);
+        const due = t.due_at ? new Date(t.due_at) : new Date(created.getTime() + DEFAULT_SLA_MINUTES * 60_000);
+        const total = Math.max(1, differenceInMinutes(due, created));
+        const elapsed = Math.max(0, differenceInMinutes(new Date(), created));
+        const ratio = elapsed / total;
+        if (slaFilter === "breach") return ratio >= 1;
+        if (slaFilter === "warn") return ratio >= 0.7 && ratio < 1;
+        return true;
+      });
+    }
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      list = list.filter(t =>
+        t.title.toLowerCase().includes(q) ||
+        (t.description ?? "").toLowerCase().includes(q) ||
+        (t.workflows?.name ?? "").toLowerCase().includes(q),
+      );
+    }
+    return list;
+  }, [rawTasks, scope, currentUserId, workflowFilter, roleFilter, slaFilter, search]);
 
-  const submit = async (decision: string, resultPayload?: Record<string, any>) => {
+  const counts = useMemo(() => {
+    const breach = rawTasks.filter(t => {
+      const created = new Date(t.created_at);
+      const due = t.due_at ? new Date(t.due_at) : new Date(created.getTime() + DEFAULT_SLA_MINUTES * 60_000);
+      return new Date() >= due;
+    }).length;
+    return {
+      pending: status === "pending" ? rawTasks.length : 0,
+      completed: status === "completed" ? rawTasks.length : 0,
+      breach,
+    };
+  }, [rawTasks, status]);
+
+  // Reset selection on org/status change
+  useEffect(() => {
+    setSelectedId(null);
+    setSelection(new Set());
+  }, [organizationId, status]);
+
+  const selected = filteredTasks.find(t => t.id === selectedId) ?? null;
+
+  const toggleSelection = (id: string) => {
+    setSelection(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+  const toggleSelectAll = (ids: string[]) => {
+    setSelection(prev => {
+      const allIn = ids.every(i => prev.has(i));
+      const next = new Set(prev);
+      ids.forEach(i => allIn ? next.delete(i) : next.add(i));
+      return next;
+    });
+  };
+
+  const submit = async (decision: string, payload: Record<string, any>) => {
     if (!selected) return;
-    // basic required-field validation (only for ad-hoc fields)
     if (!selected.form_key) {
       for (const f of selected.form_schema ?? []) {
-        if (f.required && !values[f.key]) {
+        if (f.required && !payload[f.key]) {
           toast({ title: `${f.label} is required`, variant: "destructive" });
           return;
         }
@@ -129,7 +165,7 @@ export default function Inbox() {
     const { error } = await supabase.rpc("complete_workflow_task" as any, {
       _task_id: selected.id,
       _decision: decision,
-      _result: resultPayload ?? values,
+      _result: payload,
     });
     setSubmitting(false);
     if (error) {
@@ -137,107 +173,113 @@ export default function Inbox() {
       return;
     }
     toast({ title: "Step completed", description: "Workflow will resume shortly." });
-    const wfId = selected.workflow_id;
-    const runId = selected.run_id;
-    setSelected(null);
+    const { workflow_id, run_id } = selected;
+    setSelectedId(null);
     qc.invalidateQueries({ queryKey: ["workflow-tasks"] });
-    // Kick the runner immediately for snappy UX (cron also picks it up within 1 min)
     supabase.functions.invoke("workflow-runner", {
-      body: { workflow_id: wfId, run_id: runId },
-    }).catch(() => {/* server runner cron will retry */});
+      body: { workflow_id, run_id },
+    }).catch(() => { /* cron retries */ });
   };
 
-  const grouped = useMemo(() => {
-    const m = new Map<string, WorkflowTask[]>();
-    for (const t of tasks) {
-      const k = t.workflows?.name ?? "Workflow";
-      m.set(k, [...(m.get(k) ?? []), t]);
+  // Bulk actions
+  const bulkCancel = async () => {
+    if (selection.size === 0) return;
+    if (!confirm(`Cancel ${selection.size} task${selection.size > 1 ? "s" : ""}?`)) return;
+    setSubmitting(true);
+    const { error } = await supabase
+      .from("workflow_tasks" as any)
+      .update({ status: "cancelled", updated_at: new Date().toISOString() })
+      .in("id", Array.from(selection));
+    setSubmitting(false);
+    if (error) {
+      toast({ title: "Bulk cancel failed", description: error.message, variant: "destructive" });
+      return;
     }
-    return Array.from(m.entries());
-  }, [tasks]);
+    toast({ title: `${selection.size} task(s) cancelled` });
+    setSelection(new Set());
+    qc.invalidateQueries({ queryKey: ["workflow-tasks"] });
+  };
 
   return (
     <Layout>
-      <div className="p-4 md:p-6 space-y-4">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <InboxIcon className="w-7 h-7 text-primary" />
-            <div>
-              <h1 className="text-2xl font-bold">Task Inbox</h1>
-              <p className="text-sm text-muted-foreground">
-                Pending human steps from active workflows. Complete one to advance the workflow.
+      <div className="flex flex-col h-[calc(100vh-64px)] bg-background">
+        {/* Top bar */}
+        <header className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border bg-card/50 backdrop-blur-sm">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <InboxIcon className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-base font-semibold leading-tight">Task Inbox</h1>
+              <p className="text-xs text-muted-foreground truncate">
+                Pending human steps from active workflows
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant={filter === "pending" ? "default" : "outline"}
-              onClick={() => setFilter("pending")}
-            >
-              <Clock className="w-4 h-4 mr-1" /> Pending
-            </Button>
-            <Button
-              size="sm"
-              variant={filter === "completed" ? "default" : "outline"}
-              onClick={() => setFilter("completed")}
-            >
-              <CheckCircle2 className="w-4 h-4 mr-1" /> Completed
-            </Button>
+          <div className="flex items-center gap-2">
+            {counts.breach > 0 && status === "pending" && (
+              <Badge variant="outline" className="border-[hsl(var(--sla-breach)/0.4)] text-[hsl(var(--sla-breach))] bg-[hsl(var(--sla-breach)/0.1)]">
+                {counts.breach} overdue
+              </Badge>
+            )}
           </div>
-        </div>
+        </header>
 
-        {isLoading ? (
-          <div className="flex justify-center py-10">
-            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : tasks.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center text-sm text-muted-foreground">
-              No {filter} tasks. When a workflow reaches a Human Task or Approval step, it will appear here.
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {grouped.map(([wfName, items]) => (
-              <Card key={wfName}>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    {wfName} <Badge variant="secondary">{items.length}</Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {items.map((t) => (
-                    <button
-                      key={t.id}
-                      onClick={() => filter === "pending" && setSelected(t)}
-                      className="w-full text-left p-3 rounded-md border border-border bg-card hover:bg-accent/40 transition-colors flex items-start justify-between gap-3"
-                    >
-                      <div className="min-w-0">
-                        <div className="font-medium truncate">{t.title}</div>
-                        {t.description ? (
-                          <div className="text-xs text-muted-foreground truncate">{t.description}</div>
-                        ) : null}
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {t.assignee_role ? (
-                          <Badge variant="outline" className="text-xs">{t.assignee_role}</Badge>
-                        ) : null}
-                        <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(t.created_at), { addSuffix: true })}
-                        </span>
-                      </div>
-                    </button>
-                  ))}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+        <div className="flex-1 flex overflow-hidden relative">
+          {/* Left: filters */}
+          <TaskFilters
+            status={status} setStatus={setStatus}
+            scope={scope} setScope={setScope}
+            search={search} setSearch={setSearch}
+            workflowFilter={workflowFilter} setWorkflowFilter={setWorkflowFilter}
+            roleFilter={roleFilter} setRoleFilter={setRoleFilter}
+            slaFilter={slaFilter} setSlaFilter={setSlaFilter}
+            tasks={rawTasks}
+            counts={counts}
+          />
+
+          {/* Middle: list */}
+          <main className="flex-1 flex flex-col overflow-hidden border-r border-border">
+            {isLoading ? (
+              <div className="flex-1 flex items-center justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : filteredTasks.length === 0 ? (
+              <EmptyState status={status} />
+            ) : (
+              <TaskList
+                tasks={filteredTasks}
+                selectedId={selectedId}
+                onSelect={(t) => setSelectedId(t.id)}
+                selection={selection}
+                toggleSelection={toggleSelection}
+                toggleSelectAll={toggleSelectAll}
+              />
+            )}
+
+            <BulkActionBar
+              count={selection.size}
+              busy={submitting}
+              onClear={() => setSelection(new Set())}
+              onCancel={bulkCancel}
+              onReassign={() => toast({ title: "Reassign", description: "Reassign UI coming in Phase 1.1." })}
+              onAddNote={() => toast({ title: "Notes", description: "Bulk notes coming in Phase 1.1." })}
+            />
+          </main>
+
+          {/* Right: context panel (also handles ad-hoc form path) */}
+          <TaskContextPanel
+            task={selected && !selected.form_key ? selected : selected && status === "completed" ? selected : selected && !selected.form_key ? selected : selected}
+            organizationId={organizationId}
+            onClose={() => setSelectedId(null)}
+            onSubmit={submit}
+            submitting={submitting}
+          />
+        </div>
       </div>
 
-      {/* Reusable form path: the registered form brings its own dialog. */}
-      {selected?.form_key ? (
+      {/* External form path: opens its own dialog */}
+      {selected?.form_key && status === "pending" ? (
         <RenderWorkflowForm
           formKey={selected.form_key}
           prefill={{
@@ -245,92 +287,13 @@ export default function Inbox() {
             vehicle_id: selected.vehicle_id ?? selected.context?.vehicle_id,
             driver_id: selected.driver_id ?? selected.context?.driver_id,
           }}
-          onCancel={() => setSelected(null)}
+          onCancel={() => setSelectedId(null)}
           onSubmitted={(result) => {
             const decision = getWorkflowForm(selected.form_key!)?.default_decision ?? "submitted";
             submit(decision, { ...(result ?? {}), form_key: selected.form_key });
           }}
         />
       ) : null}
-
-      {/* Ad-hoc fields path: render fields inline in our dialog. */}
-      <Dialog
-        open={!!selected && !selected.form_key}
-        onOpenChange={(v) => !v && setSelected(null)}
-      >
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          {selected && !selected.form_key ? (
-            <>
-              <DialogHeader>
-                <DialogTitle>{selected.title}</DialogTitle>
-                <DialogDescription>
-                  {selected.description ?? `Complete this step to advance the ${selected.workflows?.name ?? "workflow"}.`}
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="space-y-3 py-2">
-                {(selected.form_schema ?? []).length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic">
-                    No input fields. Click an action button below to complete this step.
-                  </p>
-                ) : null}
-                {(selected.form_schema ?? []).map((f) => (
-                  <div key={f.key} className="space-y-1.5">
-                    <Label>{f.label}{f.required ? " *" : ""}</Label>
-                    {f.type === "textarea" ? (
-                      <Textarea
-                        value={values[f.key] ?? ""}
-                        onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
-                        placeholder={f.placeholder}
-                        rows={3}
-                      />
-                    ) : f.type === "select" ? (
-                      <Select
-                        value={values[f.key] ?? ""}
-                        onValueChange={(val) => setValues((v) => ({ ...v, [f.key]: val }))}
-                      >
-                        <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-                        <SelectContent>
-                          {(f.options ?? []).map((o) => (
-                            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Input
-                        type={f.type === "number" ? "number" : f.type === "date" ? "date" : f.type === "datetime" ? "datetime-local" : "text"}
-                        value={values[f.key] ?? ""}
-                        onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
-                        placeholder={f.placeholder}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <DialogFooter className="flex-wrap gap-2">
-                <Button variant="ghost" onClick={() => setSelected(null)} disabled={submitting}>
-                  Cancel
-                </Button>
-                {(selected.actions?.length
-                  ? selected.actions
-                  : [{ id: "approve", label: "Approve" }]
-                ).map((a) => (
-                  <Button
-                    key={a.id}
-                    variant={a.variant ?? (a.id.includes("reject") || a.id.includes("fail") ? "destructive" : "default")}
-                    onClick={() => submit(a.id)}
-                    disabled={submitting}
-                  >
-                    {submitting ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null}
-                    {a.label}
-                  </Button>
-                ))}
-              </DialogFooter>
-            </>
-          ) : null}
-        </DialogContent>
-      </Dialog>
     </Layout>
   );
 }
