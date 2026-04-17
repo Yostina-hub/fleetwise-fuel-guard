@@ -110,6 +110,22 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
   const [selectedDriver, setSelectedDriver] = useState("");
   const [showConsolidated, setShowConsolidated] = useState(true);
 
+  // Available drivers for assignment
+  const { data: availableDrivers = [] } = useQuery({
+    queryKey: ["available-drivers", organizationId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("drivers")
+        .select("id, first_name, last_name, phone")
+        .eq("organization_id", organizationId)
+        .eq("status", "active")
+        .order("first_name");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId,
+  });
+
   // Requests that are approved and need pool review/assignment
   const approvedRequests = requests.filter(
     (r: any) => r.status === "approved" && r.pool_review_status !== "reviewed"
@@ -186,6 +202,9 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
           });
         } catch (e) { console.error("In-app notification error:", e); }
       }
+
+      // Send SMS notifications to driver + requester
+      await sendAssignmentSMS(request, vehicleId, driverId);
     },
     onSuccess: () => {
       toast.success("Vehicle assigned from pool");
