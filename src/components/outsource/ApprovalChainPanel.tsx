@@ -38,7 +38,7 @@ export function ApprovalChainPanel({
   const userCanAct =
     !!activeStep &&
     activeStep.status === "pending" &&
-    roles.includes(activeStep.approver_role as any);
+    userRoleNames.includes(activeStep.approver_role);
 
   return (
     <div className="space-y-2 border rounded-md p-3 bg-muted/30">
