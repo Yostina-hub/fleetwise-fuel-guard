@@ -118,6 +118,9 @@ export const DelegationHistoryTab = () => {
             <SelectItem value="all">All Sources</SelectItem>
             <SelectItem value="authority_matrix">Authority Rules</SelectItem>
             <SelectItem value="delegation_matrix">Substitutions</SelectItem>
+            <SelectItem value="fuel_request">Fuel Requests</SelectItem>
+            <SelectItem value="trip_request">Trip Requests</SelectItem>
+            <SelectItem value="outsource_payment_request">Payment Requests</SelectItem>
           </SelectContent>
         </Select>
         <Select value={actionFilter} onValueChange={setActionFilter}>
@@ -129,6 +132,9 @@ export const DelegationHistoryTab = () => {
             <SelectItem value="delete">Deleted</SelectItem>
             <SelectItem value="activate">Activated</SelectItem>
             <SelectItem value="deactivate">Deactivated</SelectItem>
+            <SelectItem value="route">Routed</SelectItem>
+            <SelectItem value="substitute">Delegated</SelectItem>
+            <SelectItem value="skip">Skipped</SelectItem>
           </SelectContent>
         </Select>
         <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching}>
