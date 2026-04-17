@@ -23,6 +23,7 @@ import FleetOpsReviewTab from "@/components/maintenance-enterprise/FleetOpsRevie
 import MaintenanceSectionTab from "@/components/maintenance-enterprise/MaintenanceSectionTab";
 import SCDSourcingTab from "@/components/maintenance-enterprise/SCDSourcingTab";
 import SupplierWorkflowTasksTab from "@/components/maintenance-enterprise/SupplierWorkflowTasksTab";
+import InspectorWorkspaceTab from "@/components/maintenance-enterprise/InspectorWorkspaceTab";
 
 const MaintenanceEnterprise = () => {
   const { organizationId, loading: orgLoading } = useOrganization();
@@ -116,6 +117,9 @@ const MaintenanceEnterprise = () => {
               <TabsTrigger value="supplier-tasks" className="gap-1.5 text-xs md:text-sm">
                 <Wrench className="w-4 h-4" /> Supplier Tasks
               </TabsTrigger>
+              <TabsTrigger value="inspector" className="gap-1.5 text-xs md:text-sm">
+                <ClipboardCheck className="w-4 h-4" /> Inspector
+              </TabsTrigger>
               <TabsTrigger value="tickets" className="gap-1.5 text-xs md:text-sm">
                 <Ticket className="w-4 h-4" /> Tickets
               </TabsTrigger>
@@ -162,6 +166,9 @@ const MaintenanceEnterprise = () => {
             </TabsContent>
             <TabsContent value="supplier-tasks">
               <SupplierWorkflowTasksTab />
+            </TabsContent>
+            <TabsContent value="inspector">
+              <InspectorWorkspaceTab />
             </TabsContent>
             <TabsContent value="tickets">
               <MaintenanceTicketsTab />
