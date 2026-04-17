@@ -21341,6 +21341,89 @@ export type Database = {
           },
         ]
       }
+      vehicle_request_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          checkin_odometer: number | null
+          checkout_odometer: number | null
+          created_at: string
+          driver_checked_in_at: string | null
+          driver_checked_out_at: string | null
+          driver_id: string | null
+          id: string
+          notes: string | null
+          organization_id: string
+          status: string
+          updated_at: string
+          vehicle_id: string
+          vehicle_request_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          checkin_odometer?: number | null
+          checkout_odometer?: number | null
+          created_at?: string
+          driver_checked_in_at?: string | null
+          driver_checked_out_at?: string | null
+          driver_id?: string | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          status?: string
+          updated_at?: string
+          vehicle_id: string
+          vehicle_request_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          checkin_odometer?: number | null
+          checkout_odometer?: number | null
+          created_at?: string
+          driver_checked_in_at?: string | null
+          driver_checked_out_at?: string | null
+          driver_id?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          status?: string
+          updated_at?: string
+          vehicle_id?: string
+          vehicle_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_request_assignments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_request_assignments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_request_assignments_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_request_assignments_vehicle_request_id_fkey"
+            columns: ["vehicle_request_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vehicle_requests: {
         Row: {
           actual_assignment_minutes: number | null
@@ -21359,6 +21442,13 @@ export type Database = {
           completed_at: string | null
           created_at: string
           cross_pool_assignment: boolean | null
+          deallocated_at: string | null
+          deallocated_by: string | null
+          deallocation_count: number
+          deallocation_reason: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deletion_reason: string | null
           departure_lat: number | null
           departure_lng: number | null
           departure_place: string | null
@@ -21425,6 +21515,13 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           cross_pool_assignment?: boolean | null
+          deallocated_at?: string | null
+          deallocated_by?: string | null
+          deallocation_count?: number
+          deallocation_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
           departure_lat?: number | null
           departure_lng?: number | null
           departure_place?: string | null
@@ -21491,6 +21588,13 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           cross_pool_assignment?: boolean | null
+          deallocated_at?: string | null
+          deallocated_by?: string | null
+          deallocation_count?: number
+          deallocation_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
           departure_lat?: number | null
           departure_lng?: number | null
           departure_place?: string | null
