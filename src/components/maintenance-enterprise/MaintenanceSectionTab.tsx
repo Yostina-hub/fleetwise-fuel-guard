@@ -11,15 +11,17 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Wrench, FileSignature, ClipboardCheck, XCircle } from "lucide-react";
+import { Loader2, Wrench, FileSignature, ClipboardCheck, XCircle, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 type Action = "pre_inspection" | "create_pdr";
 
 const MaintenanceSectionTab = () => {
   const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [activeAction, setActiveAction] = useState<{ id: string; type: Action } | null>(null);
   const [needsMaintenance, setNeedsMaintenance] = useState(true);
   const [notes, setNotes] = useState("");
@@ -127,9 +129,19 @@ const MaintenanceSectionTab = () => {
                     <ClipboardCheck className="w-3 h-3" /> Pre-Inspect
                   </Button>
                 ) : (
-                  <Button size="sm" className="gap-1" onClick={() => setActiveAction({ id: r.id, type: "create_pdr" })}>
-                    <FileSignature className="w-3 h-3" /> Create PDR
-                  </Button>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1"
+                      onClick={() => navigate(`/maintenance-enterprise/wo/new?request=${r.id}`)}
+                    >
+                      <FileText className="w-3 h-3" /> Open WO Editor
+                    </Button>
+                    <Button size="sm" className="gap-1" onClick={() => setActiveAction({ id: r.id, type: "create_pdr" })}>
+                      <FileSignature className="w-3 h-3" /> Create PDR
+                    </Button>
+                  </div>
                 )}
               </TableCell>
             </TableRow>
