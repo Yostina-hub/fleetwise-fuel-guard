@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { WorkflowCanvas } from "@/components/workflow/WorkflowCanvas";
 import { WorkflowList } from "@/components/workflow/WorkflowList";
 import { Button } from "@/components/ui/button";
@@ -10,8 +11,19 @@ import { useTranslation } from 'react-i18next';
 const WorkflowBuilder = () => {
   const { t } = useTranslation();
   const { organizationId } = useOrganization();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [view, setView] = useState<"list" | "builder">("list");
   const [editingWorkflowId, setEditingWorkflowId] = useState<string | null>(null);
+
+  // Phase D — honor `?edit=<workflowId>` deep-links from SOP pages.
+  useEffect(() => {
+    const editId = searchParams.get("edit");
+    if (editId) {
+      setEditingWorkflowId(editId);
+      setView("builder");
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   // Reset to list view when organization changes
   useEffect(() => {
