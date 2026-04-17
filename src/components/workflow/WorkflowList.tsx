@@ -27,7 +27,29 @@ import {
   Rocket,
   Webhook,
   Sparkles,
+  Filter,
+  X,
+  ArrowDownAZ,
+  ArrowUpDown,
+  Shield,
+  Wrench,
+  Fuel,
+  ClipboardCheck,
+  Settings2,
+  Bell,
+  Snowflake,
+  Radio,
+  BatteryCharging,
+  LayoutGrid,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { seedSOPWorkflows } from "@/lib/workflow-engine/seedSOPs";
 import {
   DropdownMenu,
