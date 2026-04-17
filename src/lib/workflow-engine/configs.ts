@@ -27,12 +27,23 @@ export const fleetInspectionConfig: WorkflowConfig = {
   description: "Annual & internal vehicle inspection workflow.",
   icon: ClipboardCheck,
   initialStage: "list_vehicles",
-  intakeFormKey: "create_work_request",
-  intakePrefill: {
-    context: "trip_inspection",
-    request_type: "inspection",
-    inspection_sub_type: "pre_trip",
-  },
+  intakeFormChoices: [
+    {
+      key: "create_work_request",
+      label: "Create Work Request (Oracle EBS)",
+      description: "File a Pre-trip, Post-trip or Annual vehicle inspection request via the Oracle EBS aligned form.",
+      prefill: {
+        context: "trip_inspection",
+        request_type: "inspection",
+      },
+    },
+    {
+      key: "vehicle_inspection",
+      label: "Vehicle Inspection Checklist",
+      description: "Complete the operational pre-trip / post-trip / annual checklist directly.",
+      prefill: {},
+    },
+  ],
   requiresVehicle: true,
   intakeFields: [
     { key: "title", label: "Inspection title", type: "text", required: true, placeholder: "Q2 fleet inspection" },

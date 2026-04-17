@@ -96,6 +96,17 @@ export interface WorkflowConfig {
   intakeFormKey?: string;
   /** Optional prefilled context passed into the reusable intake form. */
   intakePrefill?: Record<string, any>;
+  /**
+   * Multiple reusable intake forms. When provided, the "File new" dialog renders
+   * a chooser so the user can pick which form to fill out before the workflow
+   * instance is created.
+   */
+  intakeFormChoices?: Array<{
+    key: string;            // form_key registered in workflow-forms/registry
+    label: string;          // user-facing button label
+    description?: string;   // helper text
+    prefill?: Record<string, any>;
+  }>;
   /** Roles allowed to file a new instance */
   intakeRoles?: AppRole[];
   /** Whether this workflow is tied to a vehicle / driver */
