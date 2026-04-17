@@ -100,10 +100,39 @@ export const useOutsourcePaymentRequests = (filters?: { status?: PRStatus }) => 
       if (args.status === "fuel_info_pending") {} // no special stamp until provided
       const { error } = await supabase.from("outsource_payment_requests").update(update).eq("id", args.id);
       if (error) throw error;
+
+      // When moving to pending_approval, auto-build the authority-matrix chain
+      if (args.status === "pending_approval") {
+        const { error: rpcErr } = await (supabase as any).rpc("build_outsource_payment_approval_chain", {
+          _payment_request_id: args.id,
+        });
+        if (rpcErr) throw rpcErr;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: ["outsource-payment-requests"] });
+      qc.invalidateQueries({ queryKey: ["outsource-payment-approvals", vars.id] });
       toast.success("Workflow updated");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const actOnApproval = useMutation({
+    mutationFn: async (args: { id: string; decision: "approved" | "rejected"; comments?: string }) => {
+      const { data, error } = await (supabase as any).rpc("act_on_outsource_payment_approval", {
+        _payment_request_id: args.id,
+        _decision: args.decision,
+        _comments: args.comments ?? null,
+      });
+      if (error) throw error;
+      return data as { result: string; step?: number; total?: number; next_step?: number };
+    },
+    onSuccess: (data, vars) => {
+      qc.invalidateQueries({ queryKey: ["outsource-payment-requests"] });
+      qc.invalidateQueries({ queryKey: ["outsource-payment-approvals", vars.id] });
+      if (data?.result === "fully_approved") toast.success(`Fully approved (${data.step}/${data.total})`);
+      else if (data?.result === "advanced") toast.success(`Step ${vars.id ? data.next_step! - 1 : ""} approved → next: step ${data.next_step}`);
+      else if (data?.result === "rejected") toast.warning(`Rejected at step ${data.step}`);
     },
     onError: (e: Error) => toast.error(e.message),
   });
