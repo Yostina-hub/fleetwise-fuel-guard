@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useVehicles } from "./useVehicles";
 import { useMaintenanceSchedules } from "./useMaintenanceSchedules";
+import { useLockedVehicles } from "./useLockedVehicles";
 import { isWithinInterval, parseISO, addDays } from "date-fns";
 
 export interface AvailableVehicle {
@@ -16,6 +17,7 @@ export interface AvailableVehicle {
 export const useAvailableVehicles = () => {
   const { vehicles, loading: vehiclesLoading } = useVehicles();
   const { schedules, loading: schedulesLoading } = useMaintenanceSchedules();
+  const { lockedIds, lockedById } = useLockedVehicles();
 
   const availableVehicles = useMemo(() => {
     const now = new Date();
@@ -46,15 +48,21 @@ export const useAvailableVehicles = () => {
       const isMaintenanceStatus = vehicle.status === 'maintenance';
       const hasScheduledMaintenance = vehiclesInMaintenance.has(vehicle.id);
       const isInactive = vehicle.status === 'inactive';
-      
+      const isLocked = lockedIds.has(vehicle.id);
+
       let unavailableReason: string | undefined;
-      
+
       if (isMaintenanceStatus) {
         unavailableReason = 'Currently in maintenance';
       } else if (hasScheduledMaintenance) {
         unavailableReason = maintenanceReasons[vehicle.id] || 'Scheduled for maintenance';
       } else if (isInactive) {
         unavailableReason = 'Vehicle inactive';
+      } else if (isLocked) {
+        const lock = lockedById[vehicle.id];
+        unavailableReason = lock
+          ? `Allocated to ${lock.request_number}`
+          : 'Already allocated to an active request';
       }
 
       return {
@@ -63,11 +71,11 @@ export const useAvailableVehicles = () => {
         make: vehicle.make,
         model: vehicle.model,
         status: vehicle.status,
-        isAvailable: !isMaintenanceStatus && !hasScheduledMaintenance && !isInactive,
+        isAvailable: !isMaintenanceStatus && !hasScheduledMaintenance && !isInactive && !isLocked,
         unavailableReason,
       } as AvailableVehicle;
     });
-  }, [vehicles, schedules]);
+  }, [vehicles, schedules, lockedIds, lockedById]);
 
   const available = useMemo(
     () => availableVehicles.filter(v => v.isAvailable),
