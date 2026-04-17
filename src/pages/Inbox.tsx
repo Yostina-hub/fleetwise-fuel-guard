@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Inbox as InboxIcon, CheckCircle2, Clock, Loader2 } from "lucide-react";
+import { Inbox as InboxIcon, CheckCircle2, Clock, Loader2, FileText } from "lucide-react";
+import { RenderWorkflowForm, getWorkflowForm } from "@/lib/workflow-forms/registry";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useToast } from "@/hooks/use-toast";
@@ -39,6 +40,10 @@ interface WorkflowTask {
   description: string | null;
   assignee_role: string | null;
   form_schema: FormField[];
+  /** When set, the Inbox renders the registered reusable form instead of ad-hoc fields. */
+  form_key?: string | null;
+  /** Prefilled values from the workflow run context (vehicle_id, driver_id, etc.). */
+  context?: Record<string, any> | null;
   actions: TaskAction[];
   status: string;
   vehicle_id: string | null;
