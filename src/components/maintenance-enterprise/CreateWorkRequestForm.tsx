@@ -550,12 +550,17 @@ export default function CreateWorkRequestForm({
                 <SelectContent>
                   <SelectItem value="Veh. Trip Inspection request">Veh. Trip Inspection request</SelectItem>
                   <SelectItem value="Vehicle Maintenance request">Vehicle Maintenance request</SelectItem>
+                  <SelectItem value="V Safety & Comfort Request">V Safety & Comfort Request</SelectItem>
                   <SelectItem value="Generator Maintenance request">Generator Maintenance request</SelectItem>
                   <SelectItem value="Equipment Maintenance request">Equipment Maintenance request</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground mt-1">
-                {contextValue === "Veh. Trip Inspection request" ? "Vehicle pre and post trip inspection request" : contextValue}
+                {contextValue === "Veh. Trip Inspection request"
+                  ? "Vehicle pre and post trip inspection request"
+                  : contextValue === "V Safety & Comfort Request"
+                  ? "Vehicle safety & comfort request (broken AC, seatbelt, accessories, etc.)"
+                  : contextValue}
               </p>
             </div>
           </FieldRow>

@@ -12,7 +12,7 @@
 // running against the snapshot they were created with.
 import {
   ClipboardCheck, Car, ShieldCheck, Wrench, AlertOctagon, Truck, UserPlus,
-  GraduationCap, Banknote, Hammer, LifeBuoy, IdCard, Building2,
+  GraduationCap, Banknote, Hammer, LifeBuoy, IdCard, Building2, Shield,
 } from "lucide-react";
 import type { WorkflowConfig } from "./types";
 
@@ -782,6 +782,178 @@ export const outsourceRentalConfig: WorkflowConfig = {
   ],
 };
 
+// =============================================================
+// 15) FMG-SAF 15 — Vehicle Safety & Comfort Request
+// Full lifecycle: report → severity-based approval (critical = auto) →
+// triage → reuse/create WO → parts (if needed) → repair → QA → maintenance
+// signoff → initiator acceptance → close.
+// Intake: Oracle EBS form (office staff) OR Driver app form (drivers).
+// Captures category, severity, location-on-vehicle, photos, agreed cost,
+// parts used, and acceptance signature.
+// =============================================================
+export const safetyComfortConfig: WorkflowConfig = {
+  type: "safety_comfort",
+  sopCode: "FMG-SAF 15",
+  title: "Vehicle Safety & Comfort",
+  description: "Driver/staff reports of safety or comfort issues — triage, fix, accept.",
+  icon: Shield,
+  initialStage: "report",
+  requiresVehicle: true,
+  intakeFormChoices: [
+    {
+      key: "create_work_request",
+      label: "Office: Oracle EBS Work Request",
+      description: "File via the Oracle EBS Create Work Request form (V Safety & Comfort context).",
+      prefill: {
+        context: "vehicle_maintenance",
+        request_type: "corrective",
+        context_value: "V Safety & Comfort Request",
+      },
+    },
+    {
+      key: "safety_comfort_report",
+      label: "Driver: Quick Safety/Comfort Report",
+      description: "Simple driver-facing form: category, severity, location, photos.",
+      prefill: {},
+    },
+  ],
+  intakeFields: [
+    { key: "title", label: "Issue title", type: "text", required: true, placeholder: "e.g. Driver seatbelt broken" },
+    { key: "__vehicle_id", label: "Vehicle", type: "vehicle", required: true },
+    { key: "__driver_id", label: "Driver who reported", type: "driver" },
+    { key: "category", label: "Category", type: "select", required: true,
+      options: [
+        { value: "safety_critical", label: "Safety — critical (brakes, seatbelt, lights, steering)" },
+        { value: "safety_general",  label: "Safety — general (mirrors, wipers, horn)" },
+        { value: "comfort_ac",      label: "Comfort — AC / heater" },
+        { value: "comfort_seat",    label: "Comfort — seat / interior" },
+        { value: "comfort_noise",   label: "Comfort — noise / vibration" },
+        { value: "accessory",       label: "Accessory request (dashcam, sun film, etc.)" },
+        { value: "other",           label: "Other" },
+      ] },
+    { key: "severity", label: "Severity", type: "select", required: true,
+      options: [
+        { value: "low",      label: "Low — comfort only" },
+        { value: "medium",   label: "Medium — minor safety" },
+        { value: "high",     label: "High — affects safe operation" },
+        { value: "critical", label: "Critical — vehicle must be grounded" },
+      ] },
+    { key: "location_on_vehicle", label: "Location on vehicle", type: "text", placeholder: "e.g. Driver-side door, rear bumper" },
+    { key: "description", label: "Description", type: "textarea", required: true },
+  ],
+  lanes: [
+    { ...driverLane },
+    { ...fleetOpsLane },
+    { ...maintLane },
+    { ...sourcingLane },
+  ],
+  stages: [
+    // 1. Report filed
+    { id: "report", label: "1. Report filed", lane: "driver",
+      description: "Driver or office staff has filed a Safety & Comfort report.",
+      actions: [
+        { id: "auto_approve_critical", label: "Auto-approve (critical)", toStage: "triage",
+          allowedRoles: ["fleet_manager","operations_manager","maintenance_manager","super_admin"],
+          confirm: "Use only for critical safety issues that require immediate action." },
+        { id: "request_approval", label: "Send for approval", toStage: "pending_approval",
+          allowedRoles: ["fleet_manager","operations_manager","driver","user"] },
+      ] },
+
+    // 2. Approval — severity-based
+    { id: "pending_approval", label: "2. Approval (severity-based)", lane: "fleet_ops",
+      description: "Critical issues should be auto-approved at step 1. Comfort & general issues need manager approval here.",
+      actions: [
+        { id: "approve", label: "Approve", toStage: "triage",
+          allowedRoles: ["fleet_manager","operations_manager"],
+          fields: [{ key: "approval_notes", label: "Approval notes", type: "textarea" }] },
+        { id: "reject", label: "Reject", toStage: "rejected",
+          allowedRoles: ["fleet_manager","operations_manager"], variant: "destructive",
+          fields: [{ key: "rejection_reason", label: "Rejection reason", type: "textarea", required: true }] },
+      ] },
+    { id: "rejected", label: "Rejected — closed", lane: "fleet_ops", terminal: true,
+      actions: [{ id: "close_rejected", label: "Close", toStage: "rejected", completes: true,
+        allowedRoles: ["fleet_manager","operations_manager"] }] },
+
+    // 3. Triage by maintenance
+    { id: "triage", label: "3. Triage", lane: "maintenance",
+      actions: [{ id: "ready_wo", label: "Ready for Work Order", toStage: "request_wo",
+        allowedRoles: ["maintenance_manager","maintenance_supervisor"],
+        fields: [
+          { key: "triage_notes", label: "Triage notes / diagnosis", type: "textarea", required: true },
+          { key: "estimated_cost", label: "Estimated cost (ETB)", type: "number" },
+        ] }] },
+
+    // 4. WO — reuse or create
+    { id: "request_wo", label: "4. Work Order (reuse or create)", lane: "maintenance",
+      description: "Reuse an open WO on this vehicle if available, otherwise open the Oracle WO form.",
+      actions: [
+        { id: "use_existing_wo", label: "Use existing open WO", toStage: "in_repair",
+          allowedRoles: ["maintenance_manager","maintenance_supervisor","fleet_manager"],
+          confirm: "Link this safety & comfort request to the vehicle's open Work Order?" },
+        { id: "open_wo_form", label: "Open Work Order form", toStage: "in_repair",
+          allowedRoles: ["maintenance_manager","maintenance_supervisor","fleet_manager"],
+          fields: [{ key: "work_order_id", label: "Work Order # (paste WO id after creating)", type: "text", required: true }] },
+      ] },
+
+    // 5. Repair (with optional parts detour)
+    { id: "in_repair", label: "5. Repair in progress", lane: "maintenance",
+      actions: [
+        { id: "need_parts", label: "Need parts → Sourcing", toStage: "parts_sourcing",
+          allowedRoles: ["maintenance_manager","maintenance_supervisor"],
+          fields: [{ key: "parts_needed", label: "Parts needed", type: "textarea", required: true }] },
+        { id: "repair_done", label: "Repair done — go to QA", toStage: "qa",
+          allowedRoles: ["maintenance_manager","maintenance_supervisor"],
+          fields: [
+            { key: "actual_cost", label: "Actual cost (ETB)", type: "number", required: true },
+            { key: "repair_notes", label: "Repair notes", type: "textarea" },
+          ] },
+      ] },
+    { id: "parts_sourcing", label: "5a. Parts sourcing", lane: "sourcing",
+      actions: [{ id: "parts_delivered", label: "Parts delivered → resume repair", toStage: "in_repair",
+        allowedRoles: ["sourcing_manager"],
+        fields: [{ key: "parts_received_at", label: "Parts received at", type: "datetime", required: true }] }] },
+
+    // 6. QA / road test
+    { id: "qa", label: "6. QA / road test", lane: "maintenance",
+      actions: [
+        { id: "qa_pass", label: "QA pass — maintenance signoff", toStage: "maintenance_signoff",
+          allowedRoles: ["maintenance_manager","maintenance_supervisor"] },
+        { id: "qa_fail", label: "QA fail — re-repair", toStage: "in_repair",
+          allowedRoles: ["maintenance_manager","maintenance_supervisor"], variant: "destructive" },
+      ] },
+
+    // 7. Maintenance signoff (step 1 of 2-step closure)
+    { id: "maintenance_signoff", label: "7. Maintenance signoff", lane: "maintenance",
+      description: "Maintenance confirms the issue is fixed; the request initiator must then accept.",
+      actions: [{ id: "signoff", label: "Sign off — request initiator acceptance", toStage: "awaiting_acceptance",
+        allowedRoles: ["maintenance_manager","maintenance_supervisor"],
+        fields: [
+          { key: "signoff_notes", label: "Signoff notes", type: "textarea" },
+          { key: "signoff_at", label: "Signed off at", type: "datetime", required: true },
+        ] }] },
+
+    // 8. Initiator acceptance (step 2 of 2-step closure)
+    { id: "awaiting_acceptance", label: "8. Awaiting initiator acceptance", lane: "driver",
+      description: "Only the request initiator (or fleet/operations manager) can accept and close.",
+      actions: [
+        { id: "accept", label: "Accept fix — close", toStage: "closed",
+          allowedRoles: ["user","driver","fleet_manager","operations_manager"],
+          fields: [
+            { key: "acceptance_notes", label: "Acceptance notes", type: "textarea" },
+            { key: "accepted_at", label: "Accepted at", type: "datetime", required: true },
+          ] },
+        { id: "reject_fix", label: "Reject — re-open repair", toStage: "in_repair",
+          allowedRoles: ["user","driver","fleet_manager","operations_manager"], variant: "destructive",
+          fields: [{ key: "rejection_reason", label: "Why is the fix not acceptable?", type: "textarea", required: true }] },
+      ] },
+
+    // 9. Closed
+    { id: "closed", label: "9. Closed", lane: "fleet_ops", terminal: true,
+      actions: [{ id: "complete", label: "Complete (END)", toStage: "closed", completes: true,
+        allowedRoles: ["fleet_manager","operations_manager","user","driver"] }] },
+  ],
+};
+
 // All configs in one map for the registry
 export const WORKFLOW_CONFIGS: Record<string, WorkflowConfig> = {
   fleet_inspection:        fleetInspectionConfig,
@@ -797,4 +969,5 @@ export const WORKFLOW_CONFIGS: Record<string, WorkflowConfig> = {
   roadside_assistance:     roadsideAssistanceConfig,
   license_renewal:         licenseRenewalConfig,
   outsource_rental:        outsourceRentalConfig,
+  safety_comfort:          safetyComfortConfig,
 };
