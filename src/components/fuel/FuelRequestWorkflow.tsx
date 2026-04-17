@@ -531,14 +531,9 @@ export const FuelRequestWorkflow = () => {
         litersApproved: liters,
       });
     },
-    onSuccess: (result) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fuel-requests"] });
       setShowApprove(null);
-      toast.success(
-        result?.allApproved
-          ? "Request approved — Fuel Work Order created automatically"
-          : "Approval recorded. Waiting for the next delegated approver"
-      );
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -559,7 +554,6 @@ export const FuelRequestWorkflow = () => {
       queryClient.invalidateQueries({ queryKey: ["fuel-requests"] });
       setShowReject(null);
       setRejectReason("");
-      toast.success("Request rejected");
     },
     onError: (e: Error) => toast.error(e.message),
   });
