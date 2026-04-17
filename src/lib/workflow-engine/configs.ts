@@ -7,14 +7,15 @@ import {
 import type { WorkflowConfig } from "./types";
 
 // Reusable lane helpers
-const fleetOpsLane = { id: "fleet_ops", label: "Fleet Operation Section", roles: ["operations_manager", "fleet_manager"] as const };
-const maintLane    = { id: "maintenance", label: "Fleet Maintenance Section", roles: ["maintenance_manager"] as const };
-const sourcingLane = { id: "sourcing",    label: "Sourcing / Supply Chain",   roles: ["sourcing_manager"] as const };
-const financeLane  = { id: "finance",     label: "Account Payable / Finance", roles: ["finance_manager"] as const };
-const inspLane     = { id: "inspection",  label: "Inspection Center",         roles: ["inspection_center"] as const };
-const transportLane= { id: "transport",   label: "Transport Authority",       roles: ["transport_authority"] as const };
-const insuranceLane= { id: "insurance",   label: "Insurance Management",      roles: ["insurance_admin"] as const };
-const driverLane   = { id: "driver",      label: "Driver",                    roles: ["driver"] as const };
+import type { Lane } from "./types";
+const fleetOpsLane: Lane = { id: "fleet_ops", label: "Fleet Operation Section", roles: ["operations_manager", "fleet_manager"] };
+const maintLane: Lane    = { id: "maintenance", label: "Fleet Maintenance Section", roles: ["maintenance_manager"] };
+const sourcingLane: Lane = { id: "sourcing",    label: "Sourcing / Supply Chain",   roles: ["sourcing_manager"] };
+const financeLane: Lane  = { id: "finance",     label: "Account Payable / Finance", roles: ["finance_manager"] };
+const inspLane: Lane     = { id: "inspection",  label: "Inspection Center",         roles: ["inspection_center"] };
+const transportLane: Lane= { id: "transport",   label: "Transport Authority",       roles: ["transport_authority"] };
+const insuranceLane: Lane= { id: "insurance",   label: "Insurance Management",      roles: ["insurance_admin"] };
+const driverLane: Lane   = { id: "driver",      label: "Driver",                    roles: ["driver"] };
 
 // =============================================================
 // 1) FMG-INS 01 — Fleet Inspection (the uploaded diagram, 16 steps)
