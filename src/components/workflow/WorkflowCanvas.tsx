@@ -485,8 +485,8 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
             defaultEdgeOptions={{
               type: "smoothstep",
               animated: true,
-              markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16 },
-              style: { strokeWidth: 2 },
+              markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18 },
+              style: { strokeWidth: 2, stroke: "hsl(var(--muted-foreground) / 0.4)" },
             }}
             fitView
             snapToGrid
@@ -494,27 +494,32 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
             className="bg-background"
             proOptions={{ hideAttribution: true }}
           >
-            <Background variant={BackgroundVariant.Dots} gap={16} size={1} className="!bg-background" />
-            <Controls className="!bg-card !border-border !shadow-lg" />
+            <Background variant={BackgroundVariant.Dots} gap={20} size={1} className="!bg-background" />
             <MiniMap
-              className="!bg-card !border-border"
+              className="!bg-card/80 !border-border !rounded-lg !shadow-md !backdrop-blur"
+              pannable
+              zoomable
               nodeColor={(node) => {
                 const d = node.data as any;
-                if (d?.status === "running") return "#eab308";
-                if (d?.status === "success") return "#22c55e";
-                if (d?.status === "error") return "#ef4444";
-                if (d?.category === "triggers") return "#10b981";
-                if (d?.category === "conditions") return "#f59e0b";
-                if (d?.category === "fleet") return "#3b82f6";
-                if (d?.category === "notifications") return "#8b5cf6";
-                if (d?.category === "ai_intelligence") return "#a855f7";
-                if (d?.category === "data") return "#06b6d4";
-                if (d?.category === "timing") return "#64748b";
-                return "#6366f1";
+                if (d?.status === "running") return "hsl(var(--status-running))";
+                if (d?.status === "success") return "hsl(var(--status-done))";
+                if (d?.status === "error") return "hsl(var(--status-failed))";
+                const token = accentTokenFor(d?.category, d?.nodeType);
+                return `hsl(var(${token}))`;
               }}
               maskColor="hsl(var(--background) / 0.7)"
             />
           </ReactFlow>
+          <CanvasToolbar
+            onFitView={() => fitView({ padding: 0.2, duration: 400 })}
+            onZoomIn={() => zoomIn()}
+            onZoomOut={() => zoomOut()}
+            onAutoLayout={handleAutoLayout}
+            problems={problems}
+            onJumpToProblem={jumpToProblem}
+            nodeCount={nodes.length}
+            edgeCount={edges.length}
+          />
         </div>
 
         {/* Right panel - Config, Simulator, or AI Chat */}
