@@ -576,13 +576,13 @@ const DriverPortal = () => {
         </Tabs>
 
         {/* Dialogs */}
-        <DriverMaintenanceDialog
+        <CreateWorkRequestDialog
           open={showMaintenance}
           onOpenChange={setShowMaintenance}
           driverId={driverId}
+          driverName={driverName}
           vehicleId={vehicle?.id}
           vehiclePlate={vehicle?.plate_number}
-          vehicleMakeModel={vehicle ? `${vehicle.make} ${vehicle.model}` : undefined}
         />
         <FuelRequestFormDialog
           open={showFuel}
