@@ -235,6 +235,7 @@ const getNavItems = (t: (key: string) => string) => [
     label: "SOP Workflows",
     highlight: true,
     subItems: [
+      { label: "All SOPs (Hub)", path: "/sop" },
       { label: "Fleet Inspection", path: "/sop/fleet-inspection" },
       { label: "Vehicle Registration", path: "/sop/vehicle-registration" },
       { label: "Insurance Renewal", path: "/sop/vehicle-insurance-renewal" },
