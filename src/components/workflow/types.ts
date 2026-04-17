@@ -87,6 +87,8 @@ export const PALETTE_ITEMS: PaletteItem[] = [
   { type: "fleet_driver_handover", label: "Driver Handover", description: "Manage driver shift change protocol", icon: "🤝", category: "fleet" },
   { type: "fleet_route_optimize", label: "Route Optimizer", description: "Calculate optimal route via API", icon: "🛤️", category: "fleet" },
   { type: "fleet_request_approval", label: "Request Approval", description: "Submit fleet request for approval", icon: "✅", category: "fleet" },
+  { type: "human_task", label: "Human Task", description: "Pause workflow until a user completes the assigned step", icon: "🧑‍💼", category: "actions" },
+  { type: "approval", label: "Approval Step", description: "Pause until an authorized role approves or rejects", icon: "🛡️", category: "actions" },
   { type: "fleet_immobilize", label: "Immobilize Vehicle", description: "Remote engine kill command", icon: "🔒", category: "fleet" },
   
   // Notifications
