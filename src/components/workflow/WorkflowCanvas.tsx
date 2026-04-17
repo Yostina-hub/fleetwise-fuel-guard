@@ -118,20 +118,25 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
   const onConnect: OnConnect = useCallback(
     (params: Connection) => {
       pushHistory();
+      // Color the edge after the source node's category accent for clarity.
+      const srcNode = nodes.find((n) => n.id === params.source);
+      const srcData = srcNode?.data as any;
+      const token = accentTokenFor(srcData?.category, srcData?.nodeType);
+      const stroke = `hsl(var(${token}))`;
       setEdges((eds) =>
         addEdge(
           {
             ...params,
             type: "smoothstep",
             animated: true,
-            markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16 },
-            style: { strokeWidth: 2 },
+            markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18, color: stroke },
+            style: { strokeWidth: 2, stroke },
           },
-          eds
-        )
+          eds,
+        ),
       );
     },
-    [setEdges, pushHistory]
+    [setEdges, pushHistory, nodes],
   );
 
   const onDragStart = useCallback((event: React.DragEvent, item: PaletteItem) => {
