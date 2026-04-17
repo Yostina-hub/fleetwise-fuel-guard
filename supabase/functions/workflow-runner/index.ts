@@ -253,7 +253,15 @@ async function runWorkflow(
       visited.add(existingRun.current_node_id);
       const decision = ctx.last_task.decision as string | undefined;
       queue = (out[existingRun.current_node_id] ?? [])
-        .filter((e) => !decision || !e.sourceHandle || e.sourceHandle === decision)
+        .filter((e) => {
+          if (!decision) return true;
+          // Match either the React-Flow sourceHandle OR the SOP decision_id
+          // stored on the edge data payload (set by sopConverter).
+          const handle = e.sourceHandle;
+          const dataDecision = (e as any).data?.decision_id;
+          if (!handle && !dataDecision) return true;
+          return handle === decision || dataDecision === decision;
+        })
         .map((e) => e.target);
     } else {
       // Fresh start: every node with no incoming edges
@@ -276,6 +284,19 @@ async function runWorkflow(
       // ── HUMAN TASK / APPROVAL: pause the run, create an inbox task ──
       if (node.data.nodeType === "human_task" || node.data.nodeType === "approval") {
         const cfg = node.data.config ?? {};
+        // Pick the primary assignee role: explicit > first of assignee_roles array.
+        const assigneeRole =
+          cfg.assignee_role ??
+          (Array.isArray(cfg.assignee_roles) ? cfg.assignee_roles[0] : null);
+        // Fallback action set: derive from outgoing edges if config didn't supply any.
+        const actionSet =
+          Array.isArray(cfg.actions) && cfg.actions.length > 0
+            ? cfg.actions
+            : (out[nodeId] ?? []).map((e) => ({
+                id: (e as any).data?.decision_id || e.sourceHandle || e.target,
+                label: (e as any).label || e.sourceHandle || "Continue",
+                variant: (e as any).data?.variant || "default",
+              }));
         const { error: taskErr } = await admin.from("workflow_tasks").insert({
           organization_id: wf.organization_id,
           workflow_id: wf.id,
@@ -283,7 +304,7 @@ async function runWorkflow(
           node_id: nodeId,
           title: cfg.title || node.data.label,
           description: cfg.description ?? null,
-          assignee_role: cfg.assignee_role ?? null,
+          assignee_role: assigneeRole,
           form_schema: cfg.fields ?? [],
           form_key: cfg.form_key ?? null,
           context: {
@@ -291,10 +312,7 @@ async function runWorkflow(
             ...(cfg.prefill ?? {}),
             ...(cfg.context ?? {}),
           },
-          actions: cfg.actions ?? (out[nodeId] ?? []).map((e) => ({
-            id: e.sourceHandle || e.target,
-            label: e.sourceHandle || "Continue",
-          })),
+          actions: actionSet,
           vehicle_id: ctx.trigger?.vehicle_id ?? cfg.prefill?.vehicle_id ?? null,
           driver_id: ctx.trigger?.driver_id ?? cfg.prefill?.driver_id ?? null,
         });
@@ -306,7 +324,7 @@ async function runWorkflow(
           node_type: node.data.nodeType,
           category: node.data.category,
           status: "success",
-          message: `Awaiting human action${cfg.assignee_role ? ` (${cfg.assignee_role})` : ""}`,
+          message: `Awaiting human action${assigneeRole ? ` (${assigneeRole})` : ""}`,
           duration_ms: Date.now() - t0,
           ts: new Date().toISOString(),
         });

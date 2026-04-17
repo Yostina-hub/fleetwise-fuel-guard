@@ -72,42 +72,60 @@ export function convertSopConfigToGraph(config: WorkflowConfig): ConverterOutput
     },
   });
 
-  // 2) One human_task node per Stage (terminal stages render as completion).
+  // 2) One node per Stage. In-flight stages → human_task (pause + Inbox row).
+  //    Terminal stages → data_log_history (auto-completes the run).
   for (const stage of config.stages) {
     const isTerminal = !!stage.terminal;
+    // Aggregate every form field across the stage's actions into a single
+    // `fields` array so the Inbox renders one form regardless of which
+    // action button the user picks.
+    const allFields: Array<ReturnType<typeof fieldsToFormSchema>[number]> = [];
+    const seenKeys = new Set<string>();
+    for (const action of stage.actions || []) {
+      for (const f of fieldsToFormSchema(action.fields)) {
+        if (seenKeys.has(f.key)) continue;
+        seenKeys.add(f.key);
+        allFields.push(f);
+      }
+    }
+    // Build inbox action buttons from stage actions.
+    const actionButtons = (stage.actions || []).map((a) => ({
+      id: a.id,
+      label: a.label,
+      variant: a.variant || "default",
+      allowed_roles: a.allowedRoles || [],
+      confirm: a.confirm,
+      completes: !!a.completes,
+    }));
+
     nodes.push({
       id: stage.id,
-      type: isTerminal ? "action" : "action",
+      type: "action",
       position: { x: 0, y: 0 },
       data: {
         label: stage.label,
         description: stage.description,
         category: "actions",
-        // Terminal stages become a notify/log node; in-flight stages become human tasks.
         nodeType: isTerminal ? "data_log_history" : "human_task",
         isConfigured: true,
         config: {
+          // SOP context (for runtime overlay & analytics)
           stage_id: stage.id,
           lane: stage.lane,
           terminal: isTerminal,
-          // Aggregate role permissions from the stage's actions (so the inbox
-          // can route the task to the correct role bucket immediately).
+          sop_code: config.sopCode,
+          // Inbox routing — first allowed role becomes the primary assignee
+          assignee_role: (stage.actions || []).flatMap((a) => a.allowedRoles || [])[0] || null,
           assignee_roles: Array.from(
-            new Set(
-              (stage.actions || []).flatMap((a) => a.allowedRoles || []),
-            ),
+            new Set((stage.actions || []).flatMap((a) => a.allowedRoles || [])),
           ),
-          // Aggregate decisions / form fields the user must answer to advance.
-          decisions: (stage.actions || []).map((a) => ({
-            id: a.id,
-            label: a.label,
-            to_stage: a.toStage,
-            variant: a.variant || "default",
-            allowed_roles: a.allowedRoles || [],
-            confirm: a.confirm,
-            completes: !!a.completes,
-            fields: fieldsToFormSchema(a.fields),
-          })),
+          // Inbox form schema (runner reads cfg.fields)
+          fields: allFields,
+          // Inbox action buttons (runner reads cfg.actions)
+          actions: actionButtons,
+          // Title shown in inbox card (runner reads cfg.title)
+          title: stage.label,
+          description: stage.description,
         },
       },
     });
@@ -122,14 +140,15 @@ export function convertSopConfigToGraph(config: WorkflowConfig): ConverterOutput
     label: "Start",
   });
 
-  // 4) Stage → action edges (one edge per StageAction)
+  // 4) Stage → action edges. `sourceHandle` = action.id so the runner can route
+  //    resume traffic to the correct child after the user picks a decision.
   for (const stage of config.stages) {
     for (const action of stage.actions || []) {
-      // Self-loops on terminal stages don't need an edge — the node IS the end.
       if (action.toStage === stage.id && (stage.terminal || action.completes)) continue;
       edges.push({
         id: `${stage.id}__${action.id}__${action.toStage}`,
         source: stage.id,
+        sourceHandle: action.id,
         target: action.toStage,
         type: "smoothstep",
         label: action.label,
