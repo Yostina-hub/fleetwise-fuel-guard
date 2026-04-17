@@ -218,6 +218,7 @@ export function PaymentRequestsTab() {
                 <TableHead>Fuel/Lub</TableHead><TableHead>Status</TableHead><TableHead>Created</TableHead><TableHead /></TableRow></TableHeader>
               <TableBody>
                 {requests.map(r => (
+                  <>
                   <TableRow key={r.id}>
                     <TableCell className="font-medium">{r.request_number}</TableCell>
                     <TableCell className="text-xs">{r.period_start} → {r.period_end}</TableCell>
@@ -226,35 +227,29 @@ export function PaymentRequestsTab() {
                     <TableCell><Badge variant={STATUS_COLOR[r.status] || "secondary"}>{STATUS_LABEL[r.status]}</Badge></TableCell>
                     <TableCell className="text-xs">{format(new Date(r.created_at), "PP")}</TableCell>
                     <TableCell className="text-right space-x-1">
-                      {/* Step 1b — Provide fuel info */}
                       {(r.status === "submitted" || r.status === "fuel_info_pending") && (
                         <Button size="sm" variant="outline" onClick={() => { setFuelDialog(r.id); setFuelForm({ fuel_cost: r.fuel_cost || 0, lubricant_cost: r.lubricant_cost || 0, notes: "" }); }}>
                           <Fuel className="w-3 h-3 mr-1" /> 1b Fuel info
                         </Button>
                       )}
-                      {/* Step 2 — Consolidate */}
                       {r.status === "submitted" && (
                         <Button size="sm" variant="outline" onClick={() => transition.mutate({ id: r.id, status: "consolidating" })}>
                           <Layers className="w-3 h-3 mr-1" /> 2 Consolidate
                         </Button>
                       )}
-                      {/* Step 2 OK? -> needs info / send for approval */}
                       {r.status === "consolidating" && (
                         <>
                           <Button size="sm" onClick={() => transition.mutate({ id: r.id, status: "pending_approval" })}>
-                            OK → 4 Approval
+                            OK → 4 Approval (matrix)
                           </Button>
                           <Button size="sm" variant="destructive" onClick={() => transition.mutate({ id: r.id, status: "info_required", patch: { rejection_reason: "More info required" } })}>
                             Need info
                           </Button>
                         </>
                       )}
-                      {/* Step 3 — Info required → resubmit */}
                       {r.status === "info_required" && (
                         <Button size="sm" variant="outline" onClick={() => transition.mutate({ id: r.id, status: "consolidating" })}>3 Re-submit info</Button>
                       )}
-                      {/* Step 4 — Approve via Authority Matrix chain (rendered below the row) */}
-                      {/* Step 5 — Contract check */}
                       {r.status === "approved" && (
                         <Button size="sm" variant="outline" onClick={() => transition.mutate({ id: r.id, status: "contract_check" })}>
                           <ShieldCheck className="w-3 h-3 mr-1" /> 5 Check contract
@@ -279,6 +274,21 @@ export function PaymentRequestsTab() {
                       )}
                     </TableCell>
                   </TableRow>
+                  {r.status === "pending_approval" && (
+                    <TableRow key={r.id + "-chain"}>
+                      <TableCell colSpan={7} className="bg-muted/10">
+                        <ApprovalChainPanel
+                          paymentRequestId={r.id}
+                          currentStep={r.current_approval_step}
+                          totalSteps={r.total_approval_steps}
+                          onApprove={() => actOnApproval.mutate({ id: r.id, decision: "approved" })}
+                          onReject={() => actOnApproval.mutate({ id: r.id, decision: "rejected", comments: "Rejected via Authority Matrix" })}
+                          isPending={actOnApproval.isPending}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  </>
                 ))}
               </TableBody>
             </Table>
