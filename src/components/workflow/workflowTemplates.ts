@@ -1132,6 +1132,140 @@ const TEMPLATES: WorkflowTemplate[] = [
       { id: "me16", source: "ma9", target: "ma12", type: "smoothstep", animated: true },
     ],
   },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 23. SOP 6.1 — MANAGE REQUEST FOR VEHICLE MAINTENANCE @ CORPORATE/ZONE
+  // Full swimlane automation: Driver → Fleet Operation → Corporate Maintenance → SCD Sourcing → Supplier
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "tpl_sop_61_corporate_maintenance",
+    name: "SOP 6.1 — Corporate/Zone Vehicle Maintenance",
+    description: "End-to-end automation of the corporate vehicle maintenance SOP across 5 swimlanes: Driver request → Fleet Operations review → Corporate Maintenance pre-inspection, WO & delegation approval → SCD Sourcing PO → Supplier execution with variation handling, post-maintenance inspection, delivery, payment and document filing.",
+    category: "maintenance",
+    icon: "🛠️",
+    difficulty: "advanced",
+    estimatedSavings: "~30% cycle-time reduction; full audit trail",
+    tags: ["sop-6.1", "corporate", "zone", "outsourced-maintenance", "delegation-matrix", "work-order", "variation", "post-inspection", "swimlane"],
+    nodes: [
+      // ── DRIVER lane (y=50) ──────────────────────────────
+      { id: "d1", type: "trigger", position: { x: 50, y: 50 }, data: { label: "1 — Driver Requests Maintenance", description: "Driver reports issue via phone / mobile app", icon: "📱", category: "triggers", nodeType: "trigger_event", config: { eventType: "maintenance_request", source: "driver" }, status: "idle", isConfigured: true } },
+
+      // ── FLEET OPERATION SECTION lane (y=230) ────────────
+      { id: "f1", type: "action", position: { x: 280, y: 230 }, data: { label: "2 — Review Request / PM Schedule", description: "Fleet Ops reviews request against preventive maintenance schedule (ERP)", icon: "🗄️", category: "data", nodeType: "data_lookup", config: { table: "maintenance_schedules" }, status: "idle", isConfigured: true } },
+      { id: "f2", type: "condition", position: { x: 540, y: 230 }, data: { label: "Accepted?", description: "Fleet Ops accepts or rejects the request", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "review.accepted", operator: "equals", rightOperand: "true" }, status: "idle", isConfigured: true } },
+      { id: "f3", type: "action", position: { x: 800, y: 230 }, data: { label: "3 — Raise Fleet Maintenance Request", description: "Formally raise request in ERP and email stakeholders", icon: "📧", category: "notifications", nodeType: "notify_email", config: { template: "Fleet Maintenance Request {{request.number}} raised for {{vehicle.name}}" }, status: "idle", isConfigured: true } },
+
+      // ── CORPORATE FLEET MAINTENANCE lane (y=420) ────────
+      { id: "m1", type: "action", position: { x: 800, y: 420 }, data: { label: "4 — Conduct Pre-Inspection", description: "Maintenance team performs pre-inspection (ERP/Email)", icon: "🔧", category: "fleet", nodeType: "fleet_maintenance", config: { action: "pre_inspection" }, status: "idle", isConfigured: true } },
+      { id: "m2", type: "condition", position: { x: 1060, y: 420 }, data: { label: "Need Maintenance?", description: "Decide whether maintenance is actually required", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "inspection.needs_maintenance", operator: "equals", rightOperand: "true" }, status: "idle", isConfigured: true } },
+      { id: "m3", type: "action", position: { x: 1320, y: 320 }, data: { label: "5 — Inform: No Maintenance Needed", description: "Notify requester that maintenance is not required", icon: "🔔", category: "notifications", nodeType: "notify_push", config: { template: "ℹ️ {{vehicle.name}} does not require maintenance" }, status: "idle", isConfigured: true } },
+      { id: "m4", type: "action", position: { x: 1320, y: 520 }, data: { label: "6 — Prepare WO + Delegation Approval", description: "Create work order; route approval per delegation matrix (ERP)", icon: "📋", category: "data", nodeType: "data_log_history", config: { table: "work_orders", action: "create_with_approval" }, status: "idle", isConfigured: true } },
+      { id: "m5", type: "condition", position: { x: 1580, y: 520 }, data: { label: "Approved?", description: "Approver in delegation matrix approves WO", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "wo.approval_status", operator: "equals", rightOperand: "approved" }, status: "idle", isConfigured: true } },
+      { id: "m6", type: "action", position: { x: 1840, y: 420 }, data: { label: "7a — Raise Zero-Value PDR (Qty 1)", description: "Auto-create PDR with 0 value, qty 1 per delegation matrix", icon: "🧾", category: "data", nodeType: "data_transform", config: { table: "purchase_orders", value: 0, qty: 1 }, status: "idle", isConfigured: true } },
+      { id: "m7", type: "action", position: { x: 1840, y: 620 }, data: { label: "7b — Inform Driver to Deliver Vehicle", description: "Notify driver to deliver vehicle and submit WO to supplier", icon: "📱", category: "notifications", nodeType: "notify_sms", config: { recipients: "driver", template: "Deliver {{vehicle.name}} to {{supplier.name}} with WO {{wo.number}}" }, status: "idle", isConfigured: true } },
+
+      // ── DRIVER lane — delivery (y=800) ──────────────────
+      { id: "d2", type: "action", position: { x: 1840, y: 800 }, data: { label: "8b — Deliver Vehicle to Garage", description: "Driver delivers vehicle to addressed outsourcing garage", icon: "🚛", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "in_transit_to_garage" }, status: "idle", isConfigured: true } },
+
+      // ── SCD-SOURCING lane (y=980) ───────────────────────
+      { id: "s1", type: "action", position: { x: 1840, y: 980 }, data: { label: "8a — Access PO to Manage WO", description: "SCD Sourcing accesses PO and manages maintenance per WO (ERP)", icon: "🗄️", category: "data", nodeType: "data_lookup", config: { table: "purchase_orders" }, status: "idle", isConfigured: true } },
+
+      // ── SUPPLIER lane (y=1170) ──────────────────────────
+      { id: "sp1", type: "action", position: { x: 1840, y: 1170 }, data: { label: "9 — Maintain Vehicle per WO & Contract", description: "Supplier executes maintenance per WO and contract (i-Supplier/Form)", icon: "🔧", category: "fleet", nodeType: "fleet_maintenance", config: { action: "execute_supplier" }, status: "idle", isConfigured: true } },
+      { id: "sp2", type: "condition", position: { x: 1580, y: 1170 }, data: { label: "WO Variation?", description: "Does the supplier need variation to the WO?", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "wo.has_variation", operator: "equals", rightOperand: "true" }, status: "idle", isConfigured: true } },
+      { id: "sp3", type: "action", position: { x: 1320, y: 1080 }, data: { label: "10 — Notify Variation for Confirmation", description: "Email/i-Supplier variation notice for confirmation", icon: "📧", category: "notifications", nodeType: "notify_email", config: { recipients: "fleet_maintenance", template: "Variation requested on WO {{wo.number}}" }, status: "idle", isConfigured: true } },
+
+      // ── BACK to Maintenance — variation handling (y=1080) ──
+      { id: "m8", type: "action", position: { x: 1060, y: 1080 }, data: { label: "11 — Assign Inspector & Check Variation", description: "Fleet inspector verifies WO variation on-site", icon: "🔍", category: "conditions", nodeType: "condition_filter", config: { table: "wo_variations" }, status: "idle", isConfigured: true } },
+      { id: "m9", type: "condition", position: { x: 800, y: 1080 }, data: { label: "Variation Accepted?", description: "Accept or reject the proposed variation", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "variation.accepted", operator: "equals", rightOperand: "true" }, status: "idle", isConfigured: true } },
+      { id: "m10", type: "action", position: { x: 540, y: 980 }, data: { label: "12 — Prepare Additional WO + Approval", description: "Create additional WO for accepted variation per delegation matrix", icon: "📋", category: "data", nodeType: "data_log_history", config: { table: "work_orders", action: "create_variation" }, status: "idle", isConfigured: true } },
+      { id: "m11", type: "action", position: { x: 540, y: 1180 }, data: { label: "26 — Inform Supplier to Correct", description: "Variation rejected — supplier must execute per original WO", icon: "📧", category: "notifications", nodeType: "notify_email", config: { recipients: "supplier", template: "Variation rejected — proceed per original WO {{wo.number}}" }, status: "idle", isConfigured: true } },
+
+      // ── SUPPLIER continues (y=1360) ─────────────────────
+      { id: "sp4", type: "action", position: { x: 1320, y: 1360 }, data: { label: "13 — Conduct Maintenance per WO", description: "Supplier executes maintenance per (possibly amended) WO", icon: "🔧", category: "fleet", nodeType: "fleet_maintenance", config: { action: "execute_final" }, status: "idle", isConfigured: true } },
+      { id: "sp5", type: "action", position: { x: 1580, y: 1360 }, data: { label: "14 — Inform Inspection of Maintained Vehicle", description: "Notify fleet inspector for post-maintenance inspection", icon: "🔔", category: "notifications", nodeType: "notify_push", config: { recipients: "fleet_inspector" }, status: "idle", isConfigured: true } },
+      { id: "sp6", type: "action", position: { x: 1840, y: 1360 }, data: { label: "17 — Send Maintenance Report & Invoice", description: "Supplier submits maintenance report and invoice (i-Supplier/Quality)", icon: "💰", category: "data", nodeType: "data_log_history", config: { table: "supplier_payment_requests" }, status: "idle", isConfigured: true } },
+
+      // ── MAINTENANCE — post-inspection (y=1540) ──────────
+      { id: "m12", type: "action", position: { x: 1320, y: 1540 }, data: { label: "15 — Conduct Post-Maintenance Inspection", description: "8-point inspection on completed maintenance", icon: "✅", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "post_inspection", checklist: 8 }, status: "idle", isConfigured: true } },
+      { id: "m13", type: "condition", position: { x: 1580, y: 1540 }, data: { label: "Acceptable?", description: "Inspection passed and quality acceptable?", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "post_inspection.result", operator: "equals", rightOperand: "pass" }, status: "idle", isConfigured: true } },
+      { id: "m14", type: "action", position: { x: 1320, y: 1720 }, data: { label: "25 — Send for Required Correction", description: "Quality not acceptable — supplier must rework", icon: "🔄", category: "data", nodeType: "data_log_history", config: { table: "work_orders", action: "rework" }, status: "idle", isConfigured: true } },
+      { id: "m15", type: "action", position: { x: 1840, y: 1540 }, data: { label: "16 — Inform Acceptance / Request Payment", description: "Notify acceptance and trigger payment request", icon: "💰", category: "notifications", nodeType: "notify_email", config: { recipients: "finance", template: "Maintenance accepted on WO {{wo.number}} — please process payment" }, status: "idle", isConfigured: true } },
+      { id: "m16", type: "action", position: { x: 2100, y: 1540 }, data: { label: "19 — Compile Maintenance Operation Plan", description: "Compile final operation plan & evidence package", icon: "📋", category: "data", nodeType: "data_log_history", config: { table: "maintenance_plans" }, status: "idle", isConfigured: true } },
+      { id: "m17", type: "action", position: { x: 2100, y: 1720 }, data: { label: "20 — Collect Replaced Parts to WH", description: "Collect replaced/recovered spare parts (Scrap Return Form)", icon: "🗄️", category: "data", nodeType: "data_log_history", config: { table: "scrap_returns" }, status: "idle", isConfigured: true } },
+      { id: "m18", type: "action", position: { x: 2100, y: 1900 }, data: { label: "21 — Update File with Vehicle Documents", description: "Update vehicle file with all maintenance documents", icon: "📋", category: "data", nodeType: "data_log_history", config: { table: "vehicle_documents" }, status: "idle", isConfigured: true } },
+
+      // ── SCD-SOURCING — confirmation (y=1900) ────────────
+      { id: "s2", type: "condition", position: { x: 1840, y: 1900 }, data: { label: "Fulfilled?", description: "SCD verifies supplier fulfilled all PO obligations", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "po.fulfilled", operator: "equals", rightOperand: "true" }, status: "idle", isConfigured: true } },
+      { id: "s3", type: "action", position: { x: 1580, y: 2080 }, data: { label: "17 — Send Vehicle Maintenance Report", description: "Re-request fulfillment evidence from supplier", icon: "📧", category: "notifications", nodeType: "notify_email", config: { recipients: "supplier" }, status: "idle", isConfigured: true } },
+      { id: "s4", type: "action", position: { x: 1840, y: 2080 }, data: { label: "18 — Request Confirmation", description: "SCD requests confirmation and closes PO", icon: "✅", category: "data", nodeType: "data_log_history", config: { table: "purchase_orders", action: "close" }, status: "idle", isConfigured: true } },
+
+      // ── DRIVER — receive maintained vehicle (y=2260) ────
+      { id: "d3", type: "action", position: { x: 1320, y: 2260 }, data: { label: "23 — Driver Receives Maintained Vehicle", description: "Driver collects maintained vehicle from garage", icon: "🚛", category: "fleet", nodeType: "fleet_update_vehicle", config: { action: "received_by_driver" }, status: "idle", isConfigured: true } },
+      { id: "d4", type: "action", position: { x: 1060, y: 2260 }, data: { label: "27 — Receive Delivery Document & Report", description: "Driver receives delivery document from supplier and reports", icon: "📋", category: "data", nodeType: "data_log_history", config: { table: "delivery_documents" }, status: "idle", isConfigured: true } },
+
+      // ── FLEET OPERATION — final filing (y=2440) ─────────
+      { id: "f4", type: "action", position: { x: 1060, y: 2440 }, data: { label: "22 — Receive Report; Assign Driver/Admin", description: "Fleet Ops receives report and re-assigns driver/admin", icon: "👤", category: "fleet", nodeType: "fleet_assign_driver", config: { action: "reassign" }, status: "idle", isConfigured: true } },
+      { id: "f5", type: "action", position: { x: 800, y: 2440 }, data: { label: "28 — Check Entry/Delivery Time; File Hard Copy", description: "Verify entry & delivery times and file hard copy", icon: "🗄️", category: "data", nodeType: "data_log_history", config: { table: "vehicle_documents", format: "hard_copy" }, status: "idle", isConfigured: true } },
+      { id: "f6", type: "condition", position: { x: 540, y: 2440 }, data: { label: "Acceptable?", description: "Documentation acceptable for archive?", icon: "🔀", category: "conditions", nodeType: "condition_if", config: { leftOperand: "doc.acceptable", operator: "equals", rightOperand: "true" }, status: "idle", isConfigured: true } },
+      { id: "f7", type: "action", position: { x: 280, y: 2540 }, data: { label: "29 — Take Appropriate Action", description: "Reject and route for corrective action", icon: "🔔", category: "notifications", nodeType: "notify_escalation", config: { recipients: "fleet_manager" }, status: "idle", isConfigured: true } },
+      { id: "f8", type: "action", position: { x: 280, y: 2340 }, data: { label: "24 — Update All Documents with Vehicle File", description: "Final filing — close case in vehicle master record", icon: "📋", category: "data", nodeType: "data_log_history", config: { table: "vehicle_documents", action: "finalize" }, status: "idle", isConfigured: true } },
+    ],
+    edges: [
+      // Driver → Fleet Ops review
+      { id: "se1", source: "d1", target: "f1", type: "smoothstep", animated: true },
+      { id: "se2", source: "f1", target: "f2", type: "smoothstep", animated: true },
+      { id: "se3", source: "f2", target: "f3", sourceHandle: "true", type: "smoothstep", animated: true, label: "Yes" },
+      // Fleet Ops → Pre-inspection
+      { id: "se4", source: "f3", target: "m1", type: "smoothstep", animated: true },
+      { id: "se5", source: "m1", target: "m2", type: "smoothstep", animated: true },
+      { id: "se6", source: "m2", target: "m3", sourceHandle: "false", type: "smoothstep", animated: true, label: "No" },
+      { id: "se7", source: "m2", target: "m4", sourceHandle: "true", type: "smoothstep", animated: true, label: "Yes" },
+      // WO approval
+      { id: "se8", source: "m4", target: "m5", type: "smoothstep", animated: true },
+      { id: "se9", source: "m5", target: "m6", sourceHandle: "true", type: "smoothstep", animated: true, label: "Approved" },
+      { id: "se10", source: "m6", target: "m7", type: "smoothstep", animated: true },
+      // Driver delivers, SCD/Supplier execute
+      { id: "se11", source: "m7", target: "d2", type: "smoothstep", animated: true },
+      { id: "se12", source: "d2", target: "s1", type: "smoothstep", animated: true },
+      { id: "se13", source: "s1", target: "sp1", type: "smoothstep", animated: true },
+      { id: "se14", source: "sp1", target: "sp2", type: "smoothstep", animated: true },
+      // Variation branch
+      { id: "se15", source: "sp2", target: "sp3", sourceHandle: "true", type: "smoothstep", animated: true, label: "Yes" },
+      { id: "se16", source: "sp3", target: "m8", type: "smoothstep", animated: true },
+      { id: "se17", source: "m8", target: "m9", type: "smoothstep", animated: true },
+      { id: "se18", source: "m9", target: "m10", sourceHandle: "true", type: "smoothstep", animated: true, label: "Accepted" },
+      { id: "se19", source: "m9", target: "m11", sourceHandle: "false", type: "smoothstep", animated: true, label: "Rejected" },
+      { id: "se20", source: "m10", target: "sp4", type: "smoothstep", animated: true },
+      { id: "se21", source: "m11", target: "sp4", type: "smoothstep", animated: true },
+      { id: "se22", source: "sp2", target: "sp4", sourceHandle: "false", type: "smoothstep", animated: true, label: "No" },
+      // Supplier execution → inspection → payment
+      { id: "se23", source: "sp4", target: "sp5", type: "smoothstep", animated: true },
+      { id: "se24", source: "sp5", target: "m12", type: "smoothstep", animated: true },
+      { id: "se25", source: "sp5", target: "sp6", type: "smoothstep", animated: true },
+      { id: "se26", source: "m12", target: "m13", type: "smoothstep", animated: true },
+      { id: "se27", source: "m13", target: "m14", sourceHandle: "false", type: "smoothstep", animated: true, label: "No" },
+      { id: "se28", source: "m14", target: "sp4", type: "smoothstep", animated: true, label: "Rework" },
+      { id: "se29", source: "m13", target: "m15", sourceHandle: "true", type: "smoothstep", animated: true, label: "Yes" },
+      { id: "se30", source: "m15", target: "m16", type: "smoothstep", animated: true },
+      { id: "se31", source: "m16", target: "m17", type: "smoothstep", animated: true },
+      { id: "se32", source: "m17", target: "m18", type: "smoothstep", animated: true },
+      // SCD fulfilment
+      { id: "se33", source: "sp6", target: "s2", type: "smoothstep", animated: true },
+      { id: "se34", source: "s2", target: "s3", sourceHandle: "false", type: "smoothstep", animated: true, label: "No" },
+      { id: "se35", source: "s3", target: "sp6", type: "smoothstep", animated: true },
+      { id: "se36", source: "s2", target: "s4", sourceHandle: "true", type: "smoothstep", animated: true, label: "Yes" },
+      // Driver receives + Fleet Ops files
+      { id: "se37", source: "m18", target: "d3", type: "smoothstep", animated: true },
+      { id: "se38", source: "s4", target: "d3", type: "smoothstep", animated: true },
+      { id: "se39", source: "d3", target: "d4", type: "smoothstep", animated: true },
+      { id: "se40", source: "d4", target: "f4", type: "smoothstep", animated: true },
+      { id: "se41", source: "f4", target: "f5", type: "smoothstep", animated: true },
+      { id: "se42", source: "f5", target: "f6", type: "smoothstep", animated: true },
+      { id: "se43", source: "f6", target: "f8", sourceHandle: "true", type: "smoothstep", animated: true, label: "Yes" },
+      { id: "se44", source: "f6", target: "f7", sourceHandle: "false", type: "smoothstep", animated: true, label: "No" },
+    ],
+  },
 ];
 
 export default TEMPLATES;
