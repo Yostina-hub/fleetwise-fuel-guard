@@ -28,7 +28,21 @@ const insuranceLane: Lane= { id: "insurance",   label: "Insurance Management",  
 const driverLane: Lane   = { id: "driver",      label: "Driver",                    roles: ["driver"] };
 
 // =============================================================
-// 1) FMG-INS 01 — Fleet Inspection (the uploaded diagram, 16 steps)
+// 1) FMG-INS 01 — Fleet Inspection
+// Updates (Phase F):
+//   • Step 1.5 added: "Approval (delegation matrix)" — approver role is
+//     resolved at runtime from authority_matrix → approval_levels (see
+//     useWorkflow's fleet_inspection interceptor + inspectionApproval.ts).
+//   • Step 3 ("Request maintenance") now offers two actions: "Use existing
+//     open WO" (auto-link the vehicle's open WO from work_orders) or
+//     "Open Work Order form" (creates a new one). The chosen WO id is
+//     stored in data.work_order_id and reused downstream.
+//   • Pre-trip / Post-trip path branches at "ready_for_trip": the request
+//     initiator (or fleet_manager / operations_manager) closes the linked WO.
+//   • Annual path now mirrors the Outsource Rental SOP — supplier select →
+//     contract → handover → perform → return → registration paid → close,
+//     capturing registration cost & date, bolo / certificate # + expiry,
+//     inspection center + contract ref + agreed amount, handover/return dates.
 // =============================================================
 export const fleetInspectionConfig: WorkflowConfig = {
   type: "fleet_inspection",
@@ -36,7 +50,7 @@ export const fleetInspectionConfig: WorkflowConfig = {
   title: "Fleet Inspection",
   description: "Annual & internal vehicle inspection workflow.",
   icon: ClipboardCheck,
-  initialStage: "list_vehicles",
+  initialStage: "pending_approval",
   intakeFormChoices: [
     {
       key: "create_work_request",
@@ -76,19 +90,48 @@ export const fleetInspectionConfig: WorkflowConfig = {
     { ...financeLane },
   ],
   stages: [
+    // 0. Approval — delegation matrix (authority_matrix → approval_levels → defaults).
+    { id: "pending_approval", label: "0. Approval (delegation matrix)", lane: "fleet_ops",
+      description: "Approver role is resolved from your organization's authority_matrix or approval_levels rules. Default: fleet_manager / operations_manager.",
+      actions: [
+        { id: "approve_request", label: "Approve request", toStage: "list_vehicles",
+          allowedRoles: ["fleet_manager","operations_manager"],
+          fields: [{ key: "approval_notes", label: "Approval notes", type: "textarea" }] },
+        { id: "reject_request", label: "Reject", toStage: "rejected",
+          allowedRoles: ["fleet_manager","operations_manager"], variant: "destructive",
+          fields: [{ key: "rejection_reason", label: "Rejection reason", type: "textarea", required: true }] },
+      ] },
+    { id: "rejected", label: "Rejected — closed", lane: "fleet_ops", terminal: true,
+      actions: [{ id: "close_rejected", label: "Close", toStage: "rejected", completes: true,
+        allowedRoles: ["fleet_manager","operations_manager"] }] },
+
+    // 1. List vehicles to inspect
     { id: "list_vehicles", label: "1. List vehicles to be inspected", lane: "fleet_ops",
       actions: [{ id: "ready", label: "Make vehicles ready", toStage: "ready_for_inspection",
         allowedRoles: ["fleet_manager","operations_manager"] }] },
+
+    // 2. Branch — pre/post & internal go to maintenance; annual goes to outsourcing chain
     { id: "ready_for_inspection", label: "2. Vehicles ready", lane: "fleet_ops",
       actions: [
-        { id: "to_internal", label: "Internal inspection path", toStage: "request_maintenance",
+        { id: "to_internal", label: "Pre/Post/Internal → Maintenance", toStage: "request_maintenance",
           allowedRoles: ["fleet_manager","operations_manager"] },
-        { id: "to_annual", label: "Annual inspection path", toStage: "develop_schedule",
+        { id: "to_annual", label: "Annual → Outsourced Inspection", toStage: "annual_supplier_select",
           allowedRoles: ["fleet_manager","operations_manager"] },
       ] },
-    { id: "request_maintenance", label: "3. Request preventive maintenance", lane: "maintenance",
-      actions: [{ id: "assign_inspector", label: "Assign fleet inspector", toStage: "assign_inspector",
-        allowedRoles: ["maintenance_manager","maintenance_supervisor"] }] },
+
+    // 3. Request maintenance — REUSE existing open WO if one exists, else create one.
+    { id: "request_maintenance", label: "3. Request maintenance (reuse WO)", lane: "maintenance",
+      description: "Reuse an open work order on this vehicle if available, otherwise open the Oracle WO form.",
+      actions: [
+        { id: "use_existing_wo", label: "Use existing open WO", toStage: "assign_inspector",
+          allowedRoles: ["maintenance_manager","maintenance_supervisor","fleet_manager"],
+          confirm: "Link this inspection to the vehicle's open Work Order?" },
+        { id: "open_wo_form", label: "Open Work Order form", toStage: "assign_inspector",
+          allowedRoles: ["maintenance_manager","maintenance_supervisor","fleet_manager"],
+          fields: [{ key: "work_order_id", label: "Work Order # (paste WO id after creating)", type: "text", required: true }] },
+      ] },
+
+    // 4. Inspector assigned
     { id: "assign_inspector", label: "4. Assign fleet inspector", lane: "maintenance",
       actions: [
         { id: "pass", label: "Pass inspection — release", toStage: "ready_for_trip",
@@ -99,49 +142,71 @@ export const fleetInspectionConfig: WorkflowConfig = {
     { id: "manage_breakdown", label: "Manage preventive/breakdown maintenance", lane: "maintenance",
       actions: [{ id: "back_to_inspector", label: "Re-assign inspector", toStage: "assign_inspector",
         allowedRoles: ["maintenance_manager"] }] },
-    { id: "ready_for_trip", label: "5. Make sure vehicles ready for trip", lane: "fleet_ops", terminal: true,
-      actions: [{ id: "close", label: "Close (END)", toStage: "ready_for_trip", completes: true,
-        allowedRoles: ["fleet_manager","operations_manager"] }] },
-    { id: "develop_schedule", label: "6. Develop inspection schedule", lane: "fleet_ops",
-      actions: [{ id: "send_to_center", label: "Send vehicle to inspection center", toStage: "send_to_center",
-        allowedRoles: ["fleet_manager","operations_manager"],
-        fields: [{ key: "scheduled_at", label: "Scheduled date", type: "datetime", required: true }] }] },
-    { id: "send_to_center", label: "7. Send vehicle to inspection center", lane: "fleet_ops",
-      actions: [{ id: "perform", label: "Perform inspection (Inspection Center)", toStage: "perform_inspection",
-        allowedRoles: ["inspection_center","fleet_manager"] }] },
-    { id: "perform_inspection", label: "8. Perform fleet inspection", lane: "inspection",
+
+    // 5. Ready for trip — initiator closes the WO for pre/post inspections
+    { id: "ready_for_trip", label: "5. Vehicle ready — initiator closes WO", lane: "fleet_ops",
+      description: "For Pre-trip / Post-trip inspections, the request initiator (or fleet_manager / operations_manager) closes the linked Work Order here.",
       actions: [
-        { id: "pass_annual", label: "Pass — issue certificate", toStage: "give_certificate",
-          allowedRoles: ["inspection_center"] },
-        { id: "fail_annual", label: "Fail — send back for maintenance", toStage: "send_back_maintenance",
+        { id: "initiator_close_wo", label: "Close Work Order (initiator)", toStage: "wo_closed",
+          allowedRoles: ["user","fleet_manager","operations_manager"],
+          fields: [
+            { key: "wo_close_notes", label: "Closure notes", type: "textarea" },
+            { key: "wo_closed_at", label: "Closed at", type: "datetime", required: true },
+          ] },
+      ] },
+    { id: "wo_closed", label: "6. Work Order closed (END)", lane: "fleet_ops", terminal: true,
+      actions: [{ id: "complete_pre_post", label: "Complete", toStage: "wo_closed", completes: true,
+        allowedRoles: ["user","fleet_manager","operations_manager"] }] },
+
+    // ===== Annual path — mirrors Outsource Rental (FMG-OUT 14) =====
+    { id: "annual_supplier_select", label: "A1. Select inspection center / supplier", lane: "sourcing",
+      actions: [{ id: "select_supplier", label: "Select inspection center", toStage: "annual_contract",
+        allowedRoles: ["sourcing_manager","fleet_manager"],
+        fields: [
+          { key: "inspection_center_name", label: "Inspection center", type: "text", required: true },
+          { key: "contract_ref", label: "Contract reference", type: "text" },
+          { key: "agreed_amount", label: "Agreed amount (ETB)", type: "number", required: true },
+        ] }] },
+    { id: "annual_contract", label: "A2. Contract signed", lane: "sourcing",
+      actions: [{ id: "ready_handover", label: "Ready for handover", toStage: "annual_handover",
+        allowedRoles: ["sourcing_manager","fleet_manager"] }] },
+    { id: "annual_handover", label: "A3. Vehicle handover to inspection center", lane: "fleet_ops",
+      actions: [{ id: "handover_done", label: "Handover complete", toStage: "annual_perform",
+        allowedRoles: ["fleet_manager","operations_manager"],
+        fields: [
+          { key: "handover_at", label: "Handover date/time", type: "datetime", required: true },
+          { key: "handover_notes", label: "Handover notes / vehicle condition", type: "textarea" },
+        ] }] },
+    { id: "annual_perform", label: "A4. Perform annual inspection", lane: "inspection",
+      actions: [
+        { id: "annual_pass", label: "Pass — issue certificate & Bolo", toStage: "annual_returned",
+          allowedRoles: ["inspection_center"],
+          fields: [
+            { key: "certificate_no", label: "Certificate #", type: "text", required: true },
+            { key: "bolo_number", label: "Bolo #", type: "text", required: true },
+            { key: "bolo_expiry", label: "Bolo expiry", type: "date", required: true },
+          ] },
+        { id: "annual_fail", label: "Fail — send back for maintenance", toStage: "manage_breakdown",
           allowedRoles: ["inspection_center"], variant: "destructive" },
       ] },
-    { id: "send_back_maintenance", label: "9. Send back for further maintenance", lane: "inspection",
-      actions: [{ id: "back_to_breakdown", label: "Route to breakdown maintenance", toStage: "manage_breakdown",
-        allowedRoles: ["inspection_center","maintenance_manager"] }] },
-    { id: "give_certificate", label: "10. Give inspection certificate", lane: "inspection",
-      actions: [{ id: "raise_payment", label: "Raise payment request", toStage: "raise_payment",
-        allowedRoles: ["inspection_center"],
-        fields: [{ key: "certificate_no", label: "Certificate #", type: "text", required: true }] }] },
-    { id: "raise_payment", label: "11. Raise payment request", lane: "inspection",
-      actions: [{ id: "request_advance", label: "Request advance (Fleet Ops)", toStage: "request_advance",
-        allowedRoles: ["inspection_center","fleet_manager"],
-        fields: [{ key: "amount_etb", label: "Amount (ETB)", type: "number", required: true }] }] },
-    { id: "request_advance", label: "12. Request advance to inspection center & TA for Bolo", lane: "fleet_ops",
-      actions: [{ id: "confirm_payment", label: "Get confirmation & order payment", toStage: "confirm_payment",
-        allowedRoles: ["fleet_manager","operations_manager"] }] },
-    { id: "confirm_payment", label: "13. Confirmation & payment order", lane: "sourcing",
-      actions: [{ id: "receive_advance", label: "Pay & collect Bolo", toStage: "receive_advance",
-        allowedRoles: ["sourcing_manager","fleet_manager"] }] },
-    { id: "receive_advance", label: "14. Receive advance, pay, collect Bolo", lane: "fleet_ops",
-      actions: [{ id: "ta_receive", label: "Send to Transport Authority", toStage: "ta_receive",
-        allowedRoles: ["fleet_manager","operations_manager"] }] },
-    { id: "ta_receive", label: "15. TA receives payment & provides Bolo", lane: "transport",
-      actions: [{ id: "receipt_paid", label: "Receive payment & give receipt", toStage: "receipt_paid",
-        allowedRoles: ["transport_authority","finance_manager"] }] },
-    { id: "receipt_paid", label: "16. Receive payment & give receipt", lane: "finance", terminal: true,
-      actions: [{ id: "complete", label: "Complete (END)", toStage: "receipt_paid", completes: true,
-        allowedRoles: ["finance_manager","fleet_manager"] }] },
+    { id: "annual_returned", label: "A5. Vehicle returned from inspection", lane: "fleet_ops",
+      actions: [{ id: "return_done", label: "Return received", toStage: "annual_registration_paid",
+        allowedRoles: ["fleet_manager","operations_manager"],
+        fields: [
+          { key: "returned_at", label: "Returned at", type: "datetime", required: true },
+          { key: "return_notes", label: "Return notes", type: "textarea" },
+        ] }] },
+    { id: "annual_registration_paid", label: "A6. Pay annual registration", lane: "finance",
+      actions: [{ id: "register_paid", label: "Registration paid", toStage: "annual_complete",
+        allowedRoles: ["finance_manager","fleet_manager"],
+        fields: [
+          { key: "annual_registration_cost", label: "Annual registration cost (ETB)", type: "number", required: true },
+          { key: "registration_payment_date", label: "Payment date", type: "date", required: true },
+          { key: "registration_receipt_no", label: "Receipt #", type: "text" },
+        ] }] },
+    { id: "annual_complete", label: "A7. Annual inspection complete", lane: "finance", terminal: true,
+      actions: [{ id: "complete_annual", label: "Close annual inspection", toStage: "annual_complete", completes: true,
+        allowedRoles: ["finance_manager","fleet_manager","operations_manager"] }] },
   ],
 };
 
