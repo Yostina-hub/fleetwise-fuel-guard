@@ -21237,6 +21237,7 @@ export type Database = {
           updated_at: string
           vehicle_id: string
           work_order_created: boolean | null
+          workflow_instance_id: string | null
         }
         Insert: {
           certified_safe?: boolean | null
@@ -21261,6 +21262,7 @@ export type Database = {
           updated_at?: string
           vehicle_id: string
           work_order_created?: boolean | null
+          workflow_instance_id?: string | null
         }
         Update: {
           certified_safe?: boolean | null
@@ -21285,6 +21287,7 @@ export type Database = {
           updated_at?: string
           vehicle_id?: string
           work_order_created?: boolean | null
+          workflow_instance_id?: string | null
         }
         Relationships: [
           {
@@ -21306,6 +21309,13 @@ export type Database = {
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_inspections_workflow_instance_id_fkey"
+            columns: ["workflow_instance_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_instances"
             referencedColumns: ["id"]
           },
         ]
