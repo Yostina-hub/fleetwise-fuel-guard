@@ -57,7 +57,6 @@ export default function CreateWorkRequestForm({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isTripInspection = defaultContext === "trip_inspection";
-  const isSafetyComfort = defaultContext === "vehicle_maintenance" && false; // computed reactively below via contextValue
 
   // Header
   const [assetNumber, setAssetNumber] = useState(vehiclePlate || "");
@@ -671,7 +670,7 @@ export default function CreateWorkRequestForm({
             </FieldRow>
           )}
 
-          {!isTripInspection && (
+          {!isTripInspection && !isSafetyComfortCtx && (
             <FieldRow label="Requestor Department" required>
               <Input value={requestorDepartment} onChange={e => setRequestorDepartment(e.target.value)} />
             </FieldRow>
