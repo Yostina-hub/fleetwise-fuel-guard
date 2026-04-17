@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, FileText, CheckCircle2, XCircle, Send, Fuel, Layers, ShieldCheck, Banknote, Calculator } from "lucide-react";
 import { useOutsourcePaymentRequests, type PRStatus } from "@/hooks/useOutsourcePaymentRequests";
+import { ApprovalChainPanel } from "./ApprovalChainPanel";
 import { useOutsourcePriceCatalogs } from "@/hooks/useOutsourcePriceCatalogs";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -48,7 +49,7 @@ const STATUS_COLOR: Partial<Record<PRStatus, "default" | "secondary" | "outline"
 
 export function PaymentRequestsTab() {
   const { organizationId } = useOrganization();
-  const { requests, isLoading, create, transition, provideFuelInfo } = useOutsourcePaymentRequests();
+  const { requests, isLoading, create, transition, provideFuelInfo, actOnApproval } = useOutsourcePaymentRequests();
   const { catalogs } = useOutsourcePriceCatalogs();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
@@ -217,7 +218,7 @@ export function PaymentRequestsTab() {
                 <TableHead>Fuel/Lub</TableHead><TableHead>Status</TableHead><TableHead>Created</TableHead><TableHead /></TableRow></TableHeader>
               <TableBody>
                 {requests.map(r => (
-                  <TableRow key={r.id}>
+                  <Fragment key={r.id}>
                     <TableCell className="font-medium">{r.request_number}</TableCell>
                     <TableCell className="text-xs">{r.period_start} → {r.period_end}</TableCell>
                     <TableCell>{r.currency} {r.amount_requested.toLocaleString()}{r.amount_approved ? <span className="text-xs text-success ml-1">(✓ {r.amount_approved.toLocaleString()})</span> : null}</TableCell>
@@ -225,46 +226,29 @@ export function PaymentRequestsTab() {
                     <TableCell><Badge variant={STATUS_COLOR[r.status] || "secondary"}>{STATUS_LABEL[r.status]}</Badge></TableCell>
                     <TableCell className="text-xs">{format(new Date(r.created_at), "PP")}</TableCell>
                     <TableCell className="text-right space-x-1">
-                      {/* Step 1b — Provide fuel info */}
                       {(r.status === "submitted" || r.status === "fuel_info_pending") && (
                         <Button size="sm" variant="outline" onClick={() => { setFuelDialog(r.id); setFuelForm({ fuel_cost: r.fuel_cost || 0, lubricant_cost: r.lubricant_cost || 0, notes: "" }); }}>
                           <Fuel className="w-3 h-3 mr-1" /> 1b Fuel info
                         </Button>
                       )}
-                      {/* Step 2 — Consolidate */}
                       {r.status === "submitted" && (
                         <Button size="sm" variant="outline" onClick={() => transition.mutate({ id: r.id, status: "consolidating" })}>
                           <Layers className="w-3 h-3 mr-1" /> 2 Consolidate
                         </Button>
                       )}
-                      {/* Step 2 OK? -> needs info / send for approval */}
                       {r.status === "consolidating" && (
                         <>
                           <Button size="sm" onClick={() => transition.mutate({ id: r.id, status: "pending_approval" })}>
-                            OK → 4 Approval
+                            OK → 4 Approval (matrix)
                           </Button>
                           <Button size="sm" variant="destructive" onClick={() => transition.mutate({ id: r.id, status: "info_required", patch: { rejection_reason: "More info required" } })}>
                             Need info
                           </Button>
                         </>
                       )}
-                      {/* Step 3 — Info required → resubmit */}
                       {r.status === "info_required" && (
                         <Button size="sm" variant="outline" onClick={() => transition.mutate({ id: r.id, status: "consolidating" })}>3 Re-submit info</Button>
                       )}
-                      {/* Step 4 — Approve */}
-                      {r.status === "pending_approval" && (
-                        <>
-                          <Button size="sm" className="bg-success text-success-foreground hover:bg-success/90"
-                            onClick={() => transition.mutate({ id: r.id, status: "approved", patch: { amount_approved: r.amount_requested } })}>
-                            <CheckCircle2 className="w-3 h-3 mr-1" /> 4 Approve
-                          </Button>
-                          <Button size="sm" variant="destructive" onClick={() => transition.mutate({ id: r.id, status: "rejected" })}>
-                            <XCircle className="w-3 h-3 mr-1" /> Reject
-                          </Button>
-                        </>
-                      )}
-                      {/* Step 5 — Contract check */}
                       {r.status === "approved" && (
                         <Button size="sm" variant="outline" onClick={() => transition.mutate({ id: r.id, status: "contract_check" })}>
                           <ShieldCheck className="w-3 h-3 mr-1" /> 5 Check contract
@@ -289,6 +273,21 @@ export function PaymentRequestsTab() {
                       )}
                     </TableCell>
                   </TableRow>
+                  {r.status === "pending_approval" && (
+                    <TableRow key={r.id + "-chain"}>
+                      <TableCell colSpan={7} className="bg-muted/10">
+                        <ApprovalChainPanel
+                          paymentRequestId={r.id}
+                          currentStep={r.current_approval_step}
+                          totalSteps={r.total_approval_steps}
+                          onApprove={() => actOnApproval.mutate({ id: r.id, decision: "approved" })}
+                          onReject={() => actOnApproval.mutate({ id: r.id, decision: "rejected", comments: "Rejected via Authority Matrix" })}
+                          isPending={actOnApproval.isPending}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  </>
                 ))}
               </TableBody>
             </Table>
