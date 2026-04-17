@@ -121,6 +121,37 @@ const TripManagement = () => {
 
   const pendingApprovalCount = pendingApprovals?.length || 0;
 
+  // ── RBAC enforcement ────────────────────────────────────────────────
+  // Drivers are redirected to their dedicated portal.
+  if (!permsLoading && isDriverOnly) {
+    return <Navigate to="/driver-portal" replace />;
+  }
+  // Show loader while permissions resolve to avoid flash of unauthorized UI.
+  if (permsLoading) {
+    return (
+      <Layout>
+        <div className="p-8 flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" aria-label="Loading permissions" />
+        </div>
+      </Layout>
+    );
+  }
+  // Hard block users without view_fleet.
+  if (!canViewPage) {
+    return (
+      <Layout>
+        <div className="p-8">
+          <Card className="p-8 text-center max-w-md mx-auto">
+            <ShieldAlert className="w-12 h-12 mx-auto mb-3 text-destructive" />
+            <h2 className="text-lg font-semibold mb-1">Access Denied</h2>
+            <p className="text-sm text-muted-foreground">
+              You don't have permission to access Trip Management. Contact your administrator if you believe this is an error.
+            </p>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
   return (
     <Layout>
       <div className="p-4 md:p-6 space-y-4">
@@ -133,12 +164,16 @@ const TripManagement = () => {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setExportOpen(true)} className="gap-1.5 h-8 text-xs">
-              <Download className="w-3.5 h-3.5" /> Export
-            </Button>
-            <Button size="sm" onClick={() => setCreateOpen(true)} className="gap-1.5 h-8 text-xs">
-              <Plus className="w-3.5 h-3.5" /> Full Request
-            </Button>
+            {canManage && (
+              <Button variant="outline" size="sm" onClick={() => setExportOpen(true)} className="gap-1.5 h-8 text-xs">
+                <Download className="w-3.5 h-3.5" /> Export
+              </Button>
+            )}
+            {canManage && (
+              <Button size="sm" onClick={() => setCreateOpen(true)} className="gap-1.5 h-8 text-xs">
+                <Plus className="w-3.5 h-3.5" /> Full Request
+              </Button>
+            )}
           </div>
         </div>
 
