@@ -219,11 +219,52 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
     },
   });
 
-  const filteredWorkflows = workflows?.filter(
-    (w: any) =>
-      w.name.toLowerCase().includes(search.toLowerCase()) ||
-      w.category?.toLowerCase().includes(search.toLowerCase())
-  );
+  // Build category list from real workflow data
+  const categoryCounts = (workflows || []).reduce((acc: Record<string, number>, w: any) => {
+    const c = (w.category || "uncategorized").toLowerCase();
+    acc[c] = (acc[c] || 0) + 1;
+    return acc;
+  }, {});
+  const availableCategories = Object.keys(categoryCounts).sort();
+
+  const filteredWorkflows = (workflows || [])
+    .filter((w: any) => {
+      const q = search.toLowerCase();
+      const matchesSearch =
+        !q ||
+        w.name?.toLowerCase().includes(q) ||
+        w.description?.toLowerCase().includes(q) ||
+        w.category?.toLowerCase().includes(q);
+      const matchesStatus = statusFilter === "all" || w.status === statusFilter;
+      const matchesCategory =
+        categoryFilter === "all" ||
+        (w.category || "uncategorized").toLowerCase() === categoryFilter;
+      return matchesSearch && matchesStatus && matchesCategory;
+    })
+    .sort((a: any, b: any) => {
+      switch (sortBy) {
+        case "name":
+          return (a.name || "").localeCompare(b.name || "");
+        case "runs":
+          return (b.execution_count || 0) - (a.execution_count || 0);
+        case "created":
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case "updated":
+        default:
+          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      }
+    });
+
+  const activeFilterCount =
+    (statusFilter !== "all" ? 1 : 0) +
+    (categoryFilter !== "all" ? 1 : 0) +
+    (search ? 1 : 0);
+
+  const clearFilters = () => {
+    setSearch("");
+    setStatusFilter("all");
+    setCategoryFilter("all");
+  };
 
   return (
     <div className="space-y-4">
@@ -255,26 +296,22 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search workflows..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
-        />
-      </div>
-
-      {/* Stats */}
+      {/* Stats — clickable to filter by status */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "Total", value: workflows?.length || 0, icon: GitBranch },
-          { label: "Active", value: workflows?.filter((w: any) => w.status === "active").length || 0, icon: Play },
-          { label: "Draft", value: workflows?.filter((w: any) => w.status === "draft").length || 0, icon: Edit },
-          { label: "Paused", value: workflows?.filter((w: any) => w.status === "paused").length || 0, icon: Pause },
+          { label: "Total", value: workflows?.length || 0, icon: GitBranch, status: "all" },
+          { label: "Active", value: workflows?.filter((w: any) => w.status === "active").length || 0, icon: Play, status: "active" },
+          { label: "Draft", value: workflows?.filter((w: any) => w.status === "draft").length || 0, icon: Edit, status: "draft" },
+          { label: "Paused", value: workflows?.filter((w: any) => w.status === "paused").length || 0, icon: Pause, status: "paused" },
         ].map((stat) => (
-          <Card key={stat.label} className="p-3">
+          <Card
+            key={stat.label}
+            className={cn(
+              "p-3 cursor-pointer transition-all hover:border-primary/50",
+              statusFilter === stat.status && "border-primary bg-primary/5",
+            )}
+            onClick={() => setStatusFilter(stat.status)}
+          >
             <div className="flex items-center gap-2">
               <stat.icon className="h-4 w-4 text-muted-foreground" />
               <span className="text-xs text-muted-foreground">{stat.label}</span>
@@ -283,6 +320,90 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
           </Card>
         ))}
       </div>
+
+      {/* Filter Toolbar */}
+      <Card className="p-3">
+        <div className="flex flex-col gap-3">
+          {/* Row 1: Search + Status + Sort */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 min-w-[220px] max-w-md">
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, description, category…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9 h-9"
+              />
+            </div>
+
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="h-9 w-[150px]">
+                <Filter className="h-3.5 w-3.5 mr-1.5" />
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="paused">Paused</SelectItem>
+                <SelectItem value="archived">Archived</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
+              <SelectTrigger className="h-9 w-[170px]">
+                <ArrowUpDown className="h-3.5 w-3.5 mr-1.5" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="updated">Recently updated</SelectItem>
+                <SelectItem value="created">Recently created</SelectItem>
+                <SelectItem value="name">Name (A–Z)</SelectItem>
+                <SelectItem value="runs">Most runs</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {activeFilterCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                className="h-9 gap-1.5 text-xs text-muted-foreground"
+              >
+                <X className="h-3.5 w-3.5" />
+                Clear ({activeFilterCount})
+              </Button>
+            )}
+
+            <div className="ml-auto text-xs text-muted-foreground">
+              {filteredWorkflows.length} of {workflows?.length || 0}
+            </div>
+          </div>
+
+          {/* Row 2: Category chips */}
+          {availableCategories.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-border">
+              <CategoryChip
+                label="All"
+                icon={<LayoutGrid className="h-3 w-3" />}
+                count={workflows?.length || 0}
+                active={categoryFilter === "all"}
+                onClick={() => setCategoryFilter("all")}
+              />
+              {availableCategories.map((cat) => (
+                <CategoryChip
+                  key={cat}
+                  label={cat.replace(/_/g, " ")}
+                  icon={getCategoryIcon(cat)}
+                  count={categoryCounts[cat]}
+                  active={categoryFilter === cat}
+                  onClick={() => setCategoryFilter(cat)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </Card>
 
       {/* Workflow Cards */}
       {isLoading ? (
