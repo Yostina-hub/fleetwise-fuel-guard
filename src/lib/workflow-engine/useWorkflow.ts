@@ -118,6 +118,36 @@ export function useWorkflow(config: WorkflowConfig) {
         documents: args.documents || [],
       });
 
+      // Auto-link: when a Fleet Inspection workflow is filed, create a matching
+      // vehicle_inspections row so the SOP and the operational record stay in sync.
+      if (config.type === "fleet_inspection" && args.vehicleId) {
+        try {
+          const inspType = (args.data?.inspection_type as string) || "annual";
+          const { data: insp, error: inspErr } = await supabase
+            .from("vehicle_inspections")
+            .insert({
+              organization_id: organizationId,
+              vehicle_id: args.vehicleId,
+              driver_id: args.driverId || null,
+              inspection_type: inspType,
+              inspection_date: new Date().toISOString(),
+              status: "pending",
+              workflow_instance_id: data.id,
+              mechanic_notes: args.description || null,
+            })
+            .select("id")
+            .single();
+          if (!inspErr && insp) {
+            await supabase
+              .from("workflow_instances")
+              .update({ data: { ...(args.data || {}), inspection_id: insp.id } })
+              .eq("id", data.id);
+          }
+        } catch (e) {
+          console.warn("auto-create inspection from SOP failed", e);
+        }
+      }
+
       return data as WorkflowInstance;
     },
     onSuccess: () => {
