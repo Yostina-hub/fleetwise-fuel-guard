@@ -248,39 +248,7 @@ function SectionPill({ label, icon, count, active, accentClass, onClick }: Secti
   );
 }
 
-interface CategoryChipProps {
-  label: string;
-  icon: React.ReactNode;
-  count: number;
-  active: boolean;
-  onClick: () => void;
-}
-
-function CategoryChip({ label, icon, count, active, onClick }: CategoryChipProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors capitalize border",
-        active
-          ? "bg-primary text-primary-foreground border-primary"
-          : "bg-muted/40 text-foreground/80 border-border hover:bg-muted hover:border-primary/40",
-      )}
-    >
-      {icon}
-      <span>{label}</span>
-      <span
-        className={cn(
-          "rounded-full px-1.5 py-0 text-[10px] font-semibold tabular-nums",
-          active ? "bg-primary-foreground/20 text-primary-foreground" : "bg-background text-muted-foreground",
-        )}
-      >
-        {count}
-      </span>
-    </button>
-  );
-}
+// (CategoryChip removed — replaced by single-tier SectionPill filtering.)
 
 export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
   const { organizationId } = useOrganization();
@@ -289,8 +257,7 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [domainFilter, setDomainFilter] = useState<string>("all");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [sectionFilter, setSectionFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"updated" | "name" | "runs" | "created">("updated");
   const [historyWorkflowId, setHistoryWorkflowId] = useState<string | null>(null);
   const [webhookWorkflow, setWebhookWorkflow] = useState<any | null>(null);
@@ -422,27 +389,21 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
     },
   });
 
-  // Build category list from real workflow data
-  const categoryCounts = (workflows || []).reduce((acc: Record<string, number>, w: any) => {
-    const c = (w.category || "uncategorized").toLowerCase();
-    acc[c] = (acc[c] || 0) + 1;
+  // Build section counts from real workflow data (parsed from FMG-XXX prefix
+  // in the workflow name, with category fallback). This single-tier taxonomy
+  // groups workflows by their functional area: Driver, Dispatch, Maintenance, etc.
+  const sectionCounts = (workflows || []).reduce((acc: Record<string, number>, w: any) => {
+    const s = getSectionForWorkflow(w);
+    acc[s] = (acc[s] || 0) + 1;
     return acc;
   }, {});
-  const availableCategories = Object.keys(categoryCounts).sort();
-
-  // Domain → categories taxonomy (professional 2-tier grouping)
-  const domainCounts: Record<string, number> = {};
-  for (const cat of availableCategories) {
-    const domain = getDomainForCategory(cat);
-    domainCounts[domain] = (domainCounts[domain] || 0) + categoryCounts[cat];
-  }
-  const availableDomains = Object.keys(domainCounts).sort(
-    (a, b) => DOMAIN_ORDER.indexOf(a) - DOMAIN_ORDER.indexOf(b),
+  const SECTION_ORDER = [
+    "drv", "dsp", "ins", "mnt", "lic", "reg", "rsa", "out",
+    "saf", "fuel", "alerts", "cold_chain", "sensors", "ev", "other",
+  ];
+  const availableSections = Object.keys(sectionCounts).sort(
+    (a, b) => SECTION_ORDER.indexOf(a) - SECTION_ORDER.indexOf(b),
   );
-  const subCategoriesForDomain =
-    domainFilter === "all"
-      ? []
-      : availableCategories.filter((c) => getDomainForCategory(c) === domainFilter);
 
   const filteredWorkflows = (workflows || [])
     .filter((w: any) => {
@@ -453,10 +414,8 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
         w.description?.toLowerCase().includes(q) ||
         w.category?.toLowerCase().includes(q);
       const matchesStatus = statusFilter === "all" || w.status === statusFilter;
-      const cat = (w.category || "uncategorized").toLowerCase();
-      const matchesDomain = domainFilter === "all" || getDomainForCategory(cat) === domainFilter;
-      const matchesCategory = categoryFilter === "all" || cat === categoryFilter;
-      return matchesSearch && matchesStatus && matchesDomain && matchesCategory;
+      const matchesSection = sectionFilter === "all" || getSectionForWorkflow(w) === sectionFilter;
+      return matchesSearch && matchesStatus && matchesSection;
     })
     .sort((a: any, b: any) => {
       switch (sortBy) {
@@ -474,15 +433,13 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
 
   const activeFilterCount =
     (statusFilter !== "all" ? 1 : 0) +
-    (domainFilter !== "all" ? 1 : 0) +
-    (categoryFilter !== "all" ? 1 : 0) +
+    (sectionFilter !== "all" ? 1 : 0) +
     (search ? 1 : 0);
 
   const clearFilters = () => {
     setSearch("");
     setStatusFilter("all");
-    setDomainFilter("all");
-    setCategoryFilter("all");
+    setSectionFilter("all");
   };
 
   return (
