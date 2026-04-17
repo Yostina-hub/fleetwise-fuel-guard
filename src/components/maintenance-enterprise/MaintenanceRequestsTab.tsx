@@ -255,6 +255,9 @@ const MaintenanceRequestsTab = () => {
             <SelectItem value="breakdown">Breakdown</SelectItem>
           </SelectContent>
         </Select>
+        <Button asChild variant="outline" className="gap-2">
+          <a href="/maintenance-enterprise/wo/new"><FileText className="w-4 h-4" /> WO Editor</a>
+        </Button>
         <Button onClick={() => setShowCreate(true)} className="gap-2">
           <Plus className="w-4 h-4" /> New Request
         </Button>
