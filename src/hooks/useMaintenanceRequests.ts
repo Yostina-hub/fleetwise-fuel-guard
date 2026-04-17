@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useDriverScope } from "@/hooks/useDriverScope";
 import { toast } from "sonner";
 
 export interface MaintenanceRequest {
@@ -120,21 +121,32 @@ export const WORKFLOW_STAGES: { key: WorkflowStage; label: string }[] = [
 
 export const useMaintenanceRequests = () => {
   const { organizationId } = useOrganization();
+  const { isDriverOnly, driverId, userId, loading: scopeLoading } = useDriverScope();
   const queryClient = useQueryClient();
 
   const { data: requests = [], isLoading } = useQuery({
-    queryKey: ["maintenance-requests", organizationId],
+    queryKey: ["maintenance-requests", organizationId, isDriverOnly, driverId, userId],
     queryFn: async () => {
       if (!organizationId) return [];
-      const { data, error } = await supabase
+      let query = supabase
         .from("maintenance_requests")
         .select("*, vehicle:vehicles(plate_number, make, model), driver:drivers(first_name, last_name)")
         .eq("organization_id", organizationId)
         .order("created_at", { ascending: false });
+
+      // RBAC: drivers only see requests they raised or are assigned to.
+      if (isDriverOnly) {
+        if (!userId) return [];
+        const orParts = [`requested_by.eq.${userId}`];
+        if (driverId) orParts.push(`driver_id.eq.${driverId}`);
+        query = query.or(orParts.join(","));
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return (data || []) as unknown as MaintenanceRequest[];
     },
-    enabled: !!organizationId,
+    enabled: !!organizationId && !scopeLoading,
   });
 
   const invalidate = () => {

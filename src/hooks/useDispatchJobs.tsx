@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
+import { useDriverScope } from "./useDriverScope";
 import { toast } from "@/hooks/use-toast";
 import { sendDispatchSms } from "@/services/smsNotificationService";
 
@@ -61,6 +62,7 @@ export const useDispatchJobs = (filters?: {
   driverId?: string;
 }) => {
   const { organizationId } = useOrganization();
+  const { isDriverOnly, driverId: scopedDriverId, loading: scopeLoading } = useDriverScope();
   const [jobs, setJobs] = useState<DispatchJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -71,6 +73,7 @@ export const useDispatchJobs = (filters?: {
       setLoading(false);
       return;
     }
+    if (scopeLoading) return;
 
     try {
       setLoading(true);
@@ -78,6 +81,16 @@ export const useDispatchJobs = (filters?: {
         .from("dispatch_jobs")
         .select("*")
         .eq("organization_id", organizationId);
+
+      // RBAC: drivers only see their own jobs (defense-in-depth alongside RLS).
+      if (isDriverOnly) {
+        if (!scopedDriverId) {
+          setJobs([]);
+          setLoading(false);
+          return;
+        }
+        query = query.eq("driver_id", scopedDriverId);
+      }
 
       if (filters?.status && filters.status !== 'all') {
         query = query.eq("status", filters.status);
@@ -132,7 +145,7 @@ export const useDispatchJobs = (filters?: {
       clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
-  }, [organizationId, filters?.status, filters?.vehicleId, filters?.driverId]);
+  }, [organizationId, filters?.status, filters?.vehicleId, filters?.driverId, isDriverOnly, scopedDriverId, scopeLoading]);
 
   const lastJobCreateRef = useRef<number>(0);
 

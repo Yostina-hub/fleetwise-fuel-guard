@@ -23478,6 +23478,7 @@ export type Database = {
         Args: { p_date: string }
         Returns: undefined
       }
+      current_driver_id: { Args: never; Returns: string }
       delivery_check_decision: {
         Args: {
           p_acceptable: boolean
@@ -23650,6 +23651,7 @@ export type Database = {
         Args: { p_notes?: string; p_request_id: string; p_result: string }
         Returns: undefined
       }
+      is_driver_only: { Args: { _user_id: string }; Returns: boolean }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       is_vehicle_online: { Args: { vehicle_uuid: string }; Returns: boolean }
       log_audit_event: {

@@ -13,6 +13,7 @@ import { CrossPoolAssignmentDialog } from "@/components/vehicle-requests/CrossPo
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useDriverScope } from "@/hooks/useDriverScope";
 import { format } from "date-fns";
 
 const statusColors: Record<string, string> = {
@@ -26,6 +27,7 @@ const requestTypeLabels: Record<string, string> = {
 
 export const VehicleRequestsPanel = () => {
   const { organizationId } = useOrganization();
+  const { isDriverOnly, driverId, userId, loading: scopeLoading } = useDriverScope();
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [showDetail, setShowDetail] = useState<any>(null);
@@ -47,18 +49,28 @@ export const VehicleRequestsPanel = () => {
   }, [queryClient, organizationId]);
 
   const { data: requests = [], isLoading } = useQuery({
-    queryKey: ["vehicle-requests-panel", organizationId],
+    queryKey: ["vehicle-requests-panel", organizationId, isDriverOnly, driverId, userId],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      let query = (supabase as any)
         .from("vehicle_requests")
         .select("*, assigned_vehicle:assigned_vehicle_id(plate_number, make, model), assigned_driver:assigned_driver_id(first_name, last_name)")
         .eq("organization_id", organizationId!)
         .order("created_at", { ascending: false })
         .limit(50);
+
+      // RBAC: drivers only see requests they raised or are assigned to.
+      if (isDriverOnly) {
+        if (!userId) return [];
+        const orParts = [`requester_id.eq.${userId}`];
+        if (driverId) orParts.push(`assigned_driver_id.eq.${driverId}`);
+        query = query.or(orParts.join(","));
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data || [];
     },
-    enabled: !!organizationId,
+    enabled: !!organizationId && !scopeLoading,
   });
 
   const { data: approvals = [] } = useQuery({
