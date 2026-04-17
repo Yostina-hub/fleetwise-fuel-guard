@@ -127,6 +127,7 @@ const RoadsideAssistanceSopPage = lazyWithRetry(() => import("./pages/sop-workfl
 const LicenseRenewalPage = lazyWithRetry(() => import("./pages/sop-workflows").then(m => ({ default: m.LicenseRenewalPage })), "LicenseRenewalPage");
 const OutsourceRentalPage = lazyWithRetry(() => import("./pages/sop-workflows").then(m => ({ default: m.OutsourceRentalPage })), "OutsourceRentalPage");
 const SafetyComfortPage = lazyWithRetry(() => import("./pages/sop-workflows").then(m => ({ default: m.SafetyComfortPage })), "SafetyComfortPage");
+const VehicleHandoverPage = lazyWithRetry(() => import("./pages/sop-workflows").then(m => ({ default: m.VehicleHandoverPage })), "VehicleHandoverPage");
 
 const App = () => {
   const [queryClient] = useState(() => new QueryClient({
@@ -265,7 +266,8 @@ const App = () => {
                         <Route path="/sop/roadside-assistance" element={<ProtectedRoute><RoadsideAssistanceSopPage /></ProtectedRoute>} />
                         <Route path="/sop/license-renewal" element={<ProtectedRoute><LicenseRenewalPage /></ProtectedRoute>} />
                         <Route path="/sop/outsource-rental" element={<ProtectedRoute><OutsourceRentalPage /></ProtectedRoute>} />
-                        <Route path="/sop/safety-comfort" element={<ProtectedRoute><SafetyComfortPage /></ProtectedRoute>} />
+                       <Route path="/sop/safety-comfort" element={<ProtectedRoute><SafetyComfortPage /></ProtectedRoute>} />
+                       <Route path="/sop/vehicle-handover" element={<ProtectedRoute><VehicleHandoverPage /></ProtectedRoute>} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />
                       </Routes>
