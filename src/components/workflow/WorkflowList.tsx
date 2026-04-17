@@ -87,6 +87,7 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [domainFilter, setDomainFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"updated" | "name" | "runs" | "created">("updated");
   const [historyWorkflowId, setHistoryWorkflowId] = useState<string | null>(null);
