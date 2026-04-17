@@ -1,11 +1,13 @@
-// Universal "file new workflow" dialog driven by config.intakeFields.
+// Universal "file new workflow" dialog driven by config.intakeFields,
+// config.intakeFormKey, or config.intakeFormChoices.
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { WorkflowFieldset } from "./WorkflowFieldset";
 import type { WorkflowConfig } from "./types";
 import { useWorkflow } from "./useWorkflow";
 import { RenderWorkflowForm, getWorkflowForm } from "@/lib/workflow-forms/registry";
+import { FileText } from "lucide-react";
 
 interface Props {
   config: WorkflowConfig;
@@ -16,12 +18,21 @@ interface Props {
 export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
   const { createInstance } = useWorkflow(config);
   const [values, setValues] = useState<Record<string, any>>({});
+  const [chosenFormKey, setChosenFormKey] = useState<string | null>(null);
 
   const intakeFields = config.intakeFields || [];
   const intakeForm = config.intakeFormKey ? getWorkflowForm(config.intakeFormKey) : undefined;
+  const choices = config.intakeFormChoices ?? [];
+  const activeChoice = chosenFormKey
+    ? choices.find((c) => c.key === chosenFormKey)
+    : undefined;
+  const activeChoiceForm = activeChoice ? getWorkflowForm(activeChoice.key) : undefined;
 
   useEffect(() => {
-    if (!open) setValues({});
+    if (!open) {
+      setValues({});
+      setChosenFormKey(null);
+    }
   }, [open]);
 
   const submitReusableForm = async (result?: Record<string, any>) => {
@@ -64,6 +75,54 @@ export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
         onCancel={() => onOpenChange(false)}
         onSubmitted={submitReusableForm}
       />
+    );
+  }
+
+  // Reusable form chooser path
+  if (open && choices.length > 0) {
+    if (activeChoiceForm) {
+      return (
+        <RenderWorkflowForm
+          formKey={activeChoiceForm.key}
+          prefill={activeChoice?.prefill}
+          onCancel={() => setChosenFormKey(null)}
+          onSubmitted={submitReusableForm}
+        />
+      );
+    }
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>New {config.title}</DialogTitle>
+            <DialogDescription>
+              {config.sopCode} — choose how you want to file this request.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            {choices.map((c) => (
+              <button
+                key={c.key}
+                onClick={() => setChosenFormKey(c.key)}
+                className="w-full text-left p-3 rounded-md border border-border bg-card hover:bg-accent/40 transition-colors flex items-start gap-3"
+              >
+                <FileText className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <div className="font-medium">{c.label}</div>
+                  {c.description ? (
+                    <div className="text-xs text-muted-foreground mt-0.5">{c.description}</div>
+                  ) : null}
+                </div>
+              </button>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     );
   }
 
