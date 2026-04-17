@@ -47,6 +47,14 @@ export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
     onOpenChange(false);
   };
 
+  // When a choice is picked but no registered form exists for it, fall back to
+  // the inline intakeFields form, seeding values with the choice's prefill.
+  useEffect(() => {
+    if (chosenFormKey && activeChoice && !activeChoiceForm) {
+      setValues((prev) => ({ ...(activeChoice.prefill ?? {}), ...prev }));
+    }
+  }, [chosenFormKey, activeChoice, activeChoiceForm]);
+
   const submit = async () => {
     const missing = intakeFields
       .filter((f) => f.required)
@@ -61,9 +69,10 @@ export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
       description: values["description"],
       vehicleId,
       driverId,
-      data: values,
+      data: { ...(activeChoice?.prefill ?? {}), ...values },
     });
     setValues({});
+    setChosenFormKey(null);
     onOpenChange(false);
   };
 
