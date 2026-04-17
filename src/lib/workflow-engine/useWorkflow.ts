@@ -240,7 +240,7 @@ export function useWorkflow(config: WorkflowConfig) {
         performed_by: user?.id || null,
         performed_by_name: profile?.full_name || user?.email || "Unknown",
         performed_by_role: userRoles[0] || null,
-        payload: payload || {},
+        payload: interceptedPayload || {},
         documents: documents || [],
       });
       if (trErr) throw trErr;
