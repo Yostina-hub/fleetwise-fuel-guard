@@ -78,12 +78,13 @@ const NextAnnualInspectionCard = ({ vehicleId }: { vehicleId: string }) => {
       const [dueRes, lastRes] = await Promise.all([
         supabase
           .from("inspection_due_dates")
-          .select("next_annual_due, last_annual_inspection_date, last_annual_result")
+          .select("next_due_date, last_status, source")
           .eq("vehicle_id", vehicleId)
+          .eq("inspection_type", "annual")
           .maybeSingle(),
         supabase
           .from("vehicle_inspections")
-          .select("inspection_date, overall_result, sticker_expiry, sticker_number")
+          .select("inspection_date, overall_condition, certified_safe")
           .eq("vehicle_id", vehicleId)
           .eq("inspection_type", "annual")
           .order("inspection_date", { ascending: false })
@@ -96,9 +97,9 @@ const NextAnnualInspectionCard = ({ vehicleId }: { vehicleId: string }) => {
   });
 
   if (isLoading) return null;
-  const nextDue = data?.due?.next_annual_due;
-  const lastDate = data?.due?.last_annual_inspection_date || data?.last?.inspection_date;
-  const lastResult = data?.due?.last_annual_result || data?.last?.overall_result;
+  const nextDue = data?.due?.next_due_date;
+  const lastDate = data?.last?.inspection_date;
+  const lastResult = data?.last?.overall_condition || (data?.last?.certified_safe ? "certified" : null);
 
   if (!nextDue && !lastDate) return null;
 
@@ -123,7 +124,7 @@ const NextAnnualInspectionCard = ({ vehicleId }: { vehicleId: string }) => {
         <p className="text-sm font-medium">Next Annual Inspection</p>
         <p className="text-xs text-muted-foreground">
           {nextDue ? format(parseISO(nextDue), "MMM d, yyyy") : "Not scheduled"}
-          {lastDate && <> · Last: {format(parseISO(lastDate), "MMM d, yyyy")} ({lastResult || "—"})</>}
+          {lastDate && <> · Last: {format(parseISO(lastDate), "MMM d, yyyy")}{lastResult ? ` (${lastResult})` : ""}</>}
         </p>
       </div>
       <div className="text-right">

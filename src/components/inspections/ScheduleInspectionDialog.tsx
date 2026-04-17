@@ -67,10 +67,8 @@ export const ScheduleInspectionDialog = ({ open, onOpenChange, defaultType = "an
       vehicle_id: vehicleId,
       inspection_type: type,
       inspection_date: date,
-      inspector_name: inspector || null,
-      notes: notes || null,
-      status: "scheduled",
-      overall_result: "pending",
+      mechanic_notes: [inspector ? `Inspector: ${inspector}` : "", notes].filter(Boolean).join("\n") || null,
+      status: "pending",
     });
     setSaving(false);
     if (error) {
