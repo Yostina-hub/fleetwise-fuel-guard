@@ -225,6 +225,33 @@ All colors MUST be HSL.
     --shadow-elevated: 0 10px 40px hsla(0 0% 0% / 0.4);
     --shadow-floating: 0 20px 60px hsla(0 0% 0% / 0.6);
   }
+
+  /* ===== Workflow / Inbox semantic tokens (theme-agnostic) ===== */
+  :root,
+  .dark,
+  .cyber {
+    /* Runtime status */
+    --status-pending: 220 14% 55%;
+    --status-running: 195 100% 50%;
+    --status-done: 145 65% 45%;
+    --status-failed: 0 75% 55%;
+    --status-skipped: 270 30% 55%;
+
+    /* SLA traffic light (chip background uses /15, text uses solid) */
+    --sla-ok: 145 65% 45%;
+    --sla-warn: 38 92% 50%;
+    --sla-breach: 0 75% 55%;
+
+    /* Role accents — pulled from a balanced palette (HSL) */
+    --role-driver: 199 89% 56%;
+    --role-mechanic: 25 95% 53%;
+    --role-dispatcher: 262 83% 62%;
+    --role-finance: 145 65% 45%;
+    --role-fleet-manager: 84 54% 56%;
+    --role-admin: 340 82% 58%;
+    --role-inspector: 38 92% 50%;
+    --role-default: 220 14% 55%;
+  }
 }
 
 @layer base {
