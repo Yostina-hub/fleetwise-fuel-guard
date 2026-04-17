@@ -24,6 +24,9 @@ interface Props {
   driverName?: string;
   scheduleId?: string;
   defaultRequestType?: string;
+  /** When 'trip_inspection' the form renders the Oracle EBS Veh. Trip Inspection layout with Pre/Post-trip subtype. */
+  defaultContext?: "vehicle_maintenance" | "trip_inspection" | "generator_maintenance" | "equipment_maintenance";
+  defaultInspectionSubType?: "pre_trip" | "post_trip" | "annual" | "";
   onSubmitted?: () => void;
   onCancel?: () => void;
 }
