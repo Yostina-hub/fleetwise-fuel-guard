@@ -40,9 +40,28 @@ import DriverTripsView from "@/components/trips/DriverTripsView";
 const TripManagement = () => {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { organizationId } = useOrganization();
   const { requests, loading, submitRequest, cancelRequest } = useTripRequests();
   const { pendingApprovals, approveRequest, rejectRequest } = useApprovals();
   const { isSuperAdmin, hasRole, hasPermission, loading: permsLoading } = usePermissions();
+
+  // Resolve driver record for current user (only used when isDriverOnly)
+  const { data: driverSelf, isLoading: driverLoading } = useQuery({
+    queryKey: ["trip-mgmt-driver-self", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return null;
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return null;
+      const { data } = await supabase
+        .from("drivers")
+        .select("id, first_name, last_name")
+        .eq("organization_id", organizationId)
+        .eq("user_id", u.user.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!organizationId,
+  });
 
   // RBAC role groups
   const isDriverOnly = hasRole("driver") && !isSuperAdmin && !hasRole("operations_manager")
