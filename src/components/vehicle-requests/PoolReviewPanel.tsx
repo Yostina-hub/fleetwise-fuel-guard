@@ -246,9 +246,21 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
           status: "on_trip", updated_at: new Date().toISOString(),
         }).eq("id", driverId);
       }
+      // Send SMS to each requester + driver (driver only once)
+      const seenDriver = new Set<string>();
+      for (const requestId of requestIds) {
+        const request = requests.find((r: any) => r.id === requestId);
+        if (!request) continue;
+        const driverKey = driverId ? `${driverId}` : "";
+        if (driverId && seenDriver.has(driverKey)) {
+          // Skip duplicate driver SMS but still notify requester
+          await sendAssignmentSMS(request, vehicleId, undefined);
+        } else {
+          await sendAssignmentSMS(request, vehicleId, driverId);
+          if (driverId) seenDriver.add(driverKey);
+        }
+      }
     },
-    onSuccess: () => {
-      toast.success("Batch assignment complete — consolidated trip assigned");
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
       setExpandedId(null);
