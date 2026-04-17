@@ -15,6 +15,7 @@ import {
   GraduationCap, Banknote, Hammer, LifeBuoy, IdCard, Building2, Shield,
 } from "lucide-react";
 import type { WorkflowConfig } from "./types";
+import { tireRequestConfig } from "./configs/tireRequestConfig";
 
 // Reusable lane helpers
 import type { Lane } from "./types";
@@ -970,4 +971,7 @@ export const WORKFLOW_CONFIGS: Record<string, WorkflowConfig> = {
   license_renewal:         licenseRenewalConfig,
   outsource_rental:        outsourceRentalConfig,
   safety_comfort:          safetyComfortConfig,
+  tire_request:            tireRequestConfig,
 };
+
+export { tireRequestConfig };

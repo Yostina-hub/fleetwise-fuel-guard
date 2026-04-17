@@ -9,10 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
-import { CircleDot, Plus, BarChart3, History, AlertTriangle, TrendingUp, RotateCcw, ClipboardList } from "lucide-react";
+import { CircleDot, Plus, BarChart3, History, AlertTriangle, TrendingUp, RotateCcw, ClipboardList, GitBranch } from "lucide-react";
 import { TireChangeDialog } from "@/components/tire-management/TireChangeDialog";
 import { TireRequestDialog } from "@/components/tire-management/TireRequestDialog";
 import { TireRequestsTab } from "@/components/tire-management/TireRequestsTab";
+import { TireUtilizationReport } from "@/components/tire-management/TireUtilizationReport";
+import { WorkflowPage } from "@/lib/workflow-engine/WorkflowPage";
+import { tireRequestConfig } from "@/lib/workflow-engine/configs/tireRequestConfig";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -172,6 +175,8 @@ const TireManagement = () => {
           <TabsList>
             <TabsTrigger value="inventory" className="gap-1.5"><CircleDot className="w-3.5 h-3.5" /> Inventory</TabsTrigger>
             <TabsTrigger value="requests" className="gap-1.5"><ClipboardList className="w-3.5 h-3.5" /> Requests</TabsTrigger>
+            <TabsTrigger value="workflow" className="gap-1.5"><GitBranch className="w-3.5 h-3.5" /> Workflow</TabsTrigger>
+            <TabsTrigger value="utilization" className="gap-1.5"><BarChart3 className="w-3.5 h-3.5" /> Utilization</TabsTrigger>
             <TabsTrigger value="positions" className="gap-1.5"><CircleDot className="w-3.5 h-3.5" /> Positions</TabsTrigger>
             <TabsTrigger value="changes" className="gap-1.5"><History className="w-3.5 h-3.5" /> Change History</TabsTrigger>
             <TabsTrigger value="costs" className="gap-1.5"><BarChart3 className="w-3.5 h-3.5" /> Cost Analysis</TabsTrigger>
@@ -229,6 +234,14 @@ const TireManagement = () => {
 
             <TabsContent value="requests" className="mt-0">
               <TireRequestsTab />
+            </TabsContent>
+
+            <TabsContent value="workflow" className="mt-0">
+              <WorkflowPage config={tireRequestConfig} />
+            </TabsContent>
+
+            <TabsContent value="utilization" className="mt-0">
+              <TireUtilizationReport />
             </TabsContent>
 
             <TabsContent value="positions" className="mt-0">
