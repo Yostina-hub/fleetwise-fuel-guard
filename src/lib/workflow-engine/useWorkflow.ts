@@ -118,9 +118,9 @@ export function useWorkflow(config: WorkflowConfig) {
         documents: args.documents || [],
       });
 
-      // Auto-link: when a Fleet Inspection workflow is filed, create a matching
-      // vehicle_inspections row so the SOP and the operational record stay in sync.
-      if (config.type === "fleet_inspection" && args.vehicleId) {
+      // Auto-link: when a Fleet Inspection workflow is filed from the generic dialog,
+      // create a matching vehicle_inspections row so the SOP and the operational record stay in sync.
+      if (config.type === "fleet_inspection" && args.vehicleId && !args.data?.inspection_id) {
         try {
           const inspType = (args.data?.inspection_type as string) || "annual";
           const { data: insp, error: inspErr } = await supabase
