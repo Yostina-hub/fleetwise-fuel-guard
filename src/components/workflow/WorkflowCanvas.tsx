@@ -4,7 +4,6 @@ import { useSearchParams } from "react-router-dom";
 import TEMPLATES from "./workflowTemplates";
 import {
   ReactFlow,
-  Controls,
   MiniMap,
   Background,
   BackgroundVariant,
@@ -32,6 +31,9 @@ import TriggerNode from "./nodes/TriggerNode";
 import ConditionNode from "./nodes/ConditionNode";
 import ActionNode from "./nodes/ActionNode";
 import CustomNode from "./nodes/CustomNode";
+import { CanvasToolbar } from "./CanvasToolbar";
+import { autoLayout, findProblems, type LayoutDirection } from "./canvasLayout";
+import { accentTokenFor } from "./nodeAccents";
 import type { PaletteItem, WorkflowNode, WorkflowEdge } from "./types";
 import type { WorkflowTemplate } from "./workflowTemplates";
 import { AnimatePresence } from "framer-motion";
@@ -115,20 +117,25 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
   const onConnect: OnConnect = useCallback(
     (params: Connection) => {
       pushHistory();
+      // Color the edge after the source node's category accent for clarity.
+      const srcNode = nodes.find((n) => n.id === params.source);
+      const srcData = srcNode?.data as any;
+      const token = accentTokenFor(srcData?.category, srcData?.nodeType);
+      const stroke = `hsl(var(${token}))`;
       setEdges((eds) =>
         addEdge(
           {
             ...params,
             type: "smoothstep",
             animated: true,
-            markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16 },
-            style: { strokeWidth: 2 },
+            markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18, color: stroke },
+            style: { strokeWidth: 2, stroke },
           },
-          eds
-        )
+          eds,
+        ),
       );
     },
-    [setEdges, pushHistory]
+    [setEdges, pushHistory, nodes],
   );
 
   const onDragStart = useCallback((event: React.DragEvent, item: PaletteItem) => {
@@ -392,6 +399,29 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
     setTimeout(() => fitView({ padding: 0.2 }), 200);
   }, [pushHistory, setNodes, setEdges, fitView]);
 
+  // Auto-layout (dagre)
+  const handleAutoLayout = useCallback(
+    (direction: LayoutDirection) => {
+      if (nodes.length === 0) return;
+      pushHistory();
+      const { nodes: ln, edges: le } = autoLayout(nodes, edges, direction);
+      setNodes(ln);
+      setEdges(le);
+      setTimeout(() => fitView({ padding: 0.2, duration: 400 }), 50);
+      toast({ title: "Auto-layout applied", description: `Arranged ${nodes.length} nodes ${direction === "TB" ? "vertically" : "horizontally"}.` });
+    },
+    [nodes, edges, setNodes, setEdges, pushHistory, fitView, toast],
+  );
+
+  // Validation problems (memoised)
+  const problems = useMemo(() => findProblems(nodes, edges), [nodes, edges]);
+
+  const jumpToProblem = useCallback((nodeId: string) => {
+    const n = nodes.find((nn) => nn.id === nodeId);
+    if (!n) return;
+    setSelectedNode(n as WorkflowNode);
+  }, [nodes]);
+
   // Cmd+K keyboard shortcut
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -439,7 +469,7 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
         </div>
 
         {/* Canvas */}
-        <div className="flex-1" ref={reactFlowWrapper}>
+        <div className="flex-1 relative" ref={reactFlowWrapper}>
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -454,8 +484,8 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
             defaultEdgeOptions={{
               type: "smoothstep",
               animated: true,
-              markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16 },
-              style: { strokeWidth: 2 },
+              markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18 },
+              style: { strokeWidth: 2, stroke: "hsl(var(--muted-foreground) / 0.4)" },
             }}
             fitView
             snapToGrid
@@ -463,27 +493,32 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
             className="bg-background"
             proOptions={{ hideAttribution: true }}
           >
-            <Background variant={BackgroundVariant.Dots} gap={16} size={1} className="!bg-background" />
-            <Controls className="!bg-card !border-border !shadow-lg" />
+            <Background variant={BackgroundVariant.Dots} gap={20} size={1} className="!bg-background" />
             <MiniMap
-              className="!bg-card !border-border"
+              className="!bg-card/80 !border-border !rounded-lg !shadow-md !backdrop-blur"
+              pannable
+              zoomable
               nodeColor={(node) => {
                 const d = node.data as any;
-                if (d?.status === "running") return "#eab308";
-                if (d?.status === "success") return "#22c55e";
-                if (d?.status === "error") return "#ef4444";
-                if (d?.category === "triggers") return "#10b981";
-                if (d?.category === "conditions") return "#f59e0b";
-                if (d?.category === "fleet") return "#3b82f6";
-                if (d?.category === "notifications") return "#8b5cf6";
-                if (d?.category === "ai_intelligence") return "#a855f7";
-                if (d?.category === "data") return "#06b6d4";
-                if (d?.category === "timing") return "#64748b";
-                return "#6366f1";
+                if (d?.status === "running") return "hsl(var(--status-running))";
+                if (d?.status === "success") return "hsl(var(--status-done))";
+                if (d?.status === "error") return "hsl(var(--status-failed))";
+                const token = accentTokenFor(d?.category, d?.nodeType);
+                return `hsl(var(${token}))`;
               }}
               maskColor="hsl(var(--background) / 0.7)"
             />
           </ReactFlow>
+          <CanvasToolbar
+            onFitView={() => fitView({ padding: 0.2, duration: 400 })}
+            onZoomIn={() => zoomIn()}
+            onZoomOut={() => zoomOut()}
+            onAutoLayout={handleAutoLayout}
+            problems={problems}
+            onJumpToProblem={jumpToProblem}
+            nodeCount={nodes.length}
+            edgeCount={edges.length}
+          />
         </div>
 
         {/* Right panel - Config, Simulator, or AI Chat */}
