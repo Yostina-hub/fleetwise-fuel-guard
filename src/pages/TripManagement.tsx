@@ -1,5 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
-import { useSearchParams, Navigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useOrganization } from "@/hooks/useOrganization";
 import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { ShieldAlert, Loader2 } from "lucide-react";
