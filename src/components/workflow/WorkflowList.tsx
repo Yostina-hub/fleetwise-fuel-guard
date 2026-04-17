@@ -87,6 +87,7 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [domainFilter, setDomainFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"updated" | "name" | "runs" | "created">("updated");
   const [historyWorkflowId, setHistoryWorkflowId] = useState<string | null>(null);
@@ -227,6 +228,20 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
   }, {});
   const availableCategories = Object.keys(categoryCounts).sort();
 
+  // Domain → categories taxonomy (professional 2-tier grouping)
+  const domainCounts: Record<string, number> = {};
+  for (const cat of availableCategories) {
+    const domain = getDomainForCategory(cat);
+    domainCounts[domain] = (domainCounts[domain] || 0) + categoryCounts[cat];
+  }
+  const availableDomains = Object.keys(domainCounts).sort(
+    (a, b) => DOMAIN_ORDER.indexOf(a) - DOMAIN_ORDER.indexOf(b),
+  );
+  const subCategoriesForDomain =
+    domainFilter === "all"
+      ? []
+      : availableCategories.filter((c) => getDomainForCategory(c) === domainFilter);
+
   const filteredWorkflows = (workflows || [])
     .filter((w: any) => {
       const q = search.toLowerCase();
@@ -236,10 +251,10 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
         w.description?.toLowerCase().includes(q) ||
         w.category?.toLowerCase().includes(q);
       const matchesStatus = statusFilter === "all" || w.status === statusFilter;
-      const matchesCategory =
-        categoryFilter === "all" ||
-        (w.category || "uncategorized").toLowerCase() === categoryFilter;
-      return matchesSearch && matchesStatus && matchesCategory;
+      const cat = (w.category || "uncategorized").toLowerCase();
+      const matchesDomain = domainFilter === "all" || getDomainForCategory(cat) === domainFilter;
+      const matchesCategory = categoryFilter === "all" || cat === categoryFilter;
+      return matchesSearch && matchesStatus && matchesDomain && matchesCategory;
     })
     .sort((a: any, b: any) => {
       switch (sortBy) {
@@ -257,12 +272,14 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
 
   const activeFilterCount =
     (statusFilter !== "all" ? 1 : 0) +
+    (domainFilter !== "all" ? 1 : 0) +
     (categoryFilter !== "all" ? 1 : 0) +
     (search ? 1 : 0);
 
   const clearFilters = () => {
     setSearch("");
     setStatusFilter("all");
+    setDomainFilter("all");
     setCategoryFilter("all");
   };
 
@@ -380,17 +397,56 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
             </div>
           </div>
 
-          {/* Row 2: Category chips */}
-          {availableCategories.length > 0 && (
-            <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-border">
+          {/* Row 2: Domain pills (top-tier taxonomy) */}
+          {availableDomains.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-border">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mr-1">
+                Domain
+              </span>
+              <DomainPill
+                label="All domains"
+                icon={<LayoutGrid className="h-3.5 w-3.5" />}
+                count={workflows?.length || 0}
+                active={domainFilter === "all"}
+                onClick={() => {
+                  setDomainFilter("all");
+                  setCategoryFilter("all");
+                }}
+              />
+              {availableDomains.map((d) => {
+                const meta = DOMAIN_META[d];
+                return (
+                  <DomainPill
+                    key={d}
+                    label={meta?.label || d}
+                    icon={meta?.icon || <GitBranch className="h-3.5 w-3.5" />}
+                    count={domainCounts[d]}
+                    active={domainFilter === d}
+                    accentClass={meta?.accentClass}
+                    onClick={() => {
+                      setDomainFilter(d);
+                      setCategoryFilter("all");
+                    }}
+                  />
+                );
+              })}
+            </div>
+          )}
+
+          {/* Row 3: Sub-category chips (only for the selected domain) */}
+          {domainFilter !== "all" && subCategoriesForDomain.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-dashed border-border">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mr-1">
+                Category
+              </span>
               <CategoryChip
                 label="All"
                 icon={<LayoutGrid className="h-3 w-3" />}
-                count={workflows?.length || 0}
+                count={domainCounts[domainFilter] || 0}
                 active={categoryFilter === "all"}
                 onClick={() => setCategoryFilter("all")}
               />
-              {availableCategories.map((cat) => (
+              {subCategoriesForDomain.map((cat) => (
                 <CategoryChip
                   key={cat}
                   label={cat.replace(/_/g, " ")}
@@ -709,7 +765,67 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
   );
 };
 
-// ----- Category filtering helpers -----
+// ----- Domain & Category filtering helpers (2-tier taxonomy) -----
+
+// Top-level professional domain grouping
+const DOMAIN_ORDER = [
+  "safety_compliance",
+  "fleet_operations",
+  "energy_sustainability",
+  "telematics_iot",
+  "other",
+];
+
+interface DomainMeta {
+  label: string;
+  icon: React.ReactNode;
+  accentClass: string; // semantic token-based accent for the active state
+}
+
+const DOMAIN_META: Record<string, DomainMeta> = {
+  safety_compliance: {
+    label: "Safety & Compliance",
+    icon: <Shield className="h-3.5 w-3.5" />,
+    accentClass: "bg-destructive text-destructive-foreground border-destructive",
+  },
+  fleet_operations: {
+    label: "Fleet Operations",
+    icon: <Settings2 className="h-3.5 w-3.5" />,
+    accentClass: "bg-primary text-primary-foreground border-primary",
+  },
+  energy_sustainability: {
+    label: "Energy & Sustainability",
+    icon: <Fuel className="h-3.5 w-3.5" />,
+    accentClass: "bg-accent text-accent-foreground border-accent",
+  },
+  telematics_iot: {
+    label: "Telematics & IoT",
+    icon: <Radio className="h-3.5 w-3.5" />,
+    accentClass: "bg-secondary text-secondary-foreground border-secondary",
+  },
+  other: {
+    label: "Other",
+    icon: <GitBranch className="h-3.5 w-3.5" />,
+    accentClass: "bg-muted text-foreground border-border",
+  },
+};
+
+// Map a workflow category → its parent domain
+const CATEGORY_TO_DOMAIN: Record<string, string> = {
+  safety: "safety_compliance",
+  compliance: "safety_compliance",
+  alerts: "safety_compliance",
+  operations: "fleet_operations",
+  maintenance: "fleet_operations",
+  cold_chain: "fleet_operations",
+  fuel: "energy_sustainability",
+  ev_charging: "energy_sustainability",
+  sensors: "telematics_iot",
+};
+
+function getDomainForCategory(category: string): string {
+  return CATEGORY_TO_DOMAIN[category] || "other";
+}
 
 const CATEGORY_ICON_MAP: Record<string, React.ReactNode> = {
   safety: <Shield className="h-3 w-3" />,
@@ -725,6 +841,41 @@ const CATEGORY_ICON_MAP: Record<string, React.ReactNode> = {
 
 function getCategoryIcon(category: string): React.ReactNode {
   return CATEGORY_ICON_MAP[category] || <GitBranch className="h-3 w-3" />;
+}
+
+interface DomainPillProps {
+  label: string;
+  icon: React.ReactNode;
+  count: number;
+  active: boolean;
+  accentClass?: string;
+  onClick: () => void;
+}
+
+function DomainPill({ label, icon, count, active, accentClass, onClick }: DomainPillProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all border",
+        active
+          ? cn(accentClass || "bg-primary text-primary-foreground border-primary", "shadow-sm")
+          : "bg-card text-foreground/80 border-border hover:border-primary/40 hover:bg-muted/40",
+      )}
+    >
+      {icon}
+      <span>{label}</span>
+      <span
+        className={cn(
+          "rounded-md px-1.5 py-0.5 text-[10px] font-bold tabular-nums",
+          active ? "bg-background/20" : "bg-muted text-muted-foreground",
+        )}
+      >
+        {count}
+      </span>
+    </button>
+  );
 }
 
 interface CategoryChipProps {
