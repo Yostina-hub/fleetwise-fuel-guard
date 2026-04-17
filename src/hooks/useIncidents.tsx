@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
+import { useDriverScope } from "./useDriverScope";
 
 export interface Incident {
   id: string;
@@ -29,14 +30,17 @@ export const useIncidents = (filters?: {
   vehicleId?: string;
 }) => {
   const { organizationId } = useOrganization();
+  const { isDriverOnly, driverId, loading: scopeLoading } = useDriverScope();
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!organizationId) {
-      setIncidents([]);
-      setLoading(false);
+    if (!organizationId || scopeLoading) {
+      if (!scopeLoading) {
+        setIncidents([]);
+        setLoading(false);
+      }
       return;
     }
 
@@ -47,6 +51,16 @@ export const useIncidents = (filters?: {
           .from("incidents")
           .select("*")
           .eq("organization_id", organizationId);
+
+        // RBAC: drivers only see incidents linked to their own driver record.
+        if (isDriverOnly) {
+          if (!driverId) {
+            setIncidents([]);
+            setLoading(false);
+            return;
+          }
+          query = query.eq("driver_id", driverId);
+        }
 
         if (filters?.status && filters.status !== 'all') {
           query = query.eq("status", filters.status);
@@ -74,7 +88,6 @@ export const useIncidents = (filters?: {
 
     let debounceTimer: ReturnType<typeof setTimeout>;
 
-    // Subscribe to realtime changes
     const channel = supabase
       .channel(`incidents-${organizationId.slice(0, 8)}`)
       .on(
@@ -96,7 +109,7 @@ export const useIncidents = (filters?: {
       clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
-  }, [organizationId, filters?.status, filters?.severity, filters?.vehicleId]);
+  }, [organizationId, isDriverOnly, driverId, scopeLoading, filters?.status, filters?.severity, filters?.vehicleId]);
 
   return {
     incidents,

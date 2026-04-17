@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "./useOrganization";
+import { useDriverScope } from "./useDriverScope";
 import { toast } from "@/hooks/use-toast";
 
 export interface Incident {
@@ -76,6 +77,7 @@ export const useIncidentsManagement = (filters?: {
   vehicleId?: string;
 }) => {
   const { organizationId } = useOrganization();
+  const { isDriverOnly, driverId, loading: scopeLoading } = useDriverScope();
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [claims, setClaims] = useState<InsuranceClaim[]>([]);
   const [violations, setViolations] = useState<TrafficViolation[]>([]);
@@ -83,9 +85,11 @@ export const useIncidentsManagement = (filters?: {
   const [error, setError] = useState<string | null>(null);
 
   const fetchIncidents = async () => {
-    if (!organizationId) {
-      setIncidents([]);
-      setLoading(false);
+    if (!organizationId || scopeLoading) {
+      if (!scopeLoading) {
+        setIncidents([]);
+        setLoading(false);
+      }
       return;
     }
 
@@ -95,6 +99,16 @@ export const useIncidentsManagement = (filters?: {
         .from("incidents")
         .select("*")
         .eq("organization_id", organizationId);
+
+      // RBAC: drivers only see incidents linked to their own driver record.
+      if (isDriverOnly) {
+        if (!driverId) {
+          setIncidents([]);
+          setLoading(false);
+          return;
+        }
+        query = query.eq("driver_id", driverId);
+      }
 
       if (filters?.status && filters.status !== 'all') {
         query = query.eq("status", filters.status);
@@ -121,7 +135,7 @@ export const useIncidentsManagement = (filters?: {
   };
 
   const fetchClaims = async () => {
-    if (!organizationId) return;
+    if (!organizationId || isDriverOnly) return;
 
     try {
       const { data, error } = await supabase
@@ -142,13 +156,23 @@ export const useIncidentsManagement = (filters?: {
     if (!organizationId) return;
 
     try {
-      const { data, error } = await supabase
+      let q = supabase
         .from("traffic_violations")
         .select("*")
         .eq("organization_id", organizationId)
         .order("violation_date", { ascending: false })
         .limit(50);
 
+      // Drivers only see their own violations.
+      if (isDriverOnly) {
+        if (!driverId) {
+          setViolations([]);
+          return;
+        }
+        q = q.eq("driver_id", driverId);
+      }
+
+      const { data, error } = await q;
       if (error) throw error;
       setViolations((data as TrafficViolation[]) || []);
     } catch (err: any) {
@@ -160,7 +184,7 @@ export const useIncidentsManagement = (filters?: {
     fetchIncidents();
     fetchClaims();
     fetchViolations();
-  }, [organizationId, filters?.status, filters?.severity, filters?.vehicleId]);
+  }, [organizationId, isDriverOnly, driverId, scopeLoading, filters?.status, filters?.severity, filters?.vehicleId]);
 
   const createIncident = async (incident: Partial<Incident>) => {
     if (!organizationId) return null;

@@ -24,6 +24,7 @@ import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
 import { useOrganizationSettings } from "@/hooks/useOrganizationSettings";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useDriverScope } from "@/hooks/useDriverScope";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { TablePagination, usePagination } from "@/components/reports/TablePagination";
@@ -423,6 +424,7 @@ const FuelAutoTriggerSettings = ({ organizationId, settings, onClose }: { organi
 export const FuelRequestWorkflow = () => {
   const { t } = useTranslation();
   const { organizationId } = useOrganization();
+  const { isDriverOnly, driverId, userId, loading: scopeLoading } = useDriverScope();
   const { vehicles } = useVehicles();
   const { drivers } = useDrivers();
   const { formatCurrency, formatFuel, settings } = useOrganizationSettings();
@@ -475,19 +477,29 @@ export const FuelRequestWorkflow = () => {
 
   // Fuel requests
   const { data: requests = [], isLoading } = useQuery({
-    queryKey: ["fuel-requests", organizationId],
+    queryKey: ["fuel-requests", organizationId, isDriverOnly, driverId, userId],
     queryFn: async () => {
       if (!organizationId) return [];
-      const { data, error } = await supabase
+      let q = supabase
         .from("fuel_requests")
         .select("*")
         .eq("organization_id", organizationId)
         .order("created_at", { ascending: false })
         .limit(500);
+
+      // RBAC: drivers only see their own fuel requests.
+      if (isDriverOnly) {
+        if (!userId) return [];
+        const orParts = [`requested_by.eq.${userId}`];
+        if (driverId) orParts.push(`driver_id.eq.${driverId}`);
+        q = q.or(orParts.join(","));
+      }
+
+      const { data, error } = await q;
       if (error) throw error;
       return data || [];
     },
-    enabled: !!organizationId,
+    enabled: !!organizationId && !scopeLoading,
   });
 
   const getPlate = (id: string) => vehicles.find(v => v.id === id)?.plate_number || "—";
