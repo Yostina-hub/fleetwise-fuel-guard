@@ -228,6 +228,28 @@ const getNavItems = (t: (key: string) => string) => [
   // ── 3PL / Outsource ──
   { icon: Package, label: "3PL Management", path: "/3pl" },
 
+  // ── ET FMG SOP Workflows ──
+  {
+    icon: ClipboardList,
+    label: "SOP Workflows",
+    highlight: true,
+    subItems: [
+      { label: "Fleet Inspection", path: "/sop/fleet-inspection" },
+      { label: "Vehicle Registration", path: "/sop/vehicle-registration" },
+      { label: "Insurance Renewal", path: "/sop/vehicle-insurance-renewal" },
+      { label: "Preventive Maintenance", path: "/sop/preventive-maintenance" },
+      { label: "Breakdown Maintenance", path: "/sop/breakdown-maintenance" },
+      { label: "Vehicle Dispatch", path: "/sop/vehicle-dispatch" },
+      { label: "Driver Onboarding", path: "/sop/driver-onboarding" },
+      { label: "Driver Training", path: "/sop/driver-training" },
+      { label: "Driver Allowance", path: "/sop/driver-allowance" },
+      { label: "Vehicle Disposal", path: "/sop/vehicle-disposal" },
+      { label: "Roadside Assistance", path: "/sop/roadside-assistance" },
+      { label: "License Renewal", path: "/sop/license-renewal" },
+      { label: "Outsource Rental", path: "/sop/outsource-rental" },
+    ],
+  },
+
   // ── Tools & Automation ──
   { icon: Workflow, label: t("nav.workflowBuilder"), path: "/workflow-builder", highlight: true },
   { icon: GitBranch, label: t("nav.delegationMatrix"), path: "/delegation-matrix" },
