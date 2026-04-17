@@ -15,6 +15,7 @@ import { PoolReviewPanel } from "@/components/vehicle-requests/PoolReviewPanel";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useDriverScope } from "@/hooks/useDriverScope";
 import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
 import { useEffect } from "react";
