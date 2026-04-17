@@ -24,6 +24,8 @@ import {
   CheckCircle2,
   XCircle,
   Activity,
+  Rocket,
+  Webhook,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -37,6 +39,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
