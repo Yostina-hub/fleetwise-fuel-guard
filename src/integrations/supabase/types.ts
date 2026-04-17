@@ -20322,6 +20322,7 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           approved_by_name: string | null
+          approved_quantity: number | null
           assigned_department_id: string | null
           attachments: Json
           contact_email: string | null
@@ -20338,6 +20339,9 @@ export type Database = {
           fulfilled_at: string | null
           fulfilled_by: string | null
           id: string
+          iproc_mr_number: string | null
+          iproc_old_tire_serials: Json | null
+          iproc_onhand_balance: Json | null
           km_reading: number | null
           notes: string | null
           notify_user: boolean
@@ -20356,12 +20360,14 @@ export type Database = {
           status: string
           updated_at: string
           vehicle_id: string
+          workflow_instance_id: string | null
         }
         Insert: {
           additional_description?: string | null
           approved_at?: string | null
           approved_by?: string | null
           approved_by_name?: string | null
+          approved_quantity?: number | null
           assigned_department_id?: string | null
           attachments?: Json
           contact_email?: string | null
@@ -20378,6 +20384,9 @@ export type Database = {
           fulfilled_at?: string | null
           fulfilled_by?: string | null
           id?: string
+          iproc_mr_number?: string | null
+          iproc_old_tire_serials?: Json | null
+          iproc_onhand_balance?: Json | null
           km_reading?: number | null
           notes?: string | null
           notify_user?: boolean
@@ -20396,12 +20405,14 @@ export type Database = {
           status?: string
           updated_at?: string
           vehicle_id: string
+          workflow_instance_id?: string | null
         }
         Update: {
           additional_description?: string | null
           approved_at?: string | null
           approved_by?: string | null
           approved_by_name?: string | null
+          approved_quantity?: number | null
           assigned_department_id?: string | null
           attachments?: Json
           contact_email?: string | null
@@ -20418,6 +20429,9 @@ export type Database = {
           fulfilled_at?: string | null
           fulfilled_by?: string | null
           id?: string
+          iproc_mr_number?: string | null
+          iproc_old_tire_serials?: Json | null
+          iproc_onhand_balance?: Json | null
           km_reading?: number | null
           notes?: string | null
           notify_user?: boolean
@@ -20436,6 +20450,7 @@ export type Database = {
           status?: string
           updated_at?: string
           vehicle_id?: string
+          workflow_instance_id?: string | null
         }
         Relationships: [
           {
@@ -20468,6 +20483,99 @@ export type Database = {
           },
           {
             foreignKeyName: "tire_requests_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tire_requests_workflow_instance_id_fkey"
+            columns: ["workflow_instance_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tire_utilization_records: {
+        Row: {
+          cost: number | null
+          created_at: string
+          id: string
+          installed_at: string
+          km_at_install: number | null
+          km_at_removal: number | null
+          km_lifetime: number | null
+          notes: string | null
+          organization_id: string
+          position: string
+          removed_at: string | null
+          status: string
+          tire_id: string | null
+          tire_request_id: string | null
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          cost?: number | null
+          created_at?: string
+          id?: string
+          installed_at?: string
+          km_at_install?: number | null
+          km_at_removal?: number | null
+          km_lifetime?: number | null
+          notes?: string | null
+          organization_id: string
+          position: string
+          removed_at?: string | null
+          status?: string
+          tire_id?: string | null
+          tire_request_id?: string | null
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          cost?: number | null
+          created_at?: string
+          id?: string
+          installed_at?: string
+          km_at_install?: number | null
+          km_at_removal?: number | null
+          km_lifetime?: number | null
+          notes?: string | null
+          organization_id?: string
+          position?: string
+          removed_at?: string | null
+          status?: string
+          tire_id?: string | null
+          tire_request_id?: string | null
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tire_utilization_records_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tire_utilization_records_tire_id_fkey"
+            columns: ["tire_id"]
+            isOneToOne: false
+            referencedRelation: "tire_inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tire_utilization_records_tire_request_id_fkey"
+            columns: ["tire_request_id"]
+            isOneToOne: false
+            referencedRelation: "tire_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tire_utilization_records_vehicle_id_fkey"
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
