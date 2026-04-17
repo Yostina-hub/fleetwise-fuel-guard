@@ -223,12 +223,14 @@ export default function CreateWorkRequestForm({
     if (!assignedDept.trim()) return "Assigned Department is required";
     if (!requestStartDate) return "Request By Start Date is required";
     if (!additionalDescription.trim()) return "Additional Description is required";
-    if (!requestorDepartment.trim()) return "Requestor Department is required";
-    if (!maintenanceTypeReq.trim()) return "Type of maintenance request is required";
-    if (workRequestType === "inspection" && !inspectionSubType) return "Inspection sub-type is required";
+    if (!isTripInspection && !requestorDepartment.trim()) return "Requestor Department is required";
+    if (isTripInspection && !requestorPool.trim()) return "Requestor Pool is required";
+    if (isTripInspection && !driverType.trim()) return "Driver type is required";
+    if (!isTripInspection && !maintenanceTypeReq.trim()) return "Type of maintenance request is required";
+    if ((workRequestType === "inspection" || isTripInspection) && !inspectionSubType) return "Type of Request is required";
     if (!kmReading.trim()) return "KM reading is required";
     if (!driverPhone.trim()) return "Driver Phone No. is required";
-    if (!fuelLevel.trim()) return "Fuel level in the tank is required";
+    if (!isTripInspection && !fuelLevel.trim()) return "Fuel level in the tank is required";
     return null;
   };
 
@@ -246,7 +248,8 @@ export default function CreateWorkRequestForm({
 
     setSubmitting(true);
     try {
-      const reqNumber = "MR-" + Date.now().toString().slice(-8);
+      const prefix = isTripInspection ? "TI-" : "MR-";
+      const reqNumber = prefix + Date.now().toString().slice(-8);
       const { data: userData } = await supabase.auth.getUser();
       const { error } = await (supabase as any).from("maintenance_requests").insert({
         organization_id: organizationId,
@@ -254,15 +257,20 @@ export default function CreateWorkRequestForm({
         vehicle_id: resolvedVehicleId,
         driver_id: driverId || null,
         requested_by: userData.user?.id,
-        request_type: workRequestType,
+        request_type: isTripInspection ? "inspection" : workRequestType,
+        request_subtype: isTripInspection ? inspectionSubType : (workRequestType === "inspection" ? inspectionSubType : null),
         trigger_source: scheduleId ? "preventive_schedule" : "manual",
         priority,
         status: "submitted",
         workflow_stage: "submitted",
-        requestor_department: requestorDepartment,
+        requestor_department: requestorDepartment || null,
+        requestor_pool: requestorPool || null,
+        requestor_employee_id: requestorEmployeeId || null,
+        driver_type: driverType || null,
+        driver_phone: driverPhone || null,
         km_reading: kmReading ? Number(kmReading) : null,
         fuel_level: fuelLevel ? Number(fuelLevel) : null,
-        description: maintenanceTypeReq,
+        description: maintenanceTypeReq || (isTripInspection ? `Vehicle ${inspectionSubType?.replace("_", "-")} Inspection Request` : null),
         additional_description: additionalDescription,
         notes: remark || null,
         remark: remark || null,
