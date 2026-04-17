@@ -164,10 +164,17 @@ export default function Inbox() {
 
   const submit = async (decision: string, payload: Record<string, any>) => {
     if (!selected) return;
+    // For SOP tasks, validate only against the picked action's own fields.
+    // For visual-builder tasks, fall back to the flattened form_schema.
     if (!selected.form_key) {
-      for (const f of selected.form_schema ?? []) {
-        if (f.required && !payload[f.key]) {
-          toast({ title: `${f.label} is required`, variant: "destructive" });
+      const sopAction = isSopTask(selected)
+        ? (selected.__stageActions ?? []).find((a) => a.id === decision)
+        : null;
+      const fieldsToCheck = sopAction?.fields ?? selected.form_schema ?? [];
+      for (const f of fieldsToCheck) {
+        const val = payload[(f as any).key];
+        if ((f as any).required && (val === undefined || val === null || val === "")) {
+          toast({ title: `${(f as any).label} is required`, variant: "destructive" });
           return;
         }
       }
