@@ -198,10 +198,18 @@ const VehicleRequests = () => {
                           ) : "—"}
                         </td>
                         <td className="py-2 px-3 text-center">
-                          {r.driver_checked_in_at ? (
-                            <Badge variant="default" className="text-[10px] bg-green-600">
-                              {r.driver_checked_out_at ? "Out" : "In"}
-                            </Badge>
+                          {r.driver_checked_in_at && !r.driver_checked_out_at ? (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 px-1.5"
+                              onClick={() => setShowCheckIn(r)}
+                              title="Check out driver"
+                            >
+                              <Badge variant="default" className="text-[10px] bg-green-600 cursor-pointer">In</Badge>
+                            </Button>
+                          ) : r.driver_checked_out_at ? (
+                            <Badge variant="default" className="text-[10px] bg-muted">Out</Badge>
                           ) : r.status === "assigned" ? (
                             <Button size="sm" variant="ghost" className="h-6 px-1.5" onClick={() => setShowCheckIn(r)}>
                               <LogIn className="w-3 h-3" />
