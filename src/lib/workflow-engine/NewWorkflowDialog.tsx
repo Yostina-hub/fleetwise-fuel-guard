@@ -8,6 +8,7 @@ import type { WorkflowConfig } from "./types";
 import { useWorkflow } from "./useWorkflow";
 import { RenderWorkflowForm, getWorkflowForm } from "@/lib/workflow-forms/registry";
 import { FileText } from "lucide-react";
+import { toast } from "sonner";
 
 interface Props {
   config: WorkflowConfig;
@@ -47,24 +48,44 @@ export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
     onOpenChange(false);
   };
 
+  // When a choice is picked but no registered form exists for it, fall back to
+  // the inline intakeFields form, seeding values with the choice's prefill.
+  useEffect(() => {
+    if (chosenFormKey && activeChoice && !activeChoiceForm) {
+      setValues((prev) => ({ ...(activeChoice.prefill ?? {}), ...prev }));
+    }
+  }, [chosenFormKey, activeChoice, activeChoiceForm]);
+
   const submit = async () => {
     const missing = intakeFields
       .filter((f) => f.required)
       .filter((f) => !values[f.key] && values[f.key] !== false);
-    if (missing.length) return;
+    if (missing.length) {
+      toast.error(
+        `Missing required field${missing.length > 1 ? "s" : ""}: ${missing
+          .map((f) => f.label)
+          .join(", ")}`,
+      );
+      return;
+    }
 
     const vehicleId = values["__vehicle_id"] || values["vehicle_id"] || null;
     const driverId = values["__driver_id"] || values["driver_id"] || null;
 
-    await createInstance.mutateAsync({
-      title: values["title"],
-      description: values["description"],
-      vehicleId,
-      driverId,
-      data: values,
-    });
-    setValues({});
-    onOpenChange(false);
+    try {
+      await createInstance.mutateAsync({
+        title: values["title"],
+        description: values["description"],
+        vehicleId,
+        driverId,
+        data: { ...(activeChoice?.prefill ?? {}), ...values },
+      });
+      setValues({});
+      setChosenFormKey(null);
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to file workflow");
+    }
   };
 
   if (open && intakeForm) {
@@ -79,17 +100,7 @@ export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
   }
 
   // Reusable form chooser path
-  if (open && choices.length > 0) {
-    if (activeChoiceForm) {
-      return (
-        <RenderWorkflowForm
-          formKey={activeChoiceForm.key}
-          prefill={activeChoice?.prefill}
-          onCancel={() => setChosenFormKey(null)}
-          onSubmitted={submitReusableForm}
-        />
-      );
-    }
+  if (open && choices.length > 0 && !chosenFormKey) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-xl">
@@ -125,6 +136,21 @@ export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
       </Dialog>
     );
   }
+
+  // A choice was picked AND there's a registered reusable form for it.
+  if (open && activeChoiceForm) {
+    return (
+      <RenderWorkflowForm
+        formKey={activeChoiceForm.key}
+        prefill={activeChoice?.prefill}
+        onCancel={() => setChosenFormKey(null)}
+        onSubmitted={submitReusableForm}
+      />
+    );
+  }
+
+  // A choice was picked but no registered form exists → fall through to inline
+  // intakeFields form below (values are pre-seeded via useEffect above).
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
