@@ -145,7 +145,7 @@ export const useDispatchJobs = (filters?: {
       clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
-  }, [organizationId, filters?.status, filters?.vehicleId, filters?.driverId]);
+  }, [organizationId, filters?.status, filters?.vehicleId, filters?.driverId, isDriverOnly, scopedDriverId, scopeLoading]);
 
   const lastJobCreateRef = useRef<number>(0);
 
