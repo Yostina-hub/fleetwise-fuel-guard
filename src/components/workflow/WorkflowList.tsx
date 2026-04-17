@@ -84,52 +84,84 @@ const statusColors: Record<string, string> = {
 
 // ----- Domain & Category filtering helpers (2-tier taxonomy) -----
 
-const DOMAIN_ORDER = [
-  "standard_procedures",
-  "safety_compliance",
-  "fleet_operations",
-  "energy_sustainability",
-  "telematics_iot",
-  "general",
-  "other",
-];
-
-interface DomainMeta {
+// Section codes parsed from workflow names (FMG-XXX NN — Title)
+// XXX is the functional section code defined by the SOP catalog.
+interface SectionMeta {
   label: string;
   icon: React.ReactNode;
   accentClass: string;
 }
 
-const DOMAIN_META: Record<string, DomainMeta> = {
-  standard_procedures: {
-    label: "Standard Procedures",
-    icon: <FileText className="h-3.5 w-3.5" />,
+const SECTION_META: Record<string, SectionMeta> = {
+  drv: {
+    label: "Driver Management",
+    icon: <Shield className="h-3.5 w-3.5" />,
     accentClass: "bg-primary text-primary-foreground border-primary",
   },
-  safety_compliance: {
-    label: "Safety & Compliance",
+  dsp: {
+    label: "Dispatch & Trips",
+    icon: <Settings2 className="h-3.5 w-3.5" />,
+    accentClass: "bg-accent text-accent-foreground border-accent",
+  },
+  ins: {
+    label: "Inspection",
+    icon: <ClipboardCheck className="h-3.5 w-3.5" />,
+    accentClass: "bg-secondary text-secondary-foreground border-secondary",
+  },
+  mnt: {
+    label: "Maintenance",
+    icon: <Wrench className="h-3.5 w-3.5" />,
+    accentClass: "bg-primary text-primary-foreground border-primary",
+  },
+  lic: {
+    label: "Licensing",
+    icon: <FileText className="h-3.5 w-3.5" />,
+    accentClass: "bg-accent text-accent-foreground border-accent",
+  },
+  reg: {
+    label: "Registration",
+    icon: <FileText className="h-3.5 w-3.5" />,
+    accentClass: "bg-secondary text-secondary-foreground border-secondary",
+  },
+  rsa: {
+    label: "Roadside Assistance",
+    icon: <Bell className="h-3.5 w-3.5" />,
+    accentClass: "bg-destructive text-destructive-foreground border-destructive",
+  },
+  out: {
+    label: "Outsource",
+    icon: <Layers className="h-3.5 w-3.5" />,
+    accentClass: "bg-muted text-foreground border-border",
+  },
+  saf: {
+    label: "Safety & Comfort",
     icon: <Shield className="h-3.5 w-3.5" />,
     accentClass: "bg-destructive text-destructive-foreground border-destructive",
   },
-  fleet_operations: {
-    label: "Fleet Operations",
-    icon: <Settings2 className="h-3.5 w-3.5" />,
-    accentClass: "bg-primary text-primary-foreground border-primary",
-  },
-  energy_sustainability: {
-    label: "Energy & Sustainability",
+  fuel: {
+    label: "Fuel",
     icon: <Fuel className="h-3.5 w-3.5" />,
     accentClass: "bg-accent text-accent-foreground border-accent",
   },
-  telematics_iot: {
-    label: "Telematics & IoT",
+  alerts: {
+    label: "Alerts & Coaching",
+    icon: <Bell className="h-3.5 w-3.5" />,
+    accentClass: "bg-destructive text-destructive-foreground border-destructive",
+  },
+  cold_chain: {
+    label: "Cold Chain",
+    icon: <Snowflake className="h-3.5 w-3.5" />,
+    accentClass: "bg-secondary text-secondary-foreground border-secondary",
+  },
+  sensors: {
+    label: "Sensors & IoT",
     icon: <Radio className="h-3.5 w-3.5" />,
     accentClass: "bg-secondary text-secondary-foreground border-secondary",
   },
-  general: {
-    label: "General",
-    icon: <Layers className="h-3.5 w-3.5" />,
-    accentClass: "bg-muted text-foreground border-border",
+  ev: {
+    label: "EV Charging",
+    icon: <BatteryCharging className="h-3.5 w-3.5" />,
+    accentClass: "bg-accent text-accent-foreground border-accent",
   },
   other: {
     label: "Other",
@@ -138,57 +170,50 @@ const DOMAIN_META: Record<string, DomainMeta> = {
   },
 };
 
-const CATEGORY_TO_DOMAIN: Record<string, string> = {
-  // Standard procedures
-  sop: "standard_procedures",
-  procedure: "standard_procedures",
-  // Safety & compliance
-  safety: "safety_compliance",
-  compliance: "safety_compliance",
-  alerts: "safety_compliance",
-  incident: "safety_compliance",
-  // Fleet operations
-  operations: "fleet_operations",
-  maintenance: "fleet_operations",
-  cold_chain: "fleet_operations",
-  dispatch: "fleet_operations",
-  trip: "fleet_operations",
-  // Energy & sustainability
-  fuel: "energy_sustainability",
-  ev_charging: "energy_sustainability",
-  // Telematics & IoT
-  sensors: "telematics_iot",
-  telemetry: "telematics_iot",
-  gps: "telematics_iot",
-  // General
-  general: "general",
+// Heuristic mapping from category text → section key (fallback when name has no FMG code)
+const CATEGORY_TO_SECTION: Record<string, string> = {
+  maintenance: "mnt",
+  fuel: "fuel",
+  safety: "saf",
+  alerts: "alerts",
+  cold_chain: "cold_chain",
+  sensors: "sensors",
+  ev_charging: "ev",
+  dispatch: "dsp",
+  trip: "dsp",
+  inspection: "ins",
+  driver: "drv",
+  licensing: "lic",
+  registration: "reg",
+  outsource: "out",
 };
 
-function getDomainForCategory(category: string): string {
-  if (!category) return "other";
-  return CATEGORY_TO_DOMAIN[category.toLowerCase()] || "other";
+function getSectionForWorkflow(w: { name?: string | null; category?: string | null }): string {
+  // 1) Parse FMG code from name, e.g. "FMG-DRV 08 — ..."
+  const m = (w.name || "").match(/FMG-([A-Z]{2,4})\b/i);
+  if (m) {
+    const key = m[1].toLowerCase();
+    if (SECTION_META[key]) return key;
+  }
+  // 2) Keyword scan in name (handles items without FMG prefix)
+  const lname = (w.name || "").toLowerCase();
+  if (/fuel|refuel|diesel|petrol/.test(lname)) return "fuel";
+  if (/overspeed|speed|harsh|coaching|alert/.test(lname)) return "alerts";
+  if (/maintenance|breakdown|service/.test(lname)) return "mnt";
+  if (/inspection/.test(lname)) return "ins";
+  if (/dispatch|trip/.test(lname)) return "dsp";
+  if (/safety|comfort/.test(lname)) return "saf";
+  if (/insurance|registration|bolo/.test(lname)) return "reg";
+  if (/license|licen[cs]ing/.test(lname)) return "lic";
+  if (/driver|recruitment|onboarding|allowance|per-?diem|training|re-?cert/.test(lname)) return "drv";
+  if (/outsource|rental/.test(lname)) return "out";
+  if (/roadside|tow/.test(lname)) return "rsa";
+  // 3) Category fallback
+  const cat = (w.category || "").toLowerCase();
+  return CATEGORY_TO_SECTION[cat] || "other";
 }
 
-const CATEGORY_ICON_MAP: Record<string, React.ReactNode> = {
-  sop: <FileText className="h-3 w-3" />,
-  procedure: <FileText className="h-3 w-3" />,
-  safety: <Shield className="h-3 w-3" />,
-  maintenance: <Wrench className="h-3 w-3" />,
-  fuel: <Fuel className="h-3 w-3" />,
-  compliance: <ClipboardCheck className="h-3 w-3" />,
-  operations: <Settings2 className="h-3 w-3" />,
-  alerts: <Bell className="h-3 w-3" />,
-  cold_chain: <Snowflake className="h-3 w-3" />,
-  sensors: <Radio className="h-3 w-3" />,
-  ev_charging: <BatteryCharging className="h-3 w-3" />,
-  general: <Layers className="h-3 w-3" />,
-};
-
-function getCategoryIcon(category: string): React.ReactNode {
-  return CATEGORY_ICON_MAP[category?.toLowerCase()] || <GitBranch className="h-3 w-3" />;
-}
-
-interface DomainPillProps {
+interface SectionPillProps {
   label: string;
   icon: React.ReactNode;
   count: number;
@@ -197,7 +222,7 @@ interface DomainPillProps {
   onClick: () => void;
 }
 
-function DomainPill({ label, icon, count, active, accentClass, onClick }: DomainPillProps) {
+function SectionPill({ label, icon, count, active, accentClass, onClick }: SectionPillProps) {
   return (
     <button
       type="button"
