@@ -29,20 +29,23 @@ const MaintenanceWorkflowProgress = ({ currentStage }: Props) => {
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-1 overflow-x-auto pb-1">
+      <div className="flex flex-wrap items-center gap-1 pb-1">
         {STAGE_SEQUENCE.map((stage, idx) => {
           const isDone = currentIdx > idx;
           const isCurrent = currentIdx === idx;
           return (
             <div key={stage.key} className="flex items-center shrink-0">
-              <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all ${
-                isDone ? "bg-success/20 text-success" :
-                isCurrent ? "bg-primary/20 text-primary ring-1 ring-primary/40" :
-                "bg-muted/50 text-muted-foreground"
-              }`}>
+              <div
+                title={stage.label}
+                className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all ${
+                  isDone ? "bg-success/20 text-success" :
+                  isCurrent ? "bg-primary/20 text-primary ring-1 ring-primary/40" :
+                  "bg-muted/50 text-muted-foreground"
+                }`}
+              >
                 {isDone ? <CheckCircle className="w-3 h-3" /> : <Circle className="w-3 h-3" />}
-                <span className="hidden md:inline">{stage.label}</span>
-                <span className="md:hidden">{stage.short}</span>
+                <span className={isCurrent ? "inline" : "hidden lg:inline"}>{stage.label}</span>
+                <span className={isCurrent ? "hidden" : "lg:hidden"}>{stage.short}</span>
               </div>
               {idx < STAGE_SEQUENCE.length - 1 && (
                 <ArrowRight className="w-3 h-3 mx-0.5 text-muted-foreground/50 shrink-0" />
