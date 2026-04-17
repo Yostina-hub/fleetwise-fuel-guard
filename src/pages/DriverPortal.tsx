@@ -21,7 +21,7 @@ import DriverQuickStats from "@/components/driver-portal/DriverQuickStats";
 import DriverQuickActions from "@/components/driver-portal/DriverQuickActions";
 import { FuelRequestFormDialog } from "@/components/fuel/FuelRequestFormDialog";
 import { VehicleInspectionFormDialog } from "@/components/maintenance/VehicleInspectionFormDialog";
-import DriverVehicleRequestDialog from "@/components/driver-portal/DriverVehicleRequestDialog";
+import { VehicleRequestForm } from "@/components/vehicle-requests/VehicleRequestForm";
 import DriverMaintenanceDialog from "@/components/driver-portal/DriverMaintenanceDialog";
 import DriverSubmissionsTab from "@/components/driver-portal/DriverSubmissionsTab";
 
