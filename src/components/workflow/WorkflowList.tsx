@@ -63,6 +63,7 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [historyWorkflowId, setHistoryWorkflowId] = useState<string | null>(null);
+  const [webhookWorkflow, setWebhookWorkflow] = useState<any | null>(null);
 
   const { data: workflows, isLoading } = useQuery({
     queryKey: ["workflows", organizationId],
@@ -79,21 +80,40 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
     enabled: !!organizationId,
   });
 
-  // Execution history for a specific workflow
-  const { data: executionHistory } = useQuery({
-    queryKey: ["workflow-executions", historyWorkflowId],
+  // Server-side run history (workflow_runs) — populated by edge runner
+  const { data: runHistory } = useQuery({
+    queryKey: ["workflow-runs", historyWorkflowId],
     queryFn: async () => {
       if (!historyWorkflowId) return [];
       const { data, error } = await (supabase as any)
-        .from("workflow_executions")
+        .from("workflow_runs")
         .select("*")
         .eq("workflow_id", historyWorkflowId)
         .order("started_at", { ascending: false })
-        .limit(20);
+        .limit(30);
       if (error) throw error;
       return data || [];
     },
     enabled: !!historyWorkflowId,
+    refetchInterval: 4000,
+  });
+
+  // Manually fire a workflow via the edge runner
+  const runNowMutation = useMutation({
+    mutationFn: async (workflowId: string) => {
+      const { data, error } = await supabase.functions.invoke("workflow-runner", {
+        body: { workflow_id: workflowId, trigger_data: { source: "manual_ui" } },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workflows", organizationId] });
+      queryClient.invalidateQueries({ queryKey: ["workflow-runs"] });
+      toast({ title: "Workflow started", description: "Execution running on the server" });
+    },
+    onError: (e: any) =>
+      toast({ title: "Run failed", description: e?.message || "Unknown error", variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
