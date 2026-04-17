@@ -251,10 +251,10 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
         w.description?.toLowerCase().includes(q) ||
         w.category?.toLowerCase().includes(q);
       const matchesStatus = statusFilter === "all" || w.status === statusFilter;
-      const matchesCategory =
-        categoryFilter === "all" ||
-        (w.category || "uncategorized").toLowerCase() === categoryFilter;
-      return matchesSearch && matchesStatus && matchesCategory;
+      const cat = (w.category || "uncategorized").toLowerCase();
+      const matchesDomain = domainFilter === "all" || getDomainForCategory(cat) === domainFilter;
+      const matchesCategory = categoryFilter === "all" || cat === categoryFilter;
+      return matchesSearch && matchesStatus && matchesDomain && matchesCategory;
     })
     .sort((a: any, b: any) => {
       switch (sortBy) {
