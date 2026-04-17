@@ -634,18 +634,22 @@ const DriverPortal = () => {
         />
         <VehicleInspectionFormDialog
           open={showInspection}
-          onOpenChange={setShowInspection}
+          onOpenChange={(v) => {
+            setShowInspection(v);
+            if (!v) setInspectionPrefillOverride(null);
+          }}
           prefill={{
-            vehicle_id: vehicle?.id,
+            vehicle_id: inspectionPrefillOverride?.vehicle_id ?? vehicle?.id,
             driver_id: driverId,
-            inspection_type: "pre_trip",
-            lockVehicle: !!vehicle?.id,
+            inspection_type: inspectionPrefillOverride?.inspection_type ?? "pre_trip",
+            lockVehicle: !!(inspectionPrefillOverride?.vehicle_id ?? vehicle?.id),
             lockDriver: !!driverId,
             enablePhotos: true,
           }}
           invalidateKeys={[
             ["vehicle-inspections"],
             ["driver-portal-submissions"],
+            ["driver-pending-post-trip"],
           ]}
         />
       </div>

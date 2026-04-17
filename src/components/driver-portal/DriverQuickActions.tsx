@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Wrench, Fuel, Car, Gauge, FileText } from "lucide-react";
+import { Wrench, Fuel, Car, Gauge, FileText, ClipboardCheck } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DriverQuickActionsProps {
@@ -8,6 +8,7 @@ interface DriverQuickActionsProps {
   onRequestFuel: () => void;
   onRequestVehicle: () => void;
   onPreTripInspection: () => void;
+  onPostTripInspection?: () => void;
   onMyDocuments: () => void;
 }
 
@@ -16,6 +17,7 @@ const DriverQuickActions = ({
   onRequestFuel,
   onRequestVehicle,
   onPreTripInspection,
+  onPostTripInspection,
   onMyDocuments,
 }: DriverQuickActionsProps) => {
   const actions = [
@@ -51,6 +53,16 @@ const DriverQuickActions = ({
       variant: "outline" as const,
       className: "border-success/50 hover:bg-success/10 text-success",
     },
+    ...(onPostTripInspection
+      ? [{
+          label: "Post-Trip Check",
+          tooltip: "Complete post-trip vehicle inspection",
+          icon: ClipboardCheck,
+          onClick: onPostTripInspection,
+          variant: "outline" as const,
+          className: "border-warning/50 hover:bg-warning/10 text-warning",
+        }]
+      : []),
     {
       label: "My Documents",
       tooltip: "View and upload personal documents",
