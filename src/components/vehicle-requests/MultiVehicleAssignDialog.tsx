@@ -8,6 +8,7 @@ import { Truck, Users } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAvailableVehicles } from "@/hooks/useAvailableVehicles";
+import { useLockedVehicles } from "@/hooks/useLockedVehicles";
 import { toast } from "sonner";
 
 interface Props {
@@ -23,6 +24,7 @@ interface Props {
 export const MultiVehicleAssignDialog = ({ request, open, onClose }: Props) => {
   const queryClient = useQueryClient();
   const { available } = useAvailableVehicles();
+  const { lockedById } = useLockedVehicles();
   const [picks, setPicks] = useState<Record<string, string | null>>({}); // vehicleId -> driverId|null
 
   const { data: drivers = [] } = useQuery({
@@ -139,18 +141,29 @@ export const MultiVehicleAssignDialog = ({ request, open, onClose }: Props) => {
               <tbody>
                 {available.slice(0, 50).map((v: any) => {
                   const checked = v.id in picks;
+                  const lock = lockedById[v.id];
+                  const isLocked = !!lock;
                   return (
-                    <tr key={v.id} className="border-t hover:bg-muted/30">
+                    <tr key={v.id} className={`border-t hover:bg-muted/30 ${isLocked ? "opacity-50" : ""}`}>
                       <td className="p-2">
-                        <Checkbox checked={checked} onCheckedChange={() => toggleVehicle(v.id)} />
+                        <Checkbox
+                          checked={checked}
+                          disabled={isLocked}
+                          onCheckedChange={() => !isLocked && toggleVehicle(v.id)}
+                        />
                       </td>
                       <td className="p-2 font-medium flex items-center gap-1">
                         <Truck className="w-3.5 h-3.5 text-muted-foreground" />
                         {v.plate_number}
+                        {isLocked && (
+                          <Badge variant="destructive" className="ml-2 text-[10px]">
+                            Allocated to {lock.request_number}
+                          </Badge>
+                        )}
                       </td>
                       <td className="p-2 text-muted-foreground text-xs">{v.make} {v.model}</td>
                       <td className="p-2">
-                        {checked && (
+                        {checked && !isLocked && (
                           <Select value={picks[v.id] || "__none__"} onValueChange={(val) => setDriver(v.id, val)}>
                             <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pick driver..." /></SelectTrigger>
                             <SelectContent>
