@@ -76,6 +76,7 @@ const AccidentInsurance = lazyWithRetry(() => import("./pages/AccidentInsurance"
 const DocumentManagement = lazyWithRetry(() => import("./pages/DocumentManagement"), "DocumentManagement");
 const ComplianceCalendar = lazyWithRetry(() => import("./pages/ComplianceCalendar"), "ComplianceCalendar");
 const MaintenanceEnterprise = lazyWithRetry(() => import("./pages/MaintenanceEnterprise"), "MaintenanceEnterprise");
+const WorkOrderEditor = lazyWithRetry(() => import("./pages/WorkOrderEditor"), "WorkOrderEditor");
 const DriverMaintenanceRequest = lazyWithRetry(() => import("./pages/DriverMaintenanceRequest"), "DriverMaintenanceRequest");
 const DriverPortal = lazyWithRetry(() => import("./pages/DriverPortal"), "DriverPortal");
 const ThirdPartyLogistics = lazyWithRetry(() => import("./pages/ThirdPartyLogistics"), "ThirdPartyLogistics");
@@ -204,6 +205,7 @@ const App = () => {
                         <Route path="/compliance-calendar" element={<ProtectedRoute><ComplianceCalendar /></ProtectedRoute>} />
                         
                         <Route path="/maintenance-enterprise" element={<ProtectedRoute><MaintenanceEnterprise /></ProtectedRoute>} />
+                        <Route path="/maintenance-enterprise/wo/:id" element={<ProtectedRoute><WorkOrderEditor /></ProtectedRoute>} />
                         <Route path="/driver-maintenance-request" element={<ProtectedRoute><DriverMaintenanceRequest /></ProtectedRoute>} />
                         <Route path="/driver-portal" element={<ProtectedRoute><DriverPortal /></ProtectedRoute>} />
                         <Route path="/parts-inventory" element={<ProtectedRoute><PartsInventory /></ProtectedRoute>} />
