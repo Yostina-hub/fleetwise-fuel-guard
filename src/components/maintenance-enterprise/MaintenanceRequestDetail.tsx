@@ -304,10 +304,13 @@ const MaintenanceRequestDetail = ({ request: req, onAction, isPending, drivers =
         </div>
       )}
 
-      {/* Step 23: Vehicle Received */}
-      {stage === "vehicle_received" && (
+      {/* Step 23: Vehicle Received — driver already confirmed via geofence RPC, advance to files step */}
+      {stage === "vehicle_received" && req.status !== "completed" && (
         <div className="space-y-3 p-3 rounded border border-success/20 bg-success/5">
           <h4 className="font-medium text-sm flex items-center gap-1"><CheckCircle className="w-4 h-4" /> Vehicle Received (Step 23)</h4>
+          <p className="text-xs text-muted-foreground">
+            {req.vehicle_received_at ? "Driver confirmed receipt. Proceed to file update." : "Mark vehicle as received from supplier."}
+          </p>
           <Button onClick={() => onAction("receive_vehicle")} disabled={isPending}>
             <CheckCircle className="w-4 h-4 mr-1" /> Confirm Vehicle Received → Update Files
           </Button>
@@ -318,9 +321,23 @@ const MaintenanceRequestDetail = ({ request: req, onAction, isPending, drivers =
       {stage === "files_updated" && (
         <div className="space-y-3 p-3 rounded border border-success/20 bg-success/5">
           <h4 className="font-medium text-sm flex items-center gap-1"><Package className="w-4 h-4" /> Collect Spare Parts & Update Files (Step 20-21)</h4>
+          <p className="text-xs text-muted-foreground">Confirm spare parts have been collected and maintenance records updated.</p>
           <Button onClick={() => onAction("complete")} disabled={isPending}>
             <CheckCircle className="w-4 h-4 mr-1" /> Complete — Files Updated
           </Button>
+        </div>
+      )}
+
+      {/* Completed terminal state */}
+      {(stage === "completed" || (stage === "vehicle_received" && req.status === "completed")) && (
+        <div className="space-y-2 p-3 rounded border border-success/30 bg-success/10">
+          <h4 className="font-medium text-sm flex items-center gap-1.5 text-success">
+            <CheckCircle className="w-4 h-4" /> Maintenance Complete
+          </h4>
+          <p className="text-xs text-muted-foreground">
+            Vehicle received{req.vehicle_received_at ? ` on ${new Date(req.vehicle_received_at).toLocaleString()}` : ""}.
+            All workflow steps closed.
+          </p>
         </div>
       )}
 

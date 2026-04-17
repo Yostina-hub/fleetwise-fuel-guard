@@ -14,6 +14,7 @@ const STAGE_SEQUENCE: { key: WorkflowStage; label: string; short: string }[] = [
   { key: "payment_pending", label: "Payment", short: "16" },
   { key: "delivery_check", label: "Delivery Check", short: "28" },
   { key: "vehicle_received", label: "Received", short: "23" },
+  { key: "files_updated", label: "Files Updated", short: "21" },
   { key: "completed", label: "Completed", short: "✓" },
 ];
 
