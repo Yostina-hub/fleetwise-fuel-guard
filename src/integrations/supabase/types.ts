@@ -24096,7 +24096,9 @@ export type Database = {
       workflow_runs: {
         Row: {
           completed_at: string | null
+          context: Json
           created_at: string
+          current_node_id: string | null
           duration_ms: number | null
           error_message: string | null
           execution_log: Json | null
@@ -24109,7 +24111,9 @@ export type Database = {
         }
         Insert: {
           completed_at?: string | null
+          context?: Json
           created_at?: string
+          current_node_id?: string | null
           duration_ms?: number | null
           error_message?: string | null
           execution_log?: Json | null
@@ -24122,7 +24126,9 @@ export type Database = {
         }
         Update: {
           completed_at?: string | null
+          context?: Json
           created_at?: string
+          current_node_id?: string | null
           duration_ms?: number | null
           error_message?: string | null
           execution_log?: Json | null
@@ -24136,6 +24142,114 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "workflow_runs_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_tasks: {
+        Row: {
+          actions: Json
+          assignee_role: string | null
+          assignee_user_id: string | null
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          decision: string | null
+          description: string | null
+          driver_id: string | null
+          due_at: string | null
+          form_schema: Json
+          id: string
+          node_id: string
+          organization_id: string
+          result: Json | null
+          run_id: string
+          status: string
+          title: string
+          updated_at: string
+          vehicle_id: string | null
+          workflow_id: string
+        }
+        Insert: {
+          actions?: Json
+          assignee_role?: string | null
+          assignee_user_id?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          decision?: string | null
+          description?: string | null
+          driver_id?: string | null
+          due_at?: string | null
+          form_schema?: Json
+          id?: string
+          node_id: string
+          organization_id: string
+          result?: Json | null
+          run_id: string
+          status?: string
+          title: string
+          updated_at?: string
+          vehicle_id?: string | null
+          workflow_id: string
+        }
+        Update: {
+          actions?: Json
+          assignee_role?: string | null
+          assignee_user_id?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          decision?: string | null
+          description?: string | null
+          driver_id?: string | null
+          due_at?: string | null
+          form_schema?: Json
+          id?: string
+          node_id?: string
+          organization_id?: string
+          result?: Json | null
+          run_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          vehicle_id?: string | null
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_tasks_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_tasks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_tasks_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_tasks_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_tasks_workflow_id_fkey"
             columns: ["workflow_id"]
             isOneToOne: false
             referencedRelation: "workflows"
@@ -24487,6 +24601,10 @@ export type Database = {
         Returns: string
       }
       clear_failed_login: { Args: { p_email: string }; Returns: undefined }
+      complete_workflow_task: {
+        Args: { _decision: string; _result?: Json; _task_id: string }
+        Returns: Json
+      }
       compute_annual_inspection_due: {
         Args: { _vehicle_id: string }
         Returns: {
