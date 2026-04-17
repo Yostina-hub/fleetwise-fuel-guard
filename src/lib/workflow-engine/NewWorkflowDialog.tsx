@@ -60,7 +60,14 @@ export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
     const missing = intakeFields
       .filter((f) => f.required)
       .filter((f) => !values[f.key] && values[f.key] !== false);
-    if (missing.length) return;
+    if (missing.length) {
+      toast.error(
+        `Missing required field${missing.length > 1 ? "s" : ""}: ${missing
+          .map((f) => f.label)
+          .join(", ")}`,
+      );
+      return;
+    }
 
     const vehicleId = values["__vehicle_id"] || values["vehicle_id"] || null;
     const driverId = values["__driver_id"] || values["driver_id"] || null;
