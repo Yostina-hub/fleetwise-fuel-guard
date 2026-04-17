@@ -87,20 +87,22 @@ export default function Inbox() {
     }
   }, [selected]);
 
-  const submit = async (decision: string) => {
+  const submit = async (decision: string, resultPayload?: Record<string, any>) => {
     if (!selected) return;
-    // basic required-field validation
-    for (const f of selected.form_schema ?? []) {
-      if (f.required && !values[f.key]) {
-        toast({ title: `${f.label} is required`, variant: "destructive" });
-        return;
+    // basic required-field validation (only for ad-hoc fields)
+    if (!selected.form_key) {
+      for (const f of selected.form_schema ?? []) {
+        if (f.required && !values[f.key]) {
+          toast({ title: `${f.label} is required`, variant: "destructive" });
+          return;
+        }
       }
     }
     setSubmitting(true);
     const { error } = await supabase.rpc("complete_workflow_task" as any, {
       _task_id: selected.id,
       _decision: decision,
-      _result: values,
+      _result: resultPayload ?? values,
     });
     setSubmitting(false);
     if (error) {
@@ -108,11 +110,13 @@ export default function Inbox() {
       return;
     }
     toast({ title: "Step completed", description: "Workflow will resume shortly." });
+    const wfId = selected.workflow_id;
+    const runId = selected.run_id;
     setSelected(null);
     qc.invalidateQueries({ queryKey: ["workflow-tasks"] });
     // Kick the runner immediately for snappy UX (cron also picks it up within 1 min)
     supabase.functions.invoke("workflow-runner", {
-      body: { workflow_id: selected.workflow_id, run_id: selected.run_id },
+      body: { workflow_id: wfId, run_id: runId },
     }).catch(() => {/* server runner cron will retry */});
   };
 
