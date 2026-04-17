@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, Clock, ShieldCheck } from "lucide-react";
 import { useOutsourcePaymentApprovals } from "@/hooks/useOutsourcePaymentApprovals";
-import { useUserRoles } from "@/hooks/useUserRoles";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Props {
   paymentRequestId: string;
