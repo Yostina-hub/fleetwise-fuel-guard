@@ -209,9 +209,30 @@ export default function Inbox() {
         )}
       </div>
 
-      <Dialog open={!!selected} onOpenChange={(v) => !v && setSelected(null)}>
+      {/* Reusable form path: the registered form brings its own dialog. */}
+      {selected?.form_key ? (
+        <RenderWorkflowForm
+          formKey={selected.form_key}
+          prefill={{
+            ...(selected.context ?? {}),
+            vehicle_id: selected.vehicle_id ?? selected.context?.vehicle_id,
+            driver_id: selected.driver_id ?? selected.context?.driver_id,
+          }}
+          onCancel={() => setSelected(null)}
+          onSubmitted={(result) => {
+            const decision = getWorkflowForm(selected.form_key!)?.default_decision ?? "submitted";
+            submit(decision, { ...(result ?? {}), form_key: selected.form_key });
+          }}
+        />
+      ) : null}
+
+      {/* Ad-hoc fields path: render fields inline in our dialog. */}
+      <Dialog
+        open={!!selected && !selected.form_key}
+        onOpenChange={(v) => !v && setSelected(null)}
+      >
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          {selected ? (
+          {selected && !selected.form_key ? (
             <>
               <DialogHeader>
                 <DialogTitle>{selected.title}</DialogTitle>
@@ -221,6 +242,11 @@ export default function Inbox() {
               </DialogHeader>
 
               <div className="space-y-3 py-2">
+                {(selected.form_schema ?? []).length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">
+                    No input fields. Click an action button below to complete this step.
+                  </p>
+                ) : null}
                 {(selected.form_schema ?? []).map((f) => (
                   <div key={f.key} className="space-y-1.5">
                     <Label>{f.label}{f.required ? " *" : ""}</Label>
