@@ -45,8 +45,8 @@ export default function Inbox() {
     staleTime: 5 * 60_000,
   });
 
-  // Tasks fetch
-  const { data: rawTasks = [], isLoading } = useQuery<WorkflowTask[]>({
+  // Tasks fetch — visual workflow builder
+  const { data: builderTasks = [], isLoading: builderLoading } = useQuery<WorkflowTask[]>({
     queryKey: ["workflow-tasks", organizationId, status],
     enabled: !!organizationId,
     refetchInterval: 8000,
@@ -84,6 +84,15 @@ export default function Inbox() {
       });
     },
   });
+
+  // SOP-engine instances surfaced as inbox tasks
+  const { data: sopTasks = [], isLoading: sopLoading } = useSopInboxTasks(organizationId, status);
+
+  const rawTasks = useMemo<WorkflowTask[]>(
+    () => [...sopTasks, ...builderTasks],
+    [sopTasks, builderTasks],
+  );
+  const isLoading = builderLoading || sopLoading;
 
   // Apply filters in-memory
   const filteredTasks = useMemo(() => {
