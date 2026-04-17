@@ -51,6 +51,7 @@ import { format } from "date-fns";
 import { z } from "zod";
 import WorkOrderPartsDialog from "./WorkOrderPartsDialog";
 import WorkOrderApprovalFlow from "./WorkOrderApprovalFlow";
+import WorkOrderSupplierCollabPanel from "./WorkOrderSupplierCollabPanel";
 
 const workOrderSchema = z.object({
   vehicle_id: z.string().uuid("Please select a vehicle"),
@@ -675,7 +676,7 @@ const WorkOrdersTab = () => {
 
       {/* View/Edit Work Order Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {selectedWorkOrder?.work_order_number}
@@ -885,6 +886,19 @@ const WorkOrdersTab = () => {
                 <WorkOrderApprovalFlow
                   workOrderId={selectedWorkOrder.id}
                   totalCost={selectedWorkOrder.total_cost || (costFormData.parts_cost + costFormData.labor_cost) || undefined}
+                />
+              </div>
+
+              {/* Supplier Collaboration: portal link, payment review, message thread (req. 1.7–1.9) */}
+              <div className="border-t pt-4">
+                <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <Package className="w-4 h-4 text-primary" />
+                  Supplier Collaboration & Payments
+                </h4>
+                <WorkOrderSupplierCollabPanel
+                  workOrderId={selectedWorkOrder.id}
+                  organizationId={organizationId || ""}
+                  workOrderNumber={selectedWorkOrder.work_order_number}
                 />
               </div>
 
