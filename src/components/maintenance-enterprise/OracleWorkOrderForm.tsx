@@ -722,13 +722,247 @@ export default function OracleWorkOrderForm({ maintenanceRequestId, workOrderId,
         </AccordionItem>
 
         <AccordionItem value="materials" className="border rounded-md">
-          <AccordionTrigger className="px-4">Materials</AccordionTrigger>
-          <AccordionContent className="px-4 pb-4 text-xs text-muted-foreground">No materials configured. Use Parts Inventory to manage WO materials.</AccordionContent>
+          <AccordionTrigger className="px-4">Materials ({materials.length})</AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="flex justify-between mb-2">
+              <Badge variant="outline">Manual Material Requirements</Badge>
+              <Button size="sm" variant="outline" onClick={addMaterial}><Plus className="w-3 h-3 mr-1" />Add Material</Button>
+            </div>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="text-xs">
+                    <TableHead>Item Code</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead className="w-20">Req Qty</TableHead>
+                    <TableHead className="w-20">Iss Qty</TableHead>
+                    <TableHead className="w-16">UOM</TableHead>
+                    <TableHead className="w-24">Supply</TableHead>
+                    <TableHead className="w-20">Unit Cost</TableHead>
+                    <TableHead className="w-12"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {materials.length === 0 && (
+                    <TableRow><TableCell colSpan={8} className="text-center text-xs text-muted-foreground py-4">No materials added</TableCell></TableRow>
+                  )}
+                  {materials.map((m, i) => (
+                    <TableRow key={i} className="text-xs">
+                      <TableCell><Input value={m.item_code} onChange={e => updateMat(i, { item_code: e.target.value })} className="h-7 text-xs" /></TableCell>
+                      <TableCell><Input value={m.item_description} onChange={e => updateMat(i, { item_description: e.target.value })} className="h-7 text-xs" /></TableCell>
+                      <TableCell><Input type="number" value={m.required_quantity} onChange={e => updateMat(i, { required_quantity: Number(e.target.value) })} className="h-7 text-xs" /></TableCell>
+                      <TableCell><Input type="number" value={m.issued_quantity} onChange={e => updateMat(i, { issued_quantity: Number(e.target.value) })} className="h-7 text-xs" /></TableCell>
+                      <TableCell><Input value={m.uom} onChange={e => updateMat(i, { uom: e.target.value })} className="h-7 text-xs" /></TableCell>
+                      <TableCell>
+                        <Select value={m.supply_type} onValueChange={v => updateMat(i, { supply_type: v })}>
+                          <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent><SelectItem value="Push">Push</SelectItem><SelectItem value="Pull">Pull</SelectItem><SelectItem value="Bulk">Bulk</SelectItem></SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell><Input type="number" value={m.unit_cost} onChange={e => updateMat(i, { unit_cost: Number(e.target.value) })} className="h-7 text-xs" /></TableCell>
+                      <TableCell><Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => removeMat(i)}><Trash2 className="w-3 h-3" /></Button></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </AccordionContent>
         </AccordionItem>
 
         <AccordionItem value="permits" className="border rounded-md">
-          <AccordionTrigger className="px-4">Work Permits</AccordionTrigger>
-          <AccordionContent className="px-4 pb-4 text-xs text-muted-foreground">No permits configured.</AccordionContent>
+          <AccordionTrigger className="px-4">Work Permits ({permits.length})</AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="flex justify-between mb-2">
+              <Badge variant="outline">Required Permits</Badge>
+              <Button size="sm" variant="outline" onClick={addPermit}><Plus className="w-3 h-3 mr-1" />Add Permit</Button>
+            </div>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="text-xs">
+                    <TableHead>Permit #</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Issued By</TableHead>
+                    <TableHead className="w-32">Valid From</TableHead>
+                    <TableHead className="w-32">Valid Until</TableHead>
+                    <TableHead className="w-24">Status</TableHead>
+                    <TableHead className="w-12"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {permits.length === 0 && (
+                    <TableRow><TableCell colSpan={7} className="text-center text-xs text-muted-foreground py-4">No permits added</TableCell></TableRow>
+                  )}
+                  {permits.map((p, i) => (
+                    <TableRow key={i} className="text-xs">
+                      <TableCell><Input value={p.permit_number} onChange={e => updatePermit(i, { permit_number: e.target.value })} className="h-7 text-xs" /></TableCell>
+                      <TableCell>
+                        <Select value={p.permit_type} onValueChange={v => updatePermit(i, { permit_type: v })}>
+                          <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="general">General</SelectItem>
+                            <SelectItem value="hot_work">Hot Work</SelectItem>
+                            <SelectItem value="confined_space">Confined Space</SelectItem>
+                            <SelectItem value="electrical">Electrical</SelectItem>
+                            <SelectItem value="height">Working at Height</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell><Input value={p.issued_by} onChange={e => updatePermit(i, { issued_by: e.target.value })} className="h-7 text-xs" /></TableCell>
+                      <TableCell><Input type="date" value={p.valid_from || ""} onChange={e => updatePermit(i, { valid_from: e.target.value })} className="h-7 text-xs" /></TableCell>
+                      <TableCell><Input type="date" value={p.valid_until || ""} onChange={e => updatePermit(i, { valid_until: e.target.value })} className="h-7 text-xs" /></TableCell>
+                      <TableCell>
+                        <Select value={p.status} onValueChange={v => updatePermit(i, { status: v })}>
+                          <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="approved">Approved</SelectItem>
+                            <SelectItem value="expired">Expired</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell><Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => removePermit(i)}><Trash2 className="w-3 h-3" /></Button></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="quality" className="border rounded-md">
+          <AccordionTrigger className="px-4">Quality Collection Plans ({qualityPlans.length})</AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="flex justify-between mb-2">
+              <Badge variant="outline">Quality Inspections</Badge>
+              <Button size="sm" variant="outline" onClick={addQuality}><Plus className="w-3 h-3 mr-1" />Add Plan</Button>
+            </div>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="text-xs">
+                    <TableHead>Plan Name</TableHead>
+                    <TableHead>Characteristic</TableHead>
+                    <TableHead>Specification</TableHead>
+                    <TableHead>Result</TableHead>
+                    <TableHead className="w-24">Pass/Fail</TableHead>
+                    <TableHead className="w-12"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {qualityPlans.length === 0 && (
+                    <TableRow><TableCell colSpan={6} className="text-center text-xs text-muted-foreground py-4">No quality plans added</TableCell></TableRow>
+                  )}
+                  {qualityPlans.map((q, i) => (
+                    <TableRow key={i} className="text-xs">
+                      <TableCell><Input value={q.plan_name} onChange={e => updateQuality(i, { plan_name: e.target.value })} className="h-7 text-xs" /></TableCell>
+                      <TableCell><Input value={q.characteristic} onChange={e => updateQuality(i, { characteristic: e.target.value })} className="h-7 text-xs" /></TableCell>
+                      <TableCell><Input value={q.specification} onChange={e => updateQuality(i, { specification: e.target.value })} className="h-7 text-xs" /></TableCell>
+                      <TableCell><Input value={q.result} onChange={e => updateQuality(i, { result: e.target.value })} className="h-7 text-xs" /></TableCell>
+                      <TableCell>
+                        <Select value={q.pass === null ? "" : q.pass ? "pass" : "fail"} onValueChange={v => updateQuality(i, { pass: v === "pass" })}>
+                          <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="-" /></SelectTrigger>
+                          <SelectContent><SelectItem value="pass">Pass</SelectItem><SelectItem value="fail">Fail</SelectItem></SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell><Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => removeQuality(i)}><Trash2 className="w-3 h-3" /></Button></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="meters" className="border rounded-md">
+          <AccordionTrigger className="px-4">Meter Readings ({meterReadings.length})</AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="flex justify-between mb-2">
+              <Badge variant="outline">Asset Meters</Badge>
+              <Button size="sm" variant="outline" onClick={addMeter}><Plus className="w-3 h-3 mr-1" />Add Reading</Button>
+            </div>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="text-xs">
+                    <TableHead>Meter Name</TableHead>
+                    <TableHead className="w-32">Reading</TableHead>
+                    <TableHead className="w-24">Unit</TableHead>
+                    <TableHead className="w-12"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {meterReadings.length === 0 && (
+                    <TableRow><TableCell colSpan={4} className="text-center text-xs text-muted-foreground py-4">No meter readings captured</TableCell></TableRow>
+                  )}
+                  {meterReadings.map((m, i) => (
+                    <TableRow key={i} className="text-xs">
+                      <TableCell>
+                        <Select value={m.meter_name} onValueChange={v => updateMeter(i, { meter_name: v })}>
+                          <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Odometer">Odometer</SelectItem>
+                            <SelectItem value="Engine Hours">Engine Hours</SelectItem>
+                            <SelectItem value="Fuel Level">Fuel Level</SelectItem>
+                            <SelectItem value="Battery Voltage">Battery Voltage</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell><Input type="number" value={m.reading_value} onChange={e => updateMeter(i, { reading_value: Number(e.target.value) })} className="h-7 text-xs" /></TableCell>
+                      <TableCell><Input value={m.unit} onChange={e => updateMeter(i, { unit: e.target.value })} className="h-7 text-xs" /></TableCell>
+                      <TableCell><Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => removeMeter(i)}><Trash2 className="w-3 h-3" /></Button></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="attachments" className="border rounded-md">
+          <AccordionTrigger className="px-4">Linked Documents ({attachments.length})</AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="flex justify-between mb-2">
+              <Badge variant="outline">Attachments</Badge>
+              <Button size="sm" variant="outline" onClick={addAttachment}><Plus className="w-3 h-3 mr-1" />Add Document</Button>
+            </div>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="text-xs">
+                    <TableHead>File Name</TableHead>
+                    <TableHead>URL</TableHead>
+                    <TableHead className="w-32">Category</TableHead>
+                    <TableHead className="w-12"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {attachments.length === 0 && (
+                    <TableRow><TableCell colSpan={4} className="text-center text-xs text-muted-foreground py-4">No documents linked</TableCell></TableRow>
+                  )}
+                  {attachments.map((a, i) => (
+                    <TableRow key={i} className="text-xs">
+                      <TableCell><Input value={a.file_name} onChange={e => updateAttachment(i, { file_name: e.target.value })} className="h-7 text-xs" placeholder="invoice.pdf" /></TableCell>
+                      <TableCell><Input value={a.file_url} onChange={e => updateAttachment(i, { file_url: e.target.value })} className="h-7 text-xs" placeholder="https://..." /></TableCell>
+                      <TableCell>
+                        <Select value={a.category} onValueChange={v => updateAttachment(i, { category: v })}>
+                          <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="general">General</SelectItem>
+                            <SelectItem value="invoice">Invoice</SelectItem>
+                            <SelectItem value="quotation">Quotation</SelectItem>
+                            <SelectItem value="photo">Photo</SelectItem>
+                            <SelectItem value="report">Report</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell><Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => removeAttachment(i)}><Trash2 className="w-3 h-3" /></Button></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </AccordionContent>
         </AccordionItem>
       </Accordion>
     </div>
