@@ -112,6 +112,7 @@ const PrivacyPolicy = lazyWithRetry(() => import("./pages/PrivacyPolicy"), "Priv
 const NotFound = lazyWithRetry(() => import("./pages/NotFound"), "NotFound");
 
 // ── ET FMG SOP Workflows (config-driven) ──
+const SopHub = lazyWithRetry(() => import("./pages/SopHub"), "SopHub");
 const FleetInspectionPage = lazyWithRetry(() => import("./pages/FleetInspectionWithEbsForm"), "FleetInspectionPage");
 const VehicleRegistrationPage = lazyWithRetry(() => import("./pages/sop-workflows").then(m => ({ default: m.VehicleRegistrationPage })), "VehicleRegistrationPage");
 const VehicleInsuranceRenewalPage = lazyWithRetry(() => import("./pages/sop-workflows").then(m => ({ default: m.VehicleInsuranceRenewalPage })), "VehicleInsuranceRenewalPage");
@@ -249,6 +250,7 @@ const App = () => {
                         <Route path="/supplier-wo/:token" element={<SupplierWorkOrderView />} />
                         <Route path="/supplier-payments" element={<ProtectedRoute><SupplierPaymentReview /></ProtectedRoute>} />
                         {/* ── ET FMG SOP Workflow routes ── */}
+                        <Route path="/sop" element={<ProtectedRoute><SopHub /></ProtectedRoute>} />
                         <Route path="/sop/fleet-inspection" element={<ProtectedRoute><FleetInspectionPage /></ProtectedRoute>} />
                         <Route path="/sop/vehicle-registration" element={<ProtectedRoute><VehicleRegistrationPage /></ProtectedRoute>} />
                         <Route path="/sop/vehicle-insurance-renewal" element={<ProtectedRoute><VehicleInsuranceRenewalPage /></ProtectedRoute>} />
