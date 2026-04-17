@@ -19,9 +19,9 @@ import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import DriverQuickStats from "@/components/driver-portal/DriverQuickStats";
 import DriverQuickActions from "@/components/driver-portal/DriverQuickActions";
-import DriverFuelRequestDialog from "@/components/driver-portal/DriverFuelRequestDialog";
+import { FuelRequestFormDialog } from "@/components/fuel/FuelRequestFormDialog";
+import { VehicleInspectionFormDialog } from "@/components/maintenance/VehicleInspectionFormDialog";
 import DriverVehicleRequestDialog from "@/components/driver-portal/DriverVehicleRequestDialog";
-import DriverInspectionDialog from "@/components/driver-portal/DriverInspectionDialog";
 import DriverMaintenanceDialog from "@/components/driver-portal/DriverMaintenanceDialog";
 import DriverSubmissionsTab from "@/components/driver-portal/DriverSubmissionsTab";
 
@@ -584,26 +584,45 @@ const DriverPortal = () => {
           vehiclePlate={vehicle?.plate_number}
           vehicleMakeModel={vehicle ? `${vehicle.make} ${vehicle.model}` : undefined}
         />
-        <DriverFuelRequestDialog
+        <FuelRequestFormDialog
           open={showFuel}
           onOpenChange={setShowFuel}
-          driverId={driverId}
-          driverName={driverName}
-          vehicleId={vehicle?.id}
-          vehiclePlate={vehicle?.plate_number}
-          vehicleFuelType={vehicle?.fuel_type}
+          source="driver_portal"
+          prefill={{
+            request_type: "vehicle",
+            vehicle_id: vehicle?.id,
+            driver_id: driverId,
+            driver_name: driverName,
+            fuel_type: vehicle?.fuel_type || undefined,
+            lockVehicle: !!vehicle?.id,
+            lockDriver: !!driverId,
+          }}
+          invalidateKeys={[
+            ["fuel-requests"],
+            ["driver-portal-requests"],
+            ["driver-portal-submissions"],
+          ]}
         />
         <DriverVehicleRequestDialog
           open={showVehicle}
           onOpenChange={setShowVehicle}
           driverName={driverName}
         />
-        <DriverInspectionDialog
+        <VehicleInspectionFormDialog
           open={showInspection}
           onOpenChange={setShowInspection}
-          driverId={driverId}
-          vehicleId={vehicle?.id}
-          vehiclePlate={vehicle?.plate_number}
+          prefill={{
+            vehicle_id: vehicle?.id,
+            driver_id: driverId,
+            inspection_type: "pre_trip",
+            lockVehicle: !!vehicle?.id,
+            lockDriver: !!driverId,
+            enablePhotos: true,
+          }}
+          invalidateKeys={[
+            ["vehicle-inspections"],
+            ["driver-portal-submissions"],
+          ]}
         />
       </div>
     </Layout>
