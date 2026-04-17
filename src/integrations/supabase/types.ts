@@ -2442,6 +2442,47 @@ export type Database = {
           },
         ]
       }
+      departments: {
+        Row: {
+          code: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "departments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       depots: {
         Row: {
           address: string | null
@@ -20277,81 +20318,133 @@ export type Database = {
       }
       tire_requests: {
         Row: {
+          additional_description: string | null
           approved_at: string | null
           approved_by: string | null
           approved_by_name: string | null
+          assigned_department_id: string | null
+          attachments: Json
+          contact_email: string | null
+          contact_phone: string | null
+          contact_preference: string | null
           created_at: string
           documents: string[] | null
           driver_id: string | null
+          driver_name: string | null
+          driver_phone: string | null
+          driver_type: string | null
           estimated_cost: number | null
+          fuel_level_in_tank: string | null
           fulfilled_at: string | null
           fulfilled_by: string | null
           id: string
+          km_reading: number | null
           notes: string | null
+          notify_user: boolean
           organization_id: string
           priority: string
           reason: string | null
           rejected_reason: string | null
+          request_by_completion_date: string | null
+          request_by_start_date: string | null
           request_number: string
           request_type: string
           requested_by: string | null
           requested_by_name: string | null
           requested_by_role: string | null
+          requestor_department_id: string | null
           status: string
           updated_at: string
           vehicle_id: string
         }
         Insert: {
+          additional_description?: string | null
           approved_at?: string | null
           approved_by?: string | null
           approved_by_name?: string | null
+          assigned_department_id?: string | null
+          attachments?: Json
+          contact_email?: string | null
+          contact_phone?: string | null
+          contact_preference?: string | null
           created_at?: string
           documents?: string[] | null
           driver_id?: string | null
+          driver_name?: string | null
+          driver_phone?: string | null
+          driver_type?: string | null
           estimated_cost?: number | null
+          fuel_level_in_tank?: string | null
           fulfilled_at?: string | null
           fulfilled_by?: string | null
           id?: string
+          km_reading?: number | null
           notes?: string | null
+          notify_user?: boolean
           organization_id: string
           priority?: string
           reason?: string | null
           rejected_reason?: string | null
+          request_by_completion_date?: string | null
+          request_by_start_date?: string | null
           request_number: string
           request_type?: string
           requested_by?: string | null
           requested_by_name?: string | null
           requested_by_role?: string | null
+          requestor_department_id?: string | null
           status?: string
           updated_at?: string
           vehicle_id: string
         }
         Update: {
+          additional_description?: string | null
           approved_at?: string | null
           approved_by?: string | null
           approved_by_name?: string | null
+          assigned_department_id?: string | null
+          attachments?: Json
+          contact_email?: string | null
+          contact_phone?: string | null
+          contact_preference?: string | null
           created_at?: string
           documents?: string[] | null
           driver_id?: string | null
+          driver_name?: string | null
+          driver_phone?: string | null
+          driver_type?: string | null
           estimated_cost?: number | null
+          fuel_level_in_tank?: string | null
           fulfilled_at?: string | null
           fulfilled_by?: string | null
           id?: string
+          km_reading?: number | null
           notes?: string | null
+          notify_user?: boolean
           organization_id?: string
           priority?: string
           reason?: string | null
           rejected_reason?: string | null
+          request_by_completion_date?: string | null
+          request_by_start_date?: string | null
           request_number?: string
           request_type?: string
           requested_by?: string | null
           requested_by_name?: string | null
           requested_by_role?: string | null
+          requestor_department_id?: string | null
           status?: string
           updated_at?: string
           vehicle_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "tire_requests_assigned_department_id_fkey"
+            columns: ["assigned_department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tire_requests_driver_id_fkey"
             columns: ["driver_id"]
@@ -20364,6 +20457,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tire_requests_requestor_department_id_fkey"
+            columns: ["requestor_department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
             referencedColumns: ["id"]
           },
           {
