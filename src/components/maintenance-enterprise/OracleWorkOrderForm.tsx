@@ -42,6 +42,54 @@ interface Operation {
   assigned_hours: number;
 }
 
+interface Material {
+  id?: string;
+  operation_sequence?: number;
+  item_code: string;
+  item_description: string;
+  required_quantity: number;
+  issued_quantity: number;
+  uom: string;
+  supply_type: string;
+  required_date?: string;
+  unit_cost: number;
+}
+
+interface Permit {
+  id?: string;
+  permit_number: string;
+  permit_type: string;
+  issued_by: string;
+  valid_from?: string;
+  valid_until?: string;
+  status: string;
+}
+
+interface QualityPlan {
+  id?: string;
+  plan_name: string;
+  characteristic: string;
+  specification: string;
+  result: string;
+  pass: boolean | null;
+}
+
+interface MeterReading {
+  id?: string;
+  meter_name: string;
+  reading_value: number;
+  unit: string;
+  captured_at?: string;
+}
+
+interface Attachment {
+  id?: string;
+  file_name: string;
+  file_url: string;
+  mime_type?: string;
+  category: string;
+}
+
 const REQ = <span className="text-destructive">*</span>;
 
 export default function OracleWorkOrderForm({ maintenanceRequestId, workOrderId, vehicleId, onSaved, onCancel }: Props) {
