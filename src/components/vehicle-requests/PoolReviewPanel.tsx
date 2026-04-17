@@ -431,6 +431,24 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
                   </Select>
                 </div>
 
+                <div>
+                  <Label className="text-xs flex items-center gap-1 mb-1">
+                    <User className="w-3 h-3" /> Driver ({availableDrivers.length} active)
+                  </Label>
+                  <Select value={selectedDriver} onValueChange={setSelectedDriver}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Select driver (optional)..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableDrivers.slice(0, 50).map((d: any) => (
+                        <SelectItem key={d.id} value={d.id} className="text-xs">
+                          {d.first_name} {d.last_name} {d.phone ? `— ${d.phone}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="flex gap-2">
                   <Button
                     size="sm"
