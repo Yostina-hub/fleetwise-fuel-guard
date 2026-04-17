@@ -145,16 +145,25 @@ const TripManagement = () => {
   const pendingApprovalCount = pendingApprovals?.length || 0;
 
   // ── RBAC enforcement ────────────────────────────────────────────────
-  // Drivers are redirected to their dedicated portal.
-  if (!permsLoading && isDriverOnly) {
-    return <Navigate to="/driver-portal" replace />;
-  }
   // Show loader while permissions resolve to avoid flash of unauthorized UI.
-  if (permsLoading) {
+  if (permsLoading || (isDriverOnly && driverLoading)) {
     return (
       <Layout>
         <div className="p-8 flex items-center justify-center min-h-[400px]">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" aria-label="Loading permissions" />
+          <Loader2 className="w-8 h-8 animate-spin text-primary" aria-label="Loading" />
+        </div>
+      </Layout>
+    );
+  }
+  // Drivers see a focused, driver-scoped view of their own trips.
+  if (isDriverOnly) {
+    return (
+      <Layout>
+        <div className="p-4 md:p-6">
+          <DriverTripsView
+            driverId={driverSelf?.id}
+            driverName={driverSelf ? `${driverSelf.first_name} ${driverSelf.last_name}` : undefined}
+          />
         </div>
       </Layout>
     );
