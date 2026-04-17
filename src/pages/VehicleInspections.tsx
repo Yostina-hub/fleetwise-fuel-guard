@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import { Input } from "@/components/ui/input";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ClipboardCheck, CheckCircle, XCircle, Clock, Search, Plus, Sticker } from "lucide-react";
+import { ClipboardCheck, CheckCircle, XCircle, Clock, Search, Plus, Sticker, Workflow } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
@@ -72,9 +73,14 @@ const VehicleInspections = () => {
   return (
     <Layout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <div><h1 className="text-2xl font-bold">{t('pages.vehicle_inspections.title', 'Vehicle Inspections')}</h1><p className="text-muted-foreground">{t('pages.vehicle_inspections.description', 'Manage inspection schedules, stickers, and compliance certifications')}</p></div>
-          <Button onClick={() => { setDialogType("annual"); setDialogOpen(true); }}><Plus className="h-4 w-4 mr-2" /> Schedule Inspection</Button>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/sop/fleet-inspection"><Workflow className="h-4 w-4 mr-2" /> Open SOP workflow</Link>
+            </Button>
+            <Button onClick={() => { setDialogType("annual"); setDialogOpen(true); }}><Plus className="h-4 w-4 mr-2" /> Schedule Inspection</Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -115,11 +121,11 @@ const VehicleInspections = () => {
             </div>
             <Card><Table>
               <TableHeader><TableRow>
-                <TableHead>{t('common.date', 'Date')}</TableHead><TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>{t('common.type', 'Type')}</TableHead><TableHead>Inspector</TableHead><TableHead>Sticker #</TableHead><TableHead>Next Due</TableHead><TableHead>Result</TableHead><TableHead>{t('common.status', 'Status')}</TableHead>
+                <TableHead>{t('common.date', 'Date')}</TableHead><TableHead>{t('common.vehicle', 'Vehicle')}</TableHead><TableHead>{t('common.type', 'Type')}</TableHead><TableHead>Inspector</TableHead><TableHead>Sticker #</TableHead><TableHead>Next Due</TableHead><TableHead>Result</TableHead><TableHead>{t('common.status', 'Status')}</TableHead><TableHead>SOP</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {isLoading ? <TableRow><TableCell colSpan={8} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
-                filtered.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No inspections recorded yet</TableCell></TableRow> :
+                {isLoading ? <TableRow><TableCell colSpan={9} className="text-center py-8">{t('common.loading', 'Loading...')}</TableCell></TableRow> :
+                filtered.length === 0 ? <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No inspections recorded yet</TableCell></TableRow> :
                 filtered.map((i: any) => (
                   <TableRow key={i.id}>
                     <TableCell>{format(new Date(i.inspection_date), "MMM dd, yyyy")}</TableCell>
@@ -128,8 +134,15 @@ const VehicleInspections = () => {
                     <TableCell>{i.inspector_name || "—"}</TableCell>
                     <TableCell className="font-mono">{i.sticker_number || "—"}</TableCell>
                     <TableCell>{i.next_due_date ? format(new Date(i.next_due_date), "MMM dd, yyyy") : "—"}</TableCell>
-                    <TableCell><Badge variant={resultColor(i.overall_result)}>{i.overall_result}</Badge></TableCell>
+                    <TableCell><Badge variant={resultColor(i.overall_condition || i.overall_result)}>{i.overall_condition || i.overall_result || "—"}</Badge></TableCell>
                     <TableCell><Badge variant="outline">{i.status}</Badge></TableCell>
+                    <TableCell>
+                      {i.workflow_instance_id ? (
+                        <Link to="/sop/fleet-inspection" className="text-xs inline-flex items-center gap-1 text-primary hover:underline">
+                          <Workflow className="h-3 w-3" /> View
+                        </Link>
+                      ) : <span className="text-xs text-muted-foreground">—</span>}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

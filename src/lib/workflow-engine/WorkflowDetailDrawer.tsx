@@ -1,5 +1,6 @@
 // Detail drawer with stage actions, role-gated buttons, and audit history.
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
-import { Lock, CheckCircle2, History as HistoryIcon } from "lucide-react";
+import { Lock, CheckCircle2, History as HistoryIcon, ExternalLink } from "lucide-react";
 import { WorkflowFieldset } from "./WorkflowFieldset";
 import { useWorkflow, useWorkflowTransitions } from "./useWorkflow";
 import type { WorkflowConfig, WorkflowInstance, StageAction } from "./types";
@@ -79,6 +80,19 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
               <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                 {instance.description}
               </p>
+            </div>
+          ) : null}
+
+          {config.type === "fleet_inspection" && (instance.data as any)?.inspection_id ? (
+            <div className="rounded-md border bg-muted/40 p-2 flex items-center justify-between gap-2 text-xs">
+              <span className="text-muted-foreground">
+                Linked operational record in <strong>Vehicle Inspections</strong>.
+              </span>
+              <Button asChild size="sm" variant="outline">
+                <Link to={`/vehicle-inspections?inspection=${(instance.data as any).inspection_id}`}>
+                  <ExternalLink className="w-3 h-3 mr-1" /> Open inspection
+                </Link>
+              </Button>
             </div>
           ) : null}
 
