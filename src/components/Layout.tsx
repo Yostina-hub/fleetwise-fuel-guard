@@ -241,6 +241,7 @@ const getNavItems = (t: (key: string) => string) => [
       { label: "Insurance Renewal", path: "/sop/vehicle-insurance-renewal" },
       { label: "Preventive Maintenance", path: "/sop/preventive-maintenance" },
       { label: "Breakdown Maintenance", path: "/sop/breakdown-maintenance" },
+      { label: "Safety & Comfort", path: "/sop/safety-comfort" },
       { label: "Vehicle Dispatch", path: "/sop/vehicle-dispatch" },
       { label: "Driver Onboarding", path: "/sop/driver-onboarding" },
       { label: "Driver Training", path: "/sop/driver-training" },
