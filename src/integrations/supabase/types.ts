@@ -24401,6 +24401,7 @@ export type Database = {
       }
     }
     Functions: {
+      _backfill_inspection_links: { Args: never; Returns: number }
       act_on_outsource_payment_approval: {
         Args: {
           _comments?: string
