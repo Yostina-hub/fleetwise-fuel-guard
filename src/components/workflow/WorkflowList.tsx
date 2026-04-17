@@ -556,65 +556,33 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
             </div>
           </div>
 
-          {/* Row 2: Domain pills (top-tier taxonomy) */}
-          {availableDomains.length > 0 && (
+          {/* Row 2: Section pills — group by functional area (FMG-XXX or fallback) */}
+          {availableSections.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-border">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mr-1">
-                Domain
+                Section
               </span>
-              <DomainPill
-                label="All domains"
+              <SectionPill
+                label="All sections"
                 icon={<LayoutGrid className="h-3.5 w-3.5" />}
                 count={workflows?.length || 0}
-                active={domainFilter === "all"}
-                onClick={() => {
-                  setDomainFilter("all");
-                  setCategoryFilter("all");
-                }}
+                active={sectionFilter === "all"}
+                onClick={() => setSectionFilter("all")}
               />
-              {availableDomains.map((d) => {
-                const meta = DOMAIN_META[d];
+              {availableSections.map((s) => {
+                const meta = SECTION_META[s];
                 return (
-                  <DomainPill
-                    key={d}
-                    label={meta?.label || d}
+                  <SectionPill
+                    key={s}
+                    label={meta?.label || s}
                     icon={meta?.icon || <GitBranch className="h-3.5 w-3.5" />}
-                    count={domainCounts[d]}
-                    active={domainFilter === d}
+                    count={sectionCounts[s]}
+                    active={sectionFilter === s}
                     accentClass={meta?.accentClass}
-                    onClick={() => {
-                      setDomainFilter(d);
-                      setCategoryFilter("all");
-                    }}
+                    onClick={() => setSectionFilter(s)}
                   />
                 );
               })}
-            </div>
-          )}
-
-          {/* Row 3: Sub-category chips (only for the selected domain) */}
-          {domainFilter !== "all" && subCategoriesForDomain.length > 0 && (
-            <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-dashed border-border">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mr-1">
-                Category
-              </span>
-              <CategoryChip
-                label="All"
-                icon={<LayoutGrid className="h-3 w-3" />}
-                count={domainCounts[domainFilter] || 0}
-                active={categoryFilter === "all"}
-                onClick={() => setCategoryFilter("all")}
-              />
-              {subCategoriesForDomain.map((cat) => (
-                <CategoryChip
-                  key={cat}
-                  label={cat.replace(/_/g, " ")}
-                  icon={getCategoryIcon(cat)}
-                  count={categoryCounts[cat]}
-                  active={categoryFilter === cat}
-                  onClick={() => setCategoryFilter(cat)}
-                />
-              ))}
             </div>
           )}
         </div>
