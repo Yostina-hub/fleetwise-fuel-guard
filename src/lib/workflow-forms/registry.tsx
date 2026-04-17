@@ -44,6 +44,7 @@ const CreateWorkRequestWrapper = lazy(() => import("./wrappers/CreateWorkRequest
 const OracleWorkOrderWrapper = lazy(() => import("./wrappers/OracleWorkOrderWrapper"));
 const VehicleInspectionWrapper = lazy(() => import("./wrappers/VehicleInspectionWrapper"));
 const FuelRequestWrapper = lazy(() => import("./wrappers/FuelRequestWrapper"));
+const SafetyComfortReportWrapper = lazy(() => import("./wrappers/SafetyComfortReportWrapper"));
 
 const FORMS: RegisteredWorkflowForm[] = [
   {
@@ -73,6 +74,13 @@ const FORMS: RegisteredWorkflowForm[] = [
     description: "Driver/Operator fuel request with approval routing.",
     default_decision: "submitted",
     Component: FuelRequestWrapper,
+  },
+  {
+    key: "safety_comfort_report",
+    label: "Safety & Comfort Report (driver)",
+    description: "Quick driver-facing form for safety & comfort issues.",
+    default_decision: "submitted",
+    Component: SafetyComfortReportWrapper,
   },
 ];
 
