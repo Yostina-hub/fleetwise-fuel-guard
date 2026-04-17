@@ -62,6 +62,7 @@ const VehicleRequests = () => {
         .from("vehicle_requests")
         .select("*, assigned_vehicle:assigned_vehicle_id(plate_number, make, model), assigned_driver:assigned_driver_id(first_name, last_name)")
         .eq("organization_id", organizationId!)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false })
         .limit(100);
 
