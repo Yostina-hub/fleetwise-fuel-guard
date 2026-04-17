@@ -230,6 +230,20 @@ export default function Inbox() {
       setSelectedId(null);
       qc.invalidateQueries({ queryKey: ["sop-inbox-tasks"] });
       qc.invalidateQueries({ queryKey: ["workflow-instances", config.type] });
+
+      // Vehicle Handover finalize hook: when archived, re-assign vehicle + notify all parties
+      if (
+        config.type === "vehicle_handover" &&
+        (action.toStage === "archived" || toStage?.terminal)
+      ) {
+        try {
+          await supabase.functions.invoke("vehicle-handover-finalize", {
+            body: { workflow_instance_id: instance.id },
+          });
+        } catch (e) {
+          console.warn("vehicle-handover-finalize failed", e);
+        }
+      }
       return;
     }
 
