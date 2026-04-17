@@ -514,36 +514,77 @@ export default function CreateWorkRequestForm({
               <Select value={contextValue} onValueChange={setContextValue}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="Veh. Trip Inspection request">Veh. Trip Inspection request</SelectItem>
                   <SelectItem value="Vehicle Maintenance request">Vehicle Maintenance request</SelectItem>
                   <SelectItem value="Generator Maintenance request">Generator Maintenance request</SelectItem>
                   <SelectItem value="Equipment Maintenance request">Equipment Maintenance request</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground mt-1">{contextValue}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {contextValue === "Veh. Trip Inspection request" ? "Vehicle pre and post trip inspection request" : contextValue}
+              </p>
             </div>
           </FieldRow>
-          <FieldRow label="Requestor Department" required>
-            <Input value={requestorDepartment} onChange={e => setRequestorDepartment(e.target.value)} />
-          </FieldRow>
-          <FieldRow label="Type of maintenance request" required>
-            <Select value={maintenanceTypeReq} onValueChange={setMaintenanceTypeReq}>
-              <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+
+          <FieldRow label="Driver type" required={isTripInspection}>
+            <Select value={driverType} onValueChange={setDriverType}>
+              <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="Oil Change">Oil Change</SelectItem>
-                <SelectItem value="Brake Service">Brake Service</SelectItem>
-                <SelectItem value="Tire Service">Tire Service</SelectItem>
-                <SelectItem value="Engine Repair">Engine Repair</SelectItem>
-                <SelectItem value="Electrical">Electrical</SelectItem>
-                <SelectItem value="Body / Paint">Body / Paint</SelectItem>
-                <SelectItem value="Air Conditioning">Air Conditioning</SelectItem>
-                <SelectItem value="Transmission">Transmission</SelectItem>
-                <SelectItem value="Suspension">Suspension</SelectItem>
-                <SelectItem value="General Inspection">General Inspection</SelectItem>
-                <SelectItem value="Other">Other</SelectItem>
+                <SelectItem value="staff">Staff Driver</SelectItem>
+                <SelectItem value="outsourced">Outsourced Driver</SelectItem>
+                <SelectItem value="contract">Contract Driver</SelectItem>
               </SelectContent>
             </Select>
           </FieldRow>
-          {workRequestType === "inspection" && (
+
+          <FieldRow label="Driver Name">
+            <Input value={selectedDriverName} onChange={e => setSelectedDriverName(e.target.value)} />
+          </FieldRow>
+
+          <FieldRow label="Employee ID">
+            <Input value={requestorEmployeeId} onChange={e => setRequestorEmployeeId(e.target.value)} placeholder="Employee number" />
+          </FieldRow>
+
+          <FieldRow label="Requestor Pool" required={isTripInspection}>
+            <Select value={requestorPool} onValueChange={setRequestorPool}>
+              <SelectTrigger><SelectValue placeholder="Select pool" /></SelectTrigger>
+              <SelectContent>
+                {pools.length === 0 && <SelectItem value="__none__" disabled>No pools configured</SelectItem>}
+                {pools.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </FieldRow>
+
+          <FieldRow label="Type of Request" required={isTripInspection || workRequestType === "inspection"}>
+            {isTripInspection ? (
+              <Select value={inspectionSubType} onValueChange={setInspectionSubType}>
+                <SelectTrigger><SelectValue placeholder="Select request type" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="post_trip">Vehicle Post-Trip Inspection Request</SelectItem>
+                  <SelectItem value="pre_trip">Vehicle Pre-Trip Inspection Request</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <Select value={maintenanceTypeReq} onValueChange={setMaintenanceTypeReq}>
+                <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Oil Change">Oil Change</SelectItem>
+                  <SelectItem value="Brake Service">Brake Service</SelectItem>
+                  <SelectItem value="Tire Service">Tire Service</SelectItem>
+                  <SelectItem value="Engine Repair">Engine Repair</SelectItem>
+                  <SelectItem value="Electrical">Electrical</SelectItem>
+                  <SelectItem value="Body / Paint">Body / Paint</SelectItem>
+                  <SelectItem value="Air Conditioning">Air Conditioning</SelectItem>
+                  <SelectItem value="Transmission">Transmission</SelectItem>
+                  <SelectItem value="Suspension">Suspension</SelectItem>
+                  <SelectItem value="General Inspection">General Inspection</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          </FieldRow>
+
+          {!isTripInspection && workRequestType === "inspection" && (
             <FieldRow label="Inspection sub-type" required>
               <Select value={inspectionSubType} onValueChange={setInspectionSubType}>
                 <SelectTrigger><SelectValue placeholder="Select sub-type" /></SelectTrigger>
@@ -555,31 +596,30 @@ export default function CreateWorkRequestForm({
               </Select>
             </FieldRow>
           )}
+
+          {!isTripInspection && (
+            <FieldRow label="Requestor Department" required>
+              <Input value={requestorDepartment} onChange={e => setRequestorDepartment(e.target.value)} />
+            </FieldRow>
+          )}
+
           <FieldRow label="KM reading" required>
             <Input type="number" value={kmReading} onChange={e => setKmReading(e.target.value)} />
           </FieldRow>
-          <FieldRow label="Driver type">
-            <Select value={driverType} onValueChange={setDriverType}>
-              <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="staff">Staff Driver</SelectItem>
-                <SelectItem value="outsourced">Outsourced Driver</SelectItem>
-                <SelectItem value="contract">Contract Driver</SelectItem>
-              </SelectContent>
-            </Select>
-          </FieldRow>
-          <FieldRow label="Driver Name">
-            <Input value={selectedDriverName} onChange={e => setSelectedDriverName(e.target.value)} />
-          </FieldRow>
+
           <FieldRow label="Driver Phone No." required>
             <Input value={driverPhone} onChange={e => setDriverPhone(e.target.value)} />
           </FieldRow>
-          <FieldRow label="fuel level in the tank" required>
-            <div className="flex items-center gap-2">
-              <Input type="number" min={0} max={100} value={fuelLevel} onChange={e => setFuelLevel(e.target.value)} className="max-w-[160px]" />
-              <span className="text-sm text-muted-foreground">%</span>
-            </div>
-          </FieldRow>
+
+          {!isTripInspection && (
+            <FieldRow label="Fuel level in the tank" required>
+              <div className="flex items-center gap-2">
+                <Input type="number" min={0} max={100} value={fuelLevel} onChange={e => setFuelLevel(e.target.value)} className="max-w-[160px]" />
+                <span className="text-sm text-muted-foreground">%</span>
+              </div>
+            </FieldRow>
+          )}
+
           <FieldRow label="Remark">
             <Textarea value={remark} onChange={e => setRemark(e.target.value)} rows={2} />
           </FieldRow>
