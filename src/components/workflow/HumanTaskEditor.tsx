@@ -133,8 +133,9 @@ export const HumanTaskEditor = ({ config, isApproval, onChange }: Props) => {
                   {r}
                 </SelectItem>
               ))}
-          </SelectContent>
-        </Select>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Reusable form picker */}
