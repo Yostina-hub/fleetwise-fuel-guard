@@ -236,52 +236,64 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
                     <Zap className="h-4 w-4 text-primary" />
                     <h3 className="font-semibold text-sm text-foreground truncate">{workflow.name}</h3>
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100">
-                        <MoreVertical className="h-3.5 w-3.5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(workflow.id); }}>
-                        <Edit className="h-3.5 w-3.5 mr-2" /> Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={(e) => { e.stopPropagation(); runNowMutation.mutate(workflow.id); }}
-                        disabled={runNowMutation.isPending}
-                      >
-                        <Rocket className="h-3.5 w-3.5 mr-2" /> Run Now
-                      </DropdownMenuItem>
-                      {workflow.webhook_token && (
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setWebhookWorkflow(workflow); }}>
-                          <Webhook className="h-3.5 w-3.5 mr-2" /> Webhook URL
+                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="h-7 gap-1 text-xs"
+                      onClick={(e) => { e.stopPropagation(); runNowMutation.mutate(workflow.id); }}
+                      disabled={runNowMutation.isPending}
+                    >
+                      <Rocket className="h-3.5 w-3.5" />
+                      Run
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                          <MoreVertical className="h-3.5 w-3.5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(workflow.id); }}>
+                          <Edit className="h-3.5 w-3.5 mr-2" /> Edit
                         </DropdownMenuItem>
-                      )}
-                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); duplicateMutation.mutate(workflow); }}>
-                        <Copy className="h-3.5 w-3.5 mr-2" /> Duplicate
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={(e) => {
-                        e.stopPropagation();
-                        toggleStatusMutation.mutate({ id: workflow.id, currentStatus: workflow.status });
-                      }}>
-                        {workflow.status === "active" ? (
-                          <><Pause className="h-3.5 w-3.5 mr-2" /> Pause</>
-                        ) : (
-                          <><Play className="h-3.5 w-3.5 mr-2" /> Activate</>
+                        <DropdownMenuItem
+                          onClick={(e) => { e.stopPropagation(); runNowMutation.mutate(workflow.id); }}
+                          disabled={runNowMutation.isPending}
+                        >
+                          <Rocket className="h-3.5 w-3.5 mr-2" /> Run Now
+                        </DropdownMenuItem>
+                        {workflow.webhook_token && (
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setWebhookWorkflow(workflow); }}>
+                            <Webhook className="h-3.5 w-3.5 mr-2" /> Webhook URL
+                          </DropdownMenuItem>
                         )}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setHistoryWorkflowId(workflow.id); }}>
-                        <History className="h-3.5 w-3.5 mr-2" /> Run History
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        className="text-destructive"
-                        onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(workflow.id); }}
-                      >
-                        <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); duplicateMutation.mutate(workflow); }}>
+                          <Copy className="h-3.5 w-3.5 mr-2" /> Duplicate
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation();
+                          toggleStatusMutation.mutate({ id: workflow.id, currentStatus: workflow.status });
+                        }}>
+                          {workflow.status === "active" ? (
+                            <><Pause className="h-3.5 w-3.5 mr-2" /> Pause</>
+                          ) : (
+                            <><Play className="h-3.5 w-3.5 mr-2" /> Activate</>
+                          )}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setHistoryWorkflowId(workflow.id); }}>
+                          <History className="h-3.5 w-3.5 mr-2" /> Run History
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(workflow.id); }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
 
                 <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
