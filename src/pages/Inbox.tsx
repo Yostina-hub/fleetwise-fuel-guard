@@ -50,7 +50,7 @@ interface WorkflowTask {
   driver_id: string | null;
   due_at: string | null;
   created_at: string;
-  workflows?: { name: string } | null;
+  workflows?: { name: string; nodes?: any[] } | null;
 }
 
 export default function Inbox() {
@@ -69,13 +69,33 @@ export default function Inbox() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("workflow_tasks" as any)
-        .select("*, workflows(name)")
+        .select("*, workflows(name, nodes)")
         .eq("organization_id", organizationId!)
         .eq("status", filter)
         .order("created_at", { ascending: false })
         .limit(100);
       if (error) throw error;
-      return (data ?? []) as unknown as WorkflowTask[];
+
+      return ((data ?? []) as any[]).map((task) => {
+        const matchedNode = Array.isArray(task.workflows?.nodes)
+          ? task.workflows.nodes.find((node: any) => node?.id === task.node_id)
+          : null;
+        const cfg = matchedNode?.data?.config ?? {};
+        const cfgFields = Array.isArray(cfg.fields) ? cfg.fields : [];
+        const cfgActions = Array.isArray(cfg.actions) ? cfg.actions : [];
+
+        return {
+          ...task,
+          form_schema: cfgFields.length ? cfgFields : (task.form_schema ?? []),
+          form_key: cfg.form_key ?? task.form_key ?? null,
+          context: {
+            ...(cfg.prefill ?? {}),
+            ...(cfg.context ?? {}),
+            ...(task.context ?? {}),
+          },
+          actions: cfgActions.length ? cfgActions : (task.actions ?? []),
+        } as WorkflowTask;
+      });
     },
   });
 
