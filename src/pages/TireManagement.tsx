@@ -227,6 +227,10 @@ const TireManagement = () => {
               )}
             </TabsContent>
 
+            <TabsContent value="requests" className="mt-0">
+              <TireRequestsTab />
+            </TabsContent>
+
             <TabsContent value="positions" className="mt-0">
               {(() => {
                 const vehicleMap: Record<string, { plate: string; tires: any[] }> = {};
