@@ -157,5 +157,5 @@ export const useOutsourcePaymentRequests = (filters?: { status?: PRStatus }) => 
     onError: (e: Error) => toast.error(e.message),
   });
 
-  return { requests, isLoading, create, transition, provideFuelInfo };
+  return { requests, isLoading, create, transition, provideFuelInfo, actOnApproval };
 };
