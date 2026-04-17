@@ -60,34 +60,43 @@ const statusColors: Record<string, string> = {
 
 export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
   const { organizationId } = useOrganization();
-  const { user, roles } = useAuth() as any;
+  const { user, hasRole } = useAuth() as any;
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [historyWorkflowId, setHistoryWorkflowId] = useState<string | null>(null);
   const [webhookWorkflow, setWebhookWorkflow] = useState<any | null>(null);
 
-  const userRoles: string[] = Array.isArray(roles)
-    ? roles.map((r: any) => r?.role).filter(Boolean)
-    : [];
-  const canSeedSOPs = userRoles.includes("super_admin") || userRoles.includes("fleet_owner");
+  // Show seed button to anyone who can manage workflows in this org.
+  // RLS still enforces what they can actually insert.
+  const canSeedSOPs =
+    typeof hasRole === "function"
+      ? hasRole("super_admin") || hasRole("fleet_owner") || hasRole("operations_manager") || hasRole("fleet_manager")
+      : true;
 
   const seedSOPsMutation = useMutation({
     mutationFn: async () => {
-      if (!organizationId) throw new Error("No organization");
-      return await seedSOPWorkflows(organizationId, user?.id);
+      if (!organizationId) throw new Error("Pick an organization first (sidebar org switcher)");
+      const report = await seedSOPWorkflows(organizationId, user?.id);
+      if (report.errors.length && report.inserted === 0 && report.updated === 0) {
+        throw new Error(report.errors[0]);
+      }
+      return report;
     },
     onSuccess: (report) => {
       queryClient.invalidateQueries({ queryKey: ["workflows", organizationId] });
-      const errs = report.errors.length ? ` · ${report.errors.length} errors` : "";
+      const errs = report.errors.length ? ` · ${report.errors.length} errors (see console)` : "";
+      if (report.errors.length) console.warn("[seedSOPs] errors:", report.errors);
       toast({
         title: "SOP workflows seeded",
         description: `${report.inserted} new · ${report.updated} updated · ${report.total} total${errs}`,
         variant: report.errors.length ? "destructive" : "default",
       });
     },
-    onError: (e: any) =>
-      toast({ title: "Seed failed", description: e?.message || "Unknown error", variant: "destructive" }),
+    onError: (e: any) => {
+      console.error("[seedSOPs] failed:", e);
+      toast({ title: "Seed failed", description: e?.message || "Unknown error", variant: "destructive" });
+    },
   });
 
   const { data: workflows, isLoading } = useQuery({
