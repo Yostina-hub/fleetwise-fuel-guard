@@ -58,12 +58,10 @@ const VehicleRequests = () => {
         .order("created_at", { ascending: false })
         .limit(100);
 
-      // RBAC: drivers only see requests they raised or are assigned to.
+      // RBAC: drivers only see requests they raised themselves.
       if (isDriverOnly) {
         if (!userId) return [];
-        const orParts = [`requester_id.eq.${userId}`];
-        if (driverId) orParts.push(`assigned_driver_id.eq.${driverId}`);
-        query = query.or(orParts.join(","));
+        query = query.eq("requester_id", userId);
       }
 
       const { data, error } = await query;
