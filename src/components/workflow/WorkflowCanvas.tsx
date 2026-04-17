@@ -4,7 +4,6 @@ import { useSearchParams } from "react-router-dom";
 import TEMPLATES from "./workflowTemplates";
 import {
   ReactFlow,
-  Controls,
   MiniMap,
   Background,
   BackgroundVariant,
@@ -470,7 +469,7 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
         </div>
 
         {/* Canvas */}
-        <div className="flex-1" ref={reactFlowWrapper}>
+        <div className="flex-1 relative" ref={reactFlowWrapper}>
           <ReactFlow
             nodes={nodes}
             edges={edges}
