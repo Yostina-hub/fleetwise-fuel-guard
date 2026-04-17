@@ -22,7 +22,7 @@ import DriverQuickActions from "@/components/driver-portal/DriverQuickActions";
 import { FuelRequestFormDialog } from "@/components/fuel/FuelRequestFormDialog";
 import { VehicleInspectionFormDialog } from "@/components/maintenance/VehicleInspectionFormDialog";
 import { VehicleRequestForm } from "@/components/vehicle-requests/VehicleRequestForm";
-import DriverMaintenanceDialog from "@/components/driver-portal/DriverMaintenanceDialog";
+import CreateWorkRequestDialog from "@/components/maintenance/CreateWorkRequestDialog";
 import DriverSubmissionsTab from "@/components/driver-portal/DriverSubmissionsTab";
 
 const DriverPortal = () => {
