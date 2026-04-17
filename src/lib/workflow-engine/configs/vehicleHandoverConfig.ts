@@ -26,18 +26,18 @@ const receivedByLane: Lane   = { id: "received_by",  label: "Received by (incomi
 const witnessLane: Lane      = { id: "witness",      label: "Witness",                 roles: ["fleet_manager", "operations_manager", "user"] };
 const archiveLane: Lane      = { id: "archive",      label: "Records / Archive",       roles: ["fleet_manager", "operations_manager"] };
 
-// Reusable accessory checklist field set (mirrors the 30-row form table).
-// Each item is a yes/no with an optional QTY note — kept compact via
-// a single textarea per group to stay manageable in the workflow drawer.
+// Reusable accessory checklist powered by the configurable
+// `vehicle_handover_catalog_items` table (admin-managed dropdown lists).
 const accessoryChecklistFields = [
-  { key: "checklist_safety",    label: "Safety items (e.g. fire extinguisher, first-aid, triangle, jack, wheel spanner)", type: "textarea" as const,
-    helpText: "List items present + QTY. Mark missing items as 'MISSING'." },
-  { key: "checklist_comfort",   label: "Comfort items (e.g. floor mats, headrests, seat covers, A/C remote)", type: "textarea" as const,
-    helpText: "List items present + QTY. Mark missing items as 'MISSING'." },
-  { key: "checklist_accessory", label: "Accessories (e.g. spare tire, tools, radio/antenna, jumper, tow rope, manuals)", type: "textarea" as const,
-    helpText: "List items present + QTY. Mark missing items as 'MISSING'." },
-  { key: "checklist_other",     label: "Other items (free-form, items 1–30 from form)", type: "textarea" as const,
-    helpText: "Any additional items inspected per Form EFM/FA/03." },
+  { key: "checklist_safety",    label: "Safety items present", type: "handover_catalog" as const,
+    catalogCategory: "safety" as const,
+    helpText: "Tap to toggle items present at handover. Manage the master list via the catalog admin." },
+  { key: "checklist_comfort",   label: "Comfort items present", type: "handover_catalog" as const,
+    catalogCategory: "comfort" as const },
+  { key: "checklist_accessory", label: "Accessories present", type: "handover_catalog" as const,
+    catalogCategory: "accessory" as const },
+  { key: "checklist_other",     label: "Other items present", type: "handover_catalog" as const,
+    catalogCategory: "other" as const },
 ];
 
 export const vehicleHandoverConfig: WorkflowConfig = {
@@ -62,24 +62,27 @@ export const vehicleHandoverConfig: WorkflowConfig = {
     // Header block (top of the form)
     { key: "title", label: "Handover title", type: "text", required: true, placeholder: "Handover — ETB-3-12345 to driver Abebe" },
     { key: "__vehicle_id", label: "Vehicle", type: "vehicle", required: true },
+    // Live auto-fetched summary panel (read-only)
+    { key: "__vehicle_summary", label: "Vehicle information (auto-fetched)", type: "vehicle_autofill_summary" },
     { key: "ref_no", label: "Ref No.", type: "text", placeholder: "EFM/FA/03-#####" },
     { key: "form_date", label: "Form date", type: "date", required: true },
-    { key: "third_party_inspection_expiry", label: "3rd-party inspection expiry", type: "date" },
-    { key: "annual_inspection_expiry", label: "Annual inspection expiry", type: "date" },
-
-    // Vehicle identity (form rows 1–8)
-    { key: "vehicle_type", label: "1. Type of vehicle", type: "text", placeholder: "Pick-up / Sedan / Van / Truck" },
-    { key: "vehicle_model", label: "2. Model", type: "text" },
-    { key: "chassis_no", label: "3. Chassis No.", type: "text" },
+    // Vehicle identity (auto-filled from registry; user can override)
+    { key: "vehicle_type", label: "1. Type of vehicle", type: "text", helpText: "Auto-filled from fleet registry — override if needed." },
+    { key: "vehicle_model", label: "2. Model", type: "text", helpText: "Auto-filled from fleet registry." },
+    { key: "chassis_no", label: "3. Chassis / VIN No.", type: "text", helpText: "Auto-filled from fleet registry." },
     { key: "engine_no", label: "4. Engine No.", type: "text" },
-    { key: "plate_no", label: "5. Plate No.", type: "text" },
-    { key: "passenger_load_capacity", label: "6. Passenger / Load capacity", type: "text" },
-    { key: "km_reading", label: "7. KM reading at handover", type: "number", required: true },
+    { key: "plate_no", label: "5. Plate No.", type: "text", helpText: "Auto-filled from fleet registry." },
+    { key: "passenger_load_capacity", label: "6. Passenger / Load capacity", type: "text", helpText: "Auto-filled from fleet registry." },
+    { key: "km_reading", label: "7. KM reading at handover", type: "number", required: true, helpText: "Auto-filled from latest odometer; update to actual." },
     { key: "fuel_amount", label: "8. Fuel amount at handover (L)", type: "number" },
+    { key: "third_party_inspection_expiry", label: "3rd-party inspection expiry", type: "date", helpText: "Auto-filled from insurance record." },
+    { key: "annual_inspection_expiry", label: "Annual inspection expiry", type: "date", helpText: "Auto-filled from registration record." },
 
     // Parties
-    { key: "delivered_by_name", label: "Delivered by — Name", type: "text", required: true },
+    { key: "delivered_by_name", label: "Delivered by — Name", type: "text", required: true, helpText: "Auto-filled from currently assigned driver." },
     { key: "delivered_by_id", label: "Delivered by — ID No.", type: "text" },
+    { key: "received_by_driver_id", label: "Received by — Driver", type: "driver", required: true,
+      helpText: "Selecting a driver here updates the vehicle's assigned driver when the handover is archived." },
     { key: "received_by_name", label: "Received by — Name", type: "text", required: true },
     { key: "received_by_id", label: "Received by — ID No.", type: "text" },
     { key: "witness_name", label: "Witness — Name", type: "text" },
