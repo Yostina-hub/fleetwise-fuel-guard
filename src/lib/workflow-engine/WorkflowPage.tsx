@@ -112,7 +112,7 @@ export function WorkflowPage({ config: baseConfig, extraAction }: Props) {
                     <TooltipTrigger asChild>
                       <Badge
                         variant="outline"
-                        className="gap-1 text-[10px] border-amber-500/50 text-amber-600 dark:text-amber-400"
+                        className="gap-1 text-[10px] border-warning/50 text-warning"
                       >
                         <AlertTriangle className="h-3 w-3" /> Drifted
                       </Badge>
