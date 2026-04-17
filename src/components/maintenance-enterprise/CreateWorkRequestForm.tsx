@@ -220,19 +220,22 @@ export default function CreateWorkRequestForm({
     setAttachments(prev => prev.filter(a => a.path !== att.path));
   };
 
+  const isSafetyComfortCtx = contextValue === "V Safety & Comfort Request";
+
   const validate = (): string | null => {
     if (!assetNumber.trim()) return "Asset Number is required";
     if (!assignedDept.trim()) return "Assigned Department is required";
     if (!requestStartDate) return "Request By Start Date is required";
     if (!additionalDescription.trim()) return "Additional Description is required";
-    if (!isTripInspection && !requestorDepartment.trim()) return "Requestor Department is required";
-    if (isTripInspection && !requestorPool.trim()) return "Requestor Pool is required";
-    if (isTripInspection && !driverType.trim()) return "Driver type is required";
-    if (!isTripInspection && !maintenanceTypeReq.trim()) return "Type of maintenance request is required";
+    if (!isTripInspection && !isSafetyComfortCtx && !requestorDepartment.trim()) return "Requestor Department is required";
+    if ((isTripInspection || isSafetyComfortCtx) && !requestorPool.trim()) return "Requestor Pool is required";
+    if ((isTripInspection || isSafetyComfortCtx) && !driverType.trim()) return "Driver type is required";
+    if (!isTripInspection && !isSafetyComfortCtx && !maintenanceTypeReq.trim()) return "Type of maintenance request is required";
+    if (isSafetyComfortCtx && !maintenanceTypeReq.trim()) return "Type of Request is required";
     if ((workRequestType === "inspection" || isTripInspection) && !inspectionSubType) return "Type of Request is required";
     if (!kmReading.trim()) return "KM reading is required";
     if (!driverPhone.trim()) return "Driver Phone No. is required";
-    if (!isTripInspection && !fuelLevel.trim()) return "Fuel level in the tank is required";
+    if (!isTripInspection && !isSafetyComfortCtx && !fuelLevel.trim()) return "Fuel level in the tank is required";
     return null;
   };
 
