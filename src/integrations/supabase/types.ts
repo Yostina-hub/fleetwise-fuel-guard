@@ -23760,6 +23760,97 @@ export type Database = {
           },
         ]
       }
+      workflow_instances: {
+        Row: {
+          assigned_to: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          current_lane: string | null
+          current_stage: string
+          data: Json | null
+          description: string | null
+          documents: string[] | null
+          driver_id: string | null
+          due_date: string | null
+          id: string
+          organization_id: string
+          priority: string | null
+          reference_number: string
+          status: string
+          title: string | null
+          updated_at: string
+          vehicle_id: string | null
+          workflow_type: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_lane?: string | null
+          current_stage: string
+          data?: Json | null
+          description?: string | null
+          documents?: string[] | null
+          driver_id?: string | null
+          due_date?: string | null
+          id?: string
+          organization_id: string
+          priority?: string | null
+          reference_number: string
+          status?: string
+          title?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+          workflow_type: string
+        }
+        Update: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_lane?: string | null
+          current_stage?: string
+          data?: Json | null
+          description?: string | null
+          documents?: string[] | null
+          driver_id?: string | null
+          due_date?: string | null
+          id?: string
+          organization_id?: string
+          priority?: string | null
+          reference_number?: string
+          status?: string
+          title?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+          workflow_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_instances_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_instances_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_instances_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workflow_runs: {
         Row: {
           completed_at: string | null
@@ -23806,6 +23897,78 @@ export type Database = {
             columns: ["workflow_id"]
             isOneToOne: false
             referencedRelation: "workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_transitions: {
+        Row: {
+          created_at: string
+          decision: string | null
+          documents: string[] | null
+          from_lane: string | null
+          from_stage: string | null
+          id: string
+          instance_id: string
+          notes: string | null
+          organization_id: string
+          payload: Json | null
+          performed_by: string | null
+          performed_by_name: string | null
+          performed_by_role: string | null
+          to_lane: string | null
+          to_stage: string
+          workflow_type: string
+        }
+        Insert: {
+          created_at?: string
+          decision?: string | null
+          documents?: string[] | null
+          from_lane?: string | null
+          from_stage?: string | null
+          id?: string
+          instance_id: string
+          notes?: string | null
+          organization_id: string
+          payload?: Json | null
+          performed_by?: string | null
+          performed_by_name?: string | null
+          performed_by_role?: string | null
+          to_lane?: string | null
+          to_stage: string
+          workflow_type: string
+        }
+        Update: {
+          created_at?: string
+          decision?: string | null
+          documents?: string[] | null
+          from_lane?: string | null
+          from_stage?: string | null
+          id?: string
+          instance_id?: string
+          notes?: string | null
+          organization_id?: string
+          payload?: Json | null
+          performed_by?: string | null
+          performed_by_name?: string | null
+          performed_by_role?: string | null
+          to_lane?: string | null
+          to_stage?: string
+          workflow_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_transitions_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_transitions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -24113,6 +24276,10 @@ export type Database = {
       fleet_ops_review_request: {
         Args: { p_decision: string; p_notes?: string; p_request_id: string }
         Returns: undefined
+      }
+      generate_workflow_reference: {
+        Args: { _org_id: string; _workflow_type: string }
+        Returns: string
       }
       get_active_delegate: {
         Args: { p_cost?: number; p_scope?: string; p_user_id: string }
