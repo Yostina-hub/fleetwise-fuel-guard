@@ -72,16 +72,20 @@ export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
     const vehicleId = values["__vehicle_id"] || values["vehicle_id"] || null;
     const driverId = values["__driver_id"] || values["driver_id"] || null;
 
-    await createInstance.mutateAsync({
-      title: values["title"],
-      description: values["description"],
-      vehicleId,
-      driverId,
-      data: { ...(activeChoice?.prefill ?? {}), ...values },
-    });
-    setValues({});
-    setChosenFormKey(null);
-    onOpenChange(false);
+    try {
+      await createInstance.mutateAsync({
+        title: values["title"],
+        description: values["description"],
+        vehicleId,
+        driverId,
+        data: { ...(activeChoice?.prefill ?? {}), ...values },
+      });
+      setValues({});
+      setChosenFormKey(null);
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to file workflow");
+    }
   };
 
   if (open && intakeForm) {
