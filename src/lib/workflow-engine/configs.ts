@@ -1,5 +1,15 @@
 // 14 ET FMG SOP workflow configs.
 // Each config drives a full E2E workflow page (file → stages → role-gated actions → audit).
+//
+// ⚠️ PHASE E NOTE: This file is now the **canonical baseline**, not the
+// runtime source of truth. SOP behavior at runtime comes from the
+// `workflows` table (see useEffectiveConfig). Editing this file changes
+// the baseline used by:
+//   • the "Seed SOP Workflows" button on /workflow-builder
+//   • the per-SOP "Seed to builder" / "Restore baseline" buttons
+//   • the drift indicator on each SOP page
+// In-flight workflow instances are unaffected by edits here — they keep
+// running against the snapshot they were created with.
 import {
   ClipboardCheck, Car, ShieldCheck, Wrench, AlertOctagon, Truck, UserPlus,
   GraduationCap, Banknote, Hammer, LifeBuoy, IdCard, Building2,
