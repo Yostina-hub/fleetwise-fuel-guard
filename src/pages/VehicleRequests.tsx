@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ClipboardList, Plus, Clock, CheckCircle, XCircle, Truck, Eye, MessageSquare, LogIn, Shuffle } from "lucide-react";
+import { ClipboardList, Plus, Clock, CheckCircle, XCircle, Truck, Eye, MessageSquare, LogIn, Shuffle, Trash2, Undo2, Users } from "lucide-react";
 import { VehicleRequestKPI } from "@/components/vehicle-requests/VehicleRequestKPI";
 import { VehicleRequestForm } from "@/components/vehicle-requests/VehicleRequestForm";
 import { VehicleRequestApprovalFlow } from "@/components/vehicle-requests/VehicleRequestApprovalFlow";
@@ -13,6 +13,9 @@ import { DriverCheckInDialog } from "@/components/vehicle-requests/DriverCheckIn
 import { CrossPoolAssignmentDialog } from "@/components/vehicle-requests/CrossPoolAssignmentDialog";
 import { PoolReviewPanel } from "@/components/vehicle-requests/PoolReviewPanel";
 import VehicleRequestWorkflowProgress from "@/components/vehicle-requests/VehicleRequestWorkflowProgress";
+import { DeallocateRequestDialog } from "@/components/vehicle-requests/DeallocateRequestDialog";
+import { DeleteRequestDialog } from "@/components/vehicle-requests/DeleteRequestDialog";
+import { MultiVehicleAssignDialog } from "@/components/vehicle-requests/MultiVehicleAssignDialog";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
