@@ -162,6 +162,7 @@ const VehicleInspections = () => {
             </CardContent></Card>
           </TabsContent>
         </Tabs>
+        <ScheduleInspectionDialog open={dialogOpen} onOpenChange={setDialogOpen} defaultType={dialogType} />
       </div>
     </Layout>
   );
