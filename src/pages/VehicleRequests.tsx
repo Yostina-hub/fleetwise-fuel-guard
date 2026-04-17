@@ -24,6 +24,7 @@ import { useQueryClient } from "@tanstack/react-query";
 const VehicleRequests = () => {
   const { t } = useTranslation();
   const { organizationId } = useOrganization();
+  const { isDriverOnly, driverId, userId, loading: scopeLoading } = useDriverScope();
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [showDetail, setShowDetail] = useState<any>(null);
@@ -48,18 +49,28 @@ const VehicleRequests = () => {
   }, [queryClient, organizationId]);
 
   const { data: requests = [], isLoading } = useQuery({
-    queryKey: ["vehicle-requests", organizationId],
+    queryKey: ["vehicle-requests", organizationId, isDriverOnly, driverId, userId],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      let query = (supabase as any)
         .from("vehicle_requests")
         .select("*, assigned_vehicle:assigned_vehicle_id(plate_number, make, model), assigned_driver:assigned_driver_id(first_name, last_name)")
         .eq("organization_id", organizationId!)
         .order("created_at", { ascending: false })
         .limit(100);
+
+      // RBAC: drivers only see requests they raised or are assigned to.
+      if (isDriverOnly) {
+        if (!userId) return [];
+        const orParts = [`requester_id.eq.${userId}`];
+        if (driverId) orParts.push(`assigned_driver_id.eq.${driverId}`);
+        query = query.or(orParts.join(","));
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data || [];
     },
-    enabled: !!organizationId,
+    enabled: !!organizationId && !scopeLoading,
   });
 
   const { data: approvals = [] } = useQuery({
