@@ -267,9 +267,9 @@ export default function Inbox() {
             />
           </main>
 
-          {/* Right: context panel (also handles ad-hoc form path) */}
+          {/* Right: context panel (form_key path opens its own dialog instead) */}
           <TaskContextPanel
-            task={selected && !selected.form_key ? selected : selected && status === "completed" ? selected : selected && !selected.form_key ? selected : selected}
+            task={selected && !selected.form_key ? selected : null}
             organizationId={organizationId}
             onClose={() => setSelectedId(null)}
             onSubmit={submit}
