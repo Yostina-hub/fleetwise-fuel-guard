@@ -40,14 +40,17 @@ export interface AlertFilters {
 
 export const useAlerts = (filters?: AlertFilters) => {
   const { organizationId } = useOrganization();
+  const { isDriverOnly, driverId, userId, loading: scopeLoading } = useDriverScope();
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchAlerts = useCallback(async () => {
-    if (!organizationId) {
-      setAlerts([]);
-      setLoading(false);
+    if (!organizationId || scopeLoading) {
+      if (!scopeLoading) {
+        setAlerts([]);
+        setLoading(false);
+      }
       return;
     }
 
@@ -57,6 +60,22 @@ export const useAlerts = (filters?: AlertFilters) => {
         .from("alerts")
         .select("*")
         .eq("organization_id", organizationId);
+
+      // RBAC: drivers only see alerts tied to them.
+      if (isDriverOnly) {
+        if (!userId) {
+          setAlerts([]);
+          setLoading(false);
+          return;
+        }
+        if (driverId) {
+          query = query.eq("driver_id", driverId);
+        } else {
+          setAlerts([]);
+          setLoading(false);
+          return;
+        }
+      }
 
       if (filters?.severity && filters.severity !== 'all') {
         query = query.eq("severity", filters.severity);
@@ -87,7 +106,7 @@ export const useAlerts = (filters?: AlertFilters) => {
     } finally {
       setLoading(false);
     }
-  }, [organizationId, filters?.severity, filters?.status, filters?.vehicleId, filters?.alertType, filters?.dateFrom, filters?.dateTo]);
+  }, [organizationId, isDriverOnly, driverId, userId, scopeLoading, filters?.severity, filters?.status, filters?.vehicleId, filters?.alertType, filters?.dateFrom, filters?.dateTo]);
 
   useEffect(() => {
     let isMounted = true;
