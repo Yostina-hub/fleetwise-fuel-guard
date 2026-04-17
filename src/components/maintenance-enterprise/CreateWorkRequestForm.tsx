@@ -685,7 +685,7 @@ export default function CreateWorkRequestForm({
             <Input value={driverPhone} onChange={e => setDriverPhone(e.target.value)} />
           </FieldRow>
 
-          {!isTripInspection && (
+          {!isTripInspection && !isSafetyComfortCtx && (
             <FieldRow label="Fuel level in the tank" required>
               <div className="flex items-center gap-2">
                 <Input type="number" min={0} max={100} value={fuelLevel} onChange={e => setFuelLevel(e.target.value)} className="max-w-[160px]" />
@@ -693,6 +693,17 @@ export default function CreateWorkRequestForm({
               </div>
             </FieldRow>
           )}
+
+          <FieldRow label="Requested Quantity">
+            <Input
+              type="number"
+              min={0}
+              value={requestedQuantity}
+              onChange={e => setRequestedQuantity(e.target.value)}
+              className="max-w-[200px]"
+              placeholder="e.g. 1"
+            />
+          </FieldRow>
 
           <FieldRow label="Remark">
             <Textarea value={remark} onChange={e => setRemark(e.target.value)} rows={2} />
