@@ -26,7 +26,9 @@ import {
   Activity,
   Rocket,
   Webhook,
+  Sparkles,
 } from "lucide-react";
+import { seedSOPWorkflows } from "@/lib/workflow-engine/seedSOPs";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,12 +60,35 @@ const statusColors: Record<string, string> = {
 
 export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
   const { organizationId } = useOrganization();
-  const { user } = useAuth();
+  const { user, roles } = useAuth() as any;
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [historyWorkflowId, setHistoryWorkflowId] = useState<string | null>(null);
   const [webhookWorkflow, setWebhookWorkflow] = useState<any | null>(null);
+
+  const userRoles: string[] = Array.isArray(roles)
+    ? roles.map((r: any) => r?.role).filter(Boolean)
+    : [];
+  const canSeedSOPs = userRoles.includes("super_admin") || userRoles.includes("fleet_owner");
+
+  const seedSOPsMutation = useMutation({
+    mutationFn: async () => {
+      if (!organizationId) throw new Error("No organization");
+      return await seedSOPWorkflows(organizationId, user?.id);
+    },
+    onSuccess: (report) => {
+      queryClient.invalidateQueries({ queryKey: ["workflows", organizationId] });
+      const errs = report.errors.length ? ` · ${report.errors.length} errors` : "";
+      toast({
+        title: "SOP workflows seeded",
+        description: `${report.inserted} new · ${report.updated} updated · ${report.total} total${errs}`,
+        variant: report.errors.length ? "destructive" : "default",
+      });
+    },
+    onError: (e: any) =>
+      toast({ title: "Seed failed", description: e?.message || "Unknown error", variant: "destructive" }),
+  });
 
   const { data: workflows, isLoading } = useQuery({
     queryKey: ["workflows", organizationId],
@@ -176,10 +201,24 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
             Build powerful automations with drag-and-drop visual builder
           </p>
         </div>
-        <Button onClick={onCreateNew} className="gap-2">
-          <Plus className="h-4 w-4" />
-          New Workflow
-        </Button>
+        <div className="flex items-center gap-2">
+          {canSeedSOPs && (
+            <Button
+              variant="outline"
+              onClick={() => seedSOPsMutation.mutate()}
+              disabled={seedSOPsMutation.isPending}
+              className="gap-2"
+              title="Convert the 14 hardcoded SOP configs into editable visual workflows"
+            >
+              <Sparkles className="h-4 w-4" />
+              {seedSOPsMutation.isPending ? "Seeding..." : "Seed SOP Workflows"}
+            </Button>
+          )}
+          <Button onClick={onCreateNew} className="gap-2">
+            <Plus className="h-4 w-4" />
+            New Workflow
+          </Button>
+        </div>
       </div>
 
       {/* Search */}
