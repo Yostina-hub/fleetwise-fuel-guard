@@ -390,19 +390,21 @@ export const useMaintenanceRequests = () => {
     onError: (err: Error) => toast.error(err.message),
   });
 
-  // Step 23: Vehicle received
+  // Step 23: Vehicle received (back-office path — driver path uses driver_confirm_vehicle_received RPC)
   const receiveVehicle = useMutation({
     mutationFn: async ({ id }: { id: string }) => {
+      const { data: userData } = await supabase.auth.getUser();
       const { error } = await supabase
         .from("maintenance_requests")
         .update({
           workflow_stage: "files_updated",
           vehicle_received_at: new Date().toISOString(),
+          vehicle_received_by: userData.user?.id,
         })
         .eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => { invalidate(); toast.success("Vehicle received"); },
+    onSuccess: () => { invalidate(); toast.success("Vehicle received — proceed to file update"); },
     onError: (err: Error) => toast.error(err.message),
   });
 
