@@ -27,7 +27,7 @@ const STAGES = [
 const stageIndex = (s?: string | null) => Math.max(0, STAGES.findIndex(x => x.key === s));
 
 export default function AnnualInspectionPipeline() {
-  const { organizationId } = useOrganization();
+  const { organizationId, isViewingAllOrgs } = useOrganization();
   const qc = useQueryClient();
   const [closingId, setClosingId] = useState<string | null>(null);
   const [closeForm, setCloseForm] = useState({
@@ -43,26 +43,31 @@ export default function AnnualInspectionPipeline() {
   const [advancingId, setAdvancingId] = useState<string | null>(null);
 
   const { data: items = [], isLoading } = useQuery({
-    queryKey: ["annual-inspections-pipeline", organizationId],
+    queryKey: ["annual-inspections-pipeline", organizationId, isViewingAllOrgs],
     queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase
+      let query = supabase
         .from("vehicle_inspections")
         .select(`
-          id, vehicle_id, status, outsource_stage, work_order_id,
+          id, vehicle_id, organization_id, status, outsource_stage, work_order_id,
           registration_cost, registration_date, registration_valid_until,
           inspection_center, bolo_certificate_url, plate_sticker_number,
           inspection_date, created_at,
           vehicles ( plate_number, make, model )
         `)
-        .eq("organization_id", organizationId)
         .eq("inspection_type", "annual")
         .order("created_at", { ascending: false })
         .limit(50);
+
+      if (!isViewingAllOrgs) {
+        if (!organizationId) return [];
+        query = query.eq("organization_id", organizationId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data || [];
     },
-    enabled: !!organizationId,
+    enabled: isViewingAllOrgs || !!organizationId,
   });
 
   const advanceStage = async (item: any) => {
@@ -118,7 +123,6 @@ export default function AnnualInspectionPipeline() {
         .eq("id", closingId);
       if (error) throw error;
 
-      // Close the linked work order too
       const item = items.find((i: any) => i.id === closingId);
       if (item?.work_order_id) {
         await supabase.from("work_orders").update({
