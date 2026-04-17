@@ -430,6 +430,7 @@ export const FuelRequestWorkflow = () => {
   const { drivers } = useDrivers();
   const { formatCurrency, formatFuel, settings } = useOrganizationSettings();
   const { hasRole } = useAuthContext();
+  const { pendingFuelApprovals, approveFuelRequest, rejectFuelRequest } = useApprovals();
   const canApprove = APPROVER_ROLES.some(r => hasRole(r));
   const queryClient = useQueryClient();
 
