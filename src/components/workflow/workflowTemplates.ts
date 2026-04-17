@@ -1337,25 +1337,37 @@ const TEMPLATES: WorkflowTemplate[] = [
         },
       },
 
-      // ── Stage 2: Vehicles ready — branch decision ─────────────
+      // ── Stage 2: Vehicles ready — auto-route by intake inspection_type ─────────────
+      // Pre-trip / Post-trip → Internal path · Annual → Annual (Bolo) path.
+      // No re-prompt: the inspection type was already chosen at the intake form.
       {
         id: "s2_ready",
         type: "action",
         position: { x: 480, y: 320 },
         data: {
-          label: "2. Vehicles Ready — Choose Path",
-          description: "Pick Internal preventive route or Annual (Bolo) inspection route.",
+          label: "2. Vehicles Ready — Confirm & Auto-Route",
+          description: "Confirm the vehicle is ready. Path is auto-selected from the intake inspection type (Pre-trip / Post-trip → Internal · Annual → Bolo).",
           icon: "🧑‍💼",
           category: "actions",
           nodeType: "human_task",
           config: {
-            title: "Vehicles ready — choose inspection path",
-            description: "Internal preventive route or Annual TA Bolo route.",
+            title: "Vehicles ready — confirm & auto-route",
+            description: "The inspection type was already captured at intake. Confirm the vehicle is ready; the workflow will auto-route to the matching path.",
             assignee_role: "operations_manager",
             allowed_roles: ["fleet_manager", "operations_manager"],
+            show_intake_summary: true,
+            auto_route: {
+              source_field: "inspection_type",
+              rules: [
+                { when: "annual",    action: "to_annual" },
+                { when: "pre_trip",  action: "to_internal" },
+                { when: "post_trip", action: "to_internal" },
+              ],
+              fallback_action: "to_internal",
+            },
             actions: [
-              { id: "to_internal", label: "Internal inspection path", variant: "secondary" },
-              { id: "to_annual",   label: "Annual inspection path",   variant: "default" },
+              { id: "to_internal", label: "Confirm — Internal path", variant: "secondary" },
+              { id: "to_annual",   label: "Confirm — Annual (Bolo) path", variant: "default" },
             ],
           },
           status: "idle",
