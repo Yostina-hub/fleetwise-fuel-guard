@@ -92,6 +92,10 @@ export interface WorkflowConfig {
   stages: Stage[];
   /** Fields collected when filing a new instance */
   intakeFields?: StageField[];
+  /** Optional reusable app form used instead of ad-hoc intake fields for new workflow instances. */
+  intakeFormKey?: string;
+  /** Optional prefilled context passed into the reusable intake form. */
+  intakePrefill?: Record<string, any>;
   /** Roles allowed to file a new instance */
   intakeRoles?: AppRole[];
   /** Whether this workflow is tied to a vehicle / driver */

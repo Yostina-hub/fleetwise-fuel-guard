@@ -27,6 +27,12 @@ export const fleetInspectionConfig: WorkflowConfig = {
   description: "Annual & internal vehicle inspection workflow.",
   icon: ClipboardCheck,
   initialStage: "list_vehicles",
+  intakeFormKey: "create_work_request",
+  intakePrefill: {
+    context: "trip_inspection",
+    request_type: "inspection",
+    inspection_sub_type: "pre_trip",
+  },
   requiresVehicle: true,
   intakeFields: [
     { key: "title", label: "Inspection title", type: "text", required: true, placeholder: "Q2 fleet inspection" },

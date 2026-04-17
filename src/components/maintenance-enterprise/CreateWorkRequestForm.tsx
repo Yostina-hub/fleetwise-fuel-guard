@@ -27,7 +27,7 @@ interface Props {
   /** When 'trip_inspection' the form renders the Oracle EBS Veh. Trip Inspection layout with Pre/Post-trip subtype. */
   defaultContext?: "vehicle_maintenance" | "trip_inspection" | "generator_maintenance" | "equipment_maintenance";
   defaultInspectionSubType?: "pre_trip" | "post_trip" | "annual" | "";
-  onSubmitted?: () => void;
+  onSubmitted?: (result?: Record<string, any>) => void;
   onCancel?: () => void;
 }
 
@@ -293,6 +293,7 @@ export default function CreateWorkRequestForm({
       if (error) throw error;
 
       // If this is an inspection request, also seed a vehicle_inspections row and bidirectionally link.
+      let createdInspectionId: string | null = null;
       if ((workRequestType === "inspection" || isTripInspection) && resolvedVehicleId && inspectionSubType) {
         const { data: insp } = await (supabase as any)
           .from("vehicle_inspections")
@@ -311,6 +312,8 @@ export default function CreateWorkRequestForm({
           .select("id")
           .maybeSingle();
 
+        createdInspectionId = insp?.id ?? null;
+
         if (insp?.id && insertedReq?.id) {
           await (supabase as any)
             .from("maintenance_requests")
@@ -323,7 +326,18 @@ export default function CreateWorkRequestForm({
         ? ` — routed to ${insertedReq.approver_role.replace(/_/g, " ")}`
         : "";
       toast.success(`Work Request ${reqNumber} created${approverInfo}`);
-      onSubmitted?.();
+      onSubmitted?.({
+        maintenance_request_id: insertedReq?.id ?? null,
+        inspection_id: createdInspectionId,
+        vehicle_id: resolvedVehicleId,
+        driver_id: driverId || null,
+        request_type: isTripInspection ? "inspection" : workRequestType,
+        inspection_type: inspectionSubType || null,
+        title: isTripInspection
+          ? `${inspectionSubType?.replace(/_/g, " ") || "Trip"} inspection — ${assetNumber}`
+          : `${workRequestType} work request — ${assetNumber}`,
+        description: additionalDescription || remark || null,
+      });
     } catch (e: any) {
       toast.error(e.message || "Failed to create request");
     } finally {
