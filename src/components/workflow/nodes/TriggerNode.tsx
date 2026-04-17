@@ -9,8 +9,10 @@ const TriggerNode = memo(({ data, selected }: NodeProps) => {
   return (
     <div
       className={cn(
-        "relative min-w-[200px] rounded-xl border-2 bg-card shadow-lg transition-all duration-200",
-        selected ? "border-primary shadow-primary/20 shadow-xl scale-105" : "border-emerald-500/50 hover:shadow-xl",
+        "relative min-w-[220px] max-w-[260px] rounded-xl border bg-popover text-popover-foreground shadow-md ring-1 ring-emerald-500/15 transition-all duration-200",
+        selected
+          ? "border-primary ring-primary/20 shadow-xl scale-[1.02]"
+          : "border-emerald-500 hover:shadow-lg",
         nodeData.status === "running" && "animate-pulse border-yellow-500",
         nodeData.status === "success" && "border-emerald-500",
         nodeData.status === "error" && "border-destructive"
@@ -18,22 +20,22 @@ const TriggerNode = memo(({ data, selected }: NodeProps) => {
     >
       {/* Top accent bar */}
       <div className="h-1.5 w-full rounded-t-[10px] bg-gradient-to-r from-emerald-400 to-teal-500" />
-      
+
       <div className="p-3">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-lg">
+        <div className="flex items-start gap-2 mb-1">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-base">
             {nodeData.icon || "⚡"}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
               Trigger
             </div>
-            <div className="text-sm font-medium truncate text-foreground">
+            <div className="text-sm font-semibold leading-snug text-foreground break-words">
               {nodeData.label}
             </div>
           </div>
           {nodeData.isConfigured && (
-            <div className="h-2 w-2 rounded-full bg-emerald-500" title="Configured" />
+            <div className="h-2 w-2 rounded-full bg-emerald-500 mt-1 shrink-0" title="Configured" />
           )}
         </div>
         {nodeData.description && (
