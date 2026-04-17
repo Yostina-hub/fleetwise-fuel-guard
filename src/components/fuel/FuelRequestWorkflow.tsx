@@ -19,6 +19,7 @@ import {
   ClipboardCheck, Send, History, Truck, Power, Settings,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useApprovals } from "@/hooks/useApprovals";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
