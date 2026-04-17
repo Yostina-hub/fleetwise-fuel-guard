@@ -77,7 +77,7 @@ export function TaskContextPanel({ task, organizationId, onClose, onSubmit, subm
     queryFn: async () => {
       const { data } = await supabase
         .from("drivers")
-        .select("id, full_name, phone, status")
+        .select("id, first_name, last_name, phone, status")
         .eq("id", task!.driver_id!)
         .maybeSingle();
       return data;
@@ -176,7 +176,9 @@ export function TaskContextPanel({ task, organizationId, onClose, onSubmit, subm
                       <UserIcon className="h-4 w-4" />
                     </div>
                     <div className="min-w-0">
-                      <div className="text-sm font-medium truncate">{driver.full_name}</div>
+                      <div className="text-sm font-medium truncate">
+                        {[driver.first_name, driver.last_name].filter(Boolean).join(" ") || "Driver"}
+                      </div>
                       <div className="text-xs text-muted-foreground truncate">{driver.phone ?? "—"}</div>
                     </div>
                   </div>
