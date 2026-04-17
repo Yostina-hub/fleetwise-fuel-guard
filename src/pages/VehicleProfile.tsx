@@ -394,6 +394,7 @@ const VehicleProfile = () => {
                       <ExpiryAlertCard label="Insurance Expiry" date={v.insurance_expiry} icon={Shield} />
                       <ExpiryAlertCard label="Registration Expiry" date={v.registration_expiry} icon={FileText} />
                       <ExpiryAlertCard label="Permit Expiry" date={v.permit_expiry} icon={Key} />
+                      <NextAnnualInspectionCard vehicleId={v.id} />
                       {isRental && <ExpiryAlertCard label="Rental Contract End" date={v.rental_end_date} icon={Building2} />}
                       {![v.insurance_expiry, v.registration_expiry, v.permit_expiry, isRental && v.rental_end_date].filter(Boolean).length && (
                         <p className="text-sm text-muted-foreground py-4 text-center">No expiry dates configured</p>
