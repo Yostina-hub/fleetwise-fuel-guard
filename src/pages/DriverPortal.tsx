@@ -25,6 +25,7 @@ import { VehicleRequestForm } from "@/components/vehicle-requests/VehicleRequest
 import CreateWorkRequestDialog from "@/components/maintenance/CreateWorkRequestDialog";
 import DriverSubmissionsTab from "@/components/driver-portal/DriverSubmissionsTab";
 import DriverTripHistory from "@/components/driver-portal/DriverTripHistory";
+import PendingPostTripBanner from "@/components/driver-portal/PendingPostTripBanner";
 
 const DriverPortal = () => {
   const navigate = useNavigate();
@@ -39,6 +40,12 @@ const DriverPortal = () => {
   const [showFuel, setShowFuel] = useState(false);
   const [showVehicle, setShowVehicle] = useState(false);
   const [showInspection, setShowInspection] = useState(false);
+  // Override prefill when launching the inspection dialog as a post-trip flow
+  // (from the pending banner or from an alert deep-link).
+  const [inspectionPrefillOverride, setInspectionPrefillOverride] = useState<{
+    vehicle_id?: string;
+    inspection_type?: string;
+  } | null>(null);
 
   // Driver self info + assigned vehicle + auth user id
   // Super admins can override via ?driverId= to view the portal as that driver.
