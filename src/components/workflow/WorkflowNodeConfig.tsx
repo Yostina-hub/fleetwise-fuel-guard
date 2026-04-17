@@ -15,6 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { X, Trash2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { WorkflowNode } from "./types";
+import { HumanTaskEditor } from "./HumanTaskEditor";
 
 interface WorkflowNodeConfigProps {
   node: WorkflowNode | null;
@@ -62,6 +63,15 @@ export const WorkflowNodeConfig = ({ node, onUpdate, onDelete, onClose }: Workfl
               placeholder="Describe what this node does..."
             />
           </div>
+
+          {/* Human Task / Approval editor */}
+          {(data.nodeType === "human_task" || data.nodeType === "approval") && (
+            <HumanTaskEditor
+              config={data.config || {}}
+              isApproval={data.nodeType === "approval"}
+              onChange={(cfg) => onUpdate(node.id, { config: cfg } as any)}
+            />
+          )}
 
           {/* Trigger-specific config */}
           {data.category === "triggers" && (
