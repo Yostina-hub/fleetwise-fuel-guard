@@ -21,6 +21,7 @@ import { VEHICLE_TYPES_OPTIONS } from "@/components/fleet/formConstants";
 interface VehicleRequestFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  source?: string;
 }
 
 const POOL_HIERARCHY: Record<string, string[]> = {
@@ -54,7 +55,7 @@ const initialForm = {
   project_number: "",
 };
 
-export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormProps) => {
+export const VehicleRequestForm = ({ open, onOpenChange, source }: VehicleRequestFormProps) => {
   const { t } = useTranslation();
   const { organizationId, isSuperAdmin } = useOrganization();
   const queryClient = useQueryClient();
@@ -188,6 +189,7 @@ export const VehicleRequestForm = ({ open, onOpenChange }: VehicleRequestFormPro
         end_time: form.end_time || null,
         project_number: form.request_type === "project_operation" ? (form.project_number || null) : null,
         status: "pending",
+        ...(source ? { source } : {}),
       };
 
       const { data, error } = await (supabase as any).from("vehicle_requests").insert(payload).select("id").single();
