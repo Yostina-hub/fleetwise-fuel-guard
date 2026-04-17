@@ -8,6 +8,7 @@ import type { WorkflowConfig } from "./types";
 import { useWorkflow } from "./useWorkflow";
 import { RenderWorkflowForm, getWorkflowForm } from "@/lib/workflow-forms/registry";
 import { FileText } from "lucide-react";
+import { toast } from "sonner";
 
 interface Props {
   config: WorkflowConfig;
