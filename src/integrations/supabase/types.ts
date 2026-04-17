@@ -13990,6 +13990,66 @@ export type Database = {
           },
         ]
       }
+      outsource_payment_approvals: {
+        Row: {
+          acted_at: string | null
+          acted_by: string | null
+          approver_role: string
+          comments: string | null
+          created_at: string
+          id: string
+          organization_id: string
+          payment_request_id: string
+          rule_name: string | null
+          status: string
+          step_order: number
+          updated_at: string
+        }
+        Insert: {
+          acted_at?: string | null
+          acted_by?: string | null
+          approver_role: string
+          comments?: string | null
+          created_at?: string
+          id?: string
+          organization_id: string
+          payment_request_id: string
+          rule_name?: string | null
+          status?: string
+          step_order: number
+          updated_at?: string
+        }
+        Update: {
+          acted_at?: string | null
+          acted_by?: string | null
+          approver_role?: string
+          comments?: string | null
+          created_at?: string
+          id?: string
+          organization_id?: string
+          payment_request_id?: string
+          rule_name?: string | null
+          status?: string
+          step_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outsource_payment_approvals_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outsource_payment_approvals_payment_request_id_fkey"
+            columns: ["payment_request_id"]
+            isOneToOne: false
+            referencedRelation: "outsource_payment_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       outsource_payment_request_items: {
         Row: {
           created_at: string
@@ -14063,6 +14123,7 @@ export type Database = {
           contract_id: string | null
           created_at: string
           currency: string
+          current_approval_step: number | null
           deductions: number | null
           driver_id: string | null
           fuel_cost: number | null
@@ -14083,6 +14144,7 @@ export type Database = {
           submitted_at: string | null
           submitted_by: string | null
           supplier_id: string | null
+          total_approval_steps: number | null
           updated_at: string
         }
         Insert: {
@@ -14100,6 +14162,7 @@ export type Database = {
           contract_id?: string | null
           created_at?: string
           currency?: string
+          current_approval_step?: number | null
           deductions?: number | null
           driver_id?: string | null
           fuel_cost?: number | null
@@ -14120,6 +14183,7 @@ export type Database = {
           submitted_at?: string | null
           submitted_by?: string | null
           supplier_id?: string | null
+          total_approval_steps?: number | null
           updated_at?: string
         }
         Update: {
@@ -14137,6 +14201,7 @@ export type Database = {
           contract_id?: string | null
           created_at?: string
           currency?: string
+          current_approval_step?: number | null
           deductions?: number | null
           driver_id?: string | null
           fuel_cost?: number | null
@@ -14157,6 +14222,7 @@ export type Database = {
           submitted_at?: string | null
           submitted_by?: string | null
           supplier_id?: string | null
+          total_approval_steps?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -23930,6 +23996,14 @@ export type Database = {
       }
     }
     Functions: {
+      act_on_outsource_payment_approval: {
+        Args: {
+          _comments?: string
+          _decision: string
+          _payment_request_id: string
+        }
+        Returns: Json
+      }
       action_fuel_approval: {
         Args: { p_action: string; p_approval_id: string; p_comment?: string }
         Returns: Json
@@ -23941,6 +24015,10 @@ export type Database = {
       action_fuel_wo_approval: {
         Args: { p_action: string; p_approval_id: string; p_comment?: string }
         Returns: Json
+      }
+      build_outsource_payment_approval_chain: {
+        Args: { _payment_request_id: string }
+        Returns: number
       }
       check_account_lockout: {
         Args: { p_email: string }
