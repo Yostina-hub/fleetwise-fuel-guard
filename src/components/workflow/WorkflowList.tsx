@@ -677,3 +677,55 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
     </div>
   );
 };
+
+// ----- Category filtering helpers -----
+
+const CATEGORY_ICON_MAP: Record<string, React.ReactNode> = {
+  safety: <Shield className="h-3 w-3" />,
+  maintenance: <Wrench className="h-3 w-3" />,
+  fuel: <Fuel className="h-3 w-3" />,
+  compliance: <ClipboardCheck className="h-3 w-3" />,
+  operations: <Settings2 className="h-3 w-3" />,
+  alerts: <Bell className="h-3 w-3" />,
+  cold_chain: <Snowflake className="h-3 w-3" />,
+  sensors: <Radio className="h-3 w-3" />,
+  ev_charging: <BatteryCharging className="h-3 w-3" />,
+};
+
+function getCategoryIcon(category: string): React.ReactNode {
+  return CATEGORY_ICON_MAP[category] || <GitBranch className="h-3 w-3" />;
+}
+
+interface CategoryChipProps {
+  label: string;
+  icon: React.ReactNode;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+}
+
+function CategoryChip({ label, icon, count, active, onClick }: CategoryChipProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors capitalize border",
+        active
+          ? "bg-primary text-primary-foreground border-primary"
+          : "bg-muted/40 text-foreground/80 border-border hover:bg-muted hover:border-primary/40",
+      )}
+    >
+      {icon}
+      <span>{label}</span>
+      <span
+        className={cn(
+          "rounded-full px-1.5 py-0 text-[10px] font-semibold tabular-nums",
+          active ? "bg-primary-foreground/20 text-primary-foreground" : "bg-background text-muted-foreground",
+        )}
+      >
+        {count}
+      </span>
+    </button>
+  );
+}
