@@ -16643,6 +16643,445 @@ export type Database = {
         }
         Relationships: []
       }
+      safety_comfort_issuances: {
+        Row: {
+          created_at: string
+          id: string
+          inventory_item_id: string | null
+          issued_at: string
+          issued_by: string | null
+          issued_by_name: string | null
+          item_key: string
+          item_label: string
+          notes: string | null
+          organization_id: string
+          qty: number
+          request_id: string | null
+          request_item_id: string | null
+          source: string
+          total_cost: number | null
+          unit_cost: number | null
+          user_id: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          inventory_item_id?: string | null
+          issued_at?: string
+          issued_by?: string | null
+          issued_by_name?: string | null
+          item_key: string
+          item_label: string
+          notes?: string | null
+          organization_id: string
+          qty?: number
+          request_id?: string | null
+          request_item_id?: string | null
+          source?: string
+          total_cost?: number | null
+          unit_cost?: number | null
+          user_id: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          inventory_item_id?: string | null
+          issued_at?: string
+          issued_by?: string | null
+          issued_by_name?: string | null
+          item_key?: string
+          item_label?: string
+          notes?: string | null
+          organization_id?: string
+          qty?: number
+          request_id?: string | null
+          request_item_id?: string | null
+          source?: string
+          total_cost?: number | null
+          unit_cost?: number | null
+          user_id?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safety_comfort_issuances_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "safety_comfort_issuances_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "safety_comfort_issuances_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "safety_comfort_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "safety_comfort_issuances_request_item_id_fkey"
+            columns: ["request_item_id"]
+            isOneToOne: false
+            referencedRelation: "safety_comfort_request_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "safety_comfort_issuances_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      safety_comfort_procurement_requests: {
+        Row: {
+          assigned_at: string | null
+          assigned_to: string | null
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          expected_delivery_date: string | null
+          id: string
+          items: Json
+          notes: string | null
+          organization_id: string
+          pr_number: string
+          request_id: string | null
+          status: string
+          total_estimated_cost: number | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_to?: string | null
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          expected_delivery_date?: string | null
+          id?: string
+          items?: Json
+          notes?: string | null
+          organization_id: string
+          pr_number: string
+          request_id?: string | null
+          status?: string
+          total_estimated_cost?: number | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_to?: string | null
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          expected_delivery_date?: string | null
+          id?: string
+          items?: Json
+          notes?: string | null
+          organization_id?: string
+          pr_number?: string
+          request_id?: string | null
+          status?: string
+          total_estimated_cost?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safety_comfort_procurement_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "safety_comfort_procurement_requests_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "safety_comfort_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      safety_comfort_request_eligibility: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          item_key: string
+          max_qty_per_period: number | null
+          notes: string | null
+          organization_id: string
+          scope_type: string
+          scope_value: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          item_key: string
+          max_qty_per_period?: number | null
+          notes?: string | null
+          organization_id: string
+          scope_type: string
+          scope_value: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          item_key?: string
+          max_qty_per_period?: number | null
+          notes?: string | null
+          organization_id?: string
+          scope_type?: string
+          scope_value?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safety_comfort_request_eligibility_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      safety_comfort_request_items: {
+        Row: {
+          approved_qty: number | null
+          available_qty: number | null
+          category: string
+          created_at: string
+          estimated_cost: number | null
+          id: string
+          inventory_item_id: string | null
+          issued_at: string | null
+          issued_by: string | null
+          issued_qty: number | null
+          item_key: string
+          item_label: string
+          last_issued_at: string | null
+          line_status: string
+          notes: string | null
+          organization_id: string
+          reason_for_replacement: string | null
+          request_id: string
+          requested_qty: number
+          required_qty: string | null
+          unit_cost: number | null
+          updated_at: string
+          usability_check_message: string | null
+          usability_check_passed: boolean | null
+          usability_period: string | null
+        }
+        Insert: {
+          approved_qty?: number | null
+          available_qty?: number | null
+          category: string
+          created_at?: string
+          estimated_cost?: number | null
+          id?: string
+          inventory_item_id?: string | null
+          issued_at?: string | null
+          issued_by?: string | null
+          issued_qty?: number | null
+          item_key: string
+          item_label: string
+          last_issued_at?: string | null
+          line_status?: string
+          notes?: string | null
+          organization_id: string
+          reason_for_replacement?: string | null
+          request_id: string
+          requested_qty?: number
+          required_qty?: string | null
+          unit_cost?: number | null
+          updated_at?: string
+          usability_check_message?: string | null
+          usability_check_passed?: boolean | null
+          usability_period?: string | null
+        }
+        Update: {
+          approved_qty?: number | null
+          available_qty?: number | null
+          category?: string
+          created_at?: string
+          estimated_cost?: number | null
+          id?: string
+          inventory_item_id?: string | null
+          issued_at?: string | null
+          issued_by?: string | null
+          issued_qty?: number | null
+          item_key?: string
+          item_label?: string
+          last_issued_at?: string | null
+          line_status?: string
+          notes?: string | null
+          organization_id?: string
+          reason_for_replacement?: string | null
+          request_id?: string
+          requested_qty?: number
+          required_qty?: string | null
+          unit_cost?: number | null
+          updated_at?: string
+          usability_check_message?: string | null
+          usability_check_passed?: boolean | null
+          usability_period?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safety_comfort_request_items_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "safety_comfort_request_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "safety_comfort_request_items_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "safety_comfort_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      safety_comfort_requests: {
+        Row: {
+          approval_comments: string | null
+          approved_at: string | null
+          approved_by: string | null
+          approved_by_name: string | null
+          created_at: string
+          eligibility_check: string | null
+          eligibility_notes: string | null
+          fulfilled_at: string | null
+          fulfilled_by: string | null
+          id: string
+          notes: string | null
+          organization_id: string
+          procurement_request_id: string | null
+          reason: string | null
+          rejected_at: string | null
+          rejection_reason: string | null
+          request_number: string
+          requester_id: string
+          requester_name: string | null
+          status: string
+          stock_status: string | null
+          total_estimated_cost: number | null
+          updated_at: string
+          vehicle_group: string | null
+          vehicle_id: string | null
+          warehouse_checked_at: string | null
+          warehouse_checked_by: string | null
+          work_order_id: string | null
+        }
+        Insert: {
+          approval_comments?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_by_name?: string | null
+          created_at?: string
+          eligibility_check?: string | null
+          eligibility_notes?: string | null
+          fulfilled_at?: string | null
+          fulfilled_by?: string | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          procurement_request_id?: string | null
+          reason?: string | null
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          request_number: string
+          requester_id: string
+          requester_name?: string | null
+          status?: string
+          stock_status?: string | null
+          total_estimated_cost?: number | null
+          updated_at?: string
+          vehicle_group?: string | null
+          vehicle_id?: string | null
+          warehouse_checked_at?: string | null
+          warehouse_checked_by?: string | null
+          work_order_id?: string | null
+        }
+        Update: {
+          approval_comments?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_by_name?: string | null
+          created_at?: string
+          eligibility_check?: string | null
+          eligibility_notes?: string | null
+          fulfilled_at?: string | null
+          fulfilled_by?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          procurement_request_id?: string | null
+          reason?: string | null
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          request_number?: string
+          requester_id?: string
+          requester_name?: string | null
+          status?: string
+          stock_status?: string | null
+          total_estimated_cost?: number | null
+          updated_at?: string
+          vehicle_group?: string | null
+          vehicle_id?: string | null
+          warehouse_checked_at?: string | null
+          warehouse_checked_by?: string | null
+          work_order_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safety_comfort_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "safety_comfort_requests_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "safety_comfort_requests_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saved_filters: {
         Row: {
           created_at: string
@@ -24601,6 +25040,20 @@ export type Database = {
           reset_at: string
         }[]
       }
+      check_safety_comfort_usability: {
+        Args: {
+          p_item_key: string
+          p_period_days?: number
+          p_user_id: string
+          p_vehicle_id: string
+        }
+        Returns: {
+          allowed: boolean
+          days_since_last: number
+          last_issued_at: string
+          reason: string
+        }[]
+      }
       cleanup_maintenance_workflow_e2e_test: { Args: never; Returns: string }
       cleanup_old_telemetry: {
         Args: { p_retain_months?: number }
@@ -24775,6 +25228,13 @@ export type Database = {
           petrol_price_per_liter: number
           petrol_stock_liters: number
           phone: string
+        }[]
+      }
+      get_safety_comfort_allowed_items: {
+        Args: { p_user_id: string; p_vehicle_id: string }
+        Returns: {
+          item_key: string
+          source: string
         }[]
       }
       get_user_organization: { Args: { _user_id: string }; Returns: string }
