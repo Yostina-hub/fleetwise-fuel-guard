@@ -400,6 +400,29 @@ function WorkflowCanvasInner({ editWorkflowId }: { editWorkflowId?: string | nul
     setTimeout(() => fitView({ padding: 0.2 }), 200);
   }, [pushHistory, setNodes, setEdges, fitView]);
 
+  // Auto-layout (dagre)
+  const handleAutoLayout = useCallback(
+    (direction: LayoutDirection) => {
+      if (nodes.length === 0) return;
+      pushHistory();
+      const { nodes: ln, edges: le } = autoLayout(nodes, edges, direction);
+      setNodes(ln);
+      setEdges(le);
+      setTimeout(() => fitView({ padding: 0.2, duration: 400 }), 50);
+      toast({ title: "Auto-layout applied", description: `Arranged ${nodes.length} nodes ${direction === "TB" ? "vertically" : "horizontally"}.` });
+    },
+    [nodes, edges, setNodes, setEdges, pushHistory, fitView, toast],
+  );
+
+  // Validation problems (memoised)
+  const problems = useMemo(() => findProblems(nodes, edges), [nodes, edges]);
+
+  const jumpToProblem = useCallback((nodeId: string) => {
+    const n = nodes.find((nn) => nn.id === nodeId);
+    if (!n) return;
+    setSelectedNode(n as WorkflowNode);
+  }, [nodes]);
+
   // Cmd+K keyboard shortcut
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
