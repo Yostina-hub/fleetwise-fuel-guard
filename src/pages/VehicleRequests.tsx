@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ClipboardList, Plus, Clock, CheckCircle, XCircle, Truck, Eye, MessageSquare, LogIn, Shuffle } from "lucide-react";
+import { ClipboardList, Plus, Clock, CheckCircle, XCircle, Truck, Eye, MessageSquare, LogIn, Shuffle, Trash2, Undo2, Users } from "lucide-react";
 import { VehicleRequestKPI } from "@/components/vehicle-requests/VehicleRequestKPI";
 import { VehicleRequestForm } from "@/components/vehicle-requests/VehicleRequestForm";
 import { VehicleRequestApprovalFlow } from "@/components/vehicle-requests/VehicleRequestApprovalFlow";
@@ -13,6 +13,9 @@ import { DriverCheckInDialog } from "@/components/vehicle-requests/DriverCheckIn
 import { CrossPoolAssignmentDialog } from "@/components/vehicle-requests/CrossPoolAssignmentDialog";
 import { PoolReviewPanel } from "@/components/vehicle-requests/PoolReviewPanel";
 import VehicleRequestWorkflowProgress from "@/components/vehicle-requests/VehicleRequestWorkflowProgress";
+import { DeallocateRequestDialog } from "@/components/vehicle-requests/DeallocateRequestDialog";
+import { DeleteRequestDialog } from "@/components/vehicle-requests/DeleteRequestDialog";
+import { MultiVehicleAssignDialog } from "@/components/vehicle-requests/MultiVehicleAssignDialog";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -32,6 +35,9 @@ const VehicleRequests = () => {
   const [showFeedback, setShowFeedback] = useState<any>(null);
   const [showCheckIn, setShowCheckIn] = useState<any>(null);
   const [showCrossPool, setShowCrossPool] = useState<any>(null);
+  const [showDeallocate, setShowDeallocate] = useState<any>(null);
+  const [showDelete, setShowDelete] = useState<any>(null);
+  const [showMultiAssign, setShowMultiAssign] = useState<any>(null);
 
   // Realtime subscription for vehicle_requests
   useEffect(() => {
@@ -56,6 +62,7 @@ const VehicleRequests = () => {
         .from("vehicle_requests")
         .select("*, assigned_vehicle:assigned_vehicle_id(plate_number, make, model), assigned_driver:assigned_driver_id(first_name, last_name)")
         .eq("organization_id", organizationId!)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false })
         .limit(100);
 
@@ -223,9 +230,18 @@ const VehicleRequests = () => {
                           </Badge>
                         </td>
                         <td className="py-2 px-3 text-center">
-                          <Button size="sm" variant="ghost" onClick={() => setShowDetail(r)}><Eye className="w-3.5 h-3.5" /></Button>
+                          <Button size="sm" variant="ghost" onClick={() => setShowDetail(r)} title="View"><Eye className="w-3.5 h-3.5" /></Button>
                           {r.status === "completed" && !r.requester_rating && !r.auto_closed && (
-                            <Button size="sm" variant="ghost" onClick={() => setShowFeedback(r)} title="Give feedback (available for manually completed trips)"><MessageSquare className="w-3.5 h-3.5" /></Button>
+                            <Button size="sm" variant="ghost" onClick={() => setShowFeedback(r)} title="Give feedback"><MessageSquare className="w-3.5 h-3.5" /></Button>
+                          )}
+                          {r.pool_category === "outsource" && (r.num_vehicles || 1) > 1 && ["approved","pending"].includes(r.status) && (
+                            <Button size="sm" variant="ghost" onClick={() => setShowMultiAssign(r)} title="Multi-vehicle assign"><Users className="w-3.5 h-3.5" /></Button>
+                          )}
+                          {r.status === "assigned" && !r.driver_checked_in_at && (
+                            <Button size="sm" variant="ghost" onClick={() => setShowDeallocate(r)} title="Deallocate vehicle/driver"><Undo2 className="w-3.5 h-3.5 text-amber-500" /></Button>
+                          )}
+                          {!["completed"].includes(r.status) && !r.driver_checked_in_at && (
+                            <Button size="sm" variant="ghost" onClick={() => setShowDelete(r)} title="Remove request"><Trash2 className="w-3.5 h-3.5 text-destructive" /></Button>
                           )}
                         </td>
                       </tr>
@@ -278,6 +294,31 @@ const VehicleRequests = () => {
             request={showCrossPool}
             open={!!showCrossPool}
             onClose={() => setShowCrossPool(null)}
+          />
+        )}
+
+        {showDeallocate && (
+          <DeallocateRequestDialog
+            request={showDeallocate}
+            open={!!showDeallocate}
+            onClose={() => setShowDeallocate(null)}
+          />
+        )}
+
+        {showDelete && (
+          <DeleteRequestDialog
+            request={showDelete}
+            open={!!showDelete}
+            onClose={() => setShowDelete(null)}
+            isOwnDraft={isDriverOnly && showDelete.requester_id === userId && showDelete.status === "pending"}
+          />
+        )}
+
+        {showMultiAssign && (
+          <MultiVehicleAssignDialog
+            request={showMultiAssign}
+            open={!!showMultiAssign}
+            onClose={() => setShowMultiAssign(null)}
           />
         )}
       </div>
