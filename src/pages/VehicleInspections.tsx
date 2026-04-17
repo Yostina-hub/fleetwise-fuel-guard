@@ -74,14 +74,14 @@ const VehicleInspections = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div><h1 className="text-2xl font-bold">{t('pages.vehicle_inspections.title', 'Vehicle Inspections')}</h1><p className="text-muted-foreground">{t('pages.vehicle_inspections.description', 'Manage inspection schedules, stickers, and compliance certifications')}</p></div>
-          <Button><Plus className="h-4 w-4 mr-2" /> Schedule Inspection</Button>
+          <Button onClick={() => { setDialogType("annual"); setDialogOpen(true); }}><Plus className="h-4 w-4 mr-2" /> Schedule Inspection</Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><ClipboardCheck className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{stats.total}</p><p className="text-sm text-muted-foreground">Total Inspections</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><CheckCircle className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{stats.passed}</p><p className="text-sm text-muted-foreground">Passed</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><CheckCircle className="h-8 w-8 text-success" /><div><p className="text-2xl font-bold">{stats.passed}</p><p className="text-sm text-muted-foreground">Passed</p></div></div></CardContent></Card>
           <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><XCircle className="h-8 w-8 text-destructive" /><div><p className="text-2xl font-bold">{stats.failed}</p><p className="text-sm text-muted-foreground">Failed</p></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Clock className="h-8 w-8 text-orange-500" /><div><p className="text-2xl font-bold">{stats.upcoming}</p><p className="text-sm text-muted-foreground">Scheduled</p></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><Clock className="h-8 w-8 text-warning" /><div><p className="text-2xl font-bold">{stats.upcoming}</p><p className="text-sm text-muted-foreground">Scheduled</p></div></div></CardContent></Card>
         </div>
 
         <Tabs defaultValue="all">
@@ -91,9 +91,27 @@ const VehicleInspections = () => {
           </TabsList>
 
           <TabsContent value="all" className="space-y-4">
-            <div className="flex gap-3">
+            <div className="flex flex-col md:flex-row gap-3">
               <div className="relative flex-1"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input placeholder="Search by plate or sticker #..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" /></div>
-              <Select value={typeFilter} onValueChange={setTypeFilter}><SelectTrigger className="w-44"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t('common.allTypes', 'All Types')}</SelectItem><SelectItem value="routine">Routine</SelectItem><SelectItem value="annual">Annual</SelectItem><SelectItem value="pre_trip">Pre-Trip</SelectItem><SelectItem value="roadworthiness">Roadworthiness</SelectItem></SelectContent></Select>
+              <div className="flex flex-wrap gap-1.5">
+                {TYPE_CHIPS.map(c => (
+                  <button
+                    key={c.value}
+                    onClick={() => setTypeFilter(c.value)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                      typeFilter === c.value
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background text-muted-foreground border-border hover:bg-muted"
+                    )}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+              <Button variant="outline" size="sm" onClick={() => { setDialogType(typeFilter === "all" ? "annual" : typeFilter); setDialogOpen(true); }}>
+                <Plus className="h-4 w-4 mr-1" /> New {typeFilter === "all" ? "" : TYPE_CHIPS.find(c => c.value === typeFilter)?.label}
+              </Button>
             </div>
             <Card><Table>
               <TableHeader><TableRow>
