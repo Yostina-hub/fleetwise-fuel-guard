@@ -23,6 +23,7 @@ import {
   PanelLeftClose,
   PanelLeft,
   Workflow,
+  Inbox,
   Battery,
   CircleDot,
   Thermometer,
