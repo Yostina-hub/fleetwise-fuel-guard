@@ -2,10 +2,12 @@ import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useDriverScope } from "./useDriverScope";
 
 export const useTripRequests = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isDriverOnly, driverId, userId, loading: scopeLoading } = useDriverScope();
 
   // Realtime subscription
   useEffect(() => {
@@ -23,9 +25,9 @@ export const useTripRequests = () => {
   }, [queryClient]);
 
   const { data: requests, isLoading: loading } = useQuery({
-    queryKey: ["trip-requests"],
+    queryKey: ["trip-requests", isDriverOnly, driverId, userId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("trip_requests")
         .select(`
           *,
@@ -36,9 +38,19 @@ export const useTripRequests = () => {
         `)
         .order("created_at", { ascending: false });
 
+      // RBAC: drivers only see requests they raised or are the preferred driver for.
+      if (isDriverOnly) {
+        if (!userId) return [];
+        const orParts = [`requester_id.eq.${userId}`];
+        if (driverId) orParts.push(`preferred_driver_id.eq.${driverId}`);
+        query = query.or(orParts.join(","));
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data as any[];
     },
+    enabled: !scopeLoading,
   });
 
   const createRequest = useMutation({
