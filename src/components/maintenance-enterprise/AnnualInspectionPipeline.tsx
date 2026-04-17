@@ -27,7 +27,7 @@ const STAGES = [
 const stageIndex = (s?: string | null) => Math.max(0, STAGES.findIndex(x => x.key === s));
 
 export default function AnnualInspectionPipeline() {
-  const { organizationId, isViewingAllOrgs } = useOrganization();
+  const { organizationId, isViewingAllOrgs, loading: organizationLoading } = useOrganization();
   const qc = useQueryClient();
   const [closingId, setClosingId] = useState<string | null>(null);
   const [closeForm, setCloseForm] = useState({
@@ -42,7 +42,9 @@ export default function AnnualInspectionPipeline() {
   const [submittingClose, setSubmittingClose] = useState(false);
   const [advancingId, setAdvancingId] = useState<string | null>(null);
 
-  const { data: items = [], isLoading } = useQuery({
+  const queryEnabled = !organizationLoading && (isViewingAllOrgs || !!organizationId);
+
+  const { data: items = [], isLoading, isFetching } = useQuery({
     queryKey: ["annual-inspections-pipeline", organizationId, isViewingAllOrgs],
     queryFn: async () => {
       let query = supabase
@@ -67,7 +69,7 @@ export default function AnnualInspectionPipeline() {
       if (error) throw error;
       return data || [];
     },
-    enabled: isViewingAllOrgs || !!organizationId,
+    enabled: queryEnabled,
   });
 
   const advanceStage = async (item: any) => {
@@ -151,9 +153,20 @@ export default function AnnualInspectionPipeline() {
     }
   };
 
-  if (isLoading) {
+  if (organizationLoading || (queryEnabled && (isLoading || isFetching))) {
     return <p className="text-sm text-center text-muted-foreground py-6">Loading annual pipeline…</p>;
   }
+
+  if (!isViewingAllOrgs && !organizationId) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-sm text-muted-foreground">
+          Unable to determine your organization yet. Please refresh or reselect your organization.
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (items.length === 0) {
     return (
       <Card>
