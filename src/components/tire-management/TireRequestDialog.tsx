@@ -11,7 +11,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useVehicles } from "@/hooks/useVehicles";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 
@@ -35,7 +35,7 @@ const emptyItem = (): LineItem => ({ position: "", tire_size: "", preferred_bran
 export const TireRequestDialog = ({ open, onOpenChange }: Props) => {
   const { organizationId } = useOrganization();
   const { vehicles } = useVehicles();
-  const { user, profile } = useAuth() as any;
+  const { user, profile } = useAuthContext() as any;
   const queryClient = useQueryClient();
 
   const [mode, setMode] = useState<"single" | "batch">("single");

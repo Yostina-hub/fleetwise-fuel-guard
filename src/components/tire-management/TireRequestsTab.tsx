@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,7 @@ const RETURN_META: Record<string, { label: string; cls: string }> = {
 
 export const TireRequestsTab = () => {
   const { organizationId } = useOrganization();
-  const { user, profile } = useAuth() as any;
+  const { user, profile } = useAuthContext() as any;
   const queryClient = useQueryClient();
   const [openId, setOpenId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
