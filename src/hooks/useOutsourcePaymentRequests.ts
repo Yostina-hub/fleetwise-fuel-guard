@@ -31,6 +31,8 @@ export interface OutsourcePaymentRequest {
   fuel_info_provided_at: string | null;
   consolidated_by: string | null;
   consolidated_at: string | null;
+  current_approval_step: number | null;
+  total_approval_steps: number | null;
   approver_id: string | null;
   approved_at: string | null;
   contract_check_by: string | null;
