@@ -152,6 +152,13 @@ export default function OracleWorkOrderForm({ maintenanceRequestId, workOrderId,
     { sequence_number: 50, operation_description: "Collect invoice & report", department: "FleetMnt06", resource_sequence: 50, resource: "Inspector", required_units: 1, assigned_units: 1, duration_hours: 0, assigned_hours: 0 },
   ]);
 
+  // Materials, Permits, Quality, Meters, Attachments
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [permits, setPermits] = useState<Permit[]>([]);
+  const [qualityPlans, setQualityPlans] = useState<QualityPlan[]>([]);
+  const [meterReadings, setMeterReadings] = useState<MeterReading[]>([]);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+
   const [submitting, setSubmitting] = useState(false);
   const [savedWoId, setSavedWoId] = useState<string | null>(workOrderId || null);
 
