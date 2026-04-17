@@ -261,6 +261,8 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
         }
       }
     },
+    onSuccess: () => {
+      toast.success("Batch assignment complete — consolidated trip assigned");
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
       setExpandedId(null);
