@@ -1,9 +1,10 @@
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Users } from "lucide-react";
+import { Shield, Users, History } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { AuthorityMatrixTab } from "@/components/delegation/AuthorityMatrixTab";
 import { SubstitutionsTab } from "@/components/delegation/SubstitutionsTab";
+import { DelegationHistoryTab } from "@/components/delegation/DelegationHistoryTab";
 
 const DelegationMatrix = () => {
   const { t } = useTranslation();
@@ -35,6 +36,10 @@ const DelegationMatrix = () => {
               <Users className="h-4 w-4" />
               Substitutions
             </TabsTrigger>
+            <TabsTrigger value="history" className="gap-2">
+              <History className="h-4 w-4" />
+              History
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="authority">
@@ -43,6 +48,10 @@ const DelegationMatrix = () => {
 
           <TabsContent value="substitutions">
             <SubstitutionsTab />
+          </TabsContent>
+
+          <TabsContent value="history">
+            <DelegationHistoryTab />
           </TabsContent>
         </Tabs>
       </div>
