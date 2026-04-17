@@ -397,17 +397,56 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
             </div>
           </div>
 
-          {/* Row 2: Category chips */}
-          {availableCategories.length > 0 && (
-            <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-border">
+          {/* Row 2: Domain pills (top-tier taxonomy) */}
+          {availableDomains.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-border">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mr-1">
+                Domain
+              </span>
+              <DomainPill
+                label="All domains"
+                icon={<LayoutGrid className="h-3.5 w-3.5" />}
+                count={workflows?.length || 0}
+                active={domainFilter === "all"}
+                onClick={() => {
+                  setDomainFilter("all");
+                  setCategoryFilter("all");
+                }}
+              />
+              {availableDomains.map((d) => {
+                const meta = DOMAIN_META[d];
+                return (
+                  <DomainPill
+                    key={d}
+                    label={meta?.label || d}
+                    icon={meta?.icon || <GitBranch className="h-3.5 w-3.5" />}
+                    count={domainCounts[d]}
+                    active={domainFilter === d}
+                    accentClass={meta?.accentClass}
+                    onClick={() => {
+                      setDomainFilter(d);
+                      setCategoryFilter("all");
+                    }}
+                  />
+                );
+              })}
+            </div>
+          )}
+
+          {/* Row 3: Sub-category chips (only for the selected domain) */}
+          {domainFilter !== "all" && subCategoriesForDomain.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-dashed border-border">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mr-1">
+                Category
+              </span>
               <CategoryChip
                 label="All"
                 icon={<LayoutGrid className="h-3 w-3" />}
-                count={workflows?.length || 0}
+                count={domainCounts[domainFilter] || 0}
                 active={categoryFilter === "all"}
                 onClick={() => setCategoryFilter("all")}
               />
-              {availableCategories.map((cat) => (
+              {subCategoriesForDomain.map((cat) => (
                 <CategoryChip
                   key={cat}
                   label={cat.replace(/_/g, " ")}
