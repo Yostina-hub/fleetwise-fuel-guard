@@ -421,29 +421,28 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
           {filteredWorkflows.map((workflow: any) => (
             <Card
               key={workflow.id}
-              className="group cursor-pointer hover:border-primary/50 transition-all"
+              className="group cursor-pointer hover:border-primary/50 hover:shadow-md transition-all flex flex-col"
               onClick={() => onEdit(workflow.id)}
             >
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-primary" />
-                    <h3 className="font-semibold text-sm text-foreground truncate">{workflow.name}</h3>
+              <CardContent className="p-4 flex flex-col flex-1">
+                {/* Header: icon + wrapping title + overflow menu */}
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-start gap-2 min-w-0 flex-1">
+                    <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                      <Zap className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    <h3 className="font-semibold text-sm text-foreground leading-snug break-words line-clamp-2">
+                      {workflow.name}
+                    </h3>
                   </div>
-                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      size="sm"
-                      variant="default"
-                      className="h-7 gap-1 text-xs"
-                      onClick={(e) => { e.stopPropagation(); runNowMutation.mutate(workflow.id); }}
-                      disabled={runNowMutation.isPending}
-                    >
-                      <Rocket className="h-3.5 w-3.5" />
-                      Run
-                    </Button>
+                  <div onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 shrink-0 opacity-60 group-hover:opacity-100"
+                        >
                           <MoreVertical className="h-3.5 w-3.5" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -465,16 +464,6 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); duplicateMutation.mutate(workflow); }}>
                           <Copy className="h-3.5 w-3.5 mr-2" /> Duplicate
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => {
-                          e.stopPropagation();
-                          toggleStatusMutation.mutate({ id: workflow.id, currentStatus: workflow.status });
-                        }}>
-                          {workflow.status === "active" ? (
-                            <><Pause className="h-3.5 w-3.5 mr-2" /> Pause</>
-                          ) : (
-                            <><Play className="h-3.5 w-3.5 mr-2" /> Activate</>
-                          )}
-                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setHistoryWorkflowId(workflow.id); }}>
                           <History className="h-3.5 w-3.5 mr-2" /> Run History
                         </DropdownMenuItem>
@@ -490,12 +479,12 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
                   </div>
                 </div>
 
-                <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+                <p className="text-xs text-muted-foreground mb-3 line-clamp-2 min-h-[2rem]">
                   {workflow.description || "No description"}
                 </p>
 
-                <div className="flex items-center gap-2 mb-3">
-                  <Badge className={statusColors[workflow.status] || statusColors.draft} variant="secondary">
+                <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+                  <Badge className={cn(statusColors[workflow.status] || statusColors.draft, "text-[10px] capitalize")} variant="secondary">
                     {workflow.status}
                   </Badge>
                   <Badge variant="outline" className="text-[10px]">
@@ -509,13 +498,13 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
                   )}
                 </div>
 
-                <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground mt-auto">
                   <div className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
                     {format(new Date(workflow.updated_at), "MMM d, HH:mm")}
                   </div>
                   <div>
-                    {(workflow.nodes as any[])?.length || 0} nodes · {(workflow.edges as any[])?.length || 0} connections
+                    {(workflow.nodes as any[])?.length || 0} nodes · {(workflow.edges as any[])?.length || 0} edges
                   </div>
                 </div>
 
@@ -525,6 +514,48 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
                     Last run: {format(new Date((workflow as any).last_executed_at), "MMM d, HH:mm")}
                   </div>
                 )}
+
+                {/* Action footer */}
+                <div
+                  className="flex items-center gap-2 mt-3 pt-3 border-t border-border"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="h-8 flex-1 gap-1.5 text-xs"
+                    onClick={(e) => { e.stopPropagation(); runNowMutation.mutate(workflow.id); }}
+                    disabled={runNowMutation.isPending}
+                  >
+                    <Rocket className="h-3.5 w-3.5" />
+                    Run
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 flex-1 gap-1.5 text-xs"
+                    onClick={(e) => { e.stopPropagation(); onEdit(workflow.id); }}
+                  >
+                    <Edit className="h-3.5 w-3.5" />
+                    Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 w-8 p-0 shrink-0"
+                    title={workflow.status === "active" ? "Pause" : "Activate"}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleStatusMutation.mutate({ id: workflow.id, currentStatus: workflow.status });
+                    }}
+                  >
+                    {workflow.status === "active" ? (
+                      <Pause className="h-3.5 w-3.5" />
+                    ) : (
+                      <Play className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
