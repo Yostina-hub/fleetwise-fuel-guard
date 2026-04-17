@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/table";
 import {
   History, Plus, Edit, Trash2, Power, PowerOff, Search, Shield, Users, RefreshCw,
+  Route, ArrowRightLeft, SkipForward, Fuel, MapPin, Receipt,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -21,11 +22,17 @@ const ACTION_META: Record<string, { icon: any; label: string; color: string }> =
   delete: { icon: Trash2, label: "Deleted", color: "bg-red-500/10 text-red-600 border-red-500/30" },
   activate: { icon: Power, label: "Activated", color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" },
   deactivate: { icon: PowerOff, label: "Deactivated", color: "bg-muted text-muted-foreground border-border" },
+  route: { icon: Route, label: "Routed", color: "bg-cyan-500/10 text-cyan-600 border-cyan-500/30" },
+  substitute: { icon: ArrowRightLeft, label: "Delegated", color: "bg-amber-500/10 text-amber-600 border-amber-500/30" },
+  skip: { icon: SkipForward, label: "Skipped", color: "bg-muted text-muted-foreground border-border" },
 };
 
 const SOURCE_META: Record<string, { icon: any; label: string }> = {
   authority_matrix: { icon: Shield, label: "Authority Rule" },
   delegation_matrix: { icon: Users, label: "Substitution" },
+  fuel_request: { icon: Fuel, label: "Fuel Request" },
+  trip_request: { icon: MapPin, label: "Trip Request" },
+  outsource_payment_request: { icon: Receipt, label: "Payment Request" },
 };
 
 export const DelegationHistoryTab = () => {
