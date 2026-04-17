@@ -603,10 +603,10 @@ const DriverPortal = () => {
             ["driver-portal-submissions"],
           ]}
         />
-        <DriverVehicleRequestDialog
+        <VehicleRequestForm
           open={showVehicle}
           onOpenChange={setShowVehicle}
-          driverName={driverName}
+          source="driver_portal"
         />
         <VehicleInspectionFormDialog
           open={showInspection}
