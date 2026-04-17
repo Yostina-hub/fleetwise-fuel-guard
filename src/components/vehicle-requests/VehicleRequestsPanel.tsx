@@ -13,6 +13,7 @@ import { CrossPoolAssignmentDialog } from "@/components/vehicle-requests/CrossPo
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useDriverScope } from "@/hooks/useDriverScope";
 import { format } from "date-fns";
 
 const statusColors: Record<string, string> = {
