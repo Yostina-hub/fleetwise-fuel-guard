@@ -572,7 +572,7 @@ export default function CreateWorkRequestForm({
             </div>
           </FieldRow>
 
-          <FieldRow label="Driver type" required={isTripInspection}>
+          <FieldRow label="Driver type" required={isTripInspection || isSafetyComfortCtx}>
             <Select value={driverType} onValueChange={setDriverType}>
               <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
               <SelectContent>
@@ -591,7 +591,7 @@ export default function CreateWorkRequestForm({
             <Input value={requestorEmployeeId} onChange={e => setRequestorEmployeeId(e.target.value)} placeholder="Employee number" />
           </FieldRow>
 
-          <FieldRow label="Requestor Pool" required={isTripInspection}>
+          <FieldRow label="Requestor Pool" required={isTripInspection || isSafetyComfortCtx}>
             <Select value={requestorPool} onValueChange={setRequestorPool}>
               <SelectTrigger><SelectValue placeholder="Select pool" /></SelectTrigger>
               <SelectContent>
