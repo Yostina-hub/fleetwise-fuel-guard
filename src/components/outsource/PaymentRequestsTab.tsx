@@ -218,8 +218,7 @@ export function PaymentRequestsTab() {
                 <TableHead>Fuel/Lub</TableHead><TableHead>Status</TableHead><TableHead>Created</TableHead><TableHead /></TableRow></TableHeader>
               <TableBody>
                 {requests.map(r => (
-                  <>
-                  <TableRow key={r.id}>
+                  <Fragment key={r.id}>
                     <TableCell className="font-medium">{r.request_number}</TableCell>
                     <TableCell className="text-xs">{r.period_start} → {r.period_end}</TableCell>
                     <TableCell>{r.currency} {r.amount_requested.toLocaleString()}{r.amount_approved ? <span className="text-xs text-success ml-1">(✓ {r.amount_approved.toLocaleString()})</span> : null}</TableCell>
