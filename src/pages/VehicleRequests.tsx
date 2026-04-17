@@ -12,6 +12,7 @@ import { RequesterFeedbackDialog } from "@/components/vehicle-requests/Requester
 import { DriverCheckInDialog } from "@/components/vehicle-requests/DriverCheckInDialog";
 import { CrossPoolAssignmentDialog } from "@/components/vehicle-requests/CrossPoolAssignmentDialog";
 import { PoolReviewPanel } from "@/components/vehicle-requests/PoolReviewPanel";
+import VehicleRequestWorkflowProgress from "@/components/vehicle-requests/VehicleRequestWorkflowProgress";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -232,10 +233,11 @@ const VehicleRequests = () => {
 
         {showDetail && (
           <Dialog open={!!showDetail} onOpenChange={() => setShowDetail(null)}>
-            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Request {showDetail.request_number}</DialogTitle>
               </DialogHeader>
+              <VehicleRequestWorkflowProgress request={showDetail} />
               <VehicleRequestApprovalFlow
                 request={showDetail}
                 approvals={approvals}
