@@ -885,7 +885,7 @@ export const FuelRequestWorkflow = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowApprove(null)}>Cancel</Button>
-            <Button onClick={() => approveMutation.mutate({ id: showApprove.id, liters: parseFloat(approvedLiters) })} disabled={approveMutation.isPending}>
+            <Button onClick={() => approveMutation.mutate({ fuelRequestId: showApprove.id, liters: parseFloat(approvedLiters) })} disabled={approveMutation.isPending}>
               {approveMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Approve & Create Work Order
             </Button>
@@ -948,7 +948,7 @@ export const FuelRequestWorkflow = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowReject(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={() => rejectMutation.mutate({ id: showReject.id, reason: rejectReason })} disabled={rejectMutation.isPending || !rejectReason.trim()}>
+            <Button variant="destructive" onClick={() => rejectMutation.mutate({ fuelRequestId: showReject.id, reason: rejectReason })} disabled={rejectMutation.isPending || !rejectReason.trim()}>
               {rejectMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Reject
             </Button>
