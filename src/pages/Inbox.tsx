@@ -15,6 +15,8 @@ import { BulkActionBar } from "@/components/inbox/BulkActionBar";
 import { EmptyState } from "@/components/inbox/EmptyState";
 import { RenderWorkflowForm, getWorkflowForm } from "@/lib/workflow-forms/registry";
 import type { WorkflowTask } from "@/components/inbox/types";
+import { useSopInboxTasks, isSopTask } from "@/hooks/useSopInboxTasks";
+import { WORKFLOW_CONFIGS } from "@/lib/workflow-engine/configs";
 
 const DEFAULT_SLA_MINUTES = 60 * 24; // 1 day
 
