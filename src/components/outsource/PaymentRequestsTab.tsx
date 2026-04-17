@@ -253,18 +253,7 @@ export function PaymentRequestsTab() {
                       {r.status === "info_required" && (
                         <Button size="sm" variant="outline" onClick={() => transition.mutate({ id: r.id, status: "consolidating" })}>3 Re-submit info</Button>
                       )}
-                      {/* Step 4 — Approve */}
-                      {r.status === "pending_approval" && (
-                        <>
-                          <Button size="sm" className="bg-success text-success-foreground hover:bg-success/90"
-                            onClick={() => transition.mutate({ id: r.id, status: "approved", patch: { amount_approved: r.amount_requested } })}>
-                            <CheckCircle2 className="w-3 h-3 mr-1" /> 4 Approve
-                          </Button>
-                          <Button size="sm" variant="destructive" onClick={() => transition.mutate({ id: r.id, status: "rejected" })}>
-                            <XCircle className="w-3 h-3 mr-1" /> Reject
-                          </Button>
-                        </>
-                      )}
+                      {/* Step 4 — Approve via Authority Matrix chain (rendered below the row) */}
                       {/* Step 5 — Contract check */}
                       {r.status === "approved" && (
                         <Button size="sm" variant="outline" onClick={() => transition.mutate({ id: r.id, status: "contract_check" })}>
