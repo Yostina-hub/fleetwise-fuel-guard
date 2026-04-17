@@ -246,6 +246,17 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(workflow.id); }}>
                         <Edit className="h-3.5 w-3.5 mr-2" /> Edit
                       </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={(e) => { e.stopPropagation(); runNowMutation.mutate(workflow.id); }}
+                        disabled={runNowMutation.isPending}
+                      >
+                        <Rocket className="h-3.5 w-3.5 mr-2" /> Run Now
+                      </DropdownMenuItem>
+                      {workflow.webhook_token && (
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setWebhookWorkflow(workflow); }}>
+                          <Webhook className="h-3.5 w-3.5 mr-2" /> Webhook URL
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); duplicateMutation.mutate(workflow); }}>
                         <Copy className="h-3.5 w-3.5 mr-2" /> Duplicate
                       </DropdownMenuItem>
@@ -260,7 +271,7 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
                         )}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setHistoryWorkflowId(workflow.id); }}>
-                        <History className="h-3.5 w-3.5 mr-2" /> Execution History
+                        <History className="h-3.5 w-3.5 mr-2" /> Run History
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
@@ -326,19 +337,22 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
         </Card>
       )}
 
-      {/* Execution History Dialog */}
+      {/* Run History Dialog (live workflow_runs from server-side runner) */}
       <Dialog open={!!historyWorkflowId} onOpenChange={(open) => !open && setHistoryWorkflowId(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh]">
+        <DialogContent className="max-w-3xl max-h-[80vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <History className="h-5 w-5" />
-              Execution History
+              Run History
             </DialogTitle>
+            <DialogDescription>
+              Live runs executed by the server-side workflow engine. Refreshes every 4s.
+            </DialogDescription>
           </DialogHeader>
           <ScrollArea className="h-[60vh]">
             <div className="space-y-2 pr-4">
-              {executionHistory && executionHistory.length > 0 ? (
-                executionHistory.map((exec: any) => (
+              {runHistory && runHistory.length > 0 ? (
+                runHistory.map((exec: any) => (
                   <div
                     key={exec.id}
                     className="p-3 rounded-lg border border-border bg-muted/30 space-y-2"
