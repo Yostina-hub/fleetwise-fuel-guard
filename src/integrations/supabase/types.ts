@@ -1180,6 +1180,74 @@ export type Database = {
           },
         ]
       }
+      authority_matrix: {
+        Row: {
+          approver_role: string
+          auto_approve_roles: string[] | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          max_amount: number | null
+          max_duration_days: number | null
+          min_amount: number | null
+          min_duration_days: number | null
+          organization_id: string
+          priority: number
+          rule_name: string
+          scope: string
+          step_order: number
+          updated_at: string
+        }
+        Insert: {
+          approver_role: string
+          auto_approve_roles?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max_amount?: number | null
+          max_duration_days?: number | null
+          min_amount?: number | null
+          min_duration_days?: number | null
+          organization_id: string
+          priority?: number
+          rule_name: string
+          scope: string
+          step_order?: number
+          updated_at?: string
+        }
+        Update: {
+          approver_role?: string
+          auto_approve_roles?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max_amount?: number | null
+          max_duration_days?: number | null
+          min_amount?: number | null
+          min_duration_days?: number | null
+          organization_id?: string
+          priority?: number
+          rule_name?: string
+          scope?: string
+          step_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "authority_matrix_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       billing_integration_configs: {
         Row: {
           api_endpoint: string
@@ -24124,6 +24192,21 @@ export type Database = {
         }[]
       }
       refresh_telemetry_aggregates: { Args: never; Returns: undefined }
+      resolve_authority_approver: {
+        Args: {
+          p_amount?: number
+          p_duration_days?: number
+          p_organization_id: string
+          p_requester_role?: string
+          p_scope: string
+        }
+        Returns: {
+          approver_role: string
+          is_auto_approve: boolean
+          rule_name: string
+          step_order: number
+        }[]
+      }
       route_fuel_request_approval: {
         Args: { p_fuel_request_id: string }
         Returns: string
@@ -24178,6 +24261,10 @@ export type Database = {
           p_supplier_id: string
           p_supplier_name: string
         }
+        Returns: undefined
+      }
+      seed_authority_matrix_defaults: {
+        Args: { p_org_id: string }
         Returns: undefined
       }
       send_notification: {
