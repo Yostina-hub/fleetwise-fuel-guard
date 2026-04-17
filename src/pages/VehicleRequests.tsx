@@ -35,6 +35,9 @@ const VehicleRequests = () => {
   const [showFeedback, setShowFeedback] = useState<any>(null);
   const [showCheckIn, setShowCheckIn] = useState<any>(null);
   const [showCrossPool, setShowCrossPool] = useState<any>(null);
+  const [showDeallocate, setShowDeallocate] = useState<any>(null);
+  const [showDelete, setShowDelete] = useState<any>(null);
+  const [showMultiAssign, setShowMultiAssign] = useState<any>(null);
 
   // Realtime subscription for vehicle_requests
   useEffect(() => {
