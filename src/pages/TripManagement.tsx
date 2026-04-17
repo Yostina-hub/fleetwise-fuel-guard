@@ -38,8 +38,18 @@ const TripManagement = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { requests, loading, submitRequest, cancelRequest } = useTripRequests();
   const { pendingApprovals, approveRequest, rejectRequest } = useApprovals();
-  const { isSuperAdmin, hasRole } = usePermissions();
-  const canApprove = isSuperAdmin || hasRole("operations_manager") || hasRole("fleet_owner");
+  const { isSuperAdmin, hasRole, hasPermission, loading: permsLoading } = usePermissions();
+
+  // RBAC role groups
+  const isDriverOnly = hasRole("driver") && !isSuperAdmin && !hasRole("operations_manager")
+    && !hasRole("fleet_owner") && !hasRole("fleet_manager") && !hasRole("org_admin")
+    && !hasRole("dispatcher") && !hasRole("operator");
+  const canViewPage = isSuperAdmin || hasPermission("view_fleet");
+  const canManage = isSuperAdmin || hasPermission("manage_fleet");
+  const canApprove = isSuperAdmin || hasRole("operations_manager") || hasRole("fleet_owner")
+    || hasRole("fleet_manager") || hasRole("org_admin");
+  const canViewAnalytics = isSuperAdmin || hasRole("operations_manager") || hasRole("fleet_owner")
+    || hasRole("fleet_manager") || hasRole("org_admin") || hasRole("auditor");
 
   const [viewMode, setViewMode] = useState<"pipeline" | "grid" | "list">("pipeline");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
