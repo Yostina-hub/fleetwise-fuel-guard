@@ -504,6 +504,18 @@ export default function CreateWorkRequestForm({
               </SelectContent>
             </Select>
           </FieldRow>
+          {workRequestType === "inspection" && (
+            <FieldRow label="Inspection sub-type" required>
+              <Select value={inspectionSubType} onValueChange={setInspectionSubType}>
+                <SelectTrigger><SelectValue placeholder="Select sub-type" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="annual">Annual</SelectItem>
+                  <SelectItem value="pre_trip">Pre-trip</SelectItem>
+                  <SelectItem value="post_trip">Post-trip</SelectItem>
+                </SelectContent>
+              </Select>
+            </FieldRow>
+          )}
           <FieldRow label="KM reading" required>
             <Input type="number" value={kmReading} onChange={e => setKmReading(e.target.value)} />
           </FieldRow>
