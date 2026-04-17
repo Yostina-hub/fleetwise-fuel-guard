@@ -42,6 +42,54 @@ interface Operation {
   assigned_hours: number;
 }
 
+interface Material {
+  id?: string;
+  operation_sequence?: number;
+  item_code: string;
+  item_description: string;
+  required_quantity: number;
+  issued_quantity: number;
+  uom: string;
+  supply_type: string;
+  required_date?: string;
+  unit_cost: number;
+}
+
+interface Permit {
+  id?: string;
+  permit_number: string;
+  permit_type: string;
+  issued_by: string;
+  valid_from?: string;
+  valid_until?: string;
+  status: string;
+}
+
+interface QualityPlan {
+  id?: string;
+  plan_name: string;
+  characteristic: string;
+  specification: string;
+  result: string;
+  pass: boolean | null;
+}
+
+interface MeterReading {
+  id?: string;
+  meter_name: string;
+  reading_value: number;
+  unit: string;
+  captured_at?: string;
+}
+
+interface Attachment {
+  id?: string;
+  file_name: string;
+  file_url: string;
+  mime_type?: string;
+  category: string;
+}
+
 const REQ = <span className="text-destructive">*</span>;
 
 export default function OracleWorkOrderForm({ maintenanceRequestId, workOrderId, vehicleId, onSaved, onCancel }: Props) {
@@ -103,6 +151,13 @@ export default function OracleWorkOrderForm({ maintenanceRequestId, workOrderId,
     { sequence_number: 40, operation_description: "Maintenance", department: "FleetMnt03", resource_sequence: 10, resource: "Inspector", required_units: 1, assigned_units: 1, duration_hours: 0, assigned_hours: 0 },
     { sequence_number: 50, operation_description: "Collect invoice & report", department: "FleetMnt06", resource_sequence: 50, resource: "Inspector", required_units: 1, assigned_units: 1, duration_hours: 0, assigned_hours: 0 },
   ]);
+
+  // Materials, Permits, Quality, Meters, Attachments
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [permits, setPermits] = useState<Permit[]>([]);
+  const [qualityPlans, setQualityPlans] = useState<QualityPlan[]>([]);
+  const [meterReadings, setMeterReadings] = useState<MeterReading[]>([]);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
 
   const [submitting, setSubmitting] = useState(false);
   const [savedWoId, setSavedWoId] = useState<string | null>(workOrderId || null);
@@ -167,9 +222,20 @@ export default function OracleWorkOrderForm({ maintenanceRequestId, workOrderId,
       setPriority(data.priority || "medium");
       if (data.scheduled_date) setScheduledStart(new Date(data.scheduled_date));
 
-      const { data: ops } = await (supabase as any)
-        .from("work_order_operations").select("*").eq("work_order_id", workOrderId).order("sequence_number");
+      const [{ data: ops }, { data: mats }, { data: prms }, { data: qps }, { data: mtrs }, { data: atts }] = await Promise.all([
+        (supabase as any).from("work_order_operations").select("*").eq("work_order_id", workOrderId).order("sequence_number"),
+        (supabase as any).from("work_order_materials").select("*").eq("work_order_id", workOrderId),
+        (supabase as any).from("work_order_permits").select("*").eq("work_order_id", workOrderId),
+        (supabase as any).from("work_order_quality_plans").select("*").eq("work_order_id", workOrderId),
+        (supabase as any).from("work_order_meter_readings").select("*").eq("work_order_id", workOrderId),
+        (supabase as any).from("work_order_attachments").select("*").eq("work_order_id", workOrderId),
+      ]);
       if (ops?.length) setOperations(ops as any);
+      if (mats?.length) setMaterials(mats as any);
+      if (prms?.length) setPermits(prms as any);
+      if (qps?.length) setQualityPlans(qps as any);
+      if (mtrs?.length) setMeterReadings(mtrs as any);
+      if (atts?.length) setAttachments(atts as any);
     })();
   }, [workOrderId]);
 
@@ -179,6 +245,26 @@ export default function OracleWorkOrderForm({ maintenanceRequestId, workOrderId,
   };
   const updateOp = (i: number, patch: Partial<Operation>) => setOperations(prev => prev.map((o, idx) => idx === i ? { ...o, ...patch } : o));
   const removeOp = (i: number) => setOperations(prev => prev.filter((_, idx) => idx !== i));
+
+  const addMaterial = () => setMaterials(prev => [...prev, { item_code: "", item_description: "", required_quantity: 1, issued_quantity: 0, uom: "EA", supply_type: "Push", unit_cost: 0 }]);
+  const updateMat = (i: number, p: Partial<Material>) => setMaterials(prev => prev.map((m, idx) => idx === i ? { ...m, ...p } : m));
+  const removeMat = (i: number) => setMaterials(prev => prev.filter((_, idx) => idx !== i));
+
+  const addPermit = () => setPermits(prev => [...prev, { permit_number: "", permit_type: "general", issued_by: "", status: "pending" }]);
+  const updatePermit = (i: number, p: Partial<Permit>) => setPermits(prev => prev.map((m, idx) => idx === i ? { ...m, ...p } : m));
+  const removePermit = (i: number) => setPermits(prev => prev.filter((_, idx) => idx !== i));
+
+  const addQuality = () => setQualityPlans(prev => [...prev, { plan_name: "", characteristic: "", specification: "", result: "", pass: null }]);
+  const updateQuality = (i: number, p: Partial<QualityPlan>) => setQualityPlans(prev => prev.map((m, idx) => idx === i ? { ...m, ...p } : m));
+  const removeQuality = (i: number) => setQualityPlans(prev => prev.filter((_, idx) => idx !== i));
+
+  const addMeter = () => setMeterReadings(prev => [...prev, { meter_name: "Odometer", reading_value: 0, unit: "KM" }]);
+  const updateMeter = (i: number, p: Partial<MeterReading>) => setMeterReadings(prev => prev.map((m, idx) => idx === i ? { ...m, ...p } : m));
+  const removeMeter = (i: number) => setMeterReadings(prev => prev.filter((_, idx) => idx !== i));
+
+  const addAttachment = () => setAttachments(prev => [...prev, { file_name: "", file_url: "", category: "general" }]);
+  const updateAttachment = (i: number, p: Partial<Attachment>) => setAttachments(prev => prev.map((m, idx) => idx === i ? { ...m, ...p } : m));
+  const removeAttachment = (i: number) => setAttachments(prev => prev.filter((_, idx) => idx !== i));
 
   const handleSave = async () => {
     if (!assetNumber.trim()) { toast.error("Asset Number is required"); return; }
@@ -258,6 +344,56 @@ export default function OracleWorkOrderForm({ maintenanceRequestId, workOrderId,
           assigned_hours: o.assigned_hours,
         }));
         await (supabase as any).from("work_order_operations").insert(opsPayload);
+      }
+
+      // Materials
+      await (supabase as any).from("work_order_materials").delete().eq("work_order_id", woId);
+      if (materials.length) {
+        await (supabase as any).from("work_order_materials").insert(materials.map(m => ({
+          organization_id: organizationId, work_order_id: woId,
+          item_code: m.item_code, item_description: m.item_description,
+          required_quantity: m.required_quantity, issued_quantity: m.issued_quantity,
+          uom: m.uom, supply_type: m.supply_type, unit_cost: m.unit_cost,
+          required_date: m.required_date || null, operation_sequence: m.operation_sequence || null,
+        })));
+      }
+
+      // Permits
+      await (supabase as any).from("work_order_permits").delete().eq("work_order_id", woId);
+      if (permits.length) {
+        await (supabase as any).from("work_order_permits").insert(permits.map(p => ({
+          organization_id: organizationId, work_order_id: woId,
+          permit_number: p.permit_number, permit_type: p.permit_type, issued_by: p.issued_by,
+          valid_from: p.valid_from || null, valid_until: p.valid_until || null, status: p.status,
+        })));
+      }
+
+      // Quality plans
+      await (supabase as any).from("work_order_quality_plans").delete().eq("work_order_id", woId);
+      if (qualityPlans.length) {
+        await (supabase as any).from("work_order_quality_plans").insert(qualityPlans.map(q => ({
+          organization_id: organizationId, work_order_id: woId,
+          plan_name: q.plan_name, characteristic: q.characteristic,
+          specification: q.specification, result: q.result, pass: q.pass,
+        })));
+      }
+
+      // Meter readings
+      await (supabase as any).from("work_order_meter_readings").delete().eq("work_order_id", woId);
+      if (meterReadings.length) {
+        await (supabase as any).from("work_order_meter_readings").insert(meterReadings.map(m => ({
+          organization_id: organizationId, work_order_id: woId,
+          meter_name: m.meter_name, reading_value: m.reading_value, unit: m.unit,
+        })));
+      }
+
+      // Attachments
+      await (supabase as any).from("work_order_attachments").delete().eq("work_order_id", woId);
+      if (attachments.length) {
+        await (supabase as any).from("work_order_attachments").insert(attachments.map(a => ({
+          organization_id: organizationId, work_order_id: woId,
+          file_name: a.file_name, file_url: a.file_url, mime_type: a.mime_type, category: a.category,
+        })));
       }
 
       toast.success(`Work Order ${woNumber} saved`);
@@ -586,13 +722,247 @@ export default function OracleWorkOrderForm({ maintenanceRequestId, workOrderId,
         </AccordionItem>
 
         <AccordionItem value="materials" className="border rounded-md">
-          <AccordionTrigger className="px-4">Materials</AccordionTrigger>
-          <AccordionContent className="px-4 pb-4 text-xs text-muted-foreground">No materials configured. Use Parts Inventory to manage WO materials.</AccordionContent>
+          <AccordionTrigger className="px-4">Materials ({materials.length})</AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="flex justify-between mb-2">
+              <Badge variant="outline">Manual Material Requirements</Badge>
+              <Button size="sm" variant="outline" onClick={addMaterial}><Plus className="w-3 h-3 mr-1" />Add Material</Button>
+            </div>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="text-xs">
+                    <TableHead>Item Code</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead className="w-20">Req Qty</TableHead>
+                    <TableHead className="w-20">Iss Qty</TableHead>
+                    <TableHead className="w-16">UOM</TableHead>
+                    <TableHead className="w-24">Supply</TableHead>
+                    <TableHead className="w-20">Unit Cost</TableHead>
+                    <TableHead className="w-12"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {materials.length === 0 && (
+                    <TableRow><TableCell colSpan={8} className="text-center text-xs text-muted-foreground py-4">No materials added</TableCell></TableRow>
+                  )}
+                  {materials.map((m, i) => (
+                    <TableRow key={i} className="text-xs">
+                      <TableCell><Input value={m.item_code} onChange={e => updateMat(i, { item_code: e.target.value })} className="h-7 text-xs" /></TableCell>
+                      <TableCell><Input value={m.item_description} onChange={e => updateMat(i, { item_description: e.target.value })} className="h-7 text-xs" /></TableCell>
+                      <TableCell><Input type="number" value={m.required_quantity} onChange={e => updateMat(i, { required_quantity: Number(e.target.value) })} className="h-7 text-xs" /></TableCell>
+                      <TableCell><Input type="number" value={m.issued_quantity} onChange={e => updateMat(i, { issued_quantity: Number(e.target.value) })} className="h-7 text-xs" /></TableCell>
+                      <TableCell><Input value={m.uom} onChange={e => updateMat(i, { uom: e.target.value })} className="h-7 text-xs" /></TableCell>
+                      <TableCell>
+                        <Select value={m.supply_type} onValueChange={v => updateMat(i, { supply_type: v })}>
+                          <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent><SelectItem value="Push">Push</SelectItem><SelectItem value="Pull">Pull</SelectItem><SelectItem value="Bulk">Bulk</SelectItem></SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell><Input type="number" value={m.unit_cost} onChange={e => updateMat(i, { unit_cost: Number(e.target.value) })} className="h-7 text-xs" /></TableCell>
+                      <TableCell><Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => removeMat(i)}><Trash2 className="w-3 h-3" /></Button></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </AccordionContent>
         </AccordionItem>
 
         <AccordionItem value="permits" className="border rounded-md">
-          <AccordionTrigger className="px-4">Work Permits</AccordionTrigger>
-          <AccordionContent className="px-4 pb-4 text-xs text-muted-foreground">No permits configured.</AccordionContent>
+          <AccordionTrigger className="px-4">Work Permits ({permits.length})</AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="flex justify-between mb-2">
+              <Badge variant="outline">Required Permits</Badge>
+              <Button size="sm" variant="outline" onClick={addPermit}><Plus className="w-3 h-3 mr-1" />Add Permit</Button>
+            </div>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="text-xs">
+                    <TableHead>Permit #</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Issued By</TableHead>
+                    <TableHead className="w-32">Valid From</TableHead>
+                    <TableHead className="w-32">Valid Until</TableHead>
+                    <TableHead className="w-24">Status</TableHead>
+                    <TableHead className="w-12"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {permits.length === 0 && (
+                    <TableRow><TableCell colSpan={7} className="text-center text-xs text-muted-foreground py-4">No permits added</TableCell></TableRow>
+                  )}
+                  {permits.map((p, i) => (
+                    <TableRow key={i} className="text-xs">
+                      <TableCell><Input value={p.permit_number} onChange={e => updatePermit(i, { permit_number: e.target.value })} className="h-7 text-xs" /></TableCell>
+                      <TableCell>
+                        <Select value={p.permit_type} onValueChange={v => updatePermit(i, { permit_type: v })}>
+                          <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="general">General</SelectItem>
+                            <SelectItem value="hot_work">Hot Work</SelectItem>
+                            <SelectItem value="confined_space">Confined Space</SelectItem>
+                            <SelectItem value="electrical">Electrical</SelectItem>
+                            <SelectItem value="height">Working at Height</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell><Input value={p.issued_by} onChange={e => updatePermit(i, { issued_by: e.target.value })} className="h-7 text-xs" /></TableCell>
+                      <TableCell><Input type="date" value={p.valid_from || ""} onChange={e => updatePermit(i, { valid_from: e.target.value })} className="h-7 text-xs" /></TableCell>
+                      <TableCell><Input type="date" value={p.valid_until || ""} onChange={e => updatePermit(i, { valid_until: e.target.value })} className="h-7 text-xs" /></TableCell>
+                      <TableCell>
+                        <Select value={p.status} onValueChange={v => updatePermit(i, { status: v })}>
+                          <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="approved">Approved</SelectItem>
+                            <SelectItem value="expired">Expired</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell><Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => removePermit(i)}><Trash2 className="w-3 h-3" /></Button></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="quality" className="border rounded-md">
+          <AccordionTrigger className="px-4">Quality Collection Plans ({qualityPlans.length})</AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="flex justify-between mb-2">
+              <Badge variant="outline">Quality Inspections</Badge>
+              <Button size="sm" variant="outline" onClick={addQuality}><Plus className="w-3 h-3 mr-1" />Add Plan</Button>
+            </div>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="text-xs">
+                    <TableHead>Plan Name</TableHead>
+                    <TableHead>Characteristic</TableHead>
+                    <TableHead>Specification</TableHead>
+                    <TableHead>Result</TableHead>
+                    <TableHead className="w-24">Pass/Fail</TableHead>
+                    <TableHead className="w-12"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {qualityPlans.length === 0 && (
+                    <TableRow><TableCell colSpan={6} className="text-center text-xs text-muted-foreground py-4">No quality plans added</TableCell></TableRow>
+                  )}
+                  {qualityPlans.map((q, i) => (
+                    <TableRow key={i} className="text-xs">
+                      <TableCell><Input value={q.plan_name} onChange={e => updateQuality(i, { plan_name: e.target.value })} className="h-7 text-xs" /></TableCell>
+                      <TableCell><Input value={q.characteristic} onChange={e => updateQuality(i, { characteristic: e.target.value })} className="h-7 text-xs" /></TableCell>
+                      <TableCell><Input value={q.specification} onChange={e => updateQuality(i, { specification: e.target.value })} className="h-7 text-xs" /></TableCell>
+                      <TableCell><Input value={q.result} onChange={e => updateQuality(i, { result: e.target.value })} className="h-7 text-xs" /></TableCell>
+                      <TableCell>
+                        <Select value={q.pass === null ? "" : q.pass ? "pass" : "fail"} onValueChange={v => updateQuality(i, { pass: v === "pass" })}>
+                          <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="-" /></SelectTrigger>
+                          <SelectContent><SelectItem value="pass">Pass</SelectItem><SelectItem value="fail">Fail</SelectItem></SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell><Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => removeQuality(i)}><Trash2 className="w-3 h-3" /></Button></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="meters" className="border rounded-md">
+          <AccordionTrigger className="px-4">Meter Readings ({meterReadings.length})</AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="flex justify-between mb-2">
+              <Badge variant="outline">Asset Meters</Badge>
+              <Button size="sm" variant="outline" onClick={addMeter}><Plus className="w-3 h-3 mr-1" />Add Reading</Button>
+            </div>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="text-xs">
+                    <TableHead>Meter Name</TableHead>
+                    <TableHead className="w-32">Reading</TableHead>
+                    <TableHead className="w-24">Unit</TableHead>
+                    <TableHead className="w-12"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {meterReadings.length === 0 && (
+                    <TableRow><TableCell colSpan={4} className="text-center text-xs text-muted-foreground py-4">No meter readings captured</TableCell></TableRow>
+                  )}
+                  {meterReadings.map((m, i) => (
+                    <TableRow key={i} className="text-xs">
+                      <TableCell>
+                        <Select value={m.meter_name} onValueChange={v => updateMeter(i, { meter_name: v })}>
+                          <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Odometer">Odometer</SelectItem>
+                            <SelectItem value="Engine Hours">Engine Hours</SelectItem>
+                            <SelectItem value="Fuel Level">Fuel Level</SelectItem>
+                            <SelectItem value="Battery Voltage">Battery Voltage</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell><Input type="number" value={m.reading_value} onChange={e => updateMeter(i, { reading_value: Number(e.target.value) })} className="h-7 text-xs" /></TableCell>
+                      <TableCell><Input value={m.unit} onChange={e => updateMeter(i, { unit: e.target.value })} className="h-7 text-xs" /></TableCell>
+                      <TableCell><Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => removeMeter(i)}><Trash2 className="w-3 h-3" /></Button></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="attachments" className="border rounded-md">
+          <AccordionTrigger className="px-4">Linked Documents ({attachments.length})</AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="flex justify-between mb-2">
+              <Badge variant="outline">Attachments</Badge>
+              <Button size="sm" variant="outline" onClick={addAttachment}><Plus className="w-3 h-3 mr-1" />Add Document</Button>
+            </div>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="text-xs">
+                    <TableHead>File Name</TableHead>
+                    <TableHead>URL</TableHead>
+                    <TableHead className="w-32">Category</TableHead>
+                    <TableHead className="w-12"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {attachments.length === 0 && (
+                    <TableRow><TableCell colSpan={4} className="text-center text-xs text-muted-foreground py-4">No documents linked</TableCell></TableRow>
+                  )}
+                  {attachments.map((a, i) => (
+                    <TableRow key={i} className="text-xs">
+                      <TableCell><Input value={a.file_name} onChange={e => updateAttachment(i, { file_name: e.target.value })} className="h-7 text-xs" placeholder="invoice.pdf" /></TableCell>
+                      <TableCell><Input value={a.file_url} onChange={e => updateAttachment(i, { file_url: e.target.value })} className="h-7 text-xs" placeholder="https://..." /></TableCell>
+                      <TableCell>
+                        <Select value={a.category} onValueChange={v => updateAttachment(i, { category: v })}>
+                          <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="general">General</SelectItem>
+                            <SelectItem value="invoice">Invoice</SelectItem>
+                            <SelectItem value="quotation">Quotation</SelectItem>
+                            <SelectItem value="photo">Photo</SelectItem>
+                            <SelectItem value="report">Report</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell><Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => removeAttachment(i)}><Trash2 className="w-3 h-3" /></Button></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </AccordionContent>
         </AccordionItem>
       </Accordion>
     </div>
