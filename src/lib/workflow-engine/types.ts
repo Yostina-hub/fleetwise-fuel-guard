@@ -24,10 +24,13 @@ export type FieldType =
   | "date"
   | "datetime"
   | "select"
+  | "multiselect"
   | "checkbox"
   | "vehicle"
   | "driver"
-  | "file";
+  | "file"
+  | "handover_catalog"
+  | "vehicle_autofill_summary";
 
 export interface StageField {
   key: string;
@@ -37,6 +40,8 @@ export interface StageField {
   options?: { value: string; label: string }[];
   placeholder?: string;
   helpText?: string;
+  /** For handover_catalog: filter to a specific category (safety/comfort/accessory/other). */
+  catalogCategory?: "safety" | "comfort" | "accessory" | "other";
 }
 
 export interface StageAction {
