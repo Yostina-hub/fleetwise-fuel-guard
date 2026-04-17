@@ -110,6 +110,21 @@ const RBACManagement = lazyWithRetry(() => import("./pages/RBACManagement"), "RB
 const PrivacyPolicy = lazyWithRetry(() => import("./pages/PrivacyPolicy"), "PrivacyPolicy");
 const NotFound = lazyWithRetry(() => import("./pages/NotFound"), "NotFound");
 
+// ── ET FMG SOP Workflows (config-driven) ──
+const FleetInspectionPage = lazyWithRetry(() => import("./pages/sop-workflows").then(m => ({ default: m.FleetInspectionPage })), "FleetInspectionPage");
+const VehicleRegistrationPage = lazyWithRetry(() => import("./pages/sop-workflows").then(m => ({ default: m.VehicleRegistrationPage })), "VehicleRegistrationPage");
+const VehicleInsuranceRenewalPage = lazyWithRetry(() => import("./pages/sop-workflows").then(m => ({ default: m.VehicleInsuranceRenewalPage })), "VehicleInsuranceRenewalPage");
+const PreventiveMaintenancePage = lazyWithRetry(() => import("./pages/sop-workflows").then(m => ({ default: m.PreventiveMaintenancePage })), "PreventiveMaintenancePage");
+const BreakdownMaintenancePage = lazyWithRetry(() => import("./pages/sop-workflows").then(m => ({ default: m.BreakdownMaintenancePage })), "BreakdownMaintenancePage");
+const VehicleDispatchPage = lazyWithRetry(() => import("./pages/sop-workflows").then(m => ({ default: m.VehicleDispatchPage })), "VehicleDispatchPage");
+const DriverOnboardingPage = lazyWithRetry(() => import("./pages/sop-workflows").then(m => ({ default: m.DriverOnboardingPage })), "DriverOnboardingPage");
+const DriverTrainingPage = lazyWithRetry(() => import("./pages/sop-workflows").then(m => ({ default: m.DriverTrainingPage })), "DriverTrainingPage");
+const DriverAllowancePage = lazyWithRetry(() => import("./pages/sop-workflows").then(m => ({ default: m.DriverAllowancePage })), "DriverAllowancePage");
+const VehicleDisposalPage = lazyWithRetry(() => import("./pages/sop-workflows").then(m => ({ default: m.VehicleDisposalPage })), "VehicleDisposalPage");
+const RoadsideAssistanceSopPage = lazyWithRetry(() => import("./pages/sop-workflows").then(m => ({ default: m.RoadsideAssistancePage })), "RoadsideAssistanceSopPage");
+const LicenseRenewalPage = lazyWithRetry(() => import("./pages/sop-workflows").then(m => ({ default: m.LicenseRenewalPage })), "LicenseRenewalPage");
+const OutsourceRentalPage = lazyWithRetry(() => import("./pages/sop-workflows").then(m => ({ default: m.OutsourceRentalPage })), "OutsourceRentalPage");
+
 const App = () => {
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
@@ -231,6 +246,20 @@ const App = () => {
                         <Route path="/supplier-portal" element={<ProtectedRoute><SupplierPortal /></ProtectedRoute>} />
                         <Route path="/supplier-wo/:token" element={<SupplierWorkOrderView />} />
                         <Route path="/supplier-payments" element={<ProtectedRoute><SupplierPaymentReview /></ProtectedRoute>} />
+                        {/* ── ET FMG SOP Workflow routes ── */}
+                        <Route path="/sop/fleet-inspection" element={<ProtectedRoute><FleetInspectionPage /></ProtectedRoute>} />
+                        <Route path="/sop/vehicle-registration" element={<ProtectedRoute><VehicleRegistrationPage /></ProtectedRoute>} />
+                        <Route path="/sop/vehicle-insurance-renewal" element={<ProtectedRoute><VehicleInsuranceRenewalPage /></ProtectedRoute>} />
+                        <Route path="/sop/preventive-maintenance" element={<ProtectedRoute><PreventiveMaintenancePage /></ProtectedRoute>} />
+                        <Route path="/sop/breakdown-maintenance" element={<ProtectedRoute><BreakdownMaintenancePage /></ProtectedRoute>} />
+                        <Route path="/sop/vehicle-dispatch" element={<ProtectedRoute><VehicleDispatchPage /></ProtectedRoute>} />
+                        <Route path="/sop/driver-onboarding" element={<ProtectedRoute><DriverOnboardingPage /></ProtectedRoute>} />
+                        <Route path="/sop/driver-training" element={<ProtectedRoute><DriverTrainingPage /></ProtectedRoute>} />
+                        <Route path="/sop/driver-allowance" element={<ProtectedRoute><DriverAllowancePage /></ProtectedRoute>} />
+                        <Route path="/sop/vehicle-disposal" element={<ProtectedRoute><VehicleDisposalPage /></ProtectedRoute>} />
+                        <Route path="/sop/roadside-assistance" element={<ProtectedRoute><RoadsideAssistanceSopPage /></ProtectedRoute>} />
+                        <Route path="/sop/license-renewal" element={<ProtectedRoute><LicenseRenewalPage /></ProtectedRoute>} />
+                        <Route path="/sop/outsource-rental" element={<ProtectedRoute><OutsourceRentalPage /></ProtectedRoute>} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />
                       </Routes>
