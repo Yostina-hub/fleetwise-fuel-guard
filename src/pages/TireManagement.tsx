@@ -26,7 +26,7 @@ import { format } from "date-fns";
 import { useTranslation } from 'react-i18next';
 const TireManagement = () => {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState("inventory");
+  const [activeTab, setActiveTab] = useState("workflow");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showChangeDialog, setShowChangeDialog] = useState(false);
   const [showRequestDialog, setShowRequestDialog] = useState(false);
@@ -139,13 +139,13 @@ const TireManagement = () => {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" className="gap-2" onClick={() => setShowRequestDialog(true)}>
-              <ClipboardList className="w-4 h-4" /> New Request
+            <Button className="gap-2" onClick={() => setShowRequestDialog(true)}>
+              <ClipboardList className="w-4 h-4" /> New Tire Request
             </Button>
             <Button variant="outline" className="gap-2" onClick={() => setShowChangeDialog(true)}>
               <RotateCcw className="w-4 h-4" /> Record Change
             </Button>
-            <Button className="gap-2" onClick={() => setShowAddDialog(true)}>
+            <Button variant="outline" className="gap-2" onClick={() => setShowAddDialog(true)}>
               <Plus className="w-4 h-4" /> Add Tire
             </Button>
           </div>
@@ -173,9 +173,9 @@ const TireManagement = () => {
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
-            <TabsTrigger value="inventory" className="gap-1.5"><CircleDot className="w-3.5 h-3.5" /> Inventory</TabsTrigger>
-            <TabsTrigger value="requests" className="gap-1.5"><ClipboardList className="w-3.5 h-3.5" /> Requests</TabsTrigger>
             <TabsTrigger value="workflow" className="gap-1.5"><GitBranch className="w-3.5 h-3.5" /> Workflow</TabsTrigger>
+            <TabsTrigger value="requests" className="gap-1.5"><ClipboardList className="w-3.5 h-3.5" /> Requests</TabsTrigger>
+            <TabsTrigger value="inventory" className="gap-1.5"><CircleDot className="w-3.5 h-3.5" /> Inventory</TabsTrigger>
             <TabsTrigger value="utilization" className="gap-1.5"><BarChart3 className="w-3.5 h-3.5" /> Utilization</TabsTrigger>
             <TabsTrigger value="positions" className="gap-1.5"><CircleDot className="w-3.5 h-3.5" /> Positions</TabsTrigger>
             <TabsTrigger value="changes" className="gap-1.5"><History className="w-3.5 h-3.5" /> Change History</TabsTrigger>
