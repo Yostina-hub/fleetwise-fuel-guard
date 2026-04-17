@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Navigate } from "react-router-dom";
 import Layout from "@/components/Layout";
+import { Card } from "@/components/ui/card";
+import { ShieldAlert, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -36,8 +38,18 @@ const TripManagement = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { requests, loading, submitRequest, cancelRequest } = useTripRequests();
   const { pendingApprovals, approveRequest, rejectRequest } = useApprovals();
-  const { isSuperAdmin, hasRole } = usePermissions();
-  const canApprove = isSuperAdmin || hasRole("operations_manager") || hasRole("fleet_owner");
+  const { isSuperAdmin, hasRole, hasPermission, loading: permsLoading } = usePermissions();
+
+  // RBAC role groups
+  const isDriverOnly = hasRole("driver") && !isSuperAdmin && !hasRole("operations_manager")
+    && !hasRole("fleet_owner") && !hasRole("fleet_manager") && !hasRole("org_admin")
+    && !hasRole("dispatcher") && !hasRole("operator");
+  const canViewPage = isSuperAdmin || hasPermission("view_fleet");
+  const canManage = isSuperAdmin || hasPermission("manage_fleet");
+  const canApprove = isSuperAdmin || hasRole("operations_manager") || hasRole("fleet_owner")
+    || hasRole("fleet_manager") || hasRole("org_admin");
+  const canViewAnalytics = isSuperAdmin || hasRole("operations_manager") || hasRole("fleet_owner")
+    || hasRole("fleet_manager") || hasRole("org_admin") || hasRole("auditor");
 
   const [viewMode, setViewMode] = useState<"pipeline" | "grid" | "list">("pipeline");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
@@ -109,6 +121,37 @@ const TripManagement = () => {
 
   const pendingApprovalCount = pendingApprovals?.length || 0;
 
+  // ── RBAC enforcement ────────────────────────────────────────────────
+  // Drivers are redirected to their dedicated portal.
+  if (!permsLoading && isDriverOnly) {
+    return <Navigate to="/driver-portal" replace />;
+  }
+  // Show loader while permissions resolve to avoid flash of unauthorized UI.
+  if (permsLoading) {
+    return (
+      <Layout>
+        <div className="p-8 flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" aria-label="Loading permissions" />
+        </div>
+      </Layout>
+    );
+  }
+  // Hard block users without view_fleet.
+  if (!canViewPage) {
+    return (
+      <Layout>
+        <div className="p-8">
+          <Card className="p-8 text-center max-w-md mx-auto">
+            <ShieldAlert className="w-12 h-12 mx-auto mb-3 text-destructive" />
+            <h2 className="text-lg font-semibold mb-1">Access Denied</h2>
+            <p className="text-sm text-muted-foreground">
+              You don't have permission to access Trip Management. Contact your administrator if you believe this is an error.
+            </p>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
   return (
     <Layout>
       <div className="p-4 md:p-6 space-y-4">
@@ -121,17 +164,21 @@ const TripManagement = () => {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setExportOpen(true)} className="gap-1.5 h-8 text-xs">
-              <Download className="w-3.5 h-3.5" /> Export
-            </Button>
-            <Button size="sm" onClick={() => setCreateOpen(true)} className="gap-1.5 h-8 text-xs">
-              <Plus className="w-3.5 h-3.5" /> Full Request
-            </Button>
+            {canManage && (
+              <Button variant="outline" size="sm" onClick={() => setExportOpen(true)} className="gap-1.5 h-8 text-xs">
+                <Download className="w-3.5 h-3.5" /> Export
+              </Button>
+            )}
+            {canManage && (
+              <Button size="sm" onClick={() => setCreateOpen(true)} className="gap-1.5 h-8 text-xs">
+                <Plus className="w-3.5 h-3.5" /> Full Request
+              </Button>
+            )}
           </div>
         </div>
 
-        {/* Quick Trip Request */}
-        <QuickTripRequest />
+        {/* Quick Trip Request — only for users who can manage fleet */}
+        {canManage && <QuickTripRequest />}
 
         {/* Stats Filter Bar */}
         <TripStatsBar
@@ -164,7 +211,9 @@ const TripManagement = () => {
               )}
               <TabsTrigger value="calendar" className="text-xs h-7">Calendar</TabsTrigger>
               <TabsTrigger value="timeline" className="text-xs h-7">Timeline</TabsTrigger>
-              <TabsTrigger value="analytics" className="text-xs h-7">{t('common.analytics', 'Analytics')}</TabsTrigger>
+              {canViewAnalytics && (
+                <TabsTrigger value="analytics" className="text-xs h-7">{t('common.analytics', 'Analytics')}</TabsTrigger>
+              )}
             </TabsList>
 
             {activeTab === "trips" && (
@@ -372,9 +421,11 @@ const TripManagement = () => {
             <TimelineView />
           </TabsContent>
 
-          <TabsContent value="analytics" className="mt-4">
-            <UtilizationAnalytics />
-          </TabsContent>
+          {canViewAnalytics && (
+            <TabsContent value="analytics" className="mt-4">
+              <UtilizationAnalytics />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 
