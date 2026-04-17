@@ -253,7 +253,15 @@ async function runWorkflow(
       visited.add(existingRun.current_node_id);
       const decision = ctx.last_task.decision as string | undefined;
       queue = (out[existingRun.current_node_id] ?? [])
-        .filter((e) => !decision || !e.sourceHandle || e.sourceHandle === decision)
+        .filter((e) => {
+          if (!decision) return true;
+          // Match either the React-Flow sourceHandle OR the SOP decision_id
+          // stored on the edge data payload (set by sopConverter).
+          const handle = e.sourceHandle;
+          const dataDecision = (e as any).data?.decision_id;
+          if (!handle && !dataDecision) return true;
+          return handle === decision || dataDecision === decision;
+        })
         .map((e) => e.target);
     } else {
       // Fresh start: every node with no incoming edges
