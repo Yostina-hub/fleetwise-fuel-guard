@@ -31,6 +31,7 @@ import { WorkflowTemplateGallery } from "./WorkflowTemplateGallery";
 import TriggerNode from "./nodes/TriggerNode";
 import ConditionNode from "./nodes/ConditionNode";
 import ActionNode from "./nodes/ActionNode";
+import CustomNode from "./nodes/CustomNode";
 import type { PaletteItem, WorkflowNode, WorkflowEdge } from "./types";
 import type { WorkflowTemplate } from "./workflowTemplates";
 import { AnimatePresence } from "framer-motion";
@@ -39,6 +40,7 @@ const nodeTypes = {
   trigger: TriggerNode,
   condition: ConditionNode,
   action: ActionNode,
+  custom: CustomNode,
 };
 
 function getNodeTypeForCategory(category: string) {
