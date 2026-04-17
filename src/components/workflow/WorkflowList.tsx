@@ -41,6 +41,8 @@ import {
   Radio,
   BatteryCharging,
   LayoutGrid,
+  FileText,
+  Layers,
 } from "lucide-react";
 import {
   Select,
@@ -83,10 +85,12 @@ const statusColors: Record<string, string> = {
 // ----- Domain & Category filtering helpers (2-tier taxonomy) -----
 
 const DOMAIN_ORDER = [
+  "standard_procedures",
   "safety_compliance",
   "fleet_operations",
   "energy_sustainability",
   "telematics_iot",
+  "general",
   "other",
 ];
 
@@ -97,6 +101,11 @@ interface DomainMeta {
 }
 
 const DOMAIN_META: Record<string, DomainMeta> = {
+  standard_procedures: {
+    label: "Standard Procedures",
+    icon: <FileText className="h-3.5 w-3.5" />,
+    accentClass: "bg-primary text-primary-foreground border-primary",
+  },
   safety_compliance: {
     label: "Safety & Compliance",
     icon: <Shield className="h-3.5 w-3.5" />,
@@ -117,6 +126,11 @@ const DOMAIN_META: Record<string, DomainMeta> = {
     icon: <Radio className="h-3.5 w-3.5" />,
     accentClass: "bg-secondary text-secondary-foreground border-secondary",
   },
+  general: {
+    label: "General",
+    icon: <Layers className="h-3.5 w-3.5" />,
+    accentClass: "bg-muted text-foreground border-border",
+  },
   other: {
     label: "Other",
     icon: <GitBranch className="h-3.5 w-3.5" />,
@@ -125,22 +139,39 @@ const DOMAIN_META: Record<string, DomainMeta> = {
 };
 
 const CATEGORY_TO_DOMAIN: Record<string, string> = {
+  // Standard procedures
+  sop: "standard_procedures",
+  procedure: "standard_procedures",
+  // Safety & compliance
   safety: "safety_compliance",
   compliance: "safety_compliance",
   alerts: "safety_compliance",
+  incident: "safety_compliance",
+  // Fleet operations
   operations: "fleet_operations",
   maintenance: "fleet_operations",
   cold_chain: "fleet_operations",
+  dispatch: "fleet_operations",
+  trip: "fleet_operations",
+  // Energy & sustainability
   fuel: "energy_sustainability",
   ev_charging: "energy_sustainability",
+  // Telematics & IoT
   sensors: "telematics_iot",
+  telemetry: "telematics_iot",
+  gps: "telematics_iot",
+  // General
+  general: "general",
 };
 
 function getDomainForCategory(category: string): string {
-  return CATEGORY_TO_DOMAIN[category] || "other";
+  if (!category) return "other";
+  return CATEGORY_TO_DOMAIN[category.toLowerCase()] || "other";
 }
 
 const CATEGORY_ICON_MAP: Record<string, React.ReactNode> = {
+  sop: <FileText className="h-3 w-3" />,
+  procedure: <FileText className="h-3 w-3" />,
   safety: <Shield className="h-3 w-3" />,
   maintenance: <Wrench className="h-3 w-3" />,
   fuel: <Fuel className="h-3 w-3" />,
@@ -150,10 +181,11 @@ const CATEGORY_ICON_MAP: Record<string, React.ReactNode> = {
   cold_chain: <Snowflake className="h-3 w-3" />,
   sensors: <Radio className="h-3 w-3" />,
   ev_charging: <BatteryCharging className="h-3 w-3" />,
+  general: <Layers className="h-3 w-3" />,
 };
 
 function getCategoryIcon(category: string): React.ReactNode {
-  return CATEGORY_ICON_MAP[category] || <GitBranch className="h-3 w-3" />;
+  return CATEGORY_ICON_MAP[category?.toLowerCase()] || <GitBranch className="h-3 w-3" />;
 }
 
 interface DomainPillProps {
