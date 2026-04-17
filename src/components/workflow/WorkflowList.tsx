@@ -352,68 +352,120 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
           <ScrollArea className="h-[60vh]">
             <div className="space-y-2 pr-4">
               {runHistory && runHistory.length > 0 ? (
-                runHistory.map((exec: any) => (
-                  <div
-                    key={exec.id}
-                    className="p-3 rounded-lg border border-border bg-muted/30 space-y-2"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {exec.status === "completed" && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
-                        {exec.status === "completed_with_errors" && <XCircle className="h-4 w-4 text-amber-500" />}
-                        {exec.status === "failed" && <XCircle className="h-4 w-4 text-destructive" />}
-                        {exec.status === "aborted" && <Pause className="h-4 w-4 text-muted-foreground" />}
-                        <span className="text-sm font-medium capitalize">{exec.status.replace(/_/g, " ")}</span>
-                        <Badge variant="outline" className="text-[10px]">{exec.trigger_type}</Badge>
+                runHistory.map((exec: any) => {
+                  const log: any[] = Array.isArray(exec.execution_log) ? exec.execution_log : [];
+                  const passed = log.filter((l) => l.status === "success").length;
+                  const failedCt = log.filter((l) => l.status === "error").length;
+                  const trig = exec.trigger_data?.source || "manual";
+                  return (
+                    <div key={exec.id} className="p-3 rounded-lg border border-border bg-muted/30 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {exec.status === "completed" && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+                          {exec.status === "failed" && <XCircle className="h-4 w-4 text-destructive" />}
+                          {exec.status === "running" && <Activity className="h-4 w-4 text-amber-500 animate-pulse" />}
+                          <span className="text-sm font-medium capitalize">{exec.status}</span>
+                          <Badge variant="outline" className="text-[10px]">{trig}</Badge>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(exec.started_at), "MMM d, HH:mm:ss")}
+                        </span>
                       </div>
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(exec.started_at), "MMM d, HH:mm:ss")}
-                      </span>
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div>
+                          <div className="text-sm font-bold text-foreground">{log.length}</div>
+                          <div className="text-[9px] text-muted-foreground">Nodes Run</div>
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-emerald-500">{passed}</div>
+                          <div className="text-[9px] text-muted-foreground">Passed</div>
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-destructive">{failedCt}</div>
+                          <div className="text-[9px] text-muted-foreground">Failed</div>
+                        </div>
+                      </div>
+                      {exec.duration_ms != null && (
+                        <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          <Clock className="h-2.5 w-2.5" />
+                          Duration: {(exec.duration_ms / 1000).toFixed(2)}s
+                        </div>
+                      )}
+                      {exec.error_message && (
+                        <div className="text-[10px] text-destructive bg-destructive/10 p-1.5 rounded">
+                          {exec.error_message}
+                        </div>
+                      )}
+                      {log.length > 0 && (
+                        <details className="text-[10px]">
+                          <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                            Per-node log ({log.length})
+                          </summary>
+                          <div className="mt-1 space-y-1 max-h-48 overflow-auto">
+                            {log.map((l, i) => (
+                              <div key={i} className="flex items-start gap-1.5 p-1 rounded bg-background/50">
+                                {l.status === "success"
+                                  ? <CheckCircle2 className="h-3 w-3 text-emerald-500 mt-0.5" />
+                                  : <XCircle className="h-3 w-3 text-destructive mt-0.5" />}
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium truncate">{l.label}</div>
+                                  <div className="text-muted-foreground truncate">{l.message}</div>
+                                </div>
+                                <span className="text-muted-foreground shrink-0">{l.duration_ms}ms</span>
+                              </div>
+                            ))}
+                          </div>
+                        </details>
+                      )}
                     </div>
-                    <div className="grid grid-cols-5 gap-2 text-center">
-                      <div>
-                        <div className="text-sm font-bold text-foreground">{exec.total_nodes}</div>
-                        <div className="text-[9px] text-muted-foreground">Total</div>
-                      </div>
-                      <div>
-                        <div className="text-sm font-bold text-emerald-500">{exec.nodes_executed}</div>
-                        <div className="text-[9px] text-muted-foreground">Passed</div>
-                      </div>
-                      <div>
-                        <div className="text-sm font-bold text-destructive">{exec.nodes_failed}</div>
-                        <div className="text-[9px] text-muted-foreground">Failed</div>
-                      </div>
-                      <div>
-                        <div className="text-sm font-bold text-cyan-500">{exec.db_reads}</div>
-                        <div className="text-[9px] text-muted-foreground">Reads</div>
-                      </div>
-                      <div>
-                        <div className="text-sm font-bold text-amber-500">{exec.db_writes}</div>
-                        <div className="text-[9px] text-muted-foreground">Writes</div>
-                      </div>
-                    </div>
-                    {exec.duration_ms && (
-                      <div className="text-[10px] text-muted-foreground flex items-center gap-1">
-                        <Clock className="h-2.5 w-2.5" />
-                        Duration: {(exec.duration_ms / 1000).toFixed(1)}s
-                      </div>
-                    )}
-                    {exec.error_summary && (
-                      <div className="text-[10px] text-destructive bg-destructive/10 p-1.5 rounded">
-                        {exec.error_summary}
-                      </div>
-                    )}
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <div className="text-center py-12 text-muted-foreground">
                   <Activity className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">No executions yet</p>
-                  <p className="text-xs">Run a simulation to see execution history</p>
+                  <p className="text-sm">No runs yet</p>
+                  <p className="text-xs">Click <strong>Run Now</strong> on any workflow, or wait for the cron / event triggers to fire.</p>
                 </div>
               )}
             </div>
           </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* Webhook URL dialog */}
+      <Dialog open={!!webhookWorkflow} onOpenChange={(open) => !open && setWebhookWorkflow(null)}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Webhook className="h-5 w-5" /> Webhook Endpoint
+            </DialogTitle>
+            <DialogDescription>
+              POST to this URL to fire the workflow from any external system.
+            </DialogDescription>
+          </DialogHeader>
+          {webhookWorkflow && (
+            <div className="space-y-3">
+              <div className="text-xs text-muted-foreground">URL (keep token secret)</div>
+              <code className="block p-3 rounded bg-muted text-xs break-all">
+                {`https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/workflow-webhook?token=${webhookWorkflow.webhook_token}`}
+              </code>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  navigator.clipboard.writeText(
+                    `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/workflow-webhook?token=${webhookWorkflow.webhook_token}`
+                  );
+                  toast({ title: "Copied", description: "Webhook URL copied to clipboard" });
+                }}
+              >
+                <Copy className="h-3.5 w-3.5 mr-2" /> Copy URL
+              </Button>
+              <div className="text-[11px] text-muted-foreground">
+                The endpoint accepts an optional JSON body which will be passed to the workflow as <code>trigger_data.payload</code>.
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
