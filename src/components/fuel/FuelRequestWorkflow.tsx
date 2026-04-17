@@ -19,6 +19,7 @@ import {
   ClipboardCheck, Send, History, Truck, Power, Settings,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useApprovals } from "@/hooks/useApprovals";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
@@ -429,6 +430,7 @@ export const FuelRequestWorkflow = () => {
   const { drivers } = useDrivers();
   const { formatCurrency, formatFuel, settings } = useOrganizationSettings();
   const { hasRole } = useAuthContext();
+  const { pendingFuelApprovals, approveFuelRequest, rejectFuelRequest } = useApprovals();
   const canApprove = APPROVER_ROLES.some(r => hasRole(r));
   const queryClient = useQueryClient();
 
@@ -514,43 +516,44 @@ export const FuelRequestWorkflow = () => {
   };
 
 
-  // Approve
+  const getPendingFuelApproval = (fuelRequestId: string) =>
+    pendingFuelApprovals?.find((approval: any) => approval.fuel_request_id === fuelRequestId);
+
+  // Approve via delegated approval record
   const approveMutation = useMutation({
-    mutationFn: async ({ id, liters }: { id: string; liters: number }) => {
-      const { data: user } = await supabase.auth.getUser();
-      const { error } = await supabase.from("fuel_requests").update({
-        status: "approved",
-        liters_approved: liters,
-        approved_by: user.user?.id,
-        approved_at: new Date().toISOString(),
-      }).eq("id", id);
-      if (error) throw error;
+    mutationFn: async ({ fuelRequestId, liters }: { fuelRequestId: string; liters: number }) => {
+      const approval = getPendingFuelApproval(fuelRequestId);
+      if (!approval) throw new Error("No delegated approval is assigned to you for this request");
+
+      return approveFuelRequest.mutateAsync({
+        approvalId: approval.id,
+        fuelRequestId,
+        litersApproved: liters,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fuel-requests"] });
       setShowApprove(null);
-      toast.success("Request approved — Fuel Work Order created automatically");
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  // Reject
+  // Reject via delegated approval record
   const rejectMutation = useMutation({
-    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
-      const { data: user } = await supabase.auth.getUser();
-      const { error } = await supabase.from("fuel_requests").update({
-        status: "rejected",
-        rejected_reason: reason,
-        approved_by: user.user?.id,
-        approved_at: new Date().toISOString(),
-      }).eq("id", id);
-      if (error) throw error;
+    mutationFn: async ({ fuelRequestId, reason }: { fuelRequestId: string; reason: string }) => {
+      const approval = getPendingFuelApproval(fuelRequestId);
+      if (!approval) throw new Error("No delegated approval is assigned to you for this request");
+
+      return rejectFuelRequest.mutateAsync({
+        approvalId: approval.id,
+        fuelRequestId,
+        comment: reason,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fuel-requests"] });
       setShowReject(null);
       setRejectReason("");
-      toast.success("Request rejected");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -798,7 +801,7 @@ export const FuelRequestWorkflow = () => {
                                     <Button variant="ghost" size="sm" onClick={() => setShowDetail(r)}><Eye className="w-4 h-4" /></Button>
                                   </TooltipTrigger><TooltipContent>View details</TooltipContent></Tooltip>
                                 </TooltipProvider>
-                                {r.status === "pending" && canApprove && (
+                                {r.status === "pending" && canApprove && getPendingFuelApproval(r.id) && (
                                   <>
                                     <Button variant="ghost" size="sm" className="text-success" onClick={() => { setShowApprove(r); setApprovedLiters(String(r.liters_requested)); }}>
                                       <Check className="w-4 h-4" />
@@ -882,7 +885,7 @@ export const FuelRequestWorkflow = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowApprove(null)}>Cancel</Button>
-            <Button onClick={() => approveMutation.mutate({ id: showApprove.id, liters: parseFloat(approvedLiters) })} disabled={approveMutation.isPending}>
+            <Button onClick={() => approveMutation.mutate({ fuelRequestId: showApprove.id, liters: parseFloat(approvedLiters) })} disabled={approveMutation.isPending}>
               {approveMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Approve & Create Work Order
             </Button>
@@ -945,7 +948,7 @@ export const FuelRequestWorkflow = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowReject(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={() => rejectMutation.mutate({ id: showReject.id, reason: rejectReason })} disabled={rejectMutation.isPending || !rejectReason.trim()}>
+            <Button variant="destructive" onClick={() => rejectMutation.mutate({ fuelRequestId: showReject.id, reason: rejectReason })} disabled={rejectMutation.isPending || !rejectReason.trim()}>
               {rejectMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Reject
             </Button>
