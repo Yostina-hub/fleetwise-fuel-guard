@@ -5,7 +5,7 @@ import {
   preventiveMaintenanceConfig, breakdownMaintenanceConfig, vehicleDispatchConfig,
   driverOnboardingConfig, driverTrainingConfig, driverAllowanceConfig,
   vehicleDisposalConfig, roadsideAssistanceConfig, licenseRenewalConfig,
-  outsourceRentalConfig, safetyComfortConfig, tireRequestConfig,
+  outsourceRentalConfig, safetyComfortConfig,
 } from "@/lib/workflow-engine/configs";
 
 const wrap = (config: any) => () => <Layout><WorkflowPage config={config} /></Layout>;
@@ -24,4 +24,3 @@ export const RoadsideAssistancePage       = wrap(roadsideAssistanceConfig);
 export const LicenseRenewalPage           = wrap(licenseRenewalConfig);
 export const OutsourceRentalPage          = wrap(outsourceRentalConfig);
 export const SafetyComfortPage            = wrap(safetyComfortConfig);
-export const TireRequestPage              = wrap(tireRequestConfig);
