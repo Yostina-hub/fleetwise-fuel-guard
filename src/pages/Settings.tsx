@@ -21,6 +21,7 @@ import {
 import PushNotificationSettings from "@/components/settings/PushNotificationSettings";
 import { FuelAlertSettings } from "@/components/alerts/FuelAlertSettings";
 import { MaintenanceAlertSettings } from "@/components/alerts/MaintenanceAlertSettings";
+import { InspectionSettings } from "@/components/settings/InspectionSettings";
 import { useTranslation } from "react-i18next";
 
 const Settings = () => {
@@ -513,6 +514,7 @@ const Settings = () => {
 
           {/* Maintenance Settings */}
           <TabsContent value="maintenance" className="space-y-6">
+            <InspectionSettings />
             <MaintenanceAlertSettings />
             
             <Card>

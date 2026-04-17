@@ -12,13 +12,28 @@ import { ClipboardCheck, CheckCircle, XCircle, Clock, Search, Plus, Sticker } fr
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { format } from "date-fns";
+import { ScheduleInspectionDialog } from "@/components/inspections/ScheduleInspectionDialog";
+import { cn } from "@/lib/utils";
 
 import { useTranslation } from 'react-i18next';
+
+const TYPE_CHIPS = [
+  { value: "all", label: "All" },
+  { value: "annual", label: "Annual" },
+  { value: "pre_trip", label: "Pre-Trip" },
+  { value: "post_trip", label: "Post-Trip" },
+  { value: "internal", label: "Internal" },
+  { value: "roadworthiness", label: "Roadworthiness" },
+  { value: "routine", label: "Routine" },
+];
+
 const VehicleInspections = () => {
   const { t } = useTranslation();
   const { organizationId } = useOrganization();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogType, setDialogType] = useState("annual");
 
   const { data: inspections = [], isLoading } = useQuery({
     queryKey: ["vehicle-inspections", organizationId],
