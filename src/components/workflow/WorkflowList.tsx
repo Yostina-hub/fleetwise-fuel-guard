@@ -41,6 +41,8 @@ import {
   Radio,
   BatteryCharging,
   LayoutGrid,
+  FileText,
+  Layers,
 } from "lucide-react";
 import {
   Select,
