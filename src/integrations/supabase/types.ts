@@ -24223,6 +24223,8 @@ export type Database = {
           cron_expression: string | null
           description: string | null
           edges: Json
+          event_filter: Json | null
+          event_trigger: string | null
           execution_count: number
           id: string
           is_template: boolean | null
@@ -24239,6 +24241,7 @@ export type Database = {
           updated_at: string
           version: number
           viewport: Json | null
+          webhook_token: string | null
         }
         Insert: {
           category?: string
@@ -24247,6 +24250,8 @@ export type Database = {
           cron_expression?: string | null
           description?: string | null
           edges?: Json
+          event_filter?: Json | null
+          event_trigger?: string | null
           execution_count?: number
           id?: string
           is_template?: boolean | null
@@ -24263,6 +24268,7 @@ export type Database = {
           updated_at?: string
           version?: number
           viewport?: Json | null
+          webhook_token?: string | null
         }
         Update: {
           category?: string
@@ -24271,6 +24277,8 @@ export type Database = {
           cron_expression?: string | null
           description?: string | null
           edges?: Json
+          event_filter?: Json | null
+          event_trigger?: string | null
           execution_count?: number
           id?: string
           is_template?: boolean | null
@@ -24287,6 +24295,7 @@ export type Database = {
           updated_at?: string
           version?: number
           viewport?: Json | null
+          webhook_token?: string | null
         }
         Relationships: []
       }
