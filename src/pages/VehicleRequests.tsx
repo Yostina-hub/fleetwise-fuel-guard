@@ -296,6 +296,31 @@ const VehicleRequests = () => {
             onClose={() => setShowCrossPool(null)}
           />
         )}
+
+        {showDeallocate && (
+          <DeallocateRequestDialog
+            request={showDeallocate}
+            open={!!showDeallocate}
+            onClose={() => setShowDeallocate(null)}
+          />
+        )}
+
+        {showDelete && (
+          <DeleteRequestDialog
+            request={showDelete}
+            open={!!showDelete}
+            onClose={() => setShowDelete(null)}
+            isOwnDraft={isDriverOnly && showDelete.requester_id === userId && showDelete.status === "pending"}
+          />
+        )}
+
+        {showMultiAssign && (
+          <MultiVehicleAssignDialog
+            request={showMultiAssign}
+            open={!!showMultiAssign}
+            onClose={() => setShowMultiAssign(null)}
+          />
+        )}
       </div>
     </Layout>
   );
