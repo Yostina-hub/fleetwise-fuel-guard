@@ -265,13 +265,17 @@ const GROUP_TWO: VehicleGroupStandard = {
 
     { key: "seat_cover_ready",         label: "Seat Cover (Ready Made)",              category: "vehicle_comfort_materials" },
     { key: "seat_cover_prepared",      label: "Seat Cover (Prepared)",                category: "vehicle_comfort_materials" },
-    { key: "heat_protector",           label: "Heat Protector",                       category: "vehicle_comfort_materials" },
+    { key: "heat_protector_leather",   label: "Heat Protector (Leather Type)",        category: "vehicle_comfort_materials" },
+    { key: "heat_protector_non_leather", label: "Heat Protector (Non-leather/Normal)", category: "vehicle_comfort_materials" },
     { key: "floor_mat_prepared",       label: "Floor Mat (Prepared)",                 category: "vehicle_comfort_materials" },
     { key: "floor_mat_ready",          label: "Floor Mat (Ready Made)",               category: "vehicle_comfort_materials" },
-    { key: "sun_visor",                label: "Sun Visor",                            category: "vehicle_comfort_materials" },
+    { key: "sun_visor",                label: "Sun Visor / Sunshade",                 category: "vehicle_comfort_materials" },
     { key: "steering_wheel_cover",     label: "Steering Wheel Cover",                 category: "vehicle_comfort_materials" },
     { key: "curtain",                  label: "Curtain",                              category: "vehicle_comfort_materials" },
     { key: "dash_board_cover",         label: "Dash Board Cover",                     category: "vehicle_comfort_materials" },
+    { key: "tire_polish",              label: "Tire Polish",                          category: "vehicle_comfort_materials" },
+    { key: "car_overall_cover",        label: "Car Overall Cover",                    category: "vehicle_comfort_materials" },
+    { key: "tool_bag_canvas",          label: "Tool Bag Made of Canvases",            category: "vehicle_comfort_materials" },
   ],
 };
 
