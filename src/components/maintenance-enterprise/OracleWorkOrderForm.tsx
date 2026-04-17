@@ -346,6 +346,56 @@ export default function OracleWorkOrderForm({ maintenanceRequestId, workOrderId,
         await (supabase as any).from("work_order_operations").insert(opsPayload);
       }
 
+      // Materials
+      await (supabase as any).from("work_order_materials").delete().eq("work_order_id", woId);
+      if (materials.length) {
+        await (supabase as any).from("work_order_materials").insert(materials.map(m => ({
+          organization_id: organizationId, work_order_id: woId,
+          item_code: m.item_code, item_description: m.item_description,
+          required_quantity: m.required_quantity, issued_quantity: m.issued_quantity,
+          uom: m.uom, supply_type: m.supply_type, unit_cost: m.unit_cost,
+          required_date: m.required_date || null, operation_sequence: m.operation_sequence || null,
+        })));
+      }
+
+      // Permits
+      await (supabase as any).from("work_order_permits").delete().eq("work_order_id", woId);
+      if (permits.length) {
+        await (supabase as any).from("work_order_permits").insert(permits.map(p => ({
+          organization_id: organizationId, work_order_id: woId,
+          permit_number: p.permit_number, permit_type: p.permit_type, issued_by: p.issued_by,
+          valid_from: p.valid_from || null, valid_until: p.valid_until || null, status: p.status,
+        })));
+      }
+
+      // Quality plans
+      await (supabase as any).from("work_order_quality_plans").delete().eq("work_order_id", woId);
+      if (qualityPlans.length) {
+        await (supabase as any).from("work_order_quality_plans").insert(qualityPlans.map(q => ({
+          organization_id: organizationId, work_order_id: woId,
+          plan_name: q.plan_name, characteristic: q.characteristic,
+          specification: q.specification, result: q.result, pass: q.pass,
+        })));
+      }
+
+      // Meter readings
+      await (supabase as any).from("work_order_meter_readings").delete().eq("work_order_id", woId);
+      if (meterReadings.length) {
+        await (supabase as any).from("work_order_meter_readings").insert(meterReadings.map(m => ({
+          organization_id: organizationId, work_order_id: woId,
+          meter_name: m.meter_name, reading_value: m.reading_value, unit: m.unit,
+        })));
+      }
+
+      // Attachments
+      await (supabase as any).from("work_order_attachments").delete().eq("work_order_id", woId);
+      if (attachments.length) {
+        await (supabase as any).from("work_order_attachments").insert(attachments.map(a => ({
+          organization_id: organizationId, work_order_id: woId,
+          file_name: a.file_name, file_url: a.file_url, mime_type: a.mime_type, category: a.category,
+        })));
+      }
+
       toast.success(`Work Order ${woNumber} saved`);
       if (woId) onSaved?.(woId);
     } catch (e: any) {
