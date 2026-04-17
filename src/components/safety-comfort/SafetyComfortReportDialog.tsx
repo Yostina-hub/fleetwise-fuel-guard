@@ -19,9 +19,11 @@ import { toast } from "sonner";
 import { Shield, AlertTriangle } from "lucide-react";
 import {
   VEHICLE_GROUPS, VEHICLE_GROUPS_MAP, CATEGORY_LABELS,
-  ITEM_STATUS_OPTIONS, groupItemsByCategory,
+  ITEM_STATUS_OPTIONS, groupItemsByCategory, getItemStandard,
   type ChecklistCategory, type ItemStatus,
 } from "@/lib/safety-comfort/standard-lists";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Info } from "lucide-react";
 
 interface Props {
   open: boolean;
