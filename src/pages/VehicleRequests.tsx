@@ -230,9 +230,18 @@ const VehicleRequests = () => {
                           </Badge>
                         </td>
                         <td className="py-2 px-3 text-center">
-                          <Button size="sm" variant="ghost" onClick={() => setShowDetail(r)}><Eye className="w-3.5 h-3.5" /></Button>
+                          <Button size="sm" variant="ghost" onClick={() => setShowDetail(r)} title="View"><Eye className="w-3.5 h-3.5" /></Button>
                           {r.status === "completed" && !r.requester_rating && !r.auto_closed && (
-                            <Button size="sm" variant="ghost" onClick={() => setShowFeedback(r)} title="Give feedback (available for manually completed trips)"><MessageSquare className="w-3.5 h-3.5" /></Button>
+                            <Button size="sm" variant="ghost" onClick={() => setShowFeedback(r)} title="Give feedback"><MessageSquare className="w-3.5 h-3.5" /></Button>
+                          )}
+                          {r.pool_category === "outsource" && (r.num_vehicles || 1) > 1 && ["approved","pending"].includes(r.status) && (
+                            <Button size="sm" variant="ghost" onClick={() => setShowMultiAssign(r)} title="Multi-vehicle assign"><Users className="w-3.5 h-3.5" /></Button>
+                          )}
+                          {r.status === "assigned" && !r.driver_checked_in_at && (
+                            <Button size="sm" variant="ghost" onClick={() => setShowDeallocate(r)} title="Deallocate vehicle/driver"><Undo2 className="w-3.5 h-3.5 text-amber-500" /></Button>
+                          )}
+                          {!["completed"].includes(r.status) && !r.driver_checked_in_at && (
+                            <Button size="sm" variant="ghost" onClick={() => setShowDelete(r)} title="Remove request"><Trash2 className="w-3.5 h-3.5 text-destructive" /></Button>
                           )}
                         </td>
                       </tr>
