@@ -86,8 +86,6 @@ export function convertSopConfigToGraph(config: WorkflowConfig): ConverterOutput
         // Terminal stages become a notify/log node; in-flight stages become human tasks.
         nodeType: isTerminal ? "data_log_history" : "human_task",
         isConfigured: true,
-        // @ts-expect-error custom runtime fields tolerated by Json column
-        lane: stage.lane,
         config: {
           stage_id: stage.id,
           lane: stage.lane,
