@@ -166,8 +166,52 @@ export function useWorkflow(config: WorkflowConfig) {
       const newStatus = action.completes || toStage?.terminal ? "completed" : "in_progress";
       const completedAt = newStatus === "completed" ? new Date().toISOString() : null;
 
+      // ── Fleet Inspection: reuse existing open Work Order on the vehicle ─────
+      // When the user picks "Use existing open WO" on the request_maintenance
+      // stage, look up an open WO for the vehicle and stash its id into data.
+      let interceptedPayload: Record<string, any> = payload || {};
+      if (config.type === "fleet_inspection" && action.id === "use_existing_wo") {
+        const vehId = instance.vehicle_id;
+        if (!vehId) throw new Error("No vehicle linked to this inspection");
+        const { data: openWos, error: woErr } = await supabase
+          .from("work_orders")
+          .select("id, work_order_number, status")
+          .eq("organization_id", organizationId)
+          .eq("vehicle_id", vehId)
+          .in("status", ["open", "in_progress", "assigned", "scheduled", "pending"])
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (woErr) throw woErr;
+        if (!openWos || openWos.length === 0) {
+          throw new Error("No open Work Order on this vehicle. Use 'Open Work Order form' instead.");
+        }
+        interceptedPayload = {
+          ...interceptedPayload,
+          work_order_id: openWos[0].id,
+          work_order_number: openWos[0].work_order_number,
+          wo_link_source: "reused_existing",
+        };
+      }
+
+      // ── Fleet Inspection: enforce initiator-only WO closure for pre/post ───
+      if (
+        config.type === "fleet_inspection" &&
+        action.id === "initiator_close_wo" &&
+        instance.created_by &&
+        user?.id &&
+        instance.created_by !== user.id
+      ) {
+        const isManagerOverride =
+          userRoles.includes("fleet_manager") ||
+          userRoles.includes("operations_manager") ||
+          userRoles.includes("super_admin");
+        if (!isManagerOverride) {
+          throw new Error("Only the request initiator (or a fleet/operations manager) can close this WO");
+        }
+      }
+
       // Merge action payload into instance.data
-      const mergedData = { ...(instance.data || {}), ...(payload || {}) };
+      const mergedData = { ...(instance.data || {}), ...(interceptedPayload || {}) };
       const mergedDocs = [...(instance.documents || []), ...(documents || [])];
 
       const { error: updErr } = await supabase
@@ -196,7 +240,7 @@ export function useWorkflow(config: WorkflowConfig) {
         performed_by: user?.id || null,
         performed_by_name: profile?.full_name || user?.email || "Unknown",
         performed_by_role: userRoles[0] || null,
-        payload: payload || {},
+        payload: interceptedPayload || {},
         documents: documents || [],
       });
       if (trErr) throw trErr;
