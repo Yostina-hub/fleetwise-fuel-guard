@@ -5,12 +5,41 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { CheckCircle, XCircle, Truck, Users, Send, UserCheck, Layers } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { CheckCircle, XCircle, Truck, Users, Send, UserCheck, Layers, User } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAvailableVehicles } from "@/hooks/useAvailableVehicles";
 import { toast } from "sonner";
 import { format } from "date-fns";
+
+const sendAssignmentSMS = async (request: any, vehicleId: string, driverId?: string) => {
+  try {
+    const { data: vehicle } = await (supabase as any)
+      .from("vehicles").select("plate_number, make, model").eq("id", vehicleId).single();
+
+    const driverInfo = driverId
+      ? await (supabase as any).from("drivers").select("first_name, last_name, phone").eq("id", driverId).single()
+      : null;
+
+    // SMS to driver with trip details
+    if (driverInfo?.data?.phone) {
+      const msg = `Trip Assignment ${request.request_number}: Vehicle ${vehicle?.plate_number || ""}. From ${request.departure_place || "—"} to ${request.destination || "—"} at ${format(new Date(request.needed_from), "MMM dd HH:mm")}. Purpose: ${(request.purpose || "").substring(0, 60)}`;
+      await supabase.functions.invoke("send-sms", { body: { to: driverInfo.data.phone, message: msg, type: "trip_assignment" } });
+    }
+
+    // SMS to requester with feedback link
+    const { data: requesterProfile } = await (supabase as any)
+      .from("profiles").select("phone").eq("id", request.requester_id).single();
+    if (requesterProfile?.phone) {
+      const link = `${window.location.origin}/vehicle-requests?feedback=${request.id}`;
+      const driverName = driverInfo?.data ? `${driverInfo.data.first_name} ${driverInfo.data.last_name}` : "TBA";
+      const msg = `Your request ${request.request_number} is assigned. Vehicle: ${vehicle?.plate_number}, Driver: ${driverName}. Feedback after trip: ${link}`;
+      await supabase.functions.invoke("send-sms", { body: { to: requesterProfile.phone, message: msg, type: "trip_assignment" } });
+    }
+  } catch (e) {
+    console.warn("SMS notification failed (non-blocking):", e);
+  }
+};
 
 interface Props {
   requests: any[];
@@ -80,6 +109,22 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
   const [selectedVehicle, setSelectedVehicle] = useState("");
   const [selectedDriver, setSelectedDriver] = useState("");
   const [showConsolidated, setShowConsolidated] = useState(true);
+
+  // Available drivers for assignment
+  const { data: availableDrivers = [] } = useQuery({
+    queryKey: ["available-drivers", organizationId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("drivers")
+        .select("id, first_name, last_name, phone")
+        .eq("organization_id", organizationId)
+        .eq("status", "active")
+        .order("first_name");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId,
+  });
 
   // Requests that are approved and need pool review/assignment
   const approvedRequests = requests.filter(
@@ -157,6 +202,9 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
           });
         } catch (e) { console.error("In-app notification error:", e); }
       }
+
+      // Send SMS notifications to driver + requester
+      await sendAssignmentSMS(request, vehicleId, driverId);
     },
     onSuccess: () => {
       toast.success("Vehicle assigned from pool");
@@ -197,6 +245,20 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
         await (supabase as any).from("drivers").update({
           status: "on_trip", updated_at: new Date().toISOString(),
         }).eq("id", driverId);
+      }
+      // Send SMS to each requester + driver (driver only once)
+      const seenDriver = new Set<string>();
+      for (const requestId of requestIds) {
+        const request = requests.find((r: any) => r.id === requestId);
+        if (!request) continue;
+        const driverKey = driverId ? `${driverId}` : "";
+        if (driverId && seenDriver.has(driverKey)) {
+          // Skip duplicate driver SMS but still notify requester
+          await sendAssignmentSMS(request, vehicleId, undefined);
+        } else {
+          await sendAssignmentSMS(request, vehicleId, driverId);
+          if (driverId) seenDriver.add(driverKey);
+        }
       }
     },
     onSuccess: () => {
@@ -260,6 +322,24 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
                 {available.slice(0, 30).map((v) => (
                   <SelectItem key={v.id} value={v.id} className="text-xs">
                     {v.plate_number} — {v.make} {v.model}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label className="text-xs flex items-center gap-1 mb-1">
+              <User className="w-3 h-3" /> Driver ({availableDrivers.length} active)
+            </Label>
+            <Select value={selectedDriver} onValueChange={setSelectedDriver}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder="Select driver (optional, sends SMS if set)..." />
+              </SelectTrigger>
+              <SelectContent>
+                {availableDrivers.slice(0, 50).map((d: any) => (
+                  <SelectItem key={d.id} value={d.id} className="text-xs">
+                    {d.first_name} {d.last_name} {d.phone ? `— ${d.phone}` : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -363,6 +443,24 @@ export const PoolReviewPanel = ({ requests, organizationId }: Props) => {
                       {available.slice(0, 30).map((v) => (
                         <SelectItem key={v.id} value={v.id} className="text-xs">
                           {v.plate_number} — {v.make} {v.model}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-xs flex items-center gap-1 mb-1">
+                    <User className="w-3 h-3" /> Driver ({availableDrivers.length} active)
+                  </Label>
+                  <Select value={selectedDriver} onValueChange={setSelectedDriver}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Select driver (optional)..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableDrivers.slice(0, 50).map((d: any) => (
+                        <SelectItem key={d.id} value={d.id} className="text-xs">
+                          {d.first_name} {d.last_name} {d.phone ? `— ${d.phone}` : ""}
                         </SelectItem>
                       ))}
                     </SelectContent>
