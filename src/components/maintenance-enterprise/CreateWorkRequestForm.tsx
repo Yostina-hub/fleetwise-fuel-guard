@@ -289,7 +289,7 @@ export default function CreateWorkRequestForm({
       if (error) throw error;
 
       // If this is an inspection request, also seed a vehicle_inspections row.
-      if (workRequestType === "inspection" && resolvedVehicleId) {
+      if ((workRequestType === "inspection" || isTripInspection) && resolvedVehicleId && inspectionSubType) {
         await (supabase as any).from("vehicle_inspections").insert({
           organization_id: organizationId,
           vehicle_id: resolvedVehicleId,
@@ -298,7 +298,7 @@ export default function CreateWorkRequestForm({
           status: "pending",
           odometer_km: kmReading ? Number(kmReading) : null,
           inspection_date: new Date().toISOString(),
-          mechanic_notes: `Linked to maintenance request ${reqNumber}. ${additionalDescription}`,
+          mechanic_notes: `Linked to work request ${reqNumber}. ${additionalDescription}`,
         });
       }
 
