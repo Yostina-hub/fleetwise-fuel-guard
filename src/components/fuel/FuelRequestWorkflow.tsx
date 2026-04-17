@@ -801,7 +801,7 @@ export const FuelRequestWorkflow = () => {
                                     <Button variant="ghost" size="sm" onClick={() => setShowDetail(r)}><Eye className="w-4 h-4" /></Button>
                                   </TooltipTrigger><TooltipContent>View details</TooltipContent></Tooltip>
                                 </TooltipProvider>
-                                {r.status === "pending" && canApprove && (
+                                {r.status === "pending" && canApprove && getPendingFuelApproval(r.id) && (
                                   <>
                                     <Button variant="ghost" size="sm" className="text-success" onClick={() => { setShowApprove(r); setApprovedLiters(String(r.liters_requested)); }}>
                                       <Check className="w-4 h-4" />
