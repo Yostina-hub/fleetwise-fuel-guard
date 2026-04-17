@@ -13,6 +13,7 @@ import {
 import { MaintenanceRequest, WorkflowStage } from "@/hooks/useMaintenanceRequests";
 import MaintenanceWorkflowProgress from "./MaintenanceWorkflowProgress";
 import MaintenanceWorkflowTimeline from "./MaintenanceWorkflowTimeline";
+import DriverWorkflowActions from "./DriverWorkflowActions";
 import { format } from "date-fns";
 
 interface Props {
@@ -131,6 +132,9 @@ const MaintenanceRequestDetail = ({ request: req, onAction, isPending, drivers =
       )}
 
       <Separator />
+
+      {/* Driver geofence-verified actions (delivery / receipt) */}
+      <DriverWorkflowActions request={req} />
 
       {/* ============ ACTION PANELS based on workflow_stage ============ */}
 
