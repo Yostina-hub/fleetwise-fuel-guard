@@ -21,7 +21,7 @@ import {
   Car, Truck, Shield, FileText, DollarSign, AlertTriangle, Clock,
   CheckCircle, Calendar, Fuel, Gauge, MapPin, User, Building2,
   Wrench, Camera, Info, Search, ChevronRight, Key, Thermometer,
-  Weight, Box, Zap, Radio, Hash, ArrowLeft,
+  Weight, Box, Zap, Radio, Hash, ArrowLeft, ClipboardCheck,
 } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import LicenseExpiryBadge from "@/components/fleet/LicenseExpiryBadge";
@@ -67,6 +67,75 @@ const ExpiryAlertCard = ({ label, date, icon: Icon }: { label: string; date: str
         )}
       </div>
     </motion.div>
+  );
+};
+
+// --- Next Annual Inspection Card ---
+const NextAnnualInspectionCard = ({ vehicleId }: { vehicleId: string }) => {
+  const { data, isLoading } = useQuery({
+    queryKey: ["next-annual-inspection", vehicleId],
+    queryFn: async () => {
+      const [dueRes, lastRes] = await Promise.all([
+        supabase
+          .from("inspection_due_dates")
+          .select("next_annual_due, last_annual_inspection_date, last_annual_result")
+          .eq("vehicle_id", vehicleId)
+          .maybeSingle(),
+        supabase
+          .from("vehicle_inspections")
+          .select("inspection_date, overall_result, sticker_expiry, sticker_number")
+          .eq("vehicle_id", vehicleId)
+          .eq("inspection_type", "annual")
+          .order("inspection_date", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+      return { due: dueRes.data, last: lastRes.data };
+    },
+    enabled: !!vehicleId,
+  });
+
+  if (isLoading) return null;
+  const nextDue = data?.due?.next_annual_due;
+  const lastDate = data?.due?.last_annual_inspection_date || data?.last?.inspection_date;
+  const lastResult = data?.due?.last_annual_result || data?.last?.overall_result;
+
+  if (!nextDue && !lastDate) return null;
+
+  const days = nextDue ? differenceInDays(parseISO(nextDue), new Date()) : null;
+  const isOverdue = days !== null && days < 0;
+  const isUrgent = days !== null && days >= 0 && days <= 30;
+
+  return (
+    <div className={cn(
+      "flex items-center gap-3 p-3 rounded-xl border",
+      isOverdue && "border-destructive/40 bg-destructive/5",
+      isUrgent && "border-warning/40 bg-warning/5",
+      !isOverdue && !isUrgent && "border-primary/20 bg-primary/5"
+    )}>
+      <div className={cn(
+        "w-10 h-10 rounded-full flex items-center justify-center",
+        isOverdue ? "bg-destructive/10" : isUrgent ? "bg-warning/10" : "bg-primary/10"
+      )}>
+        <ClipboardCheck className={cn("w-5 h-5", isOverdue ? "text-destructive" : isUrgent ? "text-warning" : "text-primary")} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium">Next Annual Inspection</p>
+        <p className="text-xs text-muted-foreground">
+          {nextDue ? format(parseISO(nextDue), "MMM d, yyyy") : "Not scheduled"}
+          {lastDate && <> · Last: {format(parseISO(lastDate), "MMM d, yyyy")} ({lastResult || "—"})</>}
+        </p>
+      </div>
+      <div className="text-right">
+        {isOverdue ? (
+          <Badge variant="destructive" className="gap-1"><AlertTriangle className="w-3 h-3" />{Math.abs(days!)}d overdue</Badge>
+        ) : isUrgent ? (
+          <Badge className="bg-warning/10 text-warning border-warning/20 gap-1"><Clock className="w-3 h-3" />{days}d left</Badge>
+        ) : days !== null ? (
+          <Badge className="bg-success/10 text-success border-success/20 gap-1"><CheckCircle className="w-3 h-3" />{days}d left</Badge>
+        ) : null}
+      </div>
+    </div>
   );
 };
 
