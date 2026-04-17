@@ -15,6 +15,8 @@ import { BulkActionBar } from "@/components/inbox/BulkActionBar";
 import { EmptyState } from "@/components/inbox/EmptyState";
 import { RenderWorkflowForm, getWorkflowForm } from "@/lib/workflow-forms/registry";
 import type { WorkflowTask } from "@/components/inbox/types";
+import { useSopInboxTasks, isSopTask } from "@/hooks/useSopInboxTasks";
+import { WORKFLOW_CONFIGS } from "@/lib/workflow-engine/configs";
 
 const DEFAULT_SLA_MINUTES = 60 * 24; // 1 day
 
@@ -43,8 +45,8 @@ export default function Inbox() {
     staleTime: 5 * 60_000,
   });
 
-  // Tasks fetch
-  const { data: rawTasks = [], isLoading } = useQuery<WorkflowTask[]>({
+  // Tasks fetch — visual workflow builder
+  const { data: builderTasks = [], isLoading: builderLoading } = useQuery<WorkflowTask[]>({
     queryKey: ["workflow-tasks", organizationId, status],
     enabled: !!organizationId,
     refetchInterval: 8000,
@@ -82,6 +84,15 @@ export default function Inbox() {
       });
     },
   });
+
+  // SOP-engine instances surfaced as inbox tasks
+  const { data: sopTasks = [], isLoading: sopLoading } = useSopInboxTasks(organizationId, status);
+
+  const rawTasks = useMemo<WorkflowTask[]>(
+    () => [...sopTasks, ...builderTasks],
+    [sopTasks, builderTasks],
+  );
+  const isLoading = builderLoading || sopLoading;
 
   // Apply filters in-memory
   const filteredTasks = useMemo(() => {
@@ -162,6 +173,60 @@ export default function Inbox() {
       }
     }
     setSubmitting(true);
+
+    // ── SOP-engine task path ──────────────────────────────────────────
+    if (isSopTask(selected)) {
+      const instance = selected.__instance;
+      const config = WORKFLOW_CONFIGS[instance.workflow_type];
+      const action = (selected.__stageActions ?? []).find((a) => a.id === decision);
+      if (!config || !action) {
+        setSubmitting(false);
+        toast({ title: "Action not available for this stage", variant: "destructive" });
+        return;
+      }
+      const toStage = config.stages.find((s) => s.id === action.toStage);
+      const newStatus = action.completes || toStage?.terminal ? "completed" : "in_progress";
+      const completedAt = newStatus === "completed" ? new Date().toISOString() : null;
+
+      const mergedData = { ...(instance.data || {}), ...(payload || {}) };
+      const { data: userData } = await supabase.auth.getUser();
+      const { error: updErr } = await supabase
+        .from("workflow_instances")
+        .update({
+          current_stage: action.toStage,
+          current_lane: toStage?.lane || instance.current_lane,
+          status: newStatus,
+          completed_at: completedAt,
+          data: mergedData,
+        })
+        .eq("id", instance.id);
+      if (updErr) {
+        setSubmitting(false);
+        toast({ title: "Failed to submit", description: updErr.message, variant: "destructive" });
+        return;
+      }
+      await supabase.from("workflow_transitions").insert({
+        organization_id: instance.organization_id,
+        instance_id: instance.id,
+        workflow_type: config.type,
+        from_stage: instance.current_stage,
+        to_stage: action.toStage,
+        from_lane: instance.current_lane,
+        to_lane: toStage?.lane || instance.current_lane,
+        decision: action.id,
+        notes: payload.notes || null,
+        performed_by: userData.user?.id || null,
+        payload: payload || {},
+      });
+      setSubmitting(false);
+      toast({ title: "Stage advanced", description: `${config.title} → ${toStage?.label ?? action.toStage}` });
+      setSelectedId(null);
+      qc.invalidateQueries({ queryKey: ["sop-inbox-tasks"] });
+      qc.invalidateQueries({ queryKey: ["workflow-instances", config.type] });
+      return;
+    }
+
+    // ── Visual builder task path ─────────────────────────────────────
     const { error } = await supabase.rpc("complete_workflow_task" as any, {
       _task_id: selected.id,
       _decision: decision,
