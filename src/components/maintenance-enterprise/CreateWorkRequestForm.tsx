@@ -86,6 +86,7 @@ export default function CreateWorkRequestForm({
   const [selectedDriverName, setSelectedDriverName] = useState(driverName || "");
   const [driverPhone, setDriverPhone] = useState("");
   const [fuelLevel, setFuelLevel] = useState("");
+  const [inspectionSubType, setInspectionSubType] = useState<string>("");
   const [remark, setRemark] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
@@ -193,6 +194,7 @@ export default function CreateWorkRequestForm({
     if (!additionalDescription.trim()) return "Additional Description is required";
     if (!requestorDepartment.trim()) return "Requestor Department is required";
     if (!maintenanceTypeReq.trim()) return "Type of maintenance request is required";
+    if (workRequestType === "inspection" && !inspectionSubType) return "Inspection sub-type is required";
     if (!kmReading.trim()) return "KM reading is required";
     if (!driverPhone.trim()) return "Driver Phone No. is required";
     if (!fuelLevel.trim()) return "Fuel level in the tank is required";
@@ -246,6 +248,21 @@ export default function CreateWorkRequestForm({
         schedule_id: scheduleId || null,
       });
       if (error) throw error;
+
+      // If this is an inspection request, also seed a vehicle_inspections row.
+      if (workRequestType === "inspection" && resolvedVehicleId) {
+        await (supabase as any).from("vehicle_inspections").insert({
+          organization_id: organizationId,
+          vehicle_id: resolvedVehicleId,
+          driver_id: driverId || null,
+          inspection_type: inspectionSubType, // 'annual' | 'pre_trip' | 'post_trip'
+          status: "pending",
+          odometer_km: kmReading ? Number(kmReading) : null,
+          inspection_date: new Date().toISOString(),
+          mechanic_notes: `Linked to maintenance request ${reqNumber}. ${additionalDescription}`,
+        });
+      }
+
       toast.success(`Work Request ${reqNumber} created`);
       onSubmitted?.();
     } catch (e: any) {
