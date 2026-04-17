@@ -279,7 +279,10 @@ export default function CreateWorkRequestForm({
           fuel_level: fuelLevel ? Number(fuelLevel) : null,
           description: maintenanceTypeReq || (isTripInspection ? `Vehicle ${inspectionSubType?.replace("_", "-")} Inspection Request` : null),
           additional_description: additionalDescription,
-          notes: remark || null,
+          notes: [
+            requestedQuantity ? `Requested Quantity: ${requestedQuantity}` : null,
+            remark || null,
+          ].filter(Boolean).join("\n") || null,
           remark: remark || null,
           request_start_date: requestStartDate.toISOString(),
           request_by_completion_date: completionDate?.toISOString() || null,
