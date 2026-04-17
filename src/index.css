@@ -251,6 +251,17 @@ All colors MUST be HSL.
     --role-admin: 340 82% 58%;
     --role-inspector: 38 92% 50%;
     --role-default: 220 14% 55%;
+
+    /* Workflow node category accents (HSL) */
+    --node-trigger: 160 70% 45%;
+    --node-condition: 38 92% 50%;
+    --node-action: 199 89% 56%;
+    --node-fleet: 217 91% 60%;
+    --node-notification: 262 83% 62%;
+    --node-data: 188 86% 50%;
+    --node-timing: 270 30% 60%;
+    --node-ai: 280 80% 60%;
+    --node-sensor: 199 89% 56%;
   }
 }
 
