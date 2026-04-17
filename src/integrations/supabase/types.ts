@@ -11190,6 +11190,153 @@ export type Database = {
           },
         ]
       }
+      inspection_due_dates: {
+        Row: {
+          id: string
+          inspection_type: string
+          last_inspection_id: string | null
+          last_status: string | null
+          next_due_date: string | null
+          organization_id: string
+          source: string | null
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          id?: string
+          inspection_type: string
+          last_inspection_id?: string | null
+          last_status?: string | null
+          next_due_date?: string | null
+          organization_id: string
+          source?: string | null
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          id?: string
+          inspection_type?: string
+          last_inspection_id?: string | null
+          last_status?: string | null
+          next_due_date?: string | null
+          organization_id?: string
+          source?: string | null
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_due_dates_last_inspection_id_fkey"
+            columns: ["last_inspection_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_inspections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspection_due_dates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspection_due_dates_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inspection_reminder_log: {
+        Row: {
+          channels: Json
+          due_date: string
+          fired_at: string
+          id: string
+          inspection_type: string
+          lead_bucket: number
+          organization_id: string
+          vehicle_id: string
+        }
+        Insert: {
+          channels?: Json
+          due_date: string
+          fired_at?: string
+          id?: string
+          inspection_type: string
+          lead_bucket: number
+          organization_id: string
+          vehicle_id: string
+        }
+        Update: {
+          channels?: Json
+          due_date?: string
+          fired_at?: string
+          id?: string
+          inspection_type?: string
+          lead_bucket?: number
+          organization_id?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_reminder_log_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspection_reminder_log_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inspection_settings: {
+        Row: {
+          annual_lead_days: number[]
+          created_at: string
+          email_recipients: string[]
+          id: string
+          organization_id: string
+          posttrip_auto_create: boolean
+          pretrip_required_for_dispatch: boolean
+          updated_at: string
+        }
+        Insert: {
+          annual_lead_days?: number[]
+          created_at?: string
+          email_recipients?: string[]
+          id?: string
+          organization_id: string
+          posttrip_auto_create?: boolean
+          pretrip_required_for_dispatch?: boolean
+          updated_at?: string
+        }
+        Update: {
+          annual_lead_days?: number[]
+          created_at?: string
+          email_recipients?: string[]
+          id?: string
+          organization_id?: string
+          posttrip_auto_create?: boolean
+          pretrip_required_for_dispatch?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       insurance_claims: {
         Row: {
           adjuster_email: string | null
@@ -24235,6 +24382,15 @@ export type Database = {
         Returns: string
       }
       clear_failed_login: { Args: { p_email: string }; Returns: undefined }
+      compute_annual_inspection_due: {
+        Args: { _vehicle_id: string }
+        Returns: {
+          last_inspection_id: string
+          last_status: string
+          next_due: string
+          source: string
+        }[]
+      }
       compute_predictive_scores: {
         Args: { p_org_id: string }
         Returns: {
@@ -24492,6 +24648,10 @@ export type Database = {
           is_locked: boolean
           locked_until: string
         }[]
+      }
+      refresh_inspection_due_for_vehicle: {
+        Args: { _vehicle_id: string }
+        Returns: undefined
       }
       refresh_telemetry_aggregates: { Args: never; Returns: undefined }
       resolve_authority_approver: {
