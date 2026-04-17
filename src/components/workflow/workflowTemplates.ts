@@ -1312,22 +1312,25 @@ const TEMPLATES: WorkflowTemplate[] = [
       },
 
       // ── Stage 1: List vehicles to be inspected (Fleet Ops) ─────
+      // Vehicle was already selected at the trigger (intake form). Fleet Ops
+      // confirms the selected vehicle is on the inspection list and prepares it.
       {
         id: "s1_list",
         type: "action",
         position: { x: 480, y: 160 },
         data: {
-          label: "1. List Vehicles to Inspect",
-          description: "Fleet Operations confirms the vehicles entering this inspection cycle.",
+          label: "1. List Vehicle for Inspection",
+          description: "Fleet Operations reviews the vehicle selected at intake and adds it to the inspection list.",
           icon: "🧑‍💼",
           category: "actions",
           nodeType: "human_task",
           config: {
-            title: "List vehicles to be inspected",
-            description: "Confirm the vehicles included in this inspection batch.",
+            title: "List vehicle to be inspected",
+            description: "Review the vehicle selected at intake and confirm it is listed for this inspection cycle. Vehicle plate, driver and inspection type are already captured from the intake form.",
             assignee_role: "fleet_manager",
             allowed_roles: ["fleet_manager", "operations_manager"],
-            actions: [{ id: "ready", label: "Make vehicles ready" }],
+            show_intake_summary: true,
+            actions: [{ id: "ready", label: "Make vehicle ready" }],
           },
           status: "idle",
           isConfigured: true,
