@@ -1268,33 +1268,44 @@ const TEMPLATES: WorkflowTemplate[] = [
   },
 
   // ═══════════════════════════════════════════════════════════════
-  // FMG-INS 01 — FLEET INSPECTION (full SOP migration to builder)
+  // FMG-INS 01 — FLEET INSPECTION (1:1 mirror of legacy SOP config)
+  // Source of truth: src/lib/workflow-engine/configs.ts → fleetInspectionConfig
   // 16 stages · 6 lanes · branching internal vs annual paths
-  // Reusable forms: Create Work Request (Oracle EBS) + Vehicle Inspection
+  // Intake choice (Create Work Request EBS  OR  Vehicle Inspection Checklist)
+  // happens at the trigger — Stage 1 itself has no form.
   // ═══════════════════════════════════════════════════════════════
   {
     id: "tpl_fleet_inspection_sop",
     name: "Fleet Inspection (FMG-INS 01) — Full SOP",
     description:
-      "Full migration of the Fleet Inspection SOP into the visual builder. 16 role-gated human tasks across Fleet Ops, Maintenance, Inspection Center, Transport Authority, Sourcing and Finance — with branching for Internal vs Annual (Bolo) inspection paths and reusable Work Request / Vehicle Inspection forms.",
+      "Exact 1:1 migration of the legacy Fleet Inspection SOP into the visual builder. 16 role-gated steps across Fleet Ops, Maintenance, Inspection Center, Transport Authority, Sourcing and Finance, with the same Internal vs Annual (Bolo) branching as the legacy /sop/fleet-inspection page.",
     category: "compliance",
     icon: "📋",
     difficulty: "advanced",
     estimatedSavings: "Standardizes 16-step SOP · full audit trail",
     tags: ["SOP", "fleet-inspection", "FMG-INS-01", "annual", "bolo", "human-task", "approval", "compliance"],
     nodes: [
-      // ── Trigger ───────────────────────────────────────────────
+      // ── Trigger: file new instance (intake form choice happens here) ──
       {
         id: "trg",
         type: "trigger",
         position: { x: 480, y: 20 },
         data: {
           label: "File New Inspection",
-          description: "Manual filing or scheduled annual inspection trigger",
+          description:
+            "Manual filing via 'New Fleet Inspection' — user picks Create Work Request (Oracle EBS) or Vehicle Inspection Checklist. Vehicle is captured here before Stage 1.",
           icon: "⚡",
           category: "triggers",
           nodeType: "trigger_event",
-          config: { eventType: "fleet_inspection_filed" },
+          config: {
+            eventType: "fleet_inspection_filed",
+            intake_form_choices: [
+              { key: "create_work_request", label: "Create Work Request (Oracle EBS)" },
+              { key: "vehicle_inspection",  label: "Vehicle Inspection Checklist" },
+            ],
+            intake_roles: ["fleet_manager", "operations_manager"],
+            requires_vehicle: true,
+          },
           status: "idle",
           isConfigured: true,
         },
@@ -1307,15 +1318,15 @@ const TEMPLATES: WorkflowTemplate[] = [
         position: { x: 480, y: 160 },
         data: {
           label: "1. List Vehicles to Inspect",
-          description: "Fleet Operations selects vehicles due for inspection",
+          description: "Fleet Operations confirms the vehicles entering this inspection cycle.",
           icon: "🧑‍💼",
           category: "actions",
           nodeType: "human_task",
           config: {
             title: "List vehicles to be inspected",
-            description: "Pick the vehicles that should enter the inspection cycle.",
+            description: "Confirm the vehicles included in this inspection batch.",
             assignee_role: "fleet_manager",
-            form_key: "create_work_request",
+            allowed_roles: ["fleet_manager", "operations_manager"],
             actions: [{ id: "ready", label: "Make vehicles ready" }],
           },
           status: "idle",
@@ -1330,7 +1341,7 @@ const TEMPLATES: WorkflowTemplate[] = [
         position: { x: 480, y: 320 },
         data: {
           label: "2. Vehicles Ready — Choose Path",
-          description: "Pick Internal inspection or Annual (Bolo) inspection",
+          description: "Pick Internal preventive route or Annual (Bolo) inspection route.",
           icon: "🧑‍💼",
           category: "actions",
           nodeType: "human_task",
@@ -1338,9 +1349,10 @@ const TEMPLATES: WorkflowTemplate[] = [
             title: "Vehicles ready — choose inspection path",
             description: "Internal preventive route or Annual TA Bolo route.",
             assignee_role: "operations_manager",
+            allowed_roles: ["fleet_manager", "operations_manager"],
             actions: [
-              { id: "internal", label: "Internal inspection", variant: "secondary" },
-              { id: "annual", label: "Annual (Bolo) inspection", variant: "default" },
+              { id: "to_internal", label: "Internal inspection path", variant: "secondary" },
+              { id: "to_annual",   label: "Annual inspection path",   variant: "default" },
             ],
           },
           status: "idle",
@@ -1356,7 +1368,7 @@ const TEMPLATES: WorkflowTemplate[] = [
         position: { x: 120, y: 500 },
         data: {
           label: "3. Request Preventive Maintenance",
-          description: "Maintenance team receives the request",
+          description: "Maintenance team receives the request.",
           icon: "🧑‍💼",
           category: "actions",
           nodeType: "human_task",
@@ -1364,8 +1376,8 @@ const TEMPLATES: WorkflowTemplate[] = [
             title: "Request preventive maintenance",
             description: "Open a maintenance request for the listed vehicles.",
             assignee_role: "maintenance_manager",
-            form_key: "create_work_request",
-            actions: [{ id: "assign", label: "Assign fleet inspector" }],
+            allowed_roles: ["maintenance_manager", "maintenance_supervisor"],
+            actions: [{ id: "assign_inspector", label: "Assign fleet inspector" }],
           },
           status: "idle",
           isConfigured: true,
@@ -1378,7 +1390,7 @@ const TEMPLATES: WorkflowTemplate[] = [
         position: { x: 120, y: 670 },
         data: {
           label: "4. Assign Fleet Inspector",
-          description: "Inspector performs the internal inspection",
+          description: "Inspector performs the internal inspection and records the outcome.",
           icon: "🛡️",
           category: "actions",
           nodeType: "approval",
@@ -1386,54 +1398,57 @@ const TEMPLATES: WorkflowTemplate[] = [
             title: "Internal inspection result",
             description: "Record the inspection outcome.",
             assignee_role: "maintenance_supervisor",
+            allowed_roles: ["maintenance_manager", "maintenance_supervisor"],
             form_key: "vehicle_inspection",
             actions: [
-              { id: "pass", label: "Pass — release vehicle", variant: "default" },
-              { id: "fail", label: "Fail — manage breakdown", variant: "destructive" },
+              { id: "pass", label: "Pass inspection — release",     variant: "default" },
+              { id: "fail", label: "Fail — manage breakdown",       variant: "destructive" },
             ],
           },
           status: "idle",
           isConfigured: true,
         },
       },
-      // Stage 5: Manage breakdown (loops back)
+      // Manage breakdown (loops back to inspector) — legacy has no form here
       {
         id: "s5_breakdown",
         type: "action",
         position: { x: -80, y: 840 },
         data: {
-          label: "Manage Breakdown Maintenance",
-          description: "Repair issues then re-assign inspector",
+          label: "Manage Preventive / Breakdown Maintenance",
+          description: "Repair issues then re-assign inspector.",
           icon: "🧑‍💼",
           category: "actions",
           nodeType: "human_task",
           config: {
-            title: "Manage breakdown maintenance",
+            title: "Manage preventive/breakdown maintenance",
             description: "Fix the failure and route back to inspector.",
             assignee_role: "maintenance_manager",
-            form_key: "oracle_work_order",
+            allowed_roles: ["maintenance_manager"],
             actions: [{ id: "back_to_inspector", label: "Re-assign inspector" }],
           },
           status: "idle",
           isConfigured: true,
         },
       },
-      // Stage 5b: Ready for trip (terminal — internal path end)
+      // Stage 5: Ready for trip (terminal — internal path end)
       {
         id: "s5_ready_trip",
         type: "action",
         position: { x: 320, y: 840 },
         data: {
           label: "5. Ready for Trip ✅ (END)",
-          description: "Vehicle released to operations",
+          description: "Vehicle released to operations.",
           icon: "✅",
           category: "actions",
           nodeType: "human_task",
           config: {
-            title: "Confirm vehicle ready for trip",
+            title: "Make sure vehicles ready for trip",
             description: "Internal inspection path complete.",
             assignee_role: "fleet_manager",
-            actions: [{ id: "close", label: "Close inspection" }],
+            allowed_roles: ["fleet_manager", "operations_manager"],
+            terminal: true,
+            actions: [{ id: "close", label: "Close (END)" }],
           },
           status: "idle",
           isConfigured: true,
@@ -1441,26 +1456,26 @@ const TEMPLATES: WorkflowTemplate[] = [
       },
 
       // ═════════ ANNUAL PATH (right column) ═════════
-      // Stage 6: Develop inspection schedule
+      // Stage 6: Develop inspection schedule (legacy: only scheduled_at)
       {
         id: "s6_schedule",
         type: "action",
         position: { x: 840, y: 500 },
         data: {
           label: "6. Develop Inspection Schedule",
-          description: "Plan inspection center visit",
+          description: "Plan the inspection center visit.",
           icon: "🧑‍💼",
           category: "actions",
           nodeType: "human_task",
           config: {
-            title: "Develop annual inspection schedule",
-            description: "Set the date and assign the vehicle to a center.",
+            title: "Develop inspection schedule",
+            description: "Set the scheduled date for the inspection center visit.",
             assignee_role: "fleet_manager",
+            allowed_roles: ["fleet_manager", "operations_manager"],
             fields: [
               { key: "scheduled_at", label: "Scheduled date", type: "datetime", required: true },
-              { key: "center_name", label: "Inspection center", type: "text", required: true },
             ],
-            actions: [{ id: "send", label: "Send vehicle to center" }],
+            actions: [{ id: "send_to_center", label: "Send vehicle to inspection center" }],
           },
           status: "idle",
           isConfigured: true,
@@ -1473,15 +1488,16 @@ const TEMPLATES: WorkflowTemplate[] = [
         position: { x: 840, y: 670 },
         data: {
           label: "7. Send Vehicle to Center",
-          description: "Driver delivers the vehicle to the inspection center",
+          description: "Driver delivers the vehicle to the inspection center.",
           icon: "🧑‍💼",
           category: "actions",
           nodeType: "human_task",
           config: {
             title: "Send vehicle to inspection center",
             description: "Confirm hand-off at the inspection center.",
-            assignee_role: "operations_manager",
-            actions: [{ id: "perform", label: "Perform inspection" }],
+            assignee_role: "fleet_manager",
+            allowed_roles: ["inspection_center", "fleet_manager"],
+            actions: [{ id: "perform", label: "Perform inspection (Inspection Center)" }],
           },
           status: "idle",
           isConfigured: true,
@@ -1494,7 +1510,7 @@ const TEMPLATES: WorkflowTemplate[] = [
         position: { x: 840, y: 840 },
         data: {
           label: "8. Perform Fleet Inspection",
-          description: "Inspection center performs the official inspection",
+          description: "Inspection center performs the official annual inspection.",
           icon: "🛡️",
           category: "actions",
           nodeType: "approval",
@@ -1502,10 +1518,11 @@ const TEMPLATES: WorkflowTemplate[] = [
             title: "Annual inspection result",
             description: "Pass to issue certificate, or Fail to send back for maintenance.",
             assignee_role: "inspection_center",
+            allowed_roles: ["inspection_center"],
             form_key: "vehicle_inspection",
             actions: [
-              { id: "pass_annual", label: "Pass — issue certificate", variant: "default" },
-              { id: "fail_annual", label: "Fail — send back", variant: "destructive" },
+              { id: "pass_annual", label: "Pass — issue certificate",         variant: "default" },
+              { id: "fail_annual", label: "Fail — send back for maintenance", variant: "destructive" },
             ],
           },
           status: "idle",
@@ -1518,39 +1535,40 @@ const TEMPLATES: WorkflowTemplate[] = [
         type: "action",
         position: { x: 1080, y: 1010 },
         data: {
-          label: "9. Send Back for Maintenance",
-          description: "Failed annual inspection routed to breakdown maintenance",
+          label: "9. Send Back for Further Maintenance",
+          description: "Failed annual inspection routed to breakdown maintenance.",
           icon: "🧑‍💼",
           category: "actions",
           nodeType: "human_task",
           config: {
-            title: "Route to breakdown maintenance",
+            title: "Send back for further maintenance",
             description: "Forward the failed inspection to maintenance for repair.",
             assignee_role: "inspection_center",
-            actions: [{ id: "to_breakdown", label: "Route to breakdown" }],
+            allowed_roles: ["inspection_center", "maintenance_manager"],
+            actions: [{ id: "back_to_breakdown", label: "Route to breakdown maintenance" }],
           },
           status: "idle",
           isConfigured: true,
         },
       },
-      // Stage 10: Give inspection certificate
+      // Stage 10: Give inspection certificate (legacy: only certificate_no)
       {
         id: "s10_cert",
         type: "action",
         position: { x: 600, y: 1010 },
         data: {
-          label: "10. Issue Inspection Certificate",
-          description: "Inspection center issues the certificate",
+          label: "10. Give Inspection Certificate",
+          description: "Inspection center issues the certificate.",
           icon: "🧑‍💼",
           category: "actions",
           nodeType: "human_task",
           config: {
-            title: "Issue inspection certificate",
-            description: "Record certificate number and validity.",
+            title: "Give inspection certificate",
+            description: "Record the issued certificate number.",
             assignee_role: "inspection_center",
+            allowed_roles: ["inspection_center"],
             fields: [
               { key: "certificate_no", label: "Certificate #", type: "text", required: true },
-              { key: "valid_until", label: "Valid until", type: "date", required: true },
             ],
             actions: [{ id: "raise_payment", label: "Raise payment request" }],
           },
@@ -1565,7 +1583,7 @@ const TEMPLATES: WorkflowTemplate[] = [
         position: { x: 600, y: 1180 },
         data: {
           label: "11. Raise Payment Request",
-          description: "Inspection center raises a payment request",
+          description: "Inspection center raises a payment request.",
           icon: "🧑‍💼",
           category: "actions",
           nodeType: "human_task",
@@ -1573,55 +1591,56 @@ const TEMPLATES: WorkflowTemplate[] = [
             title: "Raise payment request",
             description: "Submit the inspection fee for advance approval.",
             assignee_role: "inspection_center",
+            allowed_roles: ["inspection_center", "fleet_manager"],
             fields: [
               { key: "amount_etb", label: "Amount (ETB)", type: "number", required: true },
             ],
-            actions: [{ id: "request_advance", label: "Request advance" }],
+            actions: [{ id: "request_advance", label: "Request advance (Fleet Ops)" }],
           },
           status: "idle",
           isConfigured: true,
         },
       },
-      // Stage 12: Request advance — Fleet Ops / TA for Bolo
+      // Stage 12: Request advance to inspection center & TA for Bolo
+      // Legacy = single human_task with one forward action (no reject branch)
       {
         id: "s12_advance",
         type: "action",
         position: { x: 600, y: 1350 },
         data: {
-          label: "12. Request Advance (Fleet Ops & TA)",
-          description: "Fleet Ops requests advance to inspection center & TA for Bolo",
-          icon: "🛡️",
+          label: "12. Request Advance (Fleet Ops & TA for Bolo)",
+          description: "Fleet Ops requests advance to inspection center & TA for Bolo.",
+          icon: "🧑‍💼",
           category: "actions",
-          nodeType: "approval",
+          nodeType: "human_task",
           config: {
-            title: "Approve advance request",
-            description: "Approve to forward to Sourcing for payment order.",
-            assignee_role: "operations_manager",
-            actions: [
-              { id: "confirm", label: "Confirm & order payment", variant: "default" },
-              { id: "reject", label: "Reject request", variant: "destructive" },
-            ],
+            title: "Request advance to inspection center & TA for Bolo",
+            description: "Get confirmation and order the payment.",
+            assignee_role: "fleet_manager",
+            allowed_roles: ["fleet_manager", "operations_manager"],
+            actions: [{ id: "confirm_payment", label: "Get confirmation & order payment" }],
           },
           status: "idle",
           isConfigured: true,
         },
       },
-      // Stage 13: Confirmation & payment order
+      // Stage 13: Confirmation & payment order (Sourcing)
       {
         id: "s13_confirm",
         type: "action",
         position: { x: 600, y: 1520 },
         data: {
           label: "13. Confirmation & Payment Order",
-          description: "Sourcing executes the payment order",
+          description: "Sourcing executes the payment order and collects Bolo.",
           icon: "🧑‍💼",
           category: "actions",
           nodeType: "human_task",
           config: {
-            title: "Sourcing payment order",
+            title: "Confirmation & payment order",
             description: "Pay & collect Bolo from Transport Authority.",
             assignee_role: "sourcing_manager",
-            actions: [{ id: "pay_collect", label: "Pay & collect Bolo" }],
+            allowed_roles: ["sourcing_manager", "fleet_manager"],
+            actions: [{ id: "receive_advance", label: "Pay & collect Bolo" }],
           },
           status: "idle",
           isConfigured: true,
@@ -1634,39 +1653,38 @@ const TEMPLATES: WorkflowTemplate[] = [
         position: { x: 600, y: 1690 },
         data: {
           label: "14. Receive Advance, Pay & Collect Bolo",
-          description: "Fleet Ops receives the advance and routes to TA",
+          description: "Fleet Ops receives the advance and routes to TA.",
           icon: "🧑‍💼",
           category: "actions",
           nodeType: "human_task",
           config: {
-            title: "Receive advance & route to Transport Authority",
-            description: "Confirm receipt and forward to TA.",
+            title: "Receive advance, pay, collect Bolo",
+            description: "Confirm receipt and forward to Transport Authority.",
             assignee_role: "fleet_manager",
-            actions: [{ id: "to_ta", label: "Send to Transport Authority" }],
+            allowed_roles: ["fleet_manager", "operations_manager"],
+            actions: [{ id: "ta_receive", label: "Send to Transport Authority" }],
           },
           status: "idle",
           isConfigured: true,
         },
       },
-      // Stage 15: TA receives payment & provides Bolo
+      // Stage 15: TA receives payment & provides Bolo (legacy: no fields)
       {
         id: "s15_ta",
         type: "action",
         position: { x: 600, y: 1860 },
         data: {
           label: "15. TA Receives Payment & Provides Bolo",
-          description: "Transport Authority receives and issues the receipt",
+          description: "Transport Authority receives payment and provides Bolo.",
           icon: "🧑‍💼",
           category: "actions",
           nodeType: "human_task",
           config: {
-            title: "Transport Authority — issue Bolo & receipt",
-            description: "Record the official receipt for the payment.",
+            title: "TA receives payment & provides Bolo",
+            description: "Receive the payment and issue receipt.",
             assignee_role: "transport_authority",
-            fields: [
-              { key: "receipt_no", label: "Receipt #", type: "text", required: true },
-            ],
-            actions: [{ id: "issue", label: "Issue receipt & finish" }],
+            allowed_roles: ["transport_authority", "finance_manager"],
+            actions: [{ id: "receipt_paid", label: "Receive payment & give receipt" }],
           },
           status: "idle",
           isConfigured: true,
@@ -1678,16 +1696,18 @@ const TEMPLATES: WorkflowTemplate[] = [
         type: "action",
         position: { x: 600, y: 2030 },
         data: {
-          label: "16. Finance Receives & Files (END) ✅",
-          description: "Finance archives the receipt and closes the SOP",
+          label: "16. Finance Receives Payment & Gives Receipt ✅ (END)",
+          description: "Finance archives the receipt and closes the SOP.",
           icon: "✅",
           category: "actions",
           nodeType: "human_task",
           config: {
-            title: "File payment receipt & close SOP",
+            title: "Receive payment & give receipt",
             description: "Annual inspection cycle complete.",
             assignee_role: "finance_manager",
-            actions: [{ id: "complete", label: "Complete workflow" }],
+            allowed_roles: ["finance_manager", "fleet_manager"],
+            terminal: true,
+            actions: [{ id: "complete", label: "Complete (END)" }],
           },
           status: "idle",
           isConfigured: true,
@@ -1696,34 +1716,33 @@ const TEMPLATES: WorkflowTemplate[] = [
     ],
     edges: [
       // Trigger → Stage 1 → Stage 2
-      { id: "fi_e1", source: "trg", target: "s1_list", type: "smoothstep", animated: true },
-      { id: "fi_e2", source: "s1_list", target: "s2_ready", type: "smoothstep", animated: true, label: "ready" },
+      { id: "fi_e1", source: "trg",          target: "s1_list",       type: "smoothstep", animated: true },
+      { id: "fi_e2", source: "s1_list",      target: "s2_ready",      type: "smoothstep", animated: true, label: "ready" },
 
       // Stage 2 branch: internal vs annual
-      { id: "fi_e3", source: "s2_ready", target: "s3_pm", type: "smoothstep", animated: true, label: "internal" },
-      { id: "fi_e4", source: "s2_ready", target: "s6_schedule", type: "smoothstep", animated: true, label: "annual" },
+      { id: "fi_e3", source: "s2_ready",     target: "s3_pm",         type: "smoothstep", animated: true, label: "to_internal" },
+      { id: "fi_e4", source: "s2_ready",     target: "s6_schedule",   type: "smoothstep", animated: true, label: "to_annual"   },
 
       // Internal path
-      { id: "fi_e5", source: "s3_pm", target: "s4_inspector", type: "smoothstep", animated: true, label: "assign" },
+      { id: "fi_e5", source: "s3_pm",        target: "s4_inspector",  type: "smoothstep", animated: true, label: "assign_inspector" },
       { id: "fi_e6", source: "s4_inspector", target: "s5_ready_trip", type: "smoothstep", animated: true, label: "pass" },
-      { id: "fi_e7", source: "s4_inspector", target: "s5_breakdown", type: "smoothstep", animated: true, label: "fail" },
-      { id: "fi_e8", source: "s5_breakdown", target: "s4_inspector", type: "smoothstep", animated: true, label: "back_to_inspector" },
+      { id: "fi_e7", source: "s4_inspector", target: "s5_breakdown",  type: "smoothstep", animated: true, label: "fail" },
+      { id: "fi_e8", source: "s5_breakdown", target: "s4_inspector",  type: "smoothstep", animated: true, label: "back_to_inspector" },
 
       // Annual path
-      { id: "fi_e9", source: "s6_schedule", target: "s7_send", type: "smoothstep", animated: true, label: "send" },
-      { id: "fi_e10", source: "s7_send", target: "s8_perform", type: "smoothstep", animated: true, label: "perform" },
-      { id: "fi_e11", source: "s8_perform", target: "s10_cert", type: "smoothstep", animated: true, label: "pass_annual" },
-      { id: "fi_e12", source: "s8_perform", target: "s9_sendback", type: "smoothstep", animated: true, label: "fail_annual" },
-      { id: "fi_e13", source: "s9_sendback", target: "s5_breakdown", type: "smoothstep", animated: true, label: "to_breakdown" },
+      { id: "fi_e9",  source: "s6_schedule", target: "s7_send",       type: "smoothstep", animated: true, label: "send_to_center" },
+      { id: "fi_e10", source: "s7_send",     target: "s8_perform",    type: "smoothstep", animated: true, label: "perform" },
+      { id: "fi_e11", source: "s8_perform",  target: "s10_cert",      type: "smoothstep", animated: true, label: "pass_annual" },
+      { id: "fi_e12", source: "s8_perform",  target: "s9_sendback",   type: "smoothstep", animated: true, label: "fail_annual" },
+      { id: "fi_e13", source: "s9_sendback", target: "s5_breakdown",  type: "smoothstep", animated: true, label: "back_to_breakdown" },
 
       // Payment chain
-      { id: "fi_e14", source: "s10_cert", target: "s11_payreq", type: "smoothstep", animated: true, label: "raise_payment" },
-      { id: "fi_e15", source: "s11_payreq", target: "s12_advance", type: "smoothstep", animated: true, label: "request_advance" },
-      { id: "fi_e16", source: "s12_advance", target: "s13_confirm", type: "smoothstep", animated: true, label: "confirm" },
-      { id: "fi_e17", source: "s12_advance", target: "s11_payreq", type: "smoothstep", animated: true, label: "reject" },
-      { id: "fi_e18", source: "s13_confirm", target: "s14_receive", type: "smoothstep", animated: true, label: "pay_collect" },
-      { id: "fi_e19", source: "s14_receive", target: "s15_ta", type: "smoothstep", animated: true, label: "to_ta" },
-      { id: "fi_e20", source: "s15_ta", target: "s16_finance", type: "smoothstep", animated: true, label: "issue" },
+      { id: "fi_e14", source: "s10_cert",    target: "s11_payreq",    type: "smoothstep", animated: true, label: "raise_payment" },
+      { id: "fi_e15", source: "s11_payreq",  target: "s12_advance",   type: "smoothstep", animated: true, label: "request_advance" },
+      { id: "fi_e16", source: "s12_advance", target: "s13_confirm",   type: "smoothstep", animated: true, label: "confirm_payment" },
+      { id: "fi_e17", source: "s13_confirm", target: "s14_receive",   type: "smoothstep", animated: true, label: "receive_advance" },
+      { id: "fi_e18", source: "s14_receive", target: "s15_ta",        type: "smoothstep", animated: true, label: "ta_receive" },
+      { id: "fi_e19", source: "s15_ta",      target: "s16_finance",   type: "smoothstep", animated: true, label: "receipt_paid" },
     ],
   },
 ];
