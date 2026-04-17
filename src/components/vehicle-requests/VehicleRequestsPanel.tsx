@@ -10,6 +10,7 @@ import { VehicleRequestForm } from "@/components/vehicle-requests/VehicleRequest
 import { VehicleRequestApprovalFlow } from "@/components/vehicle-requests/VehicleRequestApprovalFlow";
 import { DriverCheckInDialog } from "@/components/vehicle-requests/DriverCheckInDialog";
 import { CrossPoolAssignmentDialog } from "@/components/vehicle-requests/CrossPoolAssignmentDialog";
+import VehicleRequestWorkflowProgress from "@/components/vehicle-requests/VehicleRequestWorkflowProgress";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -231,10 +232,11 @@ export const VehicleRequestsPanel = () => {
 
       {showDetail && (
         <Dialog open={!!showDetail} onOpenChange={() => setShowDetail(null)}>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Request {showDetail.request_number}</DialogTitle>
             </DialogHeader>
+            <VehicleRequestWorkflowProgress request={showDetail} />
             <VehicleRequestApprovalFlow
               request={showDetail}
               approvals={approvals}
