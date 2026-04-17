@@ -14,7 +14,7 @@ import type { WorkflowConfig, Lane } from "../types";
 
 const requesterLane: Lane = { id: "requester", label: "Requester", roles: ["driver", "user"] };
 const fleetOpsLane: Lane = { id: "fleet_ops", label: "Fleet Operations", roles: ["operations_manager", "fleet_manager"] };
-const maintLane: Lane = { id: "maintenance", label: "Maintenance", roles: ["maintenance_lead"] };
+const maintLane: Lane = { id: "maintenance", label: "Maintenance", roles: ["maintenance_manager"] };
 const approvalLane: Lane = { id: "approval", label: "Approval (Authority Matrix)", roles: ["fleet_owner", "operations_manager"] };
 const erpLane: Lane = { id: "erp_sync", label: "ERP Sync (iPROC)", roles: ["operations_manager"] };
 const reportingLane: Lane = { id: "reporting", label: "Reporting", roles: ["fleet_manager"] };
@@ -74,13 +74,13 @@ export const tireRequestConfig: WorkflowConfig = {
       description: "Wait for previous tires to be returned to the warehouse via iPROC. Auto-advances when all items are returned. Daily reminders are sent if pending > 24h.",
       actions: [
         { id: "iproc_returned_manual", label: "All returned — proceed", toStage: "wo_preparation",
-          allowedRoles: ["maintenance_lead", "operations_manager"],
+          allowedRoles: ["maintenance_manager", "operations_manager"],
           fields: [
             { key: "return_reference", label: "iPROC return reference (or override note)", type: "text", required: true },
           ],
           confirm: "Confirm that all old tires have been physically returned to the warehouse?" },
         { id: "iproc_reminder", label: "Send reminder", toStage: "iproc_return_check",
-          allowedRoles: ["maintenance_lead", "operations_manager"], variant: "outline" },
+          allowedRoles: ["maintenance_manager", "operations_manager"], variant: "outline" },
       ] },
 
     // 1.4 Work Order preparation (iPROC widgets embedded in detail drawer via data fields)
@@ -88,7 +88,7 @@ export const tireRequestConfig: WorkflowConfig = {
       description: "Maintenance prepares the work order. Reference panels: 1.4.1 on-hand balance (iPROC), 1.4.2 old tire serial numbers (iPROC). Save the snapshot before advancing.",
       actions: [
         { id: "wo_prepared", label: "WO prepared — set quantity", toStage: "quantity_decision",
-          allowedRoles: ["maintenance_lead"],
+          allowedRoles: ["maintenance_manager"],
           fields: [
             { key: "iproc_onhand_snapshot", label: "On-hand balance (iPROC)", type: "textarea",
               helpText: "Paste iPROC on-hand JSON or note (e.g. '4 of 295/80R22.5 in WH-A')" },
@@ -103,7 +103,7 @@ export const tireRequestConfig: WorkflowConfig = {
       description: "Maintenance approves the quantity of tires (may differ from requested).",
       actions: [
         { id: "set_quantity", label: "Set quantity → Authority approval", toStage: "authority_approval",
-          allowedRoles: ["maintenance_lead"],
+          allowedRoles: ["maintenance_manager"],
           fields: [
             { key: "approved_quantity", label: "Approved quantity", type: "number", required: true },
             { key: "quantity_rationale", label: "Rationale", type: "textarea" },
@@ -127,7 +127,7 @@ export const tireRequestConfig: WorkflowConfig = {
       description: "System auto-generates a Material Requisition via the iPROC integration. The MR # is recorded on the request.",
       actions: [
         { id: "mr_generated", label: "MR generated → Fulfillment", toStage: "fulfillment",
-          allowedRoles: ["operations_manager", "maintenance_lead"],
+          allowedRoles: ["operations_manager", "maintenance_manager"],
           fields: [
             { key: "iproc_mr_number", label: "iPROC MR #", type: "text", required: true,
               helpText: "Stub: enter MR number returned by iPROC (mock/manual until ERP wired)" },
@@ -139,7 +139,7 @@ export const tireRequestConfig: WorkflowConfig = {
       description: "Parts dispatched, new tires installed, and inventory updated.",
       actions: [
         { id: "fulfilled", label: "Tires installed → Close", toStage: "closed",
-          allowedRoles: ["maintenance_lead", "fleet_manager"],
+          allowedRoles: ["maintenance_manager", "fleet_manager"],
           fields: [
             { key: "installed_at", label: "Install date/time", type: "datetime", required: true },
             { key: "km_at_install", label: "KM at install", type: "number", required: true },
@@ -151,6 +151,6 @@ export const tireRequestConfig: WorkflowConfig = {
     { id: "closed", label: "1.8 Closed — utilization tracked", lane: "reporting", terminal: true,
       description: "Utilization record created. View the per-vehicle tire utilization report.",
       actions: [{ id: "complete", label: "Complete", toStage: "closed", completes: true,
-        allowedRoles: ["fleet_manager", "operations_manager", "maintenance_lead"] }] },
+        allowedRoles: ["fleet_manager", "operations_manager", "maintenance_manager"] }] },
   ],
 };
