@@ -84,10 +84,17 @@ export default function Inbox() {
         const cfgFields = Array.isArray(cfg.fields) ? cfg.fields : [];
         const cfgActions = Array.isArray(cfg.actions) ? cfg.actions : [];
 
+        // When the workflow node config exists, it is the source of truth.
+        // Stale task.form_key values from older runs must not override a node
+        // that intentionally has no form_key (otherwise the wrong form opens).
+        const formKey = matchedNode
+          ? (cfg.form_key ?? null)
+          : (cfg.form_key ?? task.form_key ?? null);
+
         return {
           ...task,
           form_schema: cfgFields.length ? cfgFields : (task.form_schema ?? []),
-          form_key: cfg.form_key ?? task.form_key ?? null,
+          form_key: formKey,
           context: {
             ...(cfg.prefill ?? {}),
             ...(cfg.context ?? {}),
