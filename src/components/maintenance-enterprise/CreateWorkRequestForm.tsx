@@ -124,13 +124,31 @@ export default function CreateWorkRequestForm({
           setAssignedDept(profile.department);
           setRequestorDepartment(profile.department);
         }
-        if (code) setRequestedFor(code);
+        if (code) {
+          setRequestedFor(code);
+          setRequestorEmployeeId(code);
+        }
       } else {
         setCreatedBy(userData.user.email || "");
         setEmailAddr(userData.user.email || "");
       }
     })();
   }, []);
+
+  // Fleet pools for Requestor Pool dropdown
+  const { data: pools = [] } = useQuery({
+    queryKey: ["fleet-pools-lookup", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data } = await supabase
+        .from("fleet_pools")
+        .select("id, name")
+        .eq("organization_id", organizationId)
+        .order("name");
+      return data || [];
+    },
+    enabled: !!organizationId,
+  });
 
   // Auto-fill driver phone
   useEffect(() => {
