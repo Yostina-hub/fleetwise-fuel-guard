@@ -224,7 +224,44 @@ export const TireRequestDialog = ({ open, onOpenChange }: Props) => {
         .select("iproc_return_status")
         .eq("request_id", req.id);
       const needsReturn = (createdItems || []).some((i: any) => i.iproc_return_status === "pending");
-      if (needsReturn) {
+
+      // Create the FMG-TIR 01 workflow instance and link it to the request.
+      // The workflow drives the rest of the flow (Fleet Ops review → iPROC return → WO prep → approval → MR → fulfillment).
+      const initialStage = needsReturn ? "iproc_return_check" : "fleet_ops_review";
+      const initialLane = needsReturn ? "maintenance" : "fleet_ops";
+      const { data: wfInstance, error: wfErr } = await supabase
+        .from("workflow_instances")
+        .insert({
+          organization_id: organizationId!,
+          workflow_type: "tire_request",
+          reference_number: (req as any).request_number || `TIR-${Date.now()}`,
+          title: `Tire request — ${header.request_type}`,
+          description: header.additional_description || null,
+          current_stage: initialStage,
+          current_lane: initialLane,
+          status: "active",
+          priority: header.priority,
+          vehicle_id: header.vehicle_id,
+          created_by: user?.id || null,
+          data: {
+            tire_request_id: req.id,
+            estimated_cost: header.estimated_cost ? parseFloat(header.estimated_cost) : null,
+            request_type: header.request_type,
+            assigned_department_id: header.assigned_department_id,
+          },
+        } as any)
+        .select()
+        .single();
+
+      if (!wfErr && wfInstance) {
+        await supabase
+          .from("tire_requests")
+          .update({
+            workflow_instance_id: wfInstance.id,
+            status: needsReturn ? "awaiting_return" : "pending",
+          } as any)
+          .eq("id", req.id);
+      } else if (needsReturn) {
         await supabase.from("tire_requests").update({ status: "awaiting_return" }).eq("id", req.id);
       }
       return req;
