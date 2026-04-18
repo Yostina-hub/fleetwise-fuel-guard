@@ -543,12 +543,6 @@ const vehicleRequestTemplate: FormTemplate = {
         visibleWhen: { field: "request_type", operator: "equals", value: "daily_operation" },
       }),
       f({
-        key: "end_date",
-        type: "date",
-        label: "End Date",
-        visibleWhen: { field: "request_type", operator: "equals", value: "daily_operation" },
-      }),
-      f({
         key: "end_time",
         type: "time",
         label: "End Time",
@@ -556,7 +550,7 @@ const vehicleRequestTemplate: FormTemplate = {
         visibleWhen: { field: "request_type", operator: "equals", value: "daily_operation" },
       }),
 
-      // ---- Project / Field Operation: start_date + start_date_time / end_date + end_date_time ----
+      // ---- Project / Field Operation: start_date + start_date_time ----
       f({
         key: "start_date",
         type: "date",
@@ -571,11 +565,6 @@ const vehicleRequestTemplate: FormTemplate = {
         defaultValue: "08:00",
         visibleWhen: { field: "request_type", operator: "not_equals", value: "daily_operation" },
       }),
-      // (end_date is shared with daily, but for non-daily we want it visible too —
-      //  legacy uses the same end_date state for both; we re-declare with a
-      //  different visibility rule via duplicate-key isn't allowed, so the single
-      //  end_date above already binds for daily; for project/field we expose
-      //  end_date through this mirror entry.)
       f({
         key: "end_date_time",
         type: "time",
@@ -584,40 +573,52 @@ const vehicleRequestTemplate: FormTemplate = {
         visibleWhen: { field: "request_type", operator: "not_equals", value: "daily_operation" },
       }),
 
+      // ---- End Date — shared by ALL request types (matches legacy) ----
+      f({
+        key: "end_date",
+        type: "date",
+        label: "End Date",
+      }),
+
       // ---- Project Number (project_operation only) ----
       f({
         key: "project_number",
         type: "text",
         label: "Project Number",
+        placeholder: "Enter project number (e.g. PRJ-2026-001)",
         visibleWhen: { field: "request_type", operator: "equals", value: "project_operation" },
       }),
 
-      // ---- Route ----
+      // ---- Route — legacy LocationPickerField with lat/lng siblings ----
       f({
         key: "departure_place",
-        type: "text",
+        type: "location",
         label: "Departure Place",
-        placeholder: "Pickup location",
+        placeholder: "Select or type departure",
+        latKey: "departure_lat",
+        lngKey: "departure_lng",
       }),
       f({
         key: "destination",
-        type: "text",
-        label: "Destination",
-        placeholder: "Drop-off location",
+        type: "location",
+        label: "Destination Place",
+        placeholder: "Select or type destination",
+        latKey: "destination_lat",
+        lngKey: "destination_lng",
       }),
 
       // ---- Logistics ----
       f({
         key: "num_vehicles",
         type: "number",
-        label: "Number of Vehicles",
+        label: "No. Of Vehicle",
         defaultValue: 1,
         validation: { min: 1, max: 20 },
       }),
       f({
         key: "passengers",
         type: "number",
-        label: "Passengers",
+        label: "No. Of Passenger",
         defaultValue: 1,
         validation: { min: 1, max: 100 },
       }),
@@ -625,7 +626,7 @@ const vehicleRequestTemplate: FormTemplate = {
         key: "vehicle_type",
         type: "select",
         label: "Vehicle Type",
-        // Values aligned with VEHICLE_TYPES_OPTIONS used by the legacy dialog.
+        placeholder: "Select Vehicle Type",
         options: [
           { value: "sedan", label: "Sedan" },
           { value: "suv", label: "SUV" },
@@ -642,8 +643,9 @@ const vehicleRequestTemplate: FormTemplate = {
         key: "trip_type",
         type: "select",
         label: "Trip Type",
+        placeholder: "Select Trip Type",
         options: [
-          { value: "one_way", label: "One Way" },
+          { value: "one_way", label: "One Way Trip" },
           { value: "round_trip", label: "Round Trip" },
         ],
       }),
@@ -653,6 +655,7 @@ const vehicleRequestTemplate: FormTemplate = {
         key: "pool_category",
         type: "select",
         label: "Pool Category",
+        placeholder: "Select Pool Category",
         options: [
           { value: "corporate", label: "Corporate" },
           { value: "zone", label: "Zone" },
@@ -661,25 +664,25 @@ const vehicleRequestTemplate: FormTemplate = {
       }),
       f({
         key: "pool_name",
-        type: "text",
-        label: "Pool Name",
-        helpText: "Corporate: FAN, TPO, HQ • Zone: SWAAZ, EAAZ • Region: NR, SR",
+        type: "pool",
+        label: "Pool",
+        filterByKey: "pool_category",
       }),
 
-      // ---- Purpose (required by legacy submit guard) ----
+      // ---- Trip Description (legacy = "Trip Description", required by submit guard) ----
       f({
         key: "purpose",
         type: "textarea",
-        label: "Purpose",
+        label: "Trip Description",
         required: true,
-        placeholder: "Why is the vehicle needed?",
-        validation: { minLength: 5, maxLength: 500 },
+        placeholder: "Description",
       }),
     ],
   },
   settings: {
-    submitLabel: "Submit Request",
-    successMessage: "Vehicle request submitted.",
+    submitLabel: "Create Request",
+    cancelLabel: "Cancel",
+    successMessage: "Vehicle request submitted successfully",
     twoColumnLayout: true,
   },
 };
