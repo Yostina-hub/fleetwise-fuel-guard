@@ -125,6 +125,21 @@ export default function Inbox() {
     return list;
   }, [rawTasks, scope, currentUserId, workflowFilter, roleFilter, slaFilter, search]);
 
+  // Trash count (always-on badge, regardless of current view)
+  const { data: trashCount = 0 } = useQuery({
+    queryKey: ["sop-trash-count", organizationId],
+    enabled: !!organizationId,
+    refetchInterval: 15000,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("workflow_instances")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", organizationId!)
+        .not("archived_at", "is", null);
+      return count ?? 0;
+    },
+  });
+
   const counts = useMemo(() => {
     const breach = rawTasks.filter(t => {
       const created = new Date(t.created_at);
@@ -135,8 +150,9 @@ export default function Inbox() {
       pending: status === "pending" ? rawTasks.length : 0,
       completed: status === "completed" ? rawTasks.length : 0,
       breach,
+      trash: trashCount,
     };
-  }, [rawTasks, status]);
+  }, [rawTasks, status, trashCount]);
 
   // Reset selection on org/status change
   useEffect(() => {
