@@ -364,6 +364,7 @@ export default function FormsEditor() {
                   onAddPaletteToContainer={addToContainer}
                   onPatchField={updateField}
                   onDuplicateField={duplicateField}
+                  onInsertAt={insertAt}
                 />
               </Card>
               <Card className="col-span-12 md:col-span-3 overflow-hidden">
