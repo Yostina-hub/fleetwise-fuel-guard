@@ -328,6 +328,46 @@ export function FormRenderer({
             placeholder="https://..."
           />
         );
+      case "location": {
+        // Reuses the legacy LocationPickerField — text + map + geofence picker.
+        const { latKey, lngKey } = locKeys(field);
+        return (
+          <LocationPickerField
+            label=""
+            value={value ?? ""}
+            onChange={onValue}
+            onCoordsChange={(lat, lng) => {
+              setField(latKey, lat);
+              setField(lngKey, lng);
+            }}
+            placeholder={field.placeholder || "Select or type a place"}
+          />
+        );
+      }
+      case "pool": {
+        // Dynamic options driven by sibling `filterByKey` (default "pool_category").
+        const filterKey = field.filterByKey || "pool_category";
+        const filterValue = String(values[filterKey] ?? "");
+        const dbPools = (pools.data ?? [])
+          .filter((p) => p.category === filterValue)
+          .map((p) => p.name);
+        const fallback = POOL_FALLBACK[filterValue] ?? [];
+        const opts = dbPools.length > 0 ? dbPools : fallback;
+        return (
+          <Select value={value ?? ""} onValueChange={onValue} disabled={!filterValue}>
+            <SelectTrigger {...common}>
+              <SelectValue placeholder={filterValue ? "Select pool…" : "Pick a category first"} />
+            </SelectTrigger>
+            <SelectContent>
+              {opts.length === 0 ? (
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">No pools available</div>
+              ) : opts.map((name) => (
+                <SelectItem key={name} value={name}>{name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      }
       default:
         return (
           <Input
