@@ -1760,6 +1760,192 @@ const TEMPLATES: WorkflowTemplate[] = [
       { id: "fi_e19", source: "s15_ta",      target: "s16_finance",   type: "smoothstep", animated: true, label: "receipt_paid" },
     ],
   },
+
+  // ═══════════════════════════════════════════════════════════════
+  // VEHICLE REQUEST (FMG-VRQ 15) — End-to-end multi-role lifecycle
+  // Mirrors src/lib/workflow-engine/configs/vehicleRequestConfig.ts
+  // Uses: multi-role allowed_roles + Authority Matrix delegation.
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "tpl_vehicle_request_full",
+    name: "Vehicle Request (FMG-VRQ 15)",
+    description:
+      "Full multi-role vehicle request lifecycle: requester submission → delegation-matrix approval → pool review → vehicle & driver assignment → driver check-in/out → completion & rating. Uses the Authority Matrix to dynamically resolve approvers per request.",
+    category: "operations",
+    icon: "📋",
+    difficulty: "advanced",
+    estimatedSavings: "~60% faster vehicle dispatch with full audit trail",
+    tags: ["vehicle-request", "approval", "delegation-matrix", "multi-role", "lifecycle", "SOP"],
+    nodes: [
+      // 1. Submission (Requester lane)
+      { id: "vr_t1", type: "trigger", position: { x: 400, y: 40 },
+        data: { label: "Vehicle Request Submitted", description: "Requester files a vehicle request via the unified form.",
+          icon: "📝", category: "triggers", nodeType: "trigger_event",
+          config: { eventType: "vehicle_request_created", lane: "Requester" },
+          status: "idle", isConfigured: true } },
+
+      { id: "vr_h1", type: "action", position: { x: 400, y: 200 },
+        data: { label: "Capture Trip Details", description: "Requester fills purpose, dates, passengers, destination.",
+          icon: "🧑‍💼", category: "actions", nodeType: "human_task",
+          config: {
+            title: "File vehicle request",
+            description: "Provide trip details. Routing happens automatically per the Authority Matrix.",
+            lane: "Requester",
+            allowed_roles: ["driver", "operator", "dispatcher", "operations_manager", "fleet_manager", "fleet_owner"],
+            assignee_role: "operator",
+            form_key: "user_form:vehicle_request",
+            actions: [{ id: "submitted", label: "Submit request" }],
+          },
+          status: "idle", isConfigured: true } },
+
+      // 2. Delegation-matrix approval (Approver lane)
+      { id: "vr_a1", type: "action", position: { x: 400, y: 380 },
+        data: { label: "Approval per Delegation Matrix", description: "Approver resolved at runtime from Authority Matrix (scope: vehicle_request).",
+          icon: "🛡️", category: "actions", nodeType: "approval",
+          config: {
+            title: "Approve vehicle request",
+            description: "Decide based on policy and trip duration. Approver is derived from the Authority Matrix.",
+            lane: "Delegation Approver",
+            allowed_roles: ["operations_manager", "fleet_manager", "fleet_owner", "org_admin"],
+            assignee_role: "operations_manager",
+            use_delegation_matrix: true,
+            matrix_scope: "vehicle_request",
+            matrix_step_order: 1,
+            actions: [
+              { id: "approve", label: "Approve" },
+              { id: "reject", label: "Reject", variant: "destructive" },
+            ],
+            fields: [
+              { key: "approval_notes", label: "Approval notes", type: "textarea" },
+            ],
+          },
+          status: "idle", isConfigured: true } },
+
+      // Reject branch
+      { id: "vr_rej", type: "action", position: { x: 80, y: 560 },
+        data: { label: "Notify Requester (Rejected)", description: "Send rejection with reason and close request.",
+          icon: "📧", category: "notifications", nodeType: "notify_email",
+          config: {
+            recipients: "{{request.requester_email}}",
+            template: "Your vehicle request {{request.number}} was rejected. Reason: {{approval.rejection_reason}}",
+            lane: "Delegation Approver",
+          },
+          status: "idle", isConfigured: true } },
+
+      // 3. Pool supervisor review (Pool lane)
+      { id: "vr_p1", type: "action", position: { x: 600, y: 560 },
+        data: { label: "Pool Supervisor Review", description: "Confirm pool availability or escalate cross-pool.",
+          icon: "🧑‍💼", category: "actions", nodeType: "human_task",
+          config: {
+            title: "Review pool availability",
+            description: "Forward to dispatch or override with cross-pool justification.",
+            lane: "Pool Supervisor",
+            allowed_roles: ["dispatcher", "fleet_manager", "operations_manager"],
+            assignee_role: "dispatcher",
+            actions: [
+              { id: "forward", label: "Forward to dispatch" },
+              { id: "cross_pool", label: "Cross-pool override", variant: "secondary" },
+            ],
+            fields: [
+              { key: "cross_pool_notes", label: "Cross-pool justification (if override)", type: "textarea" },
+            ],
+          },
+          status: "idle", isConfigured: true } },
+
+      // 4. Dispatcher assigns vehicle + driver (Dispatch lane)
+      { id: "vr_d1", type: "action", position: { x: 600, y: 740 },
+        data: { label: "Assign Vehicle & Driver", description: "Dispatcher selects the vehicle and driver.",
+          icon: "🚛", category: "fleet", nodeType: "fleet_assign_driver",
+          config: {
+            lane: "Fleet Operations",
+            allowed_roles: ["dispatcher", "fleet_manager", "operations_manager"],
+            autoAssign: false,
+          },
+          status: "idle", isConfigured: true } },
+
+      // 5. Driver check-in (Driver lane)
+      { id: "vr_dr1", type: "action", position: { x: 600, y: 920 },
+        data: { label: "Driver Check-In", description: "Driver records starting odometer and condition.",
+          icon: "🧑‍💼", category: "actions", nodeType: "human_task",
+          config: {
+            title: "Driver check-in",
+            description: "Record starting odometer and any vehicle condition notes.",
+            lane: "Assigned Driver",
+            allowed_roles: ["driver", "fleet_manager", "operations_manager"],
+            assignee_role: "driver",
+            actions: [{ id: "checkin", label: "Confirm check-in" }],
+            fields: [
+              { key: "driver_checkin_odometer", label: "Odometer at check-in (km)", type: "number", required: true },
+              { key: "driver_checkin_notes", label: "Condition / notes", type: "textarea" },
+            ],
+          },
+          status: "idle", isConfigured: true } },
+
+      // 6. Trip in progress — driver check-out (Driver lane)
+      { id: "vr_dr2", type: "action", position: { x: 600, y: 1100 },
+        data: { label: "Driver Check-Out", description: "Driver records closing odometer at end of trip.",
+          icon: "🧑‍💼", category: "actions", nodeType: "human_task",
+          config: {
+            title: "Driver check-out",
+            description: "Record closing odometer. Distance is computed automatically.",
+            lane: "Assigned Driver",
+            allowed_roles: ["driver", "fleet_manager", "operations_manager"],
+            assignee_role: "driver",
+            actions: [{ id: "checkout", label: "Complete trip" }],
+            fields: [
+              { key: "driver_checkout_odometer", label: "Odometer at check-out (km)", type: "number", required: true },
+              { key: "checkout_notes", label: "End-of-trip notes", type: "textarea" },
+            ],
+          },
+          status: "idle", isConfigured: true } },
+
+      // 7. Completed — optional rating (Requester lane)
+      { id: "vr_rate", type: "action", position: { x: 600, y: 1280 },
+        data: { label: "Rate & Close", description: "Requester optionally rates the service.",
+          icon: "🧑‍💼", category: "actions", nodeType: "human_task",
+          config: {
+            title: "Rate the trip",
+            description: "Provide an optional rating and feedback.",
+            lane: "Requester",
+            allowed_roles: ["driver", "operator", "dispatcher", "operations_manager", "fleet_manager"],
+            assignee_role: "operator",
+            actions: [
+              { id: "rate", label: "Submit rating" },
+              { id: "close", label: "Close without rating", variant: "outline" },
+            ],
+            fields: [
+              { key: "requester_rating", label: "Rating (1-5)", type: "number" },
+              { key: "requester_feedback", label: "Feedback", type: "textarea" },
+            ],
+          },
+          status: "idle", isConfigured: true } },
+
+      // 8. Audit log (terminal)
+      { id: "vr_log", type: "action", position: { x: 600, y: 1460 },
+        data: { label: "Log to History", description: "Persist full lifecycle audit record.",
+          icon: "📋", category: "data", nodeType: "data_log_history",
+          config: { table: "workflow_transitions", lane: "System" },
+          status: "idle", isConfigured: true } },
+    ],
+    edges: [
+      // Submission → approval
+      { id: "vr_e1",  source: "vr_t1",  target: "vr_h1",  type: "smoothstep", animated: true, label: "open" },
+      { id: "vr_e2",  source: "vr_h1",  target: "vr_a1",  type: "smoothstep", animated: true, label: "submitted" },
+
+      // Approve / reject branches
+      { id: "vr_e3",  source: "vr_a1",  target: "vr_p1",  type: "smoothstep", animated: true, label: "approve" },
+      { id: "vr_e4",  source: "vr_a1",  target: "vr_rej", type: "smoothstep", animated: true, label: "reject" },
+
+      // Pool → dispatch → driver
+      { id: "vr_e5",  source: "vr_p1",  target: "vr_d1",  type: "smoothstep", animated: true, label: "forward" },
+      { id: "vr_e6",  source: "vr_p1",  target: "vr_d1",  type: "smoothstep", animated: true, label: "cross_pool" },
+      { id: "vr_e7",  source: "vr_d1",  target: "vr_dr1", type: "smoothstep", animated: true, label: "assigned" },
+      { id: "vr_e8",  source: "vr_dr1", target: "vr_dr2", type: "smoothstep", animated: true, label: "checkin" },
+      { id: "vr_e9",  source: "vr_dr2", target: "vr_rate",type: "smoothstep", animated: true, label: "checkout" },
+      { id: "vr_e10", source: "vr_rate",target: "vr_log", type: "smoothstep", animated: true, label: "rate" },
+      { id: "vr_e11", source: "vr_rate",target: "vr_log", type: "smoothstep", animated: true, label: "close" },
+    ],
+  },
 ];
 
 export default TEMPLATES;
