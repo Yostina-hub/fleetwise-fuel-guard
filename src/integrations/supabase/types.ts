@@ -8425,6 +8425,7 @@ export type Database = {
           description: string | null
           id: string
           is_archived: boolean
+          is_default: boolean
           key: string
           name: string
           organization_id: string
@@ -8439,6 +8440,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_archived?: boolean
+          is_default?: boolean
           key: string
           name: string
           organization_id: string
@@ -8453,6 +8455,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_archived?: boolean
+          is_default?: boolean
           key?: string
           name?: string
           organization_id?: string
@@ -25812,6 +25815,7 @@ export type Database = {
         Args: { p_decision: string; p_notes?: string; p_request_id: string }
         Returns: undefined
       }
+      form_intent: { Args: { form_key: string }; Returns: string }
       generate_workflow_reference: {
         Args: { _org_id: string; _workflow_type: string }
         Returns: string
