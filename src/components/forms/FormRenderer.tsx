@@ -100,8 +100,27 @@ function defaultValuesFromSchema(
 }
 
 export function FormRenderer({
-  schema, settings, prefill, draftKey, submitting, onSubmit, onCancel,
+  schema, settings, prefill, draftKey, submitting, onSubmit, onCancel, formKey,
 }: FormRendererProps) {
+  // Short-circuit: if this form key is bound to a legacy component, render
+  // the legacy form inline instead of the JSON-schema renderer. This keeps
+  // 100% feature parity (pickers, RPC routing, SMS, "on behalf of", etc.).
+  const legacyEntry = getLegacyFormEntry(formKey);
+  if (legacyEntry) {
+    return (
+      <RenderLegacyForm
+        entry={legacyEntry}
+        prefill={prefill}
+        onCancel={onCancel}
+        onSubmitted={(result) => {
+          // Bubble the legacy record id up through the unified onSubmit hook
+          // so workflow tasks / submission writers can attach to it.
+          void onSubmit({ legacy_form_key: formKey, legacy_record_id: result.id, ...prefill });
+        }}
+      />
+    );
+  }
+
   const cfg = { ...EMPTY_SETTINGS, ...(settings ?? {}) };
   const { organizationId } = useOrganization();
 
