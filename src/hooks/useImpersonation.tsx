@@ -242,14 +242,18 @@ export function ImpersonationProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Safety: drop impersonation if the real user loses super_admin
+  // Safety: drop impersonation if the real user loses super_admin.
+  // CRITICAL: only enforce this AFTER auth has finished loading — otherwise
+  // a fresh page load with sessionStorage-rehydrated impersonation gets
+  // wiped because realRoles is briefly [] during hydration.
   useEffect(() => {
+    if (authLoading) return;
     if (!isSuperAdmin && impersonatedUserId) {
       setImpersonatedUserId(null);
       setImpersonatedUserProfile(null);
       setSessionId(null);
     }
-  }, [isSuperAdmin, impersonatedUserId]);
+  }, [authLoading, isSuperAdmin, impersonatedUserId]);
 
   return (
     <ImpersonationContext.Provider
