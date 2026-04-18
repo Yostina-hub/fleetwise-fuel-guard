@@ -333,6 +333,102 @@ export function useUnarchiveForm() {
   });
 }
 
+/**
+ * Clone a template (from `lib/forms/templates.ts`) into the current organization.
+ * Creates the form row, seeds a published v1 with the template schema, and
+ * also creates a fresh editable draft cloned from it. Returns the new form id.
+ *
+ * If the requested key already exists for this org, the hook auto-suffixes
+ * `_copy`, `_copy_2`, etc. so the operation never fails on uniqueness.
+ */
+export function useCloneTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      organizationId: string;
+      template: {
+        key: string;
+        name: string;
+        description: string;
+        category: string;
+        schema: FormSchema;
+        settings: FormSettings;
+      };
+    }): Promise<FormRow> => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // Find a non-conflicting key.
+      let key = input.template.key;
+      let attempt = 0;
+      while (true) {
+        const { data: existing } = await (supabase as any)
+          .from("forms")
+          .select("id")
+          .eq("organization_id", input.organizationId)
+          .eq("key", key)
+          .maybeSingle();
+        if (!existing) break;
+        attempt += 1;
+        key = attempt === 1 ? `${input.template.key}_copy` : `${input.template.key}_copy_${attempt}`;
+        if (attempt > 50) throw new Error("Could not find a free key");
+      }
+
+      // Create the form.
+      const { data: form, error } = await (supabase as any)
+        .from("forms")
+        .insert({
+          organization_id: input.organizationId,
+          key,
+          name: input.template.name,
+          description: input.template.description,
+          category: input.template.category,
+          created_by: user.id,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+
+      // Seed published v1 with the template schema.
+      const { data: pub, error: ePub } = await (supabase as any)
+        .from("form_versions")
+        .insert({
+          form_id: form.id,
+          organization_id: input.organizationId,
+          status: "published",
+          schema: input.template.schema,
+          settings: input.template.settings,
+          created_by: user.id,
+        })
+        .select()
+        .single();
+      if (ePub) throw ePub;
+
+      // Seed an editable draft cloned from the published version.
+      const { error: eDraft } = await (supabase as any).from("form_versions").insert({
+        form_id: form.id,
+        organization_id: input.organizationId,
+        status: "draft",
+        schema: input.template.schema,
+        settings: input.template.settings,
+        created_by: user.id,
+      });
+      if (eDraft) throw eDraft;
+
+      // Some publish triggers may already set this; do it explicitly as a fallback.
+      await (supabase as any)
+        .from("forms")
+        .update({ current_published_version_id: pub.id })
+        .eq("id", form.id);
+
+      return form as FormRow;
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: QK.forms(vars.organizationId) });
+    },
+  });
+}
+
 export function useUpdateFormMeta() {
   const qc = useQueryClient();
   return useMutation({

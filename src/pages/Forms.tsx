@@ -7,7 +7,7 @@
  */
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Pencil, Archive, ArchiveRestore, FileText, Search, Loader2, CheckCircle2, Inbox, ListChecks } from "lucide-react";
+import { Plus, Pencil, Archive, ArchiveRestore, FileText, Search, Loader2, CheckCircle2, Inbox, ListChecks, LibraryBig, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -22,11 +22,13 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useOrganization } from "@/hooks/useOrganization";
 import {
-  useFormsList, useCreateForm, useArchiveForm, useUnarchiveForm,
+  useFormsList, useCreateForm, useArchiveForm, useUnarchiveForm, useCloneTemplate,
 } from "@/lib/forms/api";
 import { keyFromLabel } from "@/lib/forms/fieldCatalog";
+import { FORM_TEMPLATES, type FormTemplate } from "@/lib/forms/templates";
 
 export default function Forms() {
   const navigate = useNavigate();
@@ -61,7 +63,10 @@ export default function Forms() {
               Build, version, and publish dynamic forms used in workflows and SOPs.
             </p>
           </div>
-          <CreateFormDialog />
+          <div className="flex items-center gap-2">
+            <TemplateLibraryDialog />
+            <CreateFormDialog />
+          </div>
         </div>
 
         <Card>
@@ -284,6 +289,106 @@ function CreateFormDialog() {
             {create.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
             Create
           </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ---------- Template library dialog --------------------------------------
+
+function TemplateLibraryDialog() {
+  const navigate = useNavigate();
+  const { organizationId } = useOrganization();
+  const clone = useCloneTemplate();
+  const [open, setOpen] = useState(false);
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+
+  const handleClone = async (tpl: FormTemplate) => {
+    if (!organizationId) {
+      toast.error("No organization");
+      return;
+    }
+    setBusyKey(tpl.key);
+    try {
+      const form = await clone.mutateAsync({
+        organizationId,
+        template: {
+          key: tpl.key,
+          name: tpl.name,
+          description: tpl.description,
+          category: tpl.category,
+          schema: tpl.schema,
+          settings: tpl.settings,
+        },
+      });
+      toast.success(`Cloned "${tpl.name}" — opening editor`);
+      setOpen(false);
+      navigate(`/forms/${form.id}/edit`);
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to clone template");
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline">
+          <LibraryBig className="h-4 w-4 mr-1" /> Template library
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" /> Form templates
+          </DialogTitle>
+          <DialogDescription>
+            Clone a pre-built form into your organization. Each template publishes as v1
+            and a fresh draft is created for further customization. Cloning never affects
+            existing legacy forms.
+          </DialogDescription>
+        </DialogHeader>
+        <ScrollArea className="max-h-[60vh] pr-2">
+          <div className="space-y-2">
+            {FORM_TEMPLATES.map((tpl) => (
+              <div
+                key={tpl.key}
+                className="rounded-md border border-border p-3 hover:bg-muted/30 transition-colors"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-1 flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="font-medium text-sm">{tpl.name}</div>
+                      <Badge variant="secondary" className="text-[10px]">{tpl.category}</Badge>
+                      <Badge variant="outline" className="font-mono text-[10px]">{tpl.key}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{tpl.description}</p>
+                    <p className="text-[11px] text-muted-foreground italic">{tpl.rationale}</p>
+                    <div className="text-[11px] text-muted-foreground">
+                      {tpl.schema.fields.length} top-level field{tpl.schema.fields.length === 1 ? "" : "s"}
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => handleClone(tpl)}
+                    disabled={busyKey !== null}
+                  >
+                    {busyKey === tpl.key ? (
+                      <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                    ) : (
+                      <Plus className="h-3.5 w-3.5 mr-1" />
+                    )}
+                    Clone
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setOpen(false)}>Close</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
