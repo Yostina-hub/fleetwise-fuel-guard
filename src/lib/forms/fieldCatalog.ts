@@ -6,7 +6,7 @@ import {
   Type, AlignLeft, Hash, DollarSign, Mail, Phone, Calendar,
   CalendarClock, Clock, ChevronDown, ListChecks, Circle, CheckSquare,
   ToggleLeft, Upload, Car, User, Package, MapPin, UserCircle,
-  LayoutGrid, Repeat, Minus, Info, Calculator,
+  LayoutGrid, Repeat, Minus, Info, Calculator, Navigation, Layers,
 } from "lucide-react";
 import type { BaseField, FieldType } from "./schema";
 
