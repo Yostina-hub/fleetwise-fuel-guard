@@ -88,16 +88,48 @@ export const DelegationHistoryTab = () => {
       if (auditErr) throw auditErr;
       if (trErr) throw trErr;
 
-      const mappedTransitions = (transitions ?? []).map((t: any) => ({
-        id: `wt-${t.id}`,
-        created_at: t.created_at,
-        action: t.decision === "auto_route" ? "route" : t.decision,
-        source_table: t.workflow_type ?? "workflow_transitions",
-        entity_name: t.workflow_type ? `${t.workflow_type} routing` : "Workflow routing",
-        scope: t.workflow_type,
-        summary: `${t.from_stage ?? "—"} → ${t.to_stage ?? "—"}${t.notes ? ` · ${t.notes}` : ""}`,
-        actor_name: t.performed_by_name || t.performed_by_role || "System",
-      }));
+      // Resolve missing actor names/roles from profiles + user_roles
+      const actorIds = Array.from(
+        new Set(
+          (transitions ?? [])
+            .filter((t: any) => t.performed_by && (!t.performed_by_name || !t.performed_by_role))
+            .map((t: any) => t.performed_by),
+        ),
+      );
+      let actorMap: Record<string, { name?: string; role?: string }> = {};
+      if (actorIds.length > 0) {
+        const [{ data: profs }, { data: roles }] = await Promise.all([
+          supabase.from("profiles").select("id, full_name, first_name, last_name, email").in("id", actorIds),
+          supabase.from("user_roles").select("user_id, role").in("user_id", actorIds),
+        ]);
+        (profs ?? []).forEach((p: any) => {
+          const name =
+            p.full_name ||
+            [p.first_name, p.last_name].filter(Boolean).join(" ") ||
+            p.email;
+          actorMap[p.id] = { ...(actorMap[p.id] ?? {}), name };
+        });
+        (roles ?? []).forEach((r: any) => {
+          actorMap[r.user_id] = { ...(actorMap[r.user_id] ?? {}), role: r.role };
+        });
+      }
+
+      const mappedTransitions = (transitions ?? []).map((t: any) => {
+        const fallback = actorMap[t.performed_by] ?? {};
+        const name = t.performed_by_name || fallback.name;
+        const role = t.performed_by_role || fallback.role;
+        const actor = name && role ? `${name} (${role})` : name || role || "System";
+        return {
+          id: `wt-${t.id}`,
+          created_at: t.created_at,
+          action: t.decision === "auto_route" ? "route" : t.decision,
+          source_table: t.workflow_type ?? "workflow_transitions",
+          entity_name: t.workflow_type ? `${t.workflow_type} routing` : "Workflow routing",
+          scope: t.workflow_type,
+          summary: `${t.from_stage ?? "—"} → ${t.to_stage ?? "—"}${t.notes ? ` · ${t.notes}` : ""}`,
+          actor_name: actor,
+        };
+      });
 
       const combined = [...(audit ?? []), ...mappedTransitions].sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
