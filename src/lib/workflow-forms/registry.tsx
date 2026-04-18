@@ -108,19 +108,31 @@ const FORM_MAP = new Map(FORMS.map((f) => [f.key, f]));
 
 export const listWorkflowForms = (): RegisteredWorkflowForm[] => FORMS;
 
+// Cache of synthetic registrations per user-form key so the Component
+// reference is stable across renders. A new function on every call would
+// cause React to unmount/remount the entire form subtree on every parent
+// re-render — that's what produced the "removeChild" DOM crash.
+const USER_FORM_CACHE = new Map<string, RegisteredWorkflowForm>();
+
 export const getWorkflowForm = (key?: string | null): RegisteredWorkflowForm | undefined => {
   if (!key) return undefined;
   if (isUserFormKey(key)) {
-    // Synthetic registration for user-built forms — resolved at runtime by key.
+    const cached = USER_FORM_CACHE.get(key);
+    if (cached) return cached;
     const bare = stripUserFormKey(key);
-    return {
+    const Bound: React.ComponentType<WorkflowFormProps> = (props) => (
+      <DynamicFormWrapper {...props} formKey={bare} />
+    );
+    Bound.displayName = `DynamicFormWrapper(${bare})`;
+    const reg: RegisteredWorkflowForm = {
       key,
       label: `User form: ${bare}`,
       description: "Form built in the Forms module.",
       default_decision: "submitted",
-      // Bind the key into the wrapper via a thin closure component.
-      Component: (props) => <DynamicFormWrapper {...props} formKey={bare} />,
+      Component: Bound,
     };
+    USER_FORM_CACHE.set(key, reg);
+    return reg;
   }
   return FORM_MAP.get(key);
 };
