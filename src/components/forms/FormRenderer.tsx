@@ -525,6 +525,14 @@ function FormRendererInner({
     );
   };
 
+  if (!entitiesReady) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {draftKey ? (
