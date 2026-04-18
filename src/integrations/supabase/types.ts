@@ -24890,6 +24890,9 @@ export type Database = {
       }
       workflow_instances: {
         Row: {
+          archive_reason: string | null
+          archived_at: string | null
+          archived_by: string | null
           assigned_to: string | null
           completed_at: string | null
           created_at: string
@@ -24912,6 +24915,9 @@ export type Database = {
           workflow_type: string
         }
         Insert: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           assigned_to?: string | null
           completed_at?: string | null
           created_at?: string
@@ -24934,6 +24940,9 @@ export type Database = {
           workflow_type: string
         }
         Update: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           assigned_to?: string | null
           completed_at?: string | null
           created_at?: string
@@ -25038,6 +25047,9 @@ export type Database = {
       workflow_tasks: {
         Row: {
           actions: Json
+          archive_reason: string | null
+          archived_at: string | null
+          archived_by: string | null
           assignee_role: string | null
           assignee_user_id: string | null
           completed_at: string | null
@@ -25063,6 +25075,9 @@ export type Database = {
         }
         Insert: {
           actions?: Json
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           assignee_role?: string | null
           assignee_user_id?: string | null
           completed_at?: string | null
@@ -25088,6 +25103,9 @@ export type Database = {
         }
         Update: {
           actions?: Json
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           assignee_role?: string | null
           assignee_user_id?: string | null
           completed_at?: string | null

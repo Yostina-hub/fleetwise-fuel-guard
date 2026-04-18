@@ -1,11 +1,11 @@
-import { Search, Inbox as InboxIcon, CheckCircle2, AlertTriangle, User, Users } from "lucide-react";
+import { Search, Inbox as InboxIcon, CheckCircle2, AlertTriangle, User, Users, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { WorkflowTask } from "./types";
 
-export type StatusFilter = "pending" | "completed";
+export type StatusFilter = "pending" | "completed" | "trash";
 export type Scope = "me" | "team" | "all";
 
 interface TaskFiltersProps {
@@ -22,7 +22,7 @@ interface TaskFiltersProps {
   slaFilter: "all" | "breach" | "warn";
   setSlaFilter: (s: "all" | "breach" | "warn") => void;
   tasks: WorkflowTask[];
-  counts: { pending: number; completed: number; breach: number };
+  counts: { pending: number; completed: number; breach: number; trash: number };
 }
 
 export function TaskFilters({
@@ -62,6 +62,13 @@ export function TaskFilters({
           count={counts.completed}
           active={status === "completed"}
           onClick={() => setStatus("completed")}
+        />
+        <FilterRow
+          icon={<Trash2 className="h-3.5 w-3.5" />}
+          label="Recycle bin"
+          count={counts.trash}
+          active={status === "trash"}
+          onClick={() => setStatus("trash")}
         />
       </FilterGroup>
 

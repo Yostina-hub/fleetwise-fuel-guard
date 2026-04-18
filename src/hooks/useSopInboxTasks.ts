@@ -15,22 +15,30 @@ export interface SopInboxTask extends WorkflowTask {
 
 export function useSopInboxTasks(
   organizationId: string | null,
-  status: "pending" | "completed",
+  status: "pending" | "completed" | "trash",
 ) {
   return useQuery<SopInboxTask[]>({
     queryKey: ["sop-inbox-tasks", organizationId, status],
     enabled: !!organizationId,
     refetchInterval: 8000,
     queryFn: async () => {
-      const dbStatuses = status === "pending"
-        ? ["in_progress", "open", "pending"]
-        : ["completed", "archived", "closed"];
-
-      const { data, error } = await supabase
+      let query = supabase
         .from("workflow_instances")
         .select("*")
-        .eq("organization_id", organizationId!)
-        .in("status", dbStatuses)
+        .eq("organization_id", organizationId!);
+
+      if (status === "trash") {
+        // Recycle bin: only soft-deleted items.
+        query = query.not("archived_at", "is", null);
+      } else {
+        // Active inbox: hide archived items.
+        const dbStatuses = status === "pending"
+          ? ["in_progress", "open", "pending"]
+          : ["completed", "archived", "closed"];
+        query = query.in("status", dbStatuses).is("archived_at", null);
+      }
+
+      const { data, error } = await query
         .order("created_at", { ascending: false })
         .limit(300);
       if (error) throw error;
@@ -86,7 +94,7 @@ export function useSopInboxTasks(
             form_key: null,
             context: (raw.data && typeof raw.data === "object" && !Array.isArray(raw.data) ? raw.data : {}) as Record<string, any>,
             actions,
-            status: status === "pending" ? "pending" : "completed",
+            status: status === "trash" ? "trash" : (status === "pending" ? "pending" : "completed"),
             vehicle_id: raw.vehicle_id,
             driver_id: raw.driver_id,
             due_at: raw.due_date,
