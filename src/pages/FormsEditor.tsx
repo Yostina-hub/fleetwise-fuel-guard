@@ -169,6 +169,53 @@ export default function FormsEditor() {
     markDirty();
   }, []);
 
+  const replaceFields = useCallback((next: BaseField[]) => {
+    setSchema((s) => ({ ...s, fields: next }));
+    markDirty();
+  }, []);
+
+  const duplicateField = useCallback((id: string) => {
+    setSchema((s) => {
+      const keys = collectKeys(s.fields);
+      const cloneWithNewIds = (f: BaseField): BaseField => {
+        const newKey = (() => {
+          let base = `${f.key}_copy`;
+          let k = base;
+          let n = 1;
+          while (keys.has(k)) { n += 1; k = `${base}_${n}`; }
+          keys.add(k);
+          return k;
+        })();
+        return {
+          ...f,
+          id: `f_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+          key: newKey,
+          fields: f.fields?.map(cloneWithNewIds),
+        };
+      };
+      // top-level?
+      const topIdx = s.fields.findIndex((f) => f.id === id);
+      if (topIdx >= 0) {
+        const dup = cloneWithNewIds(s.fields[topIdx]);
+        const next = [...s.fields];
+        next.splice(topIdx + 1, 0, dup);
+        return { ...s, fields: next };
+      }
+      // child?
+      const next = s.fields.map((f) => {
+        if (!f.fields) return f;
+        const cIdx = f.fields.findIndex((c) => c.id === id);
+        if (cIdx < 0) return f;
+        const dup = cloneWithNewIds(f.fields[cIdx]);
+        const arr = [...f.fields];
+        arr.splice(cIdx + 1, 0, dup);
+        return { ...f, fields: arr };
+      });
+      return { ...s, fields: next };
+    });
+    markDirty();
+  }, []);
+
   // ---------- Find selected field & its siblings ------------------------
 
   const { selected, siblings } = useMemo(() => {
@@ -299,11 +346,14 @@ export default function FormsEditor() {
                   selectedId={selectedId}
                   onSelect={setSelectedId}
                   onReorder={reorder}
+                  onReplaceFields={replaceFields}
                   onDelete={deleteTopLevel}
                   onAddPaletteAtEnd={addAtEnd}
                   onAddPaletteToContainer={addToContainer}
                   onSelectChild={setSelectedId}
                   onDeleteChild={deleteChild}
+                  onPatchField={updateField}
+                  onDuplicateField={duplicateField}
                 />
               </Card>
               <Card className="col-span-3 overflow-hidden">
