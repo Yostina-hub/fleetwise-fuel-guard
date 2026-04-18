@@ -8,7 +8,8 @@ import {
   preventiveMaintenanceConfig, breakdownMaintenanceConfig, vehicleDispatchConfig,
   driverOnboardingConfig, driverTrainingConfig, driverAllowanceConfig,
   vehicleDisposalConfig, roadsideAssistanceConfig, licenseRenewalConfig,
-  outsourceRentalConfig, safetyComfortConfig,
+  outsourceRentalConfig, safetyComfortConfig, vehicleHandoverConfig,
+  fleetTransferConfig,
 } from "./configs";
 import { convertSopConfigToGraph } from "./sopConverter";
 import type { WorkflowConfig } from "./types";
@@ -18,7 +19,8 @@ const ALL_SOPS: WorkflowConfig[] = [
   preventiveMaintenanceConfig, breakdownMaintenanceConfig, vehicleDispatchConfig,
   driverOnboardingConfig, driverTrainingConfig, driverAllowanceConfig,
   vehicleDisposalConfig, roadsideAssistanceConfig, licenseRenewalConfig,
-  outsourceRentalConfig, safetyComfortConfig,
+  outsourceRentalConfig, safetyComfortConfig, vehicleHandoverConfig,
+  fleetTransferConfig,
 ];
 
 export interface SeedReport {
