@@ -3,26 +3,15 @@
  * ============================
  * Single entry point for "Create New Vehicle Request" across the app.
  *
- * Resolution order:
- *   1. Look up the org's published Vehicle Request form (any key matching
- *      `vehicle_request*`). If found, mount the unified `<FormRenderer />`,
- *      which short-circuits to the legacy component via `legacyFormRegistry`
- *      for full feature parity.
- *   2. If nothing is published yet, fall back to the legacy
- *      `<VehicleRequestForm />` directly so users are never blocked.
+ * Always renders the legacy <VehicleRequestForm /> directly because it has
+ * full feature parity (dynamic Daily / Field / Project date sections, pool
+ * routing, approval RPC, SMS notifications, "on behalf of" picker, etc.).
  *
- * Props mirror the legacy dialog so call sites can swap 1:1.
+ * The JSON-schema rendered version is reserved for the Forms module's editor
+ * preview only — keeping the user-facing dialog stable while the JSON form
+ * shape evolves.
  */
-import { useQuery } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
-import {
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
-import { supabase } from "@/integrations/supabase/client";
-import { useOrganization } from "@/hooks/useOrganization";
-import { FormRenderer } from "@/components/forms/FormRenderer";
 import { VehicleRequestForm } from "@/components/vehicle-requests/VehicleRequestForm";
-import { EMPTY_SCHEMA, EMPTY_SETTINGS } from "@/lib/forms/schema";
 
 interface Props {
   open: boolean;
@@ -30,67 +19,8 @@ interface Props {
   source?: string;
 }
 
-interface ResolvedForm {
-  id: string;
-  key: string;
-  name: string | null;
-  description: string | null;
-  version: { id: string; schema: any; settings: any };
-}
-
-function useResolvedVehicleRequestForm(open: boolean) {
-  const { organizationId } = useOrganization();
-  return useQuery({
-    enabled: !!organizationId && open,
-    queryKey: ["unified-vehicle-request-form", organizationId],
-    queryFn: async (): Promise<ResolvedForm | null> => {
-      // Find any non-archived form whose key looks like a Vehicle Request
-      // template (exact `vehicle_request` or any clone like
-      // `vehicle_request_copy_4`). Resolution order:
-      //   1. The form explicitly marked `is_default=true` for this intent.
-      //   2. Otherwise, the most recently updated published form.
-      const { data: forms, error: e1 } = await (supabase as any)
-        .from("forms")
-        .select("id, key, name, description, current_published_version_id, is_default, updated_at")
-        .eq("organization_id", organizationId)
-        .eq("is_archived", false)
-        .like("key", "vehicle_request%")
-        .order("updated_at", { ascending: false });
-      if (e1) throw e1;
-
-      const published = (forms ?? []).filter((f: any) => !!f.current_published_version_id);
-      const candidate =
-        published.find((f: any) => f.is_default) ?? published[0];
-      if (!candidate) return null;
-
-      const { data: ver, error: e2 } = await (supabase as any)
-        .from("form_versions")
-        .select("id, schema, settings")
-        .eq("id", candidate.current_published_version_id)
-        .maybeSingle();
-      if (e2) throw e2;
-      if (!ver) return null;
-
-      return {
-        id: candidate.id,
-        key: candidate.key,
-        name: candidate.name,
-        description: candidate.description,
-        version: {
-          id: ver.id,
-          schema: ver.schema ?? EMPTY_SCHEMA,
-          settings: ver.settings ?? EMPTY_SETTINGS,
-        },
-      };
-    },
-  });
-}
-
 export function UnifiedVehicleRequestDialog({ open, onOpenChange, source }: Props) {
-  // Always use the legacy VehicleRequestForm — it has full feature parity
-  // (dynamic Daily/Field/Project date sections, pool routing, RPC approval,
-  // SMS notifications, "on behalf of" picker, etc.) which the JSON-rendered
-  // form does not currently match. The JSON schema is used by the Forms
-  // module's Editor Preview only.
   return <VehicleRequestForm open={open} onOpenChange={onOpenChange} source={source} />;
 }
+
+export default UnifiedVehicleRequestDialog;
