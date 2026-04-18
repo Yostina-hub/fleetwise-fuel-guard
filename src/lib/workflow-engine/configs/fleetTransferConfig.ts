@@ -172,12 +172,24 @@ export const fleetTransferConfig: WorkflowConfig = {
     { id: "send_required_info", label: "7. Send all required information for data update (Email)", lane: "fleet_ops",
       description: "Operations sends the information bundle to Safety/QA for ERP / vehicle history update.",
       actions: [
-        { id: "info_sent", label: "Information sent → record/update (8)", toStage: "record_update_data",
+        { id: "info_sent", label: "Information sent → 2nd delegation approval (8-pre)", toStage: "records_pending_approval",
           allowedRoles: ["fleet_manager", "operations_manager"],
           fields: [
             { key: "info_bundle_notes", label: "Information bundle summary", type: "textarea", required: true },
             { key: "info_attachments_url", label: "Attachments URL (optional)", type: "text" },
           ] },
+      ] },
+
+    // 8-pre — Second delegation-matrix approval before ERP write (per FMG-FA 02 dual-control)
+    { id: "records_pending_approval", label: "8-pre. Records approval as per delegation matrix", lane: "records",
+      description: "Second approver (resolved at runtime from authority_matrix step_order=2) signs off before ERP / vehicle history is updated.",
+      actions: [
+        { id: "records_approve", label: "Approve → record/update (8)", toStage: "record_update_data",
+          allowedRoles: ["fleet_manager", "operations_manager"],
+          fields: [{ key: "records_approval_notes", label: "Approval notes", type: "textarea" }] },
+        { id: "records_reject", label: "Reject → back to send info (7)", toStage: "send_required_info",
+          allowedRoles: ["fleet_manager", "operations_manager"], variant: "destructive",
+          fields: [{ key: "records_rejection_reason", label: "Rejection reason", type: "textarea", required: true }] },
       ] },
 
     // 8 — Record / update the data (ERP / Vehicle history file)
