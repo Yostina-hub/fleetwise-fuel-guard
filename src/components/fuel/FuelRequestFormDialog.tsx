@@ -235,6 +235,7 @@ export const FuelRequestFormDialog = ({
   source = "manual",
   invalidateKeys = [["fuel-requests"]],
   onSubmitted,
+  embedded = false,
 }: Props) => {
   const { organizationId } = useOrganization();
   const { vehicles } = useVehicles();
