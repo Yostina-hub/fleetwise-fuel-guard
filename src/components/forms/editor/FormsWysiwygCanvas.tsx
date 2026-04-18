@@ -1,14 +1,23 @@
 /**
- * FormsWysiwygCanvas — renders the live form (the same way FormRenderer does)
- * but wraps every top-level field in click-to-select chrome with a drag handle
- * and quick actions. The form on screen IS both the editor and the preview.
+ * FormsWysiwygCanvas — Oracle-EBS / Google-Forms hybrid WYSIWYG editor.
  *
- * Differences from FormRenderer:
- *  - Inputs are visually rendered but interaction is captured by an overlay
- *    so clicks select the field instead of focusing the input.
- *  - Sections are collapsible cards with rename / move / duplicate / delete.
- *  - Drag-to-reorder uses dnd-kit; palette drops append a new field at the
- *    end of the section the drop occurred in (or to the form if no section).
+ * Visual model
+ * ────────────
+ *   ┌──────────────────────────────────────────────────────────┐
+ *   │  ▸ Section title           [▲ ▼]  [duplicate] [delete]   │  ← bold band
+ *   │ ────────────────────────────────────────────────────────  │
+ *   │  Field A (half)           │   Field B (half)              │
+ *   │  Field C (full width)                                      │
+ *   │  ┌─ + Add field to section ──────────────────────────┐   │
+ *   └──────────────────────────────────────────────────────────┘
+ *           ╭──── + Add section here ────╮       ← inline gap inserter
+ *   ┌──────────────────────────────────────────────────────────┐
+ *
+ * Differences from Google Forms
+ *  - Strict 2-column grid inside each section by default (Oracle EBS style).
+ *  - Per-field width toggle (½ / full) with visible chip.
+ *  - Per-section "Add field" inline button (no need to drag every time).
+ *  - Inline "Add section here" handles between every section.
  */
 import { useMemo, useState } from "react";
 import {
@@ -23,7 +32,7 @@ import { CSS } from "@dnd-kit/utilities";
 import DOMPurify from "isomorphic-dompurify";
 import {
   GripVertical, Trash2, Copy, ArrowUp, ArrowDown,
-  Columns2, Square, ChevronDown, ChevronRight, LayoutGrid, Plus,
+  Columns2, Square, ChevronDown, ChevronRight, Plus, Type,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +45,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { PALETTE } from "@/lib/forms/fieldCatalog";
 import type { BaseField, FieldType, FormSchema, FormSettings } from "@/lib/forms/schema";
@@ -55,30 +68,46 @@ export interface FormsWysiwygCanvasProps {
   onAddPaletteToContainer: (containerId: string, type: FieldType) => void;
   onPatchField: (id: string, patch: Partial<BaseField>) => void;
   onDuplicateField: (id: string) => void;
+  /** Insert a new field at a specific top-level index (used by per-section adders). */
+  onInsertAt?: (index: number, type: FieldType) => void;
 }
 
 interface SectionBand {
   sectionId: string | null;
   section: BaseField | null;
+  /** Index in schema.fields where the section marker sits (null for headless). */
+  sectionIndex: number | null;
+  /** Index just after the last item belonging to this band. */
+  endIndex: number;
   items: BaseField[];
 }
 
 function buildBands(fields: BaseField[]): SectionBand[] {
   const bands: SectionBand[] = [];
-  let current: SectionBand = { sectionId: null, section: null, items: [] };
-  for (const f of fields) {
+  let current: SectionBand = {
+    sectionId: null, section: null, sectionIndex: null, endIndex: 0, items: [],
+  };
+  fields.forEach((f, idx) => {
     if (f.type === "section") {
-      if (current.section || current.items.length) bands.push(current);
-      current = { sectionId: f.id, section: f, items: [] };
+      if (current.section || current.items.length) {
+        current.endIndex = idx;
+        bands.push(current);
+      } else if (idx === 0) {
+        // Drop the empty leading headless band entirely.
+      }
+      current = {
+        sectionId: f.id, section: f, sectionIndex: idx, endIndex: idx + 1, items: [],
+      };
     } else {
       current.items.push(f);
     }
-  }
+  });
+  current.endIndex = fields.length;
   bands.push(current);
   return bands;
 }
 
-// ------------------------------------------------------------------ root
+// ───────────────────────────────────────────────────────────── root
 
 export function FormsWysiwygCanvas(props: FormsWysiwygCanvasProps) {
   const sensors = useSensors(
@@ -87,7 +116,6 @@ export function FormsWysiwygCanvas(props: FormsWysiwygCanvasProps) {
   );
 
   const bands = useMemo(() => buildBands(props.schema.fields), [props.schema.fields]);
-  const twoCol = props.settings.twoColumnLayout ?? true;
 
   const handleDragEnd = (e: DragEndEvent) => {
     const { active, over } = e;
@@ -95,15 +123,18 @@ export function FormsWysiwygCanvas(props: FormsWysiwygCanvasProps) {
     const a: any = active.data.current;
     const o: any = over.data.current;
 
-    // Palette drop
     if (a?.source === "palette") {
       const type = a.type as FieldType;
       if (o?.containerId) props.onAddPaletteToContainer(o.containerId, type);
-      else props.onAddPaletteAtEnd(type);
+      else if (o?.bandSectionId !== undefined && props.onInsertAt) {
+        // Drop into a specific band -> insert at that band's end.
+        const band = bands.find((b) => b.sectionId === o.bandSectionId);
+        if (band) props.onInsertAt(band.endIndex, type);
+        else props.onAddPaletteAtEnd(type);
+      } else props.onAddPaletteAtEnd(type);
       return;
     }
 
-    // Field reorder (within or across sections)
     if (a?.kind === "field" && o?.kind === "field" && active.id !== over.id) {
       moveField(props, String(active.id), String(over.id));
       return;
@@ -117,38 +148,36 @@ export function FormsWysiwygCanvas(props: FormsWysiwygCanvasProps) {
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <ScrollArea className="h-full">
         <div
-          className="p-4 md:p-6 mx-auto max-w-3xl space-y-4"
+          className="p-4 md:p-6 mx-auto max-w-4xl space-y-2"
           onClick={(e) => {
             if (e.target === e.currentTarget) props.onSelect(null);
           }}
         >
           {props.schema.fields.length === 0 ? (
-            <RootDropZone />
+            <RootDropZone onAddSection={() => props.onAddPaletteAtEnd("section")} />
           ) : (
-            bands.map((band, i) => (
-              <SectionBandCard
-                key={band.sectionId ?? `__head_${i}`}
-                band={band}
-                index={i}
-                totalBands={bands.length}
-                twoCol={twoCol}
-                {...props}
-              />
-            ))
+            <>
+              {bands.map((band, i) => (
+                <div key={band.sectionId ?? `__head_${i}`}>
+                  <SectionBandCard
+                    band={band}
+                    index={i}
+                    totalBands={bands.length}
+                    {...props}
+                  />
+                  <SectionGapInserter
+                    onAdd={() => {
+                      if (props.onInsertAt) props.onInsertAt(band.endIndex, "section");
+                      else props.onAddPaletteAtEnd("section");
+                    }}
+                  />
+                </div>
+              ))}
+            </>
           )}
 
-          <div className="flex justify-center pt-2">
-            <Button
-              size="sm" variant="outline"
-              onClick={() => props.onAddPaletteAtEnd("section")}
-              className="text-xs"
-            >
-              <LayoutGrid className="h-3.5 w-3.5 mr-1.5" /> Add section
-            </Button>
-          </div>
-
           {/* Mock submit row — visual only */}
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-border opacity-60 pointer-events-none">
+          <div className="flex items-center justify-end gap-2 pt-3 mt-2 border-t border-border opacity-60 pointer-events-none">
             <Button type="button" variant="ghost">{props.settings.cancelLabel || "Cancel"}</Button>
             <Button type="button">{props.settings.submitLabel || "Submit"}</Button>
           </div>
@@ -158,29 +187,51 @@ export function FormsWysiwygCanvas(props: FormsWysiwygCanvasProps) {
   );
 }
 
-function RootDropZone() {
+function RootDropZone({ onAddSection }: { onAddSection: () => void }) {
   const { isOver, setNodeRef } = useDroppable({ id: "canvas-root", data: {} });
   return (
     <div
       ref={setNodeRef}
       className={cn(
-        "min-h-[300px] rounded-lg border-2 border-dashed border-border p-12 text-center text-sm text-muted-foreground transition-colors",
+        "min-h-[320px] rounded-lg border-2 border-dashed border-border p-12 text-center transition-colors",
         isOver && "border-primary bg-primary/5",
       )}
     >
-      <p className="font-medium">Drag a field from the left to start</p>
-      <p className="text-xs mt-2">or click any field in the library to append it.</p>
+      <p className="text-sm font-medium text-foreground">Start by adding a section</p>
+      <p className="text-xs text-muted-foreground mt-1.5 mb-4">
+        Sections group related fields — like Oracle EBS panels.
+      </p>
+      <Button size="sm" onClick={onAddSection}>
+        <Plus className="h-4 w-4 mr-1.5" /> Add first section
+      </Button>
+      <p className="text-[11px] text-muted-foreground mt-4">
+        …or drag any field from the left.
+      </p>
     </div>
   );
 }
 
-// ---------------------------------------------------------- section card
+function SectionGapInserter({ onAdd }: { onAdd: () => void }) {
+  return (
+    <div className="group relative h-3 my-1 flex items-center justify-center">
+      <div className="absolute inset-x-8 h-px bg-transparent group-hover:bg-primary/30 transition-colors" />
+      <button
+        type="button"
+        onClick={onAdd}
+        className="relative z-10 opacity-0 group-hover:opacity-100 transition-opacity rounded-full border border-primary/40 bg-background hover:bg-primary hover:text-primary-foreground text-primary text-[11px] font-medium px-2.5 py-0.5 shadow-sm flex items-center gap-1"
+      >
+        <Plus className="h-3 w-3" /> Add section here
+      </button>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────── section card
 
 interface BandCardProps extends FormsWysiwygCanvasProps {
   band: SectionBand;
   index: number;
   totalBands: number;
-  twoCol: boolean;
 }
 
 function SectionBandCard(p: BandCardProps) {
@@ -188,12 +239,17 @@ function SectionBandCard(p: BandCardProps) {
   const [collapsed, setCollapsed] = useState(false);
   const isHeadless = !band.section;
   const isSelected = band.sectionId !== null && p.selectedId === band.sectionId;
+  // Per-section column count (stored on the section field as `layout.colSpan`
+  // repurposed: 2 = two-column grid, 1 = single-column).
+  const columns = (band.section?.layout?.colSpan as 1 | 2 | undefined) ?? 2;
 
   return (
-    <div
+    <section
       className={cn(
-        "rounded-xl border bg-card overflow-hidden shadow-sm transition-colors",
-        isSelected ? "border-primary ring-1 ring-primary/30" : "border-border",
+        "rounded-lg border bg-card overflow-hidden shadow-sm transition-all",
+        isSelected
+          ? "border-primary ring-2 ring-primary/20"
+          : isHeadless ? "border-dashed border-border/60" : "border-border hover:border-border",
       )}
       onClick={(e) => {
         if (band.section) {
@@ -202,82 +258,117 @@ function SectionBandCard(p: BandCardProps) {
         }
       }}
     >
-      {/* Section header band */}
-      <div
+      {/* ── Section header band (Oracle EBS style: bold title, faint underline) */}
+      <header
         className={cn(
-          "flex items-center gap-2 px-3 py-2 border-b",
-          isHeadless ? "bg-muted/30 border-border/50" : "bg-primary/5 border-primary/20",
+          "flex items-center gap-2 px-4 py-2.5 border-b",
+          isHeadless
+            ? "bg-muted/20 border-border/40"
+            : "bg-gradient-to-r from-primary/8 to-transparent border-primary/15",
         )}
       >
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); setCollapsed((s) => !s); }}
-          className="text-muted-foreground hover:text-foreground"
+          className="text-muted-foreground hover:text-foreground transition-colors"
           aria-label={collapsed ? "Expand section" : "Collapse section"}
         >
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </button>
-        <LayoutGrid className={cn("h-4 w-4 shrink-0", isHeadless ? "text-muted-foreground" : "text-primary")} />
+
         {isHeadless ? (
-          <span className="text-sm font-medium text-muted-foreground italic">Untitled section</span>
+          <span className="text-sm font-semibold text-muted-foreground italic">
+            (Untitled top group — fields without a section)
+          </span>
         ) : (
           <Input
             value={band.section!.label}
+            placeholder="Section title…"
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => p.onPatchField(band.section!.id, { label: e.target.value })}
-            className="h-7 text-sm font-semibold border-0 bg-transparent px-1 focus-visible:ring-1"
+            className="h-7 text-sm font-bold border-0 bg-transparent px-1.5 focus-visible:ring-1 focus-visible:bg-background max-w-md"
           />
         )}
-        <span className="text-[10px] text-muted-foreground font-mono ml-1">
+
+        <span className="text-[10px] text-muted-foreground font-mono ml-auto mr-1">
           {band.items.length} field{band.items.length === 1 ? "" : "s"}
         </span>
-        <div className="ml-auto flex items-center gap-0.5">
-          {!isHeadless ? (
-            <>
-              <Button
-                size="sm" variant="ghost" className="h-6 w-6 p-0"
-                disabled={p.index <= 1}
-                onClick={(e) => { e.stopPropagation(); moveSection(p, "up"); }}
-                aria-label="Move section up"
-              >
-                <ArrowUp className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                size="sm" variant="ghost" className="h-6 w-6 p-0"
-                disabled={p.index >= p.totalBands - 1}
-                onClick={(e) => { e.stopPropagation(); moveSection(p, "down"); }}
-                aria-label="Move section down"
-              >
-                <ArrowDown className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                size="sm" variant="ghost" className="h-6 w-6 p-0"
-                onClick={(e) => { e.stopPropagation(); p.onDuplicateField(band.section!.id); }}
-                aria-label="Duplicate section"
-              >
-                <Copy className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                size="sm" variant="ghost" className="h-6 w-6 p-0"
-                onClick={(e) => { e.stopPropagation(); p.onDelete(band.section!.id); }}
-                aria-label="Delete section"
-              >
-                <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-              </Button>
-            </>
-          ) : null}
-        </div>
-      </div>
 
-      {/* Section body */}
+        {!isHeadless ? (
+          <div className="flex items-center gap-0.5">
+            {/* Column toggle */}
+            <Button
+              size="sm" variant="ghost" className="h-7 px-2 text-[11px]"
+              onClick={(e) => {
+                e.stopPropagation();
+                p.onPatchField(band.section!.id, {
+                  layout: { colSpan: columns === 2 ? 1 : 2 },
+                });
+              }}
+              title={columns === 2 ? "Switch to single column" : "Switch to two columns"}
+            >
+              {columns === 2 ? <Columns2 className="h-3.5 w-3.5 mr-1" /> : <Square className="h-3.5 w-3.5 mr-1" />}
+              {columns === 2 ? "2-col" : "1-col"}
+            </Button>
+            <Separator orientation="vertical" className="h-5 mx-0.5" />
+            <Button
+              size="sm" variant="ghost" className="h-7 w-7 p-0"
+              disabled={p.index <= (p.band.section && p.totalBands > 1 ? 0 : 1)}
+              onClick={(e) => { e.stopPropagation(); moveSection(p, "up"); }}
+              aria-label="Move section up"
+            >
+              <ArrowUp className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              size="sm" variant="ghost" className="h-7 w-7 p-0"
+              disabled={p.index >= p.totalBands - 1}
+              onClick={(e) => { e.stopPropagation(); moveSection(p, "down"); }}
+              aria-label="Move section down"
+            >
+              <ArrowDown className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              size="sm" variant="ghost" className="h-7 w-7 p-0"
+              onClick={(e) => { e.stopPropagation(); p.onDuplicateField(band.section!.id); }}
+              aria-label="Duplicate section"
+              title="Duplicate section"
+            >
+              <Copy className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              size="sm" variant="ghost" className="h-7 w-7 p-0 hover:text-destructive"
+              onClick={(e) => { e.stopPropagation(); p.onDelete(band.section!.id); }}
+              aria-label="Delete section"
+              title="Delete section"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        ) : null}
+      </header>
+
+      {/* ── Section description (optional, editable inline) */}
+      {!isHeadless && !collapsed ? (
+        <div className="px-4 pt-2" onClick={(e) => e.stopPropagation()}>
+          <Input
+            value={band.section!.helpText ?? ""}
+            placeholder="Section description (optional)…"
+            onChange={(e) => p.onPatchField(band.section!.id, { helpText: e.target.value })}
+            className="h-7 text-xs text-muted-foreground border-0 bg-transparent px-0 focus-visible:ring-0 placeholder:text-muted-foreground/60"
+          />
+        </div>
+      ) : null}
+
+      {/* ── Section body */}
       {!collapsed ? (
-        <BandDropZone bandSectionId={band.sectionId} hasItems={band.items.length > 0} twoCol={p.twoCol}>
+        <BandDropZone bandSectionId={band.sectionId} hasItems={band.items.length > 0} columns={columns}>
           <SortableContext items={band.items.map((f) => f.id)} strategy={verticalListSortingStrategy}>
-            <div className={cn("grid gap-3 p-4", p.twoCol && "md:grid-cols-2")}>
+            <div className={cn("grid gap-3 px-4 py-3", columns === 2 && "md:grid-cols-2")}>
               {band.items.map((f) => (
                 <WysiwygFieldCard
                   key={f.id}
                   field={f}
+                  columns={columns}
                   selectedId={p.selectedId}
                   onSelect={p.onSelect}
                   onDelete={p.onDelete}
@@ -287,18 +378,29 @@ function SectionBandCard(p: BandCardProps) {
               ))}
             </div>
           </SortableContext>
+
+          {/* Inline add-field button at bottom of every section */}
+          <div className="px-4 pb-3" onClick={(e) => e.stopPropagation()}>
+            <AddFieldMenu
+              onPick={(t) => {
+                if (p.onInsertAt) p.onInsertAt(band.endIndex, t);
+                else if (band.sectionId) p.onAddPaletteToContainer(band.sectionId, t);
+                else p.onAddPaletteAtEnd(t);
+              }}
+            />
+          </div>
         </BandDropZone>
       ) : null}
-    </div>
+    </section>
   );
 }
 
 function BandDropZone({
-  bandSectionId, hasItems, twoCol, children,
+  bandSectionId, hasItems, columns, children,
 }: {
   bandSectionId: string | null;
   hasItems: boolean;
-  twoCol: boolean;
+  columns: 1 | 2;
   children: React.ReactNode;
 }) {
   const { isOver, setNodeRef } = useDroppable({
@@ -308,8 +410,11 @@ function BandDropZone({
   return (
     <div ref={setNodeRef} className={cn("transition-colors", isOver && "bg-primary/5")}>
       {!hasItems ? (
-        <div className="m-4 py-8 text-center text-xs text-muted-foreground border-2 border-dashed border-border/50 rounded-md">
-          Drop fields here
+        <div className={cn(
+          "mx-4 my-3 py-6 text-center text-xs text-muted-foreground border-2 border-dashed border-border/50 rounded-md",
+          isOver && "border-primary bg-primary/5 text-primary",
+        )}>
+          {isOver ? "Release to drop here" : "Drop fields here, or click ＋ Add field below"}
         </div>
       ) : (
         children
@@ -318,10 +423,52 @@ function BandDropZone({
   );
 }
 
-// --------------------------------------------------------- field card
+// ─────────────────────────────────────────────────────── add field menu
+
+function AddFieldMenu({ onPick }: { onPick: (t: FieldType) => void }) {
+  const groups = ["Standard", "Entity", "Structural", "Logic"] as const;
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button" variant="ghost" size="sm"
+          className="w-full justify-center text-xs border border-dashed border-border/60 hover:border-primary hover:bg-primary/5 hover:text-primary text-muted-foreground"
+        >
+          <Plus className="h-3.5 w-3.5 mr-1" /> Add field to this section
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-64 max-h-96 overflow-auto" align="start">
+        {groups.map((g, gi) => (
+          <div key={g}>
+            {gi > 0 ? <DropdownMenuSeparator /> : null}
+            <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground py-1">
+              {g}
+            </DropdownMenuLabel>
+            {PALETTE.filter((p) => p.group === g && p.type !== "section").map((entry) => {
+              const Icon = entry.icon;
+              return (
+                <DropdownMenuItem
+                  key={entry.type}
+                  onClick={() => onPick(entry.type)}
+                  className="text-xs gap-2 cursor-pointer"
+                >
+                  <Icon className="h-3.5 w-3.5 text-primary" />
+                  {entry.label}
+                </DropdownMenuItem>
+              );
+            })}
+          </div>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+// ─────────────────────────────────────────────────────── field card
 
 interface FieldCardProps {
   field: BaseField;
+  columns: 1 | 2;
   selectedId: string | null;
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
@@ -330,7 +477,7 @@ interface FieldCardProps {
 }
 
 function WysiwygFieldCard(props: FieldCardProps) {
-  const { field } = props;
+  const { field, columns } = props;
   const sortable = useSortable({ id: field.id, data: { kind: "field" } });
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(sortable.transform),
@@ -340,6 +487,8 @@ function WysiwygFieldCard(props: FieldCardProps) {
   const colSpan = field.layout?.colSpan ?? 2;
   const isHalf = colSpan === 1;
   const Icon = ICON_BY_TYPE[field.type];
+  // Width toggle is only meaningful inside a 2-col section.
+  const showWidthToggle = columns === 2 && field.type !== "divider" && field.type !== "info_banner";
 
   const toggleWidth = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -352,18 +501,24 @@ function WysiwygFieldCard(props: FieldCardProps) {
       style={style}
       onClick={(e) => { e.stopPropagation(); props.onSelect(field.id); }}
       className={cn(
-        "group relative rounded-lg border bg-background p-3 cursor-pointer transition-all",
-        colSpan === 2 && "md:col-span-2",
+        "group relative rounded-md border bg-background p-3 cursor-pointer transition-all",
+        // In 2-col mode, full-width fields span both columns.
+        columns === 2 && colSpan === 2 && "md:col-span-2",
         isSelected
-          ? "border-primary ring-1 ring-primary/30 shadow-sm"
-          : "border-border hover:border-primary/50 hover:shadow-sm",
-        sortable.isDragging && "opacity-60",
+          ? "border-primary ring-2 ring-primary/20 shadow-sm"
+          : "border-border hover:border-primary/40 hover:shadow-sm",
+        sortable.isDragging && "opacity-50 z-10",
       )}
     >
-      {/* Floating toolbar (visible on hover or when selected) */}
+      {/* Selected indicator bar (left) */}
+      {isSelected ? (
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-md" />
+      ) : null}
+
+      {/* Floating toolbar */}
       <div
         className={cn(
-          "absolute -top-2.5 right-2 flex items-center gap-0.5 rounded-md border bg-background px-1 py-0.5 shadow-sm transition-opacity",
+          "absolute -top-3 right-2 flex items-center gap-0.5 rounded-md border bg-background px-1 py-0.5 shadow-sm transition-opacity z-10",
           isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100",
         )}
       >
@@ -377,29 +532,31 @@ function WysiwygFieldCard(props: FieldCardProps) {
         >
           <GripVertical className="h-3.5 w-3.5" />
         </button>
-        {field.type !== "divider" && field.type !== "info_banner" ? (
+        {showWidthToggle ? (
           <Button
-            size="sm" variant="ghost" className="h-6 w-6 p-0"
+            size="sm" variant="ghost" className="h-6 px-1.5 gap-1 text-[10px]"
             onClick={toggleWidth}
             title={isHalf ? "Half width — click for full" : "Full width — click for half"}
-            aria-label={isHalf ? "Make full width" : "Make half width"}
           >
-            {isHalf ? <Columns2 className="h-3.5 w-3.5 text-accent" /> : <Square className="h-3.5 w-3.5 text-muted-foreground" />}
+            {isHalf ? <Columns2 className="h-3 w-3 text-accent" /> : <Square className="h-3 w-3 text-muted-foreground" />}
+            <span>{isHalf ? "½" : "full"}</span>
           </Button>
         ) : null}
         <Button
           size="sm" variant="ghost" className="h-6 w-6 p-0"
           onClick={(e) => { e.stopPropagation(); props.onDuplicateField(field.id); }}
           aria-label="Duplicate field"
+          title="Duplicate"
         >
           <Copy className="h-3.5 w-3.5 text-muted-foreground" />
         </Button>
         <Button
-          size="sm" variant="ghost" className="h-6 w-6 p-0"
+          size="sm" variant="ghost" className="h-6 w-6 p-0 hover:text-destructive"
           onClick={(e) => { e.stopPropagation(); props.onDelete(field.id); }}
           aria-label="Delete field"
+          title="Delete"
         >
-          <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+          <Trash2 className="h-3.5 w-3.5" />
         </Button>
       </div>
 
@@ -411,7 +568,7 @@ function WysiwygFieldCard(props: FieldCardProps) {
   );
 }
 
-// --------------------------------------------------------- field preview
+// ─────────────────────────────────────────────────────── field preview
 
 function FieldPreview({
   field, icon: Icon,
@@ -447,7 +604,7 @@ function FieldPreview({
     <div className="space-y-1.5">
       <Label htmlFor={field.key} className="text-xs flex items-center gap-1.5">
         {Icon ? <Icon className="h-3 w-3 text-primary" /> : null}
-        <span>{field.label}</span>
+        <span className="font-medium">{field.label}</span>
         {field.required ? <span className="text-destructive">*</span> : null}
         <span className="ml-1 text-[10px] font-mono text-muted-foreground">{field.key}</span>
       </Label>
@@ -535,7 +692,7 @@ function FieldInputPreview({ field }: { field: BaseField }) {
   }
 }
 
-// --------------------------------------------------------- helpers
+// ─────────────────────────────────────────────────────── helpers
 
 function moveField(props: FormsWysiwygCanvasProps, fromId: string, toId: string) {
   const arr = [...props.schema.fields];
