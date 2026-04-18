@@ -374,11 +374,14 @@ const Layout = ({ children }: LayoutProps) => {
   }, [location.pathname, location.search]);
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden relative">
+    <div className="flex flex-col h-screen bg-background overflow-hidden relative">
       {/* Animated Background */}
       <div className="parallax-bg"></div>
+      {/* Impersonation banner sits ABOVE the sidebar/main row so it doesn't
+          steal flex width and push everything off-screen. */}
       <ImpersonationBanner />
-      
+
+      <div className="flex flex-1 min-h-0 overflow-hidden">
       {/* Desktop Sidebar - Hidden on mobile */}
       <aside 
         className={cn(
