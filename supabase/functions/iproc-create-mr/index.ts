@@ -1,6 +1,9 @@
 // iPROC auto Material Requisition generation (SOP 1.7) — STUB.
 // In production this POSTs to the ERP and stores the returned MR number on tire_requests.
-import { corsHeaders } from "@supabase/supabase-js/cors";
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 Deno.serve(async (req) => {
