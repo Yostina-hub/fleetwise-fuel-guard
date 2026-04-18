@@ -390,7 +390,7 @@ function FormRendererInner({
             </SelectTrigger>
             <SelectContent>
               {opts.length === 0 ? (
-                <div className="px-2 py-1.5 text-xs text-muted-foreground">No pools available</div>
+                <SelectItem value="__none__" disabled>No pools available</SelectItem>
               ) : opts.filter((name: string) => !!name).map((name: string) => (
                 <SelectItem key={name} value={name}>{name}</SelectItem>
               ))}
