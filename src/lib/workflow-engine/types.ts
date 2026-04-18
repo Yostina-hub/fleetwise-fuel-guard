@@ -30,6 +30,7 @@ export type FieldType =
   | "driver"
   | "file"
   | "handover_catalog"
+  | "handover_lines_30"
   | "vehicle_autofill_summary";
 
 export interface StageField {
