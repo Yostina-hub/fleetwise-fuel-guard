@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import {
   History, Plus, Edit, Trash2, Power, PowerOff, Search, Shield, Users, RefreshCw,
-  Route, ArrowRightLeft, SkipForward, Fuel, MapPin, Receipt, Car,
+  ArrowRightLeft, SkipForward,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -22,7 +22,6 @@ const ACTION_META: Record<string, { icon: any; label: string; color: string }> =
   delete: { icon: Trash2, label: "Deleted", color: "bg-red-500/10 text-red-600 border-red-500/30" },
   activate: { icon: Power, label: "Activated", color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" },
   deactivate: { icon: PowerOff, label: "Deactivated", color: "bg-muted text-muted-foreground border-border" },
-  route: { icon: Route, label: "Routed", color: "bg-cyan-500/10 text-cyan-600 border-cyan-500/30" },
   substitute: { icon: ArrowRightLeft, label: "Delegated", color: "bg-amber-500/10 text-amber-600 border-amber-500/30" },
   skip: { icon: SkipForward, label: "Skipped", color: "bg-muted text-muted-foreground border-border" },
 };
@@ -30,11 +29,17 @@ const ACTION_META: Record<string, { icon: any; label: string; color: string }> =
 const SOURCE_META: Record<string, { icon: any; label: string }> = {
   authority_matrix: { icon: Shield, label: "Authority Rule" },
   delegation_matrix: { icon: Users, label: "Substitution" },
-  fuel_request: { icon: Fuel, label: "Fuel Request" },
-  trip_request: { icon: MapPin, label: "Trip Request" },
-  outsource_payment_request: { icon: Receipt, label: "Payment Request" },
-  vehicle_request: { icon: Car, label: "Vehicle Request" },
+  user_substitutions: { icon: Users, label: "Substitution" },
+  approval_levels: { icon: Shield, label: "Approval Level" },
 };
+
+// Only show audit entries that pertain to the authority/delegation matrix itself.
+const ALLOWED_SOURCES = [
+  "authority_matrix",
+  "delegation_matrix",
+  "user_substitutions",
+  "approval_levels",
+];
 
 export const DelegationHistoryTab = () => {
   const { organizationId } = useOrganization();
@@ -43,60 +48,18 @@ export const DelegationHistoryTab = () => {
   const [sourceFilter, setSourceFilter] = useState<string>("all");
 
   const { data: logs = [], isLoading, refetch, isFetching } = useQuery({
-    queryKey: ["delegation-audit-log-merged", organizationId],
+    queryKey: ["delegation-audit-log", organizationId],
     queryFn: async () => {
       if (!organizationId) return [];
-
-      // 1) Native delegation/audit log entries
-      const auditPromise = supabase
+      const { data, error } = await supabase
         .from("delegation_audit_log")
         .select("*")
         .eq("organization_id", organizationId)
+        .in("source_table", ALLOWED_SOURCES)
         .order("created_at", { ascending: false })
         .limit(500);
-
-      // 2) Vehicle request lifecycle transitions, normalised to the same shape
-      const vrPromise = (supabase as any)
-        .from("workflow_transitions")
-        .select("id, organization_id, instance_id, from_stage, to_stage, performed_by, notes, payload, created_at, workflow_instances!inner(reference_number, workflow_type, organization_id)")
-        .eq("workflow_instances.organization_id", organizationId)
-        .eq("workflow_instances.workflow_type", "vehicle_request")
-        .order("created_at", { ascending: false })
-        .limit(500);
-
-      const [auditRes, vrRes] = await Promise.all([auditPromise, vrPromise]);
-      if (auditRes.error) throw auditRes.error;
-      if (vrRes.error) throw vrRes.error;
-
-      const vrNormalised = (vrRes.data ?? []).map((t: any) => {
-        // Map workflow stage to UI action vocabulary
-        const stageToAction: Record<string, string> = {
-          pending: "create",
-          approved: "activate",
-          rejected: "deactivate",
-          assigned: "route",
-          in_progress: "update",
-          completed: "activate",
-          cancelled: "delete",
-        };
-        return {
-          id: `vr-${t.id}`,
-          organization_id: t.organization_id,
-          source_table: "vehicle_request",
-          scope: "vehicle_request",
-          action: stageToAction[t.to_stage] ?? "update",
-          entity_name: t.workflow_instances?.reference_number ?? "Vehicle Request",
-          summary: t.notes ?? `Status: ${t.from_stage ?? "—"} → ${t.to_stage}`,
-          actor_name: null,
-          actor_id: t.performed_by,
-          created_at: t.created_at,
-        };
-      });
-
-      // Merge & sort by created_at desc
-      return [...(auditRes.data ?? []), ...vrNormalised].sort(
-        (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
+      if (error) throw error;
+      return data ?? [];
     },
     enabled: !!organizationId,
   });
@@ -162,10 +125,8 @@ export const DelegationHistoryTab = () => {
             <SelectItem value="all">All Sources</SelectItem>
             <SelectItem value="authority_matrix">Authority Rules</SelectItem>
             <SelectItem value="delegation_matrix">Substitutions</SelectItem>
-            <SelectItem value="vehicle_request">Vehicle Requests</SelectItem>
-            <SelectItem value="fuel_request">Fuel Requests</SelectItem>
-            <SelectItem value="trip_request">Trip Requests</SelectItem>
-            <SelectItem value="outsource_payment_request">Payment Requests</SelectItem>
+            <SelectItem value="user_substitutions">User Substitutions</SelectItem>
+            <SelectItem value="approval_levels">Approval Levels</SelectItem>
           </SelectContent>
         </Select>
         <Select value={actionFilter} onValueChange={setActionFilter}>
