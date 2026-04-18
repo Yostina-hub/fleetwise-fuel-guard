@@ -1,5 +1,10 @@
 // Detail drawer with stage actions, role-gated buttons, and audit history.
-import { useState } from "react";
+//
+// Delegation-matrix integration: when the current stage is an approval stage
+// (id ends in "_pending_approval"), the resolver looks up the authority_matrix
+// for this org/workflow and dynamically narrows which roles can approve/reject.
+// A small badge surfaces the rule source so operators can audit the decision.
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -9,9 +14,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
-import { Lock, CheckCircle2, History as HistoryIcon, ExternalLink } from "lucide-react";
+import { Lock, CheckCircle2, History as HistoryIcon, ExternalLink, ShieldCheck } from "lucide-react";
 import { WorkflowFieldset } from "./WorkflowFieldset";
 import { useWorkflow, useWorkflowTransitions } from "./useWorkflow";
+import { useApproverResolution, isApprovalStage } from "./useApproverResolution";
 import { VehicleHandoverHistoryDiff } from "@/components/workflow/VehicleHandoverHistoryDiff";
 import type { WorkflowConfig, WorkflowInstance, StageAction } from "./types";
 
@@ -22,16 +28,59 @@ interface Props {
 }
 
 export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) {
-  const { performAction, canPerform } = useWorkflow(config);
+  const { performAction, canPerform, userRoles } = useWorkflow(config) as any;
   const { data: transitions = [] } = useWorkflowTransitions(instance?.id ?? null);
   const [activeAction, setActiveAction] = useState<StageAction | null>(null);
   const [actionValues, setActionValues] = useState<Record<string, any>>({});
   const [actionNotes, setActionNotes] = useState("");
 
+  // Delegation matrix lookup — only fires for stages whose id ends in
+  // "_pending_approval" (the SOP convention for "Get approval as per
+  // delegation matrix"). Optional `amount` comes from instance.data.
+  const approvalAmount = useMemo(() => {
+    const d = (instance?.data as any) || {};
+    const cand = d.estimated_cost ?? d.amount ?? d.quotation_amount ?? d.cost;
+    const n = typeof cand === "number" ? cand : Number(cand);
+    return Number.isFinite(n) ? n : undefined;
+  }, [instance?.data]);
+  const approverQuery = useApproverResolution(
+    config.type,
+    instance?.current_stage,
+    approvalAmount,
+  );
+  const resolvedApproverRoles = approverQuery.data?.roles;
+  const userIsResolvedApprover = useMemo(() => {
+    if (!resolvedApproverRoles?.length) return false;
+    if (Array.isArray(userRoles) && userRoles.includes("super_admin")) return true;
+    return resolvedApproverRoles.some((r) =>
+      Array.isArray(userRoles) && userRoles.includes(r),
+    );
+  }, [resolvedApproverRoles, userRoles]);
+
   if (!instance) return null;
   const stage = config.stages.find((s) => s.id === instance.current_stage);
   const lane = config.lanes.find((l) => l.id === instance.current_lane);
   const isCompleted = instance.status === "completed";
+  const stageIsApproval = isApprovalStage(instance.current_stage);
+
+  /** Effective permission check: on approval stages, the delegation matrix
+   *  takes precedence over the static allowedRoles in the SOP config. */
+  const effectiveCanPerform = (action: StageAction): boolean => {
+    if (!stageIsApproval) return canPerform(action);
+    // Approve / reject style actions must obey the delegation matrix.
+    const isDecisionAction = /approve|reject/i.test(action.id);
+    if (!isDecisionAction) return canPerform(action);
+    if (!resolvedApproverRoles?.length) return canPerform(action); // fallback while loading
+    return userIsResolvedApprover;
+  };
+
+  /** Effective role label shown on locked buttons. */
+  const effectiveRoleHint = (action: StageAction): string => {
+    if (stageIsApproval && resolvedApproverRoles?.length && /approve|reject/i.test(action.id)) {
+      return resolvedApproverRoles.join(" / ");
+    }
+    return action.allowedRoles?.join(" / ") || "";
+  };
 
   const submitAction = async () => {
     if (!activeAction) return;
@@ -109,6 +158,35 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
             </TabsList>
 
             <TabsContent value="actions" className="space-y-3 mt-3">
+              {/* Delegation matrix banner — surfaces who can approve at this step. */}
+              {stageIsApproval && resolvedApproverRoles?.length ? (
+                <div className="rounded-md border border-primary/30 bg-primary/5 p-2 flex items-start gap-2 text-xs">
+                  <ShieldCheck className="w-3.5 h-3.5 mt-0.5 text-primary shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-foreground">
+                      Approval per delegation matrix
+                    </p>
+                    <p className="text-muted-foreground">
+                      Resolved approver{resolvedApproverRoles.length > 1 ? "s" : ""}:{" "}
+                      <span className="font-medium text-foreground">
+                        {resolvedApproverRoles.join(" / ")}
+                      </span>
+                      {approverQuery.data?.ruleLabel
+                        ? ` • rule "${approverQuery.data.ruleLabel}"`
+                        : ""}{" "}
+                      <span className="opacity-60">
+                        (source: {approverQuery.data?.source})
+                      </span>
+                    </p>
+                    {!userIsResolvedApprover && !userRoles?.includes?.("super_admin") ? (
+                      <p className="text-warning mt-1">
+                        You don't have an authorized role for this approval step.
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+
               {isCompleted ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
                   <CheckCircle2 className="w-4 h-4" /> Workflow completed.
@@ -160,7 +238,8 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
                     Pick the next step:
                   </p>
                   {stage.actions.map((a) => {
-                    const allowed = canPerform(a);
+                    const allowed = effectiveCanPerform(a);
+                    const hint = effectiveRoleHint(a);
                     return (
                       <Button
                         key={a.id}
@@ -173,7 +252,7 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
                         {!allowed ? (
                           <span className="text-[10px] flex items-center gap-1">
                             <Lock className="w-3 h-3" />
-                            {a.allowedRoles?.join(" / ")}
+                            {hint}
                           </span>
                         ) : null}
                       </Button>
