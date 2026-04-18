@@ -25,7 +25,11 @@ export type StandardFieldType =
   | "radio"
   | "checkbox"
   | "switch"
-  | "file";
+  | "file"
+  /** Legacy parity: text input + map picker, stores `{place, lat, lng}` siblings. */
+  | "location"
+  /** Legacy parity: dynamic Select sourced from `fleet_pools` filtered by sibling `pool_category`. */
+  | "pool";
 
 export type EntityFieldType =
   | "vehicle"
