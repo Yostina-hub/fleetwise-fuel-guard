@@ -87,54 +87,10 @@ function useResolvedVehicleRequestForm(open: boolean) {
 }
 
 export function UnifiedVehicleRequestDialog({ open, onOpenChange, source }: Props) {
-  const q = useResolvedVehicleRequestForm(open);
-
-  // While resolving, show a spinner inside a dialog so layout doesn't jump.
-  if (q.isLoading) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Loading form…</DialogTitle>
-            <DialogDescription>Resolving the published Vehicle Request form for your organization.</DialogDescription>
-          </DialogHeader>
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  // Fallback: no published form → mount the legacy dialog directly.
-  if (!q.data) {
-    return <VehicleRequestForm open={open} onOpenChange={onOpenChange} source={source} />;
-  }
-
-  const form = q.data;
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{form.name ?? "Vehicle Request"}</DialogTitle>
-          {form.description ? <DialogDescription>{form.description}</DialogDescription> : null}
-        </DialogHeader>
-        <FormRenderer
-          schema={form.version.schema}
-          settings={form.version.settings}
-          formKey={form.key}
-          prefill={source ? { source } : undefined}
-          onCancel={() => onOpenChange(false)}
-          onSubmit={async () => {
-            // The legacy component performs the actual insert + RPC routing
-            // and closes itself via onSubmitted → onOpenChange(false).
-            onOpenChange(false);
-          }}
-        />
-      </DialogContent>
-    </Dialog>
-  );
+  // Always use the legacy VehicleRequestForm — it has full feature parity
+  // (dynamic Daily/Field/Project date sections, pool routing, RPC approval,
+  // SMS notifications, "on behalf of" picker, etc.) which the JSON-rendered
+  // form does not currently match. The JSON schema is used by the Forms
+  // module's Editor Preview only.
+  return <VehicleRequestForm open={open} onOpenChange={onOpenChange} source={source} />;
 }
-
-export default UnifiedVehicleRequestDialog;
