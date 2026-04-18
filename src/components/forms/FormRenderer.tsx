@@ -126,6 +126,31 @@ export function FormRenderer({
   const geofences = useGeofencesLite(organizationId, needs.has("geofence"));
   const users = useUsersLite(organizationId, needs.has("user"));
 
+  // Fleet pools — needed when any `pool` field is in the schema. Loaded once
+  // per render and filtered per-field by the sibling `filterByKey` value.
+  const pools = useQuery({
+    queryKey: ["form-fleet-pools", organizationId],
+    enabled: !!organizationId && needs.has("pool"),
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("fleet_pools")
+        .select("name, category")
+        .eq("organization_id", organizationId!)
+        .eq("is_active", true)
+        .order("category");
+      if (error) throw error;
+      return (data ?? []) as Array<{ name: string; category: string }>;
+    },
+    staleTime: 60_000,
+  });
+
+  // Hardcoded fallback when fleet_pools has no matching rows (mirrors legacy POOL_HIERARCHY).
+  const POOL_FALLBACK: Record<string, string[]> = {
+    corporate: ["FAN", "TPO", "HQ"],
+    zone: ["SWAAZ", "EAAZ"],
+    region: ["NR", "SR"],
+  };
+
   // Apply computed fields whenever values change.
   useEffect(() => {
     const updates: Record<string, any> = {};
