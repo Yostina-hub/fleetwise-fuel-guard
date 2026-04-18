@@ -34,6 +34,7 @@ import {
 import { useForm, useFormDraftVersion, useFormVersions, usePublishDraft, useSaveDraft } from "@/lib/forms/api";
 import { collectKeys, makeField } from "@/lib/forms/fieldCatalog";
 import { walkFields, type BaseField, type FieldType, type FormSchema, type FormSettings } from "@/lib/forms/schema";
+import { isFieldLocked } from "@/lib/forms/legacyContracts";
 import { FormsPalette } from "@/components/forms/editor/FormsPalette";
 import { FormsCanvas } from "@/components/forms/editor/FormsCanvas";
 import { FieldProperties } from "@/components/forms/editor/FieldProperties";
