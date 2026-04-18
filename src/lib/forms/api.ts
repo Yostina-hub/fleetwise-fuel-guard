@@ -27,6 +27,7 @@ export interface FormRow {
   current_published_version_id: string | null;
   is_archived: boolean;
   archived_at: string | null;
+  is_default: boolean;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -425,6 +426,45 @@ export function useCloneTemplate() {
     },
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: QK.forms(vars.organizationId) });
+    },
+  });
+}
+
+/**
+ * Mark a form as the default for its intent (e.g. all `vehicle_request*` forms
+ * share intent `vehicle_request`). Unsets any existing default within the same
+ * org+intent first, then sets the new one. Pass `null` to just clear.
+ */
+export function useSetDefaultForm() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { formId: string; organizationId: string; intent: string }) => {
+      // Clear other defaults for this intent in the same org.
+      const { data: peers, error: e1 } = await (supabase as any)
+        .from("forms")
+        .select("id, key")
+        .eq("organization_id", input.organizationId)
+        .eq("is_default", true);
+      if (e1) throw e1;
+      const intentRe = /(_copy(_\d+)?|_v\d+)$/;
+      const peerIds = (peers ?? [])
+        .filter((p: any) => p.key.replace(intentRe, "") === input.intent && p.id !== input.formId)
+        .map((p: any) => p.id);
+      if (peerIds.length > 0) {
+        const { error: e2 } = await (supabase as any)
+          .from("forms")
+          .update({ is_default: false })
+          .in("id", peerIds);
+        if (e2) throw e2;
+      }
+      const { error: e3 } = await (supabase as any)
+        .from("forms")
+        .update({ is_default: true })
+        .eq("id", input.formId);
+      if (e3) throw e3;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["forms"] });
     },
   });
 }

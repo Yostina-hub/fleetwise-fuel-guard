@@ -7,7 +7,7 @@
  */
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Pencil, Archive, ArchiveRestore, FileText, Search, Loader2, CheckCircle2, Inbox, ListChecks, LibraryBig, Sparkles } from "lucide-react";
+import { Plus, Pencil, Archive, ArchiveRestore, FileText, Search, Loader2, CheckCircle2, Inbox, ListChecks, LibraryBig, Sparkles, Star } from "lucide-react";
 import { toast } from "sonner";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useOrganization } from "@/hooks/useOrganization";
 import {
-  useFormsList, useCreateForm, useArchiveForm, useUnarchiveForm, useCloneTemplate,
+  useFormsList, useCreateForm, useArchiveForm, useUnarchiveForm, useCloneTemplate, useSetDefaultForm,
 } from "@/lib/forms/api";
 import { keyFromLabel } from "@/lib/forms/fieldCatalog";
 import { FORM_TEMPLATES, type FormTemplate } from "@/lib/forms/templates";
@@ -40,6 +40,10 @@ export default function Forms() {
   const list = useFormsList(organizationId, includeArchived || tab !== "active");
   const archive = useArchiveForm();
   const unarchive = useUnarchiveForm();
+  const setDefault = useSetDefaultForm();
+
+  // Helper: derive intent (e.g. `vehicle_request_copy_4` → `vehicle_request`)
+  const intentOf = (key: string) => key.replace(/(_copy(_\d+)?|_v\d+)$/, "");
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -119,9 +123,16 @@ export default function Forms() {
                     {filtered.map((f) => (
                       <tr key={f.id} className="border-t border-border hover:bg-muted/30">
                         <td className="px-3 py-2 font-medium">
-                          <Link to={`/forms/${f.id}/edit`} className="hover:underline">
-                            {f.name}
-                          </Link>
+                          <div className="flex items-center gap-2">
+                            <Link to={`/forms/${f.id}/edit`} className="hover:underline">
+                              {f.name}
+                            </Link>
+                            {f.is_default ? (
+                              <Badge variant="default" className="text-[10px] gap-1">
+                                <Star className="h-2.5 w-2.5 fill-current" /> Default
+                              </Badge>
+                            ) : null}
+                          </div>
                           {f.description ? (
                             <div className="text-xs text-muted-foreground line-clamp-1">{f.description}</div>
                           ) : null}
@@ -147,6 +158,25 @@ export default function Forms() {
                         </td>
                         <td className="px-3 py-2 text-right">
                           <div className="flex items-center justify-end gap-1">
+                            {!f.is_archived && f.current_published_version_id ? (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                title={f.is_default ? "Default form for this intent" : "Set as default for this intent"}
+                                disabled={f.is_default || setDefault.isPending}
+                                onClick={() =>
+                                  setDefault.mutate(
+                                    { formId: f.id, organizationId: organizationId!, intent: intentOf(f.key) },
+                                    {
+                                      onSuccess: () => toast.success(`"${f.name}" is now the default`),
+                                      onError: (e: any) => toast.error(e.message),
+                                    },
+                                  )
+                                }
+                              >
+                                <Star className={`h-3.5 w-3.5 ${f.is_default ? "fill-current text-primary" : ""}`} />
+                              </Button>
+                            ) : null}
                             <Button size="sm" variant="ghost" onClick={() => navigate(`/forms/${f.id}/submissions`)}>
                               <ListChecks className="h-3.5 w-3.5 mr-1" /> Submissions
                             </Button>
