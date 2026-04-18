@@ -67,13 +67,44 @@ const initialForm = {
 export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefill, onSubmitted }: VehicleRequestFormProps) => {
   const { t } = useTranslation();
   const { organizationId, isSuperAdmin } = useOrganization();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [form, setForm] = useState(() => ({
+
+  // Persist in-progress form per (user, source) so progress isn't lost on
+  // accidental close, refresh, navigation, or browser crash.
+  const draftKey = user?.id ? `vehicle-request:${user.id}:${source ?? "default"}` : null;
+  const initialWithPrefill = useMemo(() => ({
     ...initialForm,
     ...(prefill?.purpose ? { purpose: String(prefill.purpose) } : {}),
     ...(prefill?.departure_place ? { departure_place: String(prefill.departure_place) } : {}),
     ...(prefill?.destination ? { destination: String(prefill.destination) } : {}),
-  }));
+  }), [prefill?.purpose, prefill?.departure_place, prefill?.destination]);
+
+  const {
+    values: form,
+    setValues: setForm,
+    restoredAt,
+    clear: clearDraft,
+  } = useFormDraft<typeof initialForm>(draftKey, initialWithPrefill);
+
+  // Date fields are stored as ISO strings in localStorage; rehydrate to Date
+  // objects after restore so the date pickers render correctly.
+  useEffect(() => {
+    setForm((prev) => {
+      const next: any = { ...prev };
+      let changed = false;
+      for (const k of ["date", "start_date", "end_date"] as const) {
+        const v = (prev as any)[k];
+        if (typeof v === "string" && v) {
+          const d = new Date(v);
+          if (!isNaN(d.getTime())) { next[k] = d; changed = true; }
+        }
+      }
+      return changed ? next : prev;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restoredAt]);
+
   // Super-admin only: file the request on behalf of another user or driver
   const [onBehalfOf, setOnBehalfOf] = useState<{ id: string; name: string; email: string; type: "user" | "driver"; driverId?: string } | null>(null);
   const [userPickerOpen, setUserPickerOpen] = useState(false);
