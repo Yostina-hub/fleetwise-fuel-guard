@@ -132,6 +132,13 @@ export interface BaseField {
   maxRows?: number;
   /** Section / repeater children. */
   fields?: BaseField[];
+  /** For `location` fields — sibling keys to write the lat/lng into.
+   *  Defaults to `<key>_lat` / `<key>_lng` if not set. Locked by legacy contracts. */
+  latKey?: string;
+  lngKey?: string;
+  /** For `pool` fields — sibling key whose value filters the dynamic options
+   *  by `fleet_pools.category`. Defaults to `pool_category`. */
+  filterByKey?: string;
 }
 
 // ---------- Form-level settings ------------------------------------------
