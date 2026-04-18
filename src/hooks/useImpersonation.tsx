@@ -27,7 +27,7 @@ export function ImpersonationProvider({ children }: { children: ReactNode }) {
   // We talk to the *real* super_admin via realUser/realRoles — the AuthContext
   // override mechanism makes user/roles reflect the impersonated user once
   // impersonation starts, so we must not loop on those.
-  const { realUser, realRoles, _setImpersonationOverride } = useAuthContext();
+  const { realUser, realRoles, loading: authLoading, _setImpersonationOverride } = useAuthContext();
   const location = useLocation();
   const queryClient = useQueryClient();
   // Persist across full-page navigations (sandbox sometimes does hard nav).
