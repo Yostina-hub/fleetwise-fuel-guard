@@ -293,7 +293,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
       onOpenChange(false);
-      setForm(initialForm);
+      setForm(initialWithPrefill);
+      clearDraft();
       setOnBehalfOf(null);
       onSubmitted?.({ id: data?.id });
     },
