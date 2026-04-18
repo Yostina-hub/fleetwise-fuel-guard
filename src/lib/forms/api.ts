@@ -3,6 +3,12 @@
  * =================================
  * Thin wrappers around the `forms`, `form_versions`, and `form_submissions`
  * tables. All hooks scope to the current organization.
+ *
+ * Schema mapping (matches Phase-1 migration):
+ *   forms.is_archived              → status: "active" | "archived"
+ *   forms.current_published_version_id  → resolved separately
+ *   form_versions.status           → "draft" | "published" | "archived"
+ *   form_versions.version_number   → version
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,24 +24,25 @@ export interface FormRow {
   name: string;
   description: string | null;
   category: string | null;
-  status: "active" | "archived";
-  current_version: number | null;
+  current_published_version_id: string | null;
+  is_archived: boolean;
+  archived_at: string | null;
+  created_by: string;
   created_at: string;
   updated_at: string;
-  created_by: string | null;
 }
 
 export interface FormVersionRow {
   id: string;
   form_id: string;
   organization_id: string;
-  version: number;
-  is_draft: boolean;
-  is_published: boolean;
+  version_number: number;
+  status: "draft" | "published" | "archived";
   schema: FormSchema;
   settings: FormSettings;
   published_at: string | null;
   published_by: string | null;
+  created_by: string;
   created_at: string;
   updated_at: string;
 }
@@ -45,11 +52,16 @@ export interface FormSubmissionRow {
   form_id: string;
   form_version_id: string;
   organization_id: string;
-  data: Record<string, any>;
-  submitted_by: string | null;
+  submitted_by: string;
+  vehicle_id: string | null;
+  driver_id: string | null;
   workflow_instance_id: string | null;
   workflow_task_id: string | null;
+  data: Record<string, any>;
+  status: "draft" | "submitted";
+  submitted_at: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 const QK = {
@@ -61,6 +73,14 @@ const QK = {
     ["forms", "published", orgId, formKey] as const,
   submissions: (formId: string) => ["forms", formId, "submissions"] as const,
 };
+
+function normalizeVersion(v: any): FormVersionRow {
+  return {
+    ...v,
+    schema: (v.schema ?? EMPTY_SCHEMA) as FormSchema,
+    settings: (v.settings ?? EMPTY_SETTINGS) as FormSettings,
+  } as FormVersionRow;
+}
 
 // ---------- List forms ---------------------------------------------------
 
@@ -74,7 +94,7 @@ export function useFormsList(organizationId?: string | null, includeArchived = f
         .select("*")
         .eq("organization_id", organizationId)
         .order("updated_at", { ascending: false });
-      if (!includeArchived) q = q.eq("status", "active");
+      if (!includeArchived) q = q.eq("is_archived", false);
       const { data, error } = await q;
       if (error) throw error;
       return (data ?? []) as FormRow[];
@@ -109,15 +129,10 @@ export function useFormDraftVersion(formId?: string | null) {
         .from("form_versions")
         .select("*")
         .eq("form_id", formId)
-        .eq("is_draft", true)
+        .eq("status", "draft")
         .maybeSingle();
       if (error) throw error;
-      if (!data) return null;
-      return {
-        ...data,
-        schema: (data.schema ?? EMPTY_SCHEMA) as FormSchema,
-        settings: (data.settings ?? EMPTY_SETTINGS) as FormSettings,
-      } as FormVersionRow;
+      return data ? normalizeVersion(data) : null;
     },
   });
 }
@@ -131,9 +146,9 @@ export function useFormVersions(formId?: string | null) {
         .from("form_versions")
         .select("*")
         .eq("form_id", formId)
-        .order("version", { ascending: false });
+        .order("version_number", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as FormVersionRow[];
+      return (data ?? []).map(normalizeVersion);
     },
   });
 }
@@ -149,27 +164,18 @@ export function usePublishedFormByKey(formKey?: string | null, organizationId?: 
         .select("*")
         .eq("organization_id", organizationId)
         .eq("key", formKey)
-        .eq("status", "active")
+        .eq("is_archived", false)
         .maybeSingle();
       if (e1) throw e1;
-      if (!form?.current_version) return null;
+      if (!form?.current_published_version_id) return null;
       const { data: ver, error: e2 } = await (supabase as any)
         .from("form_versions")
         .select("*")
-        .eq("form_id", form.id)
-        .eq("version", form.current_version)
-        .eq("is_published", true)
+        .eq("id", form.current_published_version_id)
         .maybeSingle();
       if (e2) throw e2;
       if (!ver) return null;
-      return {
-        form: form as FormRow,
-        version: {
-          ...ver,
-          schema: (ver.schema ?? EMPTY_SCHEMA) as FormSchema,
-          settings: (ver.settings ?? EMPTY_SETTINGS) as FormSettings,
-        } as FormVersionRow,
-      };
+      return { form: form as FormRow, version: normalizeVersion(ver) };
     },
   });
 }
@@ -189,6 +195,7 @@ export function useCreateForm() {
   return useMutation({
     mutationFn: async (input: CreateFormInput): Promise<FormRow> => {
       const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
       const { data: form, error } = await (supabase as any)
         .from("forms")
         .insert({
@@ -196,22 +203,20 @@ export function useCreateForm() {
           key: input.key,
           name: input.name,
           description: input.description ?? null,
-          category: input.category ?? null,
-          status: "active",
-          created_by: user?.id ?? null,
+          category: input.category ?? "general",
+          created_by: user.id,
         })
         .select()
         .single();
       if (error) throw error;
-      // Seed an empty draft (v1).
+      // Seed an empty draft (version_number auto-set by trigger).
       const { error: e2 } = await (supabase as any).from("form_versions").insert({
         form_id: form.id,
         organization_id: input.organization_id,
-        version: 1,
-        is_draft: true,
-        is_published: false,
+        status: "draft",
         schema: EMPTY_SCHEMA,
         settings: EMPTY_SETTINGS,
+        created_by: user.id,
       });
       if (e2) throw e2;
       return form as FormRow;
@@ -235,10 +240,9 @@ export function useSaveDraft() {
         .update({
           schema: input.schema,
           settings: input.settings,
-          updated_at: new Date().toISOString(),
         })
         .eq("form_id", input.formId)
-        .eq("is_draft", true);
+        .eq("status", "draft");
       if (error) throw error;
     },
     onSuccess: (_d, vars) => {
@@ -247,15 +251,50 @@ export function useSaveDraft() {
   });
 }
 
+/**
+ * Publish flow:
+ *   1. Promote the current draft to published (publish trigger updates the form pointer).
+ *   2. Create a fresh empty draft seeded from the just-published schema.
+ */
 export function usePublishDraft() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (formId: string) => {
-      const { data, error } = await (supabase as any).rpc("publish_form_draft", {
-        _form_id: formId,
-      });
-      if (error) throw error;
-      return data as number;
+    mutationFn: async (formId: string): Promise<number> => {
+      // Read the current draft.
+      const { data: draft, error: e1 } = await (supabase as any)
+        .from("form_versions")
+        .select("*")
+        .eq("form_id", formId)
+        .eq("status", "draft")
+        .maybeSingle();
+      if (e1) throw e1;
+      if (!draft) throw new Error("No draft to publish");
+
+      // Promote to published. Trigger updates forms.current_published_version_id.
+      const { data: pub, error: e2 } = await (supabase as any)
+        .from("form_versions")
+        .update({ status: "published" })
+        .eq("id", draft.id)
+        .select()
+        .single();
+      if (e2) throw e2;
+
+      // Create a new draft cloned from the just-published version.
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const { error: e3 } = await (supabase as any)
+        .from("form_versions")
+        .insert({
+          form_id: formId,
+          organization_id: draft.organization_id,
+          status: "draft",
+          schema: draft.schema,
+          settings: draft.settings,
+          created_by: user.id,
+        });
+      if (e3) throw e3;
+
+      return pub.version_number as number;
     },
     onSuccess: (_d, formId) => {
       qc.invalidateQueries({ queryKey: QK.form(formId) });
@@ -272,7 +311,7 @@ export function useArchiveForm() {
     mutationFn: async (formId: string) => {
       const { error } = await (supabase as any)
         .from("forms")
-        .update({ status: "archived" })
+        .update({ is_archived: true })
         .eq("id", formId);
       if (error) throw error;
     },
@@ -286,7 +325,7 @@ export function useUnarchiveForm() {
     mutationFn: async (formId: string) => {
       const { error } = await (supabase as any)
         .from("forms")
-        .update({ status: "active" })
+        .update({ is_archived: false, archived_at: null })
         .eq("id", formId);
       if (error) throw error;
     },
@@ -324,10 +363,13 @@ export function useSubmitForm() {
       formVersionId: string;
       organizationId: string;
       data: Record<string, any>;
+      vehicleId?: string | null;
+      driverId?: string | null;
       workflowInstanceId?: string | null;
       workflowTaskId?: string | null;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
       const { data, error } = await (supabase as any)
         .from("form_submissions")
         .insert({
@@ -335,9 +377,13 @@ export function useSubmitForm() {
           form_version_id: input.formVersionId,
           organization_id: input.organizationId,
           data: input.data,
-          submitted_by: user?.id ?? null,
+          submitted_by: user.id,
+          vehicle_id: input.vehicleId ?? null,
+          driver_id: input.driverId ?? null,
           workflow_instance_id: input.workflowInstanceId ?? null,
           workflow_task_id: input.workflowTaskId ?? null,
+          status: "submitted",
+          submitted_at: new Date().toISOString(),
         })
         .select()
         .single();
