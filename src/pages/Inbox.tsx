@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
-import { Inbox as InboxIcon, Loader2 } from "lucide-react";
+import { Inbox as InboxIcon, Loader2, Menu, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,6 +37,10 @@ export default function Inbox() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selection, setSelection] = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
+
+  // Panel visibility (hamburger toggles)
+  const [showFilters, setShowFilters] = useState(true);
+  const [showContext, setShowContext] = useState(true);
 
   // Current user (for "Me" scope)
   const { data: currentUserId } = useQuery({
@@ -384,6 +388,16 @@ export default function Inbox() {
         {/* Top bar */}
         <header className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border bg-card/50 backdrop-blur-sm">
           <div className="flex items-center gap-3 min-w-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 shrink-0"
+              onClick={() => setShowFilters((v) => !v)}
+              title={showFilters ? "Hide filters" : "Show filters"}
+              aria-label="Toggle filters"
+            >
+              <Menu className="h-4 w-4" />
+            </Button>
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
               <InboxIcon className="h-4 w-4" />
             </div>
@@ -400,21 +414,33 @@ export default function Inbox() {
                 {counts.breach} overdue
               </Badge>
             )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => setShowContext((v) => !v)}
+              title={showContext ? "Hide details" : "Show details"}
+              aria-label="Toggle details panel"
+            >
+              {showContext ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+            </Button>
           </div>
         </header>
 
         <div className="flex-1 flex overflow-hidden relative">
           {/* Left: filters */}
-          <TaskFilters
-            status={status} setStatus={setStatus}
-            scope={scope} setScope={setScope}
-            search={search} setSearch={setSearch}
-            workflowFilter={workflowFilter} setWorkflowFilter={setWorkflowFilter}
-            roleFilter={roleFilter} setRoleFilter={setRoleFilter}
-            slaFilter={slaFilter} setSlaFilter={setSlaFilter}
-            tasks={rawTasks}
-            counts={counts}
-          />
+          {showFilters && (
+            <TaskFilters
+              status={status} setStatus={setStatus}
+              scope={scope} setScope={setScope}
+              search={search} setSearch={setSearch}
+              workflowFilter={workflowFilter} setWorkflowFilter={setWorkflowFilter}
+              roleFilter={roleFilter} setRoleFilter={setRoleFilter}
+              slaFilter={slaFilter} setSlaFilter={setSlaFilter}
+              tasks={rawTasks}
+              counts={counts}
+            />
+          )}
 
           {/* Middle: list */}
           <main className="flex-1 flex flex-col overflow-hidden border-r border-border">
@@ -449,13 +475,15 @@ export default function Inbox() {
           </main>
 
           {/* Right: context panel (form_key path opens its own dialog instead) */}
-          <TaskContextPanel
-            task={selected && !selected.form_key ? selected : null}
-            organizationId={organizationId}
-            onClose={() => setSelectedId(null)}
-            onSubmit={submit}
-            submitting={submitting}
-          />
+          {showContext && (
+            <TaskContextPanel
+              task={selected && !selected.form_key ? selected : null}
+              organizationId={organizationId}
+              onClose={() => setSelectedId(null)}
+              onSubmit={submit}
+              submitting={submitting}
+            />
+          )}
         </div>
       </div>
 
