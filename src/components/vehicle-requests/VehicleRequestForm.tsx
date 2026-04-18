@@ -22,6 +22,12 @@ interface VehicleRequestFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   source?: string;
+  /** When true, render inline (no outer Dialog) — used by the unified FormRenderer. */
+  embedded?: boolean;
+  /** Optional prefill values (e.g. from workflow context). Only basic fields are mapped. */
+  prefill?: Record<string, any>;
+  /** Called after a successful submission with the created request id (embedded mode). */
+  onSubmitted?: (result: { id: string }) => void;
 }
 
 const POOL_HIERARCHY: Record<string, string[]> = {
@@ -55,11 +61,16 @@ const initialForm = {
   project_number: "",
 };
 
-export const VehicleRequestForm = ({ open, onOpenChange, source }: VehicleRequestFormProps) => {
+export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefill, onSubmitted }: VehicleRequestFormProps) => {
   const { t } = useTranslation();
   const { organizationId, isSuperAdmin } = useOrganization();
   const queryClient = useQueryClient();
-  const [form, setForm] = useState(initialForm);
+  const [form, setForm] = useState(() => ({
+    ...initialForm,
+    ...(prefill?.purpose ? { purpose: String(prefill.purpose) } : {}),
+    ...(prefill?.departure_place ? { departure_place: String(prefill.departure_place) } : {}),
+    ...(prefill?.destination ? { destination: String(prefill.destination) } : {}),
+  }));
   // Super-admin only: file the request on behalf of another user or driver
   const [onBehalfOf, setOnBehalfOf] = useState<{ id: string; name: string; email: string; type: "user" | "driver"; driverId?: string } | null>(null);
   const [userPickerOpen, setUserPickerOpen] = useState(false);
@@ -239,7 +250,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source }: VehicleReques
 
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       toast.success(
         isSuperAdmin && onBehalfOf
           ? `Vehicle request submitted on behalf of ${onBehalfOf.name}`
@@ -250,6 +261,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source }: VehicleReques
       onOpenChange(false);
       setForm(initialForm);
       setOnBehalfOf(null);
+      onSubmitted?.({ id: data?.id });
     },
     onError: (err: any) => toast.error(err.message),
   });
@@ -263,9 +275,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source }: VehicleReques
   const update = <K extends keyof typeof initialForm>(key: K, val: (typeof initialForm)[K]) =>
     setForm(f => ({ ...f, [key]: val }));
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+  const body = (
+    <>
+      {!embedded && (
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Car className="w-5 h-5 text-primary" />
@@ -273,6 +285,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source }: VehicleReques
           </DialogTitle>
           <DialogDescription>Submit a vehicle request. Fields adapt based on operation type.</DialogDescription>
         </DialogHeader>
+      )}
 
         {/* Super-admin: file on behalf of any user */}
         {isSuperAdmin && (
@@ -558,6 +571,21 @@ export const VehicleRequestForm = ({ open, onOpenChange, source }: VehicleReques
           </div>
         </div>
 
+      {embedded ? (
+        <div className="flex justify-between pt-4 border-t mt-4">
+          <Button variant="outline" onClick={() => { setForm(initialForm); }}>Clear</Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>{t('common.cancel', 'Cancel')}</Button>
+            <Button
+              onClick={() => createMutation.mutate()}
+              disabled={!canSubmit || createMutation.isPending}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {createMutation.isPending ? "Submitting..." : "Create Request"}
+            </Button>
+          </div>
+        </div>
+      ) : (
         <DialogFooter className="flex justify-between sm:justify-between">
           <Button variant="outline" onClick={() => { setForm(initialForm); }}>Clear</Button>
           <div className="flex gap-2">
@@ -571,6 +599,18 @@ export const VehicleRequestForm = ({ open, onOpenChange, source }: VehicleReques
             </Button>
           </div>
         </DialogFooter>
+      )}
+    </>
+  );
+
+  if (embedded) {
+    return <div className="space-y-4">{body}</div>;
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        {body}
       </DialogContent>
     </Dialog>
   );

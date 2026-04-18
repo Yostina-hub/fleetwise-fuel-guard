@@ -48,6 +48,7 @@ import {
   type BaseField, type FormSchema, type FormSettings,
   EMPTY_SETTINGS, isInputField, walkFields,
 } from "@/lib/forms/schema";
+import { getLegacyFormEntry, RenderLegacyForm } from "@/components/forms/legacyFormRegistry";
 
 /** Default sibling keys for `location` field type. */
 const locKeys = (f: BaseField) => ({
@@ -63,6 +64,11 @@ interface FormRendererProps {
   submitting?: boolean;
   onSubmit: (values: Record<string, any>) => Promise<void> | void;
   onCancel?: () => void;
+  /**
+   * Stable form key (`forms.key`). When this matches a registered legacy form,
+   * the renderer short-circuits to the legacy component for full feature parity.
+   */
+  formKey?: string | null;
 }
 
 function defaultRow(rowFields: BaseField[]): Record<string, any> {
@@ -94,7 +100,31 @@ function defaultValuesFromSchema(
   return out;
 }
 
-export function FormRenderer({
+export function FormRenderer(props: FormRendererProps) {
+  // Short-circuit: if this form key is bound to a legacy component, render
+  // the legacy form inline instead of the JSON-schema renderer. This keeps
+  // 100% feature parity (pickers, RPC routing, SMS, "on behalf of", etc.).
+  const legacyEntry = getLegacyFormEntry(props.formKey);
+  if (legacyEntry) {
+    return (
+      <RenderLegacyForm
+        entry={legacyEntry}
+        prefill={props.prefill}
+        onCancel={props.onCancel}
+        onSubmitted={(result) => {
+          void props.onSubmit({
+            legacy_form_key: props.formKey,
+            legacy_record_id: result.id,
+            ...props.prefill,
+          });
+        }}
+      />
+    );
+  }
+  return <FormRendererInner {...props} />;
+}
+
+function FormRendererInner({
   schema, settings, prefill, draftKey, submitting, onSubmit, onCancel,
 }: FormRendererProps) {
   const cfg = { ...EMPTY_SETTINGS, ...(settings ?? {}) };

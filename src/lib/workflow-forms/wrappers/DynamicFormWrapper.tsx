@@ -62,6 +62,7 @@ export default function DynamicFormWrapper({ formKey, prefill, onSubmitted, onCa
           <FormRenderer
             schema={q.data.version.schema}
             settings={q.data.version.settings}
+            formKey={q.data.form.key ?? formKey}
             prefill={prefill}
             draftKey={`workflow_form:${q.data.form.id}:${prefill?.workflow_task_id ?? "new"}`}
             submitting={submit.isPending}
