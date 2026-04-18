@@ -46,65 +46,13 @@ export const vehicleHandoverConfig: WorkflowConfig = {
   icon: ClipboardCheck,
   initialStage: "draft",
   requiresVehicle: true,
-  intakeFormChoices: [
-    {
-      key: "vehicle_submission_form",
-      label: "Vehicle Submission Form (EFM/FA/03)",
-      description:
-        "Standard Ethio Telecom Facility & Fleet handover form — captures vehicle identity, 30-line accessory checklist, condition narrative, and three-party sign-off.",
-      prefill: { form_template: "EFM_FA_03" },
-    },
-  ],
-  intakeFields: [
-    // ---- Workflow-level metadata (kept above the printed form) ----
-    { key: "title", label: "Handover title", type: "text", required: true,
-      placeholder: "Handover — ETB-3-12345 to driver Abebe" },
-    { key: "__vehicle_id", label: "Vehicle", type: "vehicle", required: true },
-    { key: "__vehicle_summary", label: "Vehicle information (auto-fetched)", type: "vehicle_autofill_summary" },
-
-    // ---- Header band of EFM/FA/03 ----
-    { key: "third_party_inspection_expiry", label: "3rd-party inspection expiry date", type: "date",
-      helpText: "Auto-filled from insurance record." },
-    { key: "annual_inspection_expiry", label: "…and annual inspection expiry date", type: "date",
-      helpText: "Auto-filled from registration record." },
-    { key: "ref_no", label: "Ref No.", type: "text", placeholder: "EFM/FA/03-#####" },
-    { key: "form_date", label: "Date", type: "date", required: true },
-
-    // ---- Vehicle identity (numbered 1..8 exactly like the paper form) ----
-    { key: "vehicle_type", label: "1. Type of vehicle", type: "text",
-      helpText: "Auto-filled from fleet registry — override if needed." },
-    { key: "vehicle_model", label: "2. Model", type: "text", helpText: "Auto-filled from fleet registry." },
-    { key: "chassis_no", label: "3. Chassis No.", type: "text", helpText: "Auto-filled from fleet registry (VIN)." },
-    { key: "engine_no", label: "4. Engine No.", type: "text" },
-    { key: "plate_no", label: "5. Plate No.", type: "text", helpText: "Auto-filled from fleet registry." },
-    { key: "passenger_load_capacity", label: "6. Passenger / Load capacity", type: "text",
-      helpText: "Auto-filled from fleet registry." },
-    { key: "km_reading", label: "7. KM reading", type: "number", required: true,
-      helpText: "Auto-filled from latest odometer; update to actual reading at handover." },
-    { key: "fuel_amount", label: "8. Fuel amount (L)", type: "number" },
-
-    // ---- 30-line material checklist (Serial No / List of material / QTY) ----
-    { key: "checklist_lines", label: "Fleet Safety, Comfort, Accessories and Comfort Material Lists",
-      type: "handover_lines_30",
-      helpText: "30 numbered slots — fill material name and quantity for each item handed over (matches paper form)." },
-
-    // ---- Current Over all Vehicle Condition ----
-    { key: "overall_vehicle_condition", label: "Current Over all Vehicle Condition", type: "textarea",
-      helpText: "Body, interior, mechanical, tires, lights, glass, etc." },
-
-    // ---- Three-party identity (sign-off itself happens in stages 1.3-1.5) ----
-    { key: "delivered_by_name", label: "Delivered by — Name", type: "text", required: true,
-      helpText: "Auto-filled from currently assigned driver." },
-    { key: "delivered_by_id", label: "Delivered by — ID No.", type: "text" },
-    { key: "received_by_driver_id", label: "Received by — Driver", type: "driver", required: true,
-      helpText: "Selecting a driver here updates the vehicle's assigned driver when the handover is archived." },
-    { key: "received_by_name", label: "Received by — Name", type: "text", required: true },
-    { key: "received_by_id", label: "Received by — ID No.", type: "text" },
-    { key: "witness_name", label: "Witness — Name", type: "text" },
-    { key: "witness_id", label: "Witness — ID No.", type: "text" },
-
-    { key: "description", label: "Notes / context (internal)", type: "textarea" },
-  ],
+  // Intake is now rendered by the centralized Forms module.
+  // Editable in /forms under the "Vehicle Handover (EFM/FA/03)" template
+  // (key: vehicle_handover, seeded per organization). The DynamicFormWrapper
+  // resolves the published version at runtime, so changes published in /forms
+  // take effect immediately for new handovers.
+  intakeFormKey: "user_form:vehicle_handover",
+  intakeFields: [],
   lanes: [fleetOpsLane, deliveredByLane, receivedByLane, witnessLane, archiveLane],
   stages: [
     // 1.1 Draft (form filed; awaiting physical inspection)
