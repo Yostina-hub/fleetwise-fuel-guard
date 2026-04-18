@@ -51,6 +51,10 @@ const ROLES = [
 ];
 
 export const HumanTaskEditor = ({ config, isApproval, onChange }: Props) => {
+  const { organizationId } = useOrganization();
+  const userFormsQ = useFormsList(organizationId, false);
+  const userForms = (userFormsQ.data ?? []).filter((f) => !!f.current_published_version_id);
+
   const fields: FormField[] = Array.isArray(config?.fields) ? config.fields : [];
   const actions: TaskAction[] = Array.isArray(config?.actions)
     ? config.actions
