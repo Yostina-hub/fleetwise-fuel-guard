@@ -217,11 +217,16 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
               ) : activeAction ? (
                 <div className="space-y-3">
                   <p className="text-sm font-semibold">{activeAction.label}</p>
+                  <DraftStatus
+                    restoredAt={draftRestoredAt}
+                    savedAt={draftSavedAt}
+                    onClear={clearActionDraft}
+                  />
                   {activeAction.fields?.length ? (
                     <WorkflowFieldset
                       fields={activeAction.fields}
                       values={actionValues}
-                      onChange={(k, v) => setActionValues((p) => ({ ...p, [k]: v }))}
+                      onChange={(k, v) => setActionField(k, v)}
                     />
                   ) : null}
                   <div>
@@ -244,8 +249,8 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
                       size="sm"
                       variant="ghost"
                       onClick={() => {
+                        // Just step back — keep the draft so the user can come back.
                         setActiveAction(null);
-                        setActionValues({});
                         setActionNotes("");
                       }}
                     >
