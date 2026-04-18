@@ -41,6 +41,8 @@ interface Props {
   invalidateKeys?: string[][];
   /** Optional callback fired after a successful fuel request submission. */
   onSubmitted?: (payload: { fuel_request_id?: string }) => void;
+  /** When true, render inline without the Dialog wrapper — used by the unified Forms renderer. */
+  embedded?: boolean;
 }
 
 interface FormData {
@@ -233,6 +235,7 @@ export const FuelRequestFormDialog = ({
   source = "manual",
   invalidateKeys = [["fuel-requests"]],
   onSubmitted,
+  embedded = false,
 }: Props) => {
   const { organizationId } = useOrganization();
   const { vehicles } = useVehicles();
@@ -415,14 +418,15 @@ export const FuelRequestFormDialog = ({
   const lockDriver = !!prefill?.lockDriver;
   const lockType = !!prefill?.request_type;
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh]">
+  const body = (
+    <>
+      {!embedded && (
         <DialogHeader>
           <DialogTitle>New Fuel Request</DialogTitle>
           <DialogDescription>Submit a fuel clearance request for vehicle or generator</DialogDescription>
         </DialogHeader>
-        <ScrollArea className="max-h-[75vh] pr-2">
+      )}
+      <ScrollArea className={embedded ? "max-h-[70vh] pr-2" : "max-h-[75vh] pr-2"}>
           <div className="space-y-4">
             {/* Work Request Header */}
             <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
@@ -777,7 +781,16 @@ export const FuelRequestFormDialog = ({
               <Textarea value={form.notes} onChange={e => set("notes", e.target.value)} rows={2} />
             </div>
           </div>
-        </ScrollArea>
+      </ScrollArea>
+      {embedded ? (
+        <div className="flex justify-end gap-2 pt-4 border-t mt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={() => createMutation.mutate()} disabled={createMutation.isPending}>
+            {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            Submit Request
+          </Button>
+        </div>
+      ) : (
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={() => createMutation.mutate()} disabled={createMutation.isPending}>
@@ -785,6 +798,18 @@ export const FuelRequestFormDialog = ({
             Submit Request
           </Button>
         </DialogFooter>
+      )}
+    </>
+  );
+
+  if (embedded) {
+    return <div className="space-y-4">{body}</div>;
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl max-h-[90vh]">
+        {body}
       </DialogContent>
     </Dialog>
   );
