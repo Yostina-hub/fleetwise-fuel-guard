@@ -7,7 +7,7 @@
  */
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Pencil, Archive, ArchiveRestore, FileText, Search, Loader2, CheckCircle2, Inbox, ListChecks } from "lucide-react";
+import { Plus, Pencil, Archive, ArchiveRestore, FileText, Search, Loader2, CheckCircle2, Inbox, ListChecks, LibraryBig, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -22,11 +22,13 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useOrganization } from "@/hooks/useOrganization";
 import {
-  useFormsList, useCreateForm, useArchiveForm, useUnarchiveForm,
+  useFormsList, useCreateForm, useArchiveForm, useUnarchiveForm, useCloneTemplate,
 } from "@/lib/forms/api";
 import { keyFromLabel } from "@/lib/forms/fieldCatalog";
+import { FORM_TEMPLATES, type FormTemplate } from "@/lib/forms/templates";
 
 export default function Forms() {
   const navigate = useNavigate();
@@ -61,7 +63,10 @@ export default function Forms() {
               Build, version, and publish dynamic forms used in workflows and SOPs.
             </p>
           </div>
-          <CreateFormDialog />
+          <div className="flex items-center gap-2">
+            <TemplateLibraryDialog />
+            <CreateFormDialog />
+          </div>
         </div>
 
         <Card>
