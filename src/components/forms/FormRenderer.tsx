@@ -202,6 +202,16 @@ function FormRendererInner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(values), JSON.stringify(schema)]);
 
+  // Wait until all enabled entity queries have settled before rendering Selects.
+  // Prevents Radix Select BubbleSelect remount → `removeChild` DOM crash.
+  const entitiesReady =
+    (!needs.has("vehicle") || !vehicles.isLoading) &&
+    (!needs.has("driver") || !drivers.isLoading) &&
+    (!needs.has("asset") || !assets.isLoading) &&
+    (!needs.has("geofence") || !geofences.isLoading) &&
+    (!needs.has("user") || !users.isLoading) &&
+    (!needs.has("pool") || !pools.isLoading);
+
   // Build a flat list of currently-visible top-level fields for validation.
   const visibleTopLevel = useMemo(
     () => schema.fields.filter((f) => isVisible(f.visibleWhen, values)),
@@ -329,7 +339,7 @@ function FormRendererInner({
             <SelectTrigger {...common}><SelectValue placeholder={`Select ${field.type}…`} /></SelectTrigger>
             <SelectContent>
               {opts.length === 0 ? (
-                <div className="px-2 py-1.5 text-xs text-muted-foreground">No options</div>
+                <SelectItem value="__none__" disabled>No options</SelectItem>
               ) : opts.filter((o: any) => o.value != null && o.value !== "").map((o: any) => (
                 <SelectItem key={o.value} value={String(o.value)}>{o.label}</SelectItem>
               ))}
@@ -390,7 +400,7 @@ function FormRendererInner({
             </SelectTrigger>
             <SelectContent>
               {opts.length === 0 ? (
-                <div className="px-2 py-1.5 text-xs text-muted-foreground">No pools available</div>
+                <SelectItem value="__none__" disabled>No pools available</SelectItem>
               ) : opts.filter((name: string) => !!name).map((name: string) => (
                 <SelectItem key={name} value={name}>{name}</SelectItem>
               ))}
@@ -514,6 +524,14 @@ function FormRendererInner({
       </div>
     );
   };
+
+  if (!entitiesReady) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
