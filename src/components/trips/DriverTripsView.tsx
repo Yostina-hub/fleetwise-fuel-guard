@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import DriverTripHistory from "@/components/driver-portal/DriverTripHistory";
-import { VehicleRequestForm } from "@/components/vehicle-requests/VehicleRequestForm";
+import { UnifiedVehicleRequestDialog } from "@/components/vehicle-requests/UnifiedVehicleRequestDialog";
 
 interface DriverTripsViewProps {
   driverId?: string | null;
@@ -344,7 +344,7 @@ const DriverTripsView = ({ driverId, driverName }: DriverTripsViewProps) => {
         </TabsContent>
       </Tabs>
 
-      <VehicleRequestForm
+      <UnifiedVehicleRequestDialog
         open={showVehicleReq}
         onOpenChange={setShowVehicleReq}
         source="driver_portal"

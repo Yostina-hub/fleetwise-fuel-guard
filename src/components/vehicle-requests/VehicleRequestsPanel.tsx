@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ClipboardList, Plus, Clock, CheckCircle, Truck, Eye, LogIn, Shuffle, Search } from "lucide-react";
-import { VehicleRequestForm } from "@/components/vehicle-requests/VehicleRequestForm";
+import { UnifiedVehicleRequestDialog } from "@/components/vehicle-requests/UnifiedVehicleRequestDialog";
 import { VehicleRequestApprovalFlow } from "@/components/vehicle-requests/VehicleRequestApprovalFlow";
 import { DriverCheckInDialog } from "@/components/vehicle-requests/DriverCheckInDialog";
 import { CrossPoolAssignmentDialog } from "@/components/vehicle-requests/CrossPoolAssignmentDialog";
@@ -228,7 +228,7 @@ export const VehicleRequestsPanel = () => {
       </Card>
 
       {/* Dialogs */}
-      <VehicleRequestForm open={showCreate} onOpenChange={setShowCreate} />
+      <UnifiedVehicleRequestDialog open={showCreate} onOpenChange={setShowCreate} />
 
       {showDetail && (
         <Dialog open={!!showDetail} onOpenChange={() => setShowDetail(null)}>

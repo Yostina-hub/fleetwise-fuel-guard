@@ -21,7 +21,7 @@ import DriverQuickStats from "@/components/driver-portal/DriverQuickStats";
 import DriverQuickActions from "@/components/driver-portal/DriverQuickActions";
 import { FuelRequestFormDialog } from "@/components/fuel/FuelRequestFormDialog";
 import { VehicleInspectionFormDialog } from "@/components/maintenance/VehicleInspectionFormDialog";
-import { VehicleRequestForm } from "@/components/vehicle-requests/VehicleRequestForm";
+import { UnifiedVehicleRequestDialog } from "@/components/vehicle-requests/UnifiedVehicleRequestDialog";
 import CreateWorkRequestDialog from "@/components/maintenance/CreateWorkRequestDialog";
 import DriverSubmissionsTab from "@/components/driver-portal/DriverSubmissionsTab";
 import DriverTripHistory from "@/components/driver-portal/DriverTripHistory";
@@ -627,7 +627,7 @@ const DriverPortal = () => {
             ["driver-portal-submissions"],
           ]}
         />
-        <VehicleRequestForm
+        <UnifiedVehicleRequestDialog
           open={showVehicle}
           onOpenChange={setShowVehicle}
           source="driver_portal"
