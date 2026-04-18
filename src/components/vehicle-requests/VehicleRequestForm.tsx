@@ -571,6 +571,21 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </div>
         </div>
 
+      {embedded ? (
+        <div className="flex justify-between pt-4 border-t mt-4">
+          <Button variant="outline" onClick={() => { setForm(initialForm); }}>Clear</Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>{t('common.cancel', 'Cancel')}</Button>
+            <Button
+              onClick={() => createMutation.mutate()}
+              disabled={!canSubmit || createMutation.isPending}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {createMutation.isPending ? "Submitting..." : "Create Request"}
+            </Button>
+          </div>
+        </div>
+      ) : (
         <DialogFooter className="flex justify-between sm:justify-between">
           <Button variant="outline" onClick={() => { setForm(initialForm); }}>Clear</Button>
           <div className="flex gap-2">
@@ -584,6 +599,18 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             </Button>
           </div>
         </DialogFooter>
+      )}
+    </>
+  );
+
+  if (embedded) {
+    return <div className="space-y-4">{body}</div>;
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        {body}
       </DialogContent>
     </Dialog>
   );
