@@ -20,8 +20,13 @@ interface Props {
 
 export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
   const { createInstance } = useWorkflow(config);
-  const [values, setValues] = useState<Record<string, any>>({});
   const [chosenFormKey, setChosenFormKey] = useState<string | null>(null);
+
+  // Per-SOP intake draft — restores when re-opening the same "New X" dialog.
+  const draftKey = open ? `sop-intake:${config.type}` : null;
+  const { values, setValues, setField, restoredAt, savedAt, clear } = useFormDraft<
+    Record<string, any>
+  >(draftKey, {});
 
   const intakeFields = config.intakeFields || [];
   const intakeForm = config.intakeFormKey ? getWorkflowForm(config.intakeFormKey) : undefined;
@@ -33,7 +38,6 @@ export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
 
   useEffect(() => {
     if (!open) {
-      setValues({});
       setChosenFormKey(null);
     }
   }, [open]);
