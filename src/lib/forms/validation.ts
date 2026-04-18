@@ -49,7 +49,9 @@ function buildScalar(f: BaseField): ZodTypeAny {
     case "driver":
     case "asset":
     case "geofence":
-    case "user": {
+    case "user":
+    case "location":
+    case "pool": {
       let s = z.string().trim();
       s = applyTextRules(s, f);
       return required ? s.min(1, requiredMsg) : s.optional().or(z.literal(""));
