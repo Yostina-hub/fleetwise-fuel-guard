@@ -329,7 +329,7 @@ function FormRendererInner({
             <SelectTrigger {...common}><SelectValue placeholder={`Select ${field.type}…`} /></SelectTrigger>
             <SelectContent>
               {opts.length === 0 ? (
-                <div className="px-2 py-1.5 text-xs text-muted-foreground">No options</div>
+                <SelectItem value="__none__" disabled>No options</SelectItem>
               ) : opts.filter((o: any) => o.value != null && o.value !== "").map((o: any) => (
                 <SelectItem key={o.value} value={String(o.value)}>{o.label}</SelectItem>
               ))}
