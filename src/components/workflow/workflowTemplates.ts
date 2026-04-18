@@ -1946,6 +1946,227 @@ const TEMPLATES: WorkflowTemplate[] = [
       { id: "vr_e11", source: "vr_rate",target: "vr_log", type: "smoothstep", animated: true, label: "close" },
     ],
   },
+
+  // ═══════════════════════════════════════════════════════════════
+  // FUEL REQUEST — FULL LIFECYCLE (FMG-FR 09)
+  // Mirrors tpl_vehicle_request_full architecture and the current SOP:
+  //   submitted → pending_approval (Authority Matrix)
+  //     → approved → work_order_issued → emoney_initiated → wallet_funded
+  //     → fulfilled → (deviation? justification : auto-clear) → completed
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "tpl_fuel_request_full",
+    name: "Fuel Request (FMG-FR 09)",
+    description:
+      "Full multi-role fuel request lifecycle: requester submission → delegation-matrix approval → fuel work order → e-money transfer → driver wallet funding → fuel dispensing with deviation detection → clearance & completion. Approver is resolved at runtime from the Authority Matrix (scope: fuel_request).",
+    category: "fuel",
+    icon: "⛽",
+    difficulty: "advanced",
+    estimatedSavings: "~25% fuel cost reduction with full audit trail",
+    tags: ["fuel-request", "approval", "delegation-matrix", "e-money", "deviation", "work-order", "lifecycle", "SOP"],
+    nodes: [
+      // 1. Submission (Requester lane)
+      { id: "fr_t1", type: "trigger", position: { x: 400, y: 40 },
+        data: { label: "Fuel Request Submitted", description: "Auto-trigger on low fuel threshold or manual request via the unified fuel form.",
+          icon: "📝", category: "triggers", nodeType: "trigger_event",
+          config: { eventType: "fuel_request_created", lane: "Requester" },
+          status: "idle", isConfigured: true } },
+
+      { id: "fr_h1", type: "action", position: { x: 400, y: 200 },
+        data: { label: "Capture Fuel Details", description: "Requester fills vehicle/generator, fuel type, liters, station, cost center.",
+          icon: "🧑‍💼", category: "actions", nodeType: "human_task",
+          config: {
+            title: "File fuel request",
+            description: "Provide fuel details. Routing happens automatically per the Authority Matrix.",
+            lane: "Requester",
+            allowed_roles: ["driver", "operator", "dispatcher", "operations_manager", "fleet_manager", "fuel_controller"],
+            assignee_role: "operator",
+            form_key: "user_form:fuel_request",
+            actions: [{ id: "submitted", label: "Submit request" }],
+          },
+          status: "idle", isConfigured: true } },
+
+      // 2. Delegation-matrix approval (Approver lane)
+      { id: "fr_a1", type: "action", position: { x: 400, y: 380 },
+        data: { label: "Approval per Delegation Matrix", description: "Approver resolved at runtime from the Authority Matrix (scope: fuel_request, threshold by estimated cost).",
+          icon: "🛡️", category: "actions", nodeType: "approval",
+          config: {
+            title: "Approve fuel request",
+            description: "Decide based on cost threshold and policy. Approver derived from the Authority Matrix.",
+            lane: "Delegation Approver",
+            allowed_roles: ["operations_manager", "fleet_manager", "fuel_controller", "fleet_owner", "org_admin"],
+            assignee_role: "operations_manager",
+            use_delegation_matrix: true,
+            matrix_scope: "fuel_request",
+            matrix_step_order: 1,
+            actions: [
+              { id: "approve", label: "Approve" },
+              { id: "reject", label: "Reject", variant: "destructive" },
+            ],
+            fields: [
+              { key: "liters_approved", label: "Liters approved", type: "number" },
+              { key: "approval_notes", label: "Approval notes", type: "textarea" },
+            ],
+          },
+          status: "idle", isConfigured: true } },
+
+      // Reject branch
+      { id: "fr_rej", type: "action", position: { x: 80, y: 560 },
+        data: { label: "Notify Requester (Rejected)", description: "Send rejection with reason and close the fuel request.",
+          icon: "📧", category: "notifications", nodeType: "notify_email",
+          config: {
+            recipients: "{{request.requester_email}}",
+            template: "Your fuel request {{request.number}} was rejected. Reason: {{approval.rejection_reason}}",
+            lane: "Delegation Approver",
+          },
+          status: "idle", isConfigured: true } },
+
+      // 3. Auto-issue Fuel Work Order (System lane)
+      { id: "fr_wo", type: "action", position: { x: 600, y: 560 },
+        data: { label: "Issue Fuel Work Order", description: "DB function create_fuel_work_order_on_approval auto-creates the FWO with the approved amount.",
+          icon: "📄", category: "data", nodeType: "data_transform",
+          config: {
+            action: "insert",
+            table: "fuel_work_orders",
+            trigger: "auto_on_approval",
+            lane: "System",
+          },
+          status: "idle", isConfigured: true } },
+
+      // 4. E-money initiation (Finance lane)
+      { id: "fr_em1", type: "action", position: { x: 600, y: 740 },
+        data: { label: "Initiate E-Money Transfer", description: "Finance initiates electronic transfer to fund the driver wallet for this fuel purchase.",
+          icon: "💳", category: "actions", nodeType: "integration_webhook",
+          config: {
+            action: "emoney_initiate",
+            amount_source: "estimated_cost",
+            lane: "Finance",
+            allowed_roles: ["fuel_controller", "operations_manager", "org_admin"],
+            assignee_role: "fuel_controller",
+          },
+          status: "idle", isConfigured: true } },
+
+      // 5. Wallet transfer (Finance lane)
+      { id: "fr_em2", type: "action", position: { x: 600, y: 920 },
+        data: { label: "Fund Driver Wallet", description: "Confirm the e-money transfer landed in the driver wallet (wallet_transfer_ref captured).",
+          icon: "👛", category: "actions", nodeType: "integration_webhook",
+          config: {
+            action: "wallet_transfer",
+            target: "driver_wallet",
+            lane: "Finance",
+            allowed_roles: ["fuel_controller", "operations_manager"],
+          },
+          status: "idle", isConfigured: true } },
+
+      // 6. Driver fuel dispensing (Driver lane)
+      { id: "fr_dr1", type: "action", position: { x: 600, y: 1100 },
+        data: { label: "Driver Dispenses Fuel", description: "Driver records actual liters dispensed and current odometer at the approved station.",
+          icon: "⛽", category: "actions", nodeType: "human_task",
+          config: {
+            title: "Record fuel dispensing",
+            description: "Capture actual liters and odometer. Deviation is computed automatically.",
+            lane: "Driver",
+            allowed_roles: ["driver", "fleet_manager", "operations_manager", "fuel_controller"],
+            assignee_role: "driver",
+            actions: [{ id: "fulfill", label: "Mark as fulfilled" }],
+            fields: [
+              { key: "actual_liters", label: "Actual liters dispensed", type: "number", required: true },
+              { key: "actual_cost", label: "Actual cost (ETB)", type: "number" },
+              { key: "current_odometer", label: "Odometer reading (km)", type: "number", required: true },
+              { key: "dispensing_notes", label: "Notes", type: "textarea" },
+            ],
+          },
+          status: "idle", isConfigured: true } },
+
+      // 7. Deviation gate
+      { id: "fr_c1", type: "condition", position: { x: 600, y: 1280 },
+        data: { label: "Deviation > 5%?", description: "DB function detect_fuel_deviation auto-computes |actual − approved| / approved.",
+          icon: "⚠️", category: "conditions", nodeType: "condition_threshold",
+          config: { leftOperand: "abs(deviation_percent)", operator: "greater_than", rightOperand: "5", lane: "System" },
+          status: "idle", isConfigured: true } },
+
+      // 8a. No deviation — auto-clear
+      { id: "fr_clr", type: "action", position: { x: 850, y: 1460 },
+        data: { label: "Auto-Clear Transaction", description: "No significant deviation — clearance_status set to cleared.",
+          icon: "✅", category: "data", nodeType: "data_transform",
+          config: { action: "update", table: "fuel_requests", clearance_status: "cleared", lane: "System" },
+          status: "idle", isConfigured: true } },
+
+      // 8b. Deviation — request justification (Driver / Fleet Ops)
+      { id: "fr_just", type: "action", position: { x: 350, y: 1460 },
+        data: { label: "Justify Deviation", description: "Driver provides justification, fleet operations reviews and approves or escalates.",
+          icon: "🧑‍💼", category: "actions", nodeType: "human_task",
+          config: {
+            title: "Provide deviation justification",
+            description: "Explain why dispensed liters differ from approved amount.",
+            lane: "Driver / Fleet Operations",
+            allowed_roles: ["driver", "operations_manager", "fleet_manager", "fuel_controller"],
+            assignee_role: "driver",
+            actions: [
+              { id: "justify", label: "Submit justification" },
+              { id: "escalate", label: "Escalate", variant: "secondary" },
+            ],
+            fields: [
+              { key: "deviation_justification", label: "Justification", type: "textarea", required: true },
+            ],
+          },
+          status: "idle", isConfigured: true } },
+
+      // 9. Clearance review (Fuel Management lane)
+      { id: "fr_rev", type: "action", position: { x: 350, y: 1640 },
+        data: { label: "Clearance Review", description: "Fuel Management reviews justification and clears or rejects the transaction.",
+          icon: "🔍", category: "actions", nodeType: "approval",
+          config: {
+            title: "Review deviation & clear transaction",
+            description: "Approve to clear, or reject to require corrective action.",
+            lane: "Fuel Management",
+            allowed_roles: ["fuel_controller", "operations_manager", "fleet_manager"],
+            assignee_role: "fuel_controller",
+            use_delegation_matrix: true,
+            matrix_scope: "fuel_clearance",
+            matrix_step_order: 1,
+            actions: [
+              { id: "clear", label: "Clear transaction" },
+              { id: "reject_clearance", label: "Reject", variant: "destructive" },
+            ],
+          },
+          status: "idle", isConfigured: true } },
+
+      // 10. Completion (System lane)
+      { id: "fr_done", type: "action", position: { x: 600, y: 1820 },
+        data: { label: "Complete & Archive", description: "Mark request completed and persist full lifecycle audit record.",
+          icon: "🏁", category: "data", nodeType: "data_log_history",
+          config: { table: "workflow_transitions", lane: "System" },
+          status: "idle", isConfigured: true } },
+    ],
+    edges: [
+      // Submission → approval
+      { id: "fr_e1",  source: "fr_t1",   target: "fr_h1",   type: "smoothstep", animated: true, label: "open" },
+      { id: "fr_e2",  source: "fr_h1",   target: "fr_a1",   type: "smoothstep", animated: true, label: "submitted" },
+
+      // Approve / reject
+      { id: "fr_e3",  source: "fr_a1",   target: "fr_wo",   type: "smoothstep", animated: true, label: "approve" },
+      { id: "fr_e4",  source: "fr_a1",   target: "fr_rej",  type: "smoothstep", animated: true, label: "reject" },
+
+      // Work order → e-money → wallet → driver
+      { id: "fr_e5",  source: "fr_wo",   target: "fr_em1",  type: "smoothstep", animated: true, label: "wo_issued" },
+      { id: "fr_e6",  source: "fr_em1",  target: "fr_em2",  type: "smoothstep", animated: true, label: "emoney_initiated" },
+      { id: "fr_e7",  source: "fr_em2",  target: "fr_dr1",  type: "smoothstep", animated: true, label: "wallet_funded" },
+
+      // Dispense → deviation gate
+      { id: "fr_e8",  source: "fr_dr1",  target: "fr_c1",   type: "smoothstep", animated: true, label: "fulfill" },
+
+      // Deviation branches
+      { id: "fr_e9",  source: "fr_c1",   target: "fr_clr",  sourceHandle: "false", type: "smoothstep", animated: true, label: "OK (≤5%)" },
+      { id: "fr_e10", source: "fr_c1",   target: "fr_just", sourceHandle: "true",  type: "smoothstep", animated: true, label: "Deviation" },
+      { id: "fr_e11", source: "fr_just", target: "fr_rev",  type: "smoothstep", animated: true, label: "justify" },
+
+      // Converge to completion
+      { id: "fr_e12", source: "fr_clr",  target: "fr_done", type: "smoothstep", animated: true, label: "cleared" },
+      { id: "fr_e13", source: "fr_rev",  target: "fr_done", type: "smoothstep", animated: true, label: "clear" },
+      { id: "fr_e14", source: "fr_rej",  target: "fr_done", type: "smoothstep", animated: true, label: "closed" },
+    ],
+  },
 ];
 
 export default TEMPLATES;
