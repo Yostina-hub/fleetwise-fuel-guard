@@ -59,7 +59,9 @@ export const DelegationHistoryTab = () => {
     queryKey: ["delegation-audit-log", organizationId],
     queryFn: async () => {
       if (!organizationId) return [];
-      const { data, error } = await supabase
+
+      // Source 1: explicit delegation_audit_log entries
+      const auditPromise = supabase
         .from("delegation_audit_log")
         .select("*")
         .eq("organization_id", organizationId)
@@ -68,8 +70,39 @@ export const DelegationHistoryTab = () => {
         )
         .order("created_at", { ascending: false })
         .limit(500);
-      if (error) throw error;
-      return data ?? [];
+
+      // Source 2: workflow_transitions that represent delegation routing
+      // (e.g. auto_route via authority/delegation matrix). These are written
+      // by the inbox approval engine instead of delegation_audit_log.
+      const ROUTING_DECISIONS = ["auto_route", "route", "delegate", "substitute", "reroute"];
+      const transitionsPromise = supabase
+        .from("workflow_transitions")
+        .select("id, instance_id, workflow_type, from_stage, to_stage, decision, performed_by, performed_by_name, performed_by_role, notes, created_at")
+        .eq("organization_id", organizationId)
+        .in("decision", ROUTING_DECISIONS)
+        .order("created_at", { ascending: false })
+        .limit(500);
+
+      const [{ data: audit, error: auditErr }, { data: transitions, error: trErr }] =
+        await Promise.all([auditPromise, transitionsPromise]);
+      if (auditErr) throw auditErr;
+      if (trErr) throw trErr;
+
+      const mappedTransitions = (transitions ?? []).map((t: any) => ({
+        id: `wt-${t.id}`,
+        created_at: t.created_at,
+        action: t.decision === "auto_route" ? "route" : t.decision,
+        source_table: t.workflow_type ?? "workflow_transitions",
+        entity_name: t.workflow_type ? `${t.workflow_type} routing` : "Workflow routing",
+        scope: t.workflow_type,
+        summary: `${t.from_stage ?? "—"} → ${t.to_stage ?? "—"}${t.notes ? ` · ${t.notes}` : ""}`,
+        actor_name: t.performed_by_name || t.performed_by_role || "System",
+      }));
+
+      const combined = [...(audit ?? []), ...mappedTransitions].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
+      return combined.slice(0, 500);
     },
     enabled: !!organizationId,
   });
