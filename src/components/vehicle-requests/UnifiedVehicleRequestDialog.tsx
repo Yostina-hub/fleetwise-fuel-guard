@@ -46,17 +46,21 @@ function useResolvedVehicleRequestForm(open: boolean) {
     queryFn: async (): Promise<ResolvedForm | null> => {
       // Find any non-archived form whose key looks like a Vehicle Request
       // template (exact `vehicle_request` or any clone like
-      // `vehicle_request_copy_4`). Prefer the most recently updated one.
+      // `vehicle_request_copy_4`). Resolution order:
+      //   1. The form explicitly marked `is_default=true` for this intent.
+      //   2. Otherwise, the most recently updated published form.
       const { data: forms, error: e1 } = await (supabase as any)
         .from("forms")
-        .select("id, key, name, description, current_published_version_id, updated_at")
+        .select("id, key, name, description, current_published_version_id, is_default, updated_at")
         .eq("organization_id", organizationId)
         .eq("is_archived", false)
         .like("key", "vehicle_request%")
         .order("updated_at", { ascending: false });
       if (e1) throw e1;
 
-      const candidate = (forms ?? []).find((f: any) => !!f.current_published_version_id);
+      const published = (forms ?? []).filter((f: any) => !!f.current_published_version_id);
+      const candidate =
+        published.find((f: any) => f.is_default) ?? published[0];
       if (!candidate) return null;
 
       const { data: ver, error: e2 } = await (supabase as any)
