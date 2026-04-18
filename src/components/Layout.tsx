@@ -60,6 +60,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AIAssistant } from "@/components/AIAssistant";
 import { SuperAdminOrgSwitcher } from "@/components/dashboard/SuperAdminOrgSwitcher";
 import { SuperAdminImpersonation } from "@/components/dashboard/SuperAdminImpersonation";
+import { ImpersonationBanner } from "@/components/dashboard/ImpersonationBanner";
 import { SidebarNav } from "@/components/sidebar/SidebarNav";
 import { MobileNav } from "@/components/sidebar/MobileNav";
 import { BottomNav } from "@/components/mobile/BottomNav";
