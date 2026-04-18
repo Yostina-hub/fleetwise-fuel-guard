@@ -174,12 +174,105 @@ function FormRendererInner({
     staleTime: 60_000,
   });
 
+  // Configurable catalogs (currently only vehicle_handover items). Loaded once
+  // when any `catalog_picker` field is present in the schema.
+  const catalogItems = useQuery({
+    queryKey: ["form-handover-catalog", organizationId],
+    enabled: !!organizationId && needs.has("catalog_picker"),
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("vehicle_handover_catalog_items")
+        .select("id, name, category, default_qty, sort_order, is_active")
+        .eq("organization_id", organizationId!)
+        .eq("is_active", true)
+        .order("category")
+        .order("sort_order");
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        id: string; name: string; category: string;
+        default_qty: number; sort_order: number;
+      }>;
+    },
+    staleTime: 60_000,
+  });
+
   // Hardcoded fallback when fleet_pools has no matching rows (mirrors legacy POOL_HIERARCHY).
   const POOL_FALLBACK: Record<string, string[]> = {
     corporate: ["FAN", "TPO", "HQ"],
     zone: ["SWAAZ", "EAAZ"],
     region: ["NR", "SR"],
   };
+
+  // ---- Vehicle / driver auto-fill -----------------------------------------
+  // Walk the schema for any field with `autofillFrom`, watch the source entity
+  // id (e.g. vehicle_id), and copy the requested column whenever it changes.
+  const autofillFields = useMemo(() => {
+    const list: BaseField[] = [];
+    for (const { field } of walkFields(schema.fields)) {
+      if (field.autofillFrom) list.push(field);
+    }
+    return list;
+  }, [schema]);
+
+  // Map of vehicleId -> full row for fields that autofill from "vehicle".
+  const autofillVehicleId = autofillFields.find((f) => f.autofillFrom?.entity === "vehicle")
+    ? values[autofillFields.find((f) => f.autofillFrom?.entity === "vehicle")!.autofillFrom!.sourceKey]
+    : null;
+  const autofillVehicle = useQuery({
+    queryKey: ["form-autofill-vehicle", autofillVehicleId, organizationId],
+    enabled: !!autofillVehicleId && !!organizationId,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("vehicles")
+        .select(
+          "id, plate_number, make, model, year, color, vin, fuel_type, vehicle_type, capacity_kg, capacity_volume, odometer_km, registration_expiry, insurance_expiry, assigned_driver_id"
+        )
+        .eq("id", autofillVehicleId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 60_000,
+  });
+  const autofillAssignedDriver = useQuery({
+    queryKey: ["form-autofill-driver", autofillVehicle.data?.assigned_driver_id, organizationId],
+    enabled: !!autofillVehicle.data?.assigned_driver_id && !!organizationId,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("drivers")
+        .select("id, first_name, last_name, license_number, phone")
+        .eq("id", autofillVehicle.data!.assigned_driver_id!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 60_000,
+  });
+
+  useEffect(() => {
+    if (autofillFields.length === 0) return;
+    const updates: Record<string, any> = {};
+    for (const f of autofillFields) {
+      const af = f.autofillFrom!;
+      let src: any = null;
+      if (af.entity === "vehicle") src = autofillVehicle.data;
+      else if (af.entity === "driver") src = autofillAssignedDriver.data;
+      if (!src) continue;
+      const next = src[af.sourceField];
+      if (next == null) continue;
+      const cur = values[f.key];
+      // Always overwrite when the entity changes; otherwise only fill empties
+      // so a user who manually edited a non-readOnly autofilled value keeps it.
+      const shouldOverwrite = !!f.readOnly || cur == null || cur === "";
+      if (shouldOverwrite && String(cur ?? "") !== String(next)) {
+        updates[f.key] = next;
+      }
+    }
+    if (Object.keys(updates).length) {
+      setValues((prev) => ({ ...prev, ...updates }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autofillVehicle.data?.id, autofillAssignedDriver.data?.id]);
 
   // Apply computed fields whenever values change.
   useEffect(() => {
