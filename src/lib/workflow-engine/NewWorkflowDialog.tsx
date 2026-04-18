@@ -87,6 +87,7 @@ export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
         data: { ...(activeChoice?.prefill ?? {}), ...values },
       });
       setValues({});
+      clear();
       setChosenFormKey(null);
       onOpenChange(false);
     } catch (err: any) {
