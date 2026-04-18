@@ -60,7 +60,9 @@ export const DelegationHistoryTab = () => {
         .from("delegation_audit_log")
         .select("*")
         .eq("organization_id", organizationId)
-        .in("source_table", ALLOWED_SOURCES)
+        .or(
+          `source_table.in.(${CONFIG_SOURCES.join(",")}),action.in.(${DELEGATION_ACTIONS.join(",")})`,
+        )
         .order("created_at", { ascending: false })
         .limit(500);
       if (error) throw error;
