@@ -33,6 +33,7 @@ const SOURCE_META: Record<string, { icon: any; label: string }> = {
   fuel_request: { icon: Fuel, label: "Fuel Request" },
   trip_request: { icon: MapPin, label: "Trip Request" },
   outsource_payment_request: { icon: Receipt, label: "Payment Request" },
+  vehicle_request: { icon: Car, label: "Vehicle Request" },
 };
 
 export const DelegationHistoryTab = () => {
