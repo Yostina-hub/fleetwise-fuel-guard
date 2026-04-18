@@ -382,8 +382,8 @@ export default function FormsEditor() {
             <Card className="p-4 max-w-3xl mx-auto">
               {(() => {
                 const k = formQ.data?.key ?? "";
-                const isLegacyBound = k === "vehicle_request" || k.startsWith("vehicle_request_");
-                if (isLegacyBound) {
+                const isExactLegacy = k === "vehicle_request";
+                if (isExactLegacy) {
                   return (
                     <div className="mb-3 rounded-md border border-primary/30 bg-primary/5 p-3 text-xs text-muted-foreground">
                       <span className="font-medium text-foreground">Legacy form bound:</span>{" "}
@@ -392,9 +392,17 @@ export default function FormsEditor() {
                     </div>
                   );
                 }
+                if (k.startsWith("vehicle_request_") || k.startsWith("fuel_request_")) {
+                  return (
+                    <div className="mb-3 rounded-md border border-accent/30 bg-accent/5 p-3 text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">Cloned template:</span>{" "}
+                      This is a copy of a legacy form, but it renders from your edited schema — Preview now mirrors Build exactly.
+                    </div>
+                  );
+                }
                 return null;
               })()}
-              {schema.fields.length === 0 && !(formQ.data?.key ?? "").startsWith("vehicle_request") ? (
+              {schema.fields.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground text-sm">
                   Add some fields to see the live preview.
                 </div>
