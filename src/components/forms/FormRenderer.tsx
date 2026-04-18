@@ -202,6 +202,16 @@ function FormRendererInner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(values), JSON.stringify(schema)]);
 
+  // Wait until all enabled entity queries have settled before rendering Selects.
+  // Prevents Radix Select BubbleSelect remount → `removeChild` DOM crash.
+  const entitiesReady =
+    (!needs.has("vehicle") || !vehicles.isLoading) &&
+    (!needs.has("driver") || !drivers.isLoading) &&
+    (!needs.has("asset") || !assets.isLoading) &&
+    (!needs.has("geofence") || !geofences.isLoading) &&
+    (!needs.has("user") || !users.isLoading) &&
+    (!needs.has("pool") || !pools.isLoading);
+
   // Build a flat list of currently-visible top-level fields for validation.
   const visibleTopLevel = useMemo(
     () => schema.fields.filter((f) => isVisible(f.visibleWhen, values)),
