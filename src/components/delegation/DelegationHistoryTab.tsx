@@ -31,6 +31,8 @@ const SOURCE_META: Record<string, { icon: any; label: string }> = {
   delegation_matrix: { icon: Users, label: "Substitution" },
   user_substitutions: { icon: Users, label: "Substitution" },
   approval_levels: { icon: Shield, label: "Approval Level" },
+  fuel_request: { icon: ArrowRightLeft, label: "Fuel Request Routing" },
+  vehicle_request: { icon: ArrowRightLeft, label: "Vehicle Request Routing" },
 };
 
 // Authority/delegation configuration sources — show ALL actions from these.
