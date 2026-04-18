@@ -131,6 +131,8 @@ export function useFormDraftVersion(formId?: string | null) {
         .select("*")
         .eq("form_id", formId)
         .eq("status", "draft")
+        .order("updated_at", { ascending: false })
+        .limit(1)
         .maybeSingle();
       if (error) throw error;
       return data ? normalizeVersion(data) : null;
