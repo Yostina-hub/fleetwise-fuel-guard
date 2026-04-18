@@ -111,6 +111,7 @@ export const PATH_ROLE_ACCESS: Record<string, string[]> = {
 
   // ── Tools & Automation ──
   "/workflow-builder":   ["org_admin"],
+  "/forms":              ["org_admin", "fleet_manager"],
   "/delegation-matrix":  ["org_admin"],
   "/bulk-operations":    ["org_admin", "fleet_manager"],
 
