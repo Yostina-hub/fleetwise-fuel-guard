@@ -22,6 +22,12 @@ interface VehicleRequestFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   source?: string;
+  /** When true, render inline (no outer Dialog) — used by the unified FormRenderer. */
+  embedded?: boolean;
+  /** Optional prefill values (e.g. from workflow context). Only basic fields are mapped. */
+  prefill?: Record<string, any>;
+  /** Called after a successful submission with the created request id (embedded mode). */
+  onSubmitted?: (result: { id: string }) => void;
 }
 
 const POOL_HIERARCHY: Record<string, string[]> = {
