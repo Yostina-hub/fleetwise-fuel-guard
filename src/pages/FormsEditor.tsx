@@ -99,6 +99,18 @@ export default function FormsEditor() {
     markDirty();
   }, []);
 
+  const insertAt = useCallback((index: number, type: FieldType) => {
+    setSchema((s) => {
+      const keys = collectKeys(s.fields);
+      const f = makeField(type, keys);
+      const next = [...s.fields];
+      const safeIdx = Math.max(0, Math.min(index, next.length));
+      next.splice(safeIdx, 0, f);
+      return { ...s, fields: next };
+    });
+    markDirty();
+  }, []);
+
   const addToContainer = useCallback((containerId: string, type: FieldType) => {
     setSchema((s) => {
       const keys = collectKeys(s.fields);
