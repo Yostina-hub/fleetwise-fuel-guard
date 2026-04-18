@@ -497,6 +497,170 @@ const oracleWorkOrderTemplate: FormTemplate = {
 };
 
 // ---------------------------------------------------------------------------
+// 6) Vehicle Request (template only — legacy dialog stays canonical)
+// ---------------------------------------------------------------------------
+const vehicleRequestTemplate: FormTemplate = {
+  key: "vehicle_request",
+  name: "Vehicle Request",
+  description: "Driver / staff request for a pool vehicle assignment with operation type, schedule, and route.",
+  category: "operations",
+  rationale: "Schema-driven equivalent of the Vehicle Request dialog. Use this to collect ad-hoc requests outside the dispatcher pipeline (the canonical dialog still owns pool routing, KPI calc, and approval flow).",
+  schema: {
+    version: 1,
+    fields: [
+      f({
+        key: "request_type",
+        type: "select",
+        label: "Operation Type",
+        required: true,
+        defaultValue: "daily_operation",
+        options: [
+          { value: "daily_operation", label: "Daily Operation (single-day)" },
+          { value: "field_operation", label: "Field Operation (multi-day)" },
+          { value: "project_operation", label: "Project Operation (long-term)" },
+        ],
+      }),
+      f({
+        key: "purpose",
+        type: "textarea",
+        label: "Purpose",
+        required: true,
+        validation: { minLength: 5, maxLength: 500 },
+        placeholder: "Why is the vehicle needed?",
+      }),
+      f({
+        key: "priority",
+        type: "select",
+        label: "Priority",
+        defaultValue: "normal",
+        options: [
+          { value: "low", label: "Low" },
+          { value: "normal", label: "Normal" },
+          { value: "high", label: "High" },
+          { value: "urgent", label: "Urgent" },
+        ],
+      }),
+      f({
+        key: "project_number",
+        type: "text",
+        label: "Project Number",
+        visibleWhen: { field: "request_type", operator: "equals", value: "project_operation" },
+      }),
+      f({
+        key: "schedule_section",
+        type: "section",
+        label: "Schedule",
+        fields: [
+          f({ key: "needed_from", type: "datetime", label: "Needed From", required: true }),
+          f({ key: "needed_until", type: "datetime", label: "Needed Until" }),
+          f({
+            key: "trip_duration_days",
+            type: "computed",
+            label: "Duration (days)",
+            helpText: "Auto-computed if both ends are set.",
+            computedFrom: { expression: "1", resultType: "number" },
+          }),
+        ],
+      }),
+      f({
+        key: "route_section",
+        type: "section",
+        label: "Route",
+        fields: [
+          f({ key: "departure_place", type: "text", label: "Departure Place", required: true }),
+          f({ key: "destination", type: "text", label: "Destination", required: true }),
+          f({
+            key: "trip_type",
+            type: "select",
+            label: "Trip Type",
+            defaultValue: "round_trip",
+            options: [
+              { value: "one_way", label: "One Way" },
+              { value: "round_trip", label: "Round Trip" },
+            ],
+          }),
+          f({
+            key: "distance_estimate_km",
+            type: "number",
+            label: "Estimated Distance (km)",
+            validation: { min: 0, max: 5000 },
+          }),
+        ],
+      }),
+      f({
+        key: "logistics_section",
+        type: "section",
+        label: "Logistics",
+        fields: [
+          f({
+            key: "num_vehicles",
+            type: "number",
+            label: "Number of Vehicles",
+            defaultValue: 1,
+            required: true,
+            validation: { min: 1, max: 20 },
+          }),
+          f({
+            key: "passengers",
+            type: "number",
+            label: "Passengers",
+            defaultValue: 1,
+            validation: { min: 1, max: 100 },
+          }),
+          f({
+            key: "vehicle_type",
+            type: "select",
+            label: "Vehicle Type",
+            options: [
+              { value: "sedan", label: "Sedan" },
+              { value: "suv", label: "SUV" },
+              { value: "pickup", label: "Pickup" },
+              { value: "minibus", label: "Minibus" },
+              { value: "truck", label: "Truck" },
+              { value: "van", label: "Van" },
+              { value: "other", label: "Other" },
+            ],
+          }),
+        ],
+      }),
+      f({
+        key: "pool_section",
+        type: "section",
+        label: "Pool Assignment",
+        fields: [
+          f({
+            key: "pool_category",
+            type: "select",
+            label: "Pool Category",
+            options: [
+              { value: "corporate", label: "Corporate" },
+              { value: "zone", label: "Zone" },
+              { value: "region", label: "Region" },
+            ],
+          }),
+          f({
+            key: "pool_name",
+            type: "text",
+            label: "Pool Name",
+            helpText: "e.g. FAN, TPO, HQ (corporate); SWAAZ, EAAZ (zone); NR, SR (region)",
+          }),
+        ],
+      }),
+      f({
+        key: "notes",
+        type: "textarea",
+        label: "Additional Notes",
+      }),
+    ],
+  },
+  settings: {
+    submitLabel: "Submit Request",
+    successMessage: "Vehicle request submitted.",
+    twoColumnLayout: true,
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Public registry
 // ---------------------------------------------------------------------------
 
@@ -506,6 +670,7 @@ export const FORM_TEMPLATES: FormTemplate[] = [
   createWorkRequestTemplate,
   vehicleInspectionTemplate,
   oracleWorkOrderTemplate,
+  vehicleRequestTemplate,
 ];
 
 export const getTemplate = (key: string): FormTemplate | undefined =>
