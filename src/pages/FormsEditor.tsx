@@ -36,7 +36,7 @@ import { collectKeys, makeField } from "@/lib/forms/fieldCatalog";
 import { walkFields, type BaseField, type FieldType, type FormSchema, type FormSettings } from "@/lib/forms/schema";
 import { isFieldLocked } from "@/lib/forms/legacyContracts";
 import { FormsPalette } from "@/components/forms/editor/FormsPalette";
-import { FormsCanvas } from "@/components/forms/editor/FormsCanvas";
+import { FormsWysiwygCanvas } from "@/components/forms/editor/FormsWysiwygCanvas";
 import { FieldProperties } from "@/components/forms/editor/FieldProperties";
 import { FormRenderer } from "@/components/forms/FormRenderer";
 
@@ -341,17 +341,15 @@ export default function FormsEditor() {
                 <FormsPalette onAdd={addAtEnd} />
               </Card>
               <Card className="col-span-6 overflow-hidden">
-                <FormsCanvas
-                  fields={schema.fields}
+                <FormsWysiwygCanvas
+                  schema={schema}
+                  settings={settings}
                   selectedId={selectedId}
                   onSelect={setSelectedId}
-                  onReorder={reorder}
                   onReplaceFields={replaceFields}
                   onDelete={deleteTopLevel}
                   onAddPaletteAtEnd={addAtEnd}
                   onAddPaletteToContainer={addToContainer}
-                  onSelectChild={setSelectedId}
-                  onDeleteChild={deleteChild}
                   onPatchField={updateField}
                   onDuplicateField={duplicateField}
                 />
