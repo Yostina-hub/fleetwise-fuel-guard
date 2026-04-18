@@ -9,17 +9,17 @@
  */
 
 // Roles that manage fleet assets
-const FLEET_ROLES = ["org_admin", "fleet_manager", "operator"] as const;
+const FLEET_ROLES = ["org_admin", "fleet_manager", "operations_manager", "operator"] as const;
 // Roles that manage drivers
-const DRIVER_MGMT_ROLES = ["org_admin", "fleet_manager"] as const;
+const DRIVER_MGMT_ROLES = ["org_admin", "fleet_manager", "operations_manager"] as const;
 // Roles that manage operations
-const OPS_ROLES = ["org_admin", "fleet_manager", "operator"] as const;
+const OPS_ROLES = ["org_admin", "fleet_manager", "operations_manager", "operator"] as const;
 // Roles that can view reports
-const REPORT_ROLES = ["org_admin", "fleet_manager", "operator", "auditor"] as const;
+const REPORT_ROLES = ["org_admin", "fleet_manager", "operations_manager", "operator", "auditor"] as const;
 // Maintenance roles
-const MAINT_ROLES = ["org_admin", "fleet_manager", "technician"] as const;
+const MAINT_ROLES = ["org_admin", "fleet_manager", "operations_manager", "technician"] as const;
 // Safety / compliance roles
-const SAFETY_ROLES = ["org_admin", "fleet_manager", "operator"] as const;
+const SAFETY_ROLES = ["org_admin", "fleet_manager", "operations_manager", "operator"] as const;
 
 /**
  * Path-to-roles map. Key = exact path (without query string).
