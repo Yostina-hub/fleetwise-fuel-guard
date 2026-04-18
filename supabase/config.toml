@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.ai-workflow]
 verify_jwt = false
+
+[functions.run-e2e-tests]
+verify_jwt = false
