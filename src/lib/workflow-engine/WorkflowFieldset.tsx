@@ -28,7 +28,10 @@ export function WorkflowFieldset({ fields, values, onChange, autofillFromEntitie
     [fields],
   );
   const needsDrivers = useMemo(() => fields.some((f) => f.type === "driver"), [fields]);
-  const needsCatalog = useMemo(() => fields.some((f) => f.type === "handover_catalog"), [fields]);
+  const needsCatalog = useMemo(
+    () => fields.some((f) => f.type === "handover_catalog" || f.type === "handover_lines_30"),
+    [fields],
+  );
 
   const { data: vehicles = [] } = useQuery({
     queryKey: ["wf-vehicles-full", organizationId],
