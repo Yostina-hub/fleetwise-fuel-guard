@@ -21,7 +21,37 @@ import { RenderWorkflowForm, getWorkflowForm } from "@/lib/workflow-forms/regist
 import { SlaChip } from "./SlaChip";
 import { RoleChip } from "./RoleChip";
 import { StagePill } from "./StagePill";
-import type { WorkflowTask } from "./types";
+import type { WorkflowTask, FormField } from "./types";
+
+// SOP tasks carry per-action field definitions on __stageActions.
+// We use this to render fields scoped to each action instead of
+// flattening every action's fields into a single form (which caused
+// "Reason" from Cancel to block "Start inspection").
+type ActionGroup = { actionId: string; actionLabel: string; fields: FormField[] };
+function getActionGroups(task: WorkflowTask): ActionGroup[] | null {
+  const stageActions = (task as any).__stageActions as
+    | Array<{ id: string; label: string; fields?: any[] }>
+    | undefined;
+  if (!stageActions || stageActions.length === 0) return null;
+  const groups: ActionGroup[] = stageActions.map((a) => ({
+    actionId: a.id,
+    actionLabel: a.label,
+    fields: (a.fields ?? []).map((f: any) => ({
+      key: f.key,
+      label: f.label,
+      type:
+        f.type === "textarea" ? "textarea" :
+        f.type === "number" ? "number" :
+        f.type === "date" ? "date" :
+        f.type === "datetime" ? "datetime" :
+        f.type === "select" ? "select" : "text",
+      required: f.required,
+      options: f.options,
+      placeholder: f.placeholder,
+    })),
+  }));
+  return groups.some((g) => g.fields.length > 0) ? groups : null;
+}
 
 interface TaskContextPanelProps {
   task: WorkflowTask | null;
