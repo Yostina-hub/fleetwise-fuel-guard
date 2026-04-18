@@ -9,6 +9,8 @@ import { useWorkflow } from "./useWorkflow";
 import { RenderWorkflowForm, getWorkflowForm } from "@/lib/workflow-forms/registry";
 import { FileText } from "lucide-react";
 import { toast } from "sonner";
+import { useFormDraft } from "@/hooks/useFormDraft";
+import { DraftStatus } from "@/components/inbox/DraftStatus";
 
 interface Props {
   config: WorkflowConfig;
@@ -18,8 +20,13 @@ interface Props {
 
 export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
   const { createInstance } = useWorkflow(config);
-  const [values, setValues] = useState<Record<string, any>>({});
   const [chosenFormKey, setChosenFormKey] = useState<string | null>(null);
+
+  // Per-SOP intake draft — restores when re-opening the same "New X" dialog.
+  const draftKey = open ? `sop-intake:${config.type}` : null;
+  const { values, setValues, setField, restoredAt, savedAt, clear } = useFormDraft<
+    Record<string, any>
+  >(draftKey, {});
 
   const intakeFields = config.intakeFields || [];
   const intakeForm = config.intakeFormKey ? getWorkflowForm(config.intakeFormKey) : undefined;
@@ -31,7 +38,6 @@ export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
 
   useEffect(() => {
     if (!open) {
-      setValues({});
       setChosenFormKey(null);
     }
   }, [open]);
@@ -81,6 +87,7 @@ export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
         data: { ...(activeChoice?.prefill ?? {}), ...values },
       });
       setValues({});
+      clear();
       setChosenFormKey(null);
       onOpenChange(false);
     } catch (err: any) {
@@ -161,10 +168,13 @@ export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
         <p className="text-xs text-muted-foreground mb-2">
           {config.sopCode} — {config.description}
         </p>
+        <div className="mb-3">
+          <DraftStatus restoredAt={restoredAt} savedAt={savedAt} onClear={clear} />
+        </div>
         <WorkflowFieldset
           fields={intakeFields}
           values={values}
-          onChange={(k, v) => setValues((p) => ({ ...p, [k]: v }))}
+          onChange={(k, v) => setField(k, v)}
         />
         <DialogFooter className="mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>

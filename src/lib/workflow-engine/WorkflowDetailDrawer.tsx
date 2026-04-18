@@ -4,7 +4,7 @@
 // (id ends in "_pending_approval"), the resolver looks up the authority_matrix
 // for this org/workflow and dynamically narrows which roles can approve/reject.
 // A small badge surfaces the rule source so operators can audit the decision.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,8 @@ import { WorkflowFieldset } from "./WorkflowFieldset";
 import { useWorkflow, useWorkflowTransitions } from "./useWorkflow";
 import { useApproverResolution, isApprovalStage } from "./useApproverResolution";
 import { VehicleHandoverHistoryDiff } from "@/components/workflow/VehicleHandoverHistoryDiff";
+import { useFormDraft } from "@/hooks/useFormDraft";
+import { DraftStatus } from "@/components/inbox/DraftStatus";
 import type { WorkflowConfig, WorkflowInstance, StageAction } from "./types";
 
 interface Props {
@@ -31,8 +33,21 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
   const { performAction, canPerform, userRoles } = useWorkflow(config) as any;
   const { data: transitions = [] } = useWorkflowTransitions(instance?.id ?? null);
   const [activeAction, setActiveAction] = useState<StageAction | null>(null);
-  const [actionValues, setActionValues] = useState<Record<string, any>>({});
   const [actionNotes, setActionNotes] = useState("");
+
+  // Per-instance + per-action draft so users can step away mid-form and resume.
+  const draftKey =
+    instance && activeAction
+      ? `wf-action:${config.type}:${instance.id}:${activeAction.id}`
+      : null;
+  const {
+    values: actionValues,
+    setValues: setActionValues,
+    setField: setActionField,
+    restoredAt: draftRestoredAt,
+    savedAt: draftSavedAt,
+    clear: clearActionDraft,
+  } = useFormDraft<Record<string, any>>(draftKey, {});
 
   // Delegation matrix lookup — only fires for stages whose id ends in
   // "_pending_approval" (the SOP convention for "Get approval as per
@@ -90,15 +105,21 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
     if (missing.length) return;
     if (activeAction.confirm && !window.confirm(activeAction.confirm)) return;
 
-    await performAction.mutateAsync({
-      instance,
-      action: activeAction,
-      payload: actionValues,
-      notes: actionNotes,
-    });
-    setActiveAction(null);
-    setActionValues({});
-    setActionNotes("");
+    try {
+      await performAction.mutateAsync({
+        instance,
+        action: activeAction,
+        payload: actionValues,
+        notes: actionNotes,
+      });
+      // Success → discard the persisted draft for this action.
+      clearActionDraft();
+      setActiveAction(null);
+      setActionValues({});
+      setActionNotes("");
+    } catch {
+      // Failure → keep the draft so the user can retry without retyping.
+    }
   };
 
   return (
@@ -196,11 +217,16 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
               ) : activeAction ? (
                 <div className="space-y-3">
                   <p className="text-sm font-semibold">{activeAction.label}</p>
+                  <DraftStatus
+                    restoredAt={draftRestoredAt}
+                    savedAt={draftSavedAt}
+                    onClear={clearActionDraft}
+                  />
                   {activeAction.fields?.length ? (
                     <WorkflowFieldset
                       fields={activeAction.fields}
                       values={actionValues}
-                      onChange={(k, v) => setActionValues((p) => ({ ...p, [k]: v }))}
+                      onChange={(k, v) => setActionField(k, v)}
                     />
                   ) : null}
                   <div>
@@ -223,8 +249,8 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
                       size="sm"
                       variant="ghost"
                       onClick={() => {
+                        // Just step back — keep the draft so the user can come back.
                         setActiveAction(null);
-                        setActionValues({});
                         setActionNotes("");
                       }}
                     >

@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useFormDraft, clearFormDraft } from "@/hooks/useFormDraft";
+import { DraftStatus } from "./DraftStatus";
 import { formatDistanceToNowStrict, format } from "date-fns";
 import {
   X, Loader2, Car, User as UserIcon, History, Activity, FileText, ExternalLink,
@@ -62,12 +64,11 @@ interface TaskContextPanelProps {
 }
 
 export function TaskContextPanel({ task, organizationId, onClose, onSubmit, submitting }: TaskContextPanelProps) {
-  const [values, setValues] = useState<Record<string, any>>({});
-
   const actionGroups = task ? getActionGroups(task) : null;
 
-  useEffect(() => {
-    if (!task) return;
+  // Build initial values once per task — used as the seed when no draft exists.
+  const initialValues = useMemo<Record<string, any>>(() => {
+    if (!task) return {};
     const init: Record<string, any> = {};
     const nowIso = new Date().toISOString();
     const allFields: FormField[] = actionGroups
@@ -78,8 +79,16 @@ export function TaskContextPanel({ task, organizationId, onClose, onSubmit, subm
       else if (f.type === "date") init[f.key] = nowIso.slice(0, 10);
       else init[f.key] = "";
     });
-    setValues(init);
+    return init;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [task?.id]);
+
+  // Per-task draft persistence — restores on re-open, clears after submit.
+  const draftKey = task ? `inbox-task:${task.id}` : null;
+  const { values, setValues, setField, restoredAt, savedAt, clear } = useFormDraft(
+    draftKey,
+    initialValues,
+  );
 
   // Recent activity for this run
   const { data: history } = useQuery({
@@ -146,7 +155,13 @@ export function TaskContextPanel({ task, organizationId, onClose, onSubmit, subm
         }
       }
     }
-    await onSubmit(decision, values);
+    try {
+      await onSubmit(decision, values);
+      // Successful submit → discard the draft so a new task starts clean.
+      clear();
+    } catch {
+      // Keep the draft on failure so the user doesn't lose their input.
+    }
   };
 
   return (
@@ -280,14 +295,14 @@ export function TaskContextPanel({ task, organizationId, onClose, onSubmit, subm
                 {f.type === "textarea" ? (
                   <Textarea
                     value={values[f.key] ?? ""}
-                    onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
+                    onChange={(e) => setField(f.key, e.target.value)}
                     placeholder={f.placeholder}
                     rows={3}
                   />
                 ) : f.type === "select" ? (
                   <Select
                     value={values[f.key] ?? ""}
-                    onValueChange={(val) => setValues((v) => ({ ...v, [f.key]: val }))}
+                    onValueChange={(val) => setField(f.key, val)}
                   >
                     <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
                     <SelectContent>
@@ -304,11 +319,15 @@ export function TaskContextPanel({ task, organizationId, onClose, onSubmit, subm
                       f.type === "datetime" ? "datetime-local" : "text"
                     }
                     value={values[f.key] ?? ""}
-                    onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
+                    onChange={(e) => setField(f.key, e.target.value)}
                     placeholder={f.placeholder}
                   />
                 )}
               </div>
+            );
+
+            const draftBanner = (
+              <DraftStatus restoredAt={restoredAt} savedAt={savedAt} onClear={clear} />
             );
 
             if (actionGroups) {
@@ -316,6 +335,7 @@ export function TaskContextPanel({ task, organizationId, onClose, onSubmit, subm
               if (nonEmpty.length === 0) return null;
               return (
                 <div className="space-y-4">
+                  {draftBanner}
                   {nonEmpty.map((g) => (
                     <div key={g.actionId} className="space-y-3 rounded-lg border border-border/60 bg-muted/20 p-3">
                       <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -332,6 +352,7 @@ export function TaskContextPanel({ task, organizationId, onClose, onSubmit, subm
             if ((task.form_schema ?? []).length === 0) return null;
             return (
               <div className="space-y-3">
+                {draftBanner}
                 <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   <FileText className="h-3.5 w-3.5" />
                   Required input
