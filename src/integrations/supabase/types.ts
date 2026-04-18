@@ -22957,6 +22957,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           cross_pool_assignment: boolean | null
+          current_workflow_stage: string | null
           deallocated_at: string | null
           deallocated_by: string | null
           deallocation_count: number
@@ -23012,6 +23013,7 @@ export type Database = {
           trip_type: string | null
           updated_at: string
           vehicle_type: string | null
+          workflow_instance_id: string | null
         }
         Insert: {
           actual_assignment_minutes?: number | null
@@ -23030,6 +23032,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           cross_pool_assignment?: boolean | null
+          current_workflow_stage?: string | null
           deallocated_at?: string | null
           deallocated_by?: string | null
           deallocation_count?: number
@@ -23085,6 +23088,7 @@ export type Database = {
           trip_type?: string | null
           updated_at?: string
           vehicle_type?: string | null
+          workflow_instance_id?: string | null
         }
         Update: {
           actual_assignment_minutes?: number | null
@@ -23103,6 +23107,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           cross_pool_assignment?: boolean | null
+          current_workflow_stage?: string | null
           deallocated_at?: string | null
           deallocated_by?: string | null
           deallocation_count?: number
@@ -23158,6 +23163,7 @@ export type Database = {
           trip_type?: string | null
           updated_at?: string
           vehicle_type?: string | null
+          workflow_instance_id?: string | null
         }
         Relationships: [
           {
@@ -23186,6 +23192,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_requests_workflow_instance_id_fkey"
+            columns: ["workflow_instance_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_instances"
             referencedColumns: ["id"]
           },
         ]
@@ -25642,6 +25655,11 @@ export type Database = {
     }
     Functions: {
       _backfill_inspection_links: { Args: never; Returns: number }
+      _vrq_derive_stage: {
+        Args: { r: Database["public"]["Tables"]["vehicle_requests"]["Row"] }
+        Returns: string
+      }
+      _vrq_stage_lane: { Args: { _stage: string }; Returns: string }
       act_on_outsource_payment_approval: {
         Args: {
           _comments?: string
