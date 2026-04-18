@@ -7,8 +7,10 @@
 // with reject + deviation branches.
 //
 // Behavior:
-//   • Intake reuses the published Fuel Request form (`user_form:fuel_request`).
-//     The legacy form continues to insert into `fuel_requests`.
+//   • Intake reuses the registered Fuel Request dialog (registry key
+//     `fuel_request` → `FuelRequestWrapper` → `FuelRequestFormDialog`).
+//     The dialog inserts into `fuel_requests`; the DB trigger then mirrors
+//     the row into `workflow_instances` + `workflow_transitions`.
 //   • A DB trigger (`sync_fuel_request_workflow`) creates the matching
 //     `workflow_instances` row on insert and emits `workflow_transitions`
 //     whenever the legacy row advances (approved, work order issued,
@@ -37,7 +39,7 @@ export const fuelRequestConfig: WorkflowConfig = {
     "End-to-end fuel request lifecycle: submission → authority-matrix approval → work order generation → e-money/wallet funding → dispensing → deviation detection (≥5%) → clearance → completion.",
   icon: Fuel,
   initialStage: "submitted",
-  intakeFormKey: "user_form:fuel_request",
+  intakeFormKey: "fuel_request",
   intakeRoles: [
     "user", "driver", "fleet_supervisor",
     "fleet_manager", "operations_manager", "fleet_owner",
