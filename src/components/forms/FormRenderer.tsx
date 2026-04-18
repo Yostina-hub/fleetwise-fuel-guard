@@ -250,10 +250,10 @@ function FormRendererInner({
         );
       case "select":
         return (
-          <Select value={value ?? ""} onValueChange={onValue}>
+          <Select value={value ? String(value) : undefined} onValueChange={onValue}>
             <SelectTrigger {...common}><SelectValue placeholder={field.placeholder ?? "Select…"} /></SelectTrigger>
             <SelectContent>
-              {(field.options ?? []).map((o) => (
+              {(field.options ?? []).filter((o) => o.value !== "" && o.value != null).map((o) => (
                 <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
               ))}
             </SelectContent>
@@ -325,13 +325,13 @@ function FormRendererInner({
           }));
         })();
         return (
-          <Select value={value ?? ""} onValueChange={onValue}>
+          <Select value={value ? String(value) : undefined} onValueChange={onValue}>
             <SelectTrigger {...common}><SelectValue placeholder={`Select ${field.type}…`} /></SelectTrigger>
             <SelectContent>
               {opts.length === 0 ? (
                 <div className="px-2 py-1.5 text-xs text-muted-foreground">No options</div>
-              ) : opts.map((o: any) => (
-                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ) : opts.filter((o: any) => o.value != null && o.value !== "").map((o: any) => (
+                <SelectItem key={o.value} value={String(o.value)}>{o.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -384,14 +384,14 @@ function FormRendererInner({
         const fallback = POOL_FALLBACK[filterValue] ?? [];
         const opts = dbPools.length > 0 ? dbPools : fallback;
         return (
-          <Select value={value ?? ""} onValueChange={onValue} disabled={!filterValue}>
+          <Select value={value ? String(value) : undefined} onValueChange={onValue} disabled={!filterValue}>
             <SelectTrigger {...common}>
               <SelectValue placeholder={filterValue ? "Select pool…" : "Pick a category first"} />
             </SelectTrigger>
             <SelectContent>
               {opts.length === 0 ? (
                 <div className="px-2 py-1.5 text-xs text-muted-foreground">No pools available</div>
-              ) : opts.map((name) => (
+              ) : opts.filter((name: string) => !!name).map((name: string) => (
                 <SelectItem key={name} value={name}>{name}</SelectItem>
               ))}
             </SelectContent>
