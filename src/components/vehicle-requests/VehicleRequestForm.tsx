@@ -234,7 +234,6 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
         end_time: form.end_time || null,
         project_number: form.request_type === "project_operation" ? (form.project_number || null) : null,
         status: "pending",
-        ...(source ? { source } : {}),
       };
 
       const { data, error } = await (supabase as any).from("vehicle_requests").insert(payload).select("id").single();
