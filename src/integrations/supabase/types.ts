@@ -25680,6 +25680,10 @@ export type Database = {
         Args: { p_action: string; p_approval_id: string; p_comment?: string }
         Returns: Json
       }
+      auto_complete_fuel_wo_approvals: {
+        Args: { p_comment?: string; p_emoney_amount?: number; p_wo_id: string }
+        Returns: Json
+      }
       build_outsource_payment_approval_chain: {
         Args: { _payment_request_id: string }
         Returns: number

@@ -137,6 +137,19 @@ Deno.serve(async (req) => {
       });
 
       if (status === 'success') {
+        // Step 3 + 5 audit: complete WO approval ladder + create/approve e-money approval row
+        // (in stub/automated mode). This populates fuel_wo_approvals + fuel_emoney_approvals
+        // so Delegation History reflects the full SOP path.
+        const { data: autoRes, error: autoErr } = await admin.rpc(
+          'auto_complete_fuel_wo_approvals',
+          {
+            p_wo_id: woId,
+            p_emoney_amount: amount,
+            p_comment: `Auto-approved via Telebirr ${provider} transfer ${externalRef}`,
+          },
+        );
+        if (autoErr) console.warn('[telebirr-emoney] auto_complete_fuel_wo_approvals failed', autoErr);
+
         await admin.from('fuel_work_orders').update({
           emoney_initiated: true,
           emoney_amount: amount,
