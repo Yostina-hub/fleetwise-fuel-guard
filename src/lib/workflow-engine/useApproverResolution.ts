@@ -12,10 +12,12 @@ export function isApprovalStage(stageId: string | null | undefined): boolean {
       || /^authority_approval$/i.test(stageId);
 }
 
-/** 1-based step index based on stage id prefix (2a → 1, 2b → 2). */
+/** 1-based step index based on stage id prefix (2a → 1, 2b/8-pre → 2). */
 export function stepOrderForStage(stageId: string): number {
-  // Detect "2b" prefix on stages from fleetTransferConfig (plan_pending_approval).
+  // 2b — Safety/QA plan approval
   if (/^plan_pending_approval$/i.test(stageId)) return 2;
+  // 8-pre — Records (ERP) second-line approval in 1a branch
+  if (/^records_pending_approval$/i.test(stageId)) return 2;
   return 1;
 }
 
