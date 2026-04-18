@@ -438,10 +438,13 @@ export default function Inbox() {
             <BulkActionBar
               count={selection.size}
               busy={submitting}
+              mode={status === "trash" ? "trash" : "active"}
               onClear={() => setSelection(new Set())}
-              onCancel={bulkCancel}
-              onReassign={() => toast({ title: "Reassign", description: "Reassign UI coming in Phase 1.1." })}
-              onAddNote={() => toast({ title: "Notes", description: "Bulk notes coming in Phase 1.1." })}
+              onArchive={status !== "trash" ? bulkArchive : undefined}
+              onRestore={status === "trash" ? bulkRestore : undefined}
+              onPurge={status === "trash" ? bulkPurge : undefined}
+              onReassign={status !== "trash" ? () => toast({ title: "Reassign", description: "Reassign UI coming in Phase 1.1." }) : undefined}
+              onAddNote={status !== "trash" ? () => toast({ title: "Notes", description: "Bulk notes coming in Phase 1.1." }) : undefined}
             />
           </main>
 
