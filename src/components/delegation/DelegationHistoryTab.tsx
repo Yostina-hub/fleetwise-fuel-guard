@@ -24,6 +24,7 @@ const ACTION_META: Record<string, { icon: any; label: string; color: string }> =
   deactivate: { icon: PowerOff, label: "Deactivated", color: "bg-muted text-muted-foreground border-border" },
   substitute: { icon: ArrowRightLeft, label: "Delegated", color: "bg-amber-500/10 text-amber-600 border-amber-500/30" },
   skip: { icon: SkipForward, label: "Skipped", color: "bg-muted text-muted-foreground border-border" },
+  route: { icon: ArrowRightLeft, label: "Routed", color: "bg-blue-500/10 text-blue-600 border-blue-500/30" },
 };
 
 const SOURCE_META: Record<string, { icon: any; label: string }> = {
