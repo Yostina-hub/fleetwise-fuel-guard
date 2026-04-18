@@ -162,6 +162,7 @@ export const DelegationHistoryTab = () => {
             <SelectItem value="all">All Sources</SelectItem>
             <SelectItem value="authority_matrix">Authority Rules</SelectItem>
             <SelectItem value="delegation_matrix">Substitutions</SelectItem>
+            <SelectItem value="vehicle_request">Vehicle Requests</SelectItem>
             <SelectItem value="fuel_request">Fuel Requests</SelectItem>
             <SelectItem value="trip_request">Trip Requests</SelectItem>
             <SelectItem value="outsource_payment_request">Payment Requests</SelectItem>
