@@ -291,6 +291,7 @@ export default function FormsEditor() {
                 <FieldProperties
                   field={selected}
                   siblings={siblings}
+                  formKey={formQ.data?.key}
                   onChange={(patch) => selected && updateField(selected.id, patch)}
                 />
               </Card>
