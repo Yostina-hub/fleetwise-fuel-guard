@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ClipboardList, Plus, Clock, CheckCircle, XCircle, Truck, Eye, MessageSquare, LogIn, Shuffle, Trash2, Undo2, Users } from "lucide-react";
 import { VehicleRequestKPI } from "@/components/vehicle-requests/VehicleRequestKPI";
-import { VehicleRequestForm } from "@/components/vehicle-requests/VehicleRequestForm";
+import { UnifiedVehicleRequestDialog } from "@/components/vehicle-requests/UnifiedVehicleRequestDialog";
 import { VehicleRequestApprovalFlow } from "@/components/vehicle-requests/VehicleRequestApprovalFlow";
 import { RequesterFeedbackDialog } from "@/components/vehicle-requests/RequesterFeedbackDialog";
 import { DriverCheckInDialog } from "@/components/vehicle-requests/DriverCheckInDialog";
@@ -253,7 +253,7 @@ const VehicleRequests = () => {
           </CardContent>
         </Card>
 
-        <VehicleRequestForm open={showCreate} onOpenChange={setShowCreate} />
+        <UnifiedVehicleRequestDialog open={showCreate} onOpenChange={setShowCreate} />
 
         {showDetail && (
           <Dialog open={!!showDetail} onOpenChange={() => setShowDetail(null)}>
