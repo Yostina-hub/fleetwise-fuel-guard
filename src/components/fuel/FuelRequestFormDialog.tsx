@@ -41,6 +41,8 @@ interface Props {
   invalidateKeys?: string[][];
   /** Optional callback fired after a successful fuel request submission. */
   onSubmitted?: (payload: { fuel_request_id?: string }) => void;
+  /** When true, render inline without the Dialog wrapper — used by the unified Forms renderer. */
+  embedded?: boolean;
 }
 
 interface FormData {
