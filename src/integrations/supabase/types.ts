@@ -8268,6 +8268,213 @@ export type Database = {
           },
         ]
       }
+      form_submissions: {
+        Row: {
+          created_at: string
+          data: Json
+          driver_id: string | null
+          form_id: string
+          form_version_id: string
+          id: string
+          organization_id: string
+          status: string
+          submitted_at: string | null
+          submitted_by: string
+          updated_at: string
+          vehicle_id: string | null
+          workflow_instance_id: string | null
+          workflow_task_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          driver_id?: string | null
+          form_id: string
+          form_version_id: string
+          id?: string
+          organization_id: string
+          status?: string
+          submitted_at?: string | null
+          submitted_by: string
+          updated_at?: string
+          vehicle_id?: string | null
+          workflow_instance_id?: string | null
+          workflow_task_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          driver_id?: string | null
+          form_id?: string
+          form_version_id?: string
+          id?: string
+          organization_id?: string
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string
+          updated_at?: string
+          vehicle_id?: string | null
+          workflow_instance_id?: string | null
+          workflow_task_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_submissions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "form_submissions_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "forms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "form_submissions_form_version_id_fkey"
+            columns: ["form_version_id"]
+            isOneToOne: false
+            referencedRelation: "form_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "form_submissions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "form_submissions_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      form_versions: {
+        Row: {
+          created_at: string
+          created_by: string
+          form_id: string
+          id: string
+          organization_id: string
+          published_at: string | null
+          published_by: string | null
+          schema: Json
+          settings: Json
+          status: string
+          updated_at: string
+          version_number: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          form_id: string
+          id?: string
+          organization_id: string
+          published_at?: string | null
+          published_by?: string | null
+          schema?: Json
+          settings?: Json
+          status?: string
+          updated_at?: string
+          version_number: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          form_id?: string
+          id?: string
+          organization_id?: string
+          published_at?: string | null
+          published_by?: string | null
+          schema?: Json
+          settings?: Json
+          status?: string
+          updated_at?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_versions_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "forms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "form_versions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forms: {
+        Row: {
+          archived_at: string | null
+          category: string
+          created_at: string
+          created_by: string
+          current_published_version_id: string | null
+          description: string | null
+          id: string
+          is_archived: boolean
+          key: string
+          name: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          category?: string
+          created_at?: string
+          created_by: string
+          current_published_version_id?: string | null
+          description?: string | null
+          id?: string
+          is_archived?: boolean
+          key: string
+          name: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          category?: string
+          created_at?: string
+          created_by?: string
+          current_published_version_id?: string | null
+          description?: string | null
+          id?: string
+          is_archived?: boolean
+          key?: string
+          name?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forms_current_published_version_fk"
+            columns: ["current_published_version_id"]
+            isOneToOne: false
+            referencedRelation: "form_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forms_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fuel_alert_settings: {
         Row: {
           consumption_alert_enabled: boolean | null
@@ -25459,6 +25666,7 @@ export type Database = {
         Args: { _payment_request_id: string }
         Returns: number
       }
+      can_manage_forms: { Args: { _user_id: string }; Returns: boolean }
       check_account_lockout: {
         Args: { p_email: string }
         Returns: {
