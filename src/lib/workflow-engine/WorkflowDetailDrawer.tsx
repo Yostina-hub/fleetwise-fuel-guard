@@ -158,6 +158,35 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
             </TabsList>
 
             <TabsContent value="actions" className="space-y-3 mt-3">
+              {/* Delegation matrix banner — surfaces who can approve at this step. */}
+              {stageIsApproval && resolvedApproverRoles?.length ? (
+                <div className="rounded-md border border-primary/30 bg-primary/5 p-2 flex items-start gap-2 text-xs">
+                  <ShieldCheck className="w-3.5 h-3.5 mt-0.5 text-primary shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-foreground">
+                      Approval per delegation matrix
+                    </p>
+                    <p className="text-muted-foreground">
+                      Resolved approver{resolvedApproverRoles.length > 1 ? "s" : ""}:{" "}
+                      <span className="font-medium text-foreground">
+                        {resolvedApproverRoles.join(" / ")}
+                      </span>
+                      {approverQuery.data?.ruleLabel
+                        ? ` • rule "${approverQuery.data.ruleLabel}"`
+                        : ""}{" "}
+                      <span className="opacity-60">
+                        (source: {approverQuery.data?.source})
+                      </span>
+                    </p>
+                    {!userIsResolvedApprover && !userRoles?.includes?.("super_admin") ? (
+                      <p className="text-amber-600 mt-1">
+                        You don't have an authorized role for this approval step.
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+
               {isCompleted ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
                   <CheckCircle2 className="w-4 h-4" /> Workflow completed.
@@ -209,7 +238,8 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
                     Pick the next step:
                   </p>
                   {stage.actions.map((a) => {
-                    const allowed = canPerform(a);
+                    const allowed = effectiveCanPerform(a);
+                    const hint = effectiveRoleHint(a);
                     return (
                       <Button
                         key={a.id}
@@ -222,7 +252,7 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
                         {!allowed ? (
                           <span className="text-[10px] flex items-center gap-1">
                             <Lock className="w-3 h-3" />
-                            {a.allowedRoles?.join(" / ")}
+                            {hint}
                           </span>
                         ) : null}
                       </Button>
