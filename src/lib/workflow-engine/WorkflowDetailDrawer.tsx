@@ -4,7 +4,7 @@
 // (id ends in "_pending_approval"), the resolver looks up the authority_matrix
 // for this org/workflow and dynamically narrows which roles can approve/reject.
 // A small badge surfaces the rule source so operators can audit the decision.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,8 @@ import { WorkflowFieldset } from "./WorkflowFieldset";
 import { useWorkflow, useWorkflowTransitions } from "./useWorkflow";
 import { useApproverResolution, isApprovalStage } from "./useApproverResolution";
 import { VehicleHandoverHistoryDiff } from "@/components/workflow/VehicleHandoverHistoryDiff";
+import { useFormDraft } from "@/hooks/useFormDraft";
+import { DraftStatus } from "@/components/inbox/DraftStatus";
 import type { WorkflowConfig, WorkflowInstance, StageAction } from "./types";
 
 interface Props {
