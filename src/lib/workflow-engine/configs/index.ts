@@ -2,6 +2,7 @@
 export { tireRequestConfig } from "./tireRequestConfig";
 export { vehicleHandoverConfig } from "./vehicleHandoverConfig";
 export { fleetTransferConfig } from "./fleetTransferConfig";
+export { vehicleRequestConfig } from "./vehicleRequestConfig";
 export {
   fleetInspectionConfig,
   vehicleRegistrationConfig,
