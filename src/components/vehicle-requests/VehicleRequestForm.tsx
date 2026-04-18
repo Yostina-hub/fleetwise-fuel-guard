@@ -1,4 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useFormDraft } from "@/hooks/useFormDraft";
+import { useAuth } from "@/hooks/useAuth";
+import { History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,13 +67,44 @@ const initialForm = {
 export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefill, onSubmitted }: VehicleRequestFormProps) => {
   const { t } = useTranslation();
   const { organizationId, isSuperAdmin } = useOrganization();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [form, setForm] = useState(() => ({
+
+  // Persist in-progress form per (user, source) so progress isn't lost on
+  // accidental close, refresh, navigation, or browser crash.
+  const draftKey = user?.id ? `vehicle-request:${user.id}:${source ?? "default"}` : null;
+  const initialWithPrefill = useMemo(() => ({
     ...initialForm,
     ...(prefill?.purpose ? { purpose: String(prefill.purpose) } : {}),
     ...(prefill?.departure_place ? { departure_place: String(prefill.departure_place) } : {}),
     ...(prefill?.destination ? { destination: String(prefill.destination) } : {}),
-  }));
+  }), [prefill?.purpose, prefill?.departure_place, prefill?.destination]);
+
+  const {
+    values: form,
+    setValues: setForm,
+    restoredAt,
+    clear: clearDraft,
+  } = useFormDraft<typeof initialForm>(draftKey, initialWithPrefill);
+
+  // Date fields are stored as ISO strings in localStorage; rehydrate to Date
+  // objects after restore so the date pickers render correctly.
+  useEffect(() => {
+    setForm((prev) => {
+      const next: any = { ...prev };
+      let changed = false;
+      for (const k of ["date", "start_date", "end_date"] as const) {
+        const v = (prev as any)[k];
+        if (typeof v === "string" && v) {
+          const d = new Date(v);
+          if (!isNaN(d.getTime())) { next[k] = d; changed = true; }
+        }
+      }
+      return changed ? next : prev;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restoredAt]);
+
   // Super-admin only: file the request on behalf of another user or driver
   const [onBehalfOf, setOnBehalfOf] = useState<{ id: string; name: string; email: string; type: "user" | "driver"; driverId?: string } | null>(null);
   const [userPickerOpen, setUserPickerOpen] = useState(false);
@@ -259,7 +293,8 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests"] });
       queryClient.invalidateQueries({ queryKey: ["vehicle-requests-panel"] });
       onOpenChange(false);
-      setForm(initialForm);
+      setForm(initialWithPrefill);
+      clearDraft();
       setOnBehalfOf(null);
       onSubmitted?.({ id: data?.id });
     },
@@ -286,6 +321,25 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           <DialogDescription>Submit a vehicle request. Fields adapt based on operation type.</DialogDescription>
         </DialogHeader>
       )}
+
+        {/* Draft restored notice */}
+        {restoredAt && (
+          <div className="flex items-center justify-between gap-2 rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-xs">
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              <History className="w-3.5 h-3.5 text-primary" />
+              Draft restored from {new Date(restoredAt).toLocaleString()}
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs"
+              onClick={() => { clearDraft(); setForm(initialWithPrefill); }}
+            >
+              Discard draft
+            </Button>
+          </div>
+        )}
 
         {/* Super-admin: file on behalf of any user */}
         {isSuperAdmin && (
