@@ -51,7 +51,8 @@ function buildScalar(f: BaseField): ZodTypeAny {
     case "geofence":
     case "user":
     case "location":
-    case "pool": {
+    case "pool":
+    case "catalog_picker": {
       let s = z.string().trim();
       s = applyTextRules(s, f);
       return required ? s.min(1, requiredMsg) : s.optional().or(z.literal(""));

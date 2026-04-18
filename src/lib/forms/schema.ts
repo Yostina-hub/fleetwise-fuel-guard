@@ -29,7 +29,10 @@ export type StandardFieldType =
   /** Legacy parity: text input + map picker, stores `{place, lat, lng}` siblings. */
   | "location"
   /** Legacy parity: dynamic Select sourced from `fleet_pools` filtered by sibling `pool_category`. */
-  | "pool";
+  | "pool"
+  /** Configurable catalog picker (e.g. `vehicle_handover_catalog_items`). Renders a Select
+   *  populated from a named org-scoped catalog, with a freeform fallback for ad-hoc items. */
+  | "catalog_picker";
 
 export type EntityFieldType =
   | "vehicle"
@@ -139,6 +142,27 @@ export interface BaseField {
   /** For `pool` fields — sibling key whose value filters the dynamic options
    *  by `fleet_pools.category`. Defaults to `pool_category`. */
   filterByKey?: string;
+  /** For `catalog_picker` fields — name of the catalog to load.
+   *  Currently supported: "vehicle_handover" (rows from `vehicle_handover_catalog_items`). */
+  catalog?: string;
+  /** For `catalog_picker` fields — when true, the operator may type a custom value
+   *  not present in the catalog (creates an ad-hoc per-handover entry). */
+  allowCustom?: boolean;
+  /**
+   *  Auto-fill from a related entity. When set, the renderer copies the source
+   *  field from the entity selected in `sourceField` (e.g. a `vehicle` field) and
+   *  marks this field read-only. Example:
+   *    { entity: "vehicle", sourceKey: "vehicle_id", sourceField: "plate_number" }
+   */
+  autofillFrom?: {
+    entity: "vehicle" | "driver";
+    /** Sibling key holding the entity id (e.g. `vehicle_id`). */
+    sourceKey: string;
+    /** Column on the entity table to copy. */
+    sourceField: string;
+  };
+  /** Render as read-only (still part of submission, just non-editable). */
+  readOnly?: boolean;
 }
 
 // ---------- Form-level settings ------------------------------------------

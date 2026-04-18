@@ -174,12 +174,105 @@ function FormRendererInner({
     staleTime: 60_000,
   });
 
+  // Configurable catalogs (currently only vehicle_handover items). Loaded once
+  // when any `catalog_picker` field is present in the schema.
+  const catalogItems = useQuery({
+    queryKey: ["form-handover-catalog", organizationId],
+    enabled: !!organizationId && needs.has("catalog_picker"),
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("vehicle_handover_catalog_items")
+        .select("id, name, category, default_qty, sort_order, is_active")
+        .eq("organization_id", organizationId!)
+        .eq("is_active", true)
+        .order("category")
+        .order("sort_order");
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        id: string; name: string; category: string;
+        default_qty: number; sort_order: number;
+      }>;
+    },
+    staleTime: 60_000,
+  });
+
   // Hardcoded fallback when fleet_pools has no matching rows (mirrors legacy POOL_HIERARCHY).
   const POOL_FALLBACK: Record<string, string[]> = {
     corporate: ["FAN", "TPO", "HQ"],
     zone: ["SWAAZ", "EAAZ"],
     region: ["NR", "SR"],
   };
+
+  // ---- Vehicle / driver auto-fill -----------------------------------------
+  // Walk the schema for any field with `autofillFrom`, watch the source entity
+  // id (e.g. vehicle_id), and copy the requested column whenever it changes.
+  const autofillFields = useMemo(() => {
+    const list: BaseField[] = [];
+    for (const { field } of walkFields(schema.fields)) {
+      if (field.autofillFrom) list.push(field);
+    }
+    return list;
+  }, [schema]);
+
+  // Map of vehicleId -> full row for fields that autofill from "vehicle".
+  const autofillVehicleId = autofillFields.find((f) => f.autofillFrom?.entity === "vehicle")
+    ? values[autofillFields.find((f) => f.autofillFrom?.entity === "vehicle")!.autofillFrom!.sourceKey]
+    : null;
+  const autofillVehicle = useQuery({
+    queryKey: ["form-autofill-vehicle", autofillVehicleId, organizationId],
+    enabled: !!autofillVehicleId && !!organizationId,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("vehicles")
+        .select(
+          "id, plate_number, make, model, year, color, vin, fuel_type, vehicle_type, capacity_kg, capacity_volume, odometer_km, registration_expiry, insurance_expiry, assigned_driver_id"
+        )
+        .eq("id", autofillVehicleId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 60_000,
+  });
+  const autofillAssignedDriver = useQuery({
+    queryKey: ["form-autofill-driver", autofillVehicle.data?.assigned_driver_id, organizationId],
+    enabled: !!autofillVehicle.data?.assigned_driver_id && !!organizationId,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("drivers")
+        .select("id, first_name, last_name, license_number, phone")
+        .eq("id", autofillVehicle.data!.assigned_driver_id!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 60_000,
+  });
+
+  useEffect(() => {
+    if (autofillFields.length === 0) return;
+    const updates: Record<string, any> = {};
+    for (const f of autofillFields) {
+      const af = f.autofillFrom!;
+      let src: any = null;
+      if (af.entity === "vehicle") src = autofillVehicle.data;
+      else if (af.entity === "driver") src = autofillAssignedDriver.data;
+      if (!src) continue;
+      const next = src[af.sourceField];
+      if (next == null) continue;
+      const cur = values[f.key];
+      // Always overwrite when the entity changes; otherwise only fill empties
+      // so a user who manually edited a non-readOnly autofilled value keeps it.
+      const shouldOverwrite = !!f.readOnly || cur == null || cur === "";
+      if (shouldOverwrite && String(cur ?? "") !== String(next)) {
+        updates[f.key] = next;
+      }
+    }
+    if (Object.keys(updates).length) {
+      setValues((prev) => ({ ...prev, ...updates }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autofillVehicle.data?.id, autofillAssignedDriver.data?.id]);
 
   // Apply computed fields whenever values change.
   useEffect(() => {
@@ -210,7 +303,8 @@ function FormRendererInner({
     (!needs.has("asset") || !assets.isLoading) &&
     (!needs.has("geofence") || !geofences.isLoading) &&
     (!needs.has("user") || !users.isLoading) &&
-    (!needs.has("pool") || !pools.isLoading);
+    (!needs.has("pool") || !pools.isLoading) &&
+    (!needs.has("catalog_picker") || !catalogItems.isLoading);
 
   // Build a flat list of currently-visible top-level fields for validation.
   const visibleTopLevel = useMemo(
@@ -408,6 +502,51 @@ function FormRendererInner({
           </Select>
         );
       }
+      case "catalog_picker": {
+        // Configurable dropdown sourced from a named catalog. Currently only
+        // `vehicle_handover` (rows from `vehicle_handover_catalog_items`).
+        const items = (catalogItems.data ?? []).map((it) => ({
+          value: it.name,
+          label: it.name,
+          group: it.category,
+        }));
+        const known = new Set(items.map((i) => i.value));
+        const isCustom = !!value && !known.has(String(value));
+        const allowCustom = field.allowCustom !== false;
+        return (
+          <div className="space-y-1">
+            <Select
+              value={value && known.has(String(value)) ? String(value) : isCustom ? "__custom__" : undefined}
+              onValueChange={(v) => {
+                if (v === "__custom__") onValue("");
+                else onValue(v);
+              }}
+              disabled={field.readOnly}
+            >
+              <SelectTrigger {...common}>
+                <SelectValue placeholder={field.placeholder ?? "Select item…"} />
+              </SelectTrigger>
+              <SelectContent>
+                {items.length === 0 ? (
+                  <SelectItem value="__none__" disabled>No catalog items configured</SelectItem>
+                ) : items.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                ))}
+                {allowCustom ? (
+                  <SelectItem key="__custom__" value="__custom__">+ Custom item…</SelectItem>
+                ) : null}
+              </SelectContent>
+            </Select>
+            {(isCustom || (allowCustom && value === "")) && !field.readOnly ? (
+              <Input
+                value={isCustom ? String(value) : ""}
+                placeholder="Type a custom item name"
+                onChange={(e) => onValue(e.target.value)}
+              />
+            ) : null}
+          </div>
+        );
+      }
       default:
         return (
           <Input
@@ -424,6 +563,8 @@ function FormRendererInner({
             value={value ?? ""}
             onChange={(e) => onValue(e.target.value)}
             placeholder={field.placeholder}
+            readOnly={field.readOnly}
+            className={field.readOnly ? "bg-muted/40 cursor-not-allowed" : undefined}
           />
         );
     }
