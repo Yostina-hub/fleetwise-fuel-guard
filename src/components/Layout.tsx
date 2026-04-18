@@ -545,10 +545,11 @@ const Layout = ({ children }: LayoutProps) => {
           </div>
         </div>
       </main>
-      
+      </div>
+
       {/* Mobile Bottom Navigation - Native app style */}
       <BottomNav onMenuClick={() => setMobileNavOpen(true)} />
-      
+
       {/* AI Assistant - Hide on mobile */}
       <div className="hidden md:block">
         <AIAssistant />
@@ -556,5 +557,7 @@ const Layout = ({ children }: LayoutProps) => {
     </div>
   );
 };
+
+export default Layout;
 
 export default Layout;
