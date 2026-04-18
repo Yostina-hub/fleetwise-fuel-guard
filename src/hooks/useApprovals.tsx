@@ -2,10 +2,15 @@ import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 export const useApprovals = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  // Use the *effective* user — when a super_admin is impersonating, this is
+  // the impersonated user's id, so approvals routed to them appear correctly.
+  const { user: effectiveUser, isImpersonating } = useAuthContext();
+  const effectiveUserId = effectiveUser?.id ?? null;
 
   // Realtime subscription for approvals (trip + fuel)
   useEffect(() => {
