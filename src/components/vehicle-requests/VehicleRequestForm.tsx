@@ -61,11 +61,16 @@ const initialForm = {
   project_number: "",
 };
 
-export const VehicleRequestForm = ({ open, onOpenChange, source }: VehicleRequestFormProps) => {
+export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefill, onSubmitted }: VehicleRequestFormProps) => {
   const { t } = useTranslation();
   const { organizationId, isSuperAdmin } = useOrganization();
   const queryClient = useQueryClient();
-  const [form, setForm] = useState(initialForm);
+  const [form, setForm] = useState(() => ({
+    ...initialForm,
+    ...(prefill?.purpose ? { purpose: String(prefill.purpose) } : {}),
+    ...(prefill?.departure_place ? { departure_place: String(prefill.departure_place) } : {}),
+    ...(prefill?.destination ? { destination: String(prefill.destination) } : {}),
+  }));
   // Super-admin only: file the request on behalf of another user or driver
   const [onBehalfOf, setOnBehalfOf] = useState<{ id: string; name: string; email: string; type: "user" | "driver"; driverId?: string } | null>(null);
   const [userPickerOpen, setUserPickerOpen] = useState(false);
