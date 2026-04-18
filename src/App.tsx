@@ -54,6 +54,7 @@ const WorkflowBuilder = lazyWithRetry(() => import("./pages/WorkflowBuilder"), "
 const Inbox = lazyWithRetry(() => import("./pages/Inbox"), "Inbox");
 const Forms = lazyWithRetry(() => import("./pages/Forms"), "Forms");
 const FormsEditor = lazyWithRetry(() => import("./pages/FormsEditor"), "FormsEditor");
+const FormSubmissions = lazyWithRetry(() => import("./pages/FormSubmissions"), "FormSubmissions");
 const TripManagement = lazyWithRetry(() => import("./pages/TripManagement"), "TripManagement");
 const Organizations = lazyWithRetry(() => import("./pages/Organizations"), "Organizations");
 const EVManagement = lazyWithRetry(() => import("./pages/EVManagement"), "EVManagement");
@@ -201,6 +202,7 @@ const App = () => {
                         <Route path="/inbox" element={<ProtectedRoute><Inbox /></ProtectedRoute>} />
                         <Route path="/forms" element={<ProtectedRoute><Forms /></ProtectedRoute>} />
                         <Route path="/forms/:id/edit" element={<ProtectedRoute><FormsEditor /></ProtectedRoute>} />
+                        <Route path="/forms/:id/submissions" element={<ProtectedRoute><FormSubmissions /></ProtectedRoute>} />
                         <Route path="/trip-management" element={<ProtectedRoute><TripManagement /></ProtectedRoute>} />
                         <Route path="/ev-management" element={<ProtectedRoute><EVManagement /></ProtectedRoute>} />
                         <Route path="/vehicle-requests" element={<ProtectedRoute><VehicleRequests /></ProtectedRoute>} />
