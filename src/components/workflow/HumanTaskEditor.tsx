@@ -11,7 +11,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Trash2, ArrowUp, ArrowDown, FileText } from "lucide-react";
-import { listWorkflowForms } from "@/lib/workflow-forms/registry";
+import { listWorkflowForms, USER_FORM_PREFIX } from "@/lib/workflow-forms/registry";
+import { useFormsList } from "@/lib/forms/api";
+import { useOrganization } from "@/hooks/useOrganization";
 
 type FieldType = "text" | "textarea" | "number" | "date" | "datetime" | "select";
 
@@ -49,6 +51,10 @@ const ROLES = [
 ];
 
 export const HumanTaskEditor = ({ config, isApproval, onChange }: Props) => {
+  const { organizationId } = useOrganization();
+  const userFormsQ = useFormsList(organizationId, false);
+  const userForms = (userFormsQ.data ?? []).filter((f) => !!f.current_published_version_id);
+
   const fields: FormField[] = Array.isArray(config?.fields) ? config.fields : [];
   const actions: TaskAction[] = Array.isArray(config?.actions)
     ? config.actions
@@ -157,9 +163,24 @@ export const HumanTaskEditor = ({ config, isApproval, onChange }: Props) => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="__none__">None — use ad-hoc fields below</SelectItem>
+            {listWorkflowForms().length > 0 && (
+              <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                Built-in
+              </div>
+            )}
             {listWorkflowForms().map((f) => (
               <SelectItem key={f.key} value={f.key}>
                 {f.label}
+              </SelectItem>
+            ))}
+            {userForms.length > 0 && (
+              <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground border-t border-border mt-1">
+                User-built (Forms module)
+              </div>
+            )}
+            {userForms.map((f) => (
+              <SelectItem key={f.id} value={`${USER_FORM_PREFIX}${f.key}`}>
+                {f.name}
               </SelectItem>
             ))}
           </SelectContent>

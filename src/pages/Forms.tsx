@@ -7,7 +7,7 @@
  */
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Pencil, Archive, ArchiveRestore, FileText, Search, Loader2, CheckCircle2, Inbox } from "lucide-react";
+import { Plus, Pencil, Archive, ArchiveRestore, FileText, Search, Loader2, CheckCircle2, Inbox, ListChecks } from "lucide-react";
 import { toast } from "sonner";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -142,6 +142,9 @@ export default function Forms() {
                         </td>
                         <td className="px-3 py-2 text-right">
                           <div className="flex items-center justify-end gap-1">
+                            <Button size="sm" variant="ghost" onClick={() => navigate(`/forms/${f.id}/submissions`)}>
+                              <ListChecks className="h-3.5 w-3.5 mr-1" /> Submissions
+                            </Button>
                             <Button size="sm" variant="ghost" onClick={() => navigate(`/forms/${f.id}/edit`)}>
                               <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
                             </Button>

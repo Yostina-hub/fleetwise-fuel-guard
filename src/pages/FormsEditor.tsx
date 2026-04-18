@@ -12,7 +12,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Eye, Loader2, Save, Send, Settings } from "lucide-react";
+import { ArrowLeft, Eye, Loader2, Save, Send, Settings, ListChecks, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -245,6 +245,11 @@ export default function FormsEditor() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <Link to={`/forms/${formId}/submissions`}>
+                <ListChecks className="h-3.5 w-3.5 mr-1" /> Submissions
+              </Link>
+            </Button>
             <SettingsDialog settings={settings} onChange={(s) => { setSettings(s); markDirty(); }} />
             <Button variant="outline" size="sm" onClick={onManualSave} disabled={saveDraft.isPending}>
               <Save className="h-3.5 w-3.5 mr-1" /> Save draft
@@ -319,9 +324,30 @@ export default function FormsEditor() {
             </div>
             <div className="flex flex-wrap gap-1.5">
               {versionsQ.data.filter((v) => v.status === "published").map((v) => (
-                <Badge key={v.id} variant="outline" className="text-[10px]">
-                  v{v.version_number} · {v.published_at ? new Date(v.published_at).toLocaleDateString() : ""}
-                </Badge>
+                <div
+                  key={v.id}
+                  className="flex items-center gap-1 rounded-md border border-border bg-muted/30 px-2 py-1 text-[10px]"
+                >
+                  <span className="font-mono">v{v.version_number}</span>
+                  <span className="text-muted-foreground">
+                    · {v.published_at ? new Date(v.published_at).toLocaleDateString() : ""}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-5 px-1 ml-1 text-[10px]"
+                    onClick={() => {
+                      setSchema(v.schema);
+                      setSettings(v.settings);
+                      setSelectedId(null);
+                      markDirty();
+                      toast.success(`Loaded v${v.version_number} into draft — Save or Publish to apply`);
+                    }}
+                    title="Copy this version into the current draft"
+                  >
+                    <RotateCcw className="h-3 w-3 mr-0.5" /> Restore
+                  </Button>
+                </div>
               ))}
             </div>
           </Card>
