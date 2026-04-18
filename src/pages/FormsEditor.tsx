@@ -58,13 +58,27 @@ export default function FormsEditor() {
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const dirtyRef = useRef(false);
 
-  // Hydrate from draft.
+  // Hydrate from the freshest editable source.
+  // If the current draft is older than the latest published version, prefer the
+  // published version so the editor opens on the live form instead of a stale draft.
   useEffect(() => {
-    if (!draftQ.data) return;
-    setSchema(draftQ.data.schema);
-    setSettings(draftQ.data.settings);
-    setSavedAt(draftQ.data.updated_at);
-  }, [draftQ.data?.id]);
+    const published = versionsQ.data?.find((v) => v.id === formQ.data?.current_published_version_id) ?? null;
+    const draft = draftQ.data;
+
+    const source = (() => {
+      if (!draft && published) return published;
+      if (!draft) return null;
+      if (!published) return draft;
+      return new Date(draft.updated_at).getTime() >= new Date(published.updated_at).getTime()
+        ? draft
+        : published;
+    })();
+
+    if (!source) return;
+    setSchema(source.schema);
+    setSettings(source.settings);
+    setSavedAt(source.updated_at);
+  }, [draftQ.data, versionsQ.data, formQ.data?.current_published_version_id]);
 
   // Autosave.
   useEffect(() => {
@@ -274,7 +288,7 @@ export default function FormsEditor() {
     );
   };
 
-  if (formQ.isLoading || draftQ.isLoading) {
+  if (formQ.isLoading || draftQ.isLoading || versionsQ.isLoading) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-[60vh]">
