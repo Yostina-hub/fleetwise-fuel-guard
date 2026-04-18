@@ -27,12 +27,29 @@ export function ImpersonationProvider({ children }: { children: ReactNode }) {
   // We talk to the *real* super_admin via realUser/realRoles — the AuthContext
   // override mechanism makes user/roles reflect the impersonated user once
   // impersonation starts, so we must not loop on those.
-  const { realUser, realRoles, _setImpersonationOverride } = useAuthContext();
+  const { realUser, realRoles, loading: authLoading, _setImpersonationOverride } = useAuthContext();
   const location = useLocation();
   const queryClient = useQueryClient();
-  const [impersonatedUserId, setImpersonatedUserId] = useState<string | null>(null);
+  // Persist across full-page navigations (sandbox sometimes does hard nav).
+  // sessionStorage scope = current tab only, auto-cleared when tab closes,
+  // matching our "never persist sensitive context across browser sessions" rule.
+  const [impersonatedUserId, setImpersonatedUserId] = useState<string | null>(
+    () => (typeof window !== "undefined" ? sessionStorage.getItem("imp:userId") : null),
+  );
   const [impersonatedUserProfile, setImpersonatedUserProfile] = useState<any | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(
+    () => (typeof window !== "undefined" ? sessionStorage.getItem("imp:sessionId") : null),
+  );
+
+  // Keep sessionStorage in sync
+  useEffect(() => {
+    if (impersonatedUserId) sessionStorage.setItem("imp:userId", impersonatedUserId);
+    else sessionStorage.removeItem("imp:userId");
+  }, [impersonatedUserId]);
+  useEffect(() => {
+    if (sessionId) sessionStorage.setItem("imp:sessionId", sessionId);
+    else sessionStorage.removeItem("imp:sessionId");
+  }, [sessionId]);
 
   const isSuperAdmin = realRoles.some((r) => r.role === "super_admin");
   const isImpersonating = isSuperAdmin && impersonatedUserId !== null;
@@ -225,14 +242,18 @@ export function ImpersonationProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Safety: drop impersonation if the real user loses super_admin
+  // Safety: drop impersonation if the real user loses super_admin.
+  // CRITICAL: only enforce this AFTER auth has finished loading — otherwise
+  // a fresh page load with sessionStorage-rehydrated impersonation gets
+  // wiped because realRoles is briefly [] during hydration.
   useEffect(() => {
+    if (authLoading) return;
     if (!isSuperAdmin && impersonatedUserId) {
       setImpersonatedUserId(null);
       setImpersonatedUserProfile(null);
       setSessionId(null);
     }
-  }, [isSuperAdmin, impersonatedUserId]);
+  }, [authLoading, isSuperAdmin, impersonatedUserId]);
 
   return (
     <ImpersonationContext.Provider
