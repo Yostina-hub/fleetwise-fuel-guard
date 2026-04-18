@@ -155,7 +155,13 @@ export function TaskContextPanel({ task, organizationId, onClose, onSubmit, subm
         }
       }
     }
-    await onSubmit(decision, values);
+    try {
+      await onSubmit(decision, values);
+      // Successful submit → discard the draft so a new task starts clean.
+      clear();
+    } catch {
+      // Keep the draft on failure so the user doesn't lose their input.
+    }
   };
 
   return (
