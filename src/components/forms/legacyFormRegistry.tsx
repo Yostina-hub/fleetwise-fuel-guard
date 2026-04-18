@@ -33,6 +33,28 @@ const VehicleRequestFormLazy = lazy(() =>
   })),
 );
 
+// Adapter: FuelRequestFormDialog emits { fuel_request_id } — normalize to { id }.
+const FuelRequestFormLazy = lazy(() =>
+  import("@/components/fuel/FuelRequestFormDialog").then((m) => {
+    const Inner = m.FuelRequestFormDialog;
+    const Adapted: React.ComponentType<LegacyEmbeddedFormProps> = (props) => (
+      <Inner
+        embedded
+        open
+        onOpenChange={props.onOpenChange}
+        prefill={props.prefill as any}
+        source="manual"
+        onSubmitted={(payload) => {
+          if (payload?.fuel_request_id) {
+            props.onSubmitted?.({ id: payload.fuel_request_id });
+          }
+        }}
+      />
+    );
+    return { default: Adapted };
+  }),
+);
+
 export interface LegacyFormRegistryEntry {
   /** The form `key` in the Forms module (organization-scoped). */
   key: string;
@@ -47,6 +69,11 @@ const REGISTRY: LegacyFormRegistryEntry[] = [
     key: "vehicle_request",
     label: "Fleet Request Form (legacy)",
     Component: VehicleRequestFormLazy,
+  },
+  {
+    key: "fuel_request",
+    label: "Fuel Request (legacy)",
+    Component: FuelRequestFormLazy,
   },
 ];
 
