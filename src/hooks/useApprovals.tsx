@@ -109,6 +109,8 @@ export const useApprovals = () => {
       return data as any[];
     },
   });
+
+  // Approve trip request
   const approveRequest = useMutation({
     mutationFn: async ({ approvalId, requestId, comment }: { approvalId: string; requestId: string; comment?: string }) => {
       const { error: approvalError } = await supabase
