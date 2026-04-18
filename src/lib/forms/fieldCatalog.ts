@@ -114,6 +114,16 @@ export function makeField(type: FieldType, existingKeys: Set<string> = new Set()
   if (type === "divider") {
     base.label = "Divider";
   }
+  if (type === "location") {
+    base.label = "Location";
+    base.placeholder = "Select or type a place";
+    // Lat/lng siblings auto-derived if omitted: <key>_lat / <key>_lng
+  }
+  if (type === "pool") {
+    base.label = "Pool";
+    base.helpText = "Select a fleet pool. Options come from the chosen Pool Category.";
+    base.filterByKey = "pool_category";
+  }
   return base;
 }
 
