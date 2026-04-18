@@ -295,14 +295,14 @@ export function TaskContextPanel({ task, organizationId, onClose, onSubmit, subm
                 {f.type === "textarea" ? (
                   <Textarea
                     value={values[f.key] ?? ""}
-                    onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
+                    onChange={(e) => setField(f.key, e.target.value)}
                     placeholder={f.placeholder}
                     rows={3}
                   />
                 ) : f.type === "select" ? (
                   <Select
                     value={values[f.key] ?? ""}
-                    onValueChange={(val) => setValues((v) => ({ ...v, [f.key]: val }))}
+                    onValueChange={(val) => setField(f.key, val)}
                   >
                     <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
                     <SelectContent>
@@ -319,11 +319,15 @@ export function TaskContextPanel({ task, organizationId, onClose, onSubmit, subm
                       f.type === "datetime" ? "datetime-local" : "text"
                     }
                     value={values[f.key] ?? ""}
-                    onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
+                    onChange={(e) => setField(f.key, e.target.value)}
                     placeholder={f.placeholder}
                   />
                 )}
               </div>
+            );
+
+            const draftBanner = (
+              <DraftStatus restoredAt={restoredAt} savedAt={savedAt} onClear={clear} />
             );
 
             if (actionGroups) {
@@ -331,6 +335,7 @@ export function TaskContextPanel({ task, organizationId, onClose, onSubmit, subm
               if (nonEmpty.length === 0) return null;
               return (
                 <div className="space-y-4">
+                  {draftBanner}
                   {nonEmpty.map((g) => (
                     <div key={g.actionId} className="space-y-3 rounded-lg border border-border/60 bg-muted/20 p-3">
                       <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -347,6 +352,7 @@ export function TaskContextPanel({ task, organizationId, onClose, onSubmit, subm
             if ((task.form_schema ?? []).length === 0) return null;
             return (
               <div className="space-y-3">
+                {draftBanner}
                 <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   <FileText className="h-3.5 w-3.5" />
                   Required input
