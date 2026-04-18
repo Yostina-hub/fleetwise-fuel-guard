@@ -303,7 +303,8 @@ function FormRendererInner({
     (!needs.has("asset") || !assets.isLoading) &&
     (!needs.has("geofence") || !geofences.isLoading) &&
     (!needs.has("user") || !users.isLoading) &&
-    (!needs.has("pool") || !pools.isLoading);
+    (!needs.has("pool") || !pools.isLoading) &&
+    (!needs.has("catalog_picker") || !catalogItems.isLoading);
 
   // Build a flat list of currently-visible top-level fields for validation.
   const visibleTopLevel = useMemo(
