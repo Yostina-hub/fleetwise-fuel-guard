@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import {
   History, Plus, Edit, Trash2, Power, PowerOff, Search, Shield, Users, RefreshCw,
-  Route, ArrowRightLeft, SkipForward, Fuel, MapPin, Receipt,
+  Route, ArrowRightLeft, SkipForward, Fuel, MapPin, Receipt, Car,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -33,6 +33,7 @@ const SOURCE_META: Record<string, { icon: any; label: string }> = {
   fuel_request: { icon: Fuel, label: "Fuel Request" },
   trip_request: { icon: MapPin, label: "Trip Request" },
   outsource_payment_request: { icon: Receipt, label: "Payment Request" },
+  vehicle_request: { icon: Car, label: "Vehicle Request" },
 };
 
 export const DelegationHistoryTab = () => {
@@ -42,17 +43,60 @@ export const DelegationHistoryTab = () => {
   const [sourceFilter, setSourceFilter] = useState<string>("all");
 
   const { data: logs = [], isLoading, refetch, isFetching } = useQuery({
-    queryKey: ["delegation-audit-log", organizationId],
+    queryKey: ["delegation-audit-log-merged", organizationId],
     queryFn: async () => {
       if (!organizationId) return [];
-      const { data, error } = await supabase
+
+      // 1) Native delegation/audit log entries
+      const auditPromise = supabase
         .from("delegation_audit_log")
         .select("*")
         .eq("organization_id", organizationId)
         .order("created_at", { ascending: false })
         .limit(500);
-      if (error) throw error;
-      return data || [];
+
+      // 2) Vehicle request lifecycle transitions, normalised to the same shape
+      const vrPromise = (supabase as any)
+        .from("workflow_transitions")
+        .select("id, organization_id, instance_id, from_stage, to_stage, performed_by, notes, payload, created_at, workflow_instances!inner(reference_number, workflow_type, organization_id)")
+        .eq("workflow_instances.organization_id", organizationId)
+        .eq("workflow_instances.workflow_type", "vehicle_request")
+        .order("created_at", { ascending: false })
+        .limit(500);
+
+      const [auditRes, vrRes] = await Promise.all([auditPromise, vrPromise]);
+      if (auditRes.error) throw auditRes.error;
+      if (vrRes.error) throw vrRes.error;
+
+      const vrNormalised = (vrRes.data ?? []).map((t: any) => {
+        // Map workflow stage to UI action vocabulary
+        const stageToAction: Record<string, string> = {
+          pending: "create",
+          approved: "activate",
+          rejected: "deactivate",
+          assigned: "route",
+          in_progress: "update",
+          completed: "activate",
+          cancelled: "delete",
+        };
+        return {
+          id: `vr-${t.id}`,
+          organization_id: t.organization_id,
+          source_table: "vehicle_request",
+          scope: "vehicle_request",
+          action: stageToAction[t.to_stage] ?? "update",
+          entity_name: t.workflow_instances?.reference_number ?? "Vehicle Request",
+          summary: t.notes ?? `Status: ${t.from_stage ?? "—"} → ${t.to_stage}`,
+          actor_name: null,
+          actor_id: t.performed_by,
+          created_at: t.created_at,
+        };
+      });
+
+      // Merge & sort by created_at desc
+      return [...(auditRes.data ?? []), ...vrNormalised].sort(
+        (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
     },
     enabled: !!organizationId,
   });
@@ -118,6 +162,7 @@ export const DelegationHistoryTab = () => {
             <SelectItem value="all">All Sources</SelectItem>
             <SelectItem value="authority_matrix">Authority Rules</SelectItem>
             <SelectItem value="delegation_matrix">Substitutions</SelectItem>
+            <SelectItem value="vehicle_request">Vehicle Requests</SelectItem>
             <SelectItem value="fuel_request">Fuel Requests</SelectItem>
             <SelectItem value="trip_request">Trip Requests</SelectItem>
             <SelectItem value="outsource_payment_request">Payment Requests</SelectItem>
