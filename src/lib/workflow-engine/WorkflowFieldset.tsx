@@ -339,6 +339,7 @@ export function WorkflowFieldset({ fields, values, onChange, autofillFromEntitie
               </div>,
             );
           }
+          case "vehicle_autofill_summary": {
             if (!selectedVehicle) {
               return wrap(
                 <div className="border border-dashed border-input rounded-md p-3 text-xs text-muted-foreground">
