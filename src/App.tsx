@@ -52,6 +52,8 @@ const Dispatch = lazyWithRetry(() => import("./pages/Dispatch"), "Dispatch");
 const DriverApp = lazyWithRetry(() => import("./pages/DriverApp"), "DriverApp");
 const WorkflowBuilder = lazyWithRetry(() => import("./pages/WorkflowBuilder"), "WorkflowBuilder");
 const Inbox = lazyWithRetry(() => import("./pages/Inbox"), "Inbox");
+const Forms = lazyWithRetry(() => import("./pages/Forms"), "Forms");
+const FormsEditor = lazyWithRetry(() => import("./pages/FormsEditor"), "FormsEditor");
 const TripManagement = lazyWithRetry(() => import("./pages/TripManagement"), "TripManagement");
 const Organizations = lazyWithRetry(() => import("./pages/Organizations"), "Organizations");
 const EVManagement = lazyWithRetry(() => import("./pages/EVManagement"), "EVManagement");
@@ -197,6 +199,8 @@ const App = () => {
                         <Route path="/devices" element={<ProtectedRoute><DeviceIntegration /></ProtectedRoute>} />
                         <Route path="/workflow-builder" element={<ProtectedRoute><WorkflowBuilder /></ProtectedRoute>} />
                         <Route path="/inbox" element={<ProtectedRoute><Inbox /></ProtectedRoute>} />
+                        <Route path="/forms" element={<ProtectedRoute><Forms /></ProtectedRoute>} />
+                        <Route path="/forms/:id/edit" element={<ProtectedRoute><FormsEditor /></ProtectedRoute>} />
                         <Route path="/trip-management" element={<ProtectedRoute><TripManagement /></ProtectedRoute>} />
                         <Route path="/ev-management" element={<ProtectedRoute><EVManagement /></ProtectedRoute>} />
                         <Route path="/vehicle-requests" element={<ProtectedRoute><VehicleRequests /></ProtectedRoute>} />
