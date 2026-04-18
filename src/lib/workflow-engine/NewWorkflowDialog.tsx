@@ -95,7 +95,13 @@ export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
     }
   };
 
-  if (open && intakeForm) {
+  // Centralized-form path: when the SOP declares `intakeFormKey`, render the
+  // reusable form. We early-return null when the dialog is closed so the parent
+  // `WorkflowPage` swap between "no dialog open" and the centralized form is
+  // a clean mount/unmount (avoids React removeChild crashes that occur if we
+  // toggle between two different top-level element types each render).
+  if (intakeForm) {
+    if (!open) return null;
     return (
       <RenderWorkflowForm
         formKey={intakeForm.key}
