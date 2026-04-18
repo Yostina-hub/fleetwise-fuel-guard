@@ -781,7 +781,16 @@ export const FuelRequestFormDialog = ({
               <Textarea value={form.notes} onChange={e => set("notes", e.target.value)} rows={2} />
             </div>
           </div>
-        </ScrollArea>
+      </ScrollArea>
+      {embedded ? (
+        <div className="flex justify-end gap-2 pt-4 border-t mt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={() => createMutation.mutate()} disabled={createMutation.isPending}>
+            {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            Submit Request
+          </Button>
+        </div>
+      ) : (
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={() => createMutation.mutate()} disabled={createMutation.isPending}>
@@ -789,6 +798,18 @@ export const FuelRequestFormDialog = ({
             Submit Request
           </Button>
         </DialogFooter>
+      )}
+    </>
+  );
+
+  if (embedded) {
+    return <div className="space-y-4">{body}</div>;
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl max-h-[90vh]">
+        {body}
       </DialogContent>
     </Dialog>
   );
