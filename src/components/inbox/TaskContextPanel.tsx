@@ -64,12 +64,11 @@ interface TaskContextPanelProps {
 }
 
 export function TaskContextPanel({ task, organizationId, onClose, onSubmit, submitting }: TaskContextPanelProps) {
-  const [values, setValues] = useState<Record<string, any>>({});
-
   const actionGroups = task ? getActionGroups(task) : null;
 
-  useEffect(() => {
-    if (!task) return;
+  // Build initial values once per task — used as the seed when no draft exists.
+  const initialValues = useMemo<Record<string, any>>(() => {
+    if (!task) return {};
     const init: Record<string, any> = {};
     const nowIso = new Date().toISOString();
     const allFields: FormField[] = actionGroups
@@ -80,8 +79,16 @@ export function TaskContextPanel({ task, organizationId, onClose, onSubmit, subm
       else if (f.type === "date") init[f.key] = nowIso.slice(0, 10);
       else init[f.key] = "";
     });
-    setValues(init);
+    return init;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [task?.id]);
+
+  // Per-task draft persistence — restores on re-open, clears after submit.
+  const draftKey = task ? `inbox-task:${task.id}` : null;
+  const { values, setValues, setField, restoredAt, savedAt, clear } = useFormDraft(
+    draftKey,
+    initialValues,
+  );
 
   // Recent activity for this run
   const { data: history } = useQuery({
