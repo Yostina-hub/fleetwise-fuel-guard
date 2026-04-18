@@ -35,6 +35,8 @@ function scopesForWorkflowType(workflowType: string): string[] {
       return ["vehicle_handover", "handover"];
     case "vehicle_dispatch":
       return ["vehicle_dispatch", "dispatch", "trip"];
+    case "vehicle_request":
+      return ["vehicle_request", "trip", "vehicle_dispatch"];
     case "preventive_maintenance":
     case "breakdown_maintenance":
       return ["maintenance"];
