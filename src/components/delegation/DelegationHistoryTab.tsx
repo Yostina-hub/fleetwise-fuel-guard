@@ -137,6 +137,8 @@ export const DelegationHistoryTab = () => {
             <SelectItem value="delegation_matrix">Substitutions</SelectItem>
             <SelectItem value="user_substitutions">User Substitutions</SelectItem>
             <SelectItem value="approval_levels">Approval Levels</SelectItem>
+            <SelectItem value="fuel_request">Fuel Request Routing</SelectItem>
+            <SelectItem value="vehicle_request">Vehicle Request Routing</SelectItem>
           </SelectContent>
         </Select>
         <Select value={actionFilter} onValueChange={setActionFilter}>
