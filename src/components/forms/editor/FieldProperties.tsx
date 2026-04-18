@@ -72,7 +72,7 @@ export function FieldProperties({ field, siblings, formKey, onChange }: Props) {
               <TooltipProvider delayDuration={150}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Badge variant="outline" className="gap-1 text-[10px] py-0 h-5 border-amber-500/50 text-amber-600 dark:text-amber-400">
+                    <Badge variant="outline" className="gap-1 text-[10px] py-0 h-5 border-warning/50 text-warning">
                       <Lock className="h-2.5 w-2.5" />
                       Legacy
                     </Badge>
