@@ -58,10 +58,10 @@ export const vehicleRequestConfig: WorkflowConfig = {
       description: "Approver is resolved from your organization's authority_matrix using the requester's role and trip duration. Defaults: operations_manager / fleet_manager.",
       actions: [
         { id: "approve", label: "Approve", toStage: "pool_review",
-          allowedRoles: ["operations_manager","fleet_manager","fleet_owner","org_admin"],
+          allowedRoles: ["operations_manager","fleet_manager","fleet_owner"],
           fields: [{ key: "approval_notes", label: "Approval notes", type: "textarea" }] },
         { id: "reject", label: "Reject", toStage: "rejected", variant: "destructive",
-          allowedRoles: ["operations_manager","fleet_manager","fleet_owner","org_admin"],
+          allowedRoles: ["operations_manager","fleet_manager","fleet_owner"],
           fields: [{ key: "rejection_reason", label: "Rejection reason", type: "textarea", required: true }] },
       ] },
 
