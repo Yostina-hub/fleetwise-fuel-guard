@@ -420,21 +420,34 @@ function TemplateLibraryDialog() {
                   <Button
                     size="sm"
                     onClick={() => handleClone(tpl)}
-                    disabled={busyKey !== null}
+                    disabled={busyKey !== null || seedingAll}
+                    variant={existingKeys.has(tpl.key) ? "outline" : "default"}
                   >
                     {busyKey === tpl.key ? (
                       <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
                     ) : (
                       <Plus className="h-3.5 w-3.5 mr-1" />
                     )}
-                    Clone
+                    {existingKeys.has(tpl.key) ? "Clone again" : "Clone"}
                   </Button>
                 </div>
               </div>
             ))}
           </div>
         </ScrollArea>
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:justify-between">
+          <Button
+            variant="secondary"
+            onClick={handleSeedAll}
+            disabled={seedingAll || busyKey !== null}
+          >
+            {seedingAll ? (
+              <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5 mr-1" />
+            )}
+            Seed all missing templates
+          </Button>
           <Button variant="ghost" onClick={() => setOpen(false)}>Close</Button>
         </DialogFooter>
       </DialogContent>
