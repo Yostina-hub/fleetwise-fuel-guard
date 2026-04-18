@@ -105,15 +105,21 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
     if (missing.length) return;
     if (activeAction.confirm && !window.confirm(activeAction.confirm)) return;
 
-    await performAction.mutateAsync({
-      instance,
-      action: activeAction,
-      payload: actionValues,
-      notes: actionNotes,
-    });
-    setActiveAction(null);
-    setActionValues({});
-    setActionNotes("");
+    try {
+      await performAction.mutateAsync({
+        instance,
+        action: activeAction,
+        payload: actionValues,
+        notes: actionNotes,
+      });
+      // Success → discard the persisted draft for this action.
+      clearActionDraft();
+      setActiveAction(null);
+      setActionValues({});
+      setActionNotes("");
+    } catch {
+      // Failure → keep the draft so the user can retry without retyping.
+    }
   };
 
   return (
