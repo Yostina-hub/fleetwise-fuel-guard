@@ -134,6 +134,7 @@ const SafetyComfortPage = lazyWithRetry(() => import("./pages/sop-workflows").th
 const VehicleHandoverPage = lazyWithRetry(() => import("./pages/sop-workflows").then(m => ({ default: m.VehicleHandoverPage })), "VehicleHandoverPage");
 const FleetTransferPage = lazyWithRetry(() => import("./pages/sop-workflows").then(m => ({ default: m.FleetTransferPage })), "FleetTransferPage");
 const FuelRequestSopPage = lazyWithRetry(() => import("./pages/sop-workflows").then(m => ({ default: m.FuelRequestPage })), "FuelRequestSopPage");
+const VehicleRequestSopPage = lazyWithRetry(() => import("./pages/sop-workflows").then(m => ({ default: m.VehicleRequestSopPage })), "VehicleRequestSopPage");
 
 const App = () => {
   const [queryClient] = useState(() => new QueryClient({
@@ -280,6 +281,7 @@ const App = () => {
                        <Route path="/sop/vehicle-handover/catalog" element={<ProtectedRoute><HandoverCatalogAdmin /></ProtectedRoute>} />
                       <Route path="/sop/fleet-transfer" element={<ProtectedRoute><FleetTransferPage /></ProtectedRoute>} />
                       <Route path="/sop/fuel-request" element={<ProtectedRoute><FuelRequestSopPage /></ProtectedRoute>} />
+                      <Route path="/sop/vehicle-request" element={<ProtectedRoute><VehicleRequestSopPage /></ProtectedRoute>} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />
                       </Routes>

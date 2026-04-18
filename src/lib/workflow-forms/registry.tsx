@@ -45,6 +45,7 @@ const OracleWorkOrderWrapper = lazy(() => import("./wrappers/OracleWorkOrderWrap
 const VehicleInspectionWrapper = lazy(() => import("./wrappers/VehicleInspectionWrapper"));
 const FuelRequestWrapper = lazy(() => import("./wrappers/FuelRequestWrapper"));
 const SafetyComfortReportWrapper = lazy(() => import("./wrappers/SafetyComfortReportWrapper"));
+const VehicleRequestWrapper = lazy(() => import("./wrappers/VehicleRequestWrapper"));
 const DynamicFormWrapper = lazy(() => import("./wrappers/DynamicFormWrapper"));
 
 /** Prefix used for forms built in the Forms module (`user_form:<form_key>`). */
@@ -93,6 +94,13 @@ const FORMS: RegisteredWorkflowForm[] = [
     description: "Quick driver-facing form for safety & comfort issues.",
     default_decision: "submitted",
     Component: SafetyComfortReportWrapper,
+  },
+  {
+    key: "vehicle_request",
+    label: "Vehicle Request (Fleet Request Form)",
+    description: "Unified vehicle request with pool hierarchy & delegation routing.",
+    default_decision: "submitted",
+    Component: VehicleRequestWrapper,
   },
 ];
 
