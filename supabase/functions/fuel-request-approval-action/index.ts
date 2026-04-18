@@ -131,8 +131,16 @@ serve(async (req) => {
       return secureJsonResponse({ error: "This approval is not assigned to the effective approver" }, req, 403);
     }
 
-    if (approval.action !== "pending") {
-      return secureJsonResponse({ error: "This approval has already been processed" }, req, 409);
+    // If approval already has the same action AND fuel_requests already reflects
+    // the final state, treat as success (idempotent retry). If approval matches
+    // but fuel_requests is still pending, fall through to finalize it.
+    const alreadyProcessed = approval.action !== "pending";
+    if (alreadyProcessed && approval.action !== action) {
+      return secureJsonResponse(
+        { error: "This approval has already been processed with a different decision" },
+        req,
+        409,
+      );
     }
 
     const { data: fuelRequest, error: fuelRequestError } = await admin
@@ -152,18 +160,20 @@ serve(async (req) => {
     const actedAt = new Date().toISOString();
     const normalizedComment = comment?.trim() || null;
 
-    const { error: updateApprovalError } = await admin
-      .from("fuel_request_approvals")
-      .update({
-        action,
-        comment: normalizedComment,
-        acted_at: actedAt,
-      })
-      .eq("id", approvalId)
-      .eq("action", "pending");
+    if (!alreadyProcessed) {
+      const { error: updateApprovalError } = await admin
+        .from("fuel_request_approvals")
+        .update({
+          action,
+          comment: normalizedComment,
+          acted_at: actedAt,
+        })
+        .eq("id", approvalId)
+        .eq("action", "pending");
 
-    if (updateApprovalError) {
-      return secureJsonResponse({ error: updateApprovalError.message }, req, 400);
+      if (updateApprovalError) {
+        return secureJsonResponse({ error: updateApprovalError.message }, req, 400);
+      }
     }
 
     let allApproved = false;
