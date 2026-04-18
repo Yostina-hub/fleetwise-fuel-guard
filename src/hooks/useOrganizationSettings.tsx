@@ -70,7 +70,16 @@ export const useOrganizationSettings = () => {
     default_timezone: data?.default_timezone ?? DEFAULT_SETTINGS.default_timezone,
   };
 
-  // Currency formatting helper
+  // Mirror the active timezone to localStorage so utilities outside the React tree
+  // (e.g. `combineDateAndTime` in date-time-picker.tsx) can interpret form input
+  // in the org's timezone instead of the browser's locale.
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("org_timezone", settings.default_timezone);
+    }
+  }, [settings.default_timezone]);
+
+
   const formatCurrency = (value: number) => {
     const currencySymbols: Record<string, string> = {
       ETB: 'Br ',
