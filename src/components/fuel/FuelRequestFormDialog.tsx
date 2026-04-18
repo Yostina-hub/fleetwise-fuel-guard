@@ -418,14 +418,15 @@ export const FuelRequestFormDialog = ({
   const lockDriver = !!prefill?.lockDriver;
   const lockType = !!prefill?.request_type;
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh]">
+  const body = (
+    <>
+      {!embedded && (
         <DialogHeader>
           <DialogTitle>New Fuel Request</DialogTitle>
           <DialogDescription>Submit a fuel clearance request for vehicle or generator</DialogDescription>
         </DialogHeader>
-        <ScrollArea className="max-h-[75vh] pr-2">
+      )}
+      <ScrollArea className={embedded ? "max-h-[70vh] pr-2" : "max-h-[75vh] pr-2"}>
           <div className="space-y-4">
             {/* Work Request Header */}
             <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
