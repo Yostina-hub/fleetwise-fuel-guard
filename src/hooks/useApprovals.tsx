@@ -2,10 +2,15 @@ import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 export const useApprovals = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  // Use the *effective* user — when a super_admin is impersonating, this is
+  // the impersonated user's id, so approvals routed to them appear correctly.
+  const { user: effectiveUser, isImpersonating } = useAuthContext();
+  const effectiveUserId = effectiveUser?.id ?? null;
 
   // Realtime subscription for approvals (trip + fuel)
   useEffect(() => {
@@ -27,12 +32,12 @@ export const useApprovals = () => {
     return () => { supabase.removeChannel(channel); };
   }, [queryClient]);
 
-  // Fetch pending trip approvals for current user
+  // Fetch pending trip approvals for current user (or impersonated user)
   const { data: pendingApprovals, isLoading: loading } = useQuery({
-    queryKey: ["pending-approvals"],
+    queryKey: ["pending-approvals", effectiveUserId],
+    enabled: !!effectiveUserId,
     queryFn: async () => {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return [];
+      if (!effectiveUserId) return [];
 
       const { data, error } = await supabase
         .from("trip_approvals")
@@ -45,7 +50,7 @@ export const useApprovals = () => {
             drop_geofence:drop_geofence_id(name)
           )
         `)
-        .eq("approver_id", user.user.id)
+        .eq("approver_id", effectiveUserId)
         .eq("action", "pending")
         .order("created_at", { ascending: false });
 
@@ -54,12 +59,12 @@ export const useApprovals = () => {
     },
   });
 
-  // Fetch pending fuel request approvals for current user
+  // Fetch pending fuel request approvals for current user (or impersonated user)
   const { data: pendingFuelApprovals, isLoading: fuelLoading } = useQuery({
-    queryKey: ["pending-fuel-approvals"],
+    queryKey: ["pending-fuel-approvals", effectiveUserId],
+    enabled: !!effectiveUserId,
     queryFn: async () => {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return [];
+      if (!effectiveUserId) return [];
 
       const { data, error } = await supabase
         .from("fuel_request_approvals")
@@ -69,7 +74,7 @@ export const useApprovals = () => {
             *
           )
         `)
-        .eq("approver_id", user.user.id)
+        .eq("approver_id", effectiveUserId)
         .eq("action", "pending")
         .order("created_at", { ascending: false });
 
@@ -80,10 +85,10 @@ export const useApprovals = () => {
 
   // Fetch approval history
   const { data: approvalHistory } = useQuery({
-    queryKey: ["approval-history"],
+    queryKey: ["approval-history", effectiveUserId],
+    enabled: !!effectiveUserId,
     queryFn: async () => {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return [];
+      if (!effectiveUserId) return [];
 
       const { data, error } = await supabase
         .from("trip_approvals")
@@ -95,7 +100,7 @@ export const useApprovals = () => {
             status
           )
         `)
-        .eq("approver_id", user.user.id)
+        .eq("approver_id", effectiveUserId)
         .neq("action", "pending")
         .order("acted_at", { ascending: false })
         .limit(50);
