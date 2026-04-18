@@ -1,11 +1,11 @@
-import { Search, Inbox as InboxIcon, CheckCircle2, AlertTriangle, User, Users } from "lucide-react";
+import { Search, Inbox as InboxIcon, CheckCircle2, AlertTriangle, User, Users, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { WorkflowTask } from "./types";
 
-export type StatusFilter = "pending" | "completed";
+export type StatusFilter = "pending" | "completed" | "trash";
 export type Scope = "me" | "team" | "all";
 
 interface TaskFiltersProps {
