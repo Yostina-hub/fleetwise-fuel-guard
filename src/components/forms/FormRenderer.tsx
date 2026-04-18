@@ -502,6 +502,51 @@ function FormRendererInner({
           </Select>
         );
       }
+      case "catalog_picker": {
+        // Configurable dropdown sourced from a named catalog. Currently only
+        // `vehicle_handover` (rows from `vehicle_handover_catalog_items`).
+        const items = (catalogItems.data ?? []).map((it) => ({
+          value: it.name,
+          label: it.name,
+          group: it.category,
+        }));
+        const known = new Set(items.map((i) => i.value));
+        const isCustom = !!value && !known.has(String(value));
+        const allowCustom = field.allowCustom !== false;
+        return (
+          <div className="space-y-1">
+            <Select
+              value={value && known.has(String(value)) ? String(value) : isCustom ? "__custom__" : undefined}
+              onValueChange={(v) => {
+                if (v === "__custom__") onValue("");
+                else onValue(v);
+              }}
+              disabled={field.readOnly}
+            >
+              <SelectTrigger {...common}>
+                <SelectValue placeholder={field.placeholder ?? "Select item…"} />
+              </SelectTrigger>
+              <SelectContent>
+                {items.length === 0 ? (
+                  <SelectItem value="__none__" disabled>No catalog items configured</SelectItem>
+                ) : items.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                ))}
+                {allowCustom ? (
+                  <SelectItem key="__custom__" value="__custom__">+ Custom item…</SelectItem>
+                ) : null}
+              </SelectContent>
+            </Select>
+            {(isCustom || (allowCustom && value === "")) && !field.readOnly ? (
+              <Input
+                value={isCustom ? String(value) : ""}
+                placeholder="Type a custom item name"
+                onChange={(e) => onValue(e.target.value)}
+              />
+            ) : null}
+          </div>
+        );
+      }
       default:
         return (
           <Input
@@ -518,6 +563,8 @@ function FormRendererInner({
             value={value ?? ""}
             onChange={(e) => onValue(e.target.value)}
             placeholder={field.placeholder}
+            readOnly={field.readOnly}
+            className={field.readOnly ? "bg-muted/40 cursor-not-allowed" : undefined}
           />
         );
     }
