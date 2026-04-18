@@ -389,58 +389,65 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
             </Select>
           </div>
 
-          {/* Date/Time Section */}
+          {/* Date/Time Section — dynamic per request type */}
           {isDaily ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <DateTimePicker
-                label="Start Date & Time"
-                date={form.date}
-                time={form.start_time}
-                onDateChange={d => update("date", d)}
-                onTimeChange={t => update("start_time", t)}
-                required
-                minDate={new Date()}
-              />
-              <DateTimePicker
-                label="End Date & Time"
-                date={form.end_date}
-                time={form.end_time}
-                onDateChange={d => update("end_date", d)}
-                onTimeChange={t => update("end_time", t)}
-                minDate={form.date}
-              />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-1">
+                <DateTimePicker
+                  label="Date"
+                  date={form.date}
+                  onDateChange={d => update("date", d)}
+                  required
+                  minDate={new Date()}
+                  hideTime
+                />
+              </div>
+              <div>
+                <Label className="text-primary font-medium">Start Time</Label>
+                <Input
+                  type="time"
+                  value={form.start_time}
+                  onChange={e => update("start_time", e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <Label className="text-primary font-medium">End Time</Label>
+                <Input
+                  type="time"
+                  value={form.end_time}
+                  onChange={e => update("end_time", e.target.value)}
+                  required
+                />
+              </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className={`grid grid-cols-1 ${isProject ? "md:grid-cols-3" : "md:grid-cols-2"} gap-4`}>
               <DateTimePicker
-                label="Start Date & Time"
+                label="Start Date"
                 date={form.start_date}
-                time={form.start_date_time}
                 onDateChange={d => update("start_date", d)}
-                onTimeChange={t => update("start_date_time", t)}
                 required
                 minDate={new Date()}
+                hideTime
               />
               <DateTimePicker
-                label="End Date & Time"
+                label="End Date"
                 date={form.end_date}
-                time={form.end_date_time}
                 onDateChange={d => update("end_date", d)}
-                onTimeChange={t => update("end_date_time", t)}
                 minDate={form.start_date}
+                hideTime
               />
-            </div>
-          )}
-
-          {/* Project Number - only for project operations */}
-          {isProject && (
-            <div>
-              <Label className="text-primary font-medium">Project Number</Label>
-              <Input
-                value={form.project_number}
-                onChange={e => update("project_number", e.target.value)}
-                placeholder="Enter project number (e.g. PRJ-2026-001)"
-              />
+              {isProject && (
+                <div>
+                  <Label className="text-primary font-medium">Project Number</Label>
+                  <Input
+                    value={form.project_number}
+                    onChange={e => update("project_number", e.target.value)}
+                    placeholder="Project Number"
+                  />
+                </div>
+              )}
             </div>
           )}
 
