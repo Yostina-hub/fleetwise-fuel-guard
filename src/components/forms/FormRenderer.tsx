@@ -48,6 +48,7 @@ import {
   type BaseField, type FormSchema, type FormSettings,
   EMPTY_SETTINGS, isInputField, walkFields,
 } from "@/lib/forms/schema";
+import { getLegacyFormEntry, RenderLegacyForm } from "@/components/forms/legacyFormRegistry";
 
 /** Default sibling keys for `location` field type. */
 const locKeys = (f: BaseField) => ({
