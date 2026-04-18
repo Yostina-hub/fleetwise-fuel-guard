@@ -301,8 +301,17 @@ function TemplateLibraryDialog() {
   const navigate = useNavigate();
   const { organizationId } = useOrganization();
   const clone = useCloneTemplate();
+  const list = useFormsList(organizationId, true);
   const [open, setOpen] = useState(false);
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [seedingAll, setSeedingAll] = useState(false);
+
+  // Set of template keys already present in this org (active or archived).
+  const existingKeys = useMemo(() => {
+    const set = new Set<string>();
+    for (const f of list.data ?? []) set.add(f.key);
+    return set;
+  }, [list.data]);
 
   const handleClone = async (tpl: FormTemplate) => {
     if (!organizationId) {
@@ -330,6 +339,44 @@ function TemplateLibraryDialog() {
     } finally {
       setBusyKey(null);
     }
+  };
+
+  const handleSeedAll = async () => {
+    if (!organizationId) {
+      toast.error("No organization");
+      return;
+    }
+    const pending = FORM_TEMPLATES.filter((t) => !existingKeys.has(t.key));
+    if (pending.length === 0) {
+      toast.info("All templates already exist in this organization");
+      return;
+    }
+    setSeedingAll(true);
+    let okCount = 0;
+    let failCount = 0;
+    for (const tpl of pending) {
+      try {
+        await clone.mutateAsync({
+          organizationId,
+          template: {
+            key: tpl.key,
+            name: tpl.name,
+            description: tpl.description,
+            category: tpl.category,
+            schema: tpl.schema,
+            settings: tpl.settings,
+          },
+        });
+        okCount += 1;
+      } catch (e: any) {
+        console.error("Seed failed for", tpl.key, e);
+        failCount += 1;
+      }
+    }
+    setSeedingAll(false);
+    if (okCount > 0) toast.success(`Seeded ${okCount} template${okCount === 1 ? "" : "s"}`);
+    if (failCount > 0) toast.error(`${failCount} template${failCount === 1 ? "" : "s"} failed`);
+    setOpen(false);
   };
 
   return (
@@ -373,21 +420,34 @@ function TemplateLibraryDialog() {
                   <Button
                     size="sm"
                     onClick={() => handleClone(tpl)}
-                    disabled={busyKey !== null}
+                    disabled={busyKey !== null || seedingAll}
+                    variant={existingKeys.has(tpl.key) ? "outline" : "default"}
                   >
                     {busyKey === tpl.key ? (
                       <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
                     ) : (
                       <Plus className="h-3.5 w-3.5 mr-1" />
                     )}
-                    Clone
+                    {existingKeys.has(tpl.key) ? "Clone again" : "Clone"}
                   </Button>
                 </div>
               </div>
             ))}
           </div>
         </ScrollArea>
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:justify-between">
+          <Button
+            variant="secondary"
+            onClick={handleSeedAll}
+            disabled={seedingAll || busyKey !== null}
+          >
+            {seedingAll ? (
+              <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5 mr-1" />
+            )}
+            Seed all missing templates
+          </Button>
           <Button variant="ghost" onClick={() => setOpen(false)}>Close</Button>
         </DialogFooter>
       </DialogContent>
