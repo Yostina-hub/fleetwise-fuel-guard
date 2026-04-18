@@ -54,20 +54,17 @@ const REGISTRY_MAP = new Map(REGISTRY.map((r) => [r.key, r]));
 
 /**
  * Resolves a form key to a registered legacy component.
- * Matches both the exact registered key (e.g. "vehicle_request") and any
- * cloned variant whose key starts with `<registered>_` (e.g.
- * "vehicle_request_copy_4", "vehicle_request_v2"). This lets users clone
- * legacy templates in the Forms module while still inheriting full feature
- * parity at render time.
+ *
+ * IMPORTANT: only the EXACT registered key is bound to the legacy component.
+ * Cloned/derived variants (e.g. "vehicle_request_copy_4", "vehicle_request_v2")
+ * are intentionally NOT bound — they render from their own JSON schema so the
+ * editor's Preview matches the WYSIWYG Build canvas 1:1. This lets users
+ * customize cloned templates without being overridden by the hard-coded
+ * legacy component layout.
  */
 export function getLegacyFormEntry(formKey?: string | null): LegacyFormRegistryEntry | undefined {
   if (!formKey) return undefined;
-  const direct = REGISTRY_MAP.get(formKey);
-  if (direct) return direct;
-  for (const entry of REGISTRY) {
-    if (formKey === entry.key || formKey.startsWith(`${entry.key}_`)) return entry;
-  }
-  return undefined;
+  return REGISTRY_MAP.get(formKey);
 }
 
 /** Render a registered legacy form inline. */
