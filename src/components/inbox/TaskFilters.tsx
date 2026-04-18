@@ -22,7 +22,7 @@ interface TaskFiltersProps {
   slaFilter: "all" | "breach" | "warn";
   setSlaFilter: (s: "all" | "breach" | "warn") => void;
   tasks: WorkflowTask[];
-  counts: { pending: number; completed: number; breach: number };
+  counts: { pending: number; completed: number; breach: number; trash: number };
 }
 
 export function TaskFilters({
