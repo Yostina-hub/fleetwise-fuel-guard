@@ -25754,6 +25754,8 @@ export type Database = {
         Args: { p_retain_months?: number }
         Returns: string
       }
+      cleanup_outsource_tire_e2e_test: { Args: never; Returns: string }
+      cleanup_vehicle_request_e2e_test: { Args: never; Returns: string }
       clear_failed_login: { Args: { p_email: string }; Returns: undefined }
       complete_workflow_task: {
         Args: { _decision: string; _result?: Json; _task_id: string }
@@ -26096,6 +26098,24 @@ export type Database = {
           flow: string
           status: string
           step: string
+        }[]
+      }
+      run_outsource_tire_e2e_test: {
+        Args: never
+        Returns: {
+          t_detail: string
+          t_flow: string
+          t_status: string
+          t_step: string
+        }[]
+      }
+      run_vehicle_request_e2e_test: {
+        Args: never
+        Returns: {
+          t_detail: string
+          t_flow: string
+          t_status: string
+          t_step: string
         }[]
       }
       scd_create_po: {
