@@ -45,6 +45,18 @@ const OracleWorkOrderWrapper = lazy(() => import("./wrappers/OracleWorkOrderWrap
 const VehicleInspectionWrapper = lazy(() => import("./wrappers/VehicleInspectionWrapper"));
 const FuelRequestWrapper = lazy(() => import("./wrappers/FuelRequestWrapper"));
 const SafetyComfortReportWrapper = lazy(() => import("./wrappers/SafetyComfortReportWrapper"));
+const DynamicFormWrapper = lazy(() => import("./wrappers/DynamicFormWrapper"));
+
+/** Prefix used for forms built in the Forms module (`user_form:<form_key>`). */
+export const USER_FORM_PREFIX = "user_form:";
+
+export function isUserFormKey(key?: string | null): boolean {
+  return !!key && key.startsWith(USER_FORM_PREFIX);
+}
+
+export function stripUserFormKey(key: string): string {
+  return key.startsWith(USER_FORM_PREFIX) ? key.slice(USER_FORM_PREFIX.length) : key;
+}
 
 const FORMS: RegisteredWorkflowForm[] = [
   {
@@ -88,8 +100,22 @@ const FORM_MAP = new Map(FORMS.map((f) => [f.key, f]));
 
 export const listWorkflowForms = (): RegisteredWorkflowForm[] => FORMS;
 
-export const getWorkflowForm = (key?: string | null): RegisteredWorkflowForm | undefined =>
-  key ? FORM_MAP.get(key) : undefined;
+export const getWorkflowForm = (key?: string | null): RegisteredWorkflowForm | undefined => {
+  if (!key) return undefined;
+  if (isUserFormKey(key)) {
+    // Synthetic registration for user-built forms — resolved at runtime by key.
+    const bare = stripUserFormKey(key);
+    return {
+      key,
+      label: `User form: ${bare}`,
+      description: "Form built in the Forms module.",
+      default_decision: "submitted",
+      // Bind the key into the wrapper via a thin closure component.
+      Component: (props) => <DynamicFormWrapper {...props} formKey={bare} />,
+    };
+  }
+  return FORM_MAP.get(key);
+};
 
 /**
  * Renders the registered form by key inside a Suspense boundary.
