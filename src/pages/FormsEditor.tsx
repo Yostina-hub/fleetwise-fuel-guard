@@ -121,21 +121,39 @@ export default function FormsEditor() {
   }, []);
 
   const deleteTopLevel = useCallback((id: string) => {
-    setSchema((s) => ({ ...s, fields: s.fields.filter((f) => f.id !== id) }));
+    setSchema((s) => {
+      const target = s.fields.find((f) => f.id === id);
+      if (target && isFieldLocked(formQ.data?.key, target.key)) {
+        toast.error(`"${target.label}" is locked by the legacy contract and can't be deleted.`);
+        return s;
+      }
+      return { ...s, fields: s.fields.filter((f) => f.id !== id) };
+    });
     setSelectedId((prev) => (prev === id ? null : prev));
     markDirty();
-  }, []);
+  }, [formQ.data?.key]);
 
   const deleteChild = useCallback((id: string) => {
-    setSchema((s) => ({
-      ...s,
-      fields: s.fields.map((f) =>
-        f.fields ? { ...f, fields: f.fields.filter((c) => c.id !== id) } : f,
-      ),
-    }));
+    setSchema((s) => {
+      let blocked = false;
+      const next = s.fields.map((f) => {
+        if (!f.fields) return f;
+        const child = f.fields.find((c) => c.id === id);
+        if (child && isFieldLocked(formQ.data?.key, child.key)) {
+          blocked = true;
+          return f;
+        }
+        return { ...f, fields: f.fields.filter((c) => c.id !== id) };
+      });
+      if (blocked) {
+        toast.error("That field is locked by the legacy contract and can't be deleted.");
+        return s;
+      }
+      return { ...s, fields: next };
+    });
     setSelectedId((prev) => (prev === id ? null : prev));
     markDirty();
-  }, []);
+  }, [formQ.data?.key]);
 
   const updateField = useCallback((id: string, patch: Partial<BaseField>) => {
     setSchema((s) => {
