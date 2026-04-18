@@ -24,6 +24,7 @@ const ACTION_META: Record<string, { icon: any; label: string; color: string }> =
   deactivate: { icon: PowerOff, label: "Deactivated", color: "bg-muted text-muted-foreground border-border" },
   substitute: { icon: ArrowRightLeft, label: "Delegated", color: "bg-amber-500/10 text-amber-600 border-amber-500/30" },
   skip: { icon: SkipForward, label: "Skipped", color: "bg-muted text-muted-foreground border-border" },
+  route: { icon: ArrowRightLeft, label: "Routed", color: "bg-blue-500/10 text-blue-600 border-blue-500/30" },
 };
 
 const SOURCE_META: Record<string, { icon: any; label: string }> = {
@@ -31,15 +32,22 @@ const SOURCE_META: Record<string, { icon: any; label: string }> = {
   delegation_matrix: { icon: Users, label: "Substitution" },
   user_substitutions: { icon: Users, label: "Substitution" },
   approval_levels: { icon: Shield, label: "Approval Level" },
+  fuel_request: { icon: ArrowRightLeft, label: "Fuel Request Routing" },
+  vehicle_request: { icon: ArrowRightLeft, label: "Vehicle Request Routing" },
 };
 
-// Only show audit entries that pertain to the authority/delegation matrix itself.
-const ALLOWED_SOURCES = [
+// Authority/delegation configuration sources — show ALL actions from these.
+const CONFIG_SOURCES = [
   "authority_matrix",
   "delegation_matrix",
   "user_substitutions",
   "approval_levels",
 ];
+
+// Delegation routing actions — show these from ANY workflow source table
+// (e.g. fuel_request, vehicle_request) because they represent delegation
+// decisions made by the authority/delegation matrix at runtime.
+const DELEGATION_ACTIONS = ["route", "substitute", "skip"];
 
 export const DelegationHistoryTab = () => {
   const { organizationId } = useOrganization();
@@ -55,7 +63,9 @@ export const DelegationHistoryTab = () => {
         .from("delegation_audit_log")
         .select("*")
         .eq("organization_id", organizationId)
-        .in("source_table", ALLOWED_SOURCES)
+        .or(
+          `source_table.in.(${CONFIG_SOURCES.join(",")}),action.in.(${DELEGATION_ACTIONS.join(",")})`,
+        )
         .order("created_at", { ascending: false })
         .limit(500);
       if (error) throw error;
@@ -127,6 +137,8 @@ export const DelegationHistoryTab = () => {
             <SelectItem value="delegation_matrix">Substitutions</SelectItem>
             <SelectItem value="user_substitutions">User Substitutions</SelectItem>
             <SelectItem value="approval_levels">Approval Levels</SelectItem>
+            <SelectItem value="fuel_request">Fuel Request Routing</SelectItem>
+            <SelectItem value="vehicle_request">Vehicle Request Routing</SelectItem>
           </SelectContent>
         </Select>
         <Select value={actionFilter} onValueChange={setActionFilter}>
