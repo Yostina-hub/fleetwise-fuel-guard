@@ -30,9 +30,26 @@ export function ImpersonationProvider({ children }: { children: ReactNode }) {
   const { realUser, realRoles, _setImpersonationOverride } = useAuthContext();
   const location = useLocation();
   const queryClient = useQueryClient();
-  const [impersonatedUserId, setImpersonatedUserId] = useState<string | null>(null);
+  // Persist across full-page navigations (sandbox sometimes does hard nav).
+  // sessionStorage scope = current tab only, auto-cleared when tab closes,
+  // matching our "never persist sensitive context across browser sessions" rule.
+  const [impersonatedUserId, setImpersonatedUserId] = useState<string | null>(
+    () => (typeof window !== "undefined" ? sessionStorage.getItem("imp:userId") : null),
+  );
   const [impersonatedUserProfile, setImpersonatedUserProfile] = useState<any | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(
+    () => (typeof window !== "undefined" ? sessionStorage.getItem("imp:sessionId") : null),
+  );
+
+  // Keep sessionStorage in sync
+  useEffect(() => {
+    if (impersonatedUserId) sessionStorage.setItem("imp:userId", impersonatedUserId);
+    else sessionStorage.removeItem("imp:userId");
+  }, [impersonatedUserId]);
+  useEffect(() => {
+    if (sessionId) sessionStorage.setItem("imp:sessionId", sessionId);
+    else sessionStorage.removeItem("imp:sessionId");
+  }, [sessionId]);
 
   const isSuperAdmin = realRoles.some((r) => r.role === "super_admin");
   const isImpersonating = isSuperAdmin && impersonatedUserId !== null;
