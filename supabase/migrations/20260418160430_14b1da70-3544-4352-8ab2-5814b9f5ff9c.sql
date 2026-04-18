@@ -1,0 +1,1 @@
+UPDATE public.fuel_requests SET driver_phone='+251911234567' WHERE id='b9490eab-e1ba-457a-a204-c1778b87d47e' AND (driver_phone IS NULL OR driver_phone='');
