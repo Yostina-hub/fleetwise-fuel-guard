@@ -33,8 +33,21 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
   const { performAction, canPerform, userRoles } = useWorkflow(config) as any;
   const { data: transitions = [] } = useWorkflowTransitions(instance?.id ?? null);
   const [activeAction, setActiveAction] = useState<StageAction | null>(null);
-  const [actionValues, setActionValues] = useState<Record<string, any>>({});
   const [actionNotes, setActionNotes] = useState("");
+
+  // Per-instance + per-action draft so users can step away mid-form and resume.
+  const draftKey =
+    instance && activeAction
+      ? `wf-action:${config.type}:${instance.id}:${activeAction.id}`
+      : null;
+  const {
+    values: actionValues,
+    setValues: setActionValues,
+    setField: setActionField,
+    restoredAt: draftRestoredAt,
+    savedAt: draftSavedAt,
+    clear: clearActionDraft,
+  } = useFormDraft<Record<string, any>>(draftKey, {});
 
   // Delegation matrix lookup — only fires for stages whose id ends in
   // "_pending_approval" (the SOP convention for "Get approval as per
