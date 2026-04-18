@@ -63,6 +63,11 @@ interface FormRendererProps {
   submitting?: boolean;
   onSubmit: (values: Record<string, any>) => Promise<void> | void;
   onCancel?: () => void;
+  /**
+   * Stable form key (`forms.key`). When this matches a registered legacy form,
+   * the renderer short-circuits to the legacy component for full feature parity.
+   */
+  formKey?: string | null;
 }
 
 function defaultRow(rowFields: BaseField[]): Record<string, any> {
