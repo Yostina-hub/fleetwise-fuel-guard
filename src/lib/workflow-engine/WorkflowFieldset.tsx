@@ -28,7 +28,10 @@ export function WorkflowFieldset({ fields, values, onChange, autofillFromEntitie
     [fields],
   );
   const needsDrivers = useMemo(() => fields.some((f) => f.type === "driver"), [fields]);
-  const needsCatalog = useMemo(() => fields.some((f) => f.type === "handover_catalog"), [fields]);
+  const needsCatalog = useMemo(
+    () => fields.some((f) => f.type === "handover_catalog" || f.type === "handover_lines_30"),
+    [fields],
+  );
 
   const { data: vehicles = [] } = useQuery({
     queryKey: ["wf-vehicles-full", organizationId],
@@ -131,6 +134,7 @@ export function WorkflowFieldset({ fields, values, onChange, autofillFromEntitie
               f.type === "textarea" ||
               f.type === "multiselect" ||
               f.type === "handover_catalog" ||
+              f.type === "handover_lines_30" ||
               f.type === "vehicle_autofill_summary"
                 ? "md:col-span-2"
                 : ""
@@ -264,6 +268,76 @@ export function WorkflowFieldset({ fields, values, onChange, autofillFromEntitie
                       })}
                     </div>
                   </>
+                )}
+              </div>,
+            );
+          }
+          case "handover_lines_30": {
+            // Mirrors the paper EFM/FA/03 "Fleet Safety, Comfort, Accessories
+            // and Comfort Material Lists" table — exactly 30 numbered slots,
+            // each with a free-form material name and a quantity, displayed
+            // as two columns (1-15 left, 16-30 right) just like the SOP.
+            const rows: { name: string; qty: string }[] = (() => {
+              const raw = Array.isArray(v) ? v : [];
+              const out: { name: string; qty: string }[] = [];
+              for (let i = 0; i < 30; i++) {
+                const r = raw[i] || {};
+                out.push({ name: r.name ?? "", qty: r.qty ?? "" });
+              }
+              return out;
+            })();
+            const updateRow = (idx: number, patch: Partial<{ name: string; qty: string }>) => {
+              const next = rows.map((r, i) => (i === idx ? { ...r, ...patch } : r));
+              onChange(f.key, next);
+            };
+            const renderCol = (start: number, end: number) => (
+              <div className="border border-input rounded-md overflow-hidden">
+                <div className="grid grid-cols-[40px_1fr_70px] bg-muted/60 text-[10px] uppercase font-semibold">
+                  <div className="px-2 py-1 border-r border-input text-center">No.</div>
+                  <div className="px-2 py-1 border-r border-input">List of material</div>
+                  <div className="px-2 py-1 text-center">Qty</div>
+                </div>
+                {Array.from({ length: end - start }, (_, k) => {
+                  const idx = start + k;
+                  return (
+                    <div
+                      key={idx}
+                      className="grid grid-cols-[40px_1fr_70px] border-t border-input"
+                    >
+                      <div className="px-2 py-0.5 text-center text-xs text-muted-foreground border-r border-input flex items-center justify-center">
+                        {idx + 1}
+                      </div>
+                      <input
+                        className="px-2 py-1 text-xs bg-transparent outline-none border-r border-input"
+                        value={rows[idx].name}
+                        onChange={(e) => updateRow(idx, { name: e.target.value })}
+                      />
+                      <input
+                        type="number"
+                        min={0}
+                        className="px-2 py-1 text-xs bg-transparent outline-none text-center"
+                        value={rows[idx].qty}
+                        onChange={(e) => updateRow(idx, { qty: e.target.value })}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            );
+            return wrap(
+              <div className="space-y-2">
+                <div className="text-[10px] uppercase font-semibold text-center bg-muted/40 border border-input rounded px-2 py-1">
+                  Fleet Safety, Comfort, Accessories and Comfort Material Lists
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {renderCol(0, 15)}
+                  {renderCol(15, 30)}
+                </div>
+                {catalog.length > 0 && (
+                  <p className="text-[10px] text-muted-foreground">
+                    Tip: catalog suggestions — {catalog.slice(0, 8).map((c: any) => c.name).join(", ")}
+                    {catalog.length > 8 ? "…" : ""}
+                  </p>
                 )}
               </div>,
             );
