@@ -33,13 +33,18 @@ const SOURCE_META: Record<string, { icon: any; label: string }> = {
   approval_levels: { icon: Shield, label: "Approval Level" },
 };
 
-// Only show audit entries that pertain to the authority/delegation matrix itself.
-const ALLOWED_SOURCES = [
+// Authority/delegation configuration sources — show ALL actions from these.
+const CONFIG_SOURCES = [
   "authority_matrix",
   "delegation_matrix",
   "user_substitutions",
   "approval_levels",
 ];
+
+// Delegation routing actions — show these from ANY workflow source table
+// (e.g. fuel_request, vehicle_request) because they represent delegation
+// decisions made by the authority/delegation matrix at runtime.
+const DELEGATION_ACTIONS = ["route", "substitute", "skip"];
 
 export const DelegationHistoryTab = () => {
   const { organizationId } = useOrganization();
