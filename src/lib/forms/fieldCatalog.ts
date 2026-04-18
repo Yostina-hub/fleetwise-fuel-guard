@@ -34,6 +34,8 @@ export const PALETTE: PaletteEntry[] = [
   { type: "checkbox",    label: "Checkbox",      group: "Standard", icon: CheckSquare },
   { type: "switch",      label: "Switch",        group: "Standard", icon: ToggleLeft },
   { type: "file",        label: "File / URL",    group: "Standard", icon: Upload },
+  { type: "location",    label: "Location (map)", group: "Standard", icon: Navigation },
+  { type: "pool",        label: "Fleet pool",    group: "Standard", icon: Layers },
   // Entity pickers
   { type: "vehicle",     label: "Vehicle",       group: "Entity",   icon: Car },
   { type: "driver",      label: "Driver",        group: "Entity",   icon: User },
