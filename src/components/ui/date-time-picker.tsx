@@ -90,21 +90,65 @@ export function DateTimePicker({
   );
 }
 
-/** Combine a Date + "HH:mm" string into an ISO string */
+/**
+ * Resolve the active timezone. Reads the org-level timezone saved by Lovable Cloud
+ * (`localStorage.org_timezone`, written by useOrganizationSettings); falls back to
+ * Africa/Addis_Ababa (the default for this fleet). This keeps date/time inputs
+ * stable regardless of the browser's locale (e.g. a Lovable preview running in UTC).
+ */
+function getActiveTimezone(): string {
+  if (typeof window !== "undefined") {
+    const fromStorage = window.localStorage?.getItem("org_timezone");
+    if (fromStorage) return fromStorage;
+  }
+  return "Africa/Addis_Ababa";
+}
+
+/**
+ * Compute the UTC offset (in minutes) of a given timezone at a given UTC instant.
+ * Positive = ahead of UTC (e.g. EAT = +180).
+ */
+function tzOffsetMinutes(tz: string, atUtcMs: number): number {
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz, hour12: false,
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+  });
+  const parts = dtf.formatToParts(new Date(atUtcMs));
+  const get = (t: string) => Number(parts.find(p => p.type === t)?.value);
+  const asUtc = Date.UTC(get("year"), get("month") - 1, get("day"), get("hour"), get("minute"), get("second"));
+  return Math.round((asUtc - atUtcMs) / 60000);
+}
+
+/** Combine a Date + "HH:mm" string into an ISO string, interpreted in the org's timezone. */
 export function combineDateAndTime(date?: Date, time?: string): string | undefined {
   if (!date) return undefined;
   const [h, m] = (time || "00:00").split(":").map(Number);
-  const d = new Date(date);
-  d.setHours(h, m, 0, 0);
-  return d.toISOString();
+  const tz = getActiveTimezone();
+  // Use the calendar Y-M-D the user picked (in their browser) — DatePicker stores
+  // these as "midnight local" Dates so Y/M/D match what they saw on screen.
+  const y = date.getFullYear();
+  const mo = date.getMonth();
+  const day = date.getDate();
+  // Pretend the picked wall time is UTC, then shift by the org-tz offset at that instant.
+  const naiveUtcMs = Date.UTC(y, mo, day, h, m, 0, 0);
+  const offsetMin = tzOffsetMinutes(tz, naiveUtcMs);
+  return new Date(naiveUtcMs - offsetMin * 60_000).toISOString();
 }
 
-/** Parse an ISO string into { date, time } */
+/** Parse an ISO string into { date, time } expressed in the org's timezone. */
 export function splitDateTime(iso?: string | null): { date: Date | undefined; time: string } {
   if (!iso) return { date: undefined, time: "09:00" };
+  const tz = getActiveTimezone();
   const d = new Date(iso);
-  return {
-    date: d,
-    time: `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`,
-  };
+  const dtf = new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz, hour12: false,
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit",
+  });
+  const parts = dtf.formatToParts(d);
+  const get = (t: string) => parts.find(p => p.type === t)?.value || "00";
+  // Build a Date whose local Y/M/D matches the org-tz wall date (for the picker).
+  const localDate = new Date(Number(get("year")), Number(get("month")) - 1, Number(get("day")));
+  return { date: localDate, time: `${get("hour")}:${get("minute")}` };
 }
