@@ -1,24 +1,35 @@
 /**
  * FieldProperties — right-hand panel showing the editable properties of the
  * currently selected field. Mutations are bubbled up via `onChange`.
+ *
+ * Legacy-bound forms (see `lib/forms/legacyContracts.ts`) lock the field
+ * `key`, `type`, and `options` for contract fields so users can only adjust
+ * presentation (label, help text, placeholder, required, visibility, layout).
  */
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { isInputField, type BaseField, type FieldOption, type LogicOperator } from "@/lib/forms/schema";
+import { getLegacyContract } from "@/lib/forms/legacyContracts";
 
 interface Props {
   field: BaseField | null;
   /** Sibling fields (or peer top-level fields) used to choose the visibility driver. */
   siblings: BaseField[];
+  /** Form key used to look up legacy contract locks (optional). */
+  formKey?: string | null;
   onChange: (patch: Partial<BaseField>) => void;
 }
 
@@ -35,7 +46,7 @@ const OPERATORS: { value: LogicOperator; label: string }[] = [
   { value: "is_filled", label: "is filled" },
 ];
 
-export function FieldProperties({ field, siblings, onChange }: Props) {
+export function FieldProperties({ field, siblings, formKey, onChange }: Props) {
   if (!field) {
     return (
       <div className="p-6 text-center text-xs text-muted-foreground">
@@ -48,13 +59,36 @@ export function FieldProperties({ field, siblings, onChange }: Props) {
   const hasOptions =
     field.type === "select" || field.type === "radio" || field.type === "multiselect";
 
+  const contract = getLegacyContract(formKey);
+  const locked = !!contract?.lockedKeys.includes(field.key);
+
   return (
     <ScrollArea className="h-full">
       <div className="p-3 space-y-4">
         <div className="space-y-1">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
             {field.type} field
+            {locked && (
+              <TooltipProvider delayDuration={150}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge variant="outline" className="gap-1 text-[10px] py-0 h-5 border-amber-500/50 text-amber-600 dark:text-amber-400">
+                      <Lock className="h-2.5 w-2.5" />
+                      Legacy
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent side="left" className="max-w-xs text-xs">
+                    {contract?.reason ?? "This field is part of a legacy contract. Key, type, and options are locked."}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </h3>
+          {locked && (
+            <p className="text-[11px] text-muted-foreground leading-snug">
+              Key, type, and options are locked. You can still edit label, help text, placeholder, required, visibility, and layout.
+            </p>
+          )}
         </div>
 
         <Field label="Label">
