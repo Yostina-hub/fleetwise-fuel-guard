@@ -327,6 +327,7 @@ export default function FormsEditor() {
                 <FormRenderer
                   schema={schema}
                   settings={settings}
+                  formKey={formQ.data?.key}
                   onSubmit={async (v) => {
                     toast.success("Preview submission");
                     console.log("[FormsEditor preview]", v);
