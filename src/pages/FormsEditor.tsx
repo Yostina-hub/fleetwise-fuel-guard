@@ -320,7 +320,8 @@ export default function FormsEditor() {
           <TabsContent value="preview" className="mt-3">
             <Card className="p-4 max-w-3xl mx-auto">
               {(() => {
-                const isLegacyBound = formQ.data?.key === "vehicle_request";
+                const k = formQ.data?.key ?? "";
+                const isLegacyBound = k === "vehicle_request" || k.startsWith("vehicle_request_");
                 if (isLegacyBound) {
                   return (
                     <div className="mb-3 rounded-md border border-primary/30 bg-primary/5 p-3 text-xs text-muted-foreground">
@@ -332,7 +333,7 @@ export default function FormsEditor() {
                 }
                 return null;
               })()}
-              {schema.fields.length === 0 && formQ.data?.key !== "vehicle_request" ? (
+              {schema.fields.length === 0 && !(formQ.data?.key ?? "").startsWith("vehicle_request") ? (
                 <div className="text-center py-12 text-muted-foreground text-sm">
                   Add some fields to see the live preview.
                 </div>
