@@ -35,7 +35,7 @@ export const FuelWorkOrdersTab = ({ onEdit, onCreate }: Props) => {
       if (!organizationId) return [];
       const { data, error } = await supabase
         .from("fuel_work_orders")
-        .select("*, fuel_requests(request_number, vehicle_id, generator_id, request_type, liters_approved, liters_requested)")
+        .select("*, fuel_requests!fuel_work_orders_fuel_request_id_fkey(request_number, vehicle_id, generator_id, request_type, liters_approved, liters_requested)")
         .eq("organization_id", organizationId)
         .order("created_at", { ascending: false })
         .limit(500);
