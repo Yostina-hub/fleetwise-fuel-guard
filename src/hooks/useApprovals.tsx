@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useImpersonation } from "@/hooks/useImpersonation";
 
 export const useApprovals = () => {
   const { toast } = useToast();
@@ -10,7 +11,40 @@ export const useApprovals = () => {
   // Use the *effective* user — when a super_admin is impersonating, this is
   // the impersonated user's id, so approvals routed to them appear correctly.
   const { user: effectiveUser, isImpersonating } = useAuthContext();
+  const { sessionId, impersonatedUserId } = useImpersonation();
   const effectiveUserId = effectiveUser?.id ?? null;
+
+  const runFuelApprovalAction = async ({
+    action,
+    approvalId,
+    fuelRequestId,
+    comment,
+    litersApproved,
+  }: {
+    action: "approve" | "reject";
+    approvalId: string;
+    fuelRequestId: string;
+    comment?: string;
+    litersApproved?: number;
+  }) => {
+    const { data, error } = await supabase.functions.invoke("fuel-request-approval-action", {
+      body: {
+        action,
+        approvalId,
+        fuelRequestId,
+        comment,
+        litersApproved,
+        effectiveApproverId: effectiveUserId,
+        impersonatedUserId: isImpersonating ? impersonatedUserId : null,
+        impersonationSessionId: isImpersonating ? sessionId : null,
+      },
+    });
+
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+
+    return data as { fuelRequestId: string; allApproved: boolean };
+  };
 
   // Realtime subscription for approvals (trip + fuel)
   useEffect(() => {
@@ -161,49 +195,13 @@ export const useApprovals = () => {
   // Approve fuel request
   const approveFuelRequest = useMutation({
     mutationFn: async ({ approvalId, fuelRequestId, comment, litersApproved }: { approvalId: string; fuelRequestId: string; comment?: string; litersApproved?: number }) => {
-      const { data: user } = await supabase.auth.getUser();
-      
-      const { error: approvalError } = await supabase
-        .from("fuel_request_approvals")
-        .update({
-          action: "approve",
-          comment,
-          acted_at: new Date().toISOString(),
-        })
-        .eq("id", approvalId);
-
-      if (approvalError) throw approvalError;
-
-      // Check remaining pending approvals for this fuel request
-      const { data: allApprovals } = await supabase
-        .from("fuel_request_approvals")
-        .select("*")
-        .eq("fuel_request_id", fuelRequestId)
-        .order("step");
-
-      const pendingCount = allApprovals?.filter((a) => a.action === "pending").length || 0;
-
-      if (pendingCount === 0) {
-        // Get the original request for liters
-        const { data: fuelReq } = await supabase
-          .from("fuel_requests")
-          .select("liters_requested")
-          .eq("id", fuelRequestId)
-          .single();
-
-        const { error: requestError } = await supabase
-          .from("fuel_requests")
-          .update({
-            status: "approved",
-            approved_by: user.user?.id,
-            approved_at: new Date().toISOString(),
-            liters_approved: litersApproved || fuelReq?.liters_requested,
-          })
-          .eq("id", fuelRequestId);
-        if (requestError) throw requestError;
-      }
-
-      return { fuelRequestId, allApproved: pendingCount === 0 };
+      return runFuelApprovalAction({
+        action: "approve",
+        approvalId,
+        fuelRequestId,
+        comment,
+        litersApproved,
+      });
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["pending-fuel-approvals"] });
@@ -224,31 +222,12 @@ export const useApprovals = () => {
   // Reject fuel request
   const rejectFuelRequest = useMutation({
     mutationFn: async ({ approvalId, fuelRequestId, comment }: { approvalId: string; fuelRequestId: string; comment: string }) => {
-      const { data: user } = await supabase.auth.getUser();
-
-      const { error: approvalError } = await supabase
-        .from("fuel_request_approvals")
-        .update({
-          action: "reject",
-          comment,
-          acted_at: new Date().toISOString(),
-        })
-        .eq("id", approvalId);
-
-      if (approvalError) throw approvalError;
-
-      const { error: requestError } = await supabase
-        .from("fuel_requests")
-        .update({
-          status: "rejected",
-          rejected_reason: comment,
-          approved_by: user.user?.id,
-          approved_at: new Date().toISOString(),
-        })
-        .eq("id", fuelRequestId);
-
-      if (requestError) throw requestError;
-      return fuelRequestId;
+      return runFuelApprovalAction({
+        action: "reject",
+        approvalId,
+        fuelRequestId,
+        comment,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pending-fuel-approvals"] });
