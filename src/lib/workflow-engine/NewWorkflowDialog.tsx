@@ -168,10 +168,13 @@ export function NewWorkflowDialog({ config, open, onOpenChange }: Props) {
         <p className="text-xs text-muted-foreground mb-2">
           {config.sopCode} — {config.description}
         </p>
+        <div className="mb-3">
+          <DraftStatus restoredAt={restoredAt} savedAt={savedAt} onClear={clear} />
+        </div>
         <WorkflowFieldset
           fields={intakeFields}
           values={values}
-          onChange={(k, v) => setValues((p) => ({ ...p, [k]: v }))}
+          onChange={(k, v) => setField(k, v)}
         />
         <DialogFooter className="mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
