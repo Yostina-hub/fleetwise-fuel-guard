@@ -250,7 +250,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
 
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       toast.success(
         isSuperAdmin && onBehalfOf
           ? `Vehicle request submitted on behalf of ${onBehalfOf.name}`
@@ -261,6 +261,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
       onOpenChange(false);
       setForm(initialForm);
       setOnBehalfOf(null);
+      onSubmitted?.({ id: data?.id });
     },
     onError: (err: any) => toast.error(err.message),
   });
