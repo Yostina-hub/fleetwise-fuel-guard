@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useFormDraft, clearFormDraft } from "@/hooks/useFormDraft";
+import { DraftStatus } from "./DraftStatus";
 import { formatDistanceToNowStrict, format } from "date-fns";
 import {
   X, Loader2, Car, User as UserIcon, History, Activity, FileText, ExternalLink,
