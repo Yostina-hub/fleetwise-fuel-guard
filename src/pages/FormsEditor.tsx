@@ -12,7 +12,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Eye, Loader2, Save, Send, Settings } from "lucide-react";
+import { ArrowLeft, Eye, Loader2, Save, Send, Settings, ListChecks, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -245,6 +245,11 @@ export default function FormsEditor() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <Link to={`/forms/${formId}/submissions`}>
+                <ListChecks className="h-3.5 w-3.5 mr-1" /> Submissions
+              </Link>
+            </Button>
             <SettingsDialog settings={settings} onChange={(s) => { setSettings(s); markDirty(); }} />
             <Button variant="outline" size="sm" onClick={onManualSave} disabled={saveDraft.isPending}>
               <Save className="h-3.5 w-3.5 mr-1" /> Save draft
