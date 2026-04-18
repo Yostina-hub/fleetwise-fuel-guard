@@ -64,15 +64,18 @@ interface TaskContextPanelProps {
 export function TaskContextPanel({ task, organizationId, onClose, onSubmit, submitting }: TaskContextPanelProps) {
   const [values, setValues] = useState<Record<string, any>>({});
 
+  const actionGroups = task ? getActionGroups(task) : null;
+
   useEffect(() => {
     if (!task) return;
     const init: Record<string, any> = {};
     const nowIso = new Date().toISOString();
-    (task.form_schema ?? []).forEach((f) => {
-      // Pre-fill datetime/date fields with "now" so they're never silently empty.
-      // Users can still edit before submit.
-      if (f.type === "datetime") init[f.key] = nowIso.slice(0, 16);   // YYYY-MM-DDTHH:mm
-      else if (f.type === "date") init[f.key] = nowIso.slice(0, 10);  // YYYY-MM-DD
+    const allFields: FormField[] = actionGroups
+      ? actionGroups.flatMap((g) => g.fields)
+      : (task.form_schema ?? []);
+    allFields.forEach((f) => {
+      if (f.type === "datetime") init[f.key] = nowIso.slice(0, 16);
+      else if (f.type === "date") init[f.key] = nowIso.slice(0, 10);
       else init[f.key] = "";
     });
     setValues(init);
