@@ -1,24 +1,35 @@
 /**
  * FieldProperties — right-hand panel showing the editable properties of the
  * currently selected field. Mutations are bubbled up via `onChange`.
+ *
+ * Legacy-bound forms (see `lib/forms/legacyContracts.ts`) lock the field
+ * `key`, `type`, and `options` for contract fields so users can only adjust
+ * presentation (label, help text, placeholder, required, visibility, layout).
  */
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { isInputField, type BaseField, type FieldOption, type LogicOperator } from "@/lib/forms/schema";
+import { getLegacyContract } from "@/lib/forms/legacyContracts";
 
 interface Props {
   field: BaseField | null;
   /** Sibling fields (or peer top-level fields) used to choose the visibility driver. */
   siblings: BaseField[];
+  /** Form key used to look up legacy contract locks (optional). */
+  formKey?: string | null;
   onChange: (patch: Partial<BaseField>) => void;
 }
 
@@ -35,7 +46,7 @@ const OPERATORS: { value: LogicOperator; label: string }[] = [
   { value: "is_filled", label: "is filled" },
 ];
 
-export function FieldProperties({ field, siblings, onChange }: Props) {
+export function FieldProperties({ field, siblings, formKey, onChange }: Props) {
   if (!field) {
     return (
       <div className="p-6 text-center text-xs text-muted-foreground">
@@ -48,22 +59,46 @@ export function FieldProperties({ field, siblings, onChange }: Props) {
   const hasOptions =
     field.type === "select" || field.type === "radio" || field.type === "multiselect";
 
+  const contract = getLegacyContract(formKey);
+  const locked = !!contract?.lockedKeys.includes(field.key);
+
   return (
     <ScrollArea className="h-full">
       <div className="p-3 space-y-4">
         <div className="space-y-1">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
             {field.type} field
+            {locked && (
+              <TooltipProvider delayDuration={150}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge variant="outline" className="gap-1 text-[10px] py-0 h-5 border-warning/50 text-warning">
+                      <Lock className="h-2.5 w-2.5" />
+                      Legacy
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent side="left" className="max-w-xs text-xs">
+                    {contract?.reason ?? "This field is part of a legacy contract. Key, type, and options are locked."}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </h3>
+          {locked && (
+            <p className="text-[11px] text-muted-foreground leading-snug">
+              Key, type, and options are locked. You can still edit label, help text, placeholder, required, visibility, and layout.
+            </p>
+          )}
         </div>
 
         <Field label="Label">
           <Input value={field.label} onChange={(e) => onChange({ label: e.target.value })} />
         </Field>
 
-        <Field label="Key (snake_case)">
+        <Field label={locked ? "Key (locked — legacy contract)" : "Key (snake_case)"}>
           <Input
             value={field.key}
+            disabled={locked}
             onChange={(e) => onChange({ key: e.target.value.replace(/[^a-z0-9_]/gi, "_").toLowerCase() })}
             className="font-mono"
           />
@@ -118,7 +153,7 @@ export function FieldProperties({ field, siblings, onChange }: Props) {
           </>
         ) : null}
 
-        {hasOptions ? <OptionsEditor field={field} onChange={onChange} /> : null}
+        {hasOptions ? <OptionsEditor field={field} onChange={onChange} locked={locked} /> : null}
 
         {field.type === "computed" ? (
           <>
@@ -204,10 +239,11 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 // ---------- Options editor ----------------------------------------------
 
 function OptionsEditor({
-  field, onChange,
-}: { field: BaseField; onChange: (p: Partial<BaseField>) => void }) {
+  field, onChange, locked,
+}: { field: BaseField; onChange: (p: Partial<BaseField>) => void; locked?: boolean }) {
   const opts: FieldOption[] = field.options ?? [];
   const update = (i: number, patch: Partial<FieldOption>) => {
+    if (locked && "value" in patch) return; // value is part of the contract
     const next = opts.map((o, idx) => (idx === i ? { ...o, ...patch } : o));
     onChange({ options: next });
   };
@@ -218,7 +254,9 @@ function OptionsEditor({
   const remove = (i: number) => onChange({ options: opts.filter((_, idx) => idx !== i) });
   return (
     <div className="space-y-2">
-      <Label className="text-xs">Options</Label>
+      <Label className="text-xs">
+        Options {locked ? <span className="text-muted-foreground font-normal">(values locked)</span> : null}
+      </Label>
       <div className="space-y-1.5">
         {opts.map((o, i) => (
           <div key={i} className="flex items-center gap-1.5">
@@ -230,19 +268,28 @@ function OptionsEditor({
             />
             <Input
               value={o.value}
+              disabled={locked}
               onChange={(e) => update(i, { value: e.target.value })}
               placeholder="value"
               className="h-7 text-xs font-mono"
             />
-            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => remove(i)}>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 w-7 p-0"
+              disabled={locked}
+              onClick={() => remove(i)}
+            >
               <Trash2 className="h-3 w-3" />
             </Button>
           </div>
         ))}
       </div>
-      <Button size="sm" variant="outline" onClick={add}>
-        <Plus className="h-3 w-3 mr-1" /> Add option
-      </Button>
+      {!locked && (
+        <Button size="sm" variant="outline" onClick={add}>
+          <Plus className="h-3 w-3 mr-1" /> Add option
+        </Button>
+      )}
     </div>
   );
 }
