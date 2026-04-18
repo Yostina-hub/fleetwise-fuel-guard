@@ -268,53 +268,78 @@ export function TaskContextPanel({ task, organizationId, onClose, onSubmit, subm
             </Collapsible>
           )}
 
-          {/* Form */}
-          {task.status === "pending" && !isFormKey && (task.form_schema ?? []).length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                <FileText className="h-3.5 w-3.5" />
-                Required input
+          {/* Form — for SOP tasks, fields are grouped per-action so users
+              know exactly which fields each button needs. For visual-builder
+              tasks we fall back to the flattened form_schema. */}
+          {task.status === "pending" && !isFormKey && (() => {
+            const renderField = (f: FormField) => (
+              <div key={f.key} className="space-y-1.5">
+                <Label className="text-xs">
+                  {f.label}{f.required ? <span className="text-destructive ml-0.5">*</span> : null}
+                </Label>
+                {f.type === "textarea" ? (
+                  <Textarea
+                    value={values[f.key] ?? ""}
+                    onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
+                    placeholder={f.placeholder}
+                    rows={3}
+                  />
+                ) : f.type === "select" ? (
+                  <Select
+                    value={values[f.key] ?? ""}
+                    onValueChange={(val) => setValues((v) => ({ ...v, [f.key]: val }))}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
+                    <SelectContent>
+                      {(f.options ?? []).map((o) => (
+                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    type={
+                      f.type === "number" ? "number" :
+                      f.type === "date" ? "date" :
+                      f.type === "datetime" ? "datetime-local" : "text"
+                    }
+                    value={values[f.key] ?? ""}
+                    onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
+                    placeholder={f.placeholder}
+                  />
+                )}
               </div>
-              {(task.form_schema ?? []).map((f) => (
-                <div key={f.key} className="space-y-1.5">
-                  <Label className="text-xs">
-                    {f.label}{f.required ? <span className="text-destructive ml-0.5">*</span> : null}
-                  </Label>
-                  {f.type === "textarea" ? (
-                    <Textarea
-                      value={values[f.key] ?? ""}
-                      onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
-                      placeholder={f.placeholder}
-                      rows={3}
-                    />
-                  ) : f.type === "select" ? (
-                    <Select
-                      value={values[f.key] ?? ""}
-                      onValueChange={(val) => setValues((v) => ({ ...v, [f.key]: val }))}
-                    >
-                      <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
-                      <SelectContent>
-                        {(f.options ?? []).map((o) => (
-                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Input
-                      type={
-                        f.type === "number" ? "number" :
-                        f.type === "date" ? "date" :
-                        f.type === "datetime" ? "datetime-local" : "text"
-                      }
-                      value={values[f.key] ?? ""}
-                      onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
-                      placeholder={f.placeholder}
-                    />
-                  )}
+            );
+
+            if (actionGroups) {
+              const nonEmpty = actionGroups.filter((g) => g.fields.length > 0);
+              if (nonEmpty.length === 0) return null;
+              return (
+                <div className="space-y-4">
+                  {nonEmpty.map((g) => (
+                    <div key={g.actionId} className="space-y-3 rounded-lg border border-border/60 bg-muted/20 p-3">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        <FileText className="h-3.5 w-3.5" />
+                        Required for: <span className="text-foreground/90 normal-case tracking-normal">{g.actionLabel}</span>
+                      </div>
+                      {g.fields.map(renderField)}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+              );
+            }
+
+            if ((task.form_schema ?? []).length === 0) return null;
+            return (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <FileText className="h-3.5 w-3.5" />
+                  Required input
+                </div>
+                {(task.form_schema ?? []).map(renderField)}
+              </div>
+            );
+          })()}
 
           {/* External-form path note */}
           {task.status === "pending" && isFormKey && (
