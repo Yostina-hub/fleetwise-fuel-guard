@@ -153,7 +153,7 @@ export function FieldProperties({ field, siblings, formKey, onChange }: Props) {
           </>
         ) : null}
 
-        {hasOptions ? <OptionsEditor field={field} onChange={onChange} /> : null}
+        {hasOptions ? <OptionsEditor field={field} onChange={onChange} locked={locked} /> : null}
 
         {field.type === "computed" ? (
           <>
@@ -239,10 +239,11 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 // ---------- Options editor ----------------------------------------------
 
 function OptionsEditor({
-  field, onChange,
-}: { field: BaseField; onChange: (p: Partial<BaseField>) => void }) {
+  field, onChange, locked,
+}: { field: BaseField; onChange: (p: Partial<BaseField>) => void; locked?: boolean }) {
   const opts: FieldOption[] = field.options ?? [];
   const update = (i: number, patch: Partial<FieldOption>) => {
+    if (locked && "value" in patch) return; // value is part of the contract
     const next = opts.map((o, idx) => (idx === i ? { ...o, ...patch } : o));
     onChange({ options: next });
   };
@@ -253,7 +254,9 @@ function OptionsEditor({
   const remove = (i: number) => onChange({ options: opts.filter((_, idx) => idx !== i) });
   return (
     <div className="space-y-2">
-      <Label className="text-xs">Options</Label>
+      <Label className="text-xs">
+        Options {locked ? <span className="text-muted-foreground font-normal">(values locked)</span> : null}
+      </Label>
       <div className="space-y-1.5">
         {opts.map((o, i) => (
           <div key={i} className="flex items-center gap-1.5">
@@ -265,19 +268,28 @@ function OptionsEditor({
             />
             <Input
               value={o.value}
+              disabled={locked}
               onChange={(e) => update(i, { value: e.target.value })}
               placeholder="value"
               className="h-7 text-xs font-mono"
             />
-            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => remove(i)}>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 w-7 p-0"
+              disabled={locked}
+              onClick={() => remove(i)}
+            >
               <Trash2 className="h-3 w-3" />
             </Button>
           </div>
         ))}
       </div>
-      <Button size="sm" variant="outline" onClick={add}>
-        <Plus className="h-3 w-3 mr-1" /> Add option
-      </Button>
+      {!locked && (
+        <Button size="sm" variant="outline" onClick={add}>
+          <Plus className="h-3 w-3 mr-1" /> Add option
+        </Button>
+      )}
     </div>
   );
 }
