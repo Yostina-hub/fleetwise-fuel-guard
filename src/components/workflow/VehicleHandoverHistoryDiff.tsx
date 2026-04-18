@@ -2,26 +2,51 @@
 // Compares the *current* handover form against the *most recent prior*
 // completed handover for the same vehicle and surfaces:
 //   • Items that were present last time but are now missing (FLAG)
-//   • Items that are newly present (info)
+//   • Items whose condition was downgraded (Good → Damaged) (FLAG)
+//   • Items that are newly added (info, also flagged for fleet admin awareness)
 //   • Condition narrative changes (info)
 // Displayed inside the WorkflowDetailDrawer for fleet admins to review.
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Plus, Minus, Sparkles } from "lucide-react";
+import { AlertTriangle, Plus, Minus, Sparkles, ArrowDown } from "lucide-react";
 import type { WorkflowInstance } from "@/lib/workflow-engine/types";
 
 interface Props {
   instance: WorkflowInstance;
 }
 
-const CHECKLIST_KEYS = [
-  "checklist_safety",
-  "checklist_comfort",
-  "checklist_accessory",
-  "checklist_other",
-] as const;
+// Condition severity (lower = better).
+const CONDITION_RANK: Record<string, number> = {
+  good: 0,
+  ok: 0,
+  fair: 1,
+  worn: 2,
+  damaged: 3,
+  missing: 4,
+};
+
+function rankOf(c: unknown): number {
+  if (!c) return 0;
+  return CONDITION_RANK[String(c).toLowerCase().trim()] ?? 0;
+}
+
+interface Row {
+  name?: string;
+  qty?: number | string;
+  condition?: string;
+}
+
+function indexRows(rows: Row[] | undefined): Map<string, Row> {
+  const m = new Map<string, Row>();
+  (rows || []).forEach((r) => {
+    const name = (r?.name || "").toString().trim();
+    if (!name) return;
+    m.set(name.toLowerCase(), r);
+  });
+  return m;
+}
 
 export function VehicleHandoverHistoryDiff({ instance }: Props) {
   const vehicleId = instance.vehicle_id;
@@ -41,43 +66,41 @@ export function VehicleHandoverHistoryDiff({ instance }: Props) {
     },
   });
 
-  const { data: catalog = [] } = useQuery({
-    queryKey: ["wf-vh-catalog", instance.organization_id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("vehicle_handover_catalog_items")
-        .select("id, name, category")
-        .eq("organization_id", instance.organization_id);
-      return data || [];
-    },
-  });
-
-  const nameOf = useMemo(() => {
-    const m = new Map<string, string>();
-    catalog.forEach((c: any) => m.set(c.id, c.name));
-    return (id: string) => m.get(id) || id;
-  }, [catalog]);
-
   const diff = useMemo(() => {
     const out: {
-      missing: { key: string; ids: string[] }[];
-      added: { key: string; ids: string[] }[];
+      missing: string[];
+      downgraded: { name: string; from: string; to: string }[];
+      added: string[];
       conditionChanged: boolean;
       priorCondition?: string;
       currentCondition?: string;
-    } = { missing: [], added: [], conditionChanged: false };
+    } = { missing: [], downgraded: [], added: [], conditionChanged: false };
 
     if (!prior) return out;
     const cur = (instance.data as any) || {};
     const old = (prior.data as any) || {};
 
-    for (const k of CHECKLIST_KEYS) {
-      const curArr: string[] = Array.isArray(cur[k]) ? cur[k] : [];
-      const oldArr: string[] = Array.isArray(old[k]) ? old[k] : [];
-      const missing = oldArr.filter((id) => !curArr.includes(id));
-      const added = curArr.filter((id) => !oldArr.includes(id));
-      if (missing.length) out.missing.push({ key: k, ids: missing });
-      if (added.length) out.added.push({ key: k, ids: added });
+    const curIdx = indexRows(cur.checklist_lines as Row[]);
+    const oldIdx = indexRows(old.checklist_lines as Row[]);
+
+    for (const [k, oldRow] of oldIdx.entries()) {
+      const curRow = curIdx.get(k);
+      if (!curRow) {
+        out.missing.push(oldRow.name || k);
+        continue;
+      }
+      const oldRank = rankOf(oldRow.condition);
+      const newRank = rankOf(curRow.condition);
+      if (newRank > oldRank) {
+        out.downgraded.push({
+          name: curRow.name || k,
+          from: String(oldRow.condition || "Good"),
+          to: String(curRow.condition || "Good"),
+        });
+      }
+    }
+    for (const [k, curRow] of curIdx.entries()) {
+      if (!oldIdx.has(k)) out.added.push(curRow.name || k);
     }
 
     out.priorCondition = old.overall_vehicle_condition;
@@ -107,7 +130,11 @@ export function VehicleHandoverHistoryDiff({ instance }: Props) {
     );
   }
 
-  const hasFlags = diff.missing.length > 0 || diff.conditionChanged;
+  const hasFlags =
+    diff.missing.length > 0 ||
+    diff.downgraded.length > 0 ||
+    diff.added.length > 0 ||
+    diff.conditionChanged;
 
   return (
     <div className="space-y-3">
@@ -131,26 +158,33 @@ export function VehicleHandoverHistoryDiff({ instance }: Props) {
           <p className="text-xs font-semibold text-destructive flex items-center gap-1">
             <Minus className="h-3 w-3" /> Missing items vs. previous handover
           </p>
-          {diff.missing.map((g) => (
-            <div key={g.key} className="text-xs">
-              <span className="text-muted-foreground">{labelFor(g.key)}: </span>
-              {g.ids.map((id) => nameOf(id)).join(", ")}
-            </div>
-          ))}
+          <p className="text-xs">{diff.missing.join(", ")}</p>
+        </div>
+      )}
+
+      {diff.downgraded.length > 0 && (
+        <div className="rounded-md border border-destructive/40 bg-destructive/5 p-2 space-y-1">
+          <p className="text-xs font-semibold text-destructive flex items-center gap-1">
+            <ArrowDown className="h-3 w-3" /> Condition downgraded
+          </p>
+          <ul className="text-xs space-y-0.5">
+            {diff.downgraded.map((d) => (
+              <li key={d.name}>
+                <span className="font-medium">{d.name}</span>:{" "}
+                <span className="text-muted-foreground">{d.from}</span> →{" "}
+                <span className="text-destructive">{d.to}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
       {diff.added.length > 0 && (
         <div className="rounded-md border bg-muted/30 p-2 space-y-1">
           <p className="text-xs font-semibold flex items-center gap-1">
-            <Plus className="h-3 w-3 text-primary" /> Newly present items
+            <Plus className="h-3 w-3 text-primary" /> Newly added items
           </p>
-          {diff.added.map((g) => (
-            <div key={g.key} className="text-xs">
-              <span className="text-muted-foreground">{labelFor(g.key)}: </span>
-              {g.ids.map((id) => nameOf(id)).join(", ")}
-            </div>
-          ))}
+          <p className="text-xs">{diff.added.join(", ")}</p>
         </div>
       )}
 
@@ -171,14 +205,4 @@ export function VehicleHandoverHistoryDiff({ instance }: Props) {
       )}
     </div>
   );
-}
-
-function labelFor(key: string): string {
-  switch (key) {
-    case "checklist_safety": return "Safety";
-    case "checklist_comfort": return "Comfort";
-    case "checklist_accessory": return "Accessories";
-    case "checklist_other": return "Other";
-    default: return key;
-  }
 }
