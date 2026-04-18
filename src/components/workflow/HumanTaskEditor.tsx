@@ -163,9 +163,24 @@ export const HumanTaskEditor = ({ config, isApproval, onChange }: Props) => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="__none__">None — use ad-hoc fields below</SelectItem>
+            {listWorkflowForms().length > 0 && (
+              <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                Built-in
+              </div>
+            )}
             {listWorkflowForms().map((f) => (
               <SelectItem key={f.key} value={f.key}>
                 {f.label}
+              </SelectItem>
+            ))}
+            {userForms.length > 0 && (
+              <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground border-t border-border mt-1">
+                User-built (Forms module)
+              </div>
+            )}
+            {userForms.map((f) => (
+              <SelectItem key={f.id} value={`${USER_FORM_PREFIX}${f.key}`}>
+                {f.name}
               </SelectItem>
             ))}
           </SelectContent>
