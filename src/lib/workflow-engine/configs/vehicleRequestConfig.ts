@@ -34,7 +34,7 @@ export const vehicleRequestConfig: WorkflowConfig = {
     "End-to-end vehicle request lifecycle: submission → delegation-matrix approval → pool review → vehicle & driver assignment → driver check-in/out → completion & optional requester rating.",
   icon: ClipboardList,
   initialStage: "submitted",
-  intakeFormKey: "user_form:vehicle_request",
+  intakeFormKey: "vehicle_request",
   intakeRoles: [
     "user", "driver", "fleet_supervisor",
     "fleet_manager", "operations_manager", "fleet_owner",
