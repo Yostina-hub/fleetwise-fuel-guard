@@ -19,6 +19,7 @@ import { useEffect, useMemo, useState } from "react";
 import DOMPurify from "isomorphic-dompurify";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,9 +32,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useFormDraft } from "@/hooks/useFormDraft";
 import { DraftStatus } from "@/components/inbox/DraftStatus";
+import { LocationPickerField } from "@/components/shared/LocationPickerField";
 import {
   useVehiclesLite, useDriversLite, useAssetsLite,
   useGeofencesLite, useUsersLite,
@@ -45,6 +48,12 @@ import {
   type BaseField, type FormSchema, type FormSettings,
   EMPTY_SETTINGS, isInputField, walkFields,
 } from "@/lib/forms/schema";
+
+/** Default sibling keys for `location` field type. */
+const locKeys = (f: BaseField) => ({
+  latKey: f.latKey || `${f.key}_lat`,
+  lngKey: f.lngKey || `${f.key}_lng`,
+});
 
 interface FormRendererProps {
   schema: FormSchema;
