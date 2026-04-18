@@ -37,13 +37,14 @@ const SOP_ROUTES: Record<string, string> = {
   vehicle_handover: "/sop/vehicle-handover",
   fleet_transfer: "/sop/fleet-transfer",
   fuel_request: "/sop/fuel-request",
+  vehicle_request: "/sop/vehicle-request",
 };
 
 // Group SOPs by domain for visual scanning.
 const CATEGORIES: Array<{ key: string; label: string; types: string[] }> = [
   { key: "fleet", label: "Fleet & Compliance", types: ["fleet_inspection", "vehicle_registration", "vehicle_insurance_renewal", "license_renewal", "safety_comfort"] },
   { key: "maintenance", label: "Maintenance", types: ["preventive_maintenance", "breakdown_maintenance", "roadside_assistance"] },
-  { key: "ops", label: "Operations & Dispatch", types: ["vehicle_dispatch", "vehicle_handover", "fleet_transfer", "outsource_rental", "vehicle_disposal"] },
+  { key: "ops", label: "Operations & Dispatch", types: ["vehicle_request", "vehicle_dispatch", "vehicle_handover", "fleet_transfer", "outsource_rental", "vehicle_disposal"] },
   { key: "fuel", label: "Fuel & Energy", types: ["fuel_request"] },
   { key: "drivers", label: "Drivers & HR", types: ["driver_onboarding", "driver_training", "driver_allowance"] },
 ];
