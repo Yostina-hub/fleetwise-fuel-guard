@@ -15,13 +15,15 @@ import {
 interface DateTimePickerProps {
   label?: string;
   date: Date | undefined;
-  time: string;
+  time?: string;
   onDateChange: (date: Date | undefined) => void;
-  onTimeChange: (time: string) => void;
+  onTimeChange?: (time: string) => void;
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
   minDate?: Date;
+  /** When true, only a date is shown (no time input). */
+  hideTime?: boolean;
 }
 
 export function DateTimePicker({
@@ -30,15 +32,12 @@ export function DateTimePicker({
   time,
   onDateChange,
   onTimeChange,
-  placeholder = "Select date & time",
+  placeholder = "Select date",
   required,
   disabled,
   minDate,
+  hideTime,
 }: DateTimePickerProps) {
-  const displayValue = date
-    ? `${format(date, "MMM dd, yyyy")} at ${time || "00:00"}`
-    : placeholder;
-
   return (
     <div className="space-y-1.5">
       {label && (
@@ -59,7 +58,7 @@ export function DateTimePicker({
             >
               <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
               <span className="truncate">
-                {date ? format(date, "MMM dd, yyyy") : "Pick date"}
+                {date ? format(date, "MMM dd, yyyy") : placeholder}
               </span>
             </Button>
           </PopoverTrigger>
@@ -74,16 +73,18 @@ export function DateTimePicker({
             />
           </PopoverContent>
         </Popover>
-        <div className="relative w-[110px] shrink-0">
-          <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-          <Input
-            type="time"
-            value={time}
-            onChange={(e) => onTimeChange(e.target.value)}
-            disabled={disabled}
-            className="pl-9"
-          />
-        </div>
+        {!hideTime && (
+          <div className="relative w-[110px] shrink-0">
+            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
+              type="time"
+              value={time ?? ""}
+              onChange={(e) => onTimeChange?.(e.target.value)}
+              disabled={disabled}
+              className="pl-9"
+            />
+          </div>
+        )}
       </div>
     </div>
   );
