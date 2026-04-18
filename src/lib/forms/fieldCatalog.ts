@@ -6,7 +6,7 @@ import {
   Type, AlignLeft, Hash, DollarSign, Mail, Phone, Calendar,
   CalendarClock, Clock, ChevronDown, ListChecks, Circle, CheckSquare,
   ToggleLeft, Upload, Car, User, Package, MapPin, UserCircle,
-  LayoutGrid, Repeat, Minus, Info, Calculator,
+  LayoutGrid, Repeat, Minus, Info, Calculator, Navigation, Layers,
 } from "lucide-react";
 import type { BaseField, FieldType } from "./schema";
 
@@ -34,6 +34,8 @@ export const PALETTE: PaletteEntry[] = [
   { type: "checkbox",    label: "Checkbox",      group: "Standard", icon: CheckSquare },
   { type: "switch",      label: "Switch",        group: "Standard", icon: ToggleLeft },
   { type: "file",        label: "File / URL",    group: "Standard", icon: Upload },
+  { type: "location",    label: "Location (map)", group: "Standard", icon: Navigation },
+  { type: "pool",        label: "Fleet pool",    group: "Standard", icon: Layers },
   // Entity pickers
   { type: "vehicle",     label: "Vehicle",       group: "Entity",   icon: Car },
   { type: "driver",      label: "Driver",        group: "Entity",   icon: User },
@@ -111,6 +113,16 @@ export function makeField(type: FieldType, existingKeys: Set<string> = new Set()
   }
   if (type === "divider") {
     base.label = "Divider";
+  }
+  if (type === "location") {
+    base.label = "Location";
+    base.placeholder = "Select or type a place";
+    // Lat/lng siblings auto-derived if omitted: <key>_lat / <key>_lng
+  }
+  if (type === "pool") {
+    base.label = "Pool";
+    base.helpText = "Select a fleet pool. Options come from the chosen Pool Category.";
+    base.filterByKey = "pool_category";
   }
   return base;
 }

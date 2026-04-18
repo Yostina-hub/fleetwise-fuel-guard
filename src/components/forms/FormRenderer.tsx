@@ -19,6 +19,7 @@ import { useEffect, useMemo, useState } from "react";
 import DOMPurify from "isomorphic-dompurify";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,9 +32,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useFormDraft } from "@/hooks/useFormDraft";
 import { DraftStatus } from "@/components/inbox/DraftStatus";
+import { LocationPickerField } from "@/components/shared/LocationPickerField";
 import {
   useVehiclesLite, useDriversLite, useAssetsLite,
   useGeofencesLite, useUsersLite,
@@ -45,6 +48,12 @@ import {
   type BaseField, type FormSchema, type FormSettings,
   EMPTY_SETTINGS, isInputField, walkFields,
 } from "@/lib/forms/schema";
+
+/** Default sibling keys for `location` field type. */
+const locKeys = (f: BaseField) => ({
+  latKey: f.latKey || `${f.key}_lat`,
+  lngKey: f.lngKey || `${f.key}_lng`,
+});
 
 interface FormRendererProps {
   schema: FormSchema;
@@ -116,6 +125,31 @@ export function FormRenderer({
   const assets = useAssetsLite(organizationId, needs.has("asset"));
   const geofences = useGeofencesLite(organizationId, needs.has("geofence"));
   const users = useUsersLite(organizationId, needs.has("user"));
+
+  // Fleet pools — needed when any `pool` field is in the schema. Loaded once
+  // per render and filtered per-field by the sibling `filterByKey` value.
+  const pools = useQuery({
+    queryKey: ["form-fleet-pools", organizationId],
+    enabled: !!organizationId && needs.has("pool"),
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("fleet_pools")
+        .select("name, category")
+        .eq("organization_id", organizationId!)
+        .eq("is_active", true)
+        .order("category");
+      if (error) throw error;
+      return (data ?? []) as Array<{ name: string; category: string }>;
+    },
+    staleTime: 60_000,
+  });
+
+  // Hardcoded fallback when fleet_pools has no matching rows (mirrors legacy POOL_HIERARCHY).
+  const POOL_FALLBACK: Record<string, string[]> = {
+    corporate: ["FAN", "TPO", "HQ"],
+    zone: ["SWAAZ", "EAAZ"],
+    region: ["NR", "SR"],
+  };
 
   // Apply computed fields whenever values change.
   useEffect(() => {
@@ -294,6 +328,46 @@ export function FormRenderer({
             placeholder="https://..."
           />
         );
+      case "location": {
+        // Reuses the legacy LocationPickerField — text + map + geofence picker.
+        const { latKey, lngKey } = locKeys(field);
+        return (
+          <LocationPickerField
+            label=""
+            value={value ?? ""}
+            onChange={onValue}
+            onCoordsChange={(lat, lng) => {
+              setField(latKey, lat);
+              setField(lngKey, lng);
+            }}
+            placeholder={field.placeholder || "Select or type a place"}
+          />
+        );
+      }
+      case "pool": {
+        // Dynamic options driven by sibling `filterByKey` (default "pool_category").
+        const filterKey = field.filterByKey || "pool_category";
+        const filterValue = String(values[filterKey] ?? "");
+        const dbPools = (pools.data ?? [])
+          .filter((p) => p.category === filterValue)
+          .map((p) => p.name);
+        const fallback = POOL_FALLBACK[filterValue] ?? [];
+        const opts = dbPools.length > 0 ? dbPools : fallback;
+        return (
+          <Select value={value ?? ""} onValueChange={onValue} disabled={!filterValue}>
+            <SelectTrigger {...common}>
+              <SelectValue placeholder={filterValue ? "Select pool…" : "Pick a category first"} />
+            </SelectTrigger>
+            <SelectContent>
+              {opts.length === 0 ? (
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">No pools available</div>
+              ) : opts.map((name) => (
+                <SelectItem key={name} value={name}>{name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      }
       default:
         return (
           <Input
