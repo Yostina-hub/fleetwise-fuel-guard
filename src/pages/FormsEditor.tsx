@@ -36,7 +36,7 @@ import { collectKeys, makeField } from "@/lib/forms/fieldCatalog";
 import { walkFields, type BaseField, type FieldType, type FormSchema, type FormSettings } from "@/lib/forms/schema";
 import { isFieldLocked } from "@/lib/forms/legacyContracts";
 import { FormsPalette } from "@/components/forms/editor/FormsPalette";
-import { FormsCanvas } from "@/components/forms/editor/FormsCanvas";
+import { FormsWysiwygCanvas } from "@/components/forms/editor/FormsWysiwygCanvas";
 import { FieldProperties } from "@/components/forms/editor/FieldProperties";
 import { FormRenderer } from "@/components/forms/FormRenderer";
 
@@ -337,26 +337,24 @@ export default function FormsEditor() {
 
           <TabsContent value="build" className="mt-3">
             <div className="grid grid-cols-12 gap-3 h-[calc(100vh-260px)] min-h-[500px]">
-              <Card className="col-span-3 overflow-hidden">
+              <Card className="col-span-12 md:col-span-2 overflow-hidden">
                 <FormsPalette onAdd={addAtEnd} />
               </Card>
-              <Card className="col-span-6 overflow-hidden">
-                <FormsCanvas
-                  fields={schema.fields}
+              <Card className="col-span-12 md:col-span-7 overflow-hidden bg-muted/20">
+                <FormsWysiwygCanvas
+                  schema={schema}
+                  settings={settings}
                   selectedId={selectedId}
                   onSelect={setSelectedId}
-                  onReorder={reorder}
                   onReplaceFields={replaceFields}
                   onDelete={deleteTopLevel}
                   onAddPaletteAtEnd={addAtEnd}
                   onAddPaletteToContainer={addToContainer}
-                  onSelectChild={setSelectedId}
-                  onDeleteChild={deleteChild}
                   onPatchField={updateField}
                   onDuplicateField={duplicateField}
                 />
               </Card>
-              <Card className="col-span-3 overflow-hidden">
+              <Card className="col-span-12 md:col-span-3 overflow-hidden">
                 <FieldProperties
                   field={selected}
                   siblings={siblings}
