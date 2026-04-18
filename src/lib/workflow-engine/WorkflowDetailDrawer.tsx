@@ -1,5 +1,10 @@
 // Detail drawer with stage actions, role-gated buttons, and audit history.
-import { useState } from "react";
+//
+// Delegation-matrix integration: when the current stage is an approval stage
+// (id ends in "_pending_approval"), the resolver looks up the authority_matrix
+// for this org/workflow and dynamically narrows which roles can approve/reject.
+// A small badge surfaces the rule source so operators can audit the decision.
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -9,9 +14,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
-import { Lock, CheckCircle2, History as HistoryIcon, ExternalLink } from "lucide-react";
+import { Lock, CheckCircle2, History as HistoryIcon, ExternalLink, ShieldCheck } from "lucide-react";
 import { WorkflowFieldset } from "./WorkflowFieldset";
 import { useWorkflow, useWorkflowTransitions } from "./useWorkflow";
+import { useApproverResolution, isApprovalStage } from "./useApproverResolution";
 import { VehicleHandoverHistoryDiff } from "@/components/workflow/VehicleHandoverHistoryDiff";
 import type { WorkflowConfig, WorkflowInstance, StageAction } from "./types";
 
