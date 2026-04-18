@@ -95,9 +95,10 @@ export function FieldProperties({ field, siblings, formKey, onChange }: Props) {
           <Input value={field.label} onChange={(e) => onChange({ label: e.target.value })} />
         </Field>
 
-        <Field label="Key (snake_case)">
+        <Field label={locked ? "Key (locked — legacy contract)" : "Key (snake_case)"}>
           <Input
             value={field.key}
+            disabled={locked}
             onChange={(e) => onChange({ key: e.target.value.replace(/[^a-z0-9_]/gi, "_").toLowerCase() })}
             className="font-mono"
           />
