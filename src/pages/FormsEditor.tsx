@@ -231,8 +231,8 @@ export default function FormsEditor() {
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-semibold">{formQ.data.name}</h1>
               <Badge variant="outline" className="font-mono text-[10px]">{formQ.data.key}</Badge>
-              {formQ.data.current_version ? (
-                <Badge variant="secondary" className="text-[10px]">Published v{formQ.data.current_version}</Badge>
+              {formQ.data.current_published_version_id ? (
+                <Badge variant="secondary" className="text-[10px]">Published</Badge>
               ) : (
                 <Badge variant="outline" className="text-[10px]">Unpublished</Badge>
               )}
@@ -251,7 +251,7 @@ export default function FormsEditor() {
             </Button>
             <PublishDialog
               fieldCount={fieldCount}
-              currentVersion={formQ.data.current_version}
+              hasPublished={!!formQ.data.current_published_version_id}
               onPublish={onPublish}
               isPending={publish.isPending}
             />
@@ -312,15 +312,15 @@ export default function FormsEditor() {
           </TabsContent>
         </Tabs>
 
-        {versionsQ.data && versionsQ.data.filter((v) => v.is_published).length > 0 ? (
+        {versionsQ.data && versionsQ.data.filter((v) => v.status === "published").length > 0 ? (
           <Card className="p-3">
             <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
               Version history
             </div>
             <div className="flex flex-wrap gap-1.5">
-              {versionsQ.data.filter((v) => v.is_published).map((v) => (
+              {versionsQ.data.filter((v) => v.status === "published").map((v) => (
                 <Badge key={v.id} variant="outline" className="text-[10px]">
-                  v{v.version} · {v.published_at ? new Date(v.published_at).toLocaleDateString() : ""}
+                  v{v.version_number} · {v.published_at ? new Date(v.published_at).toLocaleDateString() : ""}
                 </Badge>
               ))}
             </div>
@@ -388,10 +388,10 @@ function SettingsDialog({
 }
 
 function PublishDialog({
-  fieldCount, currentVersion, onPublish, isPending,
+  fieldCount, hasPublished, onPublish, isPending,
 }: {
   fieldCount: number;
-  currentVersion: number | null;
+  hasPublished: boolean;
   onPublish: () => void;
   isPending: boolean;
 }) {
@@ -407,9 +407,9 @@ function PublishDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Publish form?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will create v{(currentVersion ?? 0) + 1} as an immutable version. New submissions
-            will use this version. In-flight workflow instances continue with the version they
-            started with.
+            This {hasPublished ? "creates a new immutable version" : "publishes the first immutable version"}.
+            New submissions will use this version. In-flight workflow instances continue with the
+            version they started with.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

@@ -42,7 +42,7 @@ export default function Forms() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return (list.data ?? [])
-      .filter((f) => (tab === "all" ? true : tab === "active" ? f.status === "active" : f.status === "archived"))
+      .filter((f) => (tab === "all" ? true : tab === "active" ? !f.is_archived : f.is_archived))
       .filter((f) =>
         !q ? true : f.name.toLowerCase().includes(q) || f.key.toLowerCase().includes(q) || (f.category ?? "").toLowerCase().includes(q),
       );
@@ -124,17 +124,17 @@ export default function Forms() {
                         <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{f.key}</td>
                         <td className="px-3 py-2 text-xs text-muted-foreground">{f.category || "—"}</td>
                         <td className="px-3 py-2">
-                          {f.status === "active" ? (
+                          {!f.is_archived ? (
                             <Badge variant="secondary" className="text-xs">Active</Badge>
                           ) : (
                             <Badge variant="outline" className="text-xs">Archived</Badge>
                           )}
                         </td>
                         <td className="px-3 py-2 text-xs">
-                          {f.current_version ? (
+                          {f.current_published_version_id ? (
                             <span className="inline-flex items-center gap-1">
-                              <CheckCircle2 className="h-3 w-3 text-green-600" />
-                              v{f.current_version}
+                              <CheckCircle2 className="h-3 w-3 text-primary" />
+                              published
                             </span>
                           ) : (
                             <span className="text-muted-foreground">draft only</span>
@@ -145,7 +145,7 @@ export default function Forms() {
                             <Button size="sm" variant="ghost" onClick={() => navigate(`/forms/${f.id}/edit`)}>
                               <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
                             </Button>
-                            {f.status === "active" ? (
+                            {!f.is_archived ? (
                               <Button
                                 size="sm"
                                 variant="ghost"
