@@ -26,6 +26,7 @@ const SOP_ROUTES: Record<string, string> = {
   preventive_maintenance: "/sop/preventive-maintenance",
   breakdown_maintenance: "/sop/breakdown-maintenance",
   vehicle_dispatch: "/sop/vehicle-dispatch",
+  vehicle_request: "/sop/vehicle-request",
   driver_onboarding: "/sop/driver-onboarding",
   driver_training: "/sop/driver-training",
   driver_allowance: "/sop/driver-allowance",
@@ -42,7 +43,7 @@ const SOP_ROUTES: Record<string, string> = {
 const CATEGORIES: Array<{ key: string; label: string; types: string[] }> = [
   { key: "fleet", label: "Fleet & Compliance", types: ["fleet_inspection", "vehicle_registration", "vehicle_insurance_renewal", "license_renewal", "safety_comfort"] },
   { key: "maintenance", label: "Maintenance", types: ["preventive_maintenance", "breakdown_maintenance", "roadside_assistance"] },
-  { key: "ops", label: "Operations & Dispatch", types: ["vehicle_dispatch", "vehicle_handover", "fleet_transfer", "outsource_rental", "vehicle_disposal"] },
+  { key: "ops", label: "Operations & Dispatch", types: ["vehicle_request", "vehicle_dispatch", "vehicle_handover", "fleet_transfer", "outsource_rental", "vehicle_disposal"] },
   { key: "drivers", label: "Drivers & HR", types: ["driver_onboarding", "driver_training", "driver_allowance"] },
 ];
 
