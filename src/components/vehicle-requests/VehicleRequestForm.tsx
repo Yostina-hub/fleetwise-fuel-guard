@@ -275,9 +275,9 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
   const update = <K extends keyof typeof initialForm>(key: K, val: (typeof initialForm)[K]) =>
     setForm(f => ({ ...f, [key]: val }));
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+  const body = (
+    <>
+      {!embedded && (
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Car className="w-5 h-5 text-primary" />
@@ -285,6 +285,7 @@ export const VehicleRequestForm = ({ open, onOpenChange, source, embedded, prefi
           </DialogTitle>
           <DialogDescription>Submit a vehicle request. Fields adapt based on operation type.</DialogDescription>
         </DialogHeader>
+      )}
 
         {/* Super-admin: file on behalf of any user */}
         {isSuperAdmin && (
