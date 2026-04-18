@@ -63,6 +63,13 @@ export function TaskFilters({
           active={status === "completed"}
           onClick={() => setStatus("completed")}
         />
+        <FilterRow
+          icon={<Trash2 className="h-3.5 w-3.5" />}
+          label="Recycle bin"
+          count={counts.trash}
+          active={status === "trash"}
+          onClick={() => setStatus("trash")}
+        />
       </FilterGroup>
 
       {/* Scope */}
