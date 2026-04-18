@@ -283,23 +283,99 @@ export default function Inbox() {
     }).catch(() => { /* cron retries */ });
   };
 
-  // Bulk actions
-  const bulkCancel = async () => {
+  // ── Recycle bin actions ─────────────────────────────────────────────
+  // SOP tasks live in workflow_instances; visual-builder tasks in workflow_tasks.
+  // Group selection by source so we can update each table correctly.
+  const groupSelectionBySource = () => {
+    const sopIds: string[] = [];
+    const builderIds: string[] = [];
+    for (const id of selection) {
+      const t = rawTasks.find((x) => x.id === id);
+      if (!t) continue;
+      if (isSopTask(t)) sopIds.push((t as any).__instance.id);
+      else builderIds.push(t.id);
+    }
+    return { sopIds, builderIds };
+  };
+
+  const invalidateAll = () => {
+    qc.invalidateQueries({ queryKey: ["workflow-tasks"] });
+    qc.invalidateQueries({ queryKey: ["sop-inbox-tasks"] });
+    qc.invalidateQueries({ queryKey: ["sop-trash-count"] });
+  };
+
+  const bulkArchive = async () => {
     if (selection.size === 0) return;
-    if (!confirm(`Cancel ${selection.size} task${selection.size > 1 ? "s" : ""}?`)) return;
+    if (!confirm(`Move ${selection.size} task${selection.size > 1 ? "s" : ""} to the recycle bin?`)) return;
     setSubmitting(true);
-    const { error } = await supabase
-      .from("workflow_tasks" as any)
-      .update({ status: "cancelled", updated_at: new Date().toISOString() })
-      .in("id", Array.from(selection));
+    const { sopIds, builderIds } = groupSelectionBySource();
+    const { data: u } = await supabase.auth.getUser();
+    const stamp = { archived_at: new Date().toISOString(), archived_by: u.user?.id ?? null };
+    const errors: string[] = [];
+    if (sopIds.length) {
+      const { error } = await supabase.from("workflow_instances").update(stamp).in("id", sopIds);
+      if (error) errors.push(error.message);
+    }
+    if (builderIds.length) {
+      const { error } = await supabase.from("workflow_tasks" as any).update(stamp).in("id", builderIds);
+      if (error) errors.push(error.message);
+    }
     setSubmitting(false);
-    if (error) {
-      toast({ title: "Bulk cancel failed", description: error.message, variant: "destructive" });
+    if (errors.length) {
+      toast({ title: "Move to bin failed", description: errors.join("; "), variant: "destructive" });
       return;
     }
-    toast({ title: `${selection.size} task(s) cancelled` });
+    toast({ title: `${selection.size} task(s) moved to recycle bin` });
     setSelection(new Set());
-    qc.invalidateQueries({ queryKey: ["workflow-tasks"] });
+    invalidateAll();
+  };
+
+  const bulkRestore = async () => {
+    if (selection.size === 0) return;
+    setSubmitting(true);
+    const { sopIds, builderIds } = groupSelectionBySource();
+    const stamp = { archived_at: null, archived_by: null, archive_reason: null };
+    const errors: string[] = [];
+    if (sopIds.length) {
+      const { error } = await supabase.from("workflow_instances").update(stamp).in("id", sopIds);
+      if (error) errors.push(error.message);
+    }
+    if (builderIds.length) {
+      const { error } = await supabase.from("workflow_tasks" as any).update(stamp).in("id", builderIds);
+      if (error) errors.push(error.message);
+    }
+    setSubmitting(false);
+    if (errors.length) {
+      toast({ title: "Restore failed", description: errors.join("; "), variant: "destructive" });
+      return;
+    }
+    toast({ title: `${selection.size} task(s) restored` });
+    setSelection(new Set());
+    invalidateAll();
+  };
+
+  const bulkPurge = async () => {
+    if (selection.size === 0) return;
+    if (!confirm(`Permanently delete ${selection.size} task${selection.size > 1 ? "s" : ""}? This cannot be undone.`)) return;
+    setSubmitting(true);
+    const { sopIds, builderIds } = groupSelectionBySource();
+    const errors: string[] = [];
+    if (sopIds.length) {
+      const { error } = await supabase.from("workflow_instances").delete().in("id", sopIds);
+      if (error) errors.push(error.message);
+    }
+    if (builderIds.length) {
+      const { error } = await supabase.from("workflow_tasks" as any).delete().in("id", builderIds);
+      if (error) errors.push(error.message);
+    }
+    setSubmitting(false);
+    if (errors.length) {
+      toast({ title: "Permanent delete failed", description: errors.join("; "), variant: "destructive" });
+      return;
+    }
+    toast({ title: `${selection.size} task(s) permanently deleted` });
+    setSelection(new Set());
+    invalidateAll();
   };
 
   return (
