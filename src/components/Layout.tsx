@@ -377,6 +377,7 @@ const Layout = ({ children }: LayoutProps) => {
     <div className="flex h-screen bg-background overflow-hidden relative">
       {/* Animated Background */}
       <div className="parallax-bg"></div>
+      <ImpersonationBanner />
       
       {/* Desktop Sidebar - Hidden on mobile */}
       <aside 
