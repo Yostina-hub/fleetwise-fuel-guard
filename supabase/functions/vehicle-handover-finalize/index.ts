@@ -3,14 +3,14 @@
 // reaches the `archived` (terminal) stage. Responsibilities:
 //   1. Update vehicles.assigned_driver_id to the new received_by_driver_id
 //   2. Close the prior driver_vehicle_assignment row and insert a fresh one
-//   3. Fan out in-app notifications to:
+//   3. Log a vehicle_handover_history transfer record
+//   4. Fan out multi-channel notifications (in-app + email + SMS/WhatsApp) to:
 //        • The transferee (delivered_by user — best-effort lookup by created_by)
 //        • The receiver (received_by_driver_id → drivers.user_id)
 //        • All fleet admins / fleet managers / operations managers in the org
 //
 // Designed to be idempotent: re-invoking with the same workflow_instance_id
-// will simply re-confirm the assignment and re-send notifications (notifications
-// table dedupe is up to the caller).
+// will simply re-confirm the assignment and re-send notifications.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -73,14 +73,19 @@ Deno.serve(async (req) => {
 
     const updates: Record<string, any> = {};
     let assignmentChanged = false;
+    let priorDriverId: string | null = null;
+    let plate = "";
 
     // 2. Update vehicles.assigned_driver_id + log assignment history
     if (vehicleId && newDriverId) {
       const { data: veh } = await admin
         .from("vehicles")
-        .select("id, assigned_driver_id, plate_number")
+        .select("id, assigned_driver_id, plate_number, odometer_km")
         .eq("id", vehicleId)
         .maybeSingle();
+
+      plate = veh?.plate_number || "";
+      priorDriverId = (veh?.assigned_driver_id as string | null) || null;
 
       if (veh && veh.assigned_driver_id !== newDriverId) {
         // Close prior current assignments for this vehicle
@@ -104,9 +109,14 @@ Deno.serve(async (req) => {
           reason: `Assigned via Vehicle Handover ${instance.reference_number}`,
         });
 
+        const vehUpd: Record<string, any> = { assigned_driver_id: newDriverId };
+        // If the form captured a fresh odometer reading, persist it.
+        const km = Number(data.km_reading);
+        if (Number.isFinite(km) && km > 0) vehUpd.odometer_km = km;
+
         await admin
           .from("vehicles")
-          .update({ assigned_driver_id: newDriverId })
+          .update(vehUpd)
           .eq("id", vehicleId);
 
         updates.vehicle = { plate: veh.plate_number, prior: veh.assigned_driver_id, next: newDriverId };
@@ -114,20 +124,52 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 3. Notification fan-out
-    const recipients = new Set<string>();
+    // 3. Notification fan-out — collect recipient profiles + drivers
+    const recipientUserIds = new Set<string>();
+    const recipientDetails: Array<{
+      user_id?: string;
+      email?: string | null;
+      phone?: string | null;
+      role: "transferee" | "receiver" | "fleet_admin";
+      name?: string;
+    }> = [];
 
     // 3a. Transferee (workflow creator, typically the outgoing custodian)
-    if (instance.created_by) recipients.add(instance.created_by as string);
+    if (instance.created_by) {
+      recipientUserIds.add(instance.created_by as string);
+      const { data: prof } = await admin
+        .from("profiles")
+        .select("user_id, email, phone, full_name")
+        .eq("user_id", instance.created_by)
+        .maybeSingle();
+      if (prof) {
+        recipientDetails.push({
+          user_id: prof.user_id,
+          email: prof.email,
+          phone: prof.phone,
+          name: prof.full_name,
+          role: "transferee",
+        });
+      }
+    }
 
-    // 3b. Receiver (driver → user_id)
+    // 3b. Receiver (driver → user_id + phone)
     if (newDriverId) {
       const { data: drv } = await admin
         .from("drivers")
-        .select("user_id, first_name, last_name")
+        .select("user_id, first_name, last_name, phone, email")
         .eq("id", newDriverId)
         .maybeSingle();
-      if (drv?.user_id) recipients.add(drv.user_id);
+      if (drv) {
+        if (drv.user_id) recipientUserIds.add(drv.user_id);
+        recipientDetails.push({
+          user_id: drv.user_id || undefined,
+          email: drv.email,
+          phone: drv.phone,
+          name: [drv.first_name, drv.last_name].filter(Boolean).join(" "),
+          role: "receiver",
+        });
+      }
     }
 
     // 3c. Fleet admins / fleet managers / operations managers in the org
@@ -136,20 +178,38 @@ Deno.serve(async (req) => {
       .select("user_id, role")
       .eq("organization_id", orgId)
       .in("role", ["fleet_manager", "operations_manager", "org_admin"]);
-    (admins || []).forEach((r: any) => r.user_id && recipients.add(r.user_id));
+    const adminUserIds = (admins || []).map((r: any) => r.user_id).filter(Boolean);
+    if (adminUserIds.length) {
+      adminUserIds.forEach((u: string) => recipientUserIds.add(u));
+      const { data: profs } = await admin
+        .from("profiles")
+        .select("user_id, email, phone, full_name")
+        .in("user_id", adminUserIds);
+      (profs || []).forEach((p: any) =>
+        recipientDetails.push({
+          user_id: p.user_id,
+          email: p.email,
+          phone: p.phone,
+          name: p.full_name,
+          role: "fleet_admin",
+        })
+      );
+    }
 
     const refTitle = instance.title || instance.reference_number;
-    const message = `Vehicle Handover ${instance.reference_number} has been archived${
+    const inAppMessage = `Vehicle Handover ${instance.reference_number} has been archived${
       assignmentChanged ? ` and the vehicle has been re-assigned.` : `.`
     }`;
+    const smsMessage = `[Fleet] Handover ${instance.reference_number}${plate ? ` (${plate})` : ""} archived. Login to FMS for details.`;
 
+    // In-app fan-out
     let notifiedCount = 0;
-    for (const userId of recipients) {
+    for (const userId of recipientUserIds) {
       const { error: nErr } = await admin.rpc("send_notification", {
         _user_id: userId,
         _type: "vehicle_handover_archived",
         _title: `Handover archived: ${refTitle}`,
-        _message: message,
+        _message: inAppMessage,
         _link: "/sop/vehicle-handover",
         _metadata: {
           workflow_instance_id: instance.id,
@@ -161,11 +221,88 @@ Deno.serve(async (req) => {
       if (!nErr) notifiedCount++;
     }
 
+    // Multi-channel fan-out (best-effort — failures are logged, not thrown)
+    let smsSent = 0, waSent = 0, emailSent = 0;
+    const seenPhones = new Set<string>();
+    const seenEmails = new Set<string>();
+
+    for (const r of recipientDetails) {
+      // SMS
+      if (r.phone && !seenPhones.has(r.phone)) {
+        seenPhones.add(r.phone);
+        try {
+          const res = await fetch(`${supabaseUrl}/functions/v1/send-sms`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: auth,
+            },
+            body: JSON.stringify({
+              to: r.phone,
+              message: smsMessage,
+              type: "vehicle_handover_archived",
+            }),
+          });
+          if (res.ok) smsSent++;
+        } catch (e) {
+          console.warn("send-sms failed", e);
+        }
+
+        // WhatsApp (best-effort, may be misconfigured per-org)
+        try {
+          const res = await fetch(`${supabaseUrl}/functions/v1/send-whatsapp`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: auth,
+            },
+            body: JSON.stringify({
+              to: r.phone,
+              message: smsMessage,
+            }),
+          });
+          if (res.ok) waSent++;
+        } catch (e) {
+          console.warn("send-whatsapp failed", e);
+        }
+      }
+
+      // Email
+      if (r.email && !seenEmails.has(r.email)) {
+        seenEmails.add(r.email);
+        try {
+          const res = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: auth,
+            },
+            body: JSON.stringify({
+              to: r.email,
+              subject: `Handover archived: ${refTitle}`,
+              html: `
+                <p>Hello ${r.name || ""},</p>
+                <p>${inAppMessage}</p>
+                <p>Reference: <strong>${instance.reference_number}</strong>${plate ? ` — Vehicle <strong>${plate}</strong>` : ""}</p>
+                <p>Open the FMS portal to view full details.</p>
+              `,
+            }),
+          });
+          if (res.ok) emailSent++;
+        } catch (e) {
+          console.warn("send-email failed", e);
+        }
+      }
+    }
+
     return json({
       ok: true,
       workflow_instance_id: instance.id,
       assignment_changed: assignmentChanged,
       notified: notifiedCount,
+      sms_sent: smsSent,
+      whatsapp_sent: waSent,
+      email_sent: emailSent,
       updates,
     });
   } catch (e) {
