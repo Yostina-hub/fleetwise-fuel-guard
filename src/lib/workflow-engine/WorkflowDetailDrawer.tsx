@@ -178,6 +178,7 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
                         (source: {approverQuery.data?.source})
                       </span>
                     </p>
+                    {!userIsResolvedApprover && !userRoles?.includes?.("super_admin") ? (
                       <p className="text-warning mt-1">
                         You don't have an authorized role for this approval step.
                       </p>
