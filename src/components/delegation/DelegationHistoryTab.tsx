@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import {
   History, Plus, Edit, Trash2, Power, PowerOff, Search, Shield, Users, RefreshCw,
-  Route, ArrowRightLeft, SkipForward, Fuel, MapPin, Receipt,
+  Route, ArrowRightLeft, SkipForward, Fuel, MapPin, Receipt, Car,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
