@@ -16,7 +16,7 @@ const corsHeaders = {
 interface StepRow {
   step: string;
   flow: string;
-  status: "PASS" | "FAIL" | "SKIP";
+  status: "PASS" | "FAIL" | "SKIP" | "OK";
   detail: string | null;
 }
 
@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
       } else {
         report.steps = normalize(data as any[]);
         report.total = report.steps.length;
-        report.passed = report.steps.filter((x) => x.status === "PASS").length;
+        report.passed = report.steps.filter((x) => x.status === "PASS" || x.status === "OK").length;
         report.failed = report.steps.filter((x) => x.status === "FAIL").length;
       }
     } catch (e) {
