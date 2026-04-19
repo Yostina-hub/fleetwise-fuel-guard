@@ -15,6 +15,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useAuth } from "@/hooks/useAuth";
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import DriverQuickStats from "@/components/driver-portal/DriverQuickStats";
@@ -35,7 +36,8 @@ import { IdCard } from "lucide-react";
 const DriverPortal = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { organizationId, isSuperAdmin } = useOrganization();
+  const { user, loading: authLoading } = useAuth();
+  const { organizationId, isSuperAdmin, loading: organizationLoading } = useOrganization();
   const [searchParams] = useSearchParams();
   const overrideDriverId = isSuperAdmin ? searchParams.get("driverId") : null;
   const [activeTab, setActiveTab] = useState("assignments");
@@ -57,12 +59,12 @@ const DriverPortal = () => {
   // Driver self info + assigned vehicle + auth user id
   // Super admins can override via ?driverId= to view the portal as that driver.
   const { data: driverData, isLoading: driverLoading } = useQuery({
-    queryKey: ["driver-portal-self", organizationId, overrideDriverId],
+    queryKey: ["driver-portal-self", organizationId, user?.id ?? null, overrideDriverId],
     queryFn: async () => {
       if (!organizationId) return null;
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) return null;
-      const userId = userData.user.id;
+      if (!user) return null;
+      const userId = user.id;
+      const fallbackEmail = user.email?.trim().toLowerCase() ?? null;
 
       const driverColumns =
         "id, first_name, last_name, license_number, license_expiry, status, total_trips, total_distance_km, avatar_url, phone, email, user_id, organization_id";
@@ -96,7 +98,7 @@ const DriverPortal = () => {
             .select("email")
             .eq("id", userId)
             .maybeSingle();
-          const email = prof?.email?.trim().toLowerCase();
+          const email = prof?.email?.trim().toLowerCase() ?? fallbackEmail;
           if (email) {
             const { data: byEmail } = await supabase
               .from("drivers")
@@ -157,7 +159,7 @@ const DriverPortal = () => {
 
       return { driver, vehicle, activeRequest, userId };
     },
-    enabled: !!organizationId,
+    enabled: !authLoading && !organizationLoading && !!organizationId && !!user,
   });
 
   const driverId = driverData?.driver?.id;
@@ -333,7 +335,7 @@ const DriverPortal = () => {
     return () => { cancelled = true; };
   }, [postTripParam, organizationId]);
 
-  if (driverLoading) {
+  if (authLoading || organizationLoading || driverLoading) {
     return (
       <Layout>
         <div className="p-8 flex items-center justify-center min-h-[400px]">
