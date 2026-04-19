@@ -113,6 +113,7 @@ const SystemArchitecture = lazyWithRetry(() => import("./pages/SystemArchitectur
 const LicensingCompliance = lazyWithRetry(() => import("./pages/LicensingCompliance"), "LicensingCompliance");
 const RBACManagement = lazyWithRetry(() => import("./pages/RBACManagement"), "RBACManagement");
 const PrivacyPolicy = lazyWithRetry(() => import("./pages/PrivacyPolicy"), "PrivacyPolicy");
+const MyLicense = lazyWithRetry(() => import("./pages/MyLicense"), "MyLicense");
 const NotFound = lazyWithRetry(() => import("./pages/NotFound"), "NotFound");
 
 // ── ET FMG SOP Workflows (config-driven) ──
@@ -262,26 +263,30 @@ const App = () => {
                         <Route path="/supplier-wo/:token" element={<SupplierWorkOrderView />} />
                         <Route path="/supplier-payments" element={<ProtectedRoute><SupplierPaymentReview /></ProtectedRoute>} />
                         {/* ── ET FMG SOP Workflow routes ── */}
-                        <Route path="/sop" element={<ProtectedRoute><SopHub /></ProtectedRoute>} />
-                        <Route path="/sop/fleet-inspection" element={<ProtectedRoute><FleetInspectionPage /></ProtectedRoute>} />
-                        <Route path="/sop/vehicle-registration" element={<ProtectedRoute><VehicleRegistrationPage /></ProtectedRoute>} />
-                        <Route path="/sop/vehicle-insurance-renewal" element={<ProtectedRoute><VehicleInsuranceRenewalPage /></ProtectedRoute>} />
-                        <Route path="/sop/preventive-maintenance" element={<ProtectedRoute><PreventiveMaintenancePage /></ProtectedRoute>} />
-                        <Route path="/sop/breakdown-maintenance" element={<ProtectedRoute><BreakdownMaintenancePage /></ProtectedRoute>} />
-                        <Route path="/sop/vehicle-dispatch" element={<ProtectedRoute><VehicleDispatchPage /></ProtectedRoute>} />
-                        <Route path="/sop/driver-onboarding" element={<ProtectedRoute><DriverOnboardingPage /></ProtectedRoute>} />
-                        <Route path="/sop/driver-training" element={<ProtectedRoute><DriverTrainingPage /></ProtectedRoute>} />
-                        <Route path="/sop/driver-allowance" element={<ProtectedRoute><DriverAllowancePage /></ProtectedRoute>} />
-                        <Route path="/sop/vehicle-disposal" element={<ProtectedRoute><VehicleDisposalPage /></ProtectedRoute>} />
-                        <Route path="/sop/roadside-assistance" element={<ProtectedRoute><RoadsideAssistanceSopPage /></ProtectedRoute>} />
-                        <Route path="/sop/license-renewal" element={<ProtectedRoute><LicenseRenewalPage /></ProtectedRoute>} />
-                        <Route path="/sop/outsource-rental" element={<ProtectedRoute><OutsourceRentalPage /></ProtectedRoute>} />
-                       <Route path="/sop/safety-comfort" element={<ProtectedRoute><SafetyComfortPage /></ProtectedRoute>} />
-                       <Route path="/sop/vehicle-handover" element={<ProtectedRoute><VehicleHandoverPage /></ProtectedRoute>} />
-                       <Route path="/sop/vehicle-handover/catalog" element={<ProtectedRoute><HandoverCatalogAdmin /></ProtectedRoute>} />
-                      <Route path="/sop/fleet-transfer" element={<ProtectedRoute><FleetTransferPage /></ProtectedRoute>} />
-                      <Route path="/sop/fuel-request" element={<ProtectedRoute><FuelRequestSopPage /></ProtectedRoute>} />
-                      <Route path="/sop/vehicle-request" element={<ProtectedRoute><VehicleRequestSopPage /></ProtectedRoute>} />
+                        {/* SOP pages are admin/ops surfaces. Drivers are bounced to /my-license so
+                            they never see raw workflow internals. */}
+                        <Route path="/sop" element={<ProtectedRoute blockedForRoles={["driver"]}><SopHub /></ProtectedRoute>} />
+                        <Route path="/sop/fleet-inspection" element={<ProtectedRoute blockedForRoles={["driver"]}><FleetInspectionPage /></ProtectedRoute>} />
+                        <Route path="/sop/vehicle-registration" element={<ProtectedRoute blockedForRoles={["driver"]}><VehicleRegistrationPage /></ProtectedRoute>} />
+                        <Route path="/sop/vehicle-insurance-renewal" element={<ProtectedRoute blockedForRoles={["driver"]}><VehicleInsuranceRenewalPage /></ProtectedRoute>} />
+                        <Route path="/sop/preventive-maintenance" element={<ProtectedRoute blockedForRoles={["driver"]}><PreventiveMaintenancePage /></ProtectedRoute>} />
+                        <Route path="/sop/breakdown-maintenance" element={<ProtectedRoute blockedForRoles={["driver"]}><BreakdownMaintenancePage /></ProtectedRoute>} />
+                        <Route path="/sop/vehicle-dispatch" element={<ProtectedRoute blockedForRoles={["driver"]}><VehicleDispatchPage /></ProtectedRoute>} />
+                        <Route path="/sop/driver-onboarding" element={<ProtectedRoute blockedForRoles={["driver"]}><DriverOnboardingPage /></ProtectedRoute>} />
+                        <Route path="/sop/driver-training" element={<ProtectedRoute blockedForRoles={["driver"]}><DriverTrainingPage /></ProtectedRoute>} />
+                        <Route path="/sop/driver-allowance" element={<ProtectedRoute blockedForRoles={["driver"]}><DriverAllowancePage /></ProtectedRoute>} />
+                        <Route path="/sop/vehicle-disposal" element={<ProtectedRoute blockedForRoles={["driver"]}><VehicleDisposalPage /></ProtectedRoute>} />
+                        <Route path="/sop/roadside-assistance" element={<ProtectedRoute blockedForRoles={["driver"]}><RoadsideAssistanceSopPage /></ProtectedRoute>} />
+                        <Route path="/sop/license-renewal" element={<ProtectedRoute blockedForRoles={["driver"]}><LicenseRenewalPage /></ProtectedRoute>} />
+                        <Route path="/sop/outsource-rental" element={<ProtectedRoute blockedForRoles={["driver"]}><OutsourceRentalPage /></ProtectedRoute>} />
+                        <Route path="/sop/safety-comfort" element={<ProtectedRoute blockedForRoles={["driver"]}><SafetyComfortPage /></ProtectedRoute>} />
+                        <Route path="/sop/vehicle-handover" element={<ProtectedRoute blockedForRoles={["driver"]}><VehicleHandoverPage /></ProtectedRoute>} />
+                        <Route path="/sop/vehicle-handover/catalog" element={<ProtectedRoute blockedForRoles={["driver"]}><HandoverCatalogAdmin /></ProtectedRoute>} />
+                        <Route path="/sop/fleet-transfer" element={<ProtectedRoute blockedForRoles={["driver"]}><FleetTransferPage /></ProtectedRoute>} />
+                        <Route path="/sop/fuel-request" element={<ProtectedRoute blockedForRoles={["driver"]}><FuelRequestSopPage /></ProtectedRoute>} />
+                        <Route path="/sop/vehicle-request" element={<ProtectedRoute blockedForRoles={["driver"]}><VehicleRequestSopPage /></ProtectedRoute>} />
+                        {/* Driver-facing license & document hub */}
+                        <Route path="/my-license" element={<ProtectedRoute><MyLicense /></ProtectedRoute>} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />
                       </Routes>
