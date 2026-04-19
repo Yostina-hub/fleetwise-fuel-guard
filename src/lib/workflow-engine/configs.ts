@@ -879,13 +879,16 @@ export const safetyComfortConfig: WorkflowConfig = {
       actions: [{ id: "close_rejected", label: "Close", toStage: "rejected", completes: true,
         allowedRoles: ["fleet_manager","operations_manager"] }] },
 
-    // 3. Triage by maintenance
+    // 3. Triage by maintenance — also captures the standard Safety & Comfort
+    // checklist (per Vehicle Group: G1/G2/G3) from the paper SOP.
     { id: "triage", label: "3. Triage", lane: "maintenance",
       actions: [{ id: "ready_wo", label: "Ready for Work Order", toStage: "request_wo",
         allowedRoles: ["maintenance_manager","maintenance_supervisor"],
         fields: [
           { key: "triage_notes", label: "Triage notes / diagnosis", type: "textarea", required: true },
           { key: "estimated_cost", label: "Estimated cost (ETB)", type: "number" },
+          { key: "standards_checklist", label: "Standard Safety & Comfort Checklist (by Vehicle Group)", type: "safety_comfort_checklist",
+            helpText: "Pick the vehicle group, then mark each standard item as present, set its condition, and add notes." },
         ] }] },
 
     // 4. WO — reuse or create
