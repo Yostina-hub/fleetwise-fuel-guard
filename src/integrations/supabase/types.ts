@@ -25810,6 +25810,7 @@ export type Database = {
           reason: string
         }[]
       }
+      cleanup_license_renewal_e2e_test: { Args: never; Returns: undefined }
       cleanup_maintenance_workflow_e2e_test: { Args: never; Returns: string }
       cleanup_old_telemetry: {
         Args: { p_retain_months?: number }
@@ -26145,6 +26146,15 @@ export type Database = {
         }[]
       }
       run_fuel_workflow_e2e_test: {
+        Args: never
+        Returns: {
+          t_detail: string
+          t_flow: string
+          t_status: string
+          t_step: string
+        }[]
+      }
+      run_license_renewal_e2e_test: {
         Args: never
         Returns: {
           t_detail: string
