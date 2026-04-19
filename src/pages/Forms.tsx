@@ -143,11 +143,11 @@ export default function Forms() {
                         <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{f.key}</td>
                         <td className="px-3 py-2 text-xs text-muted-foreground">{f.category || "—"}</td>
                         <td className="px-3 py-2">
-                          {!f.is_archived ? (
-                            <Badge variant="secondary" className="text-xs">Active</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">Archived</Badge>
-                          )}
+                          <FormStatusBadge
+                            archived={f.is_archived}
+                            usage={usage.data?.get(f.id)}
+                            loading={usage.isLoading}
+                          />
                         </td>
                         <td className="px-3 py-2 text-xs">
                           {f.current_published_version_id ? (
