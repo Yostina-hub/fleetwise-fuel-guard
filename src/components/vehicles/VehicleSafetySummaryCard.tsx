@@ -81,6 +81,15 @@ export const VehicleSafetySummaryCard = ({ vehicleId }: Props) => {
             <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Closed</p>
             <p className="font-bold text-lg leading-none text-muted-foreground">{data?.totalCompleted ?? 0}</p>
           </div>
+          <Button
+            variant="default"
+            size="sm"
+            className="h-8 gap-1"
+            onClick={() => setReportOpen(true)}
+          >
+            <Plus className="w-3.5 h-3.5" />
+            New Report
+          </Button>
           <Button variant="outline" size="sm" asChild className="h-8 gap-1">
             <Link to="/sop/safety-comfort">
               View
@@ -116,6 +125,15 @@ export const VehicleSafetySummaryCard = ({ vehicleId }: Props) => {
           ))}
         </div>
       )}
+
+      <SafetyComfortReportDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        prefill={{ vehicle_id: vehicleId }}
+        onSubmitted={() => {
+          qc.invalidateQueries({ queryKey: ["vehicle-safety-summary", vehicleId] });
+        }}
+      />
     </div>
   );
 };
