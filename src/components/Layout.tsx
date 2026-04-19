@@ -69,6 +69,8 @@ import LanguageSelector from "@/components/settings/LanguageSelector";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationCenter } from "@/components/scheduling/NotificationCenter";
 import { HeaderAlertBell } from "@/components/alerts/HeaderAlertBell";
+import DriverNotificationBell from "@/components/driver-portal/DriverNotificationBell";
+import { useCurrentDriverId } from "@/hooks/useCurrentDriverId";
 import { cn } from "@/lib/utils";
 import { isPathAccessible } from "@/config/sidebarAccess";
 import { getRoleSpecificNav } from "@/config/roleNavTemplates";
@@ -501,6 +503,7 @@ const Layout = ({ children }: LayoutProps) => {
             <div className="hidden sm:block h-5 w-px bg-[#2a3a4d]" />
             
             <HeaderAlertBell />
+            <DriverNotificationBell driverId={currentDriverId} />
             <NotificationCenter />
             <ThemeToggle />
             
