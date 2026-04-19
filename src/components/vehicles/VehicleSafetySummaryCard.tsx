@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ShieldCheck, ShieldAlert, ChevronRight, CalendarClock } from "lucide-react";
+import { ShieldCheck, ShieldAlert, ChevronRight, CalendarClock, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
+import { useQueryClient } from "@tanstack/react-query";
 import { useVehicleSafetySummary } from "@/hooks/useVehicleSafetySummary";
 import { cn } from "@/lib/utils";
+import SafetyComfortReportDialog from "@/components/safety-comfort/SafetyComfortReportDialog";
 
 interface Props {
   vehicleId: string;
@@ -12,6 +15,8 @@ interface Props {
 
 export const VehicleSafetySummaryCard = ({ vehicleId }: Props) => {
   const { data, isLoading } = useVehicleSafetySummary(vehicleId);
+  const [reportOpen, setReportOpen] = useState(false);
+  const qc = useQueryClient();
 
   if (isLoading) {
     return (
@@ -81,6 +86,15 @@ export const VehicleSafetySummaryCard = ({ vehicleId }: Props) => {
             <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Closed</p>
             <p className="font-bold text-lg leading-none text-muted-foreground">{data?.totalCompleted ?? 0}</p>
           </div>
+          <Button
+            variant="default"
+            size="sm"
+            className="h-8 gap-1"
+            onClick={() => setReportOpen(true)}
+          >
+            <Plus className="w-3.5 h-3.5" />
+            New Report
+          </Button>
           <Button variant="outline" size="sm" asChild className="h-8 gap-1">
             <Link to="/sop/safety-comfort">
               View
@@ -116,6 +130,15 @@ export const VehicleSafetySummaryCard = ({ vehicleId }: Props) => {
           ))}
         </div>
       )}
+
+      <SafetyComfortReportDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        prefill={{ vehicle_id: vehicleId }}
+        onSubmitted={() => {
+          qc.invalidateQueries({ queryKey: ["vehicle-safety-summary", vehicleId] });
+        }}
+      />
     </div>
   );
 };
