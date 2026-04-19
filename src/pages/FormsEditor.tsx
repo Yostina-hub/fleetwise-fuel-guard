@@ -394,7 +394,7 @@ export default function FormsEditor() {
           </TabsContent>
 
           <TabsContent value="preview" className="mt-3">
-            <Card className="p-4 max-w-3xl mx-auto">
+            <Card className="mx-auto w-full max-w-6xl p-4">
               {(() => {
                 const k = formQ.data?.key ?? "";
                 const isExactLegacy = k === "vehicle_request";
