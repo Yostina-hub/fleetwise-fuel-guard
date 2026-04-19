@@ -15,6 +15,19 @@ import { useOrganization } from "@/hooks/useOrganization";
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  /** Optional values prefilled from the workflow run context (vehicle_id, driver_id, etc.) */
+  prefill?: {
+    vehicle_id?: string;
+    driver_id?: string;
+    breakdown_type?: string;
+    priority?: string;
+    description?: string;
+    location_name?: string;
+    lat?: number;
+    lng?: number;
+  };
+  /** Called after successful insert; receives the created row. */
+  onSubmitted?: (row: any) => void;
 }
 
 const BREAKDOWN_TYPES = [
