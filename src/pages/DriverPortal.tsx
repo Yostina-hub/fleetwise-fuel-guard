@@ -605,6 +605,15 @@ const DriverPortal = () => {
                   {driver?.license_number || "—"}
                   {licenseExpiry && ` · Expires ${format(new Date(licenseExpiry), "MMM dd, yyyy")}`}
                 </p>
+                {driver && (daysUntilExpiry === null || daysUntilExpiry < 90) && (
+                  <Button
+                    size="sm"
+                    className="mt-3 gap-1"
+                    onClick={() => setShowLicenseRenewal(true)}
+                  >
+                    <IdCard className="w-3.5 h-3.5" aria-hidden="true" /> Request renewal
+                  </Button>
+                )}
               </div>
 
               <Button variant="outline" className="w-full justify-between" onClick={() => navigate("/licensing-compliance")}>
