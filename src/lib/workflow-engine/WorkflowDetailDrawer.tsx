@@ -115,8 +115,21 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
     if (!activeAction) return;
     const missing = (activeAction.fields || [])
       .filter((f) => f.required)
-      .filter((f) => !actionValues[f.key] && actionValues[f.key] !== false);
-    if (missing.length) return;
+      .filter((f) => {
+        const val = actionValues[f.key];
+        if (val === false || val === 0) return false;
+        if (Array.isArray(val)) return val.length === 0;
+        return val == null || val === "";
+      });
+    if (missing.length) {
+      // Surface the validation error so the user understands why nothing
+      // happened (previously this returned silently, which looked like the
+      // datetime input had cleared itself on submit).
+      toast.error(
+        `Please fill in: ${missing.map((m) => m.label).join(", ")}`,
+      );
+      return;
+    }
     // If this action carries a `confirm:` prompt, route through the AlertDialog
     // (avoids native window.confirm which blocks E2E and is poor UX).
     if (activeAction.confirm) {
