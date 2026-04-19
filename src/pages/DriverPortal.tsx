@@ -23,6 +23,7 @@ import { FuelRequestFormDialog } from "@/components/fuel/FuelRequestFormDialog";
 import { VehicleInspectionFormDialog } from "@/components/maintenance/VehicleInspectionFormDialog";
 import { UnifiedVehicleRequestDialog } from "@/components/vehicle-requests/UnifiedVehicleRequestDialog";
 import CreateWorkRequestDialog from "@/components/maintenance/CreateWorkRequestDialog";
+import { TireRequestDialog } from "@/components/tire-management/TireRequestDialog";
 import DriverSubmissionsTab from "@/components/driver-portal/DriverSubmissionsTab";
 import DriverTripHistory from "@/components/driver-portal/DriverTripHistory";
 import PendingPostTripBanner from "@/components/driver-portal/PendingPostTripBanner";
@@ -39,6 +40,7 @@ const DriverPortal = () => {
   const [showMaintenance, setShowMaintenance] = useState(false);
   const [showFuel, setShowFuel] = useState(false);
   const [showVehicle, setShowVehicle] = useState(false);
+  const [showTire, setShowTire] = useState(false);
   const [showInspection, setShowInspection] = useState(false);
   // Override prefill when launching the inspection dialog as a post-trip flow
   // (from the pending banner or from an alert deep-link).
@@ -362,6 +364,7 @@ const DriverPortal = () => {
           onReportIssue={() => setShowMaintenance(true)}
           onRequestFuel={() => setShowFuel(true)}
           onRequestVehicle={() => setShowVehicle(true)}
+          onRequestTire={() => setShowTire(true)}
           onPreTripInspection={() => {
             setInspectionPrefillOverride(null);
             setShowInspection(true);
