@@ -661,18 +661,23 @@ const DriverPortal = () => {
                   {licenseExpiry && ` · Expires ${format(new Date(licenseExpiry), "MMM dd, yyyy")}`}
                 </p>
                 {driver && (daysUntilExpiry === null || daysUntilExpiry < 90) && (
-                  <Button
-                    size="sm"
-                    className="mt-3 gap-1"
-                    onClick={() => setShowLicenseRenewal(true)}
-                  >
-                    <IdCard className="w-3.5 h-3.5" aria-hidden="true" /> Request renewal
-                  </Button>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button size="sm" className="gap-1" onClick={() => setShowLicenseRenewal(true)}>
+                      <IdCard className="w-3.5 h-3.5" aria-hidden="true" /> Request renewal
+                    </Button>
+                    <Button size="sm" variant="outline" className="gap-1" onClick={() => navigate("/my-license")}>
+                      Open my license hub <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
+                    </Button>
+                  </div>
                 )}
               </div>
 
               <Button variant="outline" className="w-full justify-between" onClick={() => navigate("/licensing-compliance")}>
                 <span className="flex items-center gap-2"><Shield className="w-4 h-4" aria-hidden="true" /> View Compliance Status</span>
+                <ChevronRight className="w-4 h-4" aria-hidden="true" />
+              </Button>
+              <Button variant="outline" className="w-full justify-between" onClick={() => navigate("/my-license")}>
+                <span className="flex items-center gap-2"><IdCard className="w-4 h-4" aria-hidden="true" /> My License & Permits</span>
                 <ChevronRight className="w-4 h-4" aria-hidden="true" />
               </Button>
               <Button variant="outline" className="w-full justify-between" onClick={() => navigate("/document-management")}>

@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, FileText, ChevronRight, Plus, IdCard, Fuel, Car, Shield, Wrench } from "lucide-react";
 import { format } from "date-fns";
 import { WORKFLOW_CONFIGS } from "@/lib/workflow-engine/configs";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Props {
   driverId?: string | null;
@@ -53,6 +54,9 @@ export default function MyRequestsPanel({
   driverId, organizationId, userId, onRequestRenewal,
 }: Props) {
   const navigate = useNavigate();
+  const { hasRole } = useAuth();
+  const isDriverOnly = hasRole("driver") && !hasRole("super_admin") && !hasRole("org_admin")
+    && !hasRole("fleet_manager") && !hasRole("operations_manager") && !hasRole("operator");
 
   const { data: instances, isLoading } = useQuery({
     queryKey: ["my-driver-workflow-instances", driverId, userId, organizationId],
@@ -135,7 +139,13 @@ export default function MyRequestsPanel({
                     key={r.id}
                     type="button"
                     onClick={() => {
-                      // Best-effort deep link to the SOP page; falls back to /workflow-builder.
+                      // Drivers never see raw SOP pages — bounce license-renewal
+                      // to the dedicated /my-license hub. Other types fall back
+                      // to the SOP page only for non-driver roles.
+                      if (isDriverOnly) {
+                        if (type === "license_renewal") navigate("/my-license");
+                        return;
+                      }
                       const path = sopPathForType(type);
                       if (path) navigate(path);
                     }}
