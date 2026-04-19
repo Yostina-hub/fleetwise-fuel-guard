@@ -26358,6 +26358,11 @@ export type Database = {
         | "supplier"
         | "transport_authority"
         | "insurance_admin"
+        | "finance_manager"
+        | "sourcing_manager"
+        | "maintenance_manager"
+        | "maintenance_supervisor"
+        | "inspection_center"
       employee_type:
         | "driver"
         | "mechanic"
@@ -26512,6 +26517,11 @@ export const Constants = {
         "supplier",
         "transport_authority",
         "insurance_admin",
+        "finance_manager",
+        "sourcing_manager",
+        "maintenance_manager",
+        "maintenance_supervisor",
+        "inspection_center",
       ],
       employee_type: [
         "driver",

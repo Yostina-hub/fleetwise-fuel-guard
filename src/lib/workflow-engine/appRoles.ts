@@ -20,6 +20,11 @@ export type AppRole =
   | "driver"
   | "transport_authority"
   | "insurance_admin"
+  | "finance_manager"
+  | "sourcing_manager"
+  | "maintenance_manager"
+  | "maintenance_supervisor"
+  | "inspection_center"
   | "viewer";
 
 export interface RoleMeta {
@@ -43,6 +48,11 @@ export const APP_ROLES: RoleMeta[] = [
   { value: "auditor",            label: "Auditor",             group: "Management",     description: "Read + audit trails" },
   { value: "transport_authority",label: "Transport Authority", group: "Management",     description: "Vehicle registration / Bolo authority" },
   { value: "insurance_admin",    label: "Insurance Admin",     group: "Management",     description: "Insurance policies & renewals" },
+  { value: "finance_manager",    label: "Finance Manager",     group: "Management",     description: "Approves & disburses payments" },
+  { value: "sourcing_manager",   label: "Sourcing Manager",    group: "Management",     description: "Procurement & supplier management" },
+  { value: "maintenance_manager",label: "Maintenance Manager", group: "Management",     description: "Workshop / fleet maintenance manager" },
+  { value: "maintenance_supervisor", label: "Maintenance Supervisor", group: "Management", description: "Supervises maintenance jobs" },
+  { value: "inspection_center",  label: "Inspection Center",   group: "Operations",     description: "Annual / roadworthy inspection center" },
 
   // Operations
   { value: "dispatcher",         label: "Dispatcher",          group: "Operations",     description: "Trip & vehicle dispatch" },
