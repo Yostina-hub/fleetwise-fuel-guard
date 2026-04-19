@@ -30,7 +30,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import CreateDriverDialog from "@/components/fleet/CreateDriverDialog";
+import CentralizedDriverRegistrationDialog from "@/components/fleet/CentralizedDriverRegistrationDialog";
 import EditDriverDialog from "@/components/fleet/EditDriverDialog";
 import DeleteDriverDialog from "@/components/fleet/DeleteDriverDialog";
 import DriverDetailDialog from "@/components/fleet/DriverDetailDialog";
@@ -508,7 +508,7 @@ const Drivers = () => {
 
 
       {/* Dialogs */}
-      <CreateDriverDialog
+      <CentralizedDriverRegistrationDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
       />
