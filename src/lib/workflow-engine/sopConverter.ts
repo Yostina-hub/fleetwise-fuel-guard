@@ -88,7 +88,10 @@ export function convertSopConfigToGraph(config: WorkflowConfig): ConverterOutput
         allFields.push(f);
       }
     }
-    // Build inbox action buttons from stage actions.
+    // Build inbox action buttons from stage actions. Each button carries
+    // its own per-action `fields` array so the runtime drawer can render
+    // *only* the fields that belong to the picked action (preventing the
+    // "all fields leak" bug where every button would surface every field).
     const actionButtons = (stage.actions || []).map((a) => ({
       id: a.id,
       label: a.label,
@@ -96,6 +99,7 @@ export function convertSopConfigToGraph(config: WorkflowConfig): ConverterOutput
       allowed_roles: a.allowedRoles || [],
       confirm: a.confirm,
       completes: !!a.completes,
+      fields: fieldsToFormSchema(a.fields),
     }));
 
     nodes.push({

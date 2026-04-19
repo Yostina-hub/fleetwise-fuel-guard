@@ -77,6 +77,21 @@ export function graphToConfig(
         cfgActions.find((a) => a?.id === edge.sourceHandle) ??
         cfgActions.find((a) => a?.label === edge.label);
 
+      // Prefer per-action fields (new schema). Fall back to the merged
+      // node-level field set ONLY when there's a single action on this stage,
+      // so legacy graphs (saved before per-action fields existed) still work.
+      // Multi-action stages without per-action fields would otherwise leak
+      // every action's fields into every button — see fix in sopConverter.
+      const perActionFields: any[] = Array.isArray(buttonMeta?.fields)
+        ? buttonMeta.fields
+        : [];
+      const fieldsForAction =
+        perActionFields.length > 0
+          ? perActionFields
+          : edgesFromHere.length === 1
+          ? cfgFields
+          : [];
+
       return {
         id: (buttonMeta?.id as string) || edge.sourceHandle || edge.id,
         label: (buttonMeta?.label as string) || (edge.label as string) || "Continue",
@@ -86,8 +101,7 @@ export function graphToConfig(
           (buttonMeta?.allowed_roles as AppRole[] | undefined) ??
           (cfg.assignee_roles as AppRole[] | undefined) ??
           undefined,
-        // Re-use the merged field set declared on the node.
-        fields: cfgFields.map((f: any) => ({
+        fields: fieldsForAction.map((f: any) => ({
           key: f.key,
           label: f.label,
           type: mapFieldType(f.type),
