@@ -40,36 +40,53 @@ export async function seedSOPWorkflows(
     return report;
   }
 
-  // Fetch existing seeded SOPs (matched by name) so we can update in-place.
+  // Fetch existing seeded SOPs. Prefer the new `sop_type` key when present;
+  // fall back to legacy name match so previously-seeded rows are upgraded
+  // in-place (and adopted into the new (kind='sop', sop_type) keyed model).
+  const seededTypes = ALL_SOPS.map((c) => c.type);
   const seededNames = ALL_SOPS.map((c) => `${c.sopCode} — ${c.title}`);
   const { data: existing, error: fetchErr } = await supabase
     .from("workflows")
-    .select("id, name")
+    .select("id, name, sop_type, kind")
     .eq("organization_id", organizationId)
-    .eq("category", "sop")
-    .in("name", seededNames);
+    .or(
+      `sop_type.in.(${seededTypes.join(",")}),and(category.eq.sop,name.in.(${seededNames
+        .map((n) => `"${n.replace(/"/g, '""')}"`)
+        .join(",")}))`,
+    );
 
   if (fetchErr) {
     report.errors.push(`Failed to fetch existing SOPs: ${fetchErr.message}`);
     return report;
   }
-  const existingByName = new Map((existing || []).map((w: any) => [w.name, w.id]));
+  const existingByType = new Map<string, string>();
+  for (const w of existing || []) {
+    if ((w as any).sop_type) existingByType.set((w as any).sop_type, w.id);
+  }
+  const existingByName = new Map<string, string>();
+  for (const w of existing || []) {
+    if (!(w as any).sop_type) existingByName.set(w.name, w.id);
+  }
 
   for (const config of ALL_SOPS) {
     try {
       const graph = convertSopConfigToGraph(config);
-      const existingId = existingByName.get(graph.name);
+      const existingId = existingByType.get(config.type) ?? existingByName.get(graph.name);
+      const sopRow = {
+        kind: "sop" as const,
+        sop_type: config.type,
+        sop_code: config.sopCode,
+        definition: serializeConfig(config) as any,
+        category: graph.category,
+        description: graph.description,
+        nodes: graph.nodes as any,
+        edges: graph.edges as any,
+      };
 
       if (existingId) {
         const { error } = await supabase
           .from("workflows")
-          .update({
-            description: graph.description,
-            category: graph.category,
-            nodes: graph.nodes as any,
-            edges: graph.edges as any,
-            // Don't touch status/version/run_count on update.
-          })
+          .update(sopRow)
           .eq("id", existingId);
         if (error) throw error;
         report.updated++;
@@ -77,12 +94,9 @@ export async function seedSOPWorkflows(
         const { error } = await supabase.from("workflows").insert({
           organization_id: organizationId,
           name: graph.name,
-          description: graph.description,
-          category: graph.category,
-          nodes: graph.nodes as any,
-          edges: graph.edges as any,
           status: "draft",
           created_by: userId || null,
+          ...sopRow,
         });
         if (error) throw error;
         report.inserted++;
@@ -93,4 +107,14 @@ export async function seedSOPWorkflows(
   }
 
   return report;
+}
+
+/**
+ * Strip non-serializable fields (e.g. Lucide icon components) so the config
+ * round-trips through JSONB cleanly. The icon is re-attached on read by
+ * matching `type` against WORKFLOW_CONFIGS.
+ */
+function serializeConfig(config: WorkflowConfig): Omit<WorkflowConfig, "icon"> {
+  const { icon: _icon, ...rest } = config;
+  return rest;
 }

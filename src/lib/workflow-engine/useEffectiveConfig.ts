@@ -36,15 +36,23 @@ export function useEffectiveConfig(base: WorkflowConfig): EffectiveConfigResult 
     queryKey: ["sop-effective-config", organizationId, base.type],
     enabled: !!organizationId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Prefer lookup by `sop_type` (new key); fall back to legacy name match
+      // so orgs seeded before the migration still resolve correctly.
+      const byType = await supabase
         .from("workflows")
-        .select("id, name, description, nodes, edges, updated_at")
+        .select("id, name, description, nodes, edges, updated_at, definition")
+        .eq("organization_id", organizationId!)
+        .eq("sop_type", base.type)
+        .maybeSingle();
+      if (byType.data) return byType.data;
+      const byName = await supabase
+        .from("workflows")
+        .select("id, name, description, nodes, edges, updated_at, definition")
         .eq("organization_id", organizationId!)
         .eq("category", "sop")
         .eq("name", seededName)
         .maybeSingle();
-      if (error) return null;
-      return data;
+      return byName.data ?? null;
     },
     staleTime: 60_000,
   });
