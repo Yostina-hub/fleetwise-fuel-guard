@@ -27,6 +27,10 @@ import { TireRequestDialog } from "@/components/tire-management/TireRequestDialo
 import DriverSubmissionsTab from "@/components/driver-portal/DriverSubmissionsTab";
 import DriverTripHistory from "@/components/driver-portal/DriverTripHistory";
 import PendingPostTripBanner from "@/components/driver-portal/PendingPostTripBanner";
+import DriverNotificationBanner from "@/components/driver-portal/DriverNotificationBanner";
+import MyRequestsPanel from "@/components/driver-portal/MyRequestsPanel";
+import RequestLicenseRenewalDialog from "@/components/driver-portal/RequestLicenseRenewalDialog";
+import { IdCard } from "lucide-react";
 
 const DriverPortal = () => {
   const navigate = useNavigate();
@@ -42,6 +46,7 @@ const DriverPortal = () => {
   const [showVehicle, setShowVehicle] = useState(false);
   const [showTire, setShowTire] = useState(false);
   const [showInspection, setShowInspection] = useState(false);
+  const [showLicenseRenewal, setShowLicenseRenewal] = useState(false);
   // Override prefill when launching the inspection dialog as a post-trip flow
   // (from the pending banner or from an alert deep-link).
   const [inspectionPrefillOverride, setInspectionPrefillOverride] = useState<{
@@ -349,6 +354,12 @@ const DriverPortal = () => {
           openFuel={openRequests?.fuel || 0}
         />
 
+        {/* Driver notification banner — license renewed, workflow stage updates, etc. */}
+        <DriverNotificationBanner
+          driverId={driverId}
+          onOpenRequests={() => setActiveTab("requests")}
+        />
+
         {/* Pending post-trip inspection — hybrid enforcement */}
         <PendingPostTripBanner
           driverId={driverId}
@@ -387,7 +398,12 @@ const DriverPortal = () => {
             <TabsTrigger value="submissions" className="gap-2">
               <Inbox className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline">My Submissions</span>
-              <span className="sm:hidden">Requests</span>
+              <span className="sm:hidden">Forms</span>
+            </TabsTrigger>
+            <TabsTrigger value="requests" className="gap-2">
+              <FileText className="h-4 w-4" aria-hidden="true" />
+              <span className="hidden sm:inline">My Requests</span>
+              <span className="sm:hidden">SOPs</span>
             </TabsTrigger>
             <TabsTrigger value="performance" className="gap-2">
               <Award className="h-4 w-4" aria-hidden="true" />
@@ -516,6 +532,15 @@ const DriverPortal = () => {
             <DriverSubmissionsTab driverId={driverId} organizationId={organizationId} userId={userId} />
           </TabsContent>
 
+          <TabsContent value="requests">
+            <MyRequestsPanel
+              driverId={driverId}
+              organizationId={organizationId}
+              userId={userId}
+              onRequestRenewal={driver ? () => setShowLicenseRenewal(true) : undefined}
+            />
+          </TabsContent>
+
           <TabsContent value="performance">
             <Card className="p-6">
               <div className="flex items-center justify-between mb-4">
@@ -580,6 +605,15 @@ const DriverPortal = () => {
                   {driver?.license_number || "—"}
                   {licenseExpiry && ` · Expires ${format(new Date(licenseExpiry), "MMM dd, yyyy")}`}
                 </p>
+                {driver && (daysUntilExpiry === null || daysUntilExpiry < 90) && (
+                  <Button
+                    size="sm"
+                    className="mt-3 gap-1"
+                    onClick={() => setShowLicenseRenewal(true)}
+                  >
+                    <IdCard className="w-3.5 h-3.5" aria-hidden="true" /> Request renewal
+                  </Button>
+                )}
               </div>
 
               <Button variant="outline" className="w-full justify-between" onClick={() => navigate("/licensing-compliance")}>

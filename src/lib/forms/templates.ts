@@ -864,6 +864,92 @@ const maintenanceRequestTemplate: FormTemplate = {
 };
 
 // ---------------------------------------------------------------------------
+// 8) License Renewal Request (driver self-service — FMG-LIC 13)
+// ---------------------------------------------------------------------------
+const licenseRenewalRequestTemplate: FormTemplate = {
+  key: "license_renewal_request",
+  name: "License Renewal Request",
+  description:
+    "Driver-facing form to request a driving license, work permit, or HAZMAT permit renewal. Routes into the FMG-LIC 13 SOP for verification, TA processing, payment and re-issue.",
+  category: "compliance",
+  rationale:
+    "Centralized intake form for the License Renewal SOP. Customize categories, supporting documents, or add organization-specific fields without touching SOP code.",
+  schema: {
+    version: 1,
+    fields: [
+      f({
+        key: "title",
+        type: "text",
+        label: "Request title",
+        required: true,
+        placeholder: "e.g. License renewal — John Doe",
+        validation: { maxLength: 120 },
+      }),
+      f({
+        key: "driver_id",
+        type: "driver",
+        label: "Driver",
+        required: true,
+        helpText: "When a driver fills this in from the Driver Portal, this is auto-set to their record.",
+      }),
+      f({
+        key: "license_type",
+        type: "select",
+        label: "License type",
+        required: true,
+        defaultValue: "driver",
+        options: [
+          { value: "driver",      label: "Driver license" },
+          { value: "work_permit", label: "Work permit" },
+          { value: "hazmat",      label: "HAZMAT permit" },
+        ],
+      }),
+      f({
+        key: "current_license_number",
+        type: "text",
+        label: "Current license number",
+        required: true,
+      }),
+      f({
+        key: "current_expiry",
+        type: "date",
+        label: "Current expiry date",
+        required: true,
+      }),
+      f({
+        key: "urgency",
+        type: "select",
+        label: "Urgency",
+        defaultValue: "normal",
+        options: [
+          { value: "normal",   label: "Normal (≥30 days)" },
+          { value: "soon",     label: "Soon (<30 days)" },
+          { value: "expired",  label: "Already expired" },
+        ],
+      }),
+      f({
+        key: "notes",
+        type: "textarea",
+        label: "Notes for the verifier",
+        placeholder: "Anything Fleet Operations should know (medical clearance, address change, etc.)",
+        validation: { maxLength: 1000 },
+      }),
+      f({
+        key: "documents",
+        type: "file",
+        label: "Supporting documents (current license, medical, ID, photo)",
+      }),
+    ],
+  },
+  settings: {
+    submitLabel: "Submit renewal request",
+    cancelLabel: "Cancel",
+    successMessage: "License renewal request submitted — Fleet Operations will verify your documents.",
+    twoColumnLayout: true,
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Public registry
 // ---------------------------------------------------------------------------
 
@@ -875,6 +961,7 @@ export const FORM_TEMPLATES: FormTemplate[] = [
   oracleWorkOrderTemplate,
   vehicleRequestTemplate,
   maintenanceRequestTemplate,
+  licenseRenewalRequestTemplate,
 ];
 
 export const getTemplate = (key: string): FormTemplate | undefined =>
