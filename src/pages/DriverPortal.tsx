@@ -27,6 +27,10 @@ import { TireRequestDialog } from "@/components/tire-management/TireRequestDialo
 import DriverSubmissionsTab from "@/components/driver-portal/DriverSubmissionsTab";
 import DriverTripHistory from "@/components/driver-portal/DriverTripHistory";
 import PendingPostTripBanner from "@/components/driver-portal/PendingPostTripBanner";
+import DriverNotificationBanner from "@/components/driver-portal/DriverNotificationBanner";
+import MyRequestsPanel from "@/components/driver-portal/MyRequestsPanel";
+import RequestLicenseRenewalDialog from "@/components/driver-portal/RequestLicenseRenewalDialog";
+import { IdCard } from "lucide-react";
 
 const DriverPortal = () => {
   const navigate = useNavigate();
