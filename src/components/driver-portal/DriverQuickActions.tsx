@@ -1,12 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Wrench, Fuel, Car, Gauge, FileText, ClipboardCheck } from "lucide-react";
+import { Wrench, Fuel, Car, Gauge, FileText, ClipboardCheck, CircleDot } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DriverQuickActionsProps {
   onReportIssue: () => void;
   onRequestFuel: () => void;
   onRequestVehicle: () => void;
+  onRequestTire?: () => void;
   onPreTripInspection: () => void;
   onPostTripInspection?: () => void;
   onMyDocuments: () => void;
@@ -16,6 +17,7 @@ const DriverQuickActions = ({
   onReportIssue,
   onRequestFuel,
   onRequestVehicle,
+  onRequestTire,
   onPreTripInspection,
   onPostTripInspection,
   onMyDocuments,
@@ -45,6 +47,16 @@ const DriverQuickActions = ({
       variant: "outline" as const,
       className: "border-accent/50 hover:bg-accent/10",
     },
+    ...(onRequestTire
+      ? [{
+          label: "Request Tire",
+          tooltip: "Submit a tire replacement / repair request to maintenance",
+          icon: CircleDot,
+          onClick: onRequestTire,
+          variant: "outline" as const,
+          className: "border-warning/50 hover:bg-warning/10 text-warning",
+        }]
+      : []),
     {
       label: "Pre-Trip Check",
       tooltip: "Complete pre-trip vehicle inspection",

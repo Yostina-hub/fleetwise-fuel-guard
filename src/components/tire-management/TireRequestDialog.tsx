@@ -23,6 +23,12 @@ const POSITIONS = ["Front Left", "Front Right", "Rear Left Outer", "Rear Left In
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  /** When true, render inline without the outer Dialog (used by Forms module). */
+  embedded?: boolean;
+  /** Optional context prefilled by the caller. */
+  prefill?: { vehicle_id?: string; driver_id?: string };
+  /** Called after a successful submission with the new tire_request id. */
+  onSubmitted?: (payload: { id: string }) => void;
 }
 
 interface LineItem {
@@ -45,7 +51,7 @@ const toLocalInput = (d: Date) => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
-export const TireRequestDialog = ({ open, onOpenChange }: Props) => {
+export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefill, onSubmitted }: Props) => {
   const { organizationId } = useOrganization();
   const { vehicles } = useVehicles();
   const { user, profile } = useAuthContext() as any;
@@ -266,18 +272,24 @@ export const TireRequestDialog = ({ open, onOpenChange }: Props) => {
       }
       return req;
     },
-    onSuccess: () => {
+    onSuccess: (req: any) => {
       toast.success("Tire request submitted");
       queryClient.invalidateQueries({ queryKey: ["tire-requests"] });
+      onSubmitted?.({ id: req.id });
       onOpenChange(false);
       reset();
     },
     onError: (e: any) => toast.error(e.message),
   });
 
-  return (
-    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) reset(); }}>
-      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
+  // Apply caller-provided prefill once on mount.
+  useEffect(() => {
+    if (prefill?.vehicle_id) setHeader(h => ({ ...h, vehicle_id: prefill.vehicle_id! }));
+  }, [prefill?.vehicle_id]);
+
+  const body = (
+    <>
+      {!embedded && (
         <DialogHeader>
           <div className="text-xs text-muted-foreground">Maintenance Home &gt;</div>
           <DialogTitle className="text-2xl">Create Tire Request</DialogTitle>
@@ -285,6 +297,7 @@ export const TireRequestDialog = ({ open, onOpenChange }: Props) => {
             <span className="text-destructive">*</span> Indicates required field. Approval requires the previous tire to be returned to the warehouse (iPROC).
           </DialogDescription>
         </DialogHeader>
+      )}
 
         <div className="space-y-6">
           {/* ===== Header section ===== */}
@@ -581,12 +594,34 @@ export const TireRequestDialog = ({ open, onOpenChange }: Props) => {
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
-            {mutation.isPending ? "Submitting..." : "Apply / Submit"}
-          </Button>
-        </DialogFooter>
+        <div className={embedded ? "flex justify-end gap-2 pt-4 border-t mt-4" : ""}>
+          {embedded ? (
+            <>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
+                {mutation.isPending ? "Submitting..." : "Apply / Submit"}
+              </Button>
+            </>
+          ) : (
+            <DialogFooter>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
+                {mutation.isPending ? "Submitting..." : "Apply / Submit"}
+              </Button>
+            </DialogFooter>
+          )}
+        </div>
+    </>
+  );
+
+  if (embedded) {
+    return <div className="space-y-6">{body}</div>;
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) reset(); }}>
+      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
+        {body}
       </DialogContent>
     </Dialog>
   );

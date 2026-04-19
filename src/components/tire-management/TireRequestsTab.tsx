@@ -10,9 +10,10 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ClipboardList, CheckCircle2, XCircle, Clock, Package, AlertCircle, Truck } from "lucide-react";
+import { ClipboardList, CheckCircle2, XCircle, Clock, Package, AlertCircle, Truck, Warehouse } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { iproc, type OnHandBalance } from "@/lib/iproc/adapter";
 
 const STATUS_META: Record<string, { label: string; cls: string; icon: any }> = {
   pending: { label: "Pending", cls: "bg-muted text-foreground", icon: Clock },
@@ -97,24 +98,37 @@ export const TireRequestsTab = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const markReturned = useMutation({
-    mutationFn: async ({ itemId, ref }: { itemId: string; ref: string }) => {
-      const { error } = await supabase
-        .from("tire_request_items")
-        .update({
-          iproc_return_status: "returned",
-          iproc_return_reference: ref || `MANUAL-${Date.now()}`,
-          iproc_returned_at: new Date().toISOString(),
-          iproc_received_by: profile?.full_name || user?.email || null,
-        })
-        .eq("id", itemId);
-      if (error) throw error;
+  const postReturn = useMutation({
+    mutationFn: async ({ itemId, warehouse, notes }: { itemId: string; warehouse?: string; notes?: string }) => {
+      const res = await iproc.postReturn({
+        request_item_id: itemId,
+        warehouse,
+        received_by: profile?.full_name || user?.email || undefined,
+        notes,
+      });
+      return res;
     },
-    onSuccess: () => {
-      toast.success("Marked returned (manual override)");
+    onSuccess: (res) => {
+      toast.success(`Return posted to iPROC (ref: ${res.iproc_return_reference})`);
       queryClient.invalidateQueries({ queryKey: ["tire-requests"] });
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(`iPROC return failed: ${e.message}`),
+  });
+
+  // On-hand balance lookup for the selected request's items.
+  const onHand = useQuery({
+    queryKey: ["iproc-onhand", openId],
+    enabled: !!openId,
+    queryFn: async (): Promise<Record<string, OnHandBalance>> => {
+      const sel: any = (requests as any[]).find((r: any) => r.id === openId);
+      if (!sel) return {};
+      const sizes = Array.from(new Set((sel.items || []).map((it: any) => it.tire_size || "295/80R22.5"))) as string[];
+      const out: Record<string, OnHandBalance> = {};
+      await Promise.all(sizes.map(async (s) => {
+        try { out[s] = await iproc.lookupOnHand({ tire_size: s }); } catch { /* ignore */ }
+      }));
+      return out;
+    },
   });
 
   if (isLoading) {
@@ -201,10 +215,14 @@ export const TireRequestsTab = () => {
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-semibold mb-2">Items & iPROC Return Status</h3>
+                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                    Items & iPROC Return Status
+                    {onHand.isFetching && <Clock className="h-3 w-3 animate-spin opacity-50" />}
+                  </h3>
                   <div className="space-y-2">
                     {(selected.items || []).map((it: any) => {
                       const rmeta = RETURN_META[it.iproc_return_status] || RETURN_META.pending;
+                      const stock = onHand.data?.[it.tire_size || "295/80R22.5"];
                       return (
                         <div key={it.id} className="rounded-md border p-3 text-sm space-y-2">
                           <div className="flex items-center justify-between">
@@ -219,17 +237,27 @@ export const TireRequestsTab = () => {
                             {it.iproc_returned_at && <div>Returned at: {format(new Date(it.iproc_returned_at), "MMM dd, yyyy HH:mm")}</div>}
                             {it.return_skip_reason && <div>Skipped: {it.return_skip_reason}</div>}
                           </div>
+                          {stock && (
+                            <div className="flex items-center gap-2 text-[11px] rounded bg-muted/40 px-2 py-1">
+                              <Warehouse className="h-3 w-3 text-primary" />
+                              <span className="font-medium">iPROC on-hand:</span>
+                              <span>{stock.total_on_hand} units</span>
+                              <span className="text-muted-foreground">
+                                ({stock.warehouses.map((w) => `${w.warehouse}: ${w.quantity}`).join(" • ")})
+                              </span>
+                              {stock._mock && <Badge variant="outline" className="text-[9px] py-0 px-1">mock</Badge>}
+                            </div>
+                          )}
                           {isMaintenance && it.iproc_return_status === "pending" && (
                             <Button
                               size="sm"
                               variant="outline"
-                              className="h-7 text-xs"
-                              onClick={() => {
-                                const ref = prompt("Enter iPROC return reference (or leave blank for manual override):") ?? "";
-                                markReturned.mutate({ itemId: it.id, ref });
-                              }}
+                              className="h-7 text-xs gap-1"
+                              disabled={postReturn.isPending}
+                              onClick={() => postReturn.mutate({ itemId: it.id })}
                             >
-                              Mark returned (override)
+                              <Truck className="h-3 w-3" />
+                              Post return to iPROC
                             </Button>
                           )}
                         </div>
