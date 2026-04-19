@@ -398,7 +398,12 @@ const DriverPortal = () => {
             <TabsTrigger value="submissions" className="gap-2">
               <Inbox className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline">My Submissions</span>
-              <span className="sm:hidden">Requests</span>
+              <span className="sm:hidden">Forms</span>
+            </TabsTrigger>
+            <TabsTrigger value="requests" className="gap-2">
+              <FileText className="h-4 w-4" aria-hidden="true" />
+              <span className="hidden sm:inline">My Requests</span>
+              <span className="sm:hidden">SOPs</span>
             </TabsTrigger>
             <TabsTrigger value="performance" className="gap-2">
               <Award className="h-4 w-4" aria-hidden="true" />
