@@ -30,6 +30,8 @@ interface Props {
   onOpenChange: (o: boolean) => void;
   prefill?: Record<string, any>;
   onSubmitted?: (result?: Record<string, any>) => void;
+  /** When true, render inline (no outer Dialog) — used by the unified FormRenderer / legacy registry. */
+  embedded?: boolean;
 }
 
 const SEVERITY_OPTIONS = [
