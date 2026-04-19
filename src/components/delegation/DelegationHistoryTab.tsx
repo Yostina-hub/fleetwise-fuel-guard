@@ -263,15 +263,19 @@ export const DelegationHistoryTab = () => {
           />
         </div>
         <Select value={sourceFilter} onValueChange={setSourceFilter}>
-          <SelectTrigger className="w-[180px]"><SelectValue placeholder="Source" /></SelectTrigger>
+          <SelectTrigger className="w-[200px]"><SelectValue placeholder="Source" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Sources</SelectItem>
             <SelectItem value="authority_matrix">Authority Rules</SelectItem>
             <SelectItem value="delegation_matrix">Substitutions</SelectItem>
             <SelectItem value="user_substitutions">User Substitutions</SelectItem>
             <SelectItem value="approval_levels">Approval Levels</SelectItem>
-            <SelectItem value="fuel_request">Fuel Request Routing</SelectItem>
-            <SelectItem value="vehicle_request">Vehicle Request Routing</SelectItem>
+            <SelectItem value="fuel_request">Fuel Request</SelectItem>
+            <SelectItem value="vehicle_request">Vehicle Request</SelectItem>
+            <SelectItem value="tire_request">Tire Request</SelectItem>
+            <SelectItem value="fleet_transfer">Fleet Transfer</SelectItem>
+            <SelectItem value="fleet_inspection">Fleet Inspection</SelectItem>
+            <SelectItem value="safety_comfort">Safety & Comfort</SelectItem>
           </SelectContent>
         </Select>
         <Select value={actionFilter} onValueChange={setActionFilter}>
@@ -284,6 +288,8 @@ export const DelegationHistoryTab = () => {
             <SelectItem value="activate">Activated</SelectItem>
             <SelectItem value="deactivate">Deactivated</SelectItem>
             <SelectItem value="route">Routed</SelectItem>
+            <SelectItem value="approve">Approved</SelectItem>
+            <SelectItem value="reject">Rejected</SelectItem>
             <SelectItem value="substitute">Delegated</SelectItem>
             <SelectItem value="skip">Skipped</SelectItem>
           </SelectContent>
