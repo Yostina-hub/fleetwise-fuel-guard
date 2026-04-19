@@ -5613,6 +5613,73 @@ export type Database = {
           },
         ]
       }
+      driver_notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          driver_id: string
+          id: string
+          kind: string
+          link: string | null
+          organization_id: string
+          payload: Json
+          read_at: string | null
+          title: string
+          user_id: string | null
+          workflow_instance_id: string | null
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          driver_id: string
+          id?: string
+          kind: string
+          link?: string | null
+          organization_id: string
+          payload?: Json
+          read_at?: string | null
+          title: string
+          user_id?: string | null
+          workflow_instance_id?: string | null
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          driver_id?: string
+          id?: string
+          kind?: string
+          link?: string | null
+          organization_id?: string
+          payload?: Json
+          read_at?: string | null
+          title?: string
+          user_id?: string | null
+          workflow_instance_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_notifications_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_notifications_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_notifications_workflow_instance_id_fkey"
+            columns: ["workflow_instance_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_onboarding_checklists: {
         Row: {
           checklist_type: string
