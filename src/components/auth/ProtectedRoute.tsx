@@ -10,6 +10,13 @@ interface ProtectedRouteProps {
   requiredPermission?: string;
   requiredRole?: string;
   requiredRoles?: string[];
+  /**
+   * If the current user has any of these roles, redirect to `redirectTo`
+   * instead of rendering children. Used to keep drivers out of admin/SOP
+   * surfaces and bounce them to their own portal.
+   */
+  blockedForRoles?: string[];
+  redirectTo?: string;
 }
 
 const LOADING_TIMEOUT_MS = 10000; // 10 seconds max loading
@@ -20,6 +27,8 @@ const ProtectedRoute = ({
   requiredPermission,
   requiredRole,
   requiredRoles,
+  blockedForRoles,
+  redirectTo = "/my-license",
 }: ProtectedRouteProps) => {
   const { user, loading: authLoading, hasRole: authHasRole } = useAuthContext();
   const { hasPermission, hasRole, loading: permLoading } = usePermissions();
@@ -86,6 +95,17 @@ const ProtectedRoute = ({
         </div>
       </div>
     );
+  }
+
+  // Block drivers (or other listed roles) from admin-only surfaces. Super
+  // admins keep access even when they also carry the blocked role.
+  if (blockedForRoles?.length && !authHasRole("super_admin") && !hasRole("super_admin")) {
+    const isBlocked = blockedForRoles.some(
+      (role) => hasRole(role) || authHasRole(role),
+    );
+    if (isBlocked) {
+      return <Navigate to={redirectTo} replace />;
+    }
   }
 
   return <>{children}</>;
