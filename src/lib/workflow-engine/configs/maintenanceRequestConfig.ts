@@ -18,15 +18,17 @@ import type { WorkflowConfig, Lane } from "../types";
 
 const driverLane: Lane     = { id: "driver",     label: "Driver", roles: ["driver"] };
 const fleetOpsLane: Lane   = { id: "fleet_ops",  label: "Fleet Operation / QA / Assurance",
-                               roles: ["operations_manager", "fleet_manager", "qa_manager"] };
+                               roles: ["operations_manager", "fleet_manager"] };
 const maintLane: Lane      = { id: "maintenance", label: "Corporate Fleet Maintenance / Facilities",
                                roles: ["maintenance_manager", "maintenance_supervisor"] };
 const approvalLane: Lane   = { id: "approval",   label: "Approval (Delegation Matrix)",
                                roles: ["fleet_manager", "operations_manager", "fleet_owner"] };
 const sourcingLane: Lane   = { id: "sourcing",   label: "SCD — Sourcing / Contract Management",
                                roles: ["sourcing_manager"] };
+// Supplier swimlane — actions are taken on the supplier's behalf by Sourcing
+// (no dedicated supplier role exists in the workflow engine's AppRole enum).
 const supplierLane: Lane   = { id: "supplier",   label: "Supplier (Outsourced Garage)",
-                               roles: ["supplier", "sourcing_manager"] };
+                               roles: ["sourcing_manager"] };
 
 export const maintenanceRequestConfig: WorkflowConfig = {
   type: "maintenance_request",
