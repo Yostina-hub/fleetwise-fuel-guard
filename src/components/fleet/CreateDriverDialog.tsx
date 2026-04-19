@@ -151,7 +151,7 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
           });
         }
       }
-      return { portalProvisioned };
+      return { portalProvisioned, driverId };
     },
     onSuccess: (result) => {
       toast({
