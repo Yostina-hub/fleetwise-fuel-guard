@@ -41,6 +41,7 @@ export interface RegisteredWorkflowForm {
 // ---------------------------------------------------------------------------
 
 const CreateWorkRequestWrapper = lazy(() => import("./wrappers/CreateWorkRequestWrapper"));
+const MaintenanceRequestWrapper = lazy(() => import("./wrappers/MaintenanceRequestWrapper"));
 const OracleWorkOrderWrapper = lazy(() => import("./wrappers/OracleWorkOrderWrapper"));
 const VehicleInspectionWrapper = lazy(() => import("./wrappers/VehicleInspectionWrapper"));
 const FuelRequestWrapper = lazy(() => import("./wrappers/FuelRequestWrapper"));
@@ -66,6 +67,14 @@ const FORMS: RegisteredWorkflowForm[] = [
     description: "Oracle EBS-style maintenance / inspection work request form.",
     default_decision: "submitted",
     Component: CreateWorkRequestWrapper,
+  },
+  {
+    key: "maintenance_request",
+    label: "Maintenance Request (SOP 6.1)",
+    description:
+      "Driver/Operator-facing maintenance intake. Backed by the Oracle EBS Work Request dialog; inserts into maintenance_requests and syncs into the workflow engine via trg_sync_maintenance_request_workflow.",
+    default_decision: "submitted",
+    Component: MaintenanceRequestWrapper,
   },
   {
     key: "oracle_work_order",
