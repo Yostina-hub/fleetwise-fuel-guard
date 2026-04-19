@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public._diag_driver_auth_status();

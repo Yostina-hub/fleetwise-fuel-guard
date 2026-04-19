@@ -64,22 +64,66 @@ const DriverPortal = () => {
       if (!userData.user) return null;
       const userId = userData.user.id;
 
+      const driverColumns =
+        "id, first_name, last_name, license_number, license_expiry, status, total_trips, total_distance_km, avatar_url, phone, email, user_id, organization_id";
+
       let driver: any = null;
       if (overrideDriverId) {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from("drivers")
-          .select("id, first_name, last_name, license_number, license_expiry, status, total_trips, total_distance_km, avatar_url, phone")
+          .select(driverColumns)
           .eq("id", overrideDriverId)
           .maybeSingle();
+        if (error) console.warn("[DriverPortal] override lookup failed:", error.message);
         driver = data;
       } else {
-        const { data } = await supabase
+        // 1) Primary: drivers.user_id = auth.uid()
+        const primary = await supabase
           .from("drivers")
-          .select("id, first_name, last_name, license_number, license_expiry, status, total_trips, total_distance_km, avatar_url, phone")
+          .select(driverColumns)
           .eq("organization_id", organizationId)
           .eq("user_id", userId)
           .maybeSingle();
-        driver = data;
+        if (primary.error) console.warn("[DriverPortal] self lookup failed:", primary.error.message);
+        driver = primary.data;
+
+        // 2) Fallback: match by profile email → drivers.email and auto-link.
+        // Handles drivers whose auth account was created later or re-provisioned
+        // with a new auth user_id but the drivers row still points to the old one.
+        if (!driver) {
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("email")
+            .eq("id", userId)
+            .maybeSingle();
+          const email = prof?.email?.trim().toLowerCase();
+          if (email) {
+            const { data: byEmail } = await supabase
+              .from("drivers")
+              .select(driverColumns)
+              .eq("organization_id", organizationId)
+              .ilike("email", email)
+              .limit(1)
+              .maybeSingle();
+            if (byEmail) {
+              console.info(
+                "[DriverPortal] Linking driver by email fallback:",
+                byEmail.id,
+                "→ user",
+                userId
+              );
+              // Best-effort auto-link so future loads use the fast path.
+              const { error: linkErr } = await supabase
+                .from("drivers")
+                .update({ user_id: userId })
+                .eq("id", byEmail.id);
+              if (linkErr) {
+                console.warn("[DriverPortal] auto-link failed:", linkErr.message);
+              }
+              driver = { ...byEmail, user_id: userId };
+            }
+          }
+        }
       }
 
       if (!driver) return { driver: null, vehicle: null, activeRequest: null, userId };
@@ -325,19 +369,28 @@ const DriverPortal = () => {
 
         {!driver && (
           <Card className="glass-strong border-warning/30">
-            <CardContent className="p-6 flex items-center gap-3">
-              <AlertTriangle className="w-6 h-6 text-warning" aria-hidden="true" />
-              <div>
+            <CardContent className="p-6 flex items-start gap-3">
+              <AlertTriangle className="w-6 h-6 text-warning shrink-0 mt-0.5" aria-hidden="true" />
+              <div className="space-y-1">
                 <p className="font-medium">
                   {isSuperAdmin
-                    ? (overrideDriverId ? "Driver not found" : "No driver profile linked to your account")
+                    ? overrideDriverId
+                      ? "Driver not found"
+                      : "You are signed in as super admin"
                     : "No driver profile linked to your account"}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {isSuperAdmin
-                    ? "Use the \"View as Driver\" picker above to inspect any driver's portal."
-                    : "Contact Fleet Operations to link your driver record."}
+                    ? overrideDriverId
+                      ? "The selected driver could not be loaded. Pick another driver above."
+                      : "Use the \"View as Driver\" picker above to inspect any driver's portal."
+                    : "Your login is recognized but no driver record was found in this organization. Ask Fleet Operations to verify that your driver profile exists and that its email matches your account email exactly."}
                 </p>
+                {!isSuperAdmin && userId && (
+                  <p className="text-xs text-muted-foreground/80 font-mono pt-1">
+                    Account ID: {userId.slice(0, 8)}…
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
