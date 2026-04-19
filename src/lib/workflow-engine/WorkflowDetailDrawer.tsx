@@ -40,6 +40,14 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
   const [actionNotes, setActionNotes] = useState("");
   const [pendingConfirm, setPendingConfirm] = useState<string | null>(null);
 
+  // Reset transient form state when the drawer switches between instances,
+  // so we never show stale values from a previously selected card.
+  useEffect(() => {
+    setActiveAction(null);
+    setActionNotes("");
+    setPendingConfirm(null);
+  }, [instance?.id]);
+
   // Per-instance + per-action draft so users can step away mid-form and resume.
   const draftKey =
     instance && activeAction
