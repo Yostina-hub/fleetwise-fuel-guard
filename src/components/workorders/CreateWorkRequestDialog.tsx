@@ -106,12 +106,12 @@ const CreateWorkRequestDialog = ({ open, onOpenChange, onSuccess, embedded, onSu
 
   // Reset on open
   useEffect(() => {
-    if (open) {
+    if (open || embedded) {
       const nowStr = format(new Date(), "yyyy-MM-dd'T'HH:mm");
       setForm(f => ({ ...f, request_start_date: nowStr, request_completion_date: "" }));
       setFieldErrors({});
     }
-  }, [open]);
+  }, [open, embedded]);
 
   const { data: vehicles = [], isLoading: vehiclesLoading } = useQuery({
     queryKey: ["vehicles-for-wo", organizationId],
@@ -124,7 +124,7 @@ const CreateWorkRequestDialog = ({ open, onOpenChange, onSuccess, embedded, onSu
       if (error) throw error;
       return data;
     },
-    enabled: !!organizationId && open,
+    enabled: !!organizationId && (open || !!embedded),
   });
 
   const { data: departments = [] } = useQuery({
@@ -138,7 +138,7 @@ const CreateWorkRequestDialog = ({ open, onOpenChange, onSuccess, embedded, onSu
       if (error) throw error;
       return data;
     },
-    enabled: !!organizationId && open,
+    enabled: !!organizationId && (open || !!embedded),
   });
 
   const { data: drivers = [] } = useQuery({
@@ -158,7 +158,7 @@ const CreateWorkRequestDialog = ({ open, onOpenChange, onSuccess, embedded, onSu
         employment_type: d.employment_type || '',
       }));
     },
-    enabled: !!organizationId && open,
+    enabled: !!organizationId && (open || !!embedded),
   });
 
   const { data: currentUser } = useQuery({
@@ -178,7 +178,7 @@ const CreateWorkRequestDialog = ({ open, onOpenChange, onSuccess, embedded, onSu
         phone: profile?.phone || "",
       };
     },
-    enabled: open,
+    enabled: open || !!embedded,
   });
 
   const handleDriverSelect = (driverName: string) => {
@@ -216,7 +216,7 @@ const CreateWorkRequestDialog = ({ open, onOpenChange, onSuccess, embedded, onSu
       const woNumber = `WR-${Date.now().toString().slice(-8)}`;
       const selectedVehicle = vehicles.find(v => v.id === form.vehicle_id);
 
-      const { error } = await supabase.from("work_orders").insert({
+      const { data: insertedWO, error } = await supabase.from("work_orders").insert({
         work_order_number: woNumber,
         organization_id: organizationId!,
         vehicle_id: form.vehicle_id,
@@ -246,10 +246,11 @@ const CreateWorkRequestDialog = ({ open, onOpenChange, onSuccess, embedded, onSu
         parts_cost: 0,
         labor_cost: 0,
         total_cost: 0,
-      });
+      }).select("id, work_order_number").single();
 
       if (error) throw error;
-      onSuccess();
+      onSuccess?.();
+      onSubmitted?.({ id: insertedWO!.id, work_order_number: insertedWO!.work_order_number });
       onOpenChange(false);
     } catch (err: any) {
       setFieldErrors({ _form: err.message || "Failed to create work request" });
