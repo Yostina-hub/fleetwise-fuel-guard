@@ -103,15 +103,44 @@ export const DelegationHistoryTab = () => {
         .order("created_at", { ascending: false })
         .limit(500);
 
-      const [{ data: audit, error: auditErr }, { data: transitions, error: trErr }] =
-        await Promise.all([auditPromise, transitionsPromise]);
+      // Source 3: approval/rejection decisions taken on stages that are
+      // governed by the authority/delegation matrix. The approver role is
+      // resolved at runtime from authority_matrix → approval_levels, so
+      // these are de-facto "delegation matrix used" events and must show
+      // up in the history (e.g. tire_request authority_approve, vehicle
+      // request approve, fleet_transfer ops_approve, etc.).
+      const approvalsPromise = supabase
+        .from("workflow_transitions")
+        .select("id, instance_id, workflow_type, from_stage, to_stage, decision, performed_by, performed_by_name, performed_by_role, notes, created_at")
+        .eq("organization_id", organizationId)
+        .or(
+          APPROVAL_STAGE_PATTERNS.map((p) => `from_stage.ilike.${p}`).join(","),
+        )
+        .order("created_at", { ascending: false })
+        .limit(500);
+
+      const [
+        { data: audit, error: auditErr },
+        { data: transitions, error: trErr },
+        { data: approvals, error: apErr },
+      ] = await Promise.all([auditPromise, transitionsPromise, approvalsPromise]);
       if (auditErr) throw auditErr;
       if (trErr) throw trErr;
+      if (apErr) throw apErr;
+
+      // Keep only approval-style decisions (approve/reject variants) — other
+      // decisions on the same stage (e.g. "edit", "withdraw") aren't
+      // delegation-matrix events.
+      const approvalRows = (approvals ?? []).filter((t: any) => {
+        const d = String(t.decision || "").toLowerCase();
+        return APPROVAL_DECISION_TOKENS.some((tok) => d.includes(tok));
+      });
 
       // Resolve missing actor names/roles from profiles + user_roles
+      const allTransitionRows = [...(transitions ?? []), ...approvalRows];
       const actorIds = Array.from(
         new Set(
-          (transitions ?? [])
+          allTransitionRows
             .filter((t: any) => t.performed_by && (!t.performed_by_name || !t.performed_by_role))
             .map((t: any) => t.performed_by),
         ),
@@ -134,7 +163,7 @@ export const DelegationHistoryTab = () => {
         });
       }
 
-      const mappedTransitions = (transitions ?? []).map((t: any) => {
+      const mapTransitionRow = (t: any, normalizedAction: string) => {
         const fallback = actorMap[t.performed_by] ?? {};
         const name = t.performed_by_name || fallback.name;
         const role = t.performed_by_role || fallback.role;
@@ -142,19 +171,38 @@ export const DelegationHistoryTab = () => {
         return {
           id: `wt-${t.id}`,
           created_at: t.created_at,
-          action: t.decision === "auto_route" ? "route" : t.decision,
+          action: normalizedAction,
           source_table: t.workflow_type ?? "workflow_transitions",
-          entity_name: t.workflow_type ? `${t.workflow_type} routing` : "Workflow routing",
+          entity_name: t.workflow_type
+            ? `${t.workflow_type.replace(/_/g, " ")} ${normalizedAction === "route" ? "routing" : normalizedAction}`
+            : "Workflow event",
           scope: t.workflow_type,
-          summary: `${t.from_stage ?? "—"} → ${t.to_stage ?? "—"}${t.notes ? ` · ${t.notes}` : ""}`,
+          summary: `${t.from_stage ?? "—"} → ${t.to_stage ?? "—"} · decision "${t.decision}"${t.notes ? ` · ${t.notes}` : ""}`,
           actor_name: actor,
         };
+      };
+
+      const mappedTransitions = (transitions ?? []).map((t: any) =>
+        mapTransitionRow(t, t.decision === "auto_route" ? "route" : t.decision),
+      );
+      const mappedApprovals = approvalRows.map((t: any) => {
+        const d = String(t.decision || "").toLowerCase();
+        const normalized = d.includes("reject") ? "reject" : "approve";
+        return mapTransitionRow(t, normalized);
       });
 
-      const combined = [...(audit ?? []), ...mappedTransitions].sort(
+      const combined = [...(audit ?? []), ...mappedTransitions, ...mappedApprovals].sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
-      return combined.slice(0, 500);
+      // De-dupe by id (an approval stage row could appear in both lists if
+      // its decision id literally matches a routing token in the future).
+      const seen = new Set<string>();
+      const deduped = combined.filter((r: any) => {
+        if (seen.has(r.id)) return false;
+        seen.add(r.id);
+        return true;
+      });
+      return deduped.slice(0, 500);
     },
     enabled: !!organizationId,
   });
