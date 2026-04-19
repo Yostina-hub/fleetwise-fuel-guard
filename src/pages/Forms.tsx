@@ -553,3 +553,68 @@ function FormStatusBadge({
     </TooltipProvider>
   );
 }
+
+// ---------- File-new launcher (renders any form by key) -------------------
+
+function FileFormDialog({
+  formMeta,
+  onClose,
+}: {
+  formMeta: { id: string; key: string; name: string } | null;
+  onClose: () => void;
+}) {
+  const open = !!formMeta;
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className="max-w-5xl w-[95vw] max-h-[95vh] overflow-hidden p-0">
+        <DialogHeader className="p-6 pb-3 border-b">
+          <DialogTitle className="flex items-center gap-2">
+            <Send className="h-4 w-4 text-primary" />
+            {formMeta?.name ?? "Form"}
+          </DialogTitle>
+          <DialogDescription className="font-mono text-xs">{formMeta?.key}</DialogDescription>
+        </DialogHeader>
+        <ScrollArea className="max-h-[calc(95vh-100px)]">
+          <div className="p-6">
+            {formMeta ? (
+              <FileFormBody formKey={formMeta.key} onDone={onClose} />
+            ) : null}
+          </div>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function FileFormBody({ formKey, onDone }: { formKey: string; onDone: () => void }) {
+  // Lazy import to avoid pulling FormRenderer into the initial Forms bundle.
+  const Lazy = useMemo(
+    () =>
+      import("@/components/forms/FormRenderer").then((m) => ({
+        default: () => (
+          <m.FormRenderer
+            formKey={formKey}
+            schema={{ version: 1, fields: [] }}
+            settings={undefined}
+            onCancel={onDone}
+            onSubmit={async () => {
+              toast.success("Submitted");
+              onDone();
+            }}
+          />
+        ),
+      })),
+    [formKey, onDone],
+  );
+  const [Comp, setComp] = useState<React.ComponentType | null>(null);
+  // resolve once
+  if (!Comp) {
+    void Lazy.then((m) => setComp(() => m.default));
+    return (
+      <div className="flex items-center justify-center py-10 text-muted-foreground">
+        <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading form…
+      </div>
+    );
+  }
+  return <Comp />;
+}
