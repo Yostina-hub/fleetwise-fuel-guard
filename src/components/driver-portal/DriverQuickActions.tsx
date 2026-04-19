@@ -17,6 +17,7 @@ const DriverQuickActions = ({
   onReportIssue,
   onRequestFuel,
   onRequestVehicle,
+  onRequestTire,
   onPreTripInspection,
   onPostTripInspection,
   onMyDocuments,
