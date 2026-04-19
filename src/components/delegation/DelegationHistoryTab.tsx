@@ -1,396 +1,75 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import {
-  History, Plus, Edit, Trash2, Power, PowerOff, Search, Shield, Users, RefreshCw,
-  ArrowRightLeft, SkipForward,
-} from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useOrganization } from "@/hooks/useOrganization";
-import { format, formatDistanceToNowStrict } from "date-fns";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { History } from "lucide-react";
+import { HistoryFiltersBar } from "./history/HistoryFilters";
+import { HistoryStatsCards } from "./history/HistoryStatsCards";
+import { HistoryTable } from "./history/HistoryTable";
+import { useDelegationHistory } from "./history/useDelegationHistory";
+import type { HistoryFilters, HistoryStats } from "./history/types";
 
-const ACTION_META: Record<string, { icon: any; label: string; color: string }> = {
-  create: { icon: Plus, label: "Created", color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" },
-  update: { icon: Edit, label: "Updated", color: "bg-blue-500/10 text-blue-600 border-blue-500/30" },
-  delete: { icon: Trash2, label: "Deleted", color: "bg-red-500/10 text-red-600 border-red-500/30" },
-  activate: { icon: Power, label: "Activated", color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" },
-  deactivate: { icon: PowerOff, label: "Deactivated", color: "bg-muted text-muted-foreground border-border" },
-  substitute: { icon: ArrowRightLeft, label: "Delegated", color: "bg-amber-500/10 text-amber-600 border-amber-500/30" },
-  skip: { icon: SkipForward, label: "Skipped", color: "bg-muted text-muted-foreground border-border" },
-  route: { icon: ArrowRightLeft, label: "Routed", color: "bg-blue-500/10 text-blue-600 border-blue-500/30" },
-  approve: { icon: Power, label: "Approved", color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" },
-  reject: { icon: PowerOff, label: "Rejected", color: "bg-red-500/10 text-red-600 border-red-500/30" },
+const DEFAULT_FILTERS: HistoryFilters = {
+  search: "",
+  action: "all",
+  source: "all",
 };
 
-const SOURCE_META: Record<string, { icon: any; label: string }> = {
-  authority_matrix: { icon: Shield, label: "Authority Rule" },
-  delegation_matrix: { icon: Users, label: "Substitution" },
-  user_substitutions: { icon: Users, label: "Substitution" },
-  approval_levels: { icon: Shield, label: "Approval Level" },
-  fuel_request: { icon: ArrowRightLeft, label: "Fuel Request Routing" },
-  vehicle_request: { icon: ArrowRightLeft, label: "Vehicle Request Routing" },
-  tire_request: { icon: ArrowRightLeft, label: "Tire Request Routing" },
-  fleet_transfer: { icon: ArrowRightLeft, label: "Fleet Transfer Routing" },
-  fleet_inspection: { icon: ArrowRightLeft, label: "Fleet Inspection Routing" },
-  safety_comfort: { icon: ArrowRightLeft, label: "Safety & Comfort Routing" },
-};
-
-// Authority/delegation configuration sources — show ALL actions from these.
-const CONFIG_SOURCES = [
-  "authority_matrix",
-  "delegation_matrix",
-  "user_substitutions",
-  "approval_levels",
-];
-
-// Delegation + approval actions — show these from ANY workflow source table
-// (e.g. fuel_request, vehicle_request, fuel_wo, fuel_emoney,
-// outsource_payment_request, work_order) because they represent decisions
-// made by approvers governed by the authority/delegation matrix.
-const DELEGATION_ACTIONS = [
-  "route",
-  "substitute",
-  "skip",
-  "approve",
-  "reject",
-  "escalate",
-];
-
-// Stages where the authority/delegation matrix governs the approver.
-// Any decision recorded against one of these stages should surface in the
-// Delegation History — even if the decision id is workflow-specific
-// (e.g. authority_approve, fleet_ops_approve, ops_approve).
-const APPROVAL_STAGE_PATTERNS = [
-  "%pending_approval%",
-  "%authority_approval%",
-  "%records_pending_approval%",
-];
-
-// Decision id substrings that indicate an approval/rejection outcome,
-// regardless of workflow naming (authority_approve, ops_approve, approve, reject…).
-const APPROVAL_DECISION_TOKENS = ["approve", "reject", "approved", "rejected"];
-
-const formatHistoryRelativeTime = (value: string) => {
-  const date = new Date(value);
-  const diffMs = Math.max(0, Date.now() - date.getTime());
-  const totalMinutes = Math.floor(diffMs / 60000);
-
-  if (totalMinutes < 60) {
-    return `${totalMinutes} min${totalMinutes === 1 ? "" : "s"} ago`;
-  }
-
-  if (totalMinutes < 24 * 60) {
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    return minutes === 0
-      ? `${hours} hr${hours === 1 ? "" : "s"} ago`
-      : `${hours} hr${hours === 1 ? "" : "s"} ${minutes} min ago`;
-  }
-
-  return formatDistanceToNowStrict(date, { addSuffix: true, roundingMethod: "floor" });
-};
+const ROUTING_ACTIONS = new Set(["route", "substitute", "skip", "escalate"]);
+const APPROVAL_ACTIONS = new Set(["approve", "reject"]);
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 export const DelegationHistoryTab = () => {
-  const { organizationId, isViewingAllOrgs } = useOrganization();
-  const [search, setSearch] = useState("");
-  const [actionFilter, setActionFilter] = useState<string>("all");
-  const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const { data: logs = [], isLoading, isFetching, refetch } = useDelegationHistory();
+  const [filters, setFilters] = useState<HistoryFilters>(DEFAULT_FILTERS);
 
-  const { data: logs = [], isLoading, refetch, isFetching } = useQuery({
-    queryKey: ["delegation-audit-log", organizationId ?? "all-orgs", isViewingAllOrgs],
-    queryFn: async () => {
-      if (!organizationId && !isViewingAllOrgs) return [];
+  const stats = useMemo<HistoryStats>(() => {
+    const cutoff = Date.now() - ONE_DAY_MS;
+    return {
+      total: logs.length,
+      today: logs.filter((l) => new Date(l.created_at).getTime() > cutoff).length,
+      approvals: logs.filter((l) => APPROVAL_ACTIONS.has(l.action)).length,
+      routings: logs.filter((l) => ROUTING_ACTIONS.has(l.action)).length,
+    };
+  }, [logs]);
 
-      const orgFilter = isViewingAllOrgs ? "" : organizationId!;
-
-      // Source 1: explicit delegation_audit_log entries
-      let auditQuery = supabase
-        .from("delegation_audit_log")
-        .select("*");
-      if (orgFilter) auditQuery = auditQuery.eq("organization_id", orgFilter);
-      const auditPromise = auditQuery
-        .or(
-          `source_table.in.(${CONFIG_SOURCES.join(",")}),action.in.(${DELEGATION_ACTIONS.join(",")})`,
-        )
-        .order("created_at", { ascending: false })
-        .limit(500);
-
-      // Source 2: workflow_transitions that represent delegation routing
-      const ROUTING_DECISIONS = ["auto_route", "route", "delegate", "substitute", "reroute"];
-      let transitionsQuery = supabase
-        .from("workflow_transitions")
-        .select("id, instance_id, workflow_type, from_stage, to_stage, decision, performed_by, performed_by_name, performed_by_role, notes, created_at");
-      if (orgFilter) transitionsQuery = transitionsQuery.eq("organization_id", orgFilter);
-      const transitionsPromise = transitionsQuery
-        .in("decision", ROUTING_DECISIONS)
-        .order("created_at", { ascending: false })
-        .limit(500);
-
-      // Source 3: recent workflow transitions, filtered client-side for
-      // approval/rejection decisions on matrix-governed stages. This avoids
-      // brittle PostgREST OR filters dropping valid approval rows like
-      // tire_request fleet_ops_approve.
-      let approvalsQuery = supabase
-        .from("workflow_transitions")
-        .select("id, instance_id, workflow_type, from_stage, to_stage, decision, performed_by, performed_by_name, performed_by_role, notes, created_at");
-      if (orgFilter) approvalsQuery = approvalsQuery.eq("organization_id", orgFilter);
-      const approvalsPromise = approvalsQuery
-        .order("created_at", { ascending: false })
-        .limit(1000);
-
-      const [
-        { data: audit, error: auditErr },
-        { data: transitions, error: trErr },
-        { data: approvals, error: apErr },
-      ] = await Promise.all([auditPromise, transitionsPromise, approvalsPromise]);
-      if (auditErr) throw auditErr;
-      if (trErr) throw trErr;
-      if (apErr) throw apErr;
-
-      const approvalRows = (approvals ?? []).filter((t: any) => {
-        const stage = String(t.from_stage || "").toLowerCase();
-        const decision = String(t.decision || "").toLowerCase();
-        const stageMatches =
-          APPROVAL_STAGE_PATTERNS.some((p) => stage.includes(p.replace(/%/g, "").toLowerCase())) ||
-          stage.endsWith("_review") ||
-          stage.includes("_review_");
-        const decisionMatches = APPROVAL_DECISION_TOKENS.some((tok) => decision.includes(tok));
-        return stageMatches || decisionMatches;
-      });
-
-      const allTransitionRows = [...(transitions ?? []), ...approvalRows];
-      const actorIds = Array.from(
-        new Set(
-          allTransitionRows
-            .filter((t: any) => t.performed_by && (!t.performed_by_name || !t.performed_by_role))
-            .map((t: any) => t.performed_by),
-        ),
-      );
-      let actorMap: Record<string, { name?: string; role?: string }> = {};
-      if (actorIds.length > 0) {
-        const [{ data: profs }, { data: roles }] = await Promise.all([
-          supabase.from("profiles").select("id, full_name, first_name, last_name, email").in("id", actorIds),
-          supabase.from("user_roles").select("user_id, role").in("user_id", actorIds),
-        ]);
-        (profs ?? []).forEach((p: any) => {
-          const name =
-            p.full_name ||
-            [p.first_name, p.last_name].filter(Boolean).join(" ") ||
-            p.email;
-          actorMap[p.id] = { ...(actorMap[p.id] ?? {}), name };
-        });
-        (roles ?? []).forEach((r: any) => {
-          actorMap[r.user_id] = { ...(actorMap[r.user_id] ?? {}), role: r.role };
-        });
-      }
-
-      const mapTransitionRow = (t: any, normalizedAction: string) => {
-        const fallback = actorMap[t.performed_by] ?? {};
-        const name = t.performed_by_name || fallback.name;
-        const role = t.performed_by_role || fallback.role;
-        const actor = name && role ? `${name} (${role})` : name || role || "System";
-        return {
-          id: `wt-${t.id}`,
-          created_at: t.created_at,
-          action: normalizedAction,
-          source_table: t.workflow_type ?? "workflow_transitions",
-          entity_name: t.workflow_type
-            ? `${t.workflow_type.replace(/_/g, " ")} ${normalizedAction === "route" ? "routing" : normalizedAction}`
-            : "Workflow event",
-          scope: t.workflow_type,
-          summary: `${t.from_stage ?? "—"} → ${t.to_stage ?? "—"} · decision "${t.decision}"${t.notes ? ` · ${t.notes}` : ""}`,
-          actor_name: actor,
-        };
-      };
-
-      const mappedTransitions = (transitions ?? []).map((t: any) =>
-        mapTransitionRow(t, t.decision === "auto_route" ? "route" : t.decision),
-      );
-      const mappedApprovals = approvalRows.map((t: any) => {
-        const d = String(t.decision || "").toLowerCase();
-        const normalized = d.includes("reject") ? "reject" : "approve";
-        return mapTransitionRow(t, normalized);
-      });
-
-      const combined = [...(audit ?? []), ...mappedTransitions, ...mappedApprovals].sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-      );
-      const seen = new Set<string>();
-      const deduped = combined.filter((r: any) => {
-        if (seen.has(r.id)) return false;
-        seen.add(r.id);
-        return true;
-      });
-      return deduped.slice(0, 500);
-    },
-    enabled: isViewingAllOrgs || !!organizationId,
-  });
-
-  const filtered = logs.filter((l: any) => {
-    if (actionFilter !== "all" && l.action !== actionFilter) return false;
-    if (sourceFilter !== "all" && l.source_table !== sourceFilter) return false;
-    if (search) {
-      const q = search.toLowerCase();
+  const filtered = useMemo(() => {
+    const q = filters.search.trim().toLowerCase();
+    return logs.filter((log) => {
+      if (filters.action !== "all" && log.action !== filters.action) return false;
+      if (filters.source !== "all" && log.source_table !== filters.source) return false;
+      if (!q) return true;
       return (
-        l.entity_name?.toLowerCase().includes(q) ||
-        l.summary?.toLowerCase().includes(q) ||
-        l.actor_name?.toLowerCase().includes(q) ||
-        l.scope?.toLowerCase().includes(q)
+        log.entity_name?.toLowerCase().includes(q) ||
+        log.summary?.toLowerCase().includes(q) ||
+        log.actor_name?.toLowerCase().includes(q) ||
+        log.scope?.toLowerCase().includes(q) ||
+        log.source_table?.toLowerCase().includes(q)
       );
-    }
-    return true;
-  });
-
-  const stats = {
-    total: logs.length,
-    today: logs.filter((l: any) => new Date(l.created_at) > new Date(Date.now() - 86400000)).length,
-    creates: logs.filter((l: any) => l.action === "create").length,
-    deletes: logs.filter((l: any) => l.action === "delete").length,
-  };
+    });
+  }, [logs, filters]);
 
   return (
     <div className="space-y-4">
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card><CardContent className="p-4">
-          <div className="text-2xl font-bold">{stats.total}</div>
-          <div className="text-xs text-muted-foreground">Total Events</div>
-        </CardContent></Card>
-        <Card><CardContent className="p-4">
-          <div className="text-2xl font-bold text-primary">{stats.today}</div>
-          <div className="text-xs text-muted-foreground">Last 24 hours</div>
-        </CardContent></Card>
-        <Card><CardContent className="p-4">
-          <div className="text-2xl font-bold text-emerald-600">{stats.creates}</div>
-          <div className="text-xs text-muted-foreground">Created</div>
-        </CardContent></Card>
-        <Card><CardContent className="p-4">
-          <div className="text-2xl font-bold text-red-600">{stats.deletes}</div>
-          <div className="text-xs text-muted-foreground">Deleted</div>
-        </CardContent></Card>
-      </div>
+      <HistoryStatsCards stats={stats} />
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2 items-center">
-        <div className="relative flex-1 min-w-[240px] max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by entity, actor, scope..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <Select value={sourceFilter} onValueChange={setSourceFilter}>
-          <SelectTrigger className="w-[200px]"><SelectValue placeholder="Source" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Sources</SelectItem>
-            <SelectItem value="authority_matrix">Authority Rules</SelectItem>
-            <SelectItem value="delegation_matrix">Substitutions</SelectItem>
-            <SelectItem value="user_substitutions">User Substitutions</SelectItem>
-            <SelectItem value="approval_levels">Approval Levels</SelectItem>
-            <SelectItem value="fuel_request">Fuel Request</SelectItem>
-            <SelectItem value="vehicle_request">Vehicle Request</SelectItem>
-            <SelectItem value="tire_request">Tire Request</SelectItem>
-            <SelectItem value="fleet_transfer">Fleet Transfer</SelectItem>
-            <SelectItem value="fleet_inspection">Fleet Inspection</SelectItem>
-            <SelectItem value="safety_comfort">Safety & Comfort</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={actionFilter} onValueChange={setActionFilter}>
-          <SelectTrigger className="w-[160px]"><SelectValue placeholder="Action" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Actions</SelectItem>
-            <SelectItem value="create">Created</SelectItem>
-            <SelectItem value="update">Updated</SelectItem>
-            <SelectItem value="delete">Deleted</SelectItem>
-            <SelectItem value="activate">Activated</SelectItem>
-            <SelectItem value="deactivate">Deactivated</SelectItem>
-            <SelectItem value="route">Routed</SelectItem>
-            <SelectItem value="approve">Approved</SelectItem>
-            <SelectItem value="reject">Rejected</SelectItem>
-            <SelectItem value="substitute">Delegated</SelectItem>
-            <SelectItem value="skip">Skipped</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching}>
-          <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-        </Button>
-      </div>
+      <HistoryFiltersBar
+        filters={filters}
+        onChange={setFilters}
+        onRefresh={() => refetch()}
+        isRefreshing={isFetching}
+      />
 
-      {/* Timeline */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <History className="h-4 w-4 text-primary" />
-            Delegation History
-            <Badge variant="outline" className="ml-2">{filtered.length}</Badge>
+            Delegation & Approval History
+            <Badge variant="outline" className="ml-2">
+              {filtered.length}
+            </Badge>
           </CardTitle>
         </CardHeader>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>When</TableHead>
-              <TableHead>Action</TableHead>
-              <TableHead>Source</TableHead>
-              <TableHead>Entity</TableHead>
-              <TableHead>Scope</TableHead>
-              <TableHead>Summary</TableHead>
-              <TableHead>Actor</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
-            ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                {logs.length === 0 ? "No history yet — changes to authority rules and substitutions will appear here." : "No events match your filters."}
-              </TableCell></TableRow>
-            ) : filtered.map((log: any) => {
-              const action = ACTION_META[log.action] || ACTION_META.update;
-              const source = SOURCE_META[log.source_table] || { icon: History, label: log.source_table };
-              const ActionIcon = action.icon;
-              const SourceIcon = source.icon;
-              return (
-                <TableRow key={log.id}>
-                  <TableCell className="text-xs">
-                    <div className="font-medium">{formatHistoryRelativeTime(log.created_at)}</div>
-                    <div className="text-muted-foreground">{format(new Date(log.created_at), "MMM dd, HH:mm")}</div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={`gap-1 ${action.color}`}>
-                      <ActionIcon className="h-3 w-3" />
-                      {action.label}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="gap-1">
-                      <SourceIcon className="h-3 w-3" />
-                      {source.label}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-medium text-sm">{log.entity_name || "—"}</TableCell>
-                  <TableCell>
-                    {log.scope ? (
-                      <Badge variant="secondary" className="capitalize text-[10px]">{log.scope.replace(/_/g, " ")}</Badge>
-                    ) : <span className="text-muted-foreground text-xs">—</span>}
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground max-w-[300px] truncate" title={log.summary}>
-                    {log.summary}
-                  </TableCell>
-                  <TableCell className="text-xs">{log.actor_name || "System"}</TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+        <HistoryTable rows={filtered} isLoading={isLoading} totalRows={logs.length} />
       </Card>
     </div>
   );
