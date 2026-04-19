@@ -272,18 +272,24 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
       }
       return req;
     },
-    onSuccess: () => {
+    onSuccess: (req: any) => {
       toast.success("Tire request submitted");
       queryClient.invalidateQueries({ queryKey: ["tire-requests"] });
+      onSubmitted?.({ id: req.id });
       onOpenChange(false);
       reset();
     },
     onError: (e: any) => toast.error(e.message),
   });
 
-  return (
-    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) reset(); }}>
-      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
+  // Apply caller-provided prefill once on mount.
+  useEffect(() => {
+    if (prefill?.vehicle_id) setHeader(h => ({ ...h, vehicle_id: prefill.vehicle_id! }));
+  }, [prefill?.vehicle_id]);
+
+  const body = (
+    <>
+      {!embedded && (
         <DialogHeader>
           <div className="text-xs text-muted-foreground">Maintenance Home &gt;</div>
           <DialogTitle className="text-2xl">Create Tire Request</DialogTitle>
@@ -291,6 +297,7 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
             <span className="text-destructive">*</span> Indicates required field. Approval requires the previous tire to be returned to the warehouse (iPROC).
           </DialogDescription>
         </DialogHeader>
+      )}
 
         <div className="space-y-6">
           {/* ===== Header section ===== */}
