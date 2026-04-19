@@ -18,16 +18,31 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getLegacyFormEntry } from "@/components/forms/legacyFormRegistry";
+import { WORKFLOW_CONFIGS } from "@/lib/workflow-engine/configs";
 
 export interface FormUsage {
-  /** True if any of the three sources count this form as in use. */
+  /** True if any of the four sources count this form as in use. */
   inUse: boolean;
   /** True if a hard-coded legacy component is bound to this form key. */
   legacyBound: boolean;
+  /** True if a workflow config (SOP) declares this as its intake form. */
+  workflowIntake: boolean;
   /** Number of workflow_tasks that reference this form key. */
   workflowTaskCount: number;
   /** Number of submissions in form_submissions for this form. */
   submissionCount: number;
+}
+
+/** Build a Set of form keys that are wired as `intakeFormKey` on any SOP. */
+function getWorkflowIntakeKeys(): Set<string> {
+  const keys = new Set<string>();
+  for (const cfg of Object.values(WORKFLOW_CONFIGS)) {
+    const raw = (cfg as any).intakeFormKey as string | undefined;
+    if (!raw) continue;
+    const k = raw.startsWith("user_form:") ? raw.slice("user_form:".length) : raw;
+    keys.add(k);
+  }
+  return keys;
 }
 
 export function useFormsUsage(
@@ -70,16 +85,22 @@ export function useFormsUsage(
         taskCount.set(key, (taskCount.get(key) ?? 0) + 1);
       }
 
-      // 3. Combine with legacy registry binding.
+      // 3. Workflow intake form keys (declared in WORKFLOW_CONFIGS).
+      const intakeKeys = getWorkflowIntakeKeys();
+
+      // 4. Combine all signals.
       for (const f of forms) {
         const legacyBound = !!getLegacyFormEntry(f.key);
+        const workflowIntake = intakeKeys.has(f.key);
         const workflowTaskCount = taskCount.get(f.key) ?? 0;
         const submissionCount = subCount.get(f.id) ?? 0;
         result.set(f.id, {
           legacyBound,
+          workflowIntake,
           workflowTaskCount,
           submissionCount,
-          inUse: legacyBound || workflowTaskCount > 0 || submissionCount > 0,
+          inUse:
+            legacyBound || workflowIntake || workflowTaskCount > 0 || submissionCount > 0,
         });
       }
       return result;
