@@ -80,16 +80,14 @@ export const DelegationHistoryTab = () => {
     queryFn: async () => {
       if (!organizationId && !isViewingAllOrgs) return [];
 
-      const applyOrgScope = <T extends { eq: (...args: any[]) => T }>(query: T) => {
-        return isViewingAllOrgs ? query : query.eq("organization_id", organizationId!);
-      };
+      const orgFilter = isViewingAllOrgs ? "" : organizationId!;
 
       // Source 1: explicit delegation_audit_log entries
-      const auditPromise = applyOrgScope(
-        supabase
-          .from("delegation_audit_log")
-          .select("*")
-      )
+      let auditQuery = supabase
+        .from("delegation_audit_log")
+        .select("*");
+      if (orgFilter) auditQuery = auditQuery.eq("organization_id", orgFilter);
+      const auditPromise = auditQuery
         .or(
           `source_table.in.(${CONFIG_SOURCES.join(",")}),action.in.(${DELEGATION_ACTIONS.join(",")})`,
         )
@@ -97,32 +95,22 @@ export const DelegationHistoryTab = () => {
         .limit(500);
 
       // Source 2: workflow_transitions that represent delegation routing
-      // (e.g. auto_route via authority/delegation matrix). These are written
-      // by the inbox approval engine instead of delegation_audit_log.
       const ROUTING_DECISIONS = ["auto_route", "route", "delegate", "substitute", "reroute"];
-      const transitionsPromise = applyOrgScope(
-        supabase
-          .from("workflow_transitions")
-          .select("id, instance_id, workflow_type, from_stage, to_stage, decision, performed_by, performed_by_name, performed_by_role, notes, created_at")
-      )
+      let transitionsQuery = supabase
+        .from("workflow_transitions")
+        .select("id, instance_id, workflow_type, from_stage, to_stage, decision, performed_by, performed_by_name, performed_by_role, notes, created_at");
+      if (orgFilter) transitionsQuery = transitionsQuery.eq("organization_id", orgFilter);
+      const transitionsPromise = transitionsQuery
         .in("decision", ROUTING_DECISIONS)
         .order("created_at", { ascending: false })
         .limit(500);
 
-      // Source 3: approval/rejection decisions taken on stages that are
-      // governed by the authority/delegation matrix. The approver role is
-      // resolved at runtime from authority_matrix → approval_levels, so
-      // these are de-facto "delegation matrix used" events and must show
-      // up in the history. We match in two ways:
-      //   (a) stage name signals approval (pending_approval, authority_approval, *_review)
-      //   (b) decision verb signals approval (approve / reject / *_approve / *_reject)
-      // Either match qualifies, then we filter again client-side via
-      // APPROVAL_DECISION_TOKENS to drop noise like "edit"/"withdraw".
-      const approvalsPromise = applyOrgScope(
-        supabase
-          .from("workflow_transitions")
-          .select("id, instance_id, workflow_type, from_stage, to_stage, decision, performed_by, performed_by_name, performed_by_role, notes, created_at")
-      )
+      // Source 3: approval/rejection decisions on matrix-governed stages
+      let approvalsQuery = supabase
+        .from("workflow_transitions")
+        .select("id, instance_id, workflow_type, from_stage, to_stage, decision, performed_by, performed_by_name, performed_by_role, notes, created_at");
+      if (orgFilter) approvalsQuery = approvalsQuery.eq("organization_id", orgFilter);
+      const approvalsPromise = approvalsQuery
         .or(
           [
             ...APPROVAL_STAGE_PATTERNS.map((p) => `from_stage.ilike.${p}`),
