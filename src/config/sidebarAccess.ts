@@ -109,6 +109,9 @@ export const PATH_ROLE_ACCESS: Record<string, string[]> = {
   "/document-management": ["org_admin", "fleet_manager", "auditor"],
   "/contract-management": ["org_admin"],
 
+  // ── Driver self-service ──
+  "/my-license": [], // open to all authenticated; the page handles non-drivers gracefully
+
   // ── Tools & Automation ──
   "/workflow-builder":   ["org_admin"],
   "/forms":              ["org_admin", "fleet_manager"],

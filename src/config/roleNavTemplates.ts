@@ -27,6 +27,7 @@ import {
   Users,
   Truck,
   Camera,
+  IdCard,
 } from "lucide-react";
 import type { NavItem } from "@/components/sidebar/SidebarNav";
 
@@ -77,6 +78,9 @@ const driverNav = (t: T): NavItem[] => [
       { label: t("nav.incidents", "Report Incident"), path: "/incidents" },
     ],
   },
+
+  // My License & Permits
+  { icon: IdCard, label: t("nav.myLicense", "My License & Permits"), path: "/my-license" },
 
   // Alerts
   { icon: Bell, label: t("nav.alerts", "Alerts"), path: "/alerts" },
