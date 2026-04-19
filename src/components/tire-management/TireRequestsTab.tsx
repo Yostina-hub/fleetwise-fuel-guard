@@ -215,10 +215,14 @@ export const TireRequestsTab = () => {
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-semibold mb-2">Items & iPROC Return Status</h3>
+                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                    Items & iPROC Return Status
+                    {onHand.isFetching && <Clock className="h-3 w-3 animate-spin opacity-50" />}
+                  </h3>
                   <div className="space-y-2">
                     {(selected.items || []).map((it: any) => {
                       const rmeta = RETURN_META[it.iproc_return_status] || RETURN_META.pending;
+                      const stock = onHand.data?.[it.tire_size || "295/80R22.5"];
                       return (
                         <div key={it.id} className="rounded-md border p-3 text-sm space-y-2">
                           <div className="flex items-center justify-between">
@@ -233,17 +237,27 @@ export const TireRequestsTab = () => {
                             {it.iproc_returned_at && <div>Returned at: {format(new Date(it.iproc_returned_at), "MMM dd, yyyy HH:mm")}</div>}
                             {it.return_skip_reason && <div>Skipped: {it.return_skip_reason}</div>}
                           </div>
+                          {stock && (
+                            <div className="flex items-center gap-2 text-[11px] rounded bg-muted/40 px-2 py-1">
+                              <Warehouse className="h-3 w-3 text-primary" />
+                              <span className="font-medium">iPROC on-hand:</span>
+                              <span>{stock.total_on_hand} units</span>
+                              <span className="text-muted-foreground">
+                                ({stock.warehouses.map((w) => `${w.warehouse}: ${w.quantity}`).join(" • ")})
+                              </span>
+                              {stock._mock && <Badge variant="outline" className="text-[9px] py-0 px-1">mock</Badge>}
+                            </div>
+                          )}
                           {isMaintenance && it.iproc_return_status === "pending" && (
                             <Button
                               size="sm"
                               variant="outline"
-                              className="h-7 text-xs"
-                              onClick={() => {
-                                const ref = prompt("Enter iPROC return reference (or leave blank for manual override):") ?? "";
-                                markReturned.mutate({ itemId: it.id, ref });
-                              }}
+                              className="h-7 text-xs gap-1"
+                              disabled={postReturn.isPending}
+                              onClick={() => postReturn.mutate({ itemId: it.id })}
                             >
-                              Mark returned (override)
+                              <Truck className="h-3 w-3" />
+                              Post return to iPROC
                             </Button>
                           )}
                         </div>
