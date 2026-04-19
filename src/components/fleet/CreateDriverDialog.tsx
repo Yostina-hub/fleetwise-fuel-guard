@@ -516,21 +516,21 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
       </>
   );
 
-  const footer = (
-    <div className={embedded ? "flex justify-end gap-2 pt-4 border-t" : ""}>
+  const footerButtons = (
+    <>
       <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
       <Button onClick={handleSubmit} disabled={createMutation.isPending} className="min-w-[120px]">
         {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
         Register Driver
       </Button>
-    </div>
+    </>
   );
 
   if (embedded) {
     return (
       <div className="space-y-4">
         {body}
-        {footer}
+        <div className="flex justify-end gap-2 pt-4 border-t">{footerButtons}</div>
       </div>
     );
   }
@@ -546,7 +546,7 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
           <DialogDescription>Enter driver details per the registration specification</DialogDescription>
         </DialogHeader>
         {body}
-        <DialogFooter className="p-6 pt-4 border-t">{footer}</DialogFooter>
+        <DialogFooter className="p-6 pt-4 border-t">{footerButtons}</DialogFooter>
       </DialogContent>
     </Dialog>
   );
