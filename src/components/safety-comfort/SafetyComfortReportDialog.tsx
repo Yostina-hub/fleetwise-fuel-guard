@@ -48,7 +48,7 @@ const CATEGORY_TABS: ChecklistCategory[] = [
   "vehicle_comfort_materials",
 ];
 
-export default function SafetyComfortReportDialog({ open, onOpenChange, prefill, onSubmitted }: Props) {
+export default function SafetyComfortReportDialog({ open, onOpenChange, prefill, onSubmitted, embedded }: Props) {
   const { organizationId } = useOrganization();
   const { user, profile } = useAuth() as any;
   const [vehicles, setVehicles] = useState<any[]>([]);
@@ -64,14 +64,15 @@ export default function SafetyComfortReportDialog({ open, onOpenChange, prefill,
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!organizationId || !open) return;
+    if (!organizationId) return;
+    if (!embedded && !open) return;
     supabase
       .from("vehicles")
       .select("id, plate_number, make, model")
       .eq("organization_id", organizationId)
       .order("plate_number")
       .then(({ data }) => setVehicles(data || []));
-  }, [organizationId, open]);
+  }, [organizationId, open, embedded]);
 
   useEffect(() => {
     if (open && prefill?.vehicle_id) setVehicleId(prefill.vehicle_id);
@@ -193,9 +194,9 @@ export default function SafetyComfortReportDialog({ open, onOpenChange, prefill,
     }
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+  const body = (
+    <>
+      {!embedded && (
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" /> Safety & Comfort Report
@@ -204,145 +205,159 @@ export default function SafetyComfortReportDialog({ open, onOpenChange, prefill,
             File a report against the official safety & comfort standard checklist for your vehicle group. Critical missing items are auto-escalated.
           </DialogDescription>
         </DialogHeader>
+      )}
 
-        <div className="space-y-3 py-2 overflow-hidden flex-1 flex flex-col">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Vehicle *</Label>
-              <Select value={vehicleId} onValueChange={setVehicleId}>
-                <SelectTrigger><SelectValue placeholder="Select vehicle..." /></SelectTrigger>
-                <SelectContent>
-                  {vehicles.map(v => (
-                    <SelectItem key={v.id} value={v.id}>
-                      {v.plate_number} — {v.make} {v.model}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Vehicle Group (Standard) *</Label>
-              <Select value={vehicleGroup} onValueChange={setVehicleGroup}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {VEHICLE_GROUPS.map(g => (
-                    <SelectItem key={g.id} value={g.id}>{g.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Issue title *</Label>
-              <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Pre-trip checklist failed" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Severity *</Label>
-              <Select value={severity} onValueChange={setSeverity}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {SEVERITY_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {hasCriticalIssue && (
-            <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <span>Critical safety item flagged — severity will be escalated to <b>Critical</b>.</span>
-            </div>
-          )}
-
-          <div className="space-y-1.5 flex-1 flex flex-col overflow-hidden">
-            <Label>Standard Checklist — {group.label}</Label>
-            <p className="text-xs text-muted-foreground">{group.description} Mark any item that isn't OK.</p>
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ChecklistCategory)} className="flex-1 flex flex-col overflow-hidden">
-              <TabsList className="grid grid-cols-4 h-auto">
-                {CATEGORY_TABS.map(cat => (
-                  <TabsTrigger key={cat} value={cat} className="text-xs flex flex-col gap-0.5 py-2">
-                    <span>{CATEGORY_LABELS[cat]}</span>
-                    {flaggedByCategory[cat] > 0 && (
-                      <Badge variant="destructive" className="h-4 text-[10px] px-1">{flaggedByCategory[cat]}</Badge>
-                    )}
-                  </TabsTrigger>
+      <div className="space-y-3 py-2 overflow-hidden flex-1 flex flex-col">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label>Vehicle *</Label>
+            <Select value={vehicleId} onValueChange={setVehicleId}>
+              <SelectTrigger><SelectValue placeholder="Select vehicle..." /></SelectTrigger>
+              <SelectContent>
+                {vehicles.map(v => (
+                  <SelectItem key={v.id} value={v.id}>
+                    {v.plate_number} — {v.make} {v.model}
+                  </SelectItem>
                 ))}
-              </TabsList>
-              {CATEGORY_TABS.map(cat => (
-                <TabsContent key={cat} value={cat} className="flex-1 overflow-hidden mt-2">
-                  <ScrollArea className="h-[260px] rounded-md border">
-                    <div className="divide-y">
-                      {grouped[cat].map(item => {
-                        const status = itemStatuses[item.key];
-                        const flagged = status && status !== "ok";
-                        const std = getItemStandard(item.key);
-                        return (
-                          <div key={item.key} className={`p-2.5 grid grid-cols-12 gap-2 items-center ${flagged ? "bg-destructive/5" : ""}`}>
-                            <div className="col-span-5 flex items-center gap-1.5 min-w-0">
-                              <span className="text-sm truncate">{item.label}</span>
-                              {item.critical && <Badge variant="outline" className="text-[10px] h-4 shrink-0">Critical</Badge>}
-                              <TooltipProvider delayDuration={150}>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <button type="button" className="text-muted-foreground hover:text-foreground shrink-0">
-                                      <Info className="h-3.5 w-3.5" />
-                                    </button>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="right" className="max-w-xs text-xs">
-                                    <div className="space-y-1">
-                                      <div><b>Required Qty:</b> {std.requiredQty}</div>
-                                      <div><b>Usability:</b> {std.usabilityPeriod}</div>
-                                      <div className="text-muted-foreground">{std.remark}</div>
-                                    </div>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            </div>
-                            <div className="col-span-3 text-[11px] text-muted-foreground truncate" title={std.usabilityPeriod}>
-                              {std.usabilityPeriod}
-                            </div>
-                            <div className="col-span-2">
-                              <Select value={status || ""} onValueChange={(v) => setItemStatuses(s => ({ ...s, [item.key]: v as ItemStatus }))}>
-                                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="OK" /></SelectTrigger>
-                                <SelectContent>
-                                  {ITEM_STATUS_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="col-span-2">
-                              {flagged && (
-                                <Input
-                                  className="h-8 text-xs"
-                                  placeholder="Note"
-                                  value={itemNotes[item.key] || ""}
-                                  onChange={e => setItemNotes(n => ({ ...n, [item.key]: e.target.value }))}
-                                />
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </ScrollArea>
-                </TabsContent>
-              ))}
-            </Tabs>
+              </SelectContent>
+            </Select>
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Location on vehicle</Label>
-              <Input value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g. Driver-side door, rear bumper" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Additional description</Label>
-              <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={1} placeholder="Optional context..." />
-            </div>
+          <div className="space-y-1.5">
+            <Label>Vehicle Group (Standard) *</Label>
+            <Select value={vehicleGroup} onValueChange={setVehicleGroup}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {VEHICLE_GROUPS.map(g => (
+                  <SelectItem key={g.id} value={g.id}>{g.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label>Issue title *</Label>
+            <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Pre-trip checklist failed" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Severity *</Label>
+            <Select value={severity} onValueChange={setSeverity}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {SEVERITY_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {hasCriticalIssue && (
+          <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <span>Critical safety item flagged — severity will be escalated to <b>Critical</b>.</span>
+          </div>
+        )}
+
+        <div className="space-y-1.5 flex-1 flex flex-col overflow-hidden">
+          <Label>Standard Checklist — {group.label}</Label>
+          <p className="text-xs text-muted-foreground">{group.description} Mark any item that isn't OK.</p>
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ChecklistCategory)} className="flex-1 flex flex-col overflow-hidden">
+            <TabsList className="grid grid-cols-4 h-auto">
+              {CATEGORY_TABS.map(cat => (
+                <TabsTrigger key={cat} value={cat} className="text-xs flex flex-col gap-0.5 py-2">
+                  <span>{CATEGORY_LABELS[cat]}</span>
+                  {flaggedByCategory[cat] > 0 && (
+                    <Badge variant="destructive" className="h-4 text-[10px] px-1">{flaggedByCategory[cat]}</Badge>
+                  )}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            {CATEGORY_TABS.map(cat => (
+              <TabsContent key={cat} value={cat} className="flex-1 overflow-hidden mt-2">
+                <ScrollArea className="h-[260px] rounded-md border">
+                  <div className="divide-y">
+                    {grouped[cat].map(item => {
+                      const status = itemStatuses[item.key];
+                      const flagged = status && status !== "ok";
+                      const std = getItemStandard(item.key);
+                      return (
+                        <div key={item.key} className={`p-2.5 grid grid-cols-12 gap-2 items-center ${flagged ? "bg-destructive/5" : ""}`}>
+                          <div className="col-span-5 flex items-center gap-1.5 min-w-0">
+                            <span className="text-sm truncate">{item.label}</span>
+                            {item.critical && <Badge variant="outline" className="text-[10px] h-4 shrink-0">Critical</Badge>}
+                            <TooltipProvider delayDuration={150}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button type="button" className="text-muted-foreground hover:text-foreground shrink-0">
+                                    <Info className="h-3.5 w-3.5" />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="right" className="max-w-xs text-xs">
+                                  <div className="space-y-1">
+                                    <div><b>Required Qty:</b> {std.requiredQty}</div>
+                                    <div><b>Usability:</b> {std.usabilityPeriod}</div>
+                                    <div className="text-muted-foreground">{std.remark}</div>
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                          <div className="col-span-3 text-[11px] text-muted-foreground truncate" title={std.usabilityPeriod}>
+                            {std.usabilityPeriod}
+                          </div>
+                          <div className="col-span-2">
+                            <Select value={status || ""} onValueChange={(v) => setItemStatuses(s => ({ ...s, [item.key]: v as ItemStatus }))}>
+                              <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="OK" /></SelectTrigger>
+                              <SelectContent>
+                                {ITEM_STATUS_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="col-span-2">
+                            {flagged && (
+                              <Input
+                                className="h-8 text-xs"
+                                placeholder="Note"
+                                value={itemNotes[item.key] || ""}
+                                onChange={e => setItemNotes(n => ({ ...n, [item.key]: e.target.value }))}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+            ))}
+          </Tabs>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label>Location on vehicle</Label>
+            <Input value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g. Driver-side door, rear bumper" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Additional description</Label>
+            <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={1} placeholder="Optional context..." />
+          </div>
+        </div>
+      </div>
+
+      <div className={embedded ? "flex justify-between pt-4 border-t mt-4" : "hidden"}>
+        <div className="text-xs text-muted-foreground self-center">
+          {flaggedItems.length > 0
+            ? <>{flaggedItems.length} item(s) flagged{hasCriticalIssue ? <> · <span className="text-destructive font-medium">{flaggedItems.filter(i => i.critical).length} critical</span></> : null}</>
+            : "No items flagged yet"}
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
+          <Button onClick={handleSubmit} disabled={saving}>{saving ? "Filing…" : "File report"}</Button>
+        </div>
+      </div>
+
+      {!embedded && (
         <DialogFooter className="border-t pt-3">
           <div className="flex-1 text-xs text-muted-foreground">
             {flaggedItems.length > 0
@@ -352,6 +367,18 @@ export default function SafetyComfortReportDialog({ open, onOpenChange, prefill,
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
           <Button onClick={handleSubmit} disabled={saving}>{saving ? "Filing…" : "File report"}</Button>
         </DialogFooter>
+      )}
+    </>
+  );
+
+  if (embedded) {
+    return <div className="space-y-4 flex flex-col min-h-[600px]">{body}</div>;
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+        {body}
       </DialogContent>
     </Dialog>
   );
