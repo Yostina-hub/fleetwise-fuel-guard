@@ -937,7 +937,15 @@ const licenseRenewalRequestTemplate: FormTemplate = {
       f({
         key: "documents",
         type: "file",
-        label: "Supporting documents (current license, medical, ID, photo)",
+        label: "Supporting documents (optional)",
+        helpText: "Upload current license, medical certificate, ID, or photo. Optional if you provide a link below.",
+      }),
+      f({
+        key: "documents_url",
+        type: "text",
+        label: "Or link to supporting documents (optional)",
+        placeholder: "https://drive.google.com/…",
+        helpText: "Paste a shareable URL (Google Drive, OneDrive, etc.) instead of uploading.",
       }),
     ],
   },
