@@ -43,6 +43,7 @@ export default function Forms() {
   const archive = useArchiveForm();
   const unarchive = useUnarchiveForm();
   const setDefault = useSetDefaultForm();
+  const usage = useFormsUsage(list.data, organizationId);
 
   // Helper: derive intent (e.g. `vehicle_request_copy_4` → `vehicle_request`)
   const intentOf = (key: string) => key.replace(/(_copy(_\d+)?|_v\d+)$/, "");
