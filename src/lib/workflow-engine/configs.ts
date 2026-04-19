@@ -711,6 +711,14 @@ export const licenseRenewalConfig: WorkflowConfig = {
   icon: IdCard,
   initialStage: "request",
   requiresDriver: true,
+  // Centralized intake — uses the user-built form `license_renewal_request`
+  // from the Forms module. Drivers can self-file from the Driver Portal;
+  // back-office roles can also file on behalf of a driver.
+  intakeFormKey: "user_form:license_renewal_request",
+  intakeRoles: [
+    "driver", "fleet_supervisor", "fleet_manager",
+    "operations_manager", "fleet_owner", "super_admin",
+  ],
   intakeFields: [
     { key: "title", label: "Title", type: "text", required: true },
     { key: "__driver_id", label: "Driver", type: "driver", required: true },
