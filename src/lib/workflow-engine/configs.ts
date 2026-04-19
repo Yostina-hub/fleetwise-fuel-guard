@@ -804,47 +804,14 @@ export const safetyComfortConfig: WorkflowConfig = {
   icon: Shield,
   initialStage: "report",
   requiresVehicle: true,
-  intakeFormChoices: [
-    {
-      key: "create_work_request",
-      label: "Office: Oracle EBS Work Request",
-      description: "File via the Oracle EBS Create Work Request form (V Safety & Comfort context).",
-      prefill: {
-        context: "vehicle_maintenance",
-        request_type: "corrective",
-        context_value: "V Safety & Comfort Request",
-      },
-    },
-    {
-      key: "safety_comfort_report",
-      label: "Driver: Quick Safety/Comfort Report",
-      description: "Simple driver-facing form: category, severity, location, photos.",
-      prefill: {},
-    },
-  ],
-  intakeFields: [
-    { key: "title", label: "Issue title", type: "text", required: true, placeholder: "e.g. Driver seatbelt broken" },
-    { key: "__vehicle_id", label: "Vehicle", type: "vehicle", required: true },
-    { key: "__driver_id", label: "Driver who reported", type: "driver" },
-    { key: "category", label: "Category", type: "select", required: true,
-      options: [
-        { value: "safety_critical", label: "Safety — critical (brakes, seatbelt, lights, steering)" },
-        { value: "safety_general",  label: "Safety — general (mirrors, wipers, horn)" },
-        { value: "comfort_ac",      label: "Comfort — AC / heater" },
-        { value: "comfort_seat",    label: "Comfort — seat / interior" },
-        { value: "comfort_noise",   label: "Comfort — noise / vibration" },
-        { value: "accessory",       label: "Accessory request (dashcam, sun film, etc.)" },
-        { value: "other",           label: "Other" },
-      ] },
-    { key: "severity", label: "Severity", type: "select", required: true,
-      options: [
-        { value: "low",      label: "Low — comfort only" },
-        { value: "medium",   label: "Medium — minor safety" },
-        { value: "high",     label: "High — affects safe operation" },
-        { value: "critical", label: "Critical — vehicle must be grounded" },
-      ] },
-    { key: "location_on_vehicle", label: "Location on vehicle", type: "text", placeholder: "e.g. Driver-side door, rear bumper" },
-    { key: "description", label: "Description", type: "textarea", required: true },
+  // Centralized intake — opens the unified Safety & Comfort report form
+  // (registered in the workflow form registry as `safety_comfort_report`).
+  // Mirrors the vehicle_request SOP pattern so "File new" launches a single
+  // standardized form instead of a chooser.
+  intakeFormKey: "safety_comfort_report",
+  intakeRoles: [
+    "user", "driver", "fleet_supervisor",
+    "fleet_manager", "operations_manager", "maintenance_manager", "fleet_owner",
   ],
   lanes: [
     { ...driverLane },
