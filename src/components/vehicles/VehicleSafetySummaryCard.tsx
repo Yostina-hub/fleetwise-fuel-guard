@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ShieldCheck, ShieldAlert, ChevronRight, CalendarClock, Plus } from "lucide-react";
+import { ShieldCheck, ShieldAlert, ChevronRight, CalendarClock, Plus, ChevronDown, ChevronUp, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
@@ -16,6 +16,7 @@ interface Props {
 export const VehicleSafetySummaryCard = ({ vehicleId }: Props) => {
   const { data, isLoading } = useVehicleSafetySummary(vehicleId);
   const [reportOpen, setReportOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const qc = useQueryClient();
 
   if (isLoading) {
@@ -128,6 +129,91 @@ export const VehicleSafetySummaryCard = ({ vehicleId }: Props) => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {(data?.reports.length ?? 0) > 0 && (
+        <div className="mt-3">
+          <button
+            onClick={() => setHistoryOpen(o => !o)}
+            className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {historyOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            Report history ({data!.reports.length})
+          </button>
+
+          {historyOpen && (
+            <div className="mt-2 space-y-1.5 max-h-72 overflow-y-auto pr-1">
+              {data!.reports.map(report => {
+                const isCompleted = report.status === "completed";
+                const flagCount = report.flaggedItems.length;
+                return (
+                  <div
+                    key={report.id}
+                    className="rounded-md border bg-background px-2.5 py-2 text-xs"
+                  >
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                      <span className="font-semibold text-foreground">{report.reference}</span>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "text-[9px] h-4 px-1 capitalize",
+                          isCompleted
+                            ? "border-success/40 text-success"
+                            : "border-warning/40 text-warning"
+                        )}
+                      >
+                        {report.stage}
+                      </Badge>
+                      {report.severity && (
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "text-[9px] h-4 px-1 capitalize",
+                            report.severity === "critical" && "border-destructive/40 text-destructive",
+                            report.severity === "high" && "border-warning/40 text-warning"
+                          )}
+                        >
+                          {report.severity}
+                        </Badge>
+                      )}
+                      {flagCount > 0 && (
+                        <Badge variant="outline" className="text-[9px] h-4 px-1 border-destructive/40 text-destructive">
+                          {flagCount} flagged
+                        </Badge>
+                      )}
+                      <span className="ml-auto text-muted-foreground text-[10px]">
+                        {format(new Date(report.completedAt ?? report.createdAt), "dd MMM yyyy HH:mm")}
+                      </span>
+                    </div>
+
+                    {report.title && (
+                      <p className="mt-1 text-foreground/80 truncate">{report.title}</p>
+                    )}
+
+                    {flagCount > 0 && (
+                      <div className="mt-1.5 flex flex-wrap gap-1">
+                        {report.flaggedItems.slice(0, 6).map(item => (
+                          <span
+                            key={item.key}
+                            className="inline-flex items-center gap-1 rounded bg-destructive/10 text-destructive px-1.5 py-0.5 text-[10px]"
+                            title={item.usability_period}
+                          >
+                            {item.label}
+                            <span className="opacity-70">· {item.status}</span>
+                          </span>
+                        ))}
+                        {flagCount > 6 && (
+                          <span className="text-[10px] text-muted-foreground">+{flagCount - 6} more</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
