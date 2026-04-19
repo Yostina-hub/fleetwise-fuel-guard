@@ -569,7 +569,37 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
             </div>
           </div>
 
-          {/* Row 2: Section pills — group by functional area (FMG-XXX or fallback) */}
+          {/* Row 2: Kind filter — separate SOPs from automation workflows */}
+          <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-border">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mr-1">
+              Type
+            </span>
+            <SectionPill
+              label="All workflows"
+              icon={<LayoutGrid className="h-3.5 w-3.5" />}
+              count={workflows?.length || 0}
+              active={kindFilter === "all"}
+              onClick={() => setKindFilter("all")}
+            />
+            <SectionPill
+              label="SOPs"
+              icon={<FileText className="h-3.5 w-3.5" />}
+              count={sopCount}
+              active={kindFilter === "sop"}
+              accentClass="bg-primary text-primary-foreground border-primary"
+              onClick={() => setKindFilter("sop")}
+            />
+            <SectionPill
+              label="Automations"
+              icon={<Zap className="h-3.5 w-3.5" />}
+              count={automationCount}
+              active={kindFilter === "automation"}
+              accentClass="bg-accent text-accent-foreground border-accent"
+              onClick={() => setKindFilter("automation")}
+            />
+          </div>
+
+          {/* Row 3: Section pills — group by functional area (FMG-XXX or fallback) */}
           {availableSections.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-border">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mr-1">
