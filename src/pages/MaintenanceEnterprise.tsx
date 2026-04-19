@@ -186,6 +186,9 @@ const MaintenanceEnterprise = () => {
             <TabsContent value="suppliers">
               <SupplierProfilesTab />
             </TabsContent>
+            <TabsContent value="supplier-assignments">
+              <SupplierAssignmentsTab />
+            </TabsContent>
             <TabsContent value="purchase-orders">
               <PurchaseOrdersTab />
             </TabsContent>
