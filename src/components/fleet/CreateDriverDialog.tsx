@@ -226,8 +226,8 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
 
   const body = (
     <>
-      <ScrollArea className={embedded ? "max-h-[70vh]" : "max-h-[calc(95vh-180px)]"}>
-        <div className={embedded ? "p-2 space-y-6" : "p-6 space-y-6"}>
+      {embedded ? (
+        <div className="space-y-6 p-2">
 
             {/* 1.1 Employment Type */}
             <Section icon={<Briefcase className="w-5 h-5 text-primary" />} title="Employment Type">
@@ -512,7 +512,12 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
             </Section>
 
           </div>
+      ) : (
+        <ScrollArea className="max-h-[calc(95vh-180px)]">
+          <div className="p-6 space-y-6">
+          </div>
         </ScrollArea>
+      )}
       </>
   );
 
