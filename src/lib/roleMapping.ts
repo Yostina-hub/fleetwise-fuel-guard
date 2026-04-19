@@ -37,6 +37,11 @@ export const ROLE_LABELS: Record<string, string> = {
   auditor: "Auditor",
   transport_authority: "Transport Authority",
   insurance_admin: "Insurance Admin",
+  finance_manager: "Finance Manager",
+  sourcing_manager: "Sourcing Manager",
+  maintenance_manager: "Maintenance Manager",
+  maintenance_supervisor: "Maintenance Supervisor",
+  inspection_center: "Inspection Center",
   viewer: "Viewer",
 };
 
@@ -56,5 +61,10 @@ export const ROLE_COLORS: Record<string, string> = {
   auditor: "bg-purple-500/15 text-purple-400 border-purple-500/30",
   transport_authority: "bg-teal-500/15 text-teal-400 border-teal-500/30",
   insurance_admin: "bg-pink-500/15 text-pink-400 border-pink-500/30",
+  finance_manager: "bg-green-500/15 text-green-400 border-green-500/30",
+  sourcing_manager: "bg-fuchsia-500/15 text-fuchsia-400 border-fuchsia-500/30",
+  maintenance_manager: "bg-orange-500/15 text-orange-400 border-orange-500/30",
+  maintenance_supervisor: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+  inspection_center: "bg-lime-500/15 text-lime-400 border-lime-500/30",
   viewer: "bg-muted text-muted-foreground border-border",
 };
