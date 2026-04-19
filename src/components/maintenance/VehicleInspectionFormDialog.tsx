@@ -42,6 +42,8 @@ interface Props {
   invalidateKeys?: string[][];
   /** Optional callback fired after a successful inspection submission. */
   onSubmitted?: (payload: { inspection_id?: string; safe: boolean; status: string }) => void;
+  /** When true, render inline (no outer Dialog) — used by the unified FormRenderer / legacy registry. */
+  embedded?: boolean;
 }
 
 const buildState = (prefill?: InspectionPrefill) => ({
@@ -64,6 +66,7 @@ export const VehicleInspectionFormDialog = ({
   prefill,
   invalidateKeys = [["vehicle-inspections"]],
   onSubmitted,
+  embedded,
 }: Props) => {
   const { createInspection } = useMaintenanceSchedules();
   const { vehicles } = useVehicles();
@@ -75,11 +78,11 @@ export const VehicleInspectionFormDialog = ({
   const [photos, setPhotos] = useState<string[]>([]);
 
   useEffect(() => {
-    if (open) {
+    if (open || embedded) {
       setState(buildState(prefill));
       setPhotos([]);
     }
-  }, [open, prefill?.vehicle_id, prefill?.driver_id, prefill?.inspection_type]);
+  }, [open, embedded, prefill?.vehicle_id, prefill?.driver_id, prefill?.inspection_type]);
 
   const handleChecklistChange = (category: string, item: string, checked: boolean) => {
     setState(prev => ({
@@ -143,162 +146,173 @@ export const VehicleInspectionFormDialog = ({
     }
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+  const body = (
+    <>
+      {!embedded && (
         <DialogHeader>
           <DialogTitle>New Vehicle Inspection</DialogTitle>
           <DialogDescription>
             Complete a pre-trip or post-trip vehicle inspection checklist.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="insp-vehicle">Vehicle</Label>
-              <Select
-                value={state.vehicle_id}
-                onValueChange={v => setState(s => ({ ...s, vehicle_id: v }))}
-                disabled={lockVehicle}
-              >
-                <SelectTrigger id="insp-vehicle"><SelectValue placeholder="Select vehicle" /></SelectTrigger>
-                <SelectContent>
-                  {vehicles.map(v => (
-                    <SelectItem key={v.id} value={v.id}>
-                      {v.plate_number} - {v.make} {v.model}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="insp-inspector">Inspector</Label>
-              <Select
-                value={state.driver_id}
-                onValueChange={v => setState(s => ({ ...s, driver_id: v }))}
-                disabled={lockDriver}
-              >
-                <SelectTrigger id="insp-inspector"><SelectValue placeholder="Select inspector" /></SelectTrigger>
-                <SelectContent>
-                  {drivers.map(d => (
-                    <SelectItem key={d.id} value={d.id}>
-                      {d.first_name} {d.last_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="insp-type">Inspection Type</Label>
-              <Select
-                value={state.inspection_type}
-                onValueChange={v => setState(s => ({ ...s, inspection_type: v }))}
-              >
-                <SelectTrigger id="insp-type"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pre_trip">Pre-Trip</SelectItem>
-                  <SelectItem value="post_trip">Post-Trip</SelectItem>
-                  <SelectItem value="daily">Daily</SelectItem>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="annual">Annual</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="insp-odometer">Odometer (km)</Label>
-              <Input
-                id="insp-odometer"
-                type="number"
-                value={state.odometer_km || ''}
-                onChange={e => setState(s => ({ ...s, odometer_km: Number(e.target.value) }))}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <Label className="text-base font-semibold">Inspection Checklist</Label>
-            {DEFAULT_INSPECTION_CHECKLIST.map(category => (
-              <Card key={category.key}>
-                <CardHeader className="py-3">
-                  <CardTitle className="text-sm">{category.label}</CardTitle>
-                </CardHeader>
-                <CardContent className="py-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    {category.items.map(item => (
-                      <div key={item} className="flex items-center gap-2">
-                        <Checkbox
-                          id={`${category.key}-${item}`}
-                          checked={state.checklist_data[category.key]?.[item] ?? true}
-                          onCheckedChange={(checked) => handleChecklistChange(category.key, item, !!checked)}
-                        />
-                        <Label htmlFor={`${category.key}-${item}`} className="text-sm font-normal cursor-pointer">
-                          {item}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
+      )}
+      <div className="space-y-6">
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="insp-defects">Other Defects (if any)</Label>
-            <Textarea
-              id="insp-defects"
-              value={state.defects_text}
-              onChange={e => setState(s => ({ ...s, defects_text: e.target.value }))}
-              placeholder="Describe any other issues found..."
-              rows={2}
-            />
+            <Label htmlFor="insp-vehicle">Vehicle</Label>
+            <Select
+              value={state.vehicle_id}
+              onValueChange={v => setState(s => ({ ...s, vehicle_id: v }))}
+              disabled={lockVehicle}
+            >
+              <SelectTrigger id="insp-vehicle"><SelectValue placeholder="Select vehicle" /></SelectTrigger>
+              <SelectContent>
+                {vehicles.map(v => (
+                  <SelectItem key={v.id} value={v.id}>
+                    {v.plate_number} - {v.make} {v.model}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-
           <div>
-            <Label htmlFor="insp-notes">Notes</Label>
-            <Textarea
-              id="insp-notes"
-              value={state.mechanic_notes}
-              onChange={e => setState(s => ({ ...s, mechanic_notes: e.target.value }))}
-              placeholder="Optional notes"
-              rows={2}
-            />
-          </div>
-
-          {prefill?.enablePhotos && state.vehicle_id && (
-            <div>
-              <Label>Photos (optional)</Label>
-              <PhotoUploader
-                pathPrefix={`inspections/${state.vehicle_id}`}
-                value={photos}
-                onChange={setPhotos}
-                max={5}
-                label="Attach inspection photos"
-              />
-            </div>
-          )}
-
-          <div className={`p-3 rounded-lg flex items-center gap-2 text-sm ${
-            !hasFailures ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
-          }`}>
-            {!hasFailures ? <CheckCircle2 className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
-            {!hasFailures ? "Vehicle is safe for trip" : `${failedItems.length} item(s) need attention — will be flagged for repair`}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="certified_safe"
-              checked={state.certified_safe}
-              onCheckedChange={(checked) => setState(s => ({ ...s, certified_safe: !!checked }))}
-            />
-            <Label htmlFor="certified_safe" className="cursor-pointer">
-              I certify this vehicle is safe to operate
-            </Label>
+            <Label htmlFor="insp-inspector">Inspector</Label>
+            <Select
+              value={state.driver_id}
+              onValueChange={v => setState(s => ({ ...s, driver_id: v }))}
+              disabled={lockDriver}
+            >
+              <SelectTrigger id="insp-inspector"><SelectValue placeholder="Select inspector" /></SelectTrigger>
+              <SelectContent>
+                {drivers.map(d => (
+                  <SelectItem key={d.id} value={d.id}>
+                    {d.first_name} {d.last_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="insp-type">Inspection Type</Label>
+            <Select
+              value={state.inspection_type}
+              onValueChange={v => setState(s => ({ ...s, inspection_type: v }))}
+            >
+              <SelectTrigger id="insp-type"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pre_trip">Pre-Trip</SelectItem>
+                <SelectItem value="post_trip">Post-Trip</SelectItem>
+                <SelectItem value="daily">Daily</SelectItem>
+                <SelectItem value="weekly">Weekly</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+                <SelectItem value="annual">Annual</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="insp-odometer">Odometer (km)</Label>
+            <Input
+              id="insp-odometer"
+              type="number"
+              value={state.odometer_km || ''}
+              onChange={e => setState(s => ({ ...s, odometer_km: Number(e.target.value) }))}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <Label className="text-base font-semibold">Inspection Checklist</Label>
+          {DEFAULT_INSPECTION_CHECKLIST.map(category => (
+            <Card key={category.key}>
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm">{category.label}</CardTitle>
+              </CardHeader>
+              <CardContent className="py-2">
+                <div className="grid grid-cols-2 gap-2">
+                  {category.items.map(item => (
+                    <div key={item} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`${category.key}-${item}`}
+                        checked={state.checklist_data[category.key]?.[item] ?? true}
+                        onCheckedChange={(checked) => handleChecklistChange(category.key, item, !!checked)}
+                      />
+                      <Label htmlFor={`${category.key}-${item}`} className="text-sm font-normal cursor-pointer">
+                        {item}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <div>
+          <Label htmlFor="insp-defects">Other Defects (if any)</Label>
+          <Textarea
+            id="insp-defects"
+            value={state.defects_text}
+            onChange={e => setState(s => ({ ...s, defects_text: e.target.value }))}
+            placeholder="Describe any other issues found..."
+            rows={2}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="insp-notes">Notes</Label>
+          <Textarea
+            id="insp-notes"
+            value={state.mechanic_notes}
+            onChange={e => setState(s => ({ ...s, mechanic_notes: e.target.value }))}
+            placeholder="Optional notes"
+            rows={2}
+          />
+        </div>
+
+        {prefill?.enablePhotos && state.vehicle_id && (
+          <div>
+            <Label>Photos (optional)</Label>
+            <PhotoUploader
+              pathPrefix={`inspections/${state.vehicle_id}`}
+              value={photos}
+              onChange={setPhotos}
+              max={5}
+              label="Attach inspection photos"
+            />
+          </div>
+        )}
+
+        <div className={`p-3 rounded-lg flex items-center gap-2 text-sm ${
+          !hasFailures ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
+        }`}>
+          {!hasFailures ? <CheckCircle2 className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
+          {!hasFailures ? "Vehicle is safe for trip" : `${failedItems.length} item(s) need attention — will be flagged for repair`}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="certified_safe"
+            checked={state.certified_safe}
+            onCheckedChange={(checked) => setState(s => ({ ...s, certified_safe: !!checked }))}
+          />
+          <Label htmlFor="certified_safe" className="cursor-pointer">
+            I certify this vehicle is safe to operate
+          </Label>
+        </div>
+      </div>
+
+      <div className={embedded ? "flex justify-end gap-2 pt-4 border-t mt-4" : "hidden"}>
+        <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+        <Button onClick={handleSubmit} disabled={submitting || !state.vehicle_id}>
+          {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          Submit Inspection
+        </Button>
+      </div>
+
+      {!embedded && (
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={handleSubmit} disabled={submitting || !state.vehicle_id}>
@@ -306,6 +320,18 @@ export const VehicleInspectionFormDialog = ({
             Submit Inspection
           </Button>
         </DialogFooter>
+      )}
+    </>
+  );
+
+  if (embedded) {
+    return <div className="space-y-4">{body}</div>;
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        {body}
       </DialogContent>
     </Dialog>
   );

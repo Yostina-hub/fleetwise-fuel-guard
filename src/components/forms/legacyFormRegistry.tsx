@@ -75,6 +75,45 @@ const SafetyComfortReportLazy = lazy(() =>
   }),
 );
 
+// Adapter: VehicleInspectionFormDialog emits { inspection_id } — normalize to { id }.
+const VehicleInspectionFormLazy = lazy(() =>
+  import("@/components/maintenance/VehicleInspectionFormDialog").then((m) => {
+    const Inner = m.VehicleInspectionFormDialog;
+    const Adapted: React.ComponentType<LegacyEmbeddedFormProps> = (props) => (
+      <Inner
+        embedded
+        open
+        onOpenChange={props.onOpenChange}
+        prefill={props.prefill as any}
+        onSubmitted={(payload) => {
+          if (payload?.inspection_id) {
+            props.onSubmitted?.({ id: payload.inspection_id });
+          }
+        }}
+      />
+    );
+    return { default: Adapted };
+  }),
+);
+
+// Adapter: CreateWorkRequestDialog (Oracle EBS-style work request).
+const CreateWorkRequestFormLazy = lazy(() =>
+  import("@/components/workorders/CreateWorkRequestDialog").then((m) => {
+    const Inner = m.default;
+    const Adapted: React.ComponentType<LegacyEmbeddedFormProps> = (props) => (
+      <Inner
+        embedded
+        open
+        onOpenChange={props.onOpenChange}
+        onSubmitted={(payload) => {
+          if (payload?.id) props.onSubmitted?.({ id: payload.id });
+        }}
+      />
+    );
+    return { default: Adapted };
+  }),
+);
+
 export interface LegacyFormRegistryEntry {
   /** The form `key` in the Forms module (organization-scoped). */
   key: string;
@@ -99,6 +138,16 @@ const REGISTRY: LegacyFormRegistryEntry[] = [
     key: "safety_comfort_report",
     label: "Safety & Comfort Report (legacy)",
     Component: SafetyComfortReportLazy,
+  },
+  {
+    key: "vehicle_inspection",
+    label: "Vehicle Inspection Checklist (legacy)",
+    Component: VehicleInspectionFormLazy,
+  },
+  {
+    key: "create_work_request",
+    label: "Create Work Request (legacy)",
+    Component: CreateWorkRequestFormLazy,
   },
 ];
 
