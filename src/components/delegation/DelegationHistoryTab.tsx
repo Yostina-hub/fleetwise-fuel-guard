@@ -105,25 +105,17 @@ export const DelegationHistoryTab = () => {
         .order("created_at", { ascending: false })
         .limit(500);
 
-      // Source 3: approval/rejection decisions on matrix-governed stages
+      // Source 3: recent workflow transitions, filtered client-side for
+      // approval/rejection decisions on matrix-governed stages. This avoids
+      // brittle PostgREST OR filters dropping valid approval rows like
+      // tire_request fleet_ops_approve.
       let approvalsQuery = supabase
         .from("workflow_transitions")
         .select("id, instance_id, workflow_type, from_stage, to_stage, decision, performed_by, performed_by_name, performed_by_role, notes, created_at");
       if (orgFilter) approvalsQuery = approvalsQuery.eq("organization_id", orgFilter);
       const approvalsPromise = approvalsQuery
-        .or(
-          [
-            ...APPROVAL_STAGE_PATTERNS.map((p) => `from_stage.ilike.${p}`),
-            "from_stage.ilike.%_review",
-            "from_stage.ilike.%_review_%",
-            "decision.ilike.%approve%",
-            "decision.ilike.%reject%",
-            "decision.ilike.approved",
-            "decision.ilike.rejected",
-          ].join(","),
-        )
         .order("created_at", { ascending: false })
-        .limit(500);
+        .limit(1000);
 
       const [
         { data: audit, error: auditErr },
@@ -135,8 +127,14 @@ export const DelegationHistoryTab = () => {
       if (apErr) throw apErr;
 
       const approvalRows = (approvals ?? []).filter((t: any) => {
-        const d = String(t.decision || "").toLowerCase();
-        return APPROVAL_DECISION_TOKENS.some((tok) => d.includes(tok));
+        const stage = String(t.from_stage || "").toLowerCase();
+        const decision = String(t.decision || "").toLowerCase();
+        const stageMatches =
+          APPROVAL_STAGE_PATTERNS.some((p) => stage.includes(p.replace(/%/g, "").toLowerCase())) ||
+          stage.endsWith("_review") ||
+          stage.includes("_review_");
+        const decisionMatches = APPROVAL_DECISION_TOKENS.some((tok) => decision.includes(tok));
+        return stageMatches || decisionMatches;
       });
 
       const allTransitionRows = [...(transitions ?? []), ...approvalRows];
