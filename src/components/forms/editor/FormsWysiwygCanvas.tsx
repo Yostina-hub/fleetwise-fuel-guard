@@ -406,13 +406,14 @@ function SectionBandCard(p: BandCardProps) {
 
       {/* ── Section body */}
       {!collapsed ? (
-        <BandDropZone bandSectionId={band.sectionId} hasItems={band.items.length > 0} columns={columns}>
+        <BandDropZone bandSectionId={band.sectionId} bandMode={band.mode} hasItems={band.items.length > 0} columns={columns}>
           <SortableContext items={band.items.map((f) => f.id)} strategy={verticalListSortingStrategy}>
             <div className={cn("grid gap-3 px-4 py-3", columns === 2 && "md:grid-cols-2")}>
               {band.items.map((f) => (
                 <WysiwygFieldCard
                   key={f.id}
                   field={f}
+                  parentId={band.mode === "nested" ? band.sectionId : null}
                   columns={columns}
                   selectedId={p.selectedId}
                   onSelect={p.onSelect}
@@ -428,7 +429,8 @@ function SectionBandCard(p: BandCardProps) {
           <div className="px-4 pb-3" onClick={(e) => e.stopPropagation()}>
             <AddFieldMenu
               onPick={(t) => {
-                if (p.onInsertAt) p.onInsertAt(band.endIndex, t);
+                if (band.mode === "nested" && band.sectionId) p.onAddPaletteToContainer(band.sectionId, t);
+                else if (p.onInsertAt) p.onInsertAt(band.endIndex, t);
                 else if (band.sectionId) p.onAddPaletteToContainer(band.sectionId, t);
                 else p.onAddPaletteAtEnd(t);
               }}
@@ -441,16 +443,17 @@ function SectionBandCard(p: BandCardProps) {
 }
 
 function BandDropZone({
-  bandSectionId, hasItems, columns, children,
+  bandSectionId, bandMode, hasItems, columns, children,
 }: {
   bandSectionId: string | null;
+  bandMode: BandMode;
   hasItems: boolean;
   columns: 1 | 2;
   children: React.ReactNode;
 }) {
   const { isOver, setNodeRef } = useDroppable({
     id: `band:${bandSectionId ?? "__head__"}`,
-    data: { bandSectionId },
+    data: { bandSectionId, bandMode },
   });
   return (
     <div ref={setNodeRef} className={cn("transition-colors", isOver && "bg-primary/5")}>
@@ -513,6 +516,7 @@ function AddFieldMenu({ onPick }: { onPick: (t: FieldType) => void }) {
 
 interface FieldCardProps {
   field: BaseField;
+  parentId: string | null;
   columns: 1 | 2;
   selectedId: string | null;
   onSelect: (id: string) => void;
@@ -523,7 +527,7 @@ interface FieldCardProps {
 
 function WysiwygFieldCard(props: FieldCardProps) {
   const { field, columns } = props;
-  const sortable = useSortable({ id: field.id, data: { kind: "field" } });
+  const sortable = useSortable({ id: field.id, data: { kind: "field", parentId: props.parentId } });
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(sortable.transform),
     transition: sortable.transition,
