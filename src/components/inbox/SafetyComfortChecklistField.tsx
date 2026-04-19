@@ -71,7 +71,7 @@ export function SafetyComfortChecklistField({ value, onChange }: Props) {
             <span><span className="font-semibold text-foreground">{totals.present}</span> present</span>·
             <span><span className="font-semibold text-destructive">{totals.missing}</span> missing</span>·
             <span><span className="font-semibold text-destructive">{totals.expired}</span> expired</span>·
-            <span><span className="font-semibold text-amber-600">{totals.dueSoon}</span> due soon</span>·
+            <span><span className="font-semibold text-warning">{totals.dueSoon}</span> due soon</span>·
             <span>{totals.total} total</span>
           </div>
         )}
@@ -95,7 +95,7 @@ export function SafetyComfortChecklistField({ value, onChange }: Props) {
                 const expiryClass = exp?.expired
                   ? "text-destructive font-semibold"
                   : exp?.dueSoon
-                  ? "text-amber-600 font-semibold"
+                  ? "text-warning font-semibold"
                   : "text-muted-foreground";
                 return (
                   <div key={k} className="px-3 py-2 space-y-1">
