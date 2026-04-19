@@ -31,7 +31,8 @@ export type FieldType =
   | "file"
   | "handover_catalog"
   | "handover_lines_30"
-  | "vehicle_autofill_summary";
+  | "vehicle_autofill_summary"
+  | "safety_comfort_checklist";
 
 export interface StageField {
   key: string;
