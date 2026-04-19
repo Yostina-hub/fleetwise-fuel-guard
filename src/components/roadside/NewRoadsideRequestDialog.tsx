@@ -138,9 +138,10 @@ export const NewRoadsideRequestDialog = ({ open, onOpenChange, prefill, onSubmit
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (row) => {
       toast.success("Roadside assistance request created");
       qc.invalidateQueries({ queryKey: ["roadside-assistance"] });
+      onSubmitted?.(row);
       onOpenChange(false);
     },
     onError: (e: any) => toast.error(e.message || "Failed to create request"),
