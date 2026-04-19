@@ -142,7 +142,8 @@ export function WorkflowFieldset({ fields, values, onChange, autofillFromEntitie
               f.type === "multiselect" ||
               f.type === "handover_catalog" ||
               f.type === "handover_lines_30" ||
-              f.type === "vehicle_autofill_summary"
+              f.type === "vehicle_autofill_summary" ||
+              f.type === "safety_comfort_checklist"
                 ? "md:col-span-2"
                 : ""
             }
