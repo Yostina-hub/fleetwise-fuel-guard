@@ -667,6 +667,14 @@ export const roadsideAssistanceConfig: WorkflowConfig = {
   icon: LifeBuoy,
   initialStage: "report",
   requiresVehicle: true,
+  // Centralized intake — reuses the full Roadside Assistance request dialog
+  // (vehicle/driver pickers, GPS capture, provider details, tow flag) so the
+  // SOP "File new" button stays in sync with the standalone page.
+  intakeFormKey: "roadside_request",
+  intakeRoles: [
+    "driver", "fleet_supervisor", "fleet_manager",
+    "operations_manager", "fleet_owner", "super_admin",
+  ],
   intakeFields: [
     { key: "title", label: "Incident summary", type: "text", required: true },
     { key: "__vehicle_id", label: "Vehicle", type: "vehicle", required: true },

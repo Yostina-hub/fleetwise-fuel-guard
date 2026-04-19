@@ -15,6 +15,19 @@ import { useOrganization } from "@/hooks/useOrganization";
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  /** Optional values prefilled from the workflow run context (vehicle_id, driver_id, etc.) */
+  prefill?: {
+    vehicle_id?: string;
+    driver_id?: string;
+    breakdown_type?: string;
+    priority?: string;
+    description?: string;
+    location_name?: string;
+    lat?: number;
+    lng?: number;
+  };
+  /** Called after successful insert; receives the created row. */
+  onSubmitted?: (row: any) => void;
 }
 
 const BREAKDOWN_TYPES = [
@@ -28,7 +41,7 @@ const BREAKDOWN_TYPES = [
   { value: "other", label: "Other" },
 ];
 
-export const NewRoadsideRequestDialog = ({ open, onOpenChange }: Props) => {
+export const NewRoadsideRequestDialog = ({ open, onOpenChange, prefill, onSubmitted }: Props) => {
   const qc = useQueryClient();
   const { organizationId } = useOrganization();
   const [vehicleId, setVehicleId] = useState("");
@@ -46,13 +59,23 @@ export const NewRoadsideRequestDialog = ({ open, onOpenChange }: Props) => {
   const [towRequired, setTowRequired] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
 
+  // Apply prefill when the dialog opens; reset when it closes.
   useEffect(() => {
-    if (!open) {
+    if (open) {
+      if (prefill?.vehicle_id) setVehicleId(prefill.vehicle_id);
+      if (prefill?.driver_id) setDriverId(prefill.driver_id);
+      if (prefill?.breakdown_type) setBreakdownType(prefill.breakdown_type);
+      if (prefill?.priority) setPriority(prefill.priority);
+      if (prefill?.description) setDescription(prefill.description);
+      if (prefill?.location_name) setLocationName(prefill.location_name);
+      if (prefill?.lat != null) setLat(String(prefill.lat));
+      if (prefill?.lng != null) setLng(String(prefill.lng));
+    } else {
       setVehicleId(""); setDriverId(""); setBreakdownType("mechanical"); setPriority("medium");
       setDescription(""); setLocationName(""); setLat(""); setLng("");
       setServiceProvider(""); setProviderPhone(""); setEta(""); setEstimatedCost(""); setTowRequired(false);
     }
-  }, [open]);
+  }, [open, prefill]);
 
   const { data: vehicles = [] } = useQuery({
     queryKey: ["vehicles-list", organizationId],
@@ -115,9 +138,10 @@ export const NewRoadsideRequestDialog = ({ open, onOpenChange }: Props) => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (row) => {
       toast.success("Roadside assistance request created");
       qc.invalidateQueries({ queryKey: ["roadside-assistance"] });
+      onSubmitted?.(row);
       onOpenChange(false);
     },
     onError: (e: any) => toast.error(e.message || "Failed to create request"),

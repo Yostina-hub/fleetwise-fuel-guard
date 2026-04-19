@@ -47,6 +47,7 @@ const VehicleInspectionWrapper = lazy(() => import("./wrappers/VehicleInspection
 const FuelRequestWrapper = lazy(() => import("./wrappers/FuelRequestWrapper"));
 const SafetyComfortReportWrapper = lazy(() => import("./wrappers/SafetyComfortReportWrapper"));
 const VehicleRequestWrapper = lazy(() => import("./wrappers/VehicleRequestWrapper"));
+const RoadsideRequestWrapper = lazy(() => import("./wrappers/RoadsideRequestWrapper"));
 const DynamicFormWrapper = lazy(() => import("./wrappers/DynamicFormWrapper"));
 
 /** Prefix used for forms built in the Forms module (`user_form:<form_key>`). */
@@ -110,6 +111,14 @@ const FORMS: RegisteredWorkflowForm[] = [
     description: "Unified vehicle request with pool hierarchy & delegation routing.",
     default_decision: "submitted",
     Component: VehicleRequestWrapper,
+  },
+  {
+    key: "roadside_request",
+    label: "Roadside Assistance Request",
+    description:
+      "Driver/Operator-facing roadside assistance intake. Captures vehicle, driver, breakdown type, GPS location, provider details and tow flag; inserts into roadside_assistance_requests.",
+    default_decision: "submitted",
+    Component: RoadsideRequestWrapper,
   },
 ];
 
