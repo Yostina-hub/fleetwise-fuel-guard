@@ -950,6 +950,130 @@ const licenseRenewalRequestTemplate: FormTemplate = {
 };
 
 // ---------------------------------------------------------------------------
+// 9) Roadside Assistance Request (FMG-RSA 12)
+// ---------------------------------------------------------------------------
+const roadsideRequestTemplate: FormTemplate = {
+  key: "roadside_request",
+  name: "Roadside Assistance Request",
+  description:
+    "Driver/Operator-facing intake for breakdowns, tow services and emergency response. Routes into the FMG-RSA 12 SOP for dispatch, on-site action and closure.",
+  category: "maintenance",
+  rationale:
+    "Centralized intake form for the Roadside Assistance SOP. Captures vehicle, driver, breakdown type, GPS location, provider details and tow flag. Customize without touching the standalone page.",
+  schema: {
+    version: 1,
+    fields: [
+      f({
+        key: "title",
+        type: "text",
+        label: "Incident summary",
+        required: true,
+        placeholder: "e.g. Flat tire on the way to Adama",
+        validation: { maxLength: 120 },
+      }),
+      f({
+        key: "vehicle_id",
+        type: "vehicle",
+        label: "Vehicle",
+        required: true,
+      }),
+      f({
+        key: "driver_id",
+        type: "driver",
+        label: "Driver",
+        helpText: "When a driver fills this in from the Driver Portal, this is auto-set to their record.",
+      }),
+      f({
+        key: "breakdown_type",
+        type: "select",
+        label: "Breakdown type",
+        required: true,
+        defaultValue: "mechanical",
+        options: [
+          { value: "mechanical", label: "Mechanical" },
+          { value: "electrical", label: "Electrical" },
+          { value: "tire",       label: "Flat tire" },
+          { value: "fuel",       label: "Out of fuel" },
+          { value: "battery",    label: "Dead battery" },
+          { value: "accident",   label: "Accident" },
+          { value: "lockout",    label: "Lockout" },
+          { value: "other",      label: "Other" },
+        ],
+      }),
+      f({
+        key: "priority",
+        type: "select",
+        label: "Priority",
+        defaultValue: "medium",
+        options: [
+          { value: "low",      label: "Low" },
+          { value: "medium",   label: "Medium" },
+          { value: "high",     label: "High" },
+          { value: "critical", label: "Critical" },
+        ],
+      }),
+      f({
+        key: "location_name",
+        type: "text",
+        label: "Location",
+        required: true,
+        placeholder: "e.g. KM 45 Bole road",
+      }),
+      f({
+        key: "lat",
+        type: "number",
+        label: "Latitude",
+        helpText: "Optional — paste GPS coordinates if available.",
+      }),
+      f({
+        key: "lng",
+        type: "number",
+        label: "Longitude",
+      }),
+      f({
+        key: "tow_required",
+        type: "checkbox",
+        label: "Tow service required",
+        defaultValue: false,
+      }),
+      f({
+        key: "service_provider",
+        type: "text",
+        label: "Service provider (if known)",
+      }),
+      f({
+        key: "provider_phone",
+        type: "text",
+        label: "Provider phone",
+      }),
+      f({
+        key: "estimated_cost",
+        type: "number",
+        label: "Estimated cost (ETB)",
+      }),
+      f({
+        key: "description",
+        type: "textarea",
+        label: "Description",
+        placeholder: "Describe the issue and any immediate hazards…",
+        validation: { maxLength: 1000 },
+      }),
+      f({
+        key: "documents",
+        type: "file",
+        label: "Photos / supporting documents",
+      }),
+    ],
+  },
+  settings: {
+    submitLabel: "Submit assistance request",
+    cancelLabel: "Cancel",
+    successMessage: "Roadside assistance request submitted — Fleet Operations will dispatch a provider.",
+    twoColumnLayout: true,
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Public registry
 // ---------------------------------------------------------------------------
 
@@ -962,6 +1086,7 @@ export const FORM_TEMPLATES: FormTemplate[] = [
   vehicleRequestTemplate,
   maintenanceRequestTemplate,
   licenseRenewalRequestTemplate,
+  roadsideRequestTemplate,
 ];
 
 export const getTemplate = (key: string): FormTemplate | undefined =>
