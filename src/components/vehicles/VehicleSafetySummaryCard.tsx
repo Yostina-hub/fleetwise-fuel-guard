@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ShieldCheck, ShieldAlert, ChevronRight, CalendarClock } from "lucide-react";
+import { ShieldCheck, ShieldAlert, ChevronRight, CalendarClock, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
+import { useQueryClient } from "@tanstack/react-query";
 import { useVehicleSafetySummary } from "@/hooks/useVehicleSafetySummary";
 import { cn } from "@/lib/utils";
+import SafetyComfortReportDialog from "@/components/safety-comfort/SafetyComfortReportDialog";
 
 interface Props {
   vehicleId: string;
@@ -12,6 +15,8 @@ interface Props {
 
 export const VehicleSafetySummaryCard = ({ vehicleId }: Props) => {
   const { data, isLoading } = useVehicleSafetySummary(vehicleId);
+  const [reportOpen, setReportOpen] = useState(false);
+  const qc = useQueryClient();
 
   if (isLoading) {
     return (
