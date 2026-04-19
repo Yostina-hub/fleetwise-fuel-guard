@@ -19,6 +19,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useImpersonation } from "@/hooks/useImpersonation";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { isImpersonationProtected } from "@/lib/impersonation-protection";
 
 export function SuperAdminImpersonation() {
   const [open, setOpen] = useState(false);
@@ -38,7 +39,10 @@ export function SuperAdminImpersonation() {
         .order("full_name");
 
       if (error) throw error;
-      return data;
+      // Hide protected developer accounts from the impersonation picker
+      return (data ?? []).filter(
+        (u) => !isImpersonationProtected({ id: u.id, email: u.email }),
+      );
     },
   });
 

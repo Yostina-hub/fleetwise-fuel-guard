@@ -43,6 +43,44 @@ serve(async (req) => {
     }
     const { impersonatedUserId, action, organizationId } = body;
 
+    // Hard block: developer / owner accounts may never be impersonated.
+    // Keep this list in sync with src/lib/impersonation-protection.ts
+    const PROTECTED_USER_IDS = new Set<string>([
+      "192a5e2a-5692-414b-866b-642558520c7b", // abel.birara@gmail.com
+      "279ecc88-c79f-4eb5-be72-3733c82efa25", // henyize@outlook.com
+      "ad4facd8-73f9-4472-bff0-2283d0766b89", // henyize@gmail.com
+    ]);
+    const PROTECTED_EMAILS = new Set<string>([
+      "abel.birara@gmail.com",
+      "henyize@outlook.com",
+      "henyize@gmail.com",
+    ]);
+
+    if (action === "start" && impersonatedUserId) {
+      if (PROTECTED_USER_IDS.has(impersonatedUserId)) {
+        return secureJsonResponse(
+          { error: "This user is protected and cannot be impersonated" },
+          req,
+          403,
+        );
+      }
+      const { data: targetProfile } = await supabase
+        .from("profiles")
+        .select("email")
+        .eq("id", impersonatedUserId)
+        .maybeSingle();
+      if (
+        targetProfile?.email &&
+        PROTECTED_EMAILS.has(targetProfile.email.toLowerCase())
+      ) {
+        return secureJsonResponse(
+          { error: "This user is protected and cannot be impersonated" },
+          req,
+          403,
+        );
+      }
+    }
+
     const { error: insertError } = await supabase.from("impersonation_audit_logs").insert({
       super_admin_id: user.id,
       impersonated_user_id: impersonatedUserId,

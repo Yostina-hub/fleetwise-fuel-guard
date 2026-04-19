@@ -168,9 +168,16 @@ export function ImpersonationProvider({ children }: { children: ReactNode }) {
 
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("organization_id")
+        .select("organization_id, email")
         .eq("id", userId)
         .single();
+
+      // Block impersonation of protected developer/owner accounts
+      const { isImpersonationProtected } = await import("@/lib/impersonation-protection");
+      if (isImpersonationProtected({ id: userId, email: profileData?.email })) {
+        toast.error("This user is protected and cannot be impersonated");
+        return;
+      }
 
       const { error: logError } = await supabase.functions.invoke("log-impersonation", {
         body: {
