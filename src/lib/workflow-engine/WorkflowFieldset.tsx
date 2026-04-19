@@ -163,15 +163,43 @@ export function WorkflowFieldset({ fields, values, onChange, autofillFromEntitie
           case "text":
           case "number":
           case "date":
-          case "datetime":
+          case "datetime": {
+            // Normalize incoming values for native pickers:
+            // - datetime-local needs "YYYY-MM-DDTHH:MM" (no seconds, no TZ).
+            //   If autofill or a previous payload stored a full ISO string,
+            //   the browser would silently render the field as blank,
+            //   which the user perceives as "the input cleared on submit".
+            // - date needs "YYYY-MM-DD".
+            const inputType =
+              f.type === "datetime" ? "datetime-local" : f.type;
+            let displayValue: string | number = v ?? "";
+            if (typeof displayValue === "string" && displayValue.length > 0) {
+              if (f.type === "datetime") {
+                // Accept ISO with TZ ("...Z" or "+03:00") or local without TZ.
+                const hasTZ = /[zZ]$|[+-]\d{2}:?\d{2}$/.test(displayValue);
+                if (hasTZ) {
+                  const d = new Date(displayValue);
+                  if (!Number.isNaN(d.getTime())) {
+                    const pad = (n: number) => String(n).padStart(2, "0");
+                    displayValue = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                  }
+                } else if (displayValue.length > 16) {
+                  // Trim "YYYY-MM-DDTHH:MM:SS[.sss]" → "YYYY-MM-DDTHH:MM"
+                  displayValue = displayValue.slice(0, 16);
+                }
+              } else if (f.type === "date" && displayValue.length > 10) {
+                displayValue = displayValue.slice(0, 10);
+              }
+            }
             return wrap(
               <Input
-                type={f.type === "datetime" ? "datetime-local" : f.type}
-                value={v}
+                type={inputType}
+                value={displayValue}
                 placeholder={f.placeholder}
                 onChange={(e) => onChange(f.key, e.target.value)}
               />,
             );
+          }
           case "textarea":
             return wrap(
               <Textarea
