@@ -47,6 +47,16 @@ const DriverQuickActions = ({
       variant: "outline" as const,
       className: "border-accent/50 hover:bg-accent/10",
     },
+    ...(onRequestTire
+      ? [{
+          label: "Request Tire",
+          tooltip: "Submit a tire replacement / repair request to maintenance",
+          icon: CircleDot,
+          onClick: onRequestTire,
+          variant: "outline" as const,
+          className: "border-warning/50 hover:bg-warning/10 text-warning",
+        }]
+      : []),
     {
       label: "Pre-Trip Check",
       tooltip: "Complete pre-trip vehicle inspection",
