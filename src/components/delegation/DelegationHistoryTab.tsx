@@ -25,6 +25,8 @@ const ACTION_META: Record<string, { icon: any; label: string; color: string }> =
   substitute: { icon: ArrowRightLeft, label: "Delegated", color: "bg-amber-500/10 text-amber-600 border-amber-500/30" },
   skip: { icon: SkipForward, label: "Skipped", color: "bg-muted text-muted-foreground border-border" },
   route: { icon: ArrowRightLeft, label: "Routed", color: "bg-blue-500/10 text-blue-600 border-blue-500/30" },
+  approve: { icon: Power, label: "Approved", color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" },
+  reject: { icon: PowerOff, label: "Rejected", color: "bg-red-500/10 text-red-600 border-red-500/30" },
 };
 
 const SOURCE_META: Record<string, { icon: any; label: string }> = {
@@ -34,6 +36,10 @@ const SOURCE_META: Record<string, { icon: any; label: string }> = {
   approval_levels: { icon: Shield, label: "Approval Level" },
   fuel_request: { icon: ArrowRightLeft, label: "Fuel Request Routing" },
   vehicle_request: { icon: ArrowRightLeft, label: "Vehicle Request Routing" },
+  tire_request: { icon: ArrowRightLeft, label: "Tire Request Routing" },
+  fleet_transfer: { icon: ArrowRightLeft, label: "Fleet Transfer Routing" },
+  fleet_inspection: { icon: ArrowRightLeft, label: "Fleet Inspection Routing" },
+  safety_comfort: { icon: ArrowRightLeft, label: "Safety & Comfort Routing" },
 };
 
 // Authority/delegation configuration sources — show ALL actions from these.
@@ -48,6 +54,20 @@ const CONFIG_SOURCES = [
 // (e.g. fuel_request, vehicle_request) because they represent delegation
 // decisions made by the authority/delegation matrix at runtime.
 const DELEGATION_ACTIONS = ["route", "substitute", "skip"];
+
+// Stages where the authority/delegation matrix governs the approver.
+// Any decision recorded against one of these stages should surface in the
+// Delegation History — even if the decision id is workflow-specific
+// (e.g. authority_approve, fleet_ops_approve, ops_approve).
+const APPROVAL_STAGE_PATTERNS = [
+  "%pending_approval%",
+  "%authority_approval%",
+  "%records_pending_approval%",
+];
+
+// Decision id substrings that indicate an approval/rejection outcome,
+// regardless of workflow naming (authority_approve, ops_approve, approve, reject…).
+const APPROVAL_DECISION_TOKENS = ["approve", "reject"];
 
 export const DelegationHistoryTab = () => {
   const { organizationId } = useOrganization();
