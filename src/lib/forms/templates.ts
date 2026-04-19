@@ -1165,13 +1165,14 @@ const roadsideRequestTemplate: FormTemplate = {
 // ---------------------------------------------------------------------------
 // Option lists mirrored from src/components/fleet/formConstants.ts so the
 // editor canvas shows the EXACT same dropdown values as the legacy form.
+// Driver Type — grouped (Ethio telecom / Other) per real CreateDriverDialog
 const DRIVER_TYPE_OPTIONS = [
-  { value: "ethio_contract",   label: "Ethio telecom — Contract" },
-  { value: "ethio_permanent",  label: "Ethio telecom — Permanent" },
-  { value: "ethio_outsource",  label: "Ethio telecom — Outsource" },
-  { value: "ethio_rental",     label: "Ethio telecom — Rental" },
-  { value: "3pl",              label: "3PL" },
-  { value: "individual",       label: "Individual" },
+  { value: "ethio_contract",   label: "Ethio telecom · Contract" },
+  { value: "ethio_permanent",  label: "Ethio telecom · Permanent" },
+  { value: "ethio_outsource",  label: "Ethio telecom · Outsource" },
+  { value: "ethio_rental",     label: "Ethio telecom · Rental" },
+  { value: "3pl",              label: "Other · 3PL" },
+  { value: "individual",       label: "Other · Individual" },
 ];
 const GENDER_OPTIONS = [
   { value: "male",   label: "Male" },
@@ -1216,27 +1217,28 @@ const ROUTE_TYPE_OPTIONS = [
 ];
 const BLOOD_TYPE_OPTIONS = ["A+","A-","B+","B-","AB+","AB-","O+","O-"]
   .map((v) => ({ value: v, label: v }));
+// Assigned Location — grouped (Corporate / Zone / Region) per real CreateDriverDialog
 const ASSIGNED_LOCATION_OPTIONS = [
-  { value: "corp_fom1",          label: "FOM I" },
-  { value: "corp_fom2",          label: "FOM II" },
-  { value: "corp_zemengebeya",   label: "ZemenGEBEYA Logistics" },
-  { value: "region_bole",        label: "Bole" },
-  { value: "region_yeka",        label: "Yeka" },
-  { value: "region_kirkos",      label: "Kirkos" },
-  { value: "region_arada",       label: "Arada" },
-  { value: "region_addis_ketema",label: "Addis Ketema" },
-  { value: "region_lideta",      label: "Lideta" },
-  { value: "region_gulele",      label: "Gulele" },
-  { value: "region_kolfe",       label: "Kolfe Keranio" },
-  { value: "region_akaky",       label: "Akaky Kaliti" },
-  { value: "region_nefas_silk",  label: "Nefas Silk Lafto" },
-  { value: "region_lemi_kura",   label: "Lemi Kura" },
-  { value: "region_adama",       label: "Adama" },
-  { value: "region_hawassa",     label: "Hawassa" },
-  { value: "region_bahir_dar",   label: "Bahir Dar" },
-  { value: "region_mekelle",     label: "Mekelle" },
-  { value: "region_jimma",       label: "Jimma" },
-  { value: "region_dire_dawa",   label: "Dire Dawa" },
+  { value: "corp_fom1",          label: "Corporate · FOM I" },
+  { value: "corp_fom2",          label: "Corporate · FOM II" },
+  { value: "corp_zemengebeya",   label: "Corporate · ZemenGEBEYA Logistics" },
+  { value: "region_bole",        label: "Zone · Bole" },
+  { value: "region_yeka",        label: "Zone · Yeka" },
+  { value: "region_kirkos",      label: "Zone · Kirkos" },
+  { value: "region_arada",       label: "Zone · Arada" },
+  { value: "region_addis_ketema",label: "Zone · Addis Ketema" },
+  { value: "region_lideta",      label: "Zone · Lideta" },
+  { value: "region_gulele",      label: "Zone · Gulele" },
+  { value: "region_kolfe",       label: "Zone · Kolfe Keranio" },
+  { value: "region_akaky",       label: "Zone · Akaky Kaliti" },
+  { value: "region_nefas_silk",  label: "Zone · Nefas Silk Lafto" },
+  { value: "region_lemi_kura",   label: "Zone · Lemi Kura" },
+  { value: "region_adama",       label: "Region · Adama" },
+  { value: "region_hawassa",     label: "Region · Hawassa" },
+  { value: "region_bahir_dar",   label: "Region · Bahir Dar" },
+  { value: "region_mekelle",     label: "Region · Mekelle" },
+  { value: "region_jimma",       label: "Region · Jimma" },
+  { value: "region_dire_dawa",   label: "Region · Dire Dawa" },
 ];
 
 const driverRegistrationTemplate: FormTemplate = {
@@ -1294,9 +1296,18 @@ const driverRegistrationTemplate: FormTemplate = {
         type: "section",
         label: "Address",
         fields: [
-          f({ key: "address_region",   type: "text", label: "Region",   required: true, layout: { colSpan: 1 } }),
-          f({ key: "address_zone",     type: "text", label: "Zone",     required: true, layout: { colSpan: 1 } }),
-          f({ key: "address_woreda",   type: "text", label: "Woreda",   required: true, layout: { colSpan: 1 } }),
+          f({ key: "address_info", type: "info_banner",
+             label: "",
+             content: "**Region → Zone → Woreda** are dependent dropdowns at runtime (sourced from `administrative_localities`). Selecting a Region filters Zones; selecting a Zone filters Woredas." }),
+          f({ key: "address_region",   type: "select", label: "Region",   required: true,
+             helpText: "Cascading: filters Zone options",
+             options: [], layout: { colSpan: 1 } }),
+          f({ key: "address_zone",     type: "select", label: "Zone",     required: true,
+             helpText: "Filtered by selected Region",
+             options: [], layout: { colSpan: 1 } }),
+          f({ key: "address_woreda",   type: "select", label: "Woreda",   required: true,
+             helpText: "Filtered by selected Zone",
+             options: [], layout: { colSpan: 1 } }),
           f({ key: "address_specific", type: "text", label: "Specific Address",
              placeholder: "Building name, street, directions...",
              validation: { maxLength: 500 } }),
@@ -1328,10 +1339,16 @@ const driverRegistrationTemplate: FormTemplate = {
         type: "section",
         label: "Driver Attachments",
         fields: [
-          f({ key: "license_front_url", type: "file", label: "Driver's License (Front)", layout: { colSpan: 1 } }),
-          f({ key: "license_back_url",  type: "file", label: "Driver's License (Back)",  layout: { colSpan: 1 } }),
-          f({ key: "national_id_url",   type: "file", label: "National ID Card",         layout: { colSpan: 1 } }),
-          f({ key: "avatar_url",        type: "file", label: "Profile Photo",            layout: { colSpan: 1 } }),
+          f({ key: "license_front_url", type: "file", label: "Driver's License (Front)",
+             helpText: "Images or PDF, max 5 MB", layout: { colSpan: 1 } }),
+          f({ key: "license_back_url",  type: "file", label: "Driver's License (Back)",
+             helpText: "Images or PDF, max 5 MB", layout: { colSpan: 1 } }),
+          f({ key: "national_id_url",   type: "file", label: "National ID Card",
+             helpText: "Images or PDF, max 5 MB", layout: { colSpan: 1 } }),
+          f({ key: "avatar_url",        type: "file", label: "Profile Photo",
+             helpText: "Images only, max 5 MB",   layout: { colSpan: 1 } }),
+          f({ key: "attachments_note", type: "info_banner", label: "",
+             content: "Files upload to the **driver-documents** storage bucket on submit and are stored on the driver row (license_front_url, license_back_url, national_id_url, avatar_url)." }),
         ],
       }),
 
@@ -1401,9 +1418,11 @@ const driverRegistrationTemplate: FormTemplate = {
         type: "section",
         label: "Account Credentials",
         fields: [
+          f({ key: "credentials_info", type: "info_banner", label: "",
+             content: "At runtime this section shows **Generate** (random 16-char password), **Show/Hide** (eye icon) and **Copy** (clipboard) buttons next to the password input. Password complexity is enforced: ≥12 chars, with uppercase, lowercase, digit and special character." }),
           f({ key: "password", type: "text", label: "Password", required: true,
              placeholder: "Min 12 chars, upper/lower/digit/special",
-             helpText: "Used to provision the driver portal login when an email is also supplied.",
+             helpText: "Used to provision the driver portal login when an email is also supplied. The driver receives the `driver` role automatically.",
              validation: { minLength: 12, maxLength: 100 },
              layout: { colSpan: 1 } }),
         ],
@@ -1417,6 +1436,27 @@ const driverRegistrationTemplate: FormTemplate = {
         fields: [
           f({ key: "notes", type: "textarea", label: "Notes",
              placeholder: "Additional information..." }),
+        ],
+      }),
+
+      // 12) System / derived fields (set automatically on save — shown for transparency)
+      f({
+        key: "system_section",
+        type: "section",
+        label: "System Fields (set automatically)",
+        fields: [
+          f({ key: "system_info", type: "info_banner", label: "",
+             content: "These fields are populated automatically by the form on save — they are listed here so the schema editor reflects every column written to the **drivers** table." }),
+          f({ key: "license_class", type: "text", label: "License Class",
+             helpText: "Auto-copied from License Type / Class on submit.",
+             readOnly: true, layout: { colSpan: 1 } }),
+          f({ key: "hire_date", type: "date", label: "Hire Date",
+             helpText: "Auto-copied from Effective Date on submit.",
+             readOnly: true, layout: { colSpan: 1 } }),
+          f({ key: "verification_status", type: "text", label: "Verification Status",
+             defaultValue: "pending",
+             helpText: "Defaults to `pending` until verified by an admin.",
+             readOnly: true, layout: { colSpan: 1 } }),
         ],
       }),
     ],
