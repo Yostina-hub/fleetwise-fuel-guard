@@ -55,6 +55,26 @@ const FuelRequestFormLazy = lazy(() =>
   }),
 );
 
+// Adapter: SafetyComfortReportDialog emits { workflow_instance_id } — normalize to { id }.
+const SafetyComfortReportLazy = lazy(() =>
+  import("@/components/safety-comfort/SafetyComfortReportDialog").then((m) => {
+    const Inner = m.default;
+    const Adapted: React.ComponentType<LegacyEmbeddedFormProps> = (props) => (
+      <Inner
+        embedded
+        open
+        onOpenChange={props.onOpenChange}
+        prefill={props.prefill}
+        onSubmitted={(payload: any) => {
+          const id = payload?.workflow_instance_id ?? payload?.id;
+          if (id) props.onSubmitted?.({ id });
+        }}
+      />
+    );
+    return { default: Adapted };
+  }),
+);
+
 export interface LegacyFormRegistryEntry {
   /** The form `key` in the Forms module (organization-scoped). */
   key: string;
@@ -74,6 +94,11 @@ const REGISTRY: LegacyFormRegistryEntry[] = [
     key: "fuel_request",
     label: "Fuel Request (legacy)",
     Component: FuelRequestFormLazy,
+  },
+  {
+    key: "safety_comfort_report",
+    label: "Safety & Comfort Report (legacy)",
+    Component: SafetyComfortReportLazy,
   },
 ];
 
