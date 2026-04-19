@@ -107,14 +107,25 @@ export const DelegationHistoryTab = () => {
       // governed by the authority/delegation matrix. The approver role is
       // resolved at runtime from authority_matrix → approval_levels, so
       // these are de-facto "delegation matrix used" events and must show
-      // up in the history (e.g. tire_request authority_approve, vehicle
-      // request approve, fleet_transfer ops_approve, etc.).
+      // up in the history. We match in two ways:
+      //   (a) stage name signals approval (pending_approval, authority_approval, *_review)
+      //   (b) decision verb signals approval (approve / reject / *_approve / *_reject)
+      // Either match qualifies, then we filter again client-side via
+      // APPROVAL_DECISION_TOKENS to drop noise like "edit"/"withdraw".
       const approvalsPromise = supabase
         .from("workflow_transitions")
         .select("id, instance_id, workflow_type, from_stage, to_stage, decision, performed_by, performed_by_name, performed_by_role, notes, created_at")
         .eq("organization_id", organizationId)
         .or(
-          APPROVAL_STAGE_PATTERNS.map((p) => `from_stage.ilike.${p}`).join(","),
+          [
+            ...APPROVAL_STAGE_PATTERNS.map((p) => `from_stage.ilike.${p}`),
+            "from_stage.ilike.%_review",
+            "from_stage.ilike.%_review_%",
+            "decision.ilike.%approve%",
+            "decision.ilike.%reject%",
+            "decision.ilike.approved",
+            "decision.ilike.rejected",
+          ].join(","),
         )
         .order("created_at", { ascending: false })
         .limit(500);
