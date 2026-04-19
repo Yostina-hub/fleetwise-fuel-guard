@@ -13,6 +13,10 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { Lock, CheckCircle2, History as HistoryIcon, ExternalLink, ShieldCheck } from "lucide-react";
 import { WorkflowFieldset } from "./WorkflowFieldset";
@@ -34,6 +38,7 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
   const { data: transitions = [] } = useWorkflowTransitions(instance?.id ?? null);
   const [activeAction, setActiveAction] = useState<StageAction | null>(null);
   const [actionNotes, setActionNotes] = useState("");
+  const [pendingConfirm, setPendingConfirm] = useState<string | null>(null);
 
   // Per-instance + per-action draft so users can step away mid-form and resume.
   const draftKey =
@@ -103,8 +108,17 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
       .filter((f) => f.required)
       .filter((f) => !actionValues[f.key] && actionValues[f.key] !== false);
     if (missing.length) return;
-    if (activeAction.confirm && !window.confirm(activeAction.confirm)) return;
+    // If this action carries a `confirm:` prompt, route through the AlertDialog
+    // (avoids native window.confirm which blocks E2E and is poor UX).
+    if (activeAction.confirm) {
+      setPendingConfirm(activeAction.confirm);
+      return;
+    }
+    await runAction();
+  };
 
+  const runAction = async () => {
+    if (!activeAction) return;
     try {
       await performAction.mutateAsync({
         instance,
@@ -117,6 +131,7 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
       setActiveAction(null);
       setActionValues({});
       setActionNotes("");
+      setPendingConfirm(null);
     } catch {
       // Failure → keep the draft so the user can retry without retyping.
     }
@@ -328,6 +343,23 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
           </Tabs>
         </div>
       </SheetContent>
+
+      {/* Confirmation dialog for actions that carry a `confirm:` prompt. */}
+      <AlertDialog
+        open={!!pendingConfirm}
+        onOpenChange={(o) => { if (!o) setPendingConfirm(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm action</AlertDialogTitle>
+            <AlertDialogDescription>{pendingConfirm}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={runAction}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   );
 }
