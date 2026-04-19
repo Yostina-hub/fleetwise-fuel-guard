@@ -25783,6 +25783,18 @@ export type Database = {
     Functions: {
       _approval_actor_name: { Args: { _uid: string }; Returns: string }
       _backfill_inspection_links: { Args: never; Returns: number }
+      _diag_driver_auth_status: {
+        Args: never
+        Returns: {
+          driver_id: string
+          driver_name: string
+          email_confirmed: boolean
+          exists_in_auth: boolean
+          has_driver_role: boolean
+          has_password: boolean
+          user_id: string
+        }[]
+      }
       _vrq_derive_stage: {
         Args: { r: Database["public"]["Tables"]["vehicle_requests"]["Row"] }
         Returns: string
