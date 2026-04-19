@@ -243,3 +243,72 @@ Once those land, Phase 2 pilot can start.
 - Export-ready data for SAP/Oracle/Odoo sync
 - Webhook events for WO status changes (existing webhook infrastructure)
 - Cost center mapping to existing `cost_centers` table
+
+---
+
+# Preventive Maintenance — End-to-End Plan (Spec 1.1 → 1.9)  · added 2026-04-19
+
+## Architecture
+```
+[Cron hourly] → auto-create maintenance_requests (1.1)
+                         │
+                         ▼
+            Fleet Ops review & approve (1.2)
+                         │
+                         ▼
+            Maintenance creates Work Order (1.3)
+                         │
+                         ▼
+   Delegation Matrix approval — already wired (1.4)
+                         │
+        ┌────────────────┼─────────────────┐
+        ▼                                  ▼
+  Push POR → Oracle EBS (1.5)     Auto-PO zero-birr qty=1 (1.6)
+        │
+        ▼
+  Supplier Portal (RBAC `supplier` role) — view WO (1.7)
+        │
+        ▼
+  Supplier ↔ Fleet Maint: messages + doc upload (1.8)
+        │
+        ▼
+  Supplier submits payment request → Fleet Maint accept/reject (1.9)
+```
+
+## Phase A — Database (one migration)
+1. Add `supplier` to `app_role` enum.
+2. New tables (RLS-scoped by `organization_id`):
+   - `maintenance_supplier_assignments` (user_id ↔ vendor_id)
+   - `work_order_supplier_messages` (threaded chat per WO)
+   - `work_order_supplier_documents` (file metadata)
+   - `supplier_payment_requests` (status: submitted/accepted/rejected)
+   - `erp_por_queue` (outbound POR with retry/state)
+3. Functions/triggers:
+   - `auto_create_maintenance_request_from_schedule()`
+   - `on_wo_approved_create_por()` — enqueues POR + creates zero-birr PO (1.6)
+4. Storage bucket `supplier-portal` (private).
+
+## Phase B — Edge functions
+1. `maintenance-auto-trigger` (cron hourly): scans schedules, creates requests when due.
+2. `erp-por-push` (cron 5 min): drains queue, calls Oracle EBS using secrets `ORACLE_EBS_URL/USERNAME/PASSWORD` (collected later).
+3. `supplier-portal-action`: unified RBAC-checked endpoint for supplier doc upload, message send, payment-request submit.
+
+## Phase C — Frontend
+1. Extend `MaintenanceAlertSettings` with auto-trigger config.
+2. Maintenance Requests Kanban board.
+3. `/supplier-portal` route tree (list + detail with chat / uploads / payment request).
+4. `PaymentRequestReviewPanel` for Fleet Maintenance.
+5. Sidebar early-return for `supplier` users.
+
+## Phase D — Wiring
+- Existing `maintenance_request` workflow config powers approval transitions.
+- Audit log on every state change.
+- `presentation-open-backend` action so you can paste Oracle EBS secrets.
+
+## Out of scope
+- Real Oracle EBS endpoint contract — stubbed; pipeline tested with mock.
+- Mobile native; web-responsive only.
+
+## Risks
+- `supplier` enum addition + RLS using it must be in 2 migration files (Postgres committed-enum rule).
+- Supplier route tree must early-return so suppliers never see fleet UI.
