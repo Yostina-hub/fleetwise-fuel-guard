@@ -70,21 +70,26 @@ const APPROVAL_STAGE_PATTERNS = [
 const APPROVAL_DECISION_TOKENS = ["approve", "reject", "approved", "rejected"];
 
 export const DelegationHistoryTab = () => {
-  const { organizationId } = useOrganization();
+  const { organizationId, isViewingAllOrgs } = useOrganization();
   const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
 
   const { data: logs = [], isLoading, refetch, isFetching } = useQuery({
-    queryKey: ["delegation-audit-log", organizationId],
+    queryKey: ["delegation-audit-log", organizationId ?? "all-orgs", isViewingAllOrgs],
     queryFn: async () => {
-      if (!organizationId) return [];
+      if (!organizationId && !isViewingAllOrgs) return [];
+
+      const applyOrgScope = <T extends { eq: (...args: any[]) => T }>(query: T) => {
+        return isViewingAllOrgs ? query : query.eq("organization_id", organizationId!);
+      };
 
       // Source 1: explicit delegation_audit_log entries
-      const auditPromise = supabase
-        .from("delegation_audit_log")
-        .select("*")
-        .eq("organization_id", organizationId)
+      const auditPromise = applyOrgScope(
+        supabase
+          .from("delegation_audit_log")
+          .select("*")
+      )
         .or(
           `source_table.in.(${CONFIG_SOURCES.join(",")}),action.in.(${DELEGATION_ACTIONS.join(",")})`,
         )
@@ -95,10 +100,11 @@ export const DelegationHistoryTab = () => {
       // (e.g. auto_route via authority/delegation matrix). These are written
       // by the inbox approval engine instead of delegation_audit_log.
       const ROUTING_DECISIONS = ["auto_route", "route", "delegate", "substitute", "reroute"];
-      const transitionsPromise = supabase
-        .from("workflow_transitions")
-        .select("id, instance_id, workflow_type, from_stage, to_stage, decision, performed_by, performed_by_name, performed_by_role, notes, created_at")
-        .eq("organization_id", organizationId)
+      const transitionsPromise = applyOrgScope(
+        supabase
+          .from("workflow_transitions")
+          .select("id, instance_id, workflow_type, from_stage, to_stage, decision, performed_by, performed_by_name, performed_by_role, notes, created_at")
+      )
         .in("decision", ROUTING_DECISIONS)
         .order("created_at", { ascending: false })
         .limit(500);
@@ -112,10 +118,11 @@ export const DelegationHistoryTab = () => {
       //   (b) decision verb signals approval (approve / reject / *_approve / *_reject)
       // Either match qualifies, then we filter again client-side via
       // APPROVAL_DECISION_TOKENS to drop noise like "edit"/"withdraw".
-      const approvalsPromise = supabase
-        .from("workflow_transitions")
-        .select("id, instance_id, workflow_type, from_stage, to_stage, decision, performed_by, performed_by_name, performed_by_role, notes, created_at")
-        .eq("organization_id", organizationId)
+      const approvalsPromise = applyOrgScope(
+        supabase
+          .from("workflow_transitions")
+          .select("id, instance_id, workflow_type, from_stage, to_stage, decision, performed_by, performed_by_name, performed_by_role, notes, created_at")
+      )
         .or(
           [
             ...APPROVAL_STAGE_PATTERNS.map((p) => `from_stage.ilike.${p}`),
@@ -139,15 +146,11 @@ export const DelegationHistoryTab = () => {
       if (trErr) throw trErr;
       if (apErr) throw apErr;
 
-      // Keep only approval-style decisions (approve/reject variants) — other
-      // decisions on the same stage (e.g. "edit", "withdraw") aren't
-      // delegation-matrix events.
       const approvalRows = (approvals ?? []).filter((t: any) => {
         const d = String(t.decision || "").toLowerCase();
         return APPROVAL_DECISION_TOKENS.some((tok) => d.includes(tok));
       });
 
-      // Resolve missing actor names/roles from profiles + user_roles
       const allTransitionRows = [...(transitions ?? []), ...approvalRows];
       const actorIds = Array.from(
         new Set(
@@ -205,8 +208,6 @@ export const DelegationHistoryTab = () => {
       const combined = [...(audit ?? []), ...mappedTransitions, ...mappedApprovals].sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
-      // De-dupe by id (an approval stage row could appear in both lists if
-      // its decision id literally matches a routing token in the future).
       const seen = new Set<string>();
       const deduped = combined.filter((r: any) => {
         if (seen.has(r.id)) return false;
@@ -215,7 +216,7 @@ export const DelegationHistoryTab = () => {
       });
       return deduped.slice(0, 500);
     },
-    enabled: !!organizationId,
+    enabled: isViewingAllOrgs || !!organizationId,
   });
 
   const filtered = logs.filter((l: any) => {
