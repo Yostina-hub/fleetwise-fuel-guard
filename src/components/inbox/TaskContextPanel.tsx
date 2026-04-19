@@ -23,6 +23,7 @@ import { RenderWorkflowForm, getWorkflowForm } from "@/lib/workflow-forms/regist
 import { SlaChip } from "./SlaChip";
 import { RoleChip } from "./RoleChip";
 import { StagePill } from "./StagePill";
+import { SafetyComfortChecklistField } from "./SafetyComfortChecklistField";
 import type { WorkflowTask, FormField } from "./types";
 
 // SOP tasks carry per-action field definitions on __stageActions.
@@ -311,6 +312,11 @@ export function TaskContextPanel({ task, organizationId, onClose, onSubmit, subm
                       ))}
                     </SelectContent>
                   </Select>
+                ) : f.type === "safety_comfort_checklist" ? (
+                  <SafetyComfortChecklistField
+                    value={values[f.key]}
+                    onChange={(next) => setField(f.key, next)}
+                  />
                 ) : (
                   <Input
                     type={

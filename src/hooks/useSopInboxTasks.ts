@@ -62,6 +62,7 @@ export function useSopInboxTasks(
                   case "date": return "date";
                   case "datetime": return "datetime";
                   case "select": return "select";
+                  case "safety_comfort_checklist": return "safety_comfort_checklist";
                   default: return "text";
                 }
               })(),
