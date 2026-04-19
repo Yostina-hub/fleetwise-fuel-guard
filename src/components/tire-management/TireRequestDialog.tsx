@@ -23,6 +23,12 @@ const POSITIONS = ["Front Left", "Front Right", "Rear Left Outer", "Rear Left In
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  /** When true, render inline without the outer Dialog (used by Forms module). */
+  embedded?: boolean;
+  /** Optional context prefilled by the caller. */
+  prefill?: { vehicle_id?: string; driver_id?: string };
+  /** Called after a successful submission with the new tire_request id. */
+  onSubmitted?: (payload: { id: string }) => void;
 }
 
 interface LineItem {
