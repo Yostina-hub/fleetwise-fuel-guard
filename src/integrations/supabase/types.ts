@@ -26356,6 +26356,8 @@ export type Database = {
         | "mechanic"
         | "viewer"
         | "supplier"
+        | "transport_authority"
+        | "insurance_admin"
       employee_type:
         | "driver"
         | "mechanic"
@@ -26508,6 +26510,8 @@ export const Constants = {
         "mechanic",
         "viewer",
         "supplier",
+        "transport_authority",
+        "insurance_admin",
       ],
       employee_type: [
         "driver",
