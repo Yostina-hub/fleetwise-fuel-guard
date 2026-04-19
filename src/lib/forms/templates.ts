@@ -1418,9 +1418,11 @@ const driverRegistrationTemplate: FormTemplate = {
         type: "section",
         label: "Account Credentials",
         fields: [
+          f({ key: "credentials_info", type: "info_banner", label: "",
+             content: "At runtime this section shows **Generate** (random 16-char password), **Show/Hide** (eye icon) and **Copy** (clipboard) buttons next to the password input. Password complexity is enforced: ≥12 chars, with uppercase, lowercase, digit and special character." }),
           f({ key: "password", type: "text", label: "Password", required: true,
              placeholder: "Min 12 chars, upper/lower/digit/special",
-             helpText: "Used to provision the driver portal login when an email is also supplied.",
+             helpText: "Used to provision the driver portal login when an email is also supplied. The driver receives the `driver` role automatically.",
              validation: { minLength: 12, maxLength: 100 },
              layout: { colSpan: 1 } }),
         ],
@@ -1434,6 +1436,27 @@ const driverRegistrationTemplate: FormTemplate = {
         fields: [
           f({ key: "notes", type: "textarea", label: "Notes",
              placeholder: "Additional information..." }),
+        ],
+      }),
+
+      // 12) System / derived fields (set automatically on save — shown for transparency)
+      f({
+        key: "system_section",
+        type: "section",
+        label: "System Fields (set automatically)",
+        fields: [
+          f({ key: "system_info", type: "info_banner", label: "",
+             content: "These fields are populated automatically by the form on save — they are listed here so the schema editor reflects every column written to the **drivers** table." }),
+          f({ key: "license_class", type: "text", label: "License Class",
+             helpText: "Auto-copied from License Type / Class on submit.",
+             readOnly: true, layout: { colSpan: 1 } }),
+          f({ key: "hire_date", type: "date", label: "Hire Date",
+             helpText: "Auto-copied from Effective Date on submit.",
+             readOnly: true, layout: { colSpan: 1 } }),
+          f({ key: "verification_status", type: "text", label: "Verification Status",
+             defaultValue: "pending",
+             helpText: "Defaults to `pending` until verified by an admin.",
+             readOnly: true, layout: { colSpan: 1 } }),
         ],
       }),
     ],
