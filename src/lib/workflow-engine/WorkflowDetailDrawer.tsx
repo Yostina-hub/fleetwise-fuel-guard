@@ -108,8 +108,17 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
       .filter((f) => f.required)
       .filter((f) => !actionValues[f.key] && actionValues[f.key] !== false);
     if (missing.length) return;
-    if (activeAction.confirm && !window.confirm(activeAction.confirm)) return;
+    // If this action carries a `confirm:` prompt, route through the AlertDialog
+    // (avoids native window.confirm which blocks E2E and is poor UX).
+    if (activeAction.confirm) {
+      setPendingConfirm(activeAction.confirm);
+      return;
+    }
+    await runAction();
+  };
 
+  const runAction = async () => {
+    if (!activeAction) return;
     try {
       await performAction.mutateAsync({
         instance,
@@ -122,6 +131,7 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
       setActiveAction(null);
       setActionValues({});
       setActionNotes("");
+      setPendingConfirm(null);
     } catch {
       // Failure → keep the draft so the user can retry without retyping.
     }
