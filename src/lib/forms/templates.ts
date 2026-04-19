@@ -1217,27 +1217,28 @@ const ROUTE_TYPE_OPTIONS = [
 ];
 const BLOOD_TYPE_OPTIONS = ["A+","A-","B+","B-","AB+","AB-","O+","O-"]
   .map((v) => ({ value: v, label: v }));
+// Assigned Location — grouped (Corporate / Zone / Region) per real CreateDriverDialog
 const ASSIGNED_LOCATION_OPTIONS = [
-  { value: "corp_fom1",          label: "FOM I" },
-  { value: "corp_fom2",          label: "FOM II" },
-  { value: "corp_zemengebeya",   label: "ZemenGEBEYA Logistics" },
-  { value: "region_bole",        label: "Bole" },
-  { value: "region_yeka",        label: "Yeka" },
-  { value: "region_kirkos",      label: "Kirkos" },
-  { value: "region_arada",       label: "Arada" },
-  { value: "region_addis_ketema",label: "Addis Ketema" },
-  { value: "region_lideta",      label: "Lideta" },
-  { value: "region_gulele",      label: "Gulele" },
-  { value: "region_kolfe",       label: "Kolfe Keranio" },
-  { value: "region_akaky",       label: "Akaky Kaliti" },
-  { value: "region_nefas_silk",  label: "Nefas Silk Lafto" },
-  { value: "region_lemi_kura",   label: "Lemi Kura" },
-  { value: "region_adama",       label: "Adama" },
-  { value: "region_hawassa",     label: "Hawassa" },
-  { value: "region_bahir_dar",   label: "Bahir Dar" },
-  { value: "region_mekelle",     label: "Mekelle" },
-  { value: "region_jimma",       label: "Jimma" },
-  { value: "region_dire_dawa",   label: "Dire Dawa" },
+  { value: "corp_fom1",          label: "Corporate · FOM I" },
+  { value: "corp_fom2",          label: "Corporate · FOM II" },
+  { value: "corp_zemengebeya",   label: "Corporate · ZemenGEBEYA Logistics" },
+  { value: "region_bole",        label: "Zone · Bole" },
+  { value: "region_yeka",        label: "Zone · Yeka" },
+  { value: "region_kirkos",      label: "Zone · Kirkos" },
+  { value: "region_arada",       label: "Zone · Arada" },
+  { value: "region_addis_ketema",label: "Zone · Addis Ketema" },
+  { value: "region_lideta",      label: "Zone · Lideta" },
+  { value: "region_gulele",      label: "Zone · Gulele" },
+  { value: "region_kolfe",       label: "Zone · Kolfe Keranio" },
+  { value: "region_akaky",       label: "Zone · Akaky Kaliti" },
+  { value: "region_nefas_silk",  label: "Zone · Nefas Silk Lafto" },
+  { value: "region_lemi_kura",   label: "Zone · Lemi Kura" },
+  { value: "region_adama",       label: "Region · Adama" },
+  { value: "region_hawassa",     label: "Region · Hawassa" },
+  { value: "region_bahir_dar",   label: "Region · Bahir Dar" },
+  { value: "region_mekelle",     label: "Region · Mekelle" },
+  { value: "region_jimma",       label: "Region · Jimma" },
+  { value: "region_dire_dawa",   label: "Region · Dire Dawa" },
 ];
 
 const driverRegistrationTemplate: FormTemplate = {
