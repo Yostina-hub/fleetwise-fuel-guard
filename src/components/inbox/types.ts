@@ -1,7 +1,7 @@
 export interface FormField {
   key: string;
   label: string;
-  type?: "text" | "textarea" | "number" | "date" | "datetime" | "select" | "safety_comfort_checklist";
+  type?: "text" | "textarea" | "number" | "date" | "datetime" | "select" | "checkbox" | "safety_comfort_checklist";
   required?: boolean;
   options?: { value: string; label: string }[];
   placeholder?: string;

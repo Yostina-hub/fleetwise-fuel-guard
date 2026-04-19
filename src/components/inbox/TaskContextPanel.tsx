@@ -317,6 +317,16 @@ export function TaskContextPanel({ task, organizationId, onClose, onSubmit, subm
                     value={values[f.key]}
                     onChange={(next) => setField(f.key, next)}
                   />
+                ) : f.type === "checkbox" ? (
+                  <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-input accent-primary"
+                      checked={!!values[f.key]}
+                      onChange={(e) => setField(f.key, e.target.checked)}
+                    />
+                    <span className="text-muted-foreground">{f.placeholder ?? "Confirm"}</span>
+                  </label>
                 ) : (
                   <Input
                     type={
