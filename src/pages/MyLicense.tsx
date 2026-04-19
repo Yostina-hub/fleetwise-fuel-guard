@@ -585,6 +585,18 @@ export default function MyLicense() {
           onOpenChange={setShowRenewal}
           driver={driver}
         />
+
+        {uploadCategory && driverId && (
+          <UploadMyDocumentDialog
+            open={!!uploadCategory}
+            onOpenChange={(v) => { if (!v) setUploadCategory(null); }}
+            driverId={driverId}
+            category={uploadCategory}
+            onUploaded={() => {
+              queryClient.invalidateQueries({ queryKey: ["my-license-docs", organizationId, driverId] });
+            }}
+          />
+        )}
       </div>
     </Layout>
   );
