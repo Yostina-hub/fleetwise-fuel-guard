@@ -51,7 +51,7 @@ const toLocalInput = (d: Date) => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
-export const TireRequestDialog = ({ open, onOpenChange }: Props) => {
+export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefill, onSubmitted }: Props) => {
   const { organizationId } = useOrganization();
   const { vehicles } = useVehicles();
   const { user, profile } = useAuthContext() as any;
