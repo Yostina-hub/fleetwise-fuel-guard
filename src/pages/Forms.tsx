@@ -508,6 +508,7 @@ function FormStatusBadge({
 
   const reasons: string[] = [];
   if (usage.legacyBound) reasons.push("Wired to legacy component");
+  if (usage.workflowIntake) reasons.push("SOP intake form");
   if (usage.workflowTaskCount > 0)
     reasons.push(`${usage.workflowTaskCount} workflow task${usage.workflowTaskCount === 1 ? "" : "s"}`);
   if (usage.submissionCount > 0)
@@ -515,7 +516,7 @@ function FormStatusBadge({
 
   const tip = usage.inUse
     ? reasons.join(" • ")
-    : "No legacy binding, no workflow references, no submissions yet.";
+    : "Not bound to any SOP, workflow, or legacy component, and no submissions yet.";
 
   return (
     <TooltipProvider>
