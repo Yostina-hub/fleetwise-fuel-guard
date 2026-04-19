@@ -487,3 +487,55 @@ function TemplateLibraryDialog() {
     </Dialog>
   );
 }
+
+// ---------- Functional status badge --------------------------------------
+
+function FormStatusBadge({
+  archived,
+  usage,
+  loading,
+}: {
+  archived: boolean;
+  usage?: import("@/lib/forms/useFormUsage").FormUsage;
+  loading: boolean;
+}) {
+  if (archived) {
+    return <Badge variant="outline" className="text-xs">Archived</Badge>;
+  }
+  if (loading || !usage) {
+    return <Badge variant="secondary" className="text-xs opacity-60">…</Badge>;
+  }
+
+  const reasons: string[] = [];
+  if (usage.legacyBound) reasons.push("Wired to legacy component");
+  if (usage.workflowTaskCount > 0)
+    reasons.push(`${usage.workflowTaskCount} workflow task${usage.workflowTaskCount === 1 ? "" : "s"}`);
+  if (usage.submissionCount > 0)
+    reasons.push(`${usage.submissionCount} submission${usage.submissionCount === 1 ? "" : "s"}`);
+
+  const tip = usage.inUse
+    ? reasons.join(" • ")
+    : "No legacy binding, no workflow references, no submissions yet.";
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Badge
+            variant={usage.inUse ? "default" : "outline"}
+            className={`text-xs cursor-help ${
+              usage.inUse
+                ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
+                : "text-muted-foreground border-dashed"
+            }`}
+          >
+            {usage.inUse ? "In use" : "Unused"}
+          </Badge>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs max-w-xs">
+          {tip}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
