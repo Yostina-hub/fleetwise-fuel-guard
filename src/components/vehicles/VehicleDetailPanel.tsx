@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { VehicleSafetySummaryCard } from "./VehicleSafetySummaryCard";
 
 interface VehicleDetailPanelProps {
   vehicle: {
@@ -324,6 +325,8 @@ export const VehicleDetailPanel = ({
           </div>
         )}
       </div>
+
+      <VehicleSafetySummaryCard vehicleId={vehicle.id} />
     </div>
   );
 };
