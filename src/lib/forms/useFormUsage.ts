@@ -18,16 +18,31 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getLegacyFormEntry } from "@/components/forms/legacyFormRegistry";
+import { WORKFLOW_CONFIGS } from "@/lib/workflow-engine/configs";
 
 export interface FormUsage {
-  /** True if any of the three sources count this form as in use. */
+  /** True if any of the four sources count this form as in use. */
   inUse: boolean;
   /** True if a hard-coded legacy component is bound to this form key. */
   legacyBound: boolean;
+  /** True if a workflow config (SOP) declares this as its intake form. */
+  workflowIntake: boolean;
   /** Number of workflow_tasks that reference this form key. */
   workflowTaskCount: number;
   /** Number of submissions in form_submissions for this form. */
   submissionCount: number;
+}
+
+/** Build a Set of form keys that are wired as `intakeFormKey` on any SOP. */
+function getWorkflowIntakeKeys(): Set<string> {
+  const keys = new Set<string>();
+  for (const cfg of Object.values(WORKFLOW_CONFIGS)) {
+    const raw = (cfg as any).intakeFormKey as string | undefined;
+    if (!raw) continue;
+    const k = raw.startsWith("user_form:") ? raw.slice("user_form:".length) : raw;
+    keys.add(k);
+  }
+  return keys;
 }
 
 export function useFormsUsage(
