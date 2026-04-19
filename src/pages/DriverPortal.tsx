@@ -354,6 +354,12 @@ const DriverPortal = () => {
           openFuel={openRequests?.fuel || 0}
         />
 
+        {/* Driver notification banner — license renewed, workflow stage updates, etc. */}
+        <DriverNotificationBanner
+          driverId={driverId}
+          onOpenRequests={() => setActiveTab("requests")}
+        />
+
         {/* Pending post-trip inspection — hybrid enforcement */}
         <PendingPostTripBanner
           driverId={driverId}
