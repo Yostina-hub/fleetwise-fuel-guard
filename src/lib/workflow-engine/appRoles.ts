@@ -71,6 +71,7 @@ export const AUTHORITY_SCOPES = [
   { value: "work_order",         label: "Work Order" },
   { value: "trip",               label: "Trip / Dispatch" },
   { value: "maintenance",        label: "Maintenance" },
+  { value: "maintenance_request", label: "Maintenance Request" },
   { value: "fleet_inspection",   label: "Fleet Inspection" },
   { value: "fleet_transfer",     label: "Vehicle Transfer" },
   { value: "vehicle_handover",   label: "Vehicle Handover" },
