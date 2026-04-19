@@ -168,6 +168,14 @@ const REGISTRY: LegacyFormRegistryEntry[] = [
     label: "Create Work Request (legacy)",
     Component: CreateWorkRequestFormLazy,
   },
+  {
+    // Canonical Maintenance Request intake — backed by the same Oracle EBS
+    // Work Request dialog so editing the form on /forms re-labels / re-orders
+    // the existing field set without forking the dialog.
+    key: "maintenance_request",
+    label: "Maintenance Request (legacy)",
+    Component: CreateWorkRequestFormLazy,
+  },
 ];
 
 const REGISTRY_MAP = new Map(REGISTRY.map((r) => [r.key, r]));
