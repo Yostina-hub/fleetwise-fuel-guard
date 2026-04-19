@@ -44,8 +44,16 @@ const driverSchema = z.object({
 });
 
 const generatePassword = () => {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
-  return Array.from({ length: 16 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const lower = "abcdefghijklmnopqrstuvwxyz";
+  const digits = "0123456789";
+  const specials = "!@#$%^&*";
+  const all = upper + lower + digits + specials;
+  // Guarantee at least one of each required class to satisfy the schema regex.
+  const pick = (set: string) => set[Math.floor(Math.random() * set.length)];
+  const required = [pick(upper), pick(lower), pick(digits), pick(specials)];
+  const rest = Array.from({ length: 12 }, () => pick(all));
+  return [...required, ...rest].sort(() => Math.random() - 0.5).join("");
 };
 
 interface CreateDriverDialogProps {
