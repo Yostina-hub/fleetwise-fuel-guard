@@ -100,8 +100,10 @@ export default function MyLicense() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { organizationId, loading: orgLoading, isSuperAdmin } = useOrganization();
+  const queryClient = useQueryClient();
   const [showRenewal, setShowRenewal] = useState(false);
   const [activeTab, setActiveTab] = useState("license");
+  const [uploadCategory, setUploadCategory] = useState<UploadDocCategory | null>(null);
 
   // Resolve the driver record for the current user.
   const { data: driver, isLoading: driverLoading } = useQuery({
