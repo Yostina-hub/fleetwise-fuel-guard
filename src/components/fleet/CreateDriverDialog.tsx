@@ -513,14 +513,40 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
 
           </div>
         </ScrollArea>
+      </>
+  );
 
-        <DialogFooter className="p-6 pt-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={createMutation.isPending} className="min-w-[120px]">
-            {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Register Driver
-          </Button>
-        </DialogFooter>
+  const footer = (
+    <div className={embedded ? "flex justify-end gap-2 pt-4 border-t" : ""}>
+      <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+      <Button onClick={handleSubmit} disabled={createMutation.isPending} className="min-w-[120px]">
+        {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+        Register Driver
+      </Button>
+    </div>
+  );
+
+  if (embedded) {
+    return (
+      <div className="space-y-4">
+        {body}
+        {footer}
+      </div>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-5xl w-[95vw] max-h-[95vh] p-0 gap-0">
+        <DialogHeader className="p-6 pb-4 border-b">
+          <DialogTitle className="text-2xl flex items-center gap-2">
+            <User className="w-6 h-6 text-primary" />
+            Register New Driver
+          </DialogTitle>
+          <DialogDescription>Enter driver details per the registration specification</DialogDescription>
+        </DialogHeader>
+        {body}
+        <DialogFooter className="p-6 pt-4 border-t">{footer}</DialogFooter>
       </DialogContent>
     </Dialog>
   );
