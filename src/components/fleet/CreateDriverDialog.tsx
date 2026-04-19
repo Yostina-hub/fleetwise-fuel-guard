@@ -161,9 +161,10 @@ export default function CreateDriverDialog({ open, onOpenChange, embedded, prefi
           : "Driver registered successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["drivers"] });
-      setFormData({ ...initialForm });
+      setFormData({ ...initialForm, ...(prefill ?? {}) });
       setLicenseFrontFile(null); setLicenseBackFile(null);
       setNationalIdFile(null); setProfilePhotoFile(null);
+      onSubmitted?.({ id: result.driverId });
       onOpenChange(false);
     },
     onError: (error: any) => {
