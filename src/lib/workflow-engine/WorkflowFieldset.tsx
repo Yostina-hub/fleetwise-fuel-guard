@@ -11,6 +11,13 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import type { StageField } from "./types";
+import {
+  SAFETY_COMFORT_GROUPS,
+  SAFETY_COMFORT_STANDARDS,
+  CONDITION_OPTIONS,
+  type ChecklistValue,
+  type SafetyComfortGroup,
+} from "./safetyComfortStandards";
 
 interface Props {
   fields: StageField[];
