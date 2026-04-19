@@ -24,6 +24,7 @@ import MaintenanceSectionTab from "@/components/maintenance-enterprise/Maintenan
 import SCDSourcingTab from "@/components/maintenance-enterprise/SCDSourcingTab";
 import SupplierWorkflowTasksTab from "@/components/maintenance-enterprise/SupplierWorkflowTasksTab";
 import InspectorWorkspaceTab from "@/components/maintenance-enterprise/InspectorWorkspaceTab";
+import SupplierAssignmentsTab from "@/components/maintenance-enterprise/SupplierAssignmentsTab";
 
 const MaintenanceEnterprise = () => {
   const { organizationId, loading: orgLoading } = useOrganization();
