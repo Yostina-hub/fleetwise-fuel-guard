@@ -259,315 +259,326 @@ const CreateWorkRequestDialog = ({ open, onOpenChange, onSuccess, embedded, onSu
     }
   };
 
+  const header = (
+    <DialogHeader>
+      <DialogTitle className="flex items-center gap-2">
+        <Wrench className="w-5 h-5 text-primary" />
+        Create Work Request
+      </DialogTitle>
+    </DialogHeader>
+  );
+
+  const formEl = (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {fieldErrors._form && (
+        <div className="rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          {fieldErrors._form}
+        </div>
+      )}
+
+      {/* Section 1: Asset & Request Info */}
+      <div className="space-y-1">
+        <h3 className="text-sm font-semibold text-foreground">Asset & Request Information</h3>
+        <Separator />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <Label>Asset Number *</Label>
+          <Select value={form.vehicle_id} onValueChange={v => setForm(f => ({ ...f, vehicle_id: v }))}>
+            <SelectTrigger><SelectValue placeholder="Select vehicle..." /></SelectTrigger>
+            <SelectContent>
+              {vehiclesLoading ? (
+                <SelectItem value="__loading" disabled>Loading...</SelectItem>
+              ) : vehicles.map(v => (
+                <SelectItem key={v.id} value={v.id}>{v.plate_number} - {v.make} {v.model}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {fieldErrors.vehicle_id && <p className="text-xs text-destructive mt-1">{fieldErrors.vehicle_id}</p>}
+        </div>
+
+        <div>
+          <Label>Work Request Type *</Label>
+          <Select value={form.request_type} onValueChange={v => setForm(f => ({ ...f, request_type: v }))}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {REQUEST_TYPES.map(t => (
+                <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label>Assigned Department</Label>
+          <Select value={form.assigned_department} onValueChange={v => setForm(f => ({ ...f, assigned_department: v }))}>
+            <SelectTrigger><SelectValue placeholder="Select department..." /></SelectTrigger>
+            <SelectContent>
+              {departments.map(d => (
+                <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+              ))}
+              <SelectItem value="fleet_operations">Fleet Operations</SelectItem>
+              <SelectItem value="maintenance">Maintenance</SelectItem>
+              <SelectItem value="transport">Transport</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label>Priority *</Label>
+          <Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v as any }))}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="low">Low</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+              <SelectItem value="urgent">Urgent</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label>Request Start Date & Time *</Label>
+          <Input
+            type="datetime-local"
+            value={form.request_start_date}
+            onChange={e => setForm(f => ({ ...f, request_start_date: e.target.value }))}
+          />
+          {fieldErrors.request_start_date && <p className="text-xs text-destructive mt-1">{fieldErrors.request_start_date}</p>}
+        </div>
+
+        <div>
+          <Label>Request Completion Date & Time *</Label>
+          <Input
+            type="datetime-local"
+            value={form.request_completion_date}
+            onChange={e => setForm(f => ({ ...f, request_completion_date: e.target.value }))}
+          />
+          {fieldErrors.request_completion_date && <p className="text-xs text-destructive mt-1">{fieldErrors.request_completion_date}</p>}
+        </div>
+
+        <div>
+          <Label>Requested For</Label>
+          <Input
+            value={form.requested_for}
+            onChange={e => setForm(f => ({ ...f, requested_for: e.target.value }))}
+            placeholder={currentUser?.full_name || "Enter name..."}
+          />
+        </div>
+
+        <div>
+          <Label>Asset Criticality</Label>
+          <Select value={form.asset_criticality} onValueChange={v => setForm(f => ({ ...f, asset_criticality: v }))}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="low">Low</SelectItem>
+              <SelectItem value="normal">Normal</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+              <SelectItem value="critical">Critical</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Section 2: Description */}
+      <div className="space-y-1">
+        <h3 className="text-sm font-semibold text-foreground">Request Description</h3>
+        <Separator />
+      </div>
+
+      <div>
+        <Label>Additional Description *</Label>
+        <Textarea
+          value={form.service_description}
+          onChange={e => setForm(f => ({ ...f, service_description: e.target.value }))}
+          placeholder="Describe the work needed..."
+          rows={3}
+        />
+        {fieldErrors.service_description && <p className="text-xs text-destructive mt-1">{fieldErrors.service_description}</p>}
+      </div>
+
+      {/* Section 3: Creation Information */}
+      <div className="space-y-1">
+        <h3 className="text-sm font-semibold text-foreground">Creation Information</h3>
+        <Separator />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <Label className="text-muted-foreground text-xs">Created By</Label>
+          <p className="text-sm font-medium mt-1">{currentUser?.full_name || "Loading..."}</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <Label className="text-muted-foreground text-xs">Notify User</Label>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              checked={form.notify_user}
+              onCheckedChange={v => setForm(f => ({ ...f, notify_user: !!v }))}
+            />
+            <span className="text-sm">{form.notify_user ? "Yes" : "No"}</span>
+          </div>
+        </div>
+        <div>
+          <Label className="text-muted-foreground text-xs">Phone Number</Label>
+          <p className="text-sm mt-1">{currentUser?.phone || "-"}</p>
+        </div>
+        <div>
+          <Label className="text-muted-foreground text-xs">E-mail</Label>
+          <p className="text-sm mt-1">{currentUser?.email || "-"}</p>
+        </div>
+        <div>
+          <Label>Contact Preference</Label>
+          <Select value={form.contact_preference} onValueChange={v => setForm(f => ({ ...f, contact_preference: v }))}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="email">Email</SelectItem>
+              <SelectItem value="phone">Phone</SelectItem>
+              <SelectItem value="sms">SMS</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Section 4: Descriptive Information */}
+      <div className="space-y-1">
+        <h3 className="text-sm font-semibold text-foreground">Descriptive Information</h3>
+        <Separator />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="md:col-span-2">
+          <Label className="text-muted-foreground text-xs">Context Value</Label>
+          <div className="mt-1">
+            <Badge variant="secondary" className="text-xs">
+              {REQUEST_TYPES.find(t => t.value === form.request_type)?.label || "Vehicle Maintenance Request"}
+            </Badge>
+          </div>
+        </div>
+
+        <div>
+          <Label>Requestor Department</Label>
+          <Select value={form.assigned_department} onValueChange={v => setForm(f => ({ ...f, assigned_department: v }))}>
+            <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+            <SelectContent>
+              {departments.map(d => (
+                <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+              ))}
+              <SelectItem value="fleet_operations">Fleet Operations</SelectItem>
+              <SelectItem value="maintenance">Maintenance</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label>Type of Maintenance Request</Label>
+          <Select value={form.maintenance_type} onValueChange={v => setForm(f => ({ ...f, maintenance_type: v }))}>
+            <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+            <SelectContent>
+              {MAINTENANCE_TYPES.map(t => (
+                <SelectItem key={t} value={t}>{t}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label>KM Reading</Label>
+          <Input
+            type="number"
+            value={form.km_reading}
+            onChange={e => setForm(f => ({ ...f, km_reading: e.target.value }))}
+            placeholder="Current odometer..."
+          />
+        </div>
+
+        <div>
+          <Label>Driver Type</Label>
+          <Select value={form.driver_type} onValueChange={v => setForm(f => ({ ...f, driver_type: v }))}>
+            <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+            <SelectContent>
+              {DRIVER_TYPES.map(t => (
+                <SelectItem key={t} value={t}>{t}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label>Driver Name</Label>
+          <Select value={form.driver_name} onValueChange={handleDriverSelect}>
+            <SelectTrigger><SelectValue placeholder="Select driver..." /></SelectTrigger>
+            <SelectContent>
+              {drivers.map(d => (
+                <SelectItem key={d.id} value={d.full_name}>{d.full_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label>Driver Phone No.</Label>
+          <Input
+            value={form.driver_phone}
+            onChange={e => setForm(f => ({ ...f, driver_phone: e.target.value }))}
+            placeholder="Auto-filled from driver..."
+            readOnly={!!drivers.find(d => d.full_name === form.driver_name)}
+          />
+        </div>
+
+        <div>
+          <Label>Fuel Level in Tank</Label>
+          <Input
+            type="number"
+            value={form.fuel_level}
+            onChange={e => setForm(f => ({ ...f, fuel_level: e.target.value }))}
+            placeholder="Liters or %..."
+          />
+        </div>
+
+        <div className="md:col-span-2">
+          <Label>Remark</Label>
+          <Textarea
+            value={form.remark}
+            onChange={e => setForm(f => ({ ...f, remark: e.target.value }))}
+            placeholder="Additional notes..."
+            rows={2}
+          />
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="flex justify-end gap-3 pt-4 border-t">
+        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={submitting} className="gap-2">
+          {submitting ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Submitting...
+            </>
+          ) : (
+            <>
+              <CheckCircle className="w-4 h-4" />
+              Submit Request
+            </>
+          )}
+        </Button>
+      </div>
+    </form>
+  );
+
+  if (embedded) {
+    return <div className="space-y-4">{formEl}</div>;
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Wrench className="w-5 h-5 text-primary" />
-            Create Work Request
-          </DialogTitle>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {fieldErrors._form && (
-            <div className="rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 shrink-0" />
-              {fieldErrors._form}
-            </div>
-          )}
-
-          {/* Section 1: Asset & Request Info */}
-          <div className="space-y-1">
-            <h3 className="text-sm font-semibold text-foreground">Asset & Request Information</h3>
-            <Separator />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label>Asset Number *</Label>
-              <Select value={form.vehicle_id} onValueChange={v => setForm(f => ({ ...f, vehicle_id: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select vehicle..." /></SelectTrigger>
-                <SelectContent>
-                  {vehiclesLoading ? (
-                    <SelectItem value="__loading" disabled>Loading...</SelectItem>
-                  ) : vehicles.map(v => (
-                    <SelectItem key={v.id} value={v.id}>{v.plate_number} - {v.make} {v.model}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {fieldErrors.vehicle_id && <p className="text-xs text-destructive mt-1">{fieldErrors.vehicle_id}</p>}
-            </div>
-
-            <div>
-              <Label>Work Request Type *</Label>
-              <Select value={form.request_type} onValueChange={v => setForm(f => ({ ...f, request_type: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {REQUEST_TYPES.map(t => (
-                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Assigned Department</Label>
-              <Select value={form.assigned_department} onValueChange={v => setForm(f => ({ ...f, assigned_department: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select department..." /></SelectTrigger>
-                <SelectContent>
-                  {departments.map(d => (
-                    <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
-                  ))}
-                  <SelectItem value="fleet_operations">Fleet Operations</SelectItem>
-                  <SelectItem value="maintenance">Maintenance</SelectItem>
-                  <SelectItem value="transport">Transport</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Priority *</Label>
-              <Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v as any }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="urgent">Urgent</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Request Start Date & Time *</Label>
-              <Input
-                type="datetime-local"
-                value={form.request_start_date}
-                onChange={e => setForm(f => ({ ...f, request_start_date: e.target.value }))}
-              />
-              {fieldErrors.request_start_date && <p className="text-xs text-destructive mt-1">{fieldErrors.request_start_date}</p>}
-            </div>
-
-            <div>
-              <Label>Request Completion Date & Time *</Label>
-              <Input
-                type="datetime-local"
-                value={form.request_completion_date}
-                onChange={e => setForm(f => ({ ...f, request_completion_date: e.target.value }))}
-              />
-              {fieldErrors.request_completion_date && <p className="text-xs text-destructive mt-1">{fieldErrors.request_completion_date}</p>}
-            </div>
-
-            <div>
-              <Label>Requested For</Label>
-              <Input
-                value={form.requested_for}
-                onChange={e => setForm(f => ({ ...f, requested_for: e.target.value }))}
-                placeholder={currentUser?.full_name || "Enter name..."}
-              />
-            </div>
-
-            <div>
-              <Label>Asset Criticality</Label>
-              <Select value={form.asset_criticality} onValueChange={v => setForm(f => ({ ...f, asset_criticality: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="normal">Normal</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="critical">Critical</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Section 2: Description */}
-          <div className="space-y-1">
-            <h3 className="text-sm font-semibold text-foreground">Request Description</h3>
-            <Separator />
-          </div>
-
-          <div>
-            <Label>Additional Description *</Label>
-            <Textarea
-              value={form.service_description}
-              onChange={e => setForm(f => ({ ...f, service_description: e.target.value }))}
-              placeholder="Describe the work needed..."
-              rows={3}
-            />
-            {fieldErrors.service_description && <p className="text-xs text-destructive mt-1">{fieldErrors.service_description}</p>}
-          </div>
-
-          {/* Section 3: Creation Information */}
-          <div className="space-y-1">
-            <h3 className="text-sm font-semibold text-foreground">Creation Information</h3>
-            <Separator />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label className="text-muted-foreground text-xs">Created By</Label>
-              <p className="text-sm font-medium mt-1">{currentUser?.full_name || "Loading..."}</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <Label className="text-muted-foreground text-xs">Notify User</Label>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  checked={form.notify_user}
-                  onCheckedChange={v => setForm(f => ({ ...f, notify_user: !!v }))}
-                />
-                <span className="text-sm">{form.notify_user ? "Yes" : "No"}</span>
-              </div>
-            </div>
-            <div>
-              <Label className="text-muted-foreground text-xs">Phone Number</Label>
-              <p className="text-sm mt-1">{currentUser?.phone || "-"}</p>
-            </div>
-            <div>
-              <Label className="text-muted-foreground text-xs">E-mail</Label>
-              <p className="text-sm mt-1">{currentUser?.email || "-"}</p>
-            </div>
-            <div>
-              <Label>Contact Preference</Label>
-              <Select value={form.contact_preference} onValueChange={v => setForm(f => ({ ...f, contact_preference: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="email">Email</SelectItem>
-                  <SelectItem value="phone">Phone</SelectItem>
-                  <SelectItem value="sms">SMS</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Section 4: Descriptive Information */}
-          <div className="space-y-1">
-            <h3 className="text-sm font-semibold text-foreground">Descriptive Information</h3>
-            <Separator />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <Label className="text-muted-foreground text-xs">Context Value</Label>
-              <div className="mt-1">
-                <Badge variant="secondary" className="text-xs">
-                  {REQUEST_TYPES.find(t => t.value === form.request_type)?.label || "Vehicle Maintenance Request"}
-                </Badge>
-              </div>
-            </div>
-
-            <div>
-              <Label>Requestor Department</Label>
-              <Select value={form.assigned_department} onValueChange={v => setForm(f => ({ ...f, assigned_department: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-                <SelectContent>
-                  {departments.map(d => (
-                    <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
-                  ))}
-                  <SelectItem value="fleet_operations">Fleet Operations</SelectItem>
-                  <SelectItem value="maintenance">Maintenance</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Type of Maintenance Request</Label>
-              <Select value={form.maintenance_type} onValueChange={v => setForm(f => ({ ...f, maintenance_type: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-                <SelectContent>
-                  {MAINTENANCE_TYPES.map(t => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>KM Reading</Label>
-              <Input
-                type="number"
-                value={form.km_reading}
-                onChange={e => setForm(f => ({ ...f, km_reading: e.target.value }))}
-                placeholder="Current odometer..."
-              />
-            </div>
-
-            <div>
-              <Label>Driver Type</Label>
-              <Select value={form.driver_type} onValueChange={v => setForm(f => ({ ...f, driver_type: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-                <SelectContent>
-                  {DRIVER_TYPES.map(t => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Driver Name</Label>
-              <Select value={form.driver_name} onValueChange={handleDriverSelect}>
-                <SelectTrigger><SelectValue placeholder="Select driver..." /></SelectTrigger>
-                <SelectContent>
-                  {drivers.map(d => (
-                    <SelectItem key={d.id} value={d.full_name}>{d.full_name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Driver Phone No.</Label>
-              <Input
-                value={form.driver_phone}
-                onChange={e => setForm(f => ({ ...f, driver_phone: e.target.value }))}
-                placeholder="Auto-filled from driver..."
-                readOnly={!!drivers.find(d => d.full_name === form.driver_name)}
-              />
-            </div>
-
-            <div>
-              <Label>Fuel Level in Tank</Label>
-              <Input
-                type="number"
-                value={form.fuel_level}
-                onChange={e => setForm(f => ({ ...f, fuel_level: e.target.value }))}
-                placeholder="Liters or %..."
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <Label>Remark</Label>
-              <Textarea
-                value={form.remark}
-                onChange={e => setForm(f => ({ ...f, remark: e.target.value }))}
-                placeholder="Additional notes..."
-                rows={2}
-              />
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={submitting} className="gap-2">
-              {submitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="w-4 h-4" />
-                  Submit Request
-                </>
-              )}
-            </Button>
-          </div>
-        </form>
+        {header}
+        {formEl}
       </DialogContent>
     </Dialog>
   );
