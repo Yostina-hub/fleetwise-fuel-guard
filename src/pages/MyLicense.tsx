@@ -597,13 +597,14 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function SummaryCard({
-  icon, title, primary, secondary, badge,
+  icon, title, primary, secondary, badge, action,
 }: {
   icon: React.ReactNode;
   title: string;
   primary: React.ReactNode;
   secondary: React.ReactNode;
   badge: React.ReactNode;
+  action?: React.ReactNode;
 }) {
   return (
     <Card>
@@ -617,23 +618,31 @@ function SummaryCard({
         </div>
         <p className="text-lg font-semibold truncate">{primary}</p>
         <p className="text-xs text-muted-foreground">{secondary}</p>
+        {action}
       </CardContent>
     </Card>
   );
 }
 
 function DocumentList({
-  docs, empty, icon, title,
+  docs, empty, icon, title, onUpload, uploadLabel,
 }: {
   docs: DriverDoc[];
   empty: string;
   icon: React.ReactNode;
   title: string;
+  onUpload?: () => void;
+  uploadLabel?: string;
 }) {
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
         <CardTitle className="text-base flex items-center gap-2">{icon} {title}</CardTitle>
+        {onUpload && (
+          <Button size="sm" variant="outline" className="gap-1" onClick={onUpload}>
+            <Upload className="w-3.5 h-3.5" /> {uploadLabel ?? "Upload"}
+          </Button>
+        )}
       </CardHeader>
       <CardContent className="space-y-2">
         {docs.length === 0 ? (
