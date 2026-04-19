@@ -452,20 +452,24 @@ export default function MyLicense() {
           {/* Work permit */}
           <TabsContent value="permit">
             <DocumentList
-              empty="No work permits on file. If you carry a permit (e.g. HAZMAT, work-zone, foreign driver permit), ask HR to upload it."
+              empty="No work permits on file. Upload your work permit (e.g. HAZMAT, work-zone, foreign driver permit) and Fleet Ops will verify it."
               docs={grouped.permit}
               icon={<Award className="w-4 h-4" />}
               title="Work permits & special endorsements"
+              onUpload={() => setUploadCategory("work_permit")}
+              uploadLabel="Upload work permit"
             />
           </TabsContent>
 
           {/* Medical */}
           <TabsContent value="medical">
             <DocumentList
-              empty="No medical certificate on file. Submit your latest certificate of fitness to HR so it can be linked to your record."
+              empty="No medical certificate on file. Upload your latest certificate of fitness — Fleet Ops will verify and link it to your record."
               docs={grouped.medical}
               icon={<Heart className="w-4 h-4" />}
               title="Medical certificates"
+              onUpload={() => setUploadCategory("medical_certificate")}
+              uploadLabel="Upload medical certificate"
             />
           </TabsContent>
 
