@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Wrench, Loader2, Ticket, FileSignature, DollarSign, 
   Users, ShoppingCart, ClipboardList, Building2, FileText,
-  MessageSquare, CreditCard, ClipboardCheck, ShieldCheck, PackageSearch
+  MessageSquare, CreditCard, ClipboardCheck, ShieldCheck, PackageSearch, Link2
 } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
 import { usePermissions } from "@/hooks/usePermissions";
