@@ -25714,6 +25714,7 @@ export type Database = {
       }
     }
     Functions: {
+      _approval_actor_name: { Args: { _uid: string }; Returns: string }
       _backfill_inspection_links: { Args: never; Returns: number }
       _vrq_derive_stage: {
         Args: { r: Database["public"]["Tables"]["vehicle_requests"]["Row"] }
