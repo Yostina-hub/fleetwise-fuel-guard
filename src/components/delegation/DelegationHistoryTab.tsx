@@ -50,10 +50,18 @@ const CONFIG_SOURCES = [
   "approval_levels",
 ];
 
-// Delegation routing actions — show these from ANY workflow source table
-// (e.g. fuel_request, vehicle_request) because they represent delegation
-// decisions made by the authority/delegation matrix at runtime.
-const DELEGATION_ACTIONS = ["route", "substitute", "skip"];
+// Delegation + approval actions — show these from ANY workflow source table
+// (e.g. fuel_request, vehicle_request, fuel_wo, fuel_emoney,
+// outsource_payment_request, work_order) because they represent decisions
+// made by approvers governed by the authority/delegation matrix.
+const DELEGATION_ACTIONS = [
+  "route",
+  "substitute",
+  "skip",
+  "approve",
+  "reject",
+  "escalate",
+];
 
 // Stages where the authority/delegation matrix governs the approver.
 // Any decision recorded against one of these stages should surface in the
