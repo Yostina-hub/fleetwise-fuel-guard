@@ -67,7 +67,7 @@ const APPROVAL_STAGE_PATTERNS = [
 
 // Decision id substrings that indicate an approval/rejection outcome,
 // regardless of workflow naming (authority_approve, ops_approve, approve, reject…).
-const APPROVAL_DECISION_TOKENS = ["approve", "reject"];
+const APPROVAL_DECISION_TOKENS = ["approve", "reject", "approved", "rejected"];
 
 export const DelegationHistoryTab = () => {
   const { organizationId } = useOrganization();
