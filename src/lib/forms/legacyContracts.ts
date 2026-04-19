@@ -110,6 +110,26 @@ export const LEGACY_FORM_CONTRACTS: Record<string, LegacyFieldContract> = {
     reason: "Bound to the driver-portal Safety & Comfort report flow.",
     lockedKeys: ["title", "vehicle_id", "severity", "category", "description"],
   },
+
+  // Driver Registration — bound to drivers table + create-user edge function
+  driver_registration: {
+    systemLabel: "Driver Registration (legacy)",
+    reason:
+      "Bound to the drivers table, document storage, and the create-user edge function. Locked fields are required to register a driver and provision portal access.",
+    lockedKeys: [
+      "first_name",
+      "middle_name",
+      "last_name",
+      "phone",
+      "driver_type",
+      "govt_id_type",
+      "license_number",
+      "department",
+      "emergency_contact_name",
+      "emergency_contact_phone",
+      "password",
+    ],
+  },
 };
 
 /** Returns the contract for a form key, or null if none. */
