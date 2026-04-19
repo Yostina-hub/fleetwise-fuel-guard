@@ -64,6 +64,7 @@ export interface FormsWysiwygCanvasProps {
   onSelect: (id: string | null) => void;
   onReplaceFields: (next: BaseField[]) => void;
   onDelete: (id: string) => void;
+  onDeleteNested?: (id: string) => void;
   onAddPaletteAtEnd: (type: FieldType) => void;
   onAddPaletteToContainer: (containerId: string, type: FieldType) => void;
   onPatchField: (id: string, patch: Partial<BaseField>) => void;
@@ -414,6 +415,7 @@ function SectionBandCard(p: BandCardProps) {
                   key={f.id}
                   field={f}
                   parentId={band.mode === "nested" ? band.sectionId : null}
+                  onDeleteNested={p.onDeleteNested}
                   columns={columns}
                   selectedId={p.selectedId}
                   onSelect={p.onSelect}
@@ -517,6 +519,7 @@ function AddFieldMenu({ onPick }: { onPick: (t: FieldType) => void }) {
 interface FieldCardProps {
   field: BaseField;
   parentId: string | null;
+  onDeleteNested?: (id: string) => void;
   columns: 1 | 2;
   selectedId: string | null;
   onSelect: (id: string) => void;
@@ -601,7 +604,11 @@ function WysiwygFieldCard(props: FieldCardProps) {
         </Button>
         <Button
           size="sm" variant="ghost" className="h-6 w-6 p-0 hover:text-destructive"
-          onClick={(e) => { e.stopPropagation(); props.onDelete(field.id); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (props.parentId && props.onDeleteNested) props.onDeleteNested(field.id);
+            else props.onDelete(field.id);
+          }}
           aria-label="Delete field"
           title="Delete"
         >

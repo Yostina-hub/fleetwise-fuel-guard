@@ -374,6 +374,7 @@ export default function FormsEditor() {
                   onSelect={setSelectedId}
                   onReplaceFields={replaceFields}
                   onDelete={deleteTopLevel}
+                  onDeleteNested={deleteChild}
                   onAddPaletteAtEnd={addAtEnd}
                   onAddPaletteToContainer={addToContainer}
                   onPatchField={updateField}
