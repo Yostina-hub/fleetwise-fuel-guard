@@ -306,6 +306,7 @@ const Layout = ({ children }: LayoutProps) => {
   const { t } = useTranslation();
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const currentDriverId = useCurrentDriverId();
   
   const allNavItems = useMemo(() => getNavItems(t), [t]);
   const allAdminItems = useMemo(() => getAdminItems(t), [t]);
