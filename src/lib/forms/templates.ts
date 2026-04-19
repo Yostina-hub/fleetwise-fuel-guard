@@ -1161,6 +1161,51 @@ const roadsideRequestTemplate: FormTemplate = {
 };
 
 // ---------------------------------------------------------------------------
+// 10) Driver Registration (HR — bound to legacy CreateDriverDialog)
+// ---------------------------------------------------------------------------
+const driverRegistrationTemplate: FormTemplate = {
+  key: "driver_registration",
+  name: "Driver Registration",
+  description:
+    "Register a new driver: identity, license, address, employment, banking, emergency contact, and portal credentials. Provisions a driver-portal login when an email + password are provided.",
+  category: "hr",
+  rationale:
+    "Centralized intake form for new driver registration. Backed by the legacy CreateDriverDialog (drivers table + create-user edge function) so all features are preserved (file uploads, password generator, portal provisioning).",
+  schema: {
+    version: 1,
+    fields: [
+      f({ key: "first_name",  type: "text", label: "First name",  required: true }),
+      f({ key: "middle_name", type: "text", label: "Middle name", required: true }),
+      f({ key: "last_name",   type: "text", label: "Last name",   required: true }),
+      f({ key: "phone",       type: "text", label: "Phone (09XXXXXXXX)", required: true }),
+      f({ key: "driver_type", type: "select", label: "Driver type", required: true,
+         options: [
+           { value: "ethio_contract", label: "Ethio telecom — Contract" },
+           { value: "ethio_outsource", label: "Ethio telecom — Outsource" },
+           { value: "third_party",    label: "Third party" },
+         ] }),
+      f({ key: "govt_id_type",    type: "select", label: "ID type", required: true,
+         options: [
+           { value: "drivers_license", label: "Driver's license" },
+           { value: "passport",        label: "Passport" },
+           { value: "kebele_id",       label: "Kebele ID" },
+         ] }),
+      f({ key: "license_number",  type: "text", label: "ID / license number", required: true }),
+      f({ key: "department",      type: "text", label: "Assigned location",   required: true }),
+      f({ key: "emergency_contact_name",  type: "text", label: "Emergency contact name",  required: true }),
+      f({ key: "emergency_contact_phone", type: "text", label: "Emergency contact phone", required: true }),
+      f({ key: "password",        type: "text", label: "Portal password (min 12 chars)", required: true }),
+    ],
+  },
+  settings: {
+    submitLabel: "Register driver",
+    cancelLabel: "Cancel",
+    successMessage: "Driver registered. Portal access is provisioned automatically when an email + password are supplied.",
+    twoColumnLayout: true,
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Public registry
 // ---------------------------------------------------------------------------
 
@@ -1174,6 +1219,7 @@ export const FORM_TEMPLATES: FormTemplate[] = [
   maintenanceRequestTemplate,
   licenseRenewalRequestTemplate,
   roadsideRequestTemplate,
+  driverRegistrationTemplate,
 ];
 
 export const getTemplate = (key: string): FormTemplate | undefined =>

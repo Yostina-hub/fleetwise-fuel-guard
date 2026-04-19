@@ -7,7 +7,7 @@
  */
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Pencil, Archive, ArchiveRestore, FileText, Search, Loader2, CheckCircle2, Inbox, ListChecks, LibraryBig, Sparkles, Star } from "lucide-react";
+import { Plus, Pencil, Archive, ArchiveRestore, FileText, Search, Loader2, CheckCircle2, Inbox, ListChecks, LibraryBig, Sparkles, Star, Send } from "lucide-react";
 import { toast } from "sonner";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,7 @@ export default function Forms() {
   const [includeArchived, setIncludeArchived] = useState(false);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"all" | "active" | "archived">("active");
+  const [launcher, setLauncher] = useState<{ id: string; key: string; name: string } | null>(null);
 
   const list = useFormsList(organizationId, includeArchived || tab !== "active");
   const archive = useArchiveForm();
@@ -180,6 +181,14 @@ export default function Forms() {
                                 <Star className={`h-3.5 w-3.5 ${f.is_default ? "fill-current text-primary" : ""}`} />
                               </Button>
                             ) : null}
+                            {!f.is_archived && f.current_published_version_id ? (
+                              <Button
+                                size="sm"
+                                onClick={() => setLauncher({ id: f.id, key: f.key, name: f.name })}
+                              >
+                                <Send className="h-3.5 w-3.5 mr-1" /> File new
+                              </Button>
+                            ) : null}
                             <Button size="sm" variant="ghost" onClick={() => navigate(`/forms/${f.id}/submissions`)}>
                               <ListChecks className="h-3.5 w-3.5 mr-1" /> Submissions
                             </Button>
@@ -224,6 +233,10 @@ export default function Forms() {
           </CardContent>
         </Card>
       </div>
+      <FileFormDialog
+        formMeta={launcher}
+        onClose={() => setLauncher(null)}
+      />
     </Layout>
   );
 }
@@ -539,4 +552,69 @@ function FormStatusBadge({
       </Tooltip>
     </TooltipProvider>
   );
+}
+
+// ---------- File-new launcher (renders any form by key) -------------------
+
+function FileFormDialog({
+  formMeta,
+  onClose,
+}: {
+  formMeta: { id: string; key: string; name: string } | null;
+  onClose: () => void;
+}) {
+  const open = !!formMeta;
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className="max-w-5xl w-[95vw] max-h-[95vh] overflow-hidden p-0">
+        <DialogHeader className="p-6 pb-3 border-b">
+          <DialogTitle className="flex items-center gap-2">
+            <Send className="h-4 w-4 text-primary" />
+            {formMeta?.name ?? "Form"}
+          </DialogTitle>
+          <DialogDescription className="font-mono text-xs">{formMeta?.key}</DialogDescription>
+        </DialogHeader>
+        <ScrollArea className="max-h-[calc(95vh-100px)]">
+          <div className="p-6">
+            {formMeta ? (
+              <FileFormBody formKey={formMeta.key} onDone={onClose} />
+            ) : null}
+          </div>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function FileFormBody({ formKey, onDone }: { formKey: string; onDone: () => void }) {
+  // Lazy import to avoid pulling FormRenderer into the initial Forms bundle.
+  const Lazy = useMemo(
+    () =>
+      import("@/components/forms/FormRenderer").then((m) => ({
+        default: () => (
+          <m.FormRenderer
+            formKey={formKey}
+            schema={{ version: 1, fields: [] }}
+            settings={undefined}
+            onCancel={onDone}
+            onSubmit={async () => {
+              toast.success("Submitted");
+              onDone();
+            }}
+          />
+        ),
+      })),
+    [formKey, onDone],
+  );
+  const [Comp, setComp] = useState<React.ComponentType | null>(null);
+  // resolve once
+  if (!Comp) {
+    void Lazy.then((m) => setComp(() => m.default));
+    return (
+      <div className="flex items-center justify-center py-10 text-muted-foreground">
+        <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading form…
+      </div>
+    );
+  }
+  return <Comp />;
 }

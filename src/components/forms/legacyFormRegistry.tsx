@@ -133,6 +133,25 @@ const TireRequestFormLazy = lazy(() =>
   }),
 );
 
+// Adapter: CreateDriverDialog (driver registration — bound to drivers table + create-user).
+const DriverRegistrationFormLazy = lazy(() =>
+  import("@/components/fleet/CreateDriverDialog").then((m) => {
+    const Inner = m.default;
+    const Adapted: React.ComponentType<LegacyEmbeddedFormProps> = (props) => (
+      <Inner
+        embedded
+        open
+        onOpenChange={props.onOpenChange}
+        prefill={props.prefill as any}
+        onSubmitted={(payload: any) => {
+          if (payload?.id) props.onSubmitted?.({ id: payload.id });
+        }}
+      />
+    );
+    return { default: Adapted };
+  }),
+);
+
 export interface LegacyFormRegistryEntry {
   /** The form `key` in the Forms module (organization-scoped). */
   key: string;
@@ -175,6 +194,11 @@ const REGISTRY: LegacyFormRegistryEntry[] = [
     key: "maintenance_request",
     label: "Maintenance Request (legacy)",
     Component: CreateWorkRequestFormLazy,
+  },
+  {
+    key: "driver_registration",
+    label: "Driver Registration (legacy)",
+    Component: DriverRegistrationFormLazy,
   },
 ];
 

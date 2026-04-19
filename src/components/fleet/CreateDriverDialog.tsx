@@ -51,6 +51,12 @@ const generatePassword = () => {
 interface CreateDriverDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** When true, render the form body inline (no outer Dialog wrapper). */
+  embedded?: boolean;
+  /** Optional initial values (e.g. when launched from a workflow task). */
+  prefill?: Record<string, any>;
+  /** Fired after the driver row is successfully inserted. */
+  onSubmitted?: (result: { id: string }) => void;
 }
 
 const initialForm = {
@@ -69,12 +75,12 @@ const initialForm = {
   employee_id: "", medical_certificate_expiry: "",
 };
 
-export default function CreateDriverDialog({ open, onOpenChange }: CreateDriverDialogProps) {
+export default function CreateDriverDialog({ open, onOpenChange, embedded, prefill, onSubmitted }: CreateDriverDialogProps) {
   const { organizationId } = useOrganization();
   const canSubmit = useSubmitThrottle();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [formData, setFormData] = useState({ ...initialForm });
+  const [formData, setFormData] = useState({ ...initialForm, ...(prefill ?? {}) });
   const [showPassword, setShowPassword] = useState(false);
 
   // File attachments
@@ -145,7 +151,7 @@ export default function CreateDriverDialog({ open, onOpenChange }: CreateDriverD
           });
         }
       }
-      return { portalProvisioned };
+      return { portalProvisioned, driverId };
     },
     onSuccess: (result) => {
       toast({
@@ -155,9 +161,10 @@ export default function CreateDriverDialog({ open, onOpenChange }: CreateDriverD
           : "Driver registered successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["drivers"] });
-      setFormData({ ...initialForm });
+      setFormData({ ...initialForm, ...(prefill ?? {}) });
       setLicenseFrontFile(null); setLicenseBackFile(null);
       setNationalIdFile(null); setProfilePhotoFile(null);
+      onSubmitted?.({ id: result.driverId });
       onOpenChange(false);
     },
     onError: (error: any) => {
@@ -217,19 +224,10 @@ export default function CreateDriverDialog({ open, onOpenChange }: CreateDriverD
   const idLabel = formData.govt_id_type === "passport" ? "Passport Number" :
     formData.govt_id_type === "kebele_id" ? "Kebele ID Number" : "License Number";
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl w-[95vw] max-h-[95vh] p-0 gap-0">
-        <DialogHeader className="p-6 pb-4 border-b">
-          <DialogTitle className="text-2xl flex items-center gap-2">
-            <User className="w-6 h-6 text-primary" />
-            Register New Driver
-          </DialogTitle>
-          <DialogDescription>Enter driver details per the registration specification</DialogDescription>
-        </DialogHeader>
-
-        <ScrollArea className="max-h-[calc(95vh-180px)]">
-          <div className="p-6 space-y-6">
+  const body = (
+    <>
+      <ScrollArea className={embedded ? "max-h-[70vh]" : "max-h-[calc(95vh-180px)]"}>
+        <div className={embedded ? "p-2 space-y-6" : "p-6 space-y-6"}>
 
             {/* 1.1 Employment Type */}
             <Section icon={<Briefcase className="w-5 h-5 text-primary" />} title="Employment Type">
@@ -515,14 +513,40 @@ export default function CreateDriverDialog({ open, onOpenChange }: CreateDriverD
 
           </div>
         </ScrollArea>
+      </>
+  );
 
-        <DialogFooter className="p-6 pt-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={createMutation.isPending} className="min-w-[120px]">
-            {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Register Driver
-          </Button>
-        </DialogFooter>
+  const footerButtons = (
+    <>
+      <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+      <Button onClick={handleSubmit} disabled={createMutation.isPending} className="min-w-[120px]">
+        {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+        Register Driver
+      </Button>
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <div className="space-y-4">
+        {body}
+        <div className="flex justify-end gap-2 pt-4 border-t">{footerButtons}</div>
+      </div>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-5xl w-[95vw] max-h-[95vh] p-0 gap-0">
+        <DialogHeader className="p-6 pb-4 border-b">
+          <DialogTitle className="text-2xl flex items-center gap-2">
+            <User className="w-6 h-6 text-primary" />
+            Register New Driver
+          </DialogTitle>
+          <DialogDescription>Enter driver details per the registration specification</DialogDescription>
+        </DialogHeader>
+        {body}
+        <DialogFooter className="p-6 pt-4 border-t">{footerButtons}</DialogFooter>
       </DialogContent>
     </Dialog>
   );
