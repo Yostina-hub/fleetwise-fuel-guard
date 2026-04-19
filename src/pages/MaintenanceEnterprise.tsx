@@ -133,6 +133,9 @@ const MaintenanceEnterprise = () => {
               <TabsTrigger value="suppliers" className="gap-1.5 text-xs md:text-sm">
                 <Users className="w-4 h-4" /> Suppliers
               </TabsTrigger>
+              <TabsTrigger value="supplier-assignments" className="gap-1.5 text-xs md:text-sm">
+                <Link2 className="w-4 h-4" /> Portal Access
+              </TabsTrigger>
               <TabsTrigger value="purchase-orders" className="gap-1.5 text-xs md:text-sm">
                 <ShoppingCart className="w-4 h-4" /> POs
               </TabsTrigger>
