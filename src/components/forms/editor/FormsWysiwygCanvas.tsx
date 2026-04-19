@@ -72,6 +72,8 @@ export interface FormsWysiwygCanvasProps {
   onInsertAt?: (index: number, type: FieldType) => void;
 }
 
+type BandMode = "headless" | "flat" | "nested";
+
 interface SectionBand {
   sectionId: string | null;
   section: BaseField | null;
@@ -79,31 +81,68 @@ interface SectionBand {
   sectionIndex: number | null;
   /** Index just after the last item belonging to this band. */
   endIndex: number;
+  mode: BandMode;
   items: BaseField[];
 }
 
 function buildBands(fields: BaseField[]): SectionBand[] {
   const bands: SectionBand[] = [];
-  let current: SectionBand = {
-    sectionId: null, section: null, sectionIndex: null, endIndex: 0, items: [],
+  let headlessItems: BaseField[] = [];
+
+  const flushHeadless = (endIndex: number) => {
+    if (!headlessItems.length) return;
+    bands.push({
+      sectionId: null,
+      section: null,
+      sectionIndex: null,
+      endIndex,
+      mode: "headless",
+      items: headlessItems,
+    });
+    headlessItems = [];
   };
-  fields.forEach((f, idx) => {
-    if (f.type === "section") {
-      if (current.section || current.items.length) {
-        current.endIndex = idx;
-        bands.push(current);
-      } else if (idx === 0) {
-        // Drop the empty leading headless band entirely.
-      }
-      current = {
-        sectionId: f.id, section: f, sectionIndex: idx, endIndex: idx + 1, items: [],
-      };
-    } else {
-      current.items.push(f);
+
+  for (let idx = 0; idx < fields.length; idx += 1) {
+    const f = fields[idx];
+    if (f.type !== "section") {
+      headlessItems.push(f);
+      continue;
     }
-  });
-  current.endIndex = fields.length;
-  bands.push(current);
+
+    flushHeadless(idx);
+
+    if ((f.fields ?? []).length > 0) {
+      bands.push({
+        sectionId: f.id,
+        section: f,
+        sectionIndex: idx,
+        endIndex: idx + 1,
+        mode: "nested",
+        items: f.fields ?? [],
+      });
+      continue;
+    }
+
+    const items: BaseField[] = [];
+    let endIndex = idx + 1;
+    for (let j = idx + 1; j < fields.length; j += 1) {
+      if (fields[j].type === "section") break;
+      items.push(fields[j]);
+      endIndex = j + 1;
+    }
+
+    bands.push({
+      sectionId: f.id,
+      section: f,
+      sectionIndex: idx,
+      endIndex,
+      mode: "flat",
+      items,
+    });
+    idx = endIndex - 1;
+  }
+
+  flushHeadless(fields.length);
   return bands;
 }
 
@@ -127,20 +166,26 @@ export function FormsWysiwygCanvas(props: FormsWysiwygCanvasProps) {
       const type = a.type as FieldType;
       if (o?.containerId) props.onAddPaletteToContainer(o.containerId, type);
       else if (o?.bandSectionId !== undefined && props.onInsertAt) {
-        // Drop into a specific band -> insert at that band's end.
         const band = bands.find((b) => b.sectionId === o.bandSectionId);
-        if (band) props.onInsertAt(band.endIndex, type);
+        if (band?.mode === "nested" && band.sectionId) props.onAddPaletteToContainer(band.sectionId, type);
+        else if (band) props.onInsertAt(band.endIndex, type);
         else props.onAddPaletteAtEnd(type);
       } else props.onAddPaletteAtEnd(type);
       return;
     }
 
     if (a?.kind === "field" && o?.kind === "field" && active.id !== over.id) {
-      moveField(props, String(active.id), String(over.id));
+      moveField(
+        props,
+        String(active.id),
+        String(over.id),
+        (a?.parentId as string | null | undefined) ?? null,
+        (o?.parentId as string | null | undefined) ?? null,
+      );
       return;
     }
     if (a?.kind === "field" && o?.bandSectionId !== undefined) {
-      moveFieldToBandEnd(props, String(active.id), o.bandSectionId);
+      moveFieldToBandEnd(props, String(active.id), o.bandSectionId ?? null, (o?.bandMode as BandMode | undefined) ?? "headless");
     }
   };
 
