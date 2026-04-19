@@ -114,6 +114,25 @@ const CreateWorkRequestFormLazy = lazy(() =>
   }),
 );
 
+// Adapter: TireRequestDialog (tire replacement / repair / rotation).
+const TireRequestFormLazy = lazy(() =>
+  import("@/components/tire-management/TireRequestDialog").then((m) => {
+    const Inner = m.TireRequestDialog;
+    const Adapted: React.ComponentType<LegacyEmbeddedFormProps> = (props) => (
+      <Inner
+        embedded
+        open
+        onOpenChange={props.onOpenChange}
+        prefill={props.prefill as any}
+        onSubmitted={(payload) => {
+          if (payload?.id) props.onSubmitted?.({ id: payload.id });
+        }}
+      />
+    );
+    return { default: Adapted };
+  }),
+);
+
 export interface LegacyFormRegistryEntry {
   /** The form `key` in the Forms module (organization-scoped). */
   key: string;

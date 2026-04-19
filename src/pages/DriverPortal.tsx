@@ -635,6 +635,11 @@ const DriverPortal = () => {
           onOpenChange={setShowVehicle}
           source="driver_portal"
         />
+        <TireRequestDialog
+          open={showTire}
+          onOpenChange={setShowTire}
+          prefill={{ vehicle_id: vehicle?.id, driver_id: driverId }}
+        />
         <VehicleInspectionFormDialog
           open={showInspection}
           onOpenChange={(v) => {
