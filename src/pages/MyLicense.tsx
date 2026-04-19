@@ -314,7 +314,9 @@ export default function MyLicense() {
             secondary={
               grouped.permit[0]?.expiry_date
                 ? `Expires ${format(new Date(grouped.permit[0].expiry_date!), "MMM dd, yyyy")}`
-                : "Upload via Compliance"
+                : grouped.permit[0]
+                  ? "No expiry recorded"
+                  : "Upload yours below"
             }
             badge={
               grouped.permit[0]
@@ -324,17 +326,33 @@ export default function MyLicense() {
                   })()
                 : <Badge className={TONE_BADGE.muted} variant="outline">Missing</Badge>
             }
+            action={
+              !grouped.permit[0] && (
+                <Button size="sm" variant="outline" className="gap-1 mt-1" onClick={() => setUploadCategory("work_permit")}>
+                  <Upload className="w-3.5 h-3.5" /> Upload work permit
+                </Button>
+              )
+            }
           />
           <SummaryCard
             icon={<Stethoscope className="w-5 h-5" />}
             title="Medical certificate"
-            primary={driver.medical_certificate_expiry ? "On file" : "Not on file"}
+            primary={driver.medical_certificate_expiry || grouped.medical[0] ? "On file" : "Not on file"}
             secondary={
               driver.medical_certificate_expiry
                 ? `Expires ${format(new Date(driver.medical_certificate_expiry), "MMM dd, yyyy")}`
-                : "Ask HR to upload"
+                : grouped.medical[0]?.expiry_date
+                  ? `Expires ${format(new Date(grouped.medical[0].expiry_date!), "MMM dd, yyyy")}`
+                  : "Upload yours below"
             }
             badge={<Badge className={TONE_BADGE[med.tone]} variant="outline">{med.label}</Badge>}
+            action={
+              !driver.medical_certificate_expiry && !grouped.medical[0] && (
+                <Button size="sm" variant="outline" className="gap-1 mt-1" onClick={() => setUploadCategory("medical_certificate")}>
+                  <Upload className="w-3.5 h-3.5" /> Upload medical
+                </Button>
+              )
+            }
           />
         </div>
 
