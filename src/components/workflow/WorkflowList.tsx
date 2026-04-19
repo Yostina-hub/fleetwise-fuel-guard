@@ -710,6 +710,12 @@ export const WorkflowList = ({ onCreateNew, onEdit }: WorkflowListProps) => {
                 </p>
 
                 <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+                  {isSopRow(workflow) && (
+                    <Badge variant="secondary" className="text-[10px] gap-0.5 border border-primary/40 bg-primary/10 text-primary">
+                      <FileText className="h-2.5 w-2.5" />
+                      {workflow.sop_code || "SOP"}
+                    </Badge>
+                  )}
                   <Badge className={cn(statusColors[workflow.status] || statusColors.draft, "text-[10px] capitalize")} variant="secondary">
                     {workflow.status}
                   </Badge>
