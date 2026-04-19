@@ -1165,13 +1165,14 @@ const roadsideRequestTemplate: FormTemplate = {
 // ---------------------------------------------------------------------------
 // Option lists mirrored from src/components/fleet/formConstants.ts so the
 // editor canvas shows the EXACT same dropdown values as the legacy form.
+// Driver Type — grouped (Ethio telecom / Other) per real CreateDriverDialog
 const DRIVER_TYPE_OPTIONS = [
-  { value: "ethio_contract",   label: "Ethio telecom — Contract" },
-  { value: "ethio_permanent",  label: "Ethio telecom — Permanent" },
-  { value: "ethio_outsource",  label: "Ethio telecom — Outsource" },
-  { value: "ethio_rental",     label: "Ethio telecom — Rental" },
-  { value: "3pl",              label: "3PL" },
-  { value: "individual",       label: "Individual" },
+  { value: "ethio_contract",   label: "Ethio telecom · Contract" },
+  { value: "ethio_permanent",  label: "Ethio telecom · Permanent" },
+  { value: "ethio_outsource",  label: "Ethio telecom · Outsource" },
+  { value: "ethio_rental",     label: "Ethio telecom · Rental" },
+  { value: "3pl",              label: "Other · 3PL" },
+  { value: "individual",       label: "Other · Individual" },
 ];
 const GENDER_OPTIONS = [
   { value: "male",   label: "Male" },
