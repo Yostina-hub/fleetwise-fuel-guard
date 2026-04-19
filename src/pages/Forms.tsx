@@ -27,6 +27,8 @@ import { useOrganization } from "@/hooks/useOrganization";
 import {
   useFormsList, useCreateForm, useArchiveForm, useUnarchiveForm, useCloneTemplate, useSetDefaultForm,
 } from "@/lib/forms/api";
+import { useFormsUsage } from "@/lib/forms/useFormUsage";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { keyFromLabel } from "@/lib/forms/fieldCatalog";
 import { FORM_TEMPLATES, type FormTemplate } from "@/lib/forms/templates";
 
@@ -41,6 +43,7 @@ export default function Forms() {
   const archive = useArchiveForm();
   const unarchive = useUnarchiveForm();
   const setDefault = useSetDefaultForm();
+  const usage = useFormsUsage(list.data, organizationId);
 
   // Helper: derive intent (e.g. `vehicle_request_copy_4` → `vehicle_request`)
   const intentOf = (key: string) => key.replace(/(_copy(_\d+)?|_v\d+)$/, "");
@@ -140,11 +143,11 @@ export default function Forms() {
                         <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{f.key}</td>
                         <td className="px-3 py-2 text-xs text-muted-foreground">{f.category || "—"}</td>
                         <td className="px-3 py-2">
-                          {!f.is_archived ? (
-                            <Badge variant="secondary" className="text-xs">Active</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">Archived</Badge>
-                          )}
+                          <FormStatusBadge
+                            archived={f.is_archived}
+                            usage={usage.data?.get(f.id)}
+                            loading={usage.isLoading}
+                          />
                         </td>
                         <td className="px-3 py-2 text-xs">
                           {f.current_published_version_id ? (
@@ -482,5 +485,57 @@ function TemplateLibraryDialog() {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ---------- Functional status badge --------------------------------------
+
+function FormStatusBadge({
+  archived,
+  usage,
+  loading,
+}: {
+  archived: boolean;
+  usage?: import("@/lib/forms/useFormUsage").FormUsage;
+  loading: boolean;
+}) {
+  if (archived) {
+    return <Badge variant="outline" className="text-xs">Archived</Badge>;
+  }
+  if (loading || !usage) {
+    return <Badge variant="secondary" className="text-xs opacity-60">…</Badge>;
+  }
+
+  const reasons: string[] = [];
+  if (usage.legacyBound) reasons.push("Wired to legacy component");
+  if (usage.workflowTaskCount > 0)
+    reasons.push(`${usage.workflowTaskCount} workflow task${usage.workflowTaskCount === 1 ? "" : "s"}`);
+  if (usage.submissionCount > 0)
+    reasons.push(`${usage.submissionCount} submission${usage.submissionCount === 1 ? "" : "s"}`);
+
+  const tip = usage.inUse
+    ? reasons.join(" • ")
+    : "No legacy binding, no workflow references, no submissions yet.";
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Badge
+            variant={usage.inUse ? "default" : "outline"}
+            className={`text-xs cursor-help ${
+              usage.inUse
+                ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
+                : "text-muted-foreground border-dashed"
+            }`}
+          >
+            {usage.inUse ? "In use" : "Unused"}
+          </Badge>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs max-w-xs">
+          {tip}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
