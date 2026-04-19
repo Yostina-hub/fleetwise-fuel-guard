@@ -25468,6 +25468,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           cron_expression: string | null
+          definition: Json | null
           description: string | null
           edges: Json
           event_filter: Json | null
@@ -25475,6 +25476,7 @@ export type Database = {
           execution_count: number
           id: string
           is_template: boolean | null
+          kind: string
           last_executed_at: string | null
           last_run_at: string | null
           name: string
@@ -25482,6 +25484,8 @@ export type Database = {
           nodes: Json
           organization_id: string
           run_count: number | null
+          sop_code: string | null
+          sop_type: string | null
           status: string
           trigger_config: Json | null
           trigger_type: string | null
@@ -25495,6 +25499,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           cron_expression?: string | null
+          definition?: Json | null
           description?: string | null
           edges?: Json
           event_filter?: Json | null
@@ -25502,6 +25507,7 @@ export type Database = {
           execution_count?: number
           id?: string
           is_template?: boolean | null
+          kind?: string
           last_executed_at?: string | null
           last_run_at?: string | null
           name: string
@@ -25509,6 +25515,8 @@ export type Database = {
           nodes?: Json
           organization_id: string
           run_count?: number | null
+          sop_code?: string | null
+          sop_type?: string | null
           status?: string
           trigger_config?: Json | null
           trigger_type?: string | null
@@ -25522,6 +25530,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           cron_expression?: string | null
+          definition?: Json | null
           description?: string | null
           edges?: Json
           event_filter?: Json | null
@@ -25529,6 +25538,7 @@ export type Database = {
           execution_count?: number
           id?: string
           is_template?: boolean | null
+          kind?: string
           last_executed_at?: string | null
           last_run_at?: string | null
           name?: string
@@ -25536,6 +25546,8 @@ export type Database = {
           nodes?: Json
           organization_id?: string
           run_count?: number | null
+          sop_code?: string | null
+          sop_type?: string | null
           status?: string
           trigger_config?: Json | null
           trigger_type?: string | null
