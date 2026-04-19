@@ -16,7 +16,7 @@
  */
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,13 +25,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   IdCard, ShieldCheck, FileText, Award, Heart, Clock, AlertTriangle,
   CheckCircle2, Loader2, ChevronLeft, Download, FileWarning, History,
-  Calendar, Stethoscope, BookOpen,
+  Calendar, Stethoscope, BookOpen, Upload,
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrganization } from "@/hooks/useOrganization";
 import RequestLicenseRenewalDialog from "@/components/driver-portal/RequestLicenseRenewalDialog";
+import UploadMyDocumentDialog, { type UploadDocCategory } from "@/components/driver-portal/UploadMyDocumentDialog";
 
 interface DriverDoc {
   id: string;
@@ -99,8 +100,10 @@ export default function MyLicense() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { organizationId, loading: orgLoading, isSuperAdmin } = useOrganization();
+  const queryClient = useQueryClient();
   const [showRenewal, setShowRenewal] = useState(false);
   const [activeTab, setActiveTab] = useState("license");
+  const [uploadCategory, setUploadCategory] = useState<UploadDocCategory | null>(null);
 
   // Resolve the driver record for the current user.
   const { data: driver, isLoading: driverLoading } = useQuery({
@@ -311,7 +314,9 @@ export default function MyLicense() {
             secondary={
               grouped.permit[0]?.expiry_date
                 ? `Expires ${format(new Date(grouped.permit[0].expiry_date!), "MMM dd, yyyy")}`
-                : "Upload via Compliance"
+                : grouped.permit[0]
+                  ? "No expiry recorded"
+                  : "Upload yours below"
             }
             badge={
               grouped.permit[0]
@@ -321,17 +326,33 @@ export default function MyLicense() {
                   })()
                 : <Badge className={TONE_BADGE.muted} variant="outline">Missing</Badge>
             }
+            action={
+              !grouped.permit[0] && (
+                <Button size="sm" variant="outline" className="gap-1 mt-1" onClick={() => setUploadCategory("work_permit")}>
+                  <Upload className="w-3.5 h-3.5" /> Upload work permit
+                </Button>
+              )
+            }
           />
           <SummaryCard
             icon={<Stethoscope className="w-5 h-5" />}
             title="Medical certificate"
-            primary={driver.medical_certificate_expiry ? "On file" : "Not on file"}
+            primary={driver.medical_certificate_expiry || grouped.medical[0] ? "On file" : "Not on file"}
             secondary={
               driver.medical_certificate_expiry
                 ? `Expires ${format(new Date(driver.medical_certificate_expiry), "MMM dd, yyyy")}`
-                : "Ask HR to upload"
+                : grouped.medical[0]?.expiry_date
+                  ? `Expires ${format(new Date(grouped.medical[0].expiry_date!), "MMM dd, yyyy")}`
+                  : "Upload yours below"
             }
             badge={<Badge className={TONE_BADGE[med.tone]} variant="outline">{med.label}</Badge>}
+            action={
+              !driver.medical_certificate_expiry && !grouped.medical[0] && (
+                <Button size="sm" variant="outline" className="gap-1 mt-1" onClick={() => setUploadCategory("medical_certificate")}>
+                  <Upload className="w-3.5 h-3.5" /> Upload medical
+                </Button>
+              )
+            }
           />
         </div>
 
@@ -431,30 +452,37 @@ export default function MyLicense() {
           {/* Work permit */}
           <TabsContent value="permit">
             <DocumentList
-              empty="No work permits on file. If you carry a permit (e.g. HAZMAT, work-zone, foreign driver permit), ask HR to upload it."
+              empty="No work permits on file. Upload your work permit (e.g. HAZMAT, work-zone, foreign driver permit) and Fleet Ops will verify it."
               docs={grouped.permit}
               icon={<Award className="w-4 h-4" />}
               title="Work permits & special endorsements"
+              onUpload={() => setUploadCategory("work_permit")}
+              uploadLabel="Upload work permit"
             />
           </TabsContent>
 
           {/* Medical */}
           <TabsContent value="medical">
             <DocumentList
-              empty="No medical certificate on file. Submit your latest certificate of fitness to HR so it can be linked to your record."
+              empty="No medical certificate on file. Upload your latest certificate of fitness — Fleet Ops will verify and link it to your record."
               docs={grouped.medical}
               icon={<Heart className="w-4 h-4" />}
               title="Medical certificates"
+              onUpload={() => setUploadCategory("medical_certificate")}
+              uploadLabel="Upload medical certificate"
             />
           </TabsContent>
 
           {/* Training */}
           <TabsContent value="training">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between gap-2">
                 <CardTitle className="text-base flex items-center gap-2">
                   <BookOpen className="w-4 h-4" /> Training certificates
                 </CardTitle>
+                <Button size="sm" variant="outline" className="gap-1" onClick={() => setUploadCategory("training_certificate")}>
+                  <Upload className="w-3.5 h-3.5" /> Upload certificate
+                </Button>
               </CardHeader>
               <CardContent className="space-y-3">
                 {(training ?? []).length === 0 && grouped.training.length === 0 ? (
@@ -557,6 +585,18 @@ export default function MyLicense() {
           onOpenChange={setShowRenewal}
           driver={driver}
         />
+
+        {uploadCategory && driverId && (
+          <UploadMyDocumentDialog
+            open={!!uploadCategory}
+            onOpenChange={(v) => { if (!v) setUploadCategory(null); }}
+            driverId={driverId}
+            category={uploadCategory}
+            onUploaded={() => {
+              queryClient.invalidateQueries({ queryKey: ["my-license-docs", organizationId, driverId] });
+            }}
+          />
+        )}
       </div>
     </Layout>
   );
@@ -572,13 +612,14 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function SummaryCard({
-  icon, title, primary, secondary, badge,
+  icon, title, primary, secondary, badge, action,
 }: {
   icon: React.ReactNode;
   title: string;
   primary: React.ReactNode;
   secondary: React.ReactNode;
   badge: React.ReactNode;
+  action?: React.ReactNode;
 }) {
   return (
     <Card>
@@ -592,23 +633,31 @@ function SummaryCard({
         </div>
         <p className="text-lg font-semibold truncate">{primary}</p>
         <p className="text-xs text-muted-foreground">{secondary}</p>
+        {action}
       </CardContent>
     </Card>
   );
 }
 
 function DocumentList({
-  docs, empty, icon, title,
+  docs, empty, icon, title, onUpload, uploadLabel,
 }: {
   docs: DriverDoc[];
   empty: string;
   icon: React.ReactNode;
   title: string;
+  onUpload?: () => void;
+  uploadLabel?: string;
 }) {
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
         <CardTitle className="text-base flex items-center gap-2">{icon} {title}</CardTitle>
+        {onUpload && (
+          <Button size="sm" variant="outline" className="gap-1" onClick={onUpload}>
+            <Upload className="w-3.5 h-3.5" /> {uploadLabel ?? "Upload"}
+          </Button>
+        )}
       </CardHeader>
       <CardContent className="space-y-2">
         {docs.length === 0 ? (
