@@ -1,12 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Wrench, Fuel, Car, Gauge, FileText, ClipboardCheck } from "lucide-react";
+import { Wrench, Fuel, Car, Gauge, FileText, ClipboardCheck, CircleDot } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DriverQuickActionsProps {
   onReportIssue: () => void;
   onRequestFuel: () => void;
   onRequestVehicle: () => void;
+  onRequestTire?: () => void;
   onPreTripInspection: () => void;
   onPostTripInspection?: () => void;
   onMyDocuments: () => void;
