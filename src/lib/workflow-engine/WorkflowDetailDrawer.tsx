@@ -38,6 +38,7 @@ export function WorkflowDetailDrawer({ config, instance, onOpenChange }: Props) 
   const { data: transitions = [] } = useWorkflowTransitions(instance?.id ?? null);
   const [activeAction, setActiveAction] = useState<StageAction | null>(null);
   const [actionNotes, setActionNotes] = useState("");
+  const [pendingConfirm, setPendingConfirm] = useState<string | null>(null);
 
   // Per-instance + per-action draft so users can step away mid-form and resume.
   const draftKey =
