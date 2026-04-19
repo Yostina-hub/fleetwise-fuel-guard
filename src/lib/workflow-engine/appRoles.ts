@@ -18,6 +18,8 @@ export type AppRole =
   | "technician"
   | "mechanic"
   | "driver"
+  | "transport_authority"
+  | "insurance_admin"
   | "viewer";
 
 export interface RoleMeta {
@@ -39,6 +41,8 @@ export const APP_ROLES: RoleMeta[] = [
   { value: "maintenance_lead",   label: "Maintenance Lead",    group: "Management",     description: "Workshop / maintenance manager" },
   { value: "fuel_controller",    label: "Fuel Controller",     group: "Management",     description: "Fuel approvals & monitoring" },
   { value: "auditor",            label: "Auditor",             group: "Management",     description: "Read + audit trails" },
+  { value: "transport_authority",label: "Transport Authority", group: "Management",     description: "Vehicle registration / Bolo authority" },
+  { value: "insurance_admin",    label: "Insurance Admin",     group: "Management",     description: "Insurance policies & renewals" },
 
   // Operations
   { value: "dispatcher",         label: "Dispatcher",          group: "Operations",     description: "Trip & vehicle dispatch" },
