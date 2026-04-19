@@ -35,6 +35,7 @@ const SUITES: { suite: string; rpc: string; cleanup?: string }[] = [
   { suite: "Vehicle Request",    rpc: "run_vehicle_request_e2e_test",    cleanup: "cleanup_vehicle_request_e2e_test" },
   { suite: "Maintenance",        rpc: "run_maintenance_workflow_e2e_test", cleanup: "cleanup_maintenance_workflow_e2e_test" },
   { suite: "Outsource + Tire",   rpc: "run_outsource_tire_e2e_test",     cleanup: "cleanup_outsource_tire_e2e_test" },
+  { suite: "License Renewal",    rpc: "run_license_renewal_e2e_test",    cleanup: "cleanup_license_renewal_e2e_test" },
 ];
 
 function normalize(rows: any[]): StepRow[] {
