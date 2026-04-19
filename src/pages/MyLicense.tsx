@@ -476,10 +476,13 @@ export default function MyLicense() {
           {/* Training */}
           <TabsContent value="training">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between gap-2">
                 <CardTitle className="text-base flex items-center gap-2">
                   <BookOpen className="w-4 h-4" /> Training certificates
                 </CardTitle>
+                <Button size="sm" variant="outline" className="gap-1" onClick={() => setUploadCategory("training_certificate")}>
+                  <Upload className="w-3.5 h-3.5" /> Upload certificate
+                </Button>
               </CardHeader>
               <CardContent className="space-y-3">
                 {(training ?? []).length === 0 && grouped.training.length === 0 ? (
