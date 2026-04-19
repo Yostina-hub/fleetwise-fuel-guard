@@ -27,6 +27,8 @@ import { useOrganization } from "@/hooks/useOrganization";
 import {
   useFormsList, useCreateForm, useArchiveForm, useUnarchiveForm, useCloneTemplate, useSetDefaultForm,
 } from "@/lib/forms/api";
+import { useFormsUsage } from "@/lib/forms/useFormUsage";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { keyFromLabel } from "@/lib/forms/fieldCatalog";
 import { FORM_TEMPLATES, type FormTemplate } from "@/lib/forms/templates";
 
