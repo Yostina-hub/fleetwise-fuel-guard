@@ -474,53 +474,162 @@ export const vehicleDispatchConfig: WorkflowConfig = {
 };
 
 // =============================================================
-// 8) FMG-DRV 08 — Driver Recruitment & Onboarding
+// 8) FMG-DRV 08 — Driver Recruitment & Onboarding (E2E)
+// Flow: Hire (centralized intake form) → Document Verify (HR) → Training → Activate (Ops Manager)
+// Intake is the centralized `driver_registration` form (Forms module),
+// so labels/sections/validations edited in /forms apply automatically.
+// The actual `drivers` row + auth user are created by the legacy
+// CreateDriverDialog logic at intake time; this workflow tracks the
+// post-creation onboarding lifecycle (HR verify → training → activate).
 // =============================================================
 export const driverOnboardingConfig: WorkflowConfig = {
   type: "driver_onboarding",
   sopCode: "FMG-DRV 08",
   title: "Driver Recruitment & Onboarding",
-  description: "Application → screening → docs → training → activation.",
+  description: "Hire → Document verify (HR) → Training → Activate (Ops Manager).",
   icon: UserPlus,
-  initialStage: "application",
-  intakeFields: [
-    { key: "title", label: "Candidate name", type: "text", required: true },
-    { key: "phone", label: "Phone", type: "text", required: true },
-    { key: "license_number", label: "License #", type: "text", required: true },
-    { key: "license_grade", label: "License grade", type: "text" },
-    { key: "experience_years", label: "Experience (years)", type: "number" },
-  ],
+  initialStage: "doc_verify",
+  // Use the centralized Driver Registration form built in /forms.
+  // The DynamicFormWrapper resolves the published version at runtime.
+  intakeFormKey: "user_form:driver_registration",
+  intakeFields: [],
+  intakeRoles: ["fleet_manager", "operations_manager", "fleet_owner", "super_admin"],
   lanes: [
-    { id: "hr", label: "HR", roles: ["fleet_manager"] },
+    { id: "hr", label: "HR / People Ops", roles: ["fleet_manager", "operations_manager"] },
+    { id: "training", label: "Training", roles: ["fleet_manager", "operations_manager"] },
     { ...fleetOpsLane },
-    { ...maintLane },
   ],
   stages: [
-    { id: "application", label: "1. Application received", lane: "hr",
-      actions: [{ id: "screen", label: "Screen documents", toStage: "screening",
-        allowedRoles: ["fleet_manager","operations_manager"] }] },
-    { id: "screening", label: "2. Document screening", lane: "hr",
+    // 1. Document verification — HR (or fleet_manager) reviews license/ID/medical
+    {
+      id: "doc_verify",
+      label: "1. Document verification (HR)",
+      lane: "hr",
+      description:
+        "HR verifies that all driver documents captured at intake (license, national ID, medical certificate, photo) are present, legible and unexpired.",
       actions: [
-        { id: "shortlist", label: "Shortlist", toStage: "interview", allowedRoles: ["fleet_manager"] },
-        { id: "reject", label: "Reject", toStage: "rejected",
-          allowedRoles: ["fleet_manager"], variant: "destructive" },
-      ] },
-    { id: "rejected", label: "Rejected", lane: "hr", terminal: true,
-      actions: [{ id: "close", label: "Close", toStage: "rejected", completes: true,
-        allowedRoles: ["fleet_manager"] }] },
-    { id: "interview", label: "3. Interview & road test", lane: "fleet_ops",
+        {
+          id: "docs_ok",
+          label: "Documents verified → Schedule training",
+          toStage: "training",
+          allowedRoles: ["fleet_manager", "operations_manager"],
+          fields: [
+            { key: "license_verified", label: "License verified", type: "checkbox", required: true },
+            { key: "id_verified", label: "National ID verified", type: "checkbox", required: true },
+            { key: "medical_verified", label: "Medical certificate verified", type: "checkbox" },
+            { key: "doc_verify_notes", label: "Verification notes", type: "textarea" },
+          ],
+        },
+        {
+          id: "docs_missing",
+          label: "Reject — documents incomplete",
+          toStage: "rejected",
+          variant: "destructive",
+          allowedRoles: ["fleet_manager", "operations_manager"],
+          fields: [
+            { key: "rejection_reason", label: "Rejection reason", type: "textarea", required: true },
+          ],
+        },
+      ],
+    },
+
+    // 2. Training — assign + run onboarding training course
+    {
+      id: "training",
+      label: "2. Onboarding training",
+      lane: "training",
+      description:
+        "Assign and run the onboarding training course (defensive driving / fleet rules / safety). Capture course completion + score.",
       actions: [
-        { id: "pass", label: "Pass — schedule training", toStage: "training",
-          allowedRoles: ["fleet_manager","operations_manager"] },
-        { id: "fail", label: "Fail", toStage: "rejected",
-          allowedRoles: ["fleet_manager"], variant: "destructive" },
-      ] },
-    { id: "training", label: "4. Onboarding training", lane: "fleet_ops",
-      actions: [{ id: "completed_training", label: "Training completed", toStage: "activate",
-        allowedRoles: ["fleet_manager"] }] },
-    { id: "activate", label: "5. Activate driver", lane: "hr", terminal: true,
-      actions: [{ id: "complete", label: "Activate & assign vehicle", toStage: "activate", completes: true,
-        allowedRoles: ["fleet_manager","operations_manager"] }] },
+        {
+          id: "training_complete",
+          label: "Training complete → Send to Ops for activation",
+          toStage: "activation",
+          allowedRoles: ["fleet_manager", "operations_manager"],
+          fields: [
+            { key: "training_course", label: "Course name", type: "text", required: true, placeholder: "Defensive driving — Onboarding 101" },
+            { key: "training_completed_at", label: "Completion date", type: "date", required: true },
+            { key: "training_score", label: "Exam score (%)", type: "number" },
+            { key: "training_notes", label: "Trainer notes", type: "textarea" },
+          ],
+        },
+        {
+          id: "training_failed",
+          label: "Failed — reject candidate",
+          toStage: "rejected",
+          variant: "destructive",
+          allowedRoles: ["fleet_manager", "operations_manager"],
+          fields: [
+            { key: "rejection_reason", label: "Rejection reason", type: "textarea", required: true },
+          ],
+        },
+      ],
+    },
+
+    // 3. Activation — Operations Manager final approval, driver becomes active
+    {
+      id: "activation",
+      label: "3. Activate driver (Operations Manager)",
+      lane: "fleet_ops",
+      description:
+        "Operations Manager performs the final review and activates the driver. After activation the driver is eligible for dispatch and vehicle assignment.",
+      actions: [
+        {
+          id: "activate",
+          label: "Activate driver",
+          toStage: "active",
+          allowedRoles: ["operations_manager", "fleet_manager"],
+          confirm: "Activate this driver? They will become eligible for dispatch and vehicle assignment.",
+          fields: [
+            { key: "employee_id", label: "Employee ID", type: "text" },
+            { key: "assigned_vehicle_id", label: "Assigned vehicle (optional)", type: "vehicle" },
+            { key: "activation_notes", label: "Activation notes", type: "textarea" },
+          ],
+        },
+        {
+          id: "send_back_training",
+          label: "Send back for additional training",
+          toStage: "training",
+          variant: "outline",
+          allowedRoles: ["operations_manager", "fleet_manager"],
+        },
+      ],
+    },
+
+    // 4. Active — terminal success
+    {
+      id: "active",
+      label: "4. Driver active",
+      lane: "fleet_ops",
+      terminal: true,
+      description: "Driver is active and available for dispatch.",
+      actions: [
+        {
+          id: "complete_active",
+          label: "Close onboarding case",
+          toStage: "active",
+          completes: true,
+          allowedRoles: ["operations_manager", "fleet_manager"],
+        },
+      ],
+    },
+
+    // Rejected — terminal failure (used by both doc_verify and training stages)
+    {
+      id: "rejected",
+      label: "Rejected — closed",
+      lane: "hr",
+      terminal: true,
+      actions: [
+        {
+          id: "close_rejected",
+          label: "Close",
+          toStage: "rejected",
+          completes: true,
+          allowedRoles: ["fleet_manager", "operations_manager"],
+        },
+      ],
+    },
   ],
 };
 
