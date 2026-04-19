@@ -9,6 +9,7 @@ import {
   SAFETY_COMFORT_GROUPS,
   SAFETY_COMFORT_STANDARDS,
   CONDITION_OPTIONS,
+  computeExpiry,
   type ChecklistValue,
   type SafetyComfortGroup,
 } from "@/lib/workflow-engine/safetyComfortStandards";
@@ -27,7 +28,7 @@ export function SafetyComfortChecklistField({ value, onChange }: Props) {
   const setGroup = (g: SafetyComfortGroup) => onChange({ group: g, items: {} });
   const setEntry = (
     k: string,
-    patch: Partial<{ present: boolean; condition: string; notes: string }>,
+    patch: Partial<{ present: boolean; condition: string; notes: string; installed_at: string }>,
   ) => {
     const next = { ...items, [k]: { ...(items[k] || { present: false }), ...patch } };
     onChange({ group, items: next });
@@ -37,13 +38,16 @@ export function SafetyComfortChecklistField({ value, onChange }: Props) {
     (acc, s) => {
       s.items.forEach((it) => {
         acc.total += 1;
-        const e = items[`${s.id}::${it}`];
+        const e = items[`${s.id}::${it.name}`];
         if (e?.present) acc.present += 1;
         if (e?.condition === "missing" || (e && !e.present)) acc.missing += 1;
+        const exp = computeExpiry(e?.installed_at, it.usabilityMonths);
+        if (exp?.expired) acc.expired += 1;
+        else if (exp?.dueSoon) acc.dueSoon += 1;
       });
       return acc;
     },
-    { total: 0, present: 0, missing: 0 },
+    { total: 0, present: 0, missing: 0, expired: 0, dueSoon: 0 },
   );
 
   return (
@@ -63,9 +67,11 @@ export function SafetyComfortChecklistField({ value, onChange }: Props) {
           </Select>
         </div>
         {group && (
-          <div className="text-xs text-muted-foreground">
-            <span className="font-semibold text-foreground">{totals.present}</span> present ·{" "}
-            <span className="font-semibold text-destructive">{totals.missing}</span> missing/absent ·{" "}
+          <div className="text-xs text-muted-foreground space-x-2">
+            <span><span className="font-semibold text-foreground">{totals.present}</span> present</span>·
+            <span><span className="font-semibold text-destructive">{totals.missing}</span> missing</span>·
+            <span><span className="font-semibold text-destructive">{totals.expired}</span> expired</span>·
+            <span><span className="font-semibold text-warning">{totals.dueSoon}</span> due soon</span>·
             <span>{totals.total} total</span>
           </div>
         )}
@@ -83,37 +89,62 @@ export function SafetyComfortChecklistField({ value, onChange }: Props) {
             </div>
             <div className="divide-y divide-input">
               {section.items.map((item) => {
-                const k = `${section.id}::${item}`;
+                const k = `${section.id}::${item.name}`;
                 const e = items[k] || { present: false };
+                const exp = computeExpiry(e.installed_at, item.usabilityMonths);
+                const expiryClass = exp?.expired
+                  ? "text-destructive font-semibold"
+                  : exp?.dueSoon
+                  ? "text-warning font-semibold"
+                  : "text-muted-foreground";
                 return (
-                  <div
-                    key={k}
-                    className="grid grid-cols-1 md:grid-cols-[24px_1fr_140px_1fr] gap-2 items-center px-3 py-2"
-                  >
-                    <Checkbox
-                      checked={!!e.present}
-                      onCheckedChange={(c) => setEntry(k, { present: !!c })}
-                    />
-                    <span className="text-xs">{item}</span>
-                    <Select
-                      value={e.condition || ""}
-                      onValueChange={(val) => setEntry(k, { condition: val })}
-                    >
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue placeholder="Condition" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {CONDITION_OPTIONS.map((o) => (
-                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      className="h-8 text-xs"
-                      placeholder="Notes (optional)"
-                      value={e.notes || ""}
-                      onChange={(ev) => setEntry(k, { notes: ev.target.value })}
-                    />
+                  <div key={k} className="px-3 py-2 space-y-1">
+                    <div className="grid grid-cols-1 md:grid-cols-[24px_1fr_140px_140px_1fr] gap-2 items-center">
+                      <Checkbox
+                        checked={!!e.present}
+                        onCheckedChange={(c) => setEntry(k, { present: !!c })}
+                      />
+                      <span className="text-xs">{item.name}</span>
+                      <Select
+                        value={e.condition || ""}
+                        onValueChange={(val) => setEntry(k, { condition: val })}
+                      >
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="Condition" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CONDITION_OPTIONS.map((o) => (
+                            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        type="date"
+                        className="h-8 text-xs"
+                        value={e.installed_at || ""}
+                        onChange={(ev) => setEntry(k, { installed_at: ev.target.value })}
+                        title="Install / last replaced date"
+                      />
+                      <Input
+                        className="h-8 text-xs"
+                        placeholder="Notes (optional)"
+                        value={e.notes || ""}
+                        onChange={(ev) => setEntry(k, { notes: ev.target.value })}
+                      />
+                    </div>
+                    <div className="text-[10px] flex flex-wrap gap-x-3 gap-y-0.5 pl-7">
+                      <span className="text-muted-foreground">
+                        Recommended: <span className="text-foreground">{item.usabilityLabel}</span>
+                      </span>
+                      <span className="text-muted-foreground italic">{item.remark}</span>
+                      {exp && (
+                        <span className={expiryClass}>
+                          {exp.expired
+                            ? `Expired ${Math.abs(exp.daysLeft)}d ago (exp ${exp.expiresOn.toISOString().slice(0, 10)})`
+                            : `Expires in ${exp.daysLeft}d (${exp.expiresOn.toISOString().slice(0, 10)})`}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 );
               })}
