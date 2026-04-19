@@ -750,46 +750,109 @@ function FieldInputPreview({ field }: { field: BaseField }) {
 
 // ─────────────────────────────────────────────────────── helpers
 
-function moveField(props: FormsWysiwygCanvasProps, fromId: string, toId: string) {
-  const arr = [...props.schema.fields];
-  const from = arr.findIndex((f) => f.id === fromId);
-  if (from < 0) return;
-  const [item] = arr.splice(from, 1);
-  const to = arr.findIndex((f) => f.id === toId);
-  if (to < 0) { arr.push(item); }
-  else arr.splice(to, 0, item);
-  props.onReplaceFields(arr);
+function moveField(
+  props: FormsWysiwygCanvasProps,
+  fromId: string,
+  toId: string,
+  fromParentId: string | null,
+  toParentId: string | null,
+) {
+  const detached = detachField(props.schema.fields, fromId, fromParentId);
+  if (!detached.item) return;
+
+  if (toParentId) {
+    const next = detached.fields.map((f) => {
+      if (f.id !== toParentId) return f;
+      const children = [...(f.fields ?? [])];
+      const toIndex = children.findIndex((c) => c.id === toId);
+      if (toIndex < 0) children.push(detached.item!);
+      else children.splice(toIndex, 0, detached.item!);
+      return { ...f, fields: children };
+    });
+    props.onReplaceFields(next);
+    return;
+  }
+
+  const next = [...detached.fields];
+  const toIndex = next.findIndex((f) => f.id === toId);
+  if (toIndex < 0) next.push(detached.item);
+  else next.splice(toIndex, 0, detached.item);
+  props.onReplaceFields(next);
 }
 
 function moveFieldToBandEnd(
   props: FormsWysiwygCanvasProps,
   fieldId: string,
   bandSectionId: string | null,
+  bandMode: BandMode,
 ) {
-  const arr = [...props.schema.fields];
-  const from = arr.findIndex((f) => f.id === fieldId);
-  if (from < 0) return;
-  const [item] = arr.splice(from, 1);
+  const detached = detachField(props.schema.fields, fieldId, null);
+  if (!detached.item) return;
 
+  if (bandMode === "nested" && bandSectionId) {
+    props.onReplaceFields(detached.fields.map((f) =>
+      f.id === bandSectionId ? { ...f, fields: [...(f.fields ?? []), detached.item!] } : f,
+    ));
+    return;
+  }
+
+  const arr = [...detached.fields];
   if (bandSectionId === null) {
     let insertAt = 0;
     for (let i = 0; i < arr.length; i++) {
       if (arr[i].type === "section") { insertAt = i; break; }
       insertAt = i + 1;
     }
-    arr.splice(insertAt, 0, item);
+    arr.splice(insertAt, 0, detached.item);
   } else {
     const sIdx = arr.findIndex((f) => f.id === bandSectionId);
-    if (sIdx < 0) arr.push(item);
+    if (sIdx < 0) arr.push(detached.item);
     else {
       let insertAt = arr.length;
       for (let i = sIdx + 1; i < arr.length; i++) {
         if (arr[i].type === "section") { insertAt = i; break; }
       }
-      arr.splice(insertAt, 0, item);
+      arr.splice(insertAt, 0, detached.item);
     }
   }
   props.onReplaceFields(arr);
+}
+
+function detachField(fields: BaseField[], fieldId: string, hintedParentId: string | null) {
+  let item: BaseField | null = null;
+
+  if (hintedParentId) {
+    const next = fields.map((f) => {
+      if (f.id !== hintedParentId) return f;
+      const children = [...(f.fields ?? [])];
+      const idx = children.findIndex((c) => c.id === fieldId);
+      if (idx < 0) return f;
+      item = children[idx];
+      children.splice(idx, 1);
+      return { ...f, fields: children };
+    });
+    if (item) return { fields: next, item };
+  }
+
+  const topIdx = fields.findIndex((f) => f.id === fieldId);
+  if (topIdx >= 0) {
+    const next = [...fields];
+    item = next[topIdx];
+    next.splice(topIdx, 1);
+    return { fields: next, item };
+  }
+
+  const next = fields.map((f) => {
+    if (!f.fields?.length) return f;
+    const children = [...f.fields];
+    const idx = children.findIndex((c) => c.id === fieldId);
+    if (idx < 0) return f;
+    item = children[idx];
+    children.splice(idx, 1);
+    return { ...f, fields: children };
+  });
+
+  return { fields: next, item };
 }
 
 function moveSection(p: BandCardProps, dir: "up" | "down") {
