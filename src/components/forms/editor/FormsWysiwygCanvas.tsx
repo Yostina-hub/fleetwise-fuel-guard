@@ -64,6 +64,7 @@ export interface FormsWysiwygCanvasProps {
   onSelect: (id: string | null) => void;
   onReplaceFields: (next: BaseField[]) => void;
   onDelete: (id: string) => void;
+  onDeleteNested?: (id: string) => void;
   onAddPaletteAtEnd: (type: FieldType) => void;
   onAddPaletteToContainer: (containerId: string, type: FieldType) => void;
   onPatchField: (id: string, patch: Partial<BaseField>) => void;
@@ -72,6 +73,8 @@ export interface FormsWysiwygCanvasProps {
   onInsertAt?: (index: number, type: FieldType) => void;
 }
 
+type BandMode = "headless" | "flat" | "nested";
+
 interface SectionBand {
   sectionId: string | null;
   section: BaseField | null;
@@ -79,31 +82,68 @@ interface SectionBand {
   sectionIndex: number | null;
   /** Index just after the last item belonging to this band. */
   endIndex: number;
+  mode: BandMode;
   items: BaseField[];
 }
 
 function buildBands(fields: BaseField[]): SectionBand[] {
   const bands: SectionBand[] = [];
-  let current: SectionBand = {
-    sectionId: null, section: null, sectionIndex: null, endIndex: 0, items: [],
+  let headlessItems: BaseField[] = [];
+
+  const flushHeadless = (endIndex: number) => {
+    if (!headlessItems.length) return;
+    bands.push({
+      sectionId: null,
+      section: null,
+      sectionIndex: null,
+      endIndex,
+      mode: "headless",
+      items: headlessItems,
+    });
+    headlessItems = [];
   };
-  fields.forEach((f, idx) => {
-    if (f.type === "section") {
-      if (current.section || current.items.length) {
-        current.endIndex = idx;
-        bands.push(current);
-      } else if (idx === 0) {
-        // Drop the empty leading headless band entirely.
-      }
-      current = {
-        sectionId: f.id, section: f, sectionIndex: idx, endIndex: idx + 1, items: [],
-      };
-    } else {
-      current.items.push(f);
+
+  for (let idx = 0; idx < fields.length; idx += 1) {
+    const f = fields[idx];
+    if (f.type !== "section") {
+      headlessItems.push(f);
+      continue;
     }
-  });
-  current.endIndex = fields.length;
-  bands.push(current);
+
+    flushHeadless(idx);
+
+    if ((f.fields ?? []).length > 0) {
+      bands.push({
+        sectionId: f.id,
+        section: f,
+        sectionIndex: idx,
+        endIndex: idx + 1,
+        mode: "nested",
+        items: f.fields ?? [],
+      });
+      continue;
+    }
+
+    const items: BaseField[] = [];
+    let endIndex = idx + 1;
+    for (let j = idx + 1; j < fields.length; j += 1) {
+      if (fields[j].type === "section") break;
+      items.push(fields[j]);
+      endIndex = j + 1;
+    }
+
+    bands.push({
+      sectionId: f.id,
+      section: f,
+      sectionIndex: idx,
+      endIndex,
+      mode: "flat",
+      items,
+    });
+    idx = endIndex - 1;
+  }
+
+  flushHeadless(fields.length);
   return bands;
 }
 
@@ -127,20 +167,26 @@ export function FormsWysiwygCanvas(props: FormsWysiwygCanvasProps) {
       const type = a.type as FieldType;
       if (o?.containerId) props.onAddPaletteToContainer(o.containerId, type);
       else if (o?.bandSectionId !== undefined && props.onInsertAt) {
-        // Drop into a specific band -> insert at that band's end.
         const band = bands.find((b) => b.sectionId === o.bandSectionId);
-        if (band) props.onInsertAt(band.endIndex, type);
+        if (band?.mode === "nested" && band.sectionId) props.onAddPaletteToContainer(band.sectionId, type);
+        else if (band) props.onInsertAt(band.endIndex, type);
         else props.onAddPaletteAtEnd(type);
       } else props.onAddPaletteAtEnd(type);
       return;
     }
 
     if (a?.kind === "field" && o?.kind === "field" && active.id !== over.id) {
-      moveField(props, String(active.id), String(over.id));
+      moveField(
+        props,
+        String(active.id),
+        String(over.id),
+        (a?.parentId as string | null | undefined) ?? null,
+        (o?.parentId as string | null | undefined) ?? null,
+      );
       return;
     }
     if (a?.kind === "field" && o?.bandSectionId !== undefined) {
-      moveFieldToBandEnd(props, String(active.id), o.bandSectionId);
+      moveFieldToBandEnd(props, String(active.id), o.bandSectionId ?? null, (o?.bandMode as BandMode | undefined) ?? "headless");
     }
   };
 
@@ -361,13 +407,15 @@ function SectionBandCard(p: BandCardProps) {
 
       {/* ── Section body */}
       {!collapsed ? (
-        <BandDropZone bandSectionId={band.sectionId} hasItems={band.items.length > 0} columns={columns}>
+        <BandDropZone bandSectionId={band.sectionId} bandMode={band.mode} hasItems={band.items.length > 0} columns={columns}>
           <SortableContext items={band.items.map((f) => f.id)} strategy={verticalListSortingStrategy}>
             <div className={cn("grid gap-3 px-4 py-3", columns === 2 && "md:grid-cols-2")}>
               {band.items.map((f) => (
                 <WysiwygFieldCard
                   key={f.id}
                   field={f}
+                  parentId={band.mode === "nested" ? band.sectionId : null}
+                  onDeleteNested={p.onDeleteNested}
                   columns={columns}
                   selectedId={p.selectedId}
                   onSelect={p.onSelect}
@@ -383,7 +431,8 @@ function SectionBandCard(p: BandCardProps) {
           <div className="px-4 pb-3" onClick={(e) => e.stopPropagation()}>
             <AddFieldMenu
               onPick={(t) => {
-                if (p.onInsertAt) p.onInsertAt(band.endIndex, t);
+                if (band.mode === "nested" && band.sectionId) p.onAddPaletteToContainer(band.sectionId, t);
+                else if (p.onInsertAt) p.onInsertAt(band.endIndex, t);
                 else if (band.sectionId) p.onAddPaletteToContainer(band.sectionId, t);
                 else p.onAddPaletteAtEnd(t);
               }}
@@ -396,16 +445,17 @@ function SectionBandCard(p: BandCardProps) {
 }
 
 function BandDropZone({
-  bandSectionId, hasItems, columns, children,
+  bandSectionId, bandMode, hasItems, columns, children,
 }: {
   bandSectionId: string | null;
+  bandMode: BandMode;
   hasItems: boolean;
   columns: 1 | 2;
   children: React.ReactNode;
 }) {
   const { isOver, setNodeRef } = useDroppable({
     id: `band:${bandSectionId ?? "__head__"}`,
-    data: { bandSectionId },
+    data: { bandSectionId, bandMode },
   });
   return (
     <div ref={setNodeRef} className={cn("transition-colors", isOver && "bg-primary/5")}>
@@ -468,6 +518,8 @@ function AddFieldMenu({ onPick }: { onPick: (t: FieldType) => void }) {
 
 interface FieldCardProps {
   field: BaseField;
+  parentId: string | null;
+  onDeleteNested?: (id: string) => void;
   columns: 1 | 2;
   selectedId: string | null;
   onSelect: (id: string) => void;
@@ -478,7 +530,7 @@ interface FieldCardProps {
 
 function WysiwygFieldCard(props: FieldCardProps) {
   const { field, columns } = props;
-  const sortable = useSortable({ id: field.id, data: { kind: "field" } });
+  const sortable = useSortable({ id: field.id, data: { kind: "field", parentId: props.parentId } });
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(sortable.transform),
     transition: sortable.transition,
@@ -552,7 +604,11 @@ function WysiwygFieldCard(props: FieldCardProps) {
         </Button>
         <Button
           size="sm" variant="ghost" className="h-6 w-6 p-0 hover:text-destructive"
-          onClick={(e) => { e.stopPropagation(); props.onDelete(field.id); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (props.parentId && props.onDeleteNested) props.onDeleteNested(field.id);
+            else props.onDelete(field.id);
+          }}
           aria-label="Delete field"
           title="Delete"
         >
@@ -694,46 +750,109 @@ function FieldInputPreview({ field }: { field: BaseField }) {
 
 // ─────────────────────────────────────────────────────── helpers
 
-function moveField(props: FormsWysiwygCanvasProps, fromId: string, toId: string) {
-  const arr = [...props.schema.fields];
-  const from = arr.findIndex((f) => f.id === fromId);
-  if (from < 0) return;
-  const [item] = arr.splice(from, 1);
-  const to = arr.findIndex((f) => f.id === toId);
-  if (to < 0) { arr.push(item); }
-  else arr.splice(to, 0, item);
-  props.onReplaceFields(arr);
+function moveField(
+  props: FormsWysiwygCanvasProps,
+  fromId: string,
+  toId: string,
+  fromParentId: string | null,
+  toParentId: string | null,
+) {
+  const detached = detachField(props.schema.fields, fromId, fromParentId);
+  if (!detached.item) return;
+
+  if (toParentId) {
+    const next = detached.fields.map((f) => {
+      if (f.id !== toParentId) return f;
+      const children = [...(f.fields ?? [])];
+      const toIndex = children.findIndex((c) => c.id === toId);
+      if (toIndex < 0) children.push(detached.item!);
+      else children.splice(toIndex, 0, detached.item!);
+      return { ...f, fields: children };
+    });
+    props.onReplaceFields(next);
+    return;
+  }
+
+  const next = [...detached.fields];
+  const toIndex = next.findIndex((f) => f.id === toId);
+  if (toIndex < 0) next.push(detached.item);
+  else next.splice(toIndex, 0, detached.item);
+  props.onReplaceFields(next);
 }
 
 function moveFieldToBandEnd(
   props: FormsWysiwygCanvasProps,
   fieldId: string,
   bandSectionId: string | null,
+  bandMode: BandMode,
 ) {
-  const arr = [...props.schema.fields];
-  const from = arr.findIndex((f) => f.id === fieldId);
-  if (from < 0) return;
-  const [item] = arr.splice(from, 1);
+  const detached = detachField(props.schema.fields, fieldId, null);
+  if (!detached.item) return;
 
+  if (bandMode === "nested" && bandSectionId) {
+    props.onReplaceFields(detached.fields.map((f) =>
+      f.id === bandSectionId ? { ...f, fields: [...(f.fields ?? []), detached.item!] } : f,
+    ));
+    return;
+  }
+
+  const arr = [...detached.fields];
   if (bandSectionId === null) {
     let insertAt = 0;
     for (let i = 0; i < arr.length; i++) {
       if (arr[i].type === "section") { insertAt = i; break; }
       insertAt = i + 1;
     }
-    arr.splice(insertAt, 0, item);
+    arr.splice(insertAt, 0, detached.item);
   } else {
     const sIdx = arr.findIndex((f) => f.id === bandSectionId);
-    if (sIdx < 0) arr.push(item);
+    if (sIdx < 0) arr.push(detached.item);
     else {
       let insertAt = arr.length;
       for (let i = sIdx + 1; i < arr.length; i++) {
         if (arr[i].type === "section") { insertAt = i; break; }
       }
-      arr.splice(insertAt, 0, item);
+      arr.splice(insertAt, 0, detached.item);
     }
   }
   props.onReplaceFields(arr);
+}
+
+function detachField(fields: BaseField[], fieldId: string, hintedParentId: string | null) {
+  let item: BaseField | null = null;
+
+  if (hintedParentId) {
+    const next = fields.map((f) => {
+      if (f.id !== hintedParentId) return f;
+      const children = [...(f.fields ?? [])];
+      const idx = children.findIndex((c) => c.id === fieldId);
+      if (idx < 0) return f;
+      item = children[idx];
+      children.splice(idx, 1);
+      return { ...f, fields: children };
+    });
+    if (item) return { fields: next, item };
+  }
+
+  const topIdx = fields.findIndex((f) => f.id === fieldId);
+  if (topIdx >= 0) {
+    const next = [...fields];
+    item = next[topIdx];
+    next.splice(topIdx, 1);
+    return { fields: next, item };
+  }
+
+  const next = fields.map((f) => {
+    if (!f.fields?.length) return f;
+    const children = [...f.fields];
+    const idx = children.findIndex((c) => c.id === fieldId);
+    if (idx < 0) return f;
+    item = children[idx];
+    children.splice(idx, 1);
+    return { ...f, fields: children };
+  });
+
+  return { fields: next, item };
 }
 
 function moveSection(p: BandCardProps, dir: "up" | "down") {
