@@ -594,12 +594,34 @@ export const TireRequestDialog = ({ open, onOpenChange, embedded = false, prefil
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
-            {mutation.isPending ? "Submitting..." : "Apply / Submit"}
-          </Button>
-        </DialogFooter>
+        <div className={embedded ? "flex justify-end gap-2 pt-4 border-t mt-4" : ""}>
+          {embedded ? (
+            <>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
+                {mutation.isPending ? "Submitting..." : "Apply / Submit"}
+              </Button>
+            </>
+          ) : (
+            <DialogFooter>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
+                {mutation.isPending ? "Submitting..." : "Apply / Submit"}
+              </Button>
+            </DialogFooter>
+          )}
+        </div>
+    </>
+  );
+
+  if (embedded) {
+    return <div className="space-y-6">{body}</div>;
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) reset(); }}>
+      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
+        {body}
       </DialogContent>
     </Dialog>
   );
